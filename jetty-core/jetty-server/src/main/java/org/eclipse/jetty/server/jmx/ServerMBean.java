@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server.jmx;
 
 import java.time.Duration;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import org.eclipse.jetty.server.Server;
@@ -62,10 +64,17 @@ public class ServerMBean extends Handler.AbstractMBean
         return getManagedObject().getDescendants(ContextHandler.class);
     }
 
-    @ManagedAttribute("The startup date time in the system timezone")
+    @ManagedAttribute("The UTC startup instant")
     public String getStartupTime()
     {
-        return String.valueOf(getManagedObject().getStartupTime());
+        ZonedDateTime zoned = getManagedObject().getStartupDateTime();
+        return String.valueOf(zoned.withZoneSameInstant(ZoneOffset.UTC));
+    }
+
+    @ManagedAttribute("The startup date time in the system timezone")
+    public String getStartupDateTime()
+    {
+        return String.valueOf(getManagedObject().getStartupDateTime());
     }
 
     @ManagedAttribute("The uptime duration in d:HH:mm:ss.SSS")

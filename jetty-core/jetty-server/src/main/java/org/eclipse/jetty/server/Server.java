@@ -88,7 +88,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private final AutoLock _dateLock = new AutoLock();
     private final MimeTypes.Mutable _mimeTypes = new MimeTypes.Mutable();
     private String _serverInfo = __serverInfo;
-    private ZonedDateTime startupTime;
+    private ZonedDateTime _startupDateTime;
     private boolean _openEarly = true;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
@@ -551,9 +551,9 @@ public class Server extends Handler.Wrapper implements Attributes
     /**
      * @return the startup date and time in the system timezone, or {@code null} if not started
      */
-    public ZonedDateTime getStartupTime()
+    public ZonedDateTime getStartupDateTime()
     {
-        return startupTime;
+        return _startupDateTime;
     }
 
     /**
@@ -561,7 +561,7 @@ public class Server extends Handler.Wrapper implements Attributes
      */
     public long getUptimeMillis()
     {
-        return startupTime == null ? 0 : Duration.between(startupTime, ZonedDateTime.now()).toMillis();
+        return _startupDateTime == null ? 0 : Duration.between(_startupDateTime, ZonedDateTime.now()).toMillis();
     }
 
     @Override
@@ -569,7 +569,7 @@ public class Server extends Handler.Wrapper implements Attributes
     {
         try
         {
-            startupTime = ZonedDateTime.now();
+            _startupDateTime = ZonedDateTime.now();
 
             // If the Server should be stopped when the jvm exits,
             // register with the shutdown handler thread.
@@ -699,7 +699,7 @@ public class Server extends Handler.Wrapper implements Attributes
         if (LOG.isDebugEnabled())
             LOG.debug("doStop {}", this);
 
-        startupTime = null;
+        _startupDateTime = null;
 
         Throwable multiException = null;
 
