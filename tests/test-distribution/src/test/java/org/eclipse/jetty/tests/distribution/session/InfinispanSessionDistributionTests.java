@@ -57,7 +57,7 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
     @Override
     public void startExternalSessionStorage() throws Exception
     {
-        String infinispanVersion = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
+        String infinispanVersion = System.getProperty("infinispan.docker.image.version", "15.0.9.Final");
         infinispan =
                 new GenericContainer(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
                         ":" + infinispanVersion)
@@ -69,8 +69,8 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
                         .waitingFor(new LogMessageWaitStrategy()
                                 .withRegEx(".*Infinispan Server.*started in.*\\s"))
                         .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
-                        .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
-                        .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY);
+                        .withEnv("JAVA_OPTIONS", "-Xms64m -Xmx256m -Djgroups.dns.query=infinispan-dns-ping.myproject.svc.cluster.local")
+                        .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
         infinispan.start();
         host = infinispan.getContainerIpAddress();
         port = infinispan.getMappedPort(11222);
