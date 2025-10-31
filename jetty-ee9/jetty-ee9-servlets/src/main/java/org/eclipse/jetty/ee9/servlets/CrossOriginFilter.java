@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -116,7 +115,10 @@ import org.slf4j.LoggerFactory;
  *     ...
  * &lt;/web-app&gt;
  * </pre>
+ *
+ * @deprecated Use {@link org.eclipse.jetty.server.handler.CrossOriginHandler} instead
  */
+@Deprecated(since = "12.0.6", forRemoval = true)
 public class CrossOriginFilter implements Filter
 {
     private static final Logger LOG = LoggerFactory.getLogger(CrossOriginFilter.class);
