@@ -439,9 +439,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, inputStreamCallingArgs);
                 if (methodHandle != null)
                 {
-                    if (!metadata.isAutoDemand())
-                        throw new InvalidWebSocketException("InputStream methods require auto-demanding WebSocket endpoints");
-
                     // InputStream Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setBinaryHandle(InputStreamMessageSink.class, MethodHolder.from(methodHandle), onMsg);
@@ -451,9 +448,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, readerCallingArgs);
                 if (methodHandle != null)
                 {
-                    if (!metadata.isAutoDemand())
-                        throw new InvalidWebSocketException("Reader methods require auto-demanding WebSocket endpoints");
-
                     // Reader Text Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setTextHandle(ReaderMessageSink.class, MethodHolder.from(methodHandle), onMsg);

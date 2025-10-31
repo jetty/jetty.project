@@ -58,16 +58,12 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
     public DispatchedMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
         super(session, methodHolder, autoDemand);
-        if (!autoDemand)
-            throw new IllegalArgumentException("%s must be auto-demanding".formatted(getClass().getSimpleName()));
         executor = session.getWebSocketComponents().getExecutor();
     }
 
     public DispatchedMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand, Consumer<Throwable> onError)
     {
         super(session, methodHolder, autoDemand);
-        if (!autoDemand)
-            throw new IllegalArgumentException("%s must be auto-demanding".formatted(getClass().getSimpleName()));
         this.executor = session.getWebSocketComponents().getExecutor();
         this.onError = onError;
     }

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.websocket.api.annotations;
 
-import java.io.InputStream;
 import java.io.Reader;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -30,9 +29,6 @@ import java.lang.annotation.Target;
  * </ol>
  * <p>The {@code *} before the parameter type means that the parameter is mandatory.</p>
  * <p>NOTE</p>
- * <p>Method that takes a {@link Reader} must have
- * {@link WebSocket#autoDemand()} set to {@code true}.</p>
- * <p>NOTE</p>
  * <p>The {@link Reader} argument will always use the UTF-8 charset,
  * (as dictated by RFC 6455). If you need to use a different charset,
  * you must use BINARY messages.</p>
@@ -42,9 +38,6 @@ import java.lang.annotation.Target;
  * <li>{@code public void methodName(Session session, *InputStream stream)}</li>
  * </ol>
  * <p>The {@code *} before the parameter type means that the parameter is mandatory.</p>
- * <p>NOTE</p>
- * <p>Method that takes a {@link InputStream} must have
- * {@link WebSocket#autoDemand()} set to {@code true}.</p>
  * <p>Partial messages are used to receive individual frames (and therefore partial
  * messages) without aggregating the frames into a complete WebSocket message.
  * A {@code boolean} parameter is supplied to indicate whether the frame is
