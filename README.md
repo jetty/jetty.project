@@ -20,6 +20,7 @@ Jetty is a modern fully async web server that has a long history as a component 
 
 Webapp Example
 --------------
+
 ```shell
 $ mkdir base && cd base
 $ java -jar $JETTY_HOME/start.jar --add-modules=http,deploy
@@ -29,6 +30,7 @@ $ java -jar $JETTY_HOME/start.jar
 
 Embedded Example
 ----------------
+
 ```java
 Server server = new Server(port);
 ServletContextHandler context = new ServletContextHandler(server, "/");
