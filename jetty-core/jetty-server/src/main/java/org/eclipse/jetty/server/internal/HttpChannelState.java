@@ -1571,16 +1571,16 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
                 }
-                else
+                else if (httpChannelState.getConnectionMetaData().isPersistent())
                 {
-                    // consumeAvailable() makes the connection non-persistent and returns an exception
-                    // when the content cannot be consumed, this must not result in an error according
-                    // to RFC2616 section 8.2.3.
+                    // If consumeAvailable() cannot consume all the content, then it
+                    // makes the connection non-persistent and returns an exception.
+                    // This must not result in an error according to RFC2616 section 8.2.3.
                     Throwable unconsumed = stream.consumeAvailable();
-                    if (failure != null)
+                    if (failure != null && unconsumed != null)
                         ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("consumeAvailable: {} {} ", unconsumed == null, httpChannelState, failure);
+                        LOG.atDebug().setCause(failure).log("consumeAvailable: {} {}", unconsumed == null, httpChannelState);
                 }
 
                 // Pending writes are also failures
