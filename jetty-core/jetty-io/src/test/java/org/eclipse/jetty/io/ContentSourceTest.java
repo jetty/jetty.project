@@ -1036,7 +1036,8 @@ public class ContentSourceTest
     {
         TestContentSource source = new TestContentSource();
 
-        CompletableFuture<byte[]> completableFuture = Content.Source.asByteArrayAsync(source, -1);
+        FuturePromise<byte[]> promise = new FuturePromise<>();
+        Content.Source.asByteArrayAsync(source, -1, promise);
 
         Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter();
         counter.retain();
@@ -1046,7 +1047,7 @@ public class ContentSourceTest
         assertNotNull(todo);
         source.add(Content.Chunk.asChunk(BufferUtil.toBuffer("hello"), false, counter));
         todo.run();
-        assertFalse(completableFuture.isDone());
+        assertFalse(promise.isDone());
 
         todo = source.takeDemand();
         assertNotNull(todo);
@@ -1056,9 +1057,9 @@ public class ContentSourceTest
 
         todo = source.takeDemand();
         assertNull(todo);
-        assertTrue(completableFuture.isDone());
+        assertTrue(promise.isDone());
 
-        byte[] buffer = completableFuture.get();
+        byte[] buffer = promise.get();
         assertNotNull(buffer);
 
         assertThat(new String(buffer, UTF_8), equalTo("hello cruel world"));
