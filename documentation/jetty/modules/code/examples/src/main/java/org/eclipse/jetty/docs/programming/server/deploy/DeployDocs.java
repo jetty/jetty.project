@@ -214,9 +214,4 @@ public class DeployDocs
         server.start();
         // end::multi[]
     }
-
-    public static void main(String[] args) throws Exception
-    {
-        new DeployDocs().simple();
-    }
 }
