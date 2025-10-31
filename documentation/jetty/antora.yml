@@ -15,6 +15,7 @@ asciidoc:
     ee-prev: ee10
     ee-prev-caps: EE 10
     run-jetty-classpath: ${settings.localRepository}/org/eclipse/jetty/tests/jetty-testers/${project.version}/jetty-testers-${project.version}.jar${path.separator}${run.jetty.classpath}
+    servlet-current-version: 6.1.0
 nav:
 - modules/operations-guide/nav.adoc
 - modules/programming-guide/nav.adoc
