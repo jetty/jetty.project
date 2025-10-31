@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 import jakarta.servlet.MultipartConfigElement;
@@ -58,12 +59,16 @@ import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -99,15 +104,23 @@ public class MultiPartServletTest
 
     private void start(HttpServlet servlet, MultipartConfigElement config, boolean eager) throws Exception
     {
-        config = config == null ? new MultipartConfigElement(tmpDirString, MAX_FILE_SIZE, -1, 0) : config;
+        start(servletContextHandler ->
+        {
+            ServletHolder servletHolder = new ServletHolder(servlet);
+            servletHolder.getRegistration().setMultipartConfig(config == null
+                ? new MultipartConfigElement(tmpDirString, MAX_FILE_SIZE, -1, 0) : config);
+            servletContextHandler.addServlet(servletHolder, "/");
+        }, eager);
+    }
+
+    private void start(Consumer<ServletContextHandler> consumer, boolean eager) throws Exception
+    {
         server = new Server(null, null, null);
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler servletContextHandler = new ServletContextHandler("/");
-        ServletHolder servletHolder = new ServletHolder(servlet);
-        servletHolder.getRegistration().setMultipartConfig(config);
-        servletContextHandler.addServlet(servletHolder, "/");
+        consumer.accept(servletContextHandler);
         server.setHandler(servletContextHandler);
 
         GzipHandler gzipHandler = new GzipHandler();
@@ -217,7 +230,7 @@ public class MultiPartServletTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void service(HttpServletRequest req, HttpServletResponse resp)
             {
                 req.getParameterMap();
             }
@@ -484,10 +497,15 @@ public class MultiPartServletTest
             MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
             formData.setMaxParts(1);
             formData.setMaxMemoryFileSize(-1);
-            MultiPartFormData.Parts parts = formData.parse(new InputStreamContentSource(inputStream)).join();
 
-            assertThat(parts.size(), is(1));
-            assertThat(parts.get(0).getContentAsString(UTF_8), is(contentString));
+            try (Blocker.Promise<MultiPartFormData.Parts> promise = Blocker.promise())
+            {
+                formData.parse(Content.Source.from(inputStream), promise);
+                MultiPartFormData.Parts parts = promise.block();
+
+                assertThat(parts.size(), is(1));
+                assertThat(parts.get(0).getContentAsString(UTF_8), is(contentString));
+            }
         }
     }
 
@@ -534,7 +552,7 @@ public class MultiPartServletTest
         start(new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 resp.setContentType("text/plain");
                 Map<String, String[]> parameterMap = req.getParameterMap();
@@ -734,5 +752,98 @@ public class MultiPartServletTest
     private Collection<Path> getTempDirFiles() throws IOException
     {
         return Files.list(tmpDir).toList();
+    }
+
+    public static Stream<Arguments> dispatchTestArgs()
+    {
+        return Stream.of(
+            Arguments.of(true, "forward"),
+            Arguments.of(false, "forward"),
+            Arguments.of(true, "include"),
+            Arguments.of(false, "include"),
+            Arguments.of(true, "async"),
+            Arguments.of(false, "async")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("dispatchTestArgs")
+    public void testDispatch(boolean eager, String dispatchType) throws Exception
+    {
+        start(servletContextHandler ->
+        {
+            servletContextHandler.addServlet(new HttpServlet()
+            {
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+                {
+                    switch (dispatchType)
+                    {
+                        case "forward" -> request.getRequestDispatcher("/multipart").forward(request, response);
+                        case "include" -> request.getRequestDispatcher("/multipart").include(request, response);
+                        case "async" ->
+                        {
+                            request.startAsync();
+                            request.getAsyncContext().dispatch("/multipart");
+                        }
+                        default -> throw new ServletException("Unknown dispatch type: " + dispatchType);
+                    }
+                }
+            }, "/");
+
+            ServletHolder servletHolder = new ServletHolder(new HttpServlet()
+            {
+                @Override
+                protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+                {
+                    Collection<Part> parts = request.getParts();
+                    assertNotNull(parts);
+                    assertEquals(1, parts.size());
+                    Part part = parts.iterator().next();
+                    assertEquals("part1", part.getName());
+                    Collection<String> headerNames = part.getHeaderNames();
+                    assertNotNull(headerNames);
+                    assertEquals(2, headerNames.size());
+                    String content1 = IO.toString(part.getInputStream(), UTF_8);
+                    assertEquals("content1", content1);
+                    response.getWriter().print("success!");
+                }
+            });
+            servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(tmpDirString, MAX_FILE_SIZE, -1, 0));
+            servletContextHandler.addServlet(servletHolder, "/multipart");
+        }, eager);
+
+        if (server.getErrorHandler() instanceof ErrorHandler errorHandler)
+            errorHandler.setShowStacks(true);
+
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+
+            String content = """
+                --A1B2C3
+                Content-Disposition: form-data; name="part1"
+                Content-Type: text/plain; charset="UTF-8"
+                
+                content1
+                --A1B2C3--
+                """;
+            String header = """
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Type: multipart/form-data; boundary="A1B2C3"
+                Content-Length: $L
+                
+                """.replace("$L", String.valueOf(content.length()));
+
+            output.write(header.getBytes(UTF_8));
+            output.write(content.getBytes(UTF_8));
+            output.flush();
+
+            HttpTester.Response response = HttpTester.parseResponse(socket.getInputStream());
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertThat(response.getContent(), equalTo("success!"));
+        }
     }
 }

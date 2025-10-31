@@ -21,11 +21,11 @@ import java.lang.annotation.Target;
 
 /**
  * <p>Annotation for methods to receive WebSocket PING events.</p>
- * <p>Acceptable method patterns:</p>
+ * <p>Acceptable method signatures:</p>
  * <ol>
- * <li>{@code public void <methodName>(ByteBuffer payload)}</li>
- * <li>{@code public void <methodName>(Session session, ByteBuffer payload)}</li>
+ * <li>{@code public void <methodName>(Session session, *ByteBuffer payload)}</li>
  * </ol>
+ * <p>The {@code *} before the parameter type means that the parameter is mandatory.</p>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
