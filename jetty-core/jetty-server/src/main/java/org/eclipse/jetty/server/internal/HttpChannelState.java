@@ -1571,19 +1571,22 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
                 }
-                // Else failure for a persistent non expecting request to not consume the request
-                else if (httpChannelState.getConnectionMetaData().isPersistent() && !httpChannelState._expects100Continue)
-                    failure = ExceptionUtil.combine(failure, stream.consumeAvailable());
                 else
                 {
-                    // Else we consumeAvailable, but if the content cannot be fully consumed, then
-                    // consumeAvailable() makes the connection non-persistent and returns an exception.
-                    // This must not result in an error according to RFC2616 section 8.2.3.
+                    // ensure the request is fully consumed or failed.
                     Throwable unconsumed = stream.consumeAvailable();
-                    if (failure != null)
-                        ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
                     if (LOG.isDebugEnabled())
                         LOG.atDebug().setCause(failure).log("consumeAvailable: {} {}", unconsumed == null, httpChannelState);
+                    if (unconsumed != null)
+                    {
+                        // If the connection is persistent, and we are not closing due to expectations...
+                        if (httpChannelState.getConnectionMetaData().isPersistent() && !httpChannelState._expects100Continue)
+                            // then unconsumed input is a real failure
+                            failure = ExceptionUtil.combine(failure, unconsumed);
+                        else if (failure != null)
+                            // otherwise the failure is just associated with any existing failure else ignored
+                            ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
+                    }
                 }
 
                 // Pending writes are also failures
