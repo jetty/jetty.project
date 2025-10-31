@@ -286,13 +286,24 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Stream #{} not found on {}", streamId, this);
+
             // We must enlarge the session flow control window,
             // otherwise other requests will be stalled.
             flowControl.onDataConsumed(this, null, flowControlLength);
+
             if (isStreamClosed(streamId))
-                reset(null, new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), callback);
+            {
+                // SPEC: this case must not be treated as an error.
+                // However, we want to rate control it.
+                if (!rateControlOnEvent(frame))
+                    onSessionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_data_frame_rate", callback);
+                else
+                    callback.succeeded();
+            }
             else
+            {
                 onSessionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_data_frame", callback);
+            }
         }
     }
 
@@ -725,7 +736,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         else
         {
-            onConnectionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_rst_stream_frame_rate");
+            onSessionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_rst_stream_frame_rate", callback);
         }
     }
 
@@ -2043,7 +2054,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             failStreams(stream -> true, reason, true);
             sendGoAway(goAwayFrame, Callback.NOOP);
             notifyFailure(HTTP2Session.this, cause, Callback.NOOP);
-            terminate(goAwayFrame);
+            terminate(goAwayFrame, callback);
         }
 
         private void onWriteFailure(Throwable x)
@@ -2159,6 +2170,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
         private void terminate(GoAwayFrame frame)
         {
+            terminate(frame, Callback.NOOP);
+        }
+
+        private void terminate(GoAwayFrame frame, Callback callback)
+        {
             if (LOG.isDebugEnabled())
                 LOG.debug("Terminating {}", HTTP2Session.this);
 
@@ -2171,7 +2187,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 completable.complete(null);
 
             HTTP2Session.this.terminate(failure);
-            notifyClose(HTTP2Session.this, frame, Callback.NOOP);
+            notifyClose(HTTP2Session.this, frame, callback);
         }
 
         private int priority(PriorityFrame frame, Callback callback)
