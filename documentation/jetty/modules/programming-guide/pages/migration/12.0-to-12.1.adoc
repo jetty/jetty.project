@@ -132,3 +132,13 @@ If the generation of the server response overflows `HttpConfiguration.responseHe
 If the generation overflows also `HttpConfiguration.maxResponseHeaderSize`, a `500` error response is generated.
 
 In Jetty 12.1.x and HTTP/2 `HttpConfiguration.maxResponseHeaderSize` is used for the link:https://datatracker.ietf.org/doc/html/rfc9113#SETTINGS_MAX_HEADER_LIST_SIZE[`MAX_HEADER_LIST_SIZE`] setting, while in HTTP/3 is used for the link:https://datatracker.ietf.org/doc/html/rfc9114#SETTINGS_MAX_FIELD_SECTION_SIZE[`MAX_FIELD_SECTION_SIZE`] setting.
+
+[[api-changes-websocket]]
+=== `WebSocket`
+
+In Jetty 12.0.x, it was possible to use the Jetty WebSocket annotations to have, in the same WebSocket EndPoint, a method annotated with `@OnWebSocketFrame` and one annotated with `@OnWebSocketMessage`, `@OnWebSocketPing` or `@OnWebSocketPong`.
+However, this was causing issues, discussed in link:https://github.com/jetty/jetty.project/pull/12342[#12342].
+
+In Jetty 12.1.x if the annotation `@OnWebSocketFrame` is present, then there cannot be methods annotated with `@OnWebSocketMessage`, `@OnWebSocketPing` or `@OnWebSocketPong`.
+
+Furthermore, in Jetty 12.1.x the signature of methods annotated with `@OnWebSocketFrame` now requires a `Callback` parameter.

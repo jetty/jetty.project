@@ -1140,7 +1140,59 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void setOnCompleteCallbackWithBlockingSend(Scenario scenario) throws Exception
+    public void testRequestContentListenerBytesCounting(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        int length = 41;
+        ByteBuffer requestByteBuffer = BufferUtil.allocate(length * 2).limit(length);
+        AtomicInteger requestContentLength = new AtomicInteger();
+
+        class NonSlicingRequestContent implements Request.Content
+        {
+            private boolean read;
+
+            @Override
+            public Content.Chunk read()
+            {
+                if (read)
+                    return Content.Chunk.EOF;
+                read = true;
+                return Content.Chunk.from(requestByteBuffer, true);
+            }
+
+            @Override
+            public void demand(Runnable demandCallback)
+            {
+                demandCallback.run();
+            }
+
+            @Override
+            public long getLength()
+            {
+                return length;
+            }
+
+            @Override
+            public void fail(Throwable failure)
+            {
+            }
+        }
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .onRequestContent((rq, bb) -> requestContentLength.addAndGet(bb.remaining()))
+            .body(new NonSlicingRequestContent())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(requestContentLength.get(), is(length));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testSetOnCompleteCallbackWithBlockingSend(Scenario scenario) throws Exception
     {
         byte[] content = new byte[512];
         new Random().nextBytes(content);

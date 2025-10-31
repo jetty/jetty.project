@@ -77,8 +77,7 @@ public class CompletedUpgradeRequest implements UpgradeRequest
         _extensions = Collections.unmodifiableList(extensions);
 
         // Get the user principal from the request's authentication state.
-        Request.AuthenticationState authState = Request.getAuthenticationState(request);
-        _userPrincipal = authState != null ? authState.getUserPrincipal() : null;
+        _userPrincipal = Request.getAuthenticationState(request).getUserPrincipal();
     }
 
     @Override

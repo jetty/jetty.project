@@ -21,11 +21,11 @@ import java.lang.annotation.Target;
 
 /**
  * <p>Annotation for methods to receive WebSocket errors.</p>
- * <p>Acceptable method patterns:</p>
+ * <p>Acceptable method signatures:</p>
  * <ol>
- * <li>{@code public void <methodName>(Throwable cause)}</li>
- * <li>{@code public void <methodName>(Session session, Throwable cause)}</li>
+ * <li>{@code public void <methodName>(Session session, *Throwable cause)}</li>
  * </ol>
+ * <p>The {@code *} before the parameter type means that the parameter is mandatory.</p>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
