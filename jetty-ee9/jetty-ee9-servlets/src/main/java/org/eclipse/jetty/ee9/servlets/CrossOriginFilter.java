@@ -116,6 +116,7 @@ import org.slf4j.LoggerFactory;
  *     ...
  * &lt;/web-app&gt;
  * </pre>
+ *
  * @deprecated Use {@link org.eclipse.jetty.server.handler.CrossOriginHandler} instead
  */
 @Deprecated(since = "12.0.6", forRemoval = true)

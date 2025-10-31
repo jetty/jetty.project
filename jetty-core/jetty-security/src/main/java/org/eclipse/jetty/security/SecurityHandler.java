@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
 
@@ -651,6 +652,30 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         return Collections.emptySet();
     }
 
+    private static int compareMappedResources(MappedResource<?> mr1, MappedResource<?> mr2)
+    {
+        PathSpecGroup g1 = mr1.getPathSpec().getGroup();
+        PathSpecGroup g2 = mr2.getPathSpec().getGroup();
+        int l1 = mr1.getPathSpec().getSpecLength();
+        int l2 = mr2.getPathSpec().getSpecLength();
+        if (g1.equals(g2))
+            return Integer.compare(l1, l2);
+        return Integer.compare(pathSpecGroupOrder(g1), pathSpecGroupOrder(g2));
+    }
+
+    private static int pathSpecGroupOrder(PathSpecGroup group)
+    {
+        return switch (group)
+        {
+            case EXACT -> 5;
+            case ROOT -> 4;
+            case SUFFIX_GLOB -> 3;
+            case MIDDLE_GLOB -> 2;
+            case PREFIX_GLOB -> 1;
+            case DEFAULT -> 0;
+        };
+    }
+
     public class NotChecked implements Principal
     {
         @Override
@@ -671,25 +696,23 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         }
     }
 
-    // TODO consider method mapping version
-
     /**
      * <p>A concrete implementation of {@link SecurityHandler} that uses a {@link PathMappings} to
      * match request to a list of {@link Constraint}s, which are applied in the order of
      * least significant to most significant.
      * <p>
      * An example of using this class is:
-     * <pre>
-     *     SecurityHandler.PathMapped handler = new SecurityHandler.PathMapped();
-     *     handler.put("/*", Constraint.combine(Constraint.FORBIDDEN, Constraint.SECURE_TRANSPORT);
-     *     handler.put("", Constraint.ALLOWED);
-     *     handler.put("/login", Constraint.ALLOWED);
-     *     handler.put("*.png", Constraint.ANY_TRANSPORT);
-     *     handler.put("/admin/*", Constraint.from("admin", "operator"));
-     *     handler.put("/admin/super/*", Constraint.from("operator"));
-     *     handler.put("/user/*", Constraint.ANY_USER);
-     *     handler.put("*.xml", Constraint.FORBIDDEN);
-     * </pre>
+     * <pre>{@code
+     * SecurityHandler.PathMapped handler = new SecurityHandler.PathMapped();
+     * handler.put("/*", Constraint.combine(Constraint.FORBIDDEN, Constraint.SECURE_TRANSPORT));
+     * handler.put("", Constraint.ALLOWED);
+     * handler.put("/login", Constraint.ALLOWED);
+     * handler.put("*.png", Constraint.ANY_TRANSPORT);
+     * handler.put("/admin/*", Constraint.from("admin", "operator"));
+     * handler.put("/admin/super/*", Constraint.from("operator"));
+     * handler.put("/user/*", Constraint.ANY_USER);
+     * handler.put("*.xml", Constraint.FORBIDDEN);
+     * }</pre>
      * <p>
      * When {@link #getConstraint(String, Request)} is called, any matching
      * constraints are sorted into least to most significant with
@@ -698,15 +721,17 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
      * For example:
      * </p>
      * <ul>
-     *     <li>{@code "/admin/index.html"} matches {@code "/*"} and {@code "/admin/*"}, resulting in a
-     *         constraint of {@link Authorization#SPECIFIC_ROLE} and {@link Transport#SECURE}.</li>
-     *     <li>{@code "/admin/logo.png"} matches {@code "/*"}, {@code "/admin/*"} and {@code "*.png"}, resulting in a
-     *         constraint of {@link Authorization#SPECIFIC_ROLE} and {@link Transport#ANY}.</li>
-     *     <li>{@code "/admin/config.xml"} matches {@code "/*"}, {@code "/admin/*"} and {@code "*.xml"}, resulting in a
-     *         constraint of {@link Authorization#FORBIDDEN} and {@link Transport#SECURE}.</li>
-     *     <li>{@code "/admin/super/index.html"} matches {@code "/*"}, {@code "/admin/*"} and {@code "/admin/super/*"}, resulting in a
-     *         constraint of {@link Authorization#SPECIFIC_ROLE} and {@link Transport#SECURE}.</li>
+     *   <li>{@code "/admin/index.html"} matches {@code "/*"} and {@code "/admin/*"}, resulting in a
+     *       constraint of {@link Authorization#SPECIFIC_ROLE} and {@link Transport#SECURE}.</li>
+     *   <li>{@code "/admin/logo.png"} matches {@code "/*"}, {@code "/admin/*"} and {@code "*.png"}, resulting in a
+     *       constraint of {@link Authorization#SPECIFIC_ROLE} and {@link Transport#ANY}.</li>
+     *   <li>{@code "/admin/config.xml"} matches {@code "/*"}, {@code "/admin/*"} and {@code "*.xml"}, resulting in a
+     *       constraint of {@link Authorization#FORBIDDEN} and {@link Transport#SECURE}.</li>
+     *   <li>{@code "/admin/super/index.html"} matches {@code "/*"}, {@code "/admin/*"} and {@code "/admin/super/*"},
+     *       resulting in a constraint of {@link Authorization#SPECIFIC_ROLE} and {@link Transport#SECURE}.</li>
      * </ul>
+     * <p>If there is no match for the request path, then the constraint is assumed to be {@link Constraint#ALLOWED}.</p>
+     * <p>It is therefore good practice to always explicitly configure a constraint for path {@code /*} or {@code /}.</p>
      */
     public static class PathMapped extends SecurityHandler implements Comparator<PathSpec>
     {
@@ -723,11 +748,27 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
             super(handler);
         }
 
+        /**
+         * <p>Associates the specified request path pattern with the specified {@link Constraint}.</p>
+         *
+         * @param pathSpec the request path pattern to match
+         * @param constraint the associated {@link Constraint}
+         * @return the previous {@link Constraint} associated with the request path pattern,
+         * or {@code null} if there was no previous association
+         */
         public Constraint put(String pathSpec, Constraint constraint)
         {
             return put(PathSpec.from(pathSpec), constraint);
         }
 
+        /**
+         * <p>Associates the specified request path pattern with the specified {@link Constraint}.</p>
+         *
+         * @param pathSpec the request path pattern to match
+         * @param constraint the associated {@link Constraint}
+         * @return the previous {@link Constraint} associated with the request path pattern,
+         * or {@code null} if there was no previous association
+         */
         public Constraint put(PathSpec pathSpec, Constraint constraint)
         {
             Set<String> roles = constraint.getRoles();
@@ -798,15 +839,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
         int compare(MappedResource<Constraint> c1, MappedResource<Constraint> c2)
         {
-            PathSpecGroup g1 = c1.getPathSpec().getGroup();
-            PathSpecGroup g2 = c2.getPathSpec().getGroup();
-            int l1 = c1.getPathSpec().getSpecLength();
-            int l2 = c2.getPathSpec().getSpecLength();
-
-            if (g1.equals(g2))
-                return Integer.compare(l1, l2);
-
-            return Integer.compare(pathSpecGroupPrecedence(g1), pathSpecGroupPrecedence(g2));
+            return compareMappedResources(c1, c2);
         }
 
         /**
@@ -825,15 +858,160 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
          */
         protected int pathSpecGroupPrecedence(PathSpecGroup group)
         {
-            return switch (group)
+            return pathSpecGroupOrder(group);
+        }
+
+        @Override
+        protected Set<String> getKnownRoles()
+        {
+            return _knownRoles;
+        }
+    }
+
+    /**
+     * <p>A concrete implementation of {@link SecurityHandler} that uses a {@link PathMappings}
+     * to match request paths to a map of an HTTP method to a {@link Constraint}.</p>
+     * <p>The token {@code *} is used to indicate all HTTP methods.</p>
+     * <p>Request path matches are sorted from the least significant to the most significant,
+     * and the associated constraints are combined in order.</p>
+     * <p>For example:</p>
+     * <pre>{@code
+     * SecurityHandler.PathMethodMapped handler = new SecurityHandler.PathMethodMapped();
+     * handler.put(PathSpec.from("/*"), "*", Constraint.combine(Constraint.FORBIDDEN, Constraint.SECURE_TRANSPORT));
+     * handler.put(PathSpec.from("/releases/*"), "GET", Constraint.from("read"));
+     * handler.put(PathSpec.from("/releases/*"), "PUT", Constraint.from("write"));
+     * }</pre>
+     * <p>For these request paths:</p>
+     * <ul>
+     *   <li>{@code /foo} matches {@code /*};
+     *   any HTTP method results in a constraint with {@link Authorization#FORBIDDEN} and {@link Transport#SECURE}</li>
+     *   <li>{@code /releases/jetty-12.1.0.tar.gz} matches both {@code /*} and {@code /releases/*};
+     *   method {@code GET} results in a constraint with {@link Authorization#SPECIFIC_ROLE} with role {@code read}
+     *   and {@link Transport#SECURE};
+     *   method {@code PUT} results in a constraint with {@link Authorization#SPECIFIC_ROLE} with role {@code write}
+     *   and {@link Transport#SECURE};
+     *   any other HTTP method results in a constraint with {@link Authorization#FORBIDDEN} and {@link Transport#SECURE}</li>
+     * </ul>
+     * <p>If there is no match for the request path, then the constraint is assumed to be {@link Constraint#ALLOWED}.</p>
+     * <p>If there is no match for the request URI, or no match for the HTTP method, then the constraint is assumed
+     * to be {@link Constraint#ALLOWED}.</p>
+     * <p>It is therefore good practice to always explicitly configure a constraint for path {@code /*} or {@code /} 
+     * and HTTP method {@code *}.</p>
+     */
+    public static class PathMethodMapped extends SecurityHandler
+    {
+        private static final String ALL_METHODS = "*";
+
+        private final PathMappings<Map<String, Constraint>> _constraints = new PathMappings<>();
+        private final Set<String> _knownRoles = new HashSet<>();
+
+        public PathMethodMapped()
+        {
+            this(null);
+        }
+
+        public PathMethodMapped(Handler handler)
+        {
+            super(handler);
+        }
+
+        /**
+         * <p>Associates the given {@link Constraint} to the given request path patten and HTTP method.</p>
+         *
+         * @param pathSpec the {@link PathSpec} associated to the given constraint
+         * @param method the HTTP method associated to the given constraint, or {@code null} or {@code *}
+         * to indicate all HTTP methods
+         * @param constraint the constraint to associate
+         * @return the previous constraint associated with the given path and HTTP method,
+         * or {@code null} is there was no association
+         */
+        public Constraint put(String pathSpec, String method, Constraint constraint)
+        {
+            return put(PathSpec.from(pathSpec), method, constraint);
+        }
+
+        /**
+         * <p>Associates the given {@link Constraint} to the given request path pattern and HTTP method.</p>
+
+         * @param pathSpec the {@link PathSpec} associated to the given constraint
+         * @param method the HTTP method associated to the given constraint, or {@code null} or {@code *}
+         * to indicate all HTTP methods
+         * @param constraint the constraint to associate
+         * @return the previous constraint associated with the given path and HTTP method,
+         * or {@code null} is there was no association
+         */
+        public Constraint put(PathSpec pathSpec, String method, Constraint constraint)
+        {
+            Objects.requireNonNull(pathSpec);
+            if (method == null)
+                method = ALL_METHODS;
+            Objects.requireNonNull(constraint);
+            Map<String, Constraint> methodConstraints = _constraints.computeIfAbsent(pathSpec, k -> new HashMap<>());
+            Constraint result = methodConstraints.put(method, constraint);
+            if (result != null)
+                recomputeKnownRoles();
+            else
+                _knownRoles.addAll(constraint.getRoles());
+            return result;
+        }
+
+        /**
+         * <p>Associates the given {@link Constraint} to the given request path pattern and HTTP methods.</p>
+         *
+         * @param pathSpec the {@link PathSpec} associated to the given constraint
+         * @param methods the list of HTTP methods associated to the given constraint
+         * @param constraint the constraint to associate
+         */
+        public void put(PathSpec pathSpec, List<String> methods, Constraint constraint)
+        {
+            if (methods.isEmpty() || methods.contains(ALL_METHODS) || methods.contains(null))
+                throw new IllegalArgumentException("Invalid method list");
+            methods.forEach(method -> put(pathSpec, method, constraint));
+        }
+
+        @Override
+        protected Constraint getConstraint(String pathInContext, Request request)
+        {
+            List<MappedResource<Map<String, Constraint>>> matches = _constraints.getMatches(pathInContext);
+
+            if (matches == null || matches.isEmpty())
+                return Constraint.ALLOWED;
+
+            // Sort from least specific to most specific to combine constraints properly.
+            if (matches.size() > 1)
+                matches.sort(SecurityHandler::compareMappedResources);
+
+            String method = request.getMethod();
+
+            Constraint result = null;
+            for (MappedResource<Map<String, Constraint>> match : matches)
             {
-                case EXACT -> 5;
-                case ROOT -> 4;
-                case SUFFIX_GLOB -> 3;
-                case MIDDLE_GLOB -> 2;
-                case PREFIX_GLOB -> 1;
-                case DEFAULT -> 0;
-            };
+                Map<String, Constraint> methodConstraints = match.getResource();
+
+                // A constraint for all HTTP methods may be used to establish
+                // defaults such as Constraint.SECURE_TRANSPORT, so always
+                // combine it with the Constraint for the specific HTTP method.
+                Constraint allMethodsConstraint = methodConstraints.get(ALL_METHODS);
+                Constraint specificMethodConstraint = methodConstraints.get(method);
+                Constraint constraint = Constraint.combine(allMethodsConstraint, specificMethodConstraint);
+
+                // Combine the constraints from all URI matches.
+                result = Constraint.combine(result, constraint);
+            }
+
+            return result;
+        }
+
+        private void recomputeKnownRoles()
+        {
+            _knownRoles.clear();
+            for (Map<String, Constraint> m : _constraints.values())
+            {
+                for (Constraint c : m.values())
+                {
+                    _knownRoles.addAll(c.getRoles());
+                }
+            }
         }
 
         @Override

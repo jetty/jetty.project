@@ -851,4 +851,62 @@ public abstract class ConditionalHandler extends Handler.Wrapper
             return nextNext != null && nextNext.handle(request, response, callback);
         }
     }
+
+    /**
+     * <p>An implementation of {@link ConditionalHandler} that, if conditions are met,
+     * calls {@link #nextHandler(Request, Response, Callback)}, otherwise sends an
+     * error response with a configurable HTTP status code, by default {@code 403}
+     * (Forbidden).</p>
+     * <p>Websites that want to allow only certain HTTP methods, can configure an
+     * instance of this class allowing only {@code GET}, {@code HEAD} and {@code POST},
+     * so that other HTTP methods such as {@code DELETE}, {@code TRACE}, etc. are
+     * not allowed.</p>
+     * <p>Similarly, websites can configure HTTP URI path patterns to allow or
+     * disallow specific request paths.</p>
+     */
+    public static class NextElseReject extends ConditionalHandler
+    {
+        private final int _status;
+
+        public NextElseReject()
+        {
+            this(HttpStatus.FORBIDDEN_403);
+        }
+
+        public NextElseReject(int status)
+        {
+            this(null, status);
+        }
+
+        public NextElseReject(Handler nextHandler, int status)
+        {
+            this(false, nextHandler, status);
+        }
+
+        public NextElseReject(boolean dynamic, Handler nextHandler, int status)
+        {
+            super(dynamic, nextHandler);
+            if (status < 200 || status > 999)
+                throw new IllegalArgumentException("bad status");
+            _status = status;
+        }
+
+        public int getStatusCode()
+        {
+            return _status;
+        }
+
+        @Override
+        protected boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
+        {
+            return nextHandler(request, response, callback);
+        }
+
+        @Override
+        protected boolean onConditionsNotMet(Request request, Response response, Callback callback)
+        {
+            Response.writeError(request, response, callback, getStatusCode());
+            return true;
+        }
+    }
 }
