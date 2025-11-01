@@ -203,7 +203,7 @@
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
-    <jackson.version>2.20.0</jackson.version>
+    <jackson.version>2.20.1</jackson.version>
     <jacoco.maven.plugin.version>0.8.14</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
     <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
@@ -237,8 +237,8 @@
     <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
-    <junit.platform.version>1.14.0</junit.platform.version>
-    <junit.version>5.14.0</junit.version>
+    <junit.platform.version>1.14.1</junit.platform.version>
+    <junit.version>5.14.1</junit.version>
     <kerb-simplekdc.version>2.1.0</kerb-simplekdc.version>
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
@@ -248,7 +248,7 @@
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.6</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven-build-cache.version>1.2.0</maven-build-cache.version>
+    <maven-build-cache.version>1.2.1</maven-build-cache.version>
     <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.2.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
