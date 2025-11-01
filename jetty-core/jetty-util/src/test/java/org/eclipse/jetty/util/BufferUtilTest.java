@@ -15,12 +15,13 @@ package org.eclipse.jetty.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -31,8 +32,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -43,6 +42,8 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -80,7 +81,83 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testToInt() throws Exception
+    public void testSliceCollection()
+    {
+        ByteBuffer empty = ByteBuffer.allocate(0);
+        ByteBuffer one = ByteBuffer.wrap("1".getBytes(StandardCharsets.UTF_8));
+        ByteBuffer digits = ByteBuffer.wrap("0123456789".getBytes(StandardCharsets.UTF_8));
+        ByteBuffer alpha = ByteBuffer.wrap("abcdefghijklmnopqrstuvwxyz".getBytes(StandardCharsets.UTF_8));
+
+        Collection<ByteBuffer> slices = BufferUtil.slice(List.of(), 0, 0);
+        assertThat(slices.size(), is(0));
+
+        slices = BufferUtil.slice(List.of(empty), 0, 0);
+        assertThat(slices.size(), is(0));
+
+        slices = BufferUtil.slice(List.of(one), 0, 0);
+        assertThat(slices.size(), is(0));
+
+        slices = BufferUtil.slice(List.of(empty, one, digits), 0, 0);
+        assertThat(slices.size(), is(0));
+
+        Throwable thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(), 1, 0));
+        assertThat(thrown.getMessage(), containsString("offset too large"));
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(empty), 1, 0));
+        assertThat(thrown.getMessage(), containsString("offset too large"));
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(empty, empty), 1, 0));
+        assertThat(thrown.getMessage(), containsString("offset too large"));
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(empty, one, empty), 2, 0));
+        assertThat(thrown.getMessage(), containsString("offset too large"));
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(empty, one, alpha), 28, 0));
+        assertThat(thrown.getMessage(), containsString("offset too large"));
+
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(), 0, 1));
+        assertThat(thrown.getMessage(), containsString("length too large"));
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(empty), 0, 1));
+        assertThat(thrown.getMessage(), containsString("length too large"));
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(empty, empty), 0, 1));
+        assertThat(thrown.getMessage(), containsString("length too large"));
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(empty, one, empty), 0, 2));
+        assertThat(thrown.getMessage(), containsString("length too large"));
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(empty, one, alpha), 0, 28));
+        assertThat(thrown.getMessage(), containsString("length too large"));
+
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(one), 1, 1));
+        assertThat(thrown.getMessage(), containsString("length too large"));
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(one), 1, 1));
+        assertThat(thrown.getMessage(), containsString("length too large"));
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(empty, one, empty), 1, 1));
+        assertThat(thrown.getMessage(), containsString("length too large"));
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(empty, one, digits), 1, 11));
+        assertThat(thrown.getMessage(), containsString("length too large"));
+        thrown = assertThrows(IndexOutOfBoundsException.class, () -> BufferUtil.slice(List.of(empty, digits, alpha), 10, 27));
+        assertThat(thrown.getMessage(), containsString("length too large"));
+
+        String sliced = BufferUtil.slice(List.of(empty, one), 0, 1).stream().map(BufferUtil::toString).reduce("", (a, b) -> a + b);
+        assertThat(sliced, is("1"));
+        sliced = BufferUtil.slice(List.of(empty, one, digits, empty, alpha), 0, 10).stream().map(BufferUtil::toString).reduce("", (a, b) -> a + b);
+        assertThat(sliced, is("1012345678"));
+        sliced = BufferUtil.slice(List.of(empty, one, digits, empty, alpha), 1, 10).stream().map(BufferUtil::toString).reduce("", (a, b) -> a + b);
+        assertThat(sliced, is("0123456789"));
+        sliced = BufferUtil.slice(List.of(empty, one, digits, empty, alpha), 1, 11).stream().map(BufferUtil::toString).reduce("", (a, b) -> a + b);
+        assertThat(sliced, is("0123456789a"));
+
+        sliced = BufferUtil.slice(List.of(empty, one, digits, empty, alpha), 0, -1).stream().map(BufferUtil::toString).reduce("", (a, b) -> a + b);
+        assertThat(sliced, is("10123456789abcdefghijklmnopqrstuvwxyz"));
+        sliced = BufferUtil.slice(List.of(empty, one, digits, empty, alpha), 1, -1).stream().map(BufferUtil::toString).reduce("", (a, b) -> a + b);
+        assertThat(sliced, is("0123456789abcdefghijklmnopqrstuvwxyz"));
+        sliced = BufferUtil.slice(List.of(empty, one, digits, empty, alpha), 11, -1).stream().map(BufferUtil::toString).reduce("", (a, b) -> a + b);
+        assertThat(sliced, is("abcdefghijklmnopqrstuvwxyz"));
+        sliced = BufferUtil.slice(List.of(empty, one, digits, empty, alpha), 12, -1).stream().map(BufferUtil::toString).reduce("", (a, b) -> a + b);
+        assertThat(sliced, is("bcdefghijklmnopqrstuvwxyz"));
+        sliced = BufferUtil.slice(List.of(empty, one, digits, empty, alpha), 36, -1).stream().map(BufferUtil::toString).reduce("", (a, b) -> a + b);
+        assertThat(sliced, is("z"));
+        sliced = BufferUtil.slice(List.of(empty, one, digits, empty, alpha), 37, -1).stream().map(BufferUtil::toString).reduce("", (a, b) -> a + b);
+        assertThat(sliced, is(""));
+    }
+
+    @Test
+    public void testToInt()
     {
         ByteBuffer[] buf =
             {
@@ -105,7 +182,7 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testPutInt() throws Exception
+    public void testPutInt()
     {
         int[] val =
             {
@@ -129,7 +206,7 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testPutLong() throws Exception
+    public void testPutLong()
     {
         long[] val =
             {
@@ -153,7 +230,7 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testPutHexInt() throws Exception
+    public void testPutHexInt()
     {
         int[] val =
             {
@@ -177,7 +254,7 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testPut() throws Exception
+    public void testPut()
     {
         ByteBuffer to = BufferUtil.allocate(10);
         ByteBuffer from = BufferUtil.toBuffer("12345");
@@ -196,7 +273,7 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testAppend() throws Exception
+    public void testAppend()
     {
         ByteBuffer to = BufferUtil.allocate(8);
         ByteBuffer from = BufferUtil.toBuffer("12345");
@@ -206,14 +283,11 @@ public class BufferUtilTest
         BufferUtil.append(to, from.array(), 3, 2);
         assertEquals("12345", BufferUtil.toString(to));
 
-        assertThrows(BufferOverflowException.class, () ->
-        {
-            BufferUtil.append(to, from.array(), 0, 5);
-        });
+        assertThrows(BufferOverflowException.class, () -> BufferUtil.append(to, from.array(), 0, 5));
     }
 
     @Test
-    public void testPutDirect() throws Exception
+    public void testPutDirect()
     {
         ByteBuffer to = BufferUtil.allocateDirect(10);
         ByteBuffer from = BufferUtil.toBuffer("12345");
@@ -242,7 +316,7 @@ public class BufferUtilTest
         while (buf.remaining() > 0)
         {
             byte b = buf.get();
-            assertEquals(b, 0x44);
+            assertEquals(0x44, b);
             count++;
         }
 
@@ -253,7 +327,7 @@ public class BufferUtilTest
     public void testToBufferArrayOffsetLength()
     {
         byte[] arr = new byte[128];
-        Arrays.fill(arr, (byte)0xFF); // fill whole thing with FF
+        Arrays.fill(arr, (byte)0xFF); // fill the whole thing with FF
         int offset = 10;
         int length = 100;
         Arrays.fill(arr, offset, offset + length, (byte)0x77); // fill partial with 0x77
@@ -263,14 +337,12 @@ public class BufferUtilTest
         while (buf.remaining() > 0)
         {
             byte b = buf.get();
-            assertEquals(b, 0x77);
+            assertEquals(0x77, b);
             count++;
         }
 
         assertEquals(length, count, "Count of bytes");
     }
-
-    private static final Logger LOG = LoggerFactory.getLogger(BufferUtilTest.class);
 
     @Test
     public void testWriteToWithBufferThatDoesNotExposeArrayAndSmallContent() throws IOException
@@ -297,15 +369,15 @@ public class BufferUtilTest
 
     @Test
     @SuppressWarnings("ReferenceEquality")
-    public void testEnsureCapacity() throws Exception
+    public void testEnsureCapacity()
     {
         ByteBuffer b = BufferUtil.toBuffer("Goodbye Cruel World");
-        assertTrue(b == BufferUtil.ensureCapacity(b, 0));
-        assertTrue(b == BufferUtil.ensureCapacity(b, 10));
-        assertTrue(b == BufferUtil.ensureCapacity(b, b.capacity()));
+        assertSame(b, BufferUtil.ensureCapacity(b, 0));
+        assertSame(b, BufferUtil.ensureCapacity(b, 10));
+        assertSame(b, BufferUtil.ensureCapacity(b, b.capacity()));
 
         ByteBuffer b1 = BufferUtil.ensureCapacity(b, 64);
-        assertTrue(b != b1);
+        assertNotSame(b, b1);
         assertEquals(64, b1.capacity());
         assertEquals("Goodbye Cruel World", BufferUtil.toString(b1));
 
@@ -318,10 +390,10 @@ public class BufferUtilTest
         assertEquals(8, b2.arrayOffset());
         assertEquals(5, b2.capacity());
 
-        assertTrue(b2 == BufferUtil.ensureCapacity(b2, 5));
+        assertSame(b2, BufferUtil.ensureCapacity(b2, 5));
 
         ByteBuffer b3 = BufferUtil.ensureCapacity(b2, 64);
-        assertTrue(b2 != b3);
+        assertNotSame(b2, b3);
         assertEquals(64, b3.capacity());
         assertEquals("Cruel", BufferUtil.toString(b3));
         assertEquals(0, b3.arrayOffset());

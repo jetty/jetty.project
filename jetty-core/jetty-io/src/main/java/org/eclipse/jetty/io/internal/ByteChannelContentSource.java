@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
@@ -45,48 +46,41 @@ public class ByteChannelContentSource implements Content.Source
     private final long _offset;
     private final long _length;
     private RetainableByteBuffer _buffer;
+    private long _offsetRemaining;
     private long _totalRead;
     private Runnable demandCallback;
     private Content.Chunk _terminal;
 
-    public ByteChannelContentSource(SeekableByteChannel seekableByteChannel, long offset, long length)
-    {
-        this(null, seekableByteChannel, offset, length);
-    }
-
-    public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
-    {
-        this(byteBufferPool, (ByteChannel)seekableByteChannel, offset, length);
-        if (offset >= 0 && seekableByteChannel != null)
-        {
-            try
-            {
-                seekableByteChannel.position(offset);
-            }
-            catch (IOException e)
-            {
-                // lock not needed in constructor
-                lockedSetTerminal(Content.Chunk.from(e, true));
-            }
-        }
-    }
-
-    public ByteChannelContentSource(ByteChannel byteChannel)
-    {
-        this(null, byteChannel, 0L, -1L);
-    }
-
+    /**
+     * Create a {@link ByteChannelContentSource} which reads from a {@link ByteChannel}.
+     * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+     * @param byteChannel The {@link ByteChannel}s to use as the source.
+     */
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel)
     {
         this(byteBufferPool, byteChannel, 0L, -1L);
     }
 
-    private ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel, long offset, long length)
+    /**
+     * Create a {@link ByteChannelContentSource} which reads from a {@link ByteChannel}.
+     * If the {@link ByteChannel} is an instance of {@link SeekableByteChannel} the implementation will use
+     * {@link SeekableByteChannel#position(long)} to navigate to the starting offset.
+     * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+     * @param byteChannel The {@link ByteChannel}s to use as the source.
+     * @param offset the offset byte of the content to start from.
+     *               Must be greater than or equal to 0 and less than the content length (if known).
+     * @param length the length of the content to make available, -1 for the full length.
+     *               If the size of the content is known, the length may be truncated to the content size minus the offset.
+     * @throws IndexOutOfBoundsException if the offset or length are out of range.
+     * @see TypeUtil#checkOffsetLengthSize(long, long, long)
+     */
+    public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel, long offset, long length)
     {
         _byteBufferPool = Objects.requireNonNullElse(byteBufferPool, ByteBufferPool.SIZED_NON_POOLING);
         _byteChannel = byteChannel;
-        _offset = offset < 0 ? 0 : offset;
-        _length = length;
+        _offset = offset;
+        _length = TypeUtil.checkOffsetLengthSize(offset, length, -1L);
+        _offsetRemaining = offset;
     }
 
     protected ByteChannel open() throws IOException
@@ -120,6 +114,7 @@ public class ByteChannelContentSource implements Content.Source
 
     protected void lockedSetTerminal(Content.Chunk terminal)
     {
+        assert lock.isHeldByCurrentThread();
         if (_terminal == null)
             _terminal = Objects.requireNonNull(terminal);
         else
@@ -132,15 +127,21 @@ public class ByteChannelContentSource implements Content.Source
 
     private void lockedEnsureOpenOrTerminal()
     {
+        assert lock.isHeldByCurrentThread();
         if (_terminal == null && (_byteChannel == null || !_byteChannel.isOpen()))
         {
             try
             {
                 _byteChannel = open();
                 if (_byteChannel == null || !_byteChannel.isOpen())
+                {
                     lockedSetTerminal(Content.Chunk.from(new ClosedChannelException(), true));
-                else if (_offset >= 0 && _byteChannel instanceof SeekableByteChannel seekableByteChannel)
+                }
+                else if (_byteChannel instanceof SeekableByteChannel seekableByteChannel)
+                {
                     seekableByteChannel.position(_offset);
+                    _offsetRemaining = 0;
+                }
             }
             catch (IOException e)
             {
@@ -178,6 +179,26 @@ public class ByteChannelContentSource implements Content.Source
             try
             {
                 ByteBuffer byteBuffer = _buffer.getByteBuffer();
+                if (_offsetRemaining > 0)
+                {
+                    // Discard all bytes read until we reach the staring offset.
+                    while (_offsetRemaining > 0)
+                    {
+                        BufferUtil.clearToFill(byteBuffer);
+                        byteBuffer.limit((int)Math.min(_buffer.capacity(), _offsetRemaining));
+                        int read = _byteChannel.read(byteBuffer);
+                        if (read < 0)
+                        {
+                            lockedSetTerminal(Content.Chunk.EOF);
+                            return _terminal;
+                        }
+                        if (read == 0)
+                            return null;
+
+                        _offsetRemaining -= read;
+                    }
+                }
+
                 BufferUtil.clearToFill(byteBuffer);
                 if (_length > 0)
                     byteBuffer.limit((int)Math.min(_buffer.capacity(), _length - _totalRead));
@@ -226,6 +247,10 @@ public class ByteChannelContentSource implements Content.Source
     {
         try (AutoLock ignored = lock.lock())
         {
+            // We can only rewind if we have a SeekableByteChannel.
+            if (!(_byteChannel instanceof SeekableByteChannel))
+                return false;
+
             // We can remove terminal condition for a rewind that is likely to occur
             if (_terminal != null && !Content.Chunk.isFailure(_terminal) && (_byteChannel == null || _byteChannel instanceof SeekableByteChannel))
                 _terminal = null;
@@ -234,20 +259,19 @@ public class ByteChannelContentSource implements Content.Source
             if (_terminal != null || _byteChannel == null || !_byteChannel.isOpen())
                 return false;
 
-            if (_offset >= 0 && _byteChannel instanceof SeekableByteChannel seekableByteChannel)
+            try
             {
-                try
-                {
-                    seekableByteChannel.position(_offset);
-                    _totalRead = 0;
-                    return true;
-                }
-                catch (Throwable t)
-                {
-                    lockedSetTerminal(Content.Chunk.from(t, true));
-                }
+                ((SeekableByteChannel)_byteChannel).position(_offset);
+                _offsetRemaining = 0;
+                _totalRead = 0;
+                return true;
             }
-            return false;
+            catch (Throwable t)
+            {
+                lockedSetTerminal(Content.Chunk.from(t, true));
+            }
+
+            return true;
         }
     }
 
@@ -270,7 +294,7 @@ public class ByteChannelContentSource implements Content.Source
 
         public PathContentSource(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
-            super(byteBufferPool, null, offset, length < 0L ? size(path) : length);
+            super(byteBufferPool, null, offset, TypeUtil.checkOffsetLengthSize(offset, length, size(path)));
             _path = path;
         }
 
