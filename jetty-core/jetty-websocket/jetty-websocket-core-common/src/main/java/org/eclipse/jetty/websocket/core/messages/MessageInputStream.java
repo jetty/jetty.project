@@ -79,7 +79,12 @@ public class MessageInputStream extends InputStream implements MessageSink
             }
             else if (closed)
             {
-                action = callback::succeeded;
+                action = () ->
+                {
+                    callback.succeeded();
+                    if (!frame.isFin())
+                        session.demand();
+                };
             }
             else
             {
@@ -193,7 +198,12 @@ public class MessageInputStream extends InputStream implements MessageSink
             l.signal();
         }
 
-        entries.forEach(e -> e.callback.succeeded());
+        entries.forEach(e ->
+        {
+            e.callback.succeeded();
+            if (e.frame != null && !e.frame.isFin())
+                session.demand();
+        });
     }
 
     private void drainInto(ArrayList<Entry> entries)
