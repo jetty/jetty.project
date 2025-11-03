@@ -1574,7 +1574,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
 
         public abstract int getFrameBytesGenerated();
 
-        public int getDataBytesRemaining()
+        public long getDataBytesRemaining()
         {
             return 0;
         }
@@ -1747,7 +1747,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     {
         private int frameBytes;
         private int dataBytes;
-        private int dataRemaining;
+        private long dataRemaining;
 
         private DataEntry(DataFrame frame, HTTP2Stream stream, Callback callback)
         {
@@ -1757,7 +1757,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             // of data frames that cannot be completely written due to
             // the flow control window exhausting, since in that case
             // we would have to count the padding only once.
-            dataRemaining = frame.remaining();
+            dataRemaining = frame.bytesLeft();
         }
 
         @Override
@@ -1767,7 +1767,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
 
         @Override
-        public int getDataBytesRemaining()
+        public long getDataBytesRemaining()
         {
             return dataRemaining;
         }
@@ -1775,7 +1775,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         @Override
         public boolean generate(RetainableByteBuffer.Mutable accumulator)
         {
-            int dataRemaining = getDataBytesRemaining();
+            long dataRemaining = getDataBytesRemaining();
 
             int sessionSendWindow = getSendWindow();
             int streamSendWindow = stream.updateSendWindow(0);
@@ -1783,9 +1783,9 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             if (window <= 0 && dataRemaining > 0)
                 return false;
 
-            int length = Math.min(dataRemaining, window);
+            int length = (int)Math.min(dataRemaining, window);
 
-            // Only one DATA frame is generated.
+            // Only one DATA frame is generated to support interleaving.
             DataFrame dataFrame = (DataFrame)frame;
             int frameBytes = generator.data(accumulator, dataFrame, length);
             this.frameBytes += frameBytes;

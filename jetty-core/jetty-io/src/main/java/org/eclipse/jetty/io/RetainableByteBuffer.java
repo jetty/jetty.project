@@ -2406,20 +2406,27 @@ public interface RetainableByteBuffer extends Retainable
                     // Can we do a gather write?
                     if (!last && sink instanceof EndPoint endPoint)
                     {
+                        boolean canGather = true;
                         ByteBuffer[] buffers = new ByteBuffer[_buffers.size()];
-                        int i = 0;
-                        for (RetainableByteBuffer rbb : _buffers)
-                            buffers[i++] = rbb.getByteBuffer();
-                        endPoint.write(Callback.from(this::clear, callback), buffers);
-                        return;
+                        for (int i = 0; i < _buffers.size(); ++i)
+                        {
+                            RetainableByteBuffer rbb = _buffers.get(i);
+                            ByteBuffer byteBuffer = buffers[i] = rbb.getByteBuffer();
+                            canGather &= byteBuffer != Content.Sink.TRANSFER_TO;
+                        }
+                        if (canGather)
+                        {
+                            endPoint.write(Callback.from(this::clear, callback), buffers);
+                            return;
+                        }
                     }
 
-                    // write buffer by buffer
-                    new IteratingNestedCallback(callback)
+                    // Write buffer by buffer.
+                    IteratingNestedCallback flusher = new IteratingNestedCallback(callback)
                     {
-                        int _index;
-                        RetainableByteBuffer _buffer;
-                        boolean _lastWritten;
+                        private int _index;
+                        private RetainableByteBuffer _buffer;
+                        private boolean _lastWritten;
 
                         @Override
                         protected Action process()
@@ -2458,7 +2465,8 @@ public interface RetainableByteBuffer extends Retainable
                             // release the last buffer written
                             _buffer = Retainable.release(_buffer);
                         }
-                    }.iterate();
+                    };
+                    flusher.iterate();
                 }
             }
         }

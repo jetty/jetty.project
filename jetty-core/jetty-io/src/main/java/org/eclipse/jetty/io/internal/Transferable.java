@@ -34,7 +34,7 @@ public class Transferable
 
     public interface From
     {
-        boolean transferTo(Content.Sink sink, long length, Callback callback);
+        boolean transferTo(Content.Sink sink, Callback callback);
     }
 
     public interface To
