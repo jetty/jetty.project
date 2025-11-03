@@ -21,65 +21,20 @@ import org.eclipse.jetty.io.Content;
 /**
  * <p>A {@link Content.Source} that provides the file content of the passed {@link Path}.</p>
  */
-public class PathContentSource implements Content.Source
+public class PathContentSource extends org.eclipse.jetty.io.internal.PathContentSource
 {
-    private final Path _path;
-    private final Content.Source _source;
-
     public PathContentSource(Path path)
     {
-        this(path, null);
+        super(path);
     }
 
     public PathContentSource(Path path, ByteBufferPool byteBufferPool)
     {
-        this(path, byteBufferPool instanceof ByteBufferPool.Sized sized ? sized : new ByteBufferPool.Sized(byteBufferPool));
+        super(byteBufferPool instanceof ByteBufferPool.Sized sized ? sized : new ByteBufferPool.Sized(byteBufferPool), path);
     }
 
     public PathContentSource(Path path, ByteBufferPool.Sized sizedBufferPool)
     {
-        _path = path;
-        _source = Content.Source.from(sizedBufferPool, path);
-    }
-
-    public Path getPath()
-    {
-        return _path;
-    }
-
-    @Override
-    public void demand(Runnable demandCallback)
-    {
-        _source.demand(demandCallback);
-    }
-
-    @Override
-    public void fail(Throwable failure)
-    {
-        _source.fail(failure);
-    }
-
-    @Override
-    public void fail(Throwable failure, boolean last)
-    {
-        _source.fail(failure, last);
-    }
-
-    @Override
-    public long getLength()
-    {
-        return _source.getLength();
-    }
-
-    @Override
-    public Content.Chunk read()
-    {
-        return _source.read();
-    }
-
-    @Override
-    public boolean rewind()
-    {
-        return _source.rewind();
+        super(sizedBufferPool, path);
     }
 }

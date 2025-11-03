@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.http2.generator;
 
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.Callback;
 
 public class DataGenerator
 {
@@ -32,14 +35,19 @@ public class DataGenerator
 
     public int generate(RetainableByteBuffer.Mutable accumulator, DataFrame frame, int maxLength)
     {
-        return generateData(accumulator, frame.getStreamId(), frame.getByteBuffer(), frame.isEndStream(), maxLength);
+        int streamId = frame.getStreamId();
+        if (streamId < 0)
+            throw new IllegalArgumentException("Invalid stream id: " + streamId);
+
+        ByteBuffer byteBuffer = frame.getByteBuffer();
+        if (byteBuffer == Content.Sink.TRANSFER_TO)
+            return generateData(accumulator, streamId, frame.getContentSource(), frame.isEndStream(), maxLength);
+        else
+            return generateData(accumulator, streamId, byteBuffer, frame.isEndStream(), maxLength);
     }
 
     public int generateData(RetainableByteBuffer.Mutable accumulator, int streamId, ByteBuffer data, boolean last, int maxLength)
     {
-        if (streamId < 0)
-            throw new IllegalArgumentException("Invalid stream id: " + streamId);
-
         int dataLength = data.remaining();
         int maxFrameSize = headerGenerator.getMaxFrameSize();
         int length = Math.min(dataLength, Math.min(maxFrameSize, maxLength));
@@ -49,12 +57,9 @@ public class DataGenerator
         }
         else
         {
-            int limit = data.limit();
-            int newLimit = data.position() + length;
-            data.limit(newLimit);
-            ByteBuffer slice = data.slice();
-            data.position(newLimit);
-            data.limit(limit);
+            int position = data.position();
+            ByteBuffer slice = data.slice(position, length);
+            data.position(position + length);
             generateFrame(accumulator, streamId, slice, false);
         }
         return Frame.HEADER_LENGTH + length;
@@ -72,5 +77,61 @@ public class DataGenerator
         // Skip empty data buffers.
         if (data.remaining() > 0)
             accumulator.add(data);
+    }
+
+    public int generateData(RetainableByteBuffer.Mutable accumulator, int streamId, Content.Source.Seekable source, boolean last, int maxLength)
+    {
+        long dataLength = source.remaining();
+        int maxFrameSize = headerGenerator.getMaxFrameSize();
+        int length = (int)Math.min(dataLength, Math.min(maxFrameSize, maxLength));
+
+        last = last && length == dataLength;
+
+        int flags = Flags.NONE;
+        if (last)
+            flags |= Flags.END_STREAM;
+
+        headerGenerator.generate(accumulator, FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
+        Content.Source.Seekable slice = source.slice(source.position(), length);
+        source.position(source.position() + length);
+        accumulator.add(new TransferableRetainableByteBuffer(slice));
+
+        return Frame.HEADER_LENGTH + length;
+    }
+
+    private static class TransferableRetainableByteBuffer implements RetainableByteBuffer
+    {
+        private final Content.Source.Seekable source;
+
+        public TransferableRetainableByteBuffer(Content.Source.Seekable source)
+        {
+            this.source = source;
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer() throws BufferOverflowException
+        {
+            return Content.Sink.TRANSFER_TO;
+        }
+
+        @Override
+        public long size()
+        {
+            return source.remaining();
+        }
+
+        @Override
+        public int remaining()
+        {
+            return Math.toIntExact(size());
+        }
+
+        @Override
+        public void writeTo(Content.Sink sink, boolean last, Callback callback)
+        {
+            // The "last" parameter is not used here, since "last-ness" has
+            // already been encoded by the generator in DATA frame header bytes.
+            Content.transfer(source, sink, callback);
+        }
     }
 }

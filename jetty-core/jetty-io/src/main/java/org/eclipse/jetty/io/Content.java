@@ -21,7 +21,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousByteChannel;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.CompletionHandler;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -45,6 +47,7 @@ import org.eclipse.jetty.io.internal.ContentSourceConsumer;
 import org.eclipse.jetty.io.internal.ContentSourceRange;
 import org.eclipse.jetty.io.internal.ContentSourceRetainableByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
+import org.eclipse.jetty.io.internal.PathContentSource;
 import org.eclipse.jetty.io.internal.Transferable;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
@@ -72,12 +75,15 @@ public class Content
      * the given callback when the copy is complete (either succeeded or failed).</p>
      * <p>In case of {@link Chunk#getFailure() failure chunks},
      * the content source is {@link Source#fail(Throwable) failed}.</p>
+     * <p>When the last chunk is read, the last write is performed; use
+     * {@link #copy(Source, boolean, Sink, Callback)} to customize the
+     * last write behavior.</p>
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
      * @param callback the callback to notify when the copy is complete
-     * @see #copy(Source, Sink, Chunk.Processor, Callback) to allow processing of individual {@code Content.Chunk}s, including
-     *      the ability to ignore transient failures.
+     * @see #copy(Source, Sink, Chunk.Processor, Callback) to allow processing of individual
+     *      {@code Content.Chunk}s, including the ability to ignore transient failures.
      */
     public static void copy(Source source, Sink sink, Callback callback)
     {
@@ -98,6 +104,9 @@ public class Content
      * <p>In case of {@link Chunk#getFailure() failure chunks} not handled by any {@code chunkHandler},
      * the content source is {@link Source#fail(Throwable) failed} if the failure
      * chunk is {@link Chunk#isLast() last}, else the failure is transient and is ignored.</p>
+     * <p>When the last chunk is read, the last write is performed; use
+     * {@link #copy(Source, boolean, Sink, Callback)} to customize the
+     * last write behavior.</p>
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
@@ -109,35 +118,43 @@ public class Content
         new ContentCopier(source, sink, chunkProcessor, callback).iterate();
     }
 
+    /**
+     * <p>Copies the given content source to the given content sink, notifying
+     * the given callback when the copy is complete (either succeeded or failed).</p>
+     * <p>When the last chunk is read, the final write is performed, and it is the
+     * last write only if the given parameter is {@code true}.</p>
+     *
+     * @param source the source to copy from
+     * @param last whether the final write is the last write
+     * @param sink the sink to copy to
+     * @param callback the callback to notify when the copy is complete
+     */
     public static void copy(Source source, boolean last, Sink sink, Callback callback)
     {
         new ContentCopier(source, last, sink, null, callback).iterate();
     }
 
-    private static void copyRange(Source source, long length, Sink sink, Callback callback)
-    {
-        // TODO: it would be really difficult to make a source remember the bytes...
-        //  a subsequent call with the same source cannot have stored a chunk that
-        //  it returned previously, so do we really need a range?
-        //  Isn't the length always implicit to be the full length?
-        //  In HTTP/2 a large write is chunked and the write callback is not completed
-        //  until all the chunks are written (we store the BB in a DATA frame, and we
-        //  consume the BB chunk by chunk).
-        //  How can we do the same with a Source?
-        //  We can read a BB, wrap it in a DATA frame, even if larger than maxFrameSize
-        //  or flow control, as the Flusher will remember it.
-        //  But for transferTo(), we need a similar way for a Source to have position
-        //  and limit that a BB has, so perhaps we need a Source.Seekable.
-    }
-
-    public static boolean transfer(Source source, long length, Sink sink, Callback callback)
+    /**
+     * <p>Attempts to <em>transfer</em> the given content source to the given content
+     * sink using zero-copy primitives such as
+     * {@link FileChannel#transferTo(long, long, WritableByteChannel)} if possible.</p>
+     * <p>If the <em>transfer</em> cannot be performed, falls back to a regular call
+     * to {@link #copy(Source, boolean, Sink, Callback) copy(source, false, sink, callback)}.</p>
+     *
+     * @param source the source to transfer from
+     * @param sink the sink to transfer to
+     * @param callback the callback to notify when the transfer is complete
+     * @return whether the transfer was performed
+     */
+    public static boolean transfer(Source.Seekable source, Sink sink, Callback callback)
     {
         if (source instanceof Transferable.From from)
         {
-            if (from.transferTo(sink, length, callback))
+            if (from.transferTo(sink, callback))
                 return true;
         }
-        copyRange(source, length, sink, callback);
+        // Cannot transfer, fall back to regular copy.
+        Content.copy(source, false, sink, callback);
         return false;
     }
 
@@ -214,11 +231,60 @@ public class Content
             Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length);
         }
 
-        interface Aware
+        /**
+         * <p>A {@link Content.Source} that maintains a position and allows the position to be changed.</p>
+         * <p>The position is updated in every read, but can be changed without reading, for example to
+         * {@link #slice(long, int) slice} this source into smaller sources.</p>
+         */
+        interface Seekable extends Source
         {
-            Source getContentSource();
+            /**
+             * @return the current position, or -1 if unknown
+             */
+            default long position()
+            {
+                return -1;
+            }
 
-            void setContentSource(Source source);
+            /**
+             * @param position the new position
+             */
+            default void position(long position)
+            {
+            }
+
+            /**
+             * @return the number of bytes remaining, or -1 if the length is unknown
+             */
+            default long remaining()
+            {
+                return -1;
+            }
+
+            /**
+             * <p>Creates a new slice from this source, from the given absolute position, for the given length.</p>
+             *
+             * @param position the position to slice from
+             * @param length the length of the slice
+             * @return a new slice
+             */
+            Seekable slice(long position, int length);
+
+            /**
+             * <p>Implementations are made aware of a {@link Seekable} instance.</p>
+             */
+            interface Aware
+            {
+                /**
+                 * @return the content source associated with this instance
+                 */
+                Seekable getContentSource();
+
+                /**
+                 * @param source the content source to associate to this instance
+                 */
+                void setContentSource(Seekable source);
+            }
         }
 
         /**
@@ -304,7 +370,7 @@ public class Content
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
-            return new ByteChannelContentSource.PathContentSource(byteBufferPool, path, offset, length);
+            return new PathContentSource(byteBufferPool, path, offset, length);
         }
 
         /**
@@ -753,7 +819,10 @@ public class Content
      */
     public interface Sink
     {
-        ByteBuffer TRANSFER = ByteBuffer.allocate(0);
+        /**
+         * <p>A special {@link ByteBuffer} used to implement {@link #write(Sink, boolean, Source, Callback)}.</p>
+         */
+        ByteBuffer TRANSFER_TO = ByteBuffer.allocate(0);
 
         /**
          * <p>Wraps the given {@link OutputStream} as a {@link Sink}.
@@ -964,14 +1033,33 @@ public class Content
             sink.write(last, ByteBuffer.wrap(utf8Content.getBytes(StandardCharsets.UTF_8)), callback);
         }
 
+        /**
+         * <p>Writes the given {@link Source}, trying to optimize for zero-copy of bytes
+         * between the source and the sink.</p>
+         * <p>For the zero-copy optimization to happen, the sink or one of its wrapped
+         * sinks must implement {@link Source.Seekable.Aware}, so that the source can
+         * be associated with the sink.
+         * This call is then converted to {@code sink.write(last, TRANSFER_TO, callback)}
+         * and sink implementation should check whether the {@link ByteBuffer} is
+         * {@link #TRANSFER_TO}, and if so they can retrieve the source via
+         * {@link #findSourceSeekable(Sink)}.
+         * Eventually, the {@code sink.write(last, TRANSFER_TO, callback)} call
+         * arrives to a sink implementation that supports the zero-copy optimization,
+         * and can therefore call {@link #transfer(Source.Seekable, Sink, Callback)}.
+         *
+         * @param sink the sink to write to
+         * @param last whether the write should be last
+         * @param source the source to read from
+         * @param callback – the callback to notify when the write is complete
+         */
         static void write(Sink sink, boolean last, Content.Source source, Callback callback)
         {
-            Content.Source.Aware aware = findContentSourceAware(sink);
-            if (aware != null)
+            Source.Seekable.Aware aware = findContentSourceAware(sink);
+            if (aware != null && source instanceof Source.Seekable seekable)
             {
                 // Optimization to enable zero-copy.
-                aware.setContentSource(source);
-                sink.write(last, TRANSFER, callback);
+                aware.setContentSource(seekable);
+                sink.write(last, TRANSFER_TO, callback);
             }
             else
             {
@@ -980,11 +1068,25 @@ public class Content
             }
         }
 
-        private static Content.Source.Aware findContentSourceAware(Sink sink)
+        /**
+         * <p>Utility method to be used by sink wrappers to find the source
+         * associated with the given sink, or one of its wrapped sinks, by
+         * {@link #write(Sink, boolean, Source, Callback)}.</p>
+         *
+         * @param sink the sink to probe
+         * @return the associated sink, or {@code null} if the sink is not found
+         */
+        static Source.Seekable findSourceSeekable(Sink sink)
+        {
+            Source.Seekable.Aware aware = findContentSourceAware(sink);
+            return aware == null ? null : aware.getContentSource();
+        }
+
+        private static Source.Seekable.Aware findContentSourceAware(Sink sink)
         {
             while (true)
             {
-                if (sink instanceof Content.Source.Aware aware)
+                if (sink instanceof Source.Seekable.Aware aware)
                     return aware;
                 if (sink instanceof Wrapper wrapper)
                     sink = wrapper.getWrapped();
@@ -1007,6 +1109,9 @@ public class Content
          */
         void write(boolean last, ByteBuffer byteBuffer, Callback callback);
 
+        /**
+         * A {@link Sink} wrapper.
+         */
         class Wrapper implements Sink
         {
             private final Sink wrapped;

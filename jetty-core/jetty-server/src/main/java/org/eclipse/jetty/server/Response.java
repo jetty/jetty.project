@@ -751,6 +751,9 @@ public interface Response extends Content.Sink
         return Content.Sink.asBuffered(response, bufferPool, useOutputDirectByteBuffers, outputAggregationSize, bufferSize);
     }
 
+    /**
+     * A {@link Response} wrapper.
+     */
     class Wrapper extends Content.Sink.Wrapper implements Response
     {
         private final Request _request;

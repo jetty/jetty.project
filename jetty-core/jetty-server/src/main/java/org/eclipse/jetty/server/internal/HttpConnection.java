@@ -942,9 +942,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                                 getEndPoint().write(this, _content);
                                 break;
                             default:
-                                Content.Source source = _info.getContentSource();
+                                Content.Source.Seekable source = _info.getContentSource();
                                 if (source != null)
-                                    Content.transfer(source, source.getLength(), getEndPoint(), this);
+                                    Content.transfer(source, getEndPoint(), this);
                                 else
                                     succeeded();
                         }
@@ -1245,6 +1245,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         private long _contentLength = -1;
         private HostPortHttpField _hostField;
         private MetaData.Request _request;
+        private MetaData.Response _response;
         private HttpField _upgrade = null;
         private Content.Chunk _chunk;
         private boolean _connectionClose = false;
@@ -1533,40 +1534,52 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
         {
-            // TODO: do not rely on response==null.
-            if (response == null)
-            {
-                if (!last && BufferUtil.isEmpty(content))
-                {
-                    callback.succeeded();
-                    return;
-                }
-            }
-            else if (_generator.isCommitted())
+            if (_response == null)
+                sendHeaders(request, response, last, content, callback);
+            else
+                sendContent(request, response, last, content, callback);
+        }
+
+        private void sendHeaders(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+        {
+            _response = response;
+
+            if (_generator.isCommitted())
             {
                 callback.failed(new IllegalStateException("Committed"));
                 return;
             }
-            else
+
+            _responses.incrementAndGet();
+            if (_expects100Continue)
             {
-                _responses.incrementAndGet();
-                if (_expects100Continue)
+                if (response.getStatus() == HttpStatus.CONTINUE_100)
                 {
-                    if (response.getStatus() == HttpStatus.CONTINUE_100)
-                    {
-                        _expects100Continue = false;
-                    }
-                    else
-                    {
-                        // Expecting to send a 100 Continue response, but it's a different response,
-                        // then cannot be persistent because likely the client did not send the content.
-                        _generator.setPersistent(false);
-                    }
+                    _expects100Continue = false;
+                }
+                else
+                {
+                    // Expecting to send a 100 Continue response, but it's a different response,
+                    // then cannot be persistent because likely the client did not send the content.
+                    _generator.setPersistent(false);
                 }
             }
 
-            if (_sendCallback.reset(_request, response, content, last, callback))
+            if (_sendCallback.reset(request, response, content, last, callback))
                 _sendCallback.iterate();
+        }
+
+        private void sendContent(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+        {
+            if (!last && BufferUtil.isEmpty(content))
+            {
+                callback.succeeded();
+            }
+            else
+            {
+                if (_sendCallback.reset(request, response, content, last, callback))
+                    _sendCallback.iterate();
+            }
         }
 
         @Override

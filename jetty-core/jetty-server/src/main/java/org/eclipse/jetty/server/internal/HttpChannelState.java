@@ -1235,13 +1235,13 @@ public class HttpChannelState implements HttpChannel, Components
      * method when calling
      * {@link HttpStream#send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
      */
-    public static class ChannelResponse implements Response, Content.Source.Aware, Callback
+    public static class ChannelResponse implements Response, Content.Source.Seekable.Aware, Callback
     {
         private final ChannelRequest _request;
         private final ResponseHttpFields _httpFields;
-        private MetaData.Response _responseMetaData;
+        private MetaData.Response _metaData;
         private int _status;
-        private Content.Source _source;
+        private Content.Source.Seekable _source;
         private long _contentBytesWritten;
         private Supplier<HttpFields> _trailers;
         private Callback _writeCallback;
@@ -1337,7 +1337,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             Callback writeCallback = Objects.requireNonNullElse(callback, NOOP);
 
-            long length = content == Content.Sink.TRANSFER ? _source.getLength() : BufferUtil.length(content);
+            long length = content == Content.Sink.TRANSFER_TO ? _source.remaining() : BufferUtil.length(content);
 
             HttpChannelState httpChannelState;
             HttpStream stream;
@@ -1403,19 +1403,27 @@ public class HttpChannelState implements HttpChannel, Components
                     return;
                 }
 
-                // TODO: check that we don't have both a ByteBuffer and a Content.Source.
+                Throwable dataFailure = null;
+                if (content == TRANSFER_TO && _source == null)
+                    dataFailure = new IllegalStateException("No source for transferTo() operation");
+                if (dataFailure != null)
+                {
+                    Throwable failure = dataFailure;
+                    httpChannelState._writeInvoker.run(() -> HttpChannelState.failed(callback, failure));
+                    return;
+                }
 
                 // No failure, do the actual stream send using the ChannelResponse as the callback.
                 _writeCallback = writeCallback;
                 _contentBytesWritten = totalWritten;
                 stream = httpChannelState._stream;
                 if (_httpFields.commit())
-                    _responseMetaData = lockedPrepareResponse(httpChannelState, last);
+                    _metaData = lockedPrepareResponse(httpChannelState, last);
             }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
-            stream.send(_request._metaData, _responseMetaData, last, content, this);
+            stream.send(_request._metaData, _metaData, last, content, this);
         }
 
         /**
@@ -1517,16 +1525,18 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public Content.Source getContentSource()
+        public Content.Source.Seekable getContentSource()
         {
             return _source;
         }
 
         @Override
-        public void setContentSource(Content.Source source)
+        public void setContentSource(Content.Source.Seekable source)
         {
-            // TODO: need to store the source into the MetaData.Response if it already exists.
-            _source = source;
+            if (_metaData != null)
+                _metaData.setContentSource(source);
+            else
+                _source = source;
         }
 
         @Override

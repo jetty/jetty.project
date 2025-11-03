@@ -153,9 +153,9 @@ public class ContentSourceTest
         ByteChannelContentSource bccs2 = new ByteChannelContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 8192), Files.newByteChannel(path0123, StandardOpenOption.READ), 4, 6);
         ByteChannelContentSource bccs3 = new ByteChannelContentSource(new ByteBufferPool.Sized(null, false, 3), Files.newByteChannel(path0123, StandardOpenOption.READ), 4, 6);
 
-        ByteChannelContentSource.PathContentSource pcs0 = new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 1024), path12);
-        ByteChannelContentSource.PathContentSource pcs1 = new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 1024), path0123, 4, 6);
-        ByteChannelContentSource.PathContentSource pcs2 = new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(null, false, 3), path12);
+        org.eclipse.jetty.io.internal.PathContentSource pcs0 = new org.eclipse.jetty.io.internal.PathContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 1024), path12);
+        org.eclipse.jetty.io.internal.PathContentSource pcs1 = new org.eclipse.jetty.io.internal.PathContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 1024), path0123, 4, 6);
+        org.eclipse.jetty.io.internal.PathContentSource pcs2 = new org.eclipse.jetty.io.internal.PathContentSource(new ByteBufferPool.Sized(null, false, 3), path12);
 
         return switch (mode)
         {
@@ -299,7 +299,7 @@ public class ContentSourceTest
     public void testReadAllRewindReadAll(Content.Source source) throws Exception
     {
         // A raw BCCS cannot be rewound if fully consumed, as it is not able to re-open a passed in channel
-        Assumptions.assumeTrue(!(source instanceof ByteChannelContentSource) || source instanceof ByteChannelContentSource.PathContentSource);
+        Assumptions.assumeTrue(!(source instanceof ByteChannelContentSource) || source instanceof org.eclipse.jetty.io.internal.PathContentSource);
 
         String first = Content.Source.asString(source);
         assertThat(first, is("onetwo"));
