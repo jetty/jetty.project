@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee9.websocket.jakarta.common.messages;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -150,7 +151,9 @@ public class MessageWriterTest
         @Override
         public void sendFrame(OutgoingEntry entry)
         {
-            frames.offer(Frame.copy(entry.getFrame()));
+            frames.add(Frame.copy(entry.getFrame()));
+            ByteBuffer payload = entry.getFrame().getPayload();
+            payload.position(payload.limit());
             entry.getCallback().succeeded();
         }
     }
@@ -175,6 +178,8 @@ public class MessageWriterTest
                 messages.offer(activeMessage.takeCompleteString(IllegalArgumentException::new));
                 activeMessage = null;
             }
+
+            frame.getPayload().position(frame.getPayload().limit());
             entry.getCallback().succeeded();
         }
     }

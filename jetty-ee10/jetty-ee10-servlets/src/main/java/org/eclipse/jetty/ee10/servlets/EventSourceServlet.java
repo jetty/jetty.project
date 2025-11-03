@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 public abstract class EventSourceServlet extends HttpServlet
 {
     private static final byte[] CRLF = new byte[]{'\r', '\n'};
+    private static final byte[] CRLF_CRLF = new byte[]{'\r', '\n', '\r', '\n'};
     private static final byte[] EVENT_FIELD = "event: ".getBytes(StandardCharsets.UTF_8);
     private static final byte[] DATA_FIELD = "data: ".getBytes(StandardCharsets.UTF_8);
     private static final byte[] COMMENT_FIELD = ": ".getBytes(StandardCharsets.UTF_8);
@@ -76,7 +77,6 @@ public abstract class EventSourceServlet extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        @SuppressWarnings("unchecked")
         Enumeration<String> acceptValues = request.getHeaders("Accept");
         while (acceptValues.hasMoreElements())
         {
@@ -92,11 +92,11 @@ public abstract class EventSourceServlet extends HttpServlet
                 {
                     respond(request, response);
                     AsyncContext async = request.startAsync();
-                    // Infinite timeout because the continuation is never resumed,
+                    // Infinite timeout because the continuation is never resumed
                     // but only completed on close
                     async.setTimeout(0);
                     EventSourceEmitter emitter = new EventSourceEmitter(eventSource, async);
-                    emitter.scheduleHeartBeat();
+                    emitter.heartBeat = scheduler.schedule(emitter, heartBeatPeriod, TimeUnit.SECONDS);
                     open(eventSource, emitter);
                 }
                 return;
@@ -145,10 +145,12 @@ public abstract class EventSourceServlet extends HttpServlet
         {
             try (AutoLock l = lock.lock())
             {
+                if (closed)
+                    throw new IOException("closed");
                 output.write(EVENT_FIELD);
                 output.write(name.getBytes(StandardCharsets.UTF_8));
                 output.write(CRLF);
-                data(data);
+                lockedData(data);
             }
         }
 
@@ -157,17 +159,26 @@ public abstract class EventSourceServlet extends HttpServlet
         {
             try (AutoLock l = lock.lock())
             {
-                BufferedReader reader = new BufferedReader(new StringReader(data));
-                String line;
-                while ((line = reader.readLine()) != null)
-                {
-                    output.write(DATA_FIELD);
-                    output.write(line.getBytes(StandardCharsets.UTF_8));
-                    output.write(CRLF);
-                }
-                output.write(CRLF);
-                flush();
+                if (closed)
+                    throw new IOException("closed");
+                lockedData(data);
             }
+        }
+
+        private void lockedData(String data) throws IOException
+        {
+            assert lock.isHeldByCurrentThread();
+
+            BufferedReader reader = new BufferedReader(new StringReader(data));
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                output.write(DATA_FIELD);
+                output.write(line.getBytes(StandardCharsets.UTF_8));
+                output.write(CRLF);
+            }
+            output.write(CRLF);
+            flush();
         }
 
         @Override
@@ -175,10 +186,11 @@ public abstract class EventSourceServlet extends HttpServlet
         {
             try (AutoLock l = lock.lock())
             {
+                if (closed)
+                    throw new IOException("closed");
                 output.write(COMMENT_FIELD);
                 output.write(comment.getBytes(StandardCharsets.UTF_8));
-                output.write(CRLF);
-                output.write(CRLF);
+                output.write(CRLF_CRLF);
                 flush();
             }
         }
@@ -189,17 +201,17 @@ public abstract class EventSourceServlet extends HttpServlet
             // If the other peer closes the connection, the first
             // flush() should generate a TCP reset that is detected
             // on the second flush()
-            try
+            try (AutoLock l = lock.lock())
             {
-                try (AutoLock l = lock.lock())
-                {
-                    output.write('\r');
-                    flush();
-                    output.write('\n');
-                    flush();
-                }
+                if (closed)
+                    return;
+                output.write('\r');
+                flush();
+                output.write('\n');
+                flush();
+
                 // We could write, reschedule heartbeat
-                scheduleHeartBeat();
+                heartBeat = scheduler.schedule(this, heartBeatPeriod, TimeUnit.SECONDS);
             }
             catch (Throwable x)
             {
@@ -228,19 +240,12 @@ public abstract class EventSourceServlet extends HttpServlet
         {
             try (AutoLock l = lock.lock())
             {
+                if (closed)
+                    return;
                 closed = true;
                 heartBeat.cancel(false);
             }
             async.complete();
-        }
-
-        private void scheduleHeartBeat()
-        {
-            try (AutoLock l = lock.lock())
-            {
-                if (!closed)
-                    heartBeat = scheduler.schedule(this, heartBeatPeriod, TimeUnit.SECONDS);
-            }
         }
     }
 }

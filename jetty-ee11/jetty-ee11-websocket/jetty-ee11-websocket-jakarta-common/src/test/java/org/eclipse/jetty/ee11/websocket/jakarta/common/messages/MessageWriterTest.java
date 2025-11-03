@@ -151,7 +151,8 @@ public class MessageWriterTest
         @Override
         public void sendFrame(OutgoingEntry entry)
         {
-            frames.offer(Frame.copy(entry.getFrame()));
+            frames.add(Frame.copy(entry.getFrame()));
+            entry.getFrame().getPayload().position(entry.getFrame().getPayload().limit());
             entry.getCallback().succeeded();
         }
     }
@@ -173,9 +174,10 @@ public class MessageWriterTest
 
             if (frame.isFin())
             {
-                messages.offer(activeMessage.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8")));
+                messages.add(activeMessage.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8")));
                 activeMessage = null;
             }
+            frame.getPayload().position(frame.getPayload().limit());
             entry.getCallback().succeeded();
         }
     }

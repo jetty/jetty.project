@@ -179,4 +179,31 @@ public abstract class ByteBufferChunk extends RetainableByteBuffer.FixedCapacity
             return "%s[%s]".formatted(super.toString(), retainable);
         }
     }
+
+    public static class WithRetainableByteBuffer extends RetainableByteBuffer.Wrapper implements Content.Chunk
+    {
+        private final boolean last;
+
+        public WithRetainableByteBuffer(RetainableByteBuffer wrapped, boolean last)
+        {
+            super(wrapped);
+            this.last = last;
+        }
+
+        @Override
+        public boolean isLast()
+        {
+            return last;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[l=%b,b=%s]".formatted(
+                TypeUtil.toShortName(getClass()),
+                hashCode(),
+                isLast(),
+                getWrapped().toDetailString());
+        }
+    }
 }

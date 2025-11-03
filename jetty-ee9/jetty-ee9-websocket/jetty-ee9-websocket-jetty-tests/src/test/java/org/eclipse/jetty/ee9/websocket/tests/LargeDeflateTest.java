@@ -82,6 +82,7 @@ public class LargeDeflateTest
         EventSocket clientSocket = new EventSocket();
         Session session = _client.connect(clientSocket, URI.create("ws://localhost:" + _connector.getLocalPort() + "/ws"), upgradeRequest).get();
         ByteBuffer sentMessage = largePayloads();
+        ByteBuffer sentMessageSlice = sentMessage.slice();
         session.getRemote().sendBytes(sentMessage);
         session.close(StatusCode.NORMAL, "close from test");
 
@@ -90,7 +91,8 @@ public class LargeDeflateTest
         assertThat(_serverSocket.closeReason, is("close from test"));
 
         ByteBuffer message = _serverSocket.binaryMessages.poll(1, TimeUnit.SECONDS);
-        assertThat(message, is(sentMessage));
+        assertThat(message, is(sentMessageSlice));
+        assertThat(sentMessage.remaining(), is(0));
     }
 
     @Test

@@ -480,7 +480,7 @@ public abstract class HttpSender
         private volatile boolean expect100;
         // Fields only used internally.
         private Content.Chunk chunk;
-        private ByteBuffer contentBuffer;
+        private ByteBuffer notifyBuffer;
         private boolean committed;
         private boolean success;
         private boolean complete;
@@ -494,7 +494,7 @@ public abstract class HttpSender
             proceedAction = null;
             expect100 = false;
             chunk = null;
-            contentBuffer = null;
+            notifyBuffer = null;
             committed = false;
             success = false;
             complete = false;
@@ -567,7 +567,8 @@ public abstract class HttpSender
             }
 
             ByteBuffer buffer = chunk.getByteBuffer();
-            contentBuffer = buffer.asReadOnlyBuffer();
+            // Save the buffer used to notify request content listeners.
+            notifyBuffer = buffer.slice().asReadOnlyBuffer();
             boolean last = chunk.isLast();
             if (committed)
                 sendContent(exchange, buffer, last, this);
@@ -590,8 +591,8 @@ public abstract class HttpSender
                 boolean proceed = true;
                 if (committed)
                 {
-                    if (contentBuffer.hasRemaining())
-                        proceed = someToContent(exchange, contentBuffer);
+                    if (notifyBuffer.hasRemaining())
+                        proceed = someToContent(exchange, notifyBuffer);
                 }
                 else
                 {
@@ -600,8 +601,8 @@ public abstract class HttpSender
                     if (proceed)
                     {
                         // Was any content sent while committing?
-                        if (contentBuffer.hasRemaining())
-                            proceed = someToContent(exchange, contentBuffer);
+                        if (notifyBuffer.hasRemaining())
+                            proceed = someToContent(exchange, notifyBuffer);
                     }
                 }
 

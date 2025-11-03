@@ -38,6 +38,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -255,5 +256,39 @@ public class QuickStartTest
         assertThat(content, Matchers.containsString("JNDI Demo WebApp"));
 
         server.stop();
+    }
+
+    @Test
+    public void testFilterMappings() throws Exception
+    {
+        Path workdir = MavenPaths.targetTestDir(PreconfigureSpecWar.class.getSimpleName());
+        FS.ensureEmpty(workdir);
+        Path target = workdir.resolve("test-filter-mappings");
+        FS.ensureEmpty(target);
+        FS.ensureDirExists(target.resolve("WEB-INF"));
+
+        Path sourceWebXml = MavenPaths.findTestResourceFile("filter-web.xml");
+        Files.copy(sourceWebXml, target.resolve("WEB-INF/web.xml"));
+        System.setProperty("jetty.home", target.toString());
+
+        PreconfigureQuickStartWar.main(target.toString());
+
+        Path quickStartXml = target.resolve("WEB-INF/quickstart-web.xml");
+        String quickStartContents = Files.readString(quickStartXml);
+        assertThat(quickStartContents, containsString("""
+              <filter>
+                <filter-name>CustomFilter</filter-name>
+                <filter-class>org.example.CustomFilter</filter-class>
+                <async-supported>false</async-supported>
+              </filter>
+              <filter-mapping>
+                <filter-name>CustomFilter</filter-name>
+                <url-pattern>/foo/*</url-pattern>
+                <dispatcher>REQUEST</dispatcher>
+                <dispatcher>ERROR</dispatcher>
+                <dispatcher>FORWARD</dispatcher>
+                <dispatcher>INCLUDE</dispatcher>
+              </filter-mapping>
+            """));
     }
 }

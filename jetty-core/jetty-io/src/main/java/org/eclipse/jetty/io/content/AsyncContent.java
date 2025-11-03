@@ -311,6 +311,12 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         }
 
         @Override
+        public int getRetained()
+        {
+            return referenceCounter.getRetained();
+        }
+
+        @Override
         public void retain()
         {
             if (canRetain())

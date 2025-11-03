@@ -15,12 +15,14 @@ package org.eclipse.jetty.util;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.test10.ExampleClass;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -31,11 +33,13 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class TypeUtilTest
 {
+
     @Test
     public void convertHexDigitTest()
     {
@@ -46,12 +50,12 @@ public class TypeUtilTest
         assertEquals((byte)15, TypeUtil.convertHexDigit((byte)'f'));
         assertEquals((byte)15, TypeUtil.convertHexDigit((byte)'F'));
 
-        assertEquals((int)0, TypeUtil.convertHexDigit((int)'0'));
-        assertEquals((int)9, TypeUtil.convertHexDigit((int)'9'));
-        assertEquals((int)10, TypeUtil.convertHexDigit((int)'a'));
-        assertEquals((int)10, TypeUtil.convertHexDigit((int)'A'));
-        assertEquals((int)15, TypeUtil.convertHexDigit((int)'f'));
-        assertEquals((int)15, TypeUtil.convertHexDigit((int)'F'));
+        assertEquals(0, TypeUtil.convertHexDigit((int)'0'));
+        assertEquals(9, TypeUtil.convertHexDigit((int)'9'));
+        assertEquals(10, TypeUtil.convertHexDigit((int)'a'));
+        assertEquals(10, TypeUtil.convertHexDigit((int)'A'));
+        assertEquals(15, TypeUtil.convertHexDigit((int)'f'));
+        assertEquals(15, TypeUtil.convertHexDigit((int)'F'));
     }
 
     @Test
@@ -60,7 +64,7 @@ public class TypeUtilTest
         StringBuilder b = new StringBuilder();
 
         b.setLength(0);
-        TypeUtil.toHex((int)0, b);
+        TypeUtil.toHex(0, b);
         assertEquals("00000000", b.toString());
 
         b.setLength(0);
@@ -202,7 +206,7 @@ public class TypeUtilTest
     }
 
     @Test
-    public void testGetLocationOfClassFromMavenRepo() throws Exception
+    public void testGetLocationOfClassFromMavenRepo()
     {
         String mavenRepoPathProperty = System.getProperty("mavenRepoPath");
         assumeTrue(mavenRepoPathProperty != null);
@@ -211,7 +215,7 @@ public class TypeUtilTest
         // Classes from maven dependencies
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Resource resource = resourceFactory.newResource(TypeUtil.getLocationOfClass(org.junit.jupiter.api.Assertions.class).toASCIIString());
+            Resource resource = resourceFactory.newResource(Objects.requireNonNull(TypeUtil.getLocationOfClass(Assertions.class)).toASCIIString());
             assertThat(resource.getPath().toString(), Matchers.startsWith(mavenRepoPath.toString()));
         }
     }
@@ -220,7 +224,7 @@ public class TypeUtilTest
     public void getLocationOfClassClassDirectory()
     {
         // Class from project dependencies
-        assertThat(TypeUtil.getLocationOfClass(TypeUtil.class).toASCIIString(), containsString("/classes/"));
+        assertThat(Objects.requireNonNull(TypeUtil.getLocationOfClass(TypeUtil.class)).toASCIIString(), containsString("/classes/"));
     }
 
     @Test
@@ -228,7 +232,7 @@ public class TypeUtilTest
     {
         // Class from JVM core
         String expectedJavaBase = "/java.base";
-        assertThat(TypeUtil.getLocationOfClass(String.class).toASCIIString(), containsString(expectedJavaBase));
+        assertThat(Objects.requireNonNull(TypeUtil.getLocationOfClass(String.class)).toASCIIString(), containsString(expectedJavaBase));
     }
 
     @Test
@@ -236,7 +240,7 @@ public class TypeUtilTest
     {
         // Class from JVM core
         String expectedJavaBase = "/java.base";
-        assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(), containsString(expectedJavaBase));
+        assertThat(Objects.requireNonNull(TypeUtil.getLocationOfClass(ThreadDeath.class)).toASCIIString(), containsString(expectedJavaBase));
     }
 
     public static Stream<Arguments> shortNames()
@@ -284,5 +288,38 @@ public class TypeUtilTest
         Example example = new Example();
         assertFalse(TypeUtil.isDeclaredMethodOn(example, "methodA", String.class));
         assertTrue(TypeUtil.isDeclaredMethodOn(example, "methodB", String.class));
+    }
+
+    public static Stream<Arguments> offsetLengthSizeExpected()
+    {
+        return Stream.of(
+            Arguments.of(0L, 0L, 0L, 0L),
+            Arguments.of(0L, 0L, 10L, 0L),
+            Arguments.of(0L, 10L, 10L, 10L),
+            Arguments.of(5L, 5L, 10L, 5L),
+            Arguments.of(5L, 5L, 15L, 5L),
+            Arguments.of(5L, 10L, 15L, 10L),
+            Arguments.of(0L, 10L, -1L, 10L),
+            Arguments.of(5L, 10L, -1L, 10L),
+            Arguments.of(5L, -1L, 15L, 10L),
+            Arguments.of(0L, -1L, -1L, -1L),
+            Arguments.of(5L, -1L, -1L, -1L),
+            Arguments.of(1L, 0L, 0L, 0L),
+            Arguments.of(0L, 1L, 0L, 0L),
+            Arguments.of(1L, 1L, 0L, -2L),
+            Arguments.of(10L, 0L, 10L, 0L),
+            Arguments.of(0L, 11L, 10L, 10L),
+            Arguments.of(5L, 6L, 10L, 5L)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("offsetLengthSizeExpected")
+    public void testCheckOffsetLengthSize(long offset, long length, long size, long expected)
+    {
+        if (expected < -1)
+            assertThrows(IndexOutOfBoundsException.class, () -> TypeUtil.checkOffsetLengthSize(offset, length, size));
+        else
+            assertThat(TypeUtil.checkOffsetLengthSize(offset, length, size), is(expected));
     }
 }

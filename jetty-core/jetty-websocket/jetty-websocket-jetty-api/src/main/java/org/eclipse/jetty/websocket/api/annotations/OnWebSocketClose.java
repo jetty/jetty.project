@@ -21,13 +21,11 @@ import java.lang.annotation.Target;
 
 /**
  * <p>Annotation for methods to receive WebSocket close events.</p>
- * <p>Acceptable method patterns:</p>
+ * <p>Acceptable method signatures:</p>
  * <ol>
- * <li>{@code public void <methodName>(int statusCode, String reason)}</li>
- * <li>{@code public void <methodName>(Session session, int statusCode, String reason)}</li>
- * <li>{@code public void <methodName>(int statusCode, String reason, Callback callback)}</li>
  * <li>{@code public void <methodName>(Session session, int statusCode, String reason, Callback callback)}</li>
  * </ol>
+ * <p>None of the parameters are mandatory, and you can specify any combination of parameters.</p>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

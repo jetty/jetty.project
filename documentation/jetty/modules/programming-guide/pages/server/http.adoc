@@ -874,7 +874,7 @@ Alternatively, you can use the following `ConditionalHandler` subclasses that im
 ** When conditions are met, you have to write the implementation.
 ** When conditions are not met, the handling of the request is forwarded to the next `Handler`.
 * `ConditionalHandler.Reject`:
-** When conditions are met, a response is written with a configurable, non-2xx, HTTP status code.
+** When conditions are met, a response is written with a configurable HTTP status code.
 ** When conditions are not met, the handling of the request is forwarded to the next `Handler`.
 * `ConditionalHandler.SkipNext`:
 ** When conditions are met, the handling of the request is forwarded to the next-next `Handler`, skipping the next `Handler`.
@@ -882,6 +882,9 @@ Alternatively, you can use the following `ConditionalHandler` subclasses that im
 * `ConditionalHandler.DontHandle`:
 ** When conditions are met, the request is not handled.
 ** When conditions are not met, the handling of the request is forwarded to the next `Handler`.
+* `ConditionalHandler.NextElseReject`:
+** When conditions are met, the handling of the request is forwarded to the next `Handler`.
+** When conditions are not met, a response is written with a configurable HTTP status code.
 
 Conditions can be specified using an include/exclude mechanism, where a condition match if it is not excluded, and either it is included or the include set is empty.
 
@@ -894,7 +897,7 @@ For example, you can specify to match only the specific HTTP request method `DEL
 * The request remote address.
 * Custom predicates that receive the request to match a custom condition.
 
-Notable subclasses of `ConditionalHandler` are, for example, <<handler-use-qos,`QoSHandler`>> and <<handler-use-thread-limit,`ThreadLimitHandler`>>.
+Notable subclasses of `ConditionalHandler` are, for example, <<handler-use-qos,`QoSHandler`>>, <<handler-use-thread-limit,`ThreadLimitHandler`>> and <<handler-use-dos,`DoSHandler`>>.
 
 [[handler-use-compression]]
 ==== CompressionHandler
@@ -1583,6 +1586,11 @@ The ``Handler``s children of `PathMappingsHandler` may extend <<handler-use-cond
 For example, a `LoginHandler` that extends `ConditionalHandler` may be configured to only accept `POST` requests.
 ====
 
+[[handler-use-security]]
+==== SecurityHandler
+
+`SecurityHandler` allows to configure authentication and authorization for your web applications, and it is discussed in details in xref:security/index.adoc[this section].
+
 [[handler-use-servlet]]
 === Servlet API Handlers
 
@@ -2136,8 +2144,20 @@ The advanced configuration of Jetty's HTTP session support is discussed in more 
 [[security]]
 === Securing HTTP Server Applications
 
-// TODO: ConstraintSecurityHandler and Authenticators and LoginServices
-TODO
+Web applications may need to restrict access to resources to authenticated requests.
+
+The Jetty support for web application security is provided by the artifact at the following Maven coordinates:
+
+[,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-security</artifactId>
+  <version>{jetty-version}</version>
+</dependency>
+----
+
+Web application security is primarily provided by <<handler-use-security,`org.eclipse.jetty.security.SecurityHandler`>>, and it is covered in details in xref:security/index.adoc[this section].
 
 [[application]]
 === Writing HTTP Server Applications
