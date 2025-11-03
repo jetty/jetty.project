@@ -90,12 +90,14 @@ public class FileMappingHttpContentFactoryTest
 
         HttpContent content = fileMappingHttpContentFactory.getContent("file.txt");
 
-        assertThrows(IllegalArgumentException.class, () -> writeToString(content, 0, 31));
-        assertThrows(IllegalArgumentException.class, () -> writeToString(content, 30, 1));
-        assertThrows(IllegalArgumentException.class, () -> writeToString(content, 31, 0));
+        assertThrows(IllegalArgumentException.class, () -> writeToString(content, -1, 0));
+        assertThrows(IndexOutOfBoundsException.class, () -> writeToString(content, 31, 1));
 
+        assertThat(writeToString(content, 0, 100), is("0123456789abcdefghijABCDEFGHIJ"));
+        assertThat(writeToString(content, 0, 31), is("0123456789abcdefghijABCDEFGHIJ"));
         assertThat(writeToString(content, 0, 30), is("0123456789abcdefghijABCDEFGHIJ"));
         assertThat(writeToString(content, 29, 1), is("J"));
+        assertThat(writeToString(content, 30, 1), is(""));
         assertThat(writeToString(content, 0, 0), is(""));
         assertThat(writeToString(content, 10, 0), is(""));
         assertThat(writeToString(content, 15, 0), is(""));

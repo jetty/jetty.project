@@ -20,6 +20,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
@@ -45,8 +47,18 @@ public class ByteBufferContentSource implements Content.Source
 
     public ByteBufferContentSource(Collection<ByteBuffer> byteBuffers)
     {
-        this.byteBuffers = byteBuffers;
-        this.length = byteBuffers.stream().mapToLong(Buffer::remaining).sum();
+        this(byteBuffers, 0, -1);
+    }
+
+    public ByteBufferContentSource(Collection<ByteBuffer> byteBuffers, long offset, long length)
+    {
+        long size = byteBuffers.stream().mapToLong(Buffer::remaining).sum();
+        length = TypeUtil.checkOffsetLengthSize(offset, length, size);
+        if (offset == 0 && size == length)
+            this.byteBuffers = byteBuffers;
+        else
+            this.byteBuffers = BufferUtil.slice(byteBuffers, offset, length);
+        this.length = length;
     }
 
     public Collection<ByteBuffer> getByteBuffers()

@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.internal.ByteChannelContentSource;
 import org.eclipse.jetty.io.internal.ContentCopier;
 import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
+import org.eclipse.jetty.io.internal.ContentSourceRange;
 import org.eclipse.jetty.io.internal.ContentSourceRetainableByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.util.Blocker;
@@ -169,9 +170,13 @@ public class Content
              * Creates a new {@link Content.Source}.
              *
              * @param bufferPool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
-             * @param offset the offset byte of the resource to start from.
+             * @param offset the offset byte of the content to start from.
+             *               Must be greater than or equal to 0 and less than the content length (if known).
              * @param length the length of the content to make available, -1 for the full length.
+             *               If the size of the content is known, the length may be truncated to the content size minus the offset.
              * @return a {@link Content.Source}.
+             * @throws IndexOutOfBoundsException if the offset or length are out of range.
+             * @see TypeUtil#checkOffsetLengthSize(long, long, long)
              */
             Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length);
         }
@@ -198,14 +203,40 @@ public class Content
 
         /**
          * Create a {@code Content.Source} from a {@link Path}.
+         *
          * @param path The {@link Path}s to use as the source.
-         * @param offset The offset in bytes from which to start the source
-         * @param length The length in bytes of the source.
-         * @return A {@code Content.Source}
+         * @param offset the offset byte of the content to start from.
+         *               Must be greater than or equal to 0 and less than the content length (if known).
+         * @param length the length of the content to make available, -1 for the full length.
+         *               If the size of the content is known, the length may be truncated to the content size minus the offset.
+         * @return a {@link Content.Source}.
+         * @throws IndexOutOfBoundsException if the offset or length are out of range.
+         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
          */
         static Content.Source from(Path path, long offset, long length)
         {
             return from(null, path, offset, length);
+        }
+
+        /**
+         * Wrap a {@link Content.Source} to make it appear as a sub-range of the original.
+         *
+         * @param source The {@link Content.Source} to wrap.
+         * @param offset the offset byte of the content to start from.
+         *               Must be greater than or equal to 0 and less than the content length (if known).
+         * @param length the length of the content to make available, -1 for the full length.
+         *               If the size of the content is known, the length may be truncated to the content size minus the offset.
+         * @return a {@link Content.Source}.
+         * @throws IndexOutOfBoundsException if the offset or length are out of range.
+         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
+         */
+        static Content.Source from(Content.Source source, long offset, long length)
+        {
+            // If the offset and length include the full content, then do not wrap.
+            if (offset == 0 && (length == -1 || length == source.getLength()))
+                return source;
+
+            return new ContentSourceRange(source, offset, length);
         }
 
         /**
@@ -223,9 +254,13 @@ public class Content
          * Create a {@code Content.Source} from a {@link Path}.
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param path The {@link Path}s to use as the source.
-         * @param offset The offset in bytes from which to start the source
-         * @param length The length in bytes of the source, -1 for the full length.
-         * @return A {@code Content.Source}
+         * @param offset the offset byte of the content to start from.
+         *               Must be greater than or equal to 0 and less than the content length (if known).
+         * @param length the length of the content to make available, -1 for the full length.
+         *               If the size of the content is known, the length may be truncated to the content size minus the offset.
+         * @return a {@link Content.Source}.
+         * @throws IndexOutOfBoundsException if the offset or length are out of range.
+         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
@@ -247,9 +282,13 @@ public class Content
          * Create a {@code Content.Source} from a {@link ByteChannel}.
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param seekableByteChannel The {@link ByteChannel}s to use as the source.
-         * @param offset The offset in bytes from which to start the source
-         * @param length The length in bytes of the source.
-         * @return A {@code Content.Source}
+         * @param offset the offset byte of the content to start from.
+         *               Must be greater than or equal to 0 and less than the content length (if known).
+         * @param length the length of the content to make available, -1 for the full length.
+         *               If the size of the content is known, the length may be truncated to the content size minus the offset.
+         * @return a {@link Content.Source}.
+         * @throws IndexOutOfBoundsException if the offset or length are out of range.
+         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
         {
@@ -276,9 +315,13 @@ public class Content
          * Create a {@code Content.Source} from an {@link InputStream}.
          * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
          * @param inputStream The {@link InputStream}s to use as the source.
-         * @param offset The offset in bytes from which to start the source
-         * @param length The number of bytes to read from the source, or -1 to read to the end of the stream
-         * @return A {@code Content.Source}
+         * @param offset the offset byte of the resource to start from.
+         *               Must be greater than or equal to 0 and less than the resource size (if known).
+         * @param length the length of the content to make available, or -1 for the full length available.
+         *               The length may be truncated if the stream ends sooner.
+         * @return a {@link Content.Source}.
+         * @throws IndexOutOfBoundsException if the offset or length are out of range.
+         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream, long offset, long length)
         {
@@ -971,6 +1014,19 @@ public class Content
             if (byteBuffer.hasRemaining())
                return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
             return last ? EOF : EMPTY;
+        }
+
+        /**
+         * <p>Creates a Chunk with the given RetainableByteBuffer</p>
+         * <p>The returned Chunk is not {@link #retain() retained} and {@link #release() releasing it
+         * will release the passed buffer}.</p>
+         * @param buffer the RetainableByteBuffer to use to back the returned Chunk
+         * @param last whether the Chunk is the last one
+         * @return a buffer as a Chunk
+         */
+        static Chunk from(RetainableByteBuffer buffer, boolean last)
+        {
+            return new ByteBufferChunk.WithRetainableByteBuffer(buffer, last);
         }
 
         /**

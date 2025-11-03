@@ -354,7 +354,9 @@ public class MultiPart
         @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
-            return newContentSource();
+            // We call the deprecated newContentSource() to support existing subclasses.
+            // All current implementations of Part do override newContentSource(ByteBufferPool.Sized, long, long).
+            return Content.Source.from(newContentSource(), offset, length);
         }
 
         public long getLength()
@@ -500,9 +502,18 @@ public class MultiPart
         }
 
         @Override
+        public long getLength()
+        {
+            long length = 0;
+            for (ByteBuffer b : content)
+                length += BufferUtil.length(b);
+            return length;
+        }
+
+        @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
-            return new ByteBufferContentSource(content);
+            return new ByteBufferContentSource(content, offset, length);
         }
 
         @Override
@@ -536,8 +547,20 @@ public class MultiPart
         }
 
         @Override
+        public long getLength()
+        {
+            long length = 0;
+            for (Content.Chunk c : content)
+                length += c.size();
+            return length;
+        }
+
+        @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
+            long size = getLength();
+            length = TypeUtil.checkOffsetLengthSize(offset, length, size);
+
             try (AutoLock ignored = lock.lock())
             {
                 if (closed)
@@ -556,7 +579,7 @@ public class MultiPart
                 ChunksContentSource newContentSource = new ChunksContentSource(chunks);
                 chunks.forEach(Content.Chunk::release);
                 contentSources.add(newContentSource);
-                return newContentSource;
+                return Content.Source.from(newContentSource, offset, length);
             }
         }
 
@@ -651,11 +674,18 @@ public class MultiPart
         }
 
         @Override
+        public long getLength()
+        {
+            return content.getLength();
+        }
+
+        @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
+            length = TypeUtil.checkOffsetLengthSize(offset, length, content.getLength());
             Content.Source c = content;
             content = null;
-            return c;
+            return Content.Source.from(c, offset, length);
         }
 
         @Override

@@ -678,7 +678,7 @@ public class ResourceService
         response.getOutputStream().write(data);
     }
 
-    protected void sendData(HttpServletRequest request,
+    protected boolean sendData(HttpServletRequest request,
                                HttpServletResponse response,
                                boolean include,
                                final HttpContent content,
@@ -764,7 +764,7 @@ public class ResourceService
                             return String.format("ResourceService@%x$CB", ResourceService.this.hashCode());
                         }
                     });
-                    return;
+                    return false;
                 }
                 // otherwise write content blocking
                 ((HttpOutput)out).sendContent(content);
@@ -782,7 +782,7 @@ public class ResourceService
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     InclusiveByteRange.to416HeaderRangeString(content_length));
                 sendStatus(response, HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE, null);
-                return;
+                return true;
             }
 
             //  if there is only a single valid range (must be satisfiable
@@ -798,7 +798,7 @@ public class ResourceService
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     singleSatisfiableRange.toHeaderRangeString(content_length));
                 writeContent(content, out, singleSatisfiableRange.getFirst(), singleLength);
-                return;
+                return true;
             }
 
             //  multiple non-overlapping valid ranges cause a multipart
@@ -858,6 +858,7 @@ public class ResourceService
 
             multi.close();
         }
+        return true;
     }
 
     private static void writeContent(HttpContent content, OutputStream out, long start, long contentLength) throws IOException
