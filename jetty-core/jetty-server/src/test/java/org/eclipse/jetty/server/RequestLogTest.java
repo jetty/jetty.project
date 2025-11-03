@@ -33,7 +33,6 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,13 +137,12 @@ public class RequestLogTest
      * The RequestLog accidentally attempts to read the Request body content due to the use of Request.getParameterNames() API.
      */
     @ParameterizedTest
-    @CsvSource({"/hello,true", "/hello,false", "/hello?a=b,true", "/hello?a=b,false"})
-    public void testNormalPostFormRequest(String requestPath, boolean persistent) throws Exception
+    @ValueSource(strings = {"/hello", "/hello?a=b"})
+    public void testNormalPostFormRequest(String requestPath) throws Exception
     {
         Server server = null;
         try
         {
-            int parameterCount = 9;
             BlockingArrayQueue<String> requestLogLines = new BlockingArrayQueue<>();
 
             server = createServer((request, response1) ->
@@ -172,9 +170,9 @@ public class RequestLogTest
                  InputStream in = socket.getInputStream())
             {
                 StringBuilder form = new StringBuilder();
-                for (int i = 0; i < parameterCount; i++)
+                for (int i = 'a'; i < 'j'; i++)
                 {
-                    form.append((char)('a' + i)).append("=").append(i).append("&");
+                    form.append((char)i).append("=").append(i).append("&");
                 }
 
                 byte[] bufForm = form.toString().getBytes(UTF_8);
@@ -184,9 +182,9 @@ public class RequestLogTest
                     Host: %s
                     Content-Type: application/x-www-form-urlencoded
                     Content-Length: %d
-                    Connection: %s
+                    Connection: close
                     
-                    """.formatted(requestPath, baseURI.getRawAuthority(), bufForm.length, persistent ? "keepalive" : "close");
+                    """.formatted(requestPath, baseURI.getRawAuthority(), bufForm.length);
 
                 out.write(rawRequest.getBytes(UTF_8));
                 out.write(bufForm);
@@ -202,17 +200,9 @@ public class RequestLogTest
                 assertThat("Body Content", response.getContent(), containsString("Got POST to " + expectedURI));
 
                 String reqlog = requestLogLines.poll(5, TimeUnit.SECONDS);
-                int querySize;
-                if (persistent)
-                {
-                    querySize = 0;
-                    if (requestPath.contains("?"))
-                        querySize = 1; // assuming that parameterized version only has 1 query value
-                }
-                else
-                {
-                    querySize = parameterCount;
-                }
+                int querySize = 0;
+                if (requestPath.contains("?"))
+                    querySize = 1; // assuming that parameterized version only has 1 query value
                 assertThat("RequestLog", reqlog, containsString("method:POST|uri:%s|params.size:%d|status:200"
                     .formatted(expectedURI, querySize)
                 ));

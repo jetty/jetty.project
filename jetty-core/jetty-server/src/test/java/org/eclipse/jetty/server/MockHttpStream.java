@@ -231,9 +231,10 @@ public class MockHttpStream implements HttpStream
     @Override
     public Throwable consumeAvailable()
     {
-        if (_channel.getConnectionMetaData() instanceof MockConnectionMetaData mock)
+        Throwable throwable = HttpStream.consumeAvailable(this, new HttpConfiguration());
+        if (throwable != null && _channel.getConnectionMetaData() instanceof MockConnectionMetaData mock)
             mock.notPersistent();
-        return HttpStream.consumeAvailable(this, new HttpConfiguration());
+        return throwable;
     }
 
     public boolean isComplete()
