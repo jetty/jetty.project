@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -1036,8 +1037,8 @@ public class ContentSourceTest
     {
         TestContentSource source = new TestContentSource();
 
-        FuturePromise<byte[]> promise = new FuturePromise<>();
-        Content.Source.asByteArrayAsync(source, -1, promise);
+        CompletableFuture<byte[]> future = new CompletableFuture<>();
+        Content.Source.asByteArrayAsync(source, -1, Promise.Invocable.toPromise(future));
 
         Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter();
         counter.retain();
@@ -1047,7 +1048,7 @@ public class ContentSourceTest
         assertNotNull(todo);
         source.add(Content.Chunk.asChunk(BufferUtil.toBuffer("hello"), false, counter));
         todo.run();
-        assertFalse(promise.isDone());
+        assertFalse(future.isDone());
 
         todo = source.takeDemand();
         assertNotNull(todo);
@@ -1057,9 +1058,9 @@ public class ContentSourceTest
 
         todo = source.takeDemand();
         assertNull(todo);
-        assertTrue(promise.isDone());
+        assertTrue(future.isDone());
 
-        byte[] buffer = promise.get();
+        byte[] buffer = future.get();
         assertNotNull(buffer);
 
         assertThat(new String(buffer, UTF_8), equalTo("hello cruel world"));

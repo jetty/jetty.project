@@ -326,7 +326,7 @@ public class Content
          * @param maxSize The maximum size to read, or -1 for no limit
          * @return A {@link CompletableFuture} that will be completed when the complete content is read or
          * failed if the max size is exceeded or there is a read error.
-         * @deprecated see {@link #asByteArrayAsync(Source, int, Promise)}
+         * @deprecated use {@link #asByteArrayAsync(Source, int, Promise.Invocable)}
          */
         @Deprecated(forRemoval = true, since = "12.0.15")
         static CompletableFuture<byte[]> asByteArrayAsync(Source source, int maxSize)
@@ -345,26 +345,11 @@ public class Content
          *
          * @param source the source to read
          * @param maxSize The maximum size to read, or -1 for no limit
-         * @param promise the promise to notify when the whole content has been read into a byte array.
+         * @param promise the {@link Promise.Invocable} to notify when the whole content has been read into a byte array.
          */
-        static void asByteArrayAsync(Source source, int maxSize, Promise<byte[]> promise)
+        static void asByteArrayAsync(Source source, int maxSize, Promise.Invocable<byte[]> promise)
         {
-            asRetainableByteBuffer(source, null, false, maxSize, new Promise.Completable<>()
-            {
-                @Override
-                public void succeeded(RetainableByteBuffer result)
-                {
-                    super.succeeded(result);
-                    promise.succeeded(result.takeByteArray());
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    super.failed(x);
-                    promise.failed(x);
-                }
-            });
+            asRetainableByteBuffer(source, null, false, maxSize, Promise.Invocable.toPromise(promise, RetainableByteBuffer::takeByteArray));
         }
 
         /**
