@@ -198,12 +198,15 @@ public class MessageInputStream extends InputStream implements MessageSink
             l.signal();
         }
 
-        entries.forEach(e ->
+        boolean demandRequired = false;
+        for (Entry e : entries)
         {
             e.callback.succeeded();
             if (e.frame != null && !e.frame.isFin())
-                session.demand();
-        });
+                demandRequired = true;
+        }
+        if (demandRequired)
+            session.demand();
     }
 
     private void drainInto(ArrayList<Entry> entries)
