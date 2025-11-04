@@ -550,8 +550,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    @Disabled // TODO
-    public void test824() throws Exception
+    public void test823No100Response() throws Exception
     {
         // Expect 100 not sent
         int offset = 0;
