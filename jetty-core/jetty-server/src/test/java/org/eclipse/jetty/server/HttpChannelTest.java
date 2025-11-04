@@ -796,7 +796,7 @@ public class HttpChannelTest
         task.run();
 
         assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), notNullValue());
+        assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getFailure().getMessage(), containsString("Unconsumed"));
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));

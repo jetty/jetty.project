@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,8 +136,8 @@ public class RequestLogTest
      * The RequestLog accidentally attempts to read the Request body content due to the use of Request.getParameterNames() API.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"/hello", "/hello?a=b"})
-    public void testNormalPostFormRequest(String requestPath) throws Exception
+    @CsvSource({"/hello,true", "/hello,false", "/hello?a=b,true", "/hello?a=b,false"})
+    public void testNormalPostFormRequest(String requestPath, boolean persistent) throws Exception
     {
         Server server = null;
         try
@@ -181,9 +181,9 @@ public class RequestLogTest
                     Host: %s
                     Content-Type: application/x-www-form-urlencoded
                     Content-Length: %d
-                    Connection: close
+                    Connection: %s
                     
-                    """.formatted(requestPath, baseURI.getRawAuthority(), bufForm.length);
+                    """.formatted(requestPath, baseURI.getRawAuthority(), bufForm.length, persistent ? "keepalive" : "close");
 
                 out.write(rawRequest.getBytes(UTF_8));
                 out.write(bufForm);
