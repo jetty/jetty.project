@@ -1569,18 +1569,26 @@ public class HttpChannelState implements HttpChannel, Components
                 stream = httpChannelState._stream;
                 assert httpChannelState._callbackFailure == null;
 
-                // Turn pending demand or unconsumed input on persistent connections into failure
+                // Turn pending demand into failure.
                 if (httpChannelState._onContentAvailable != null)
+                {
                     failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
-                else if (httpChannelState.getConnectionMetaData().isPersistent())
-                    failure = ExceptionUtil.combine(failure, stream.consumeAvailable());
+                }
                 else
                 {
+                    // If consumeAvailable() cannot consume all the content, then it
+                    // makes the connection non-persistent and returns an exception.
+                    // This must not result in an error according to RFC2616 section 8.2.3.
+                    // Also, consumeAvailable must be called even when the connection is not
+                    // persistent otherwise RequestLog.log() would be able to read
+                    // x-www-form-urlencoded parameters in one case and not the other.
                     Throwable unconsumed = stream.consumeAvailable();
-                    if (failure != null)
+                    if (httpChannelState.getConnectionMetaData().isPersistent() && !httpChannelState._expects100Continue)
+                        failure = ExceptionUtil.combine(failure, unconsumed);
+                    else if (failure != null && unconsumed != null)
                         ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("consumeAvailable: {} {} ", unconsumed == null, httpChannelState);
+                        LOG.atDebug().setCause(failure).log("consumeAvailable: {} {}", unconsumed == null, httpChannelState);
                 }
 
                 // Pending writes are also failures
