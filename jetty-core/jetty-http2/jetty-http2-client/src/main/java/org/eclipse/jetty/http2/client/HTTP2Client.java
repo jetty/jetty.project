@@ -322,6 +322,10 @@ public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
         return maxLocalStreams;
     }
 
+    /**
+     * @param maxLocalStreams the max number of local streams that can be opened,
+     * if the server does not send the max concurrent stream setting.
+     */
     public void setMaxLocalStreams(int maxLocalStreams)
     {
         this.maxLocalStreams = maxLocalStreams;
