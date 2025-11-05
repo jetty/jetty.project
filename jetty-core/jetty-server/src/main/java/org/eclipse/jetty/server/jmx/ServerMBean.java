@@ -14,7 +14,8 @@
 package org.eclipse.jetty.server.jmx;
 
 import java.time.Duration;
-import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import org.eclipse.jetty.server.Server;
@@ -26,12 +27,9 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class ServerMBean extends Handler.AbstractMBean
 {
-    private final Instant startup;
-
     public ServerMBean(Object managedObject)
     {
         super(managedObject);
-        startup = Instant.now();
     }
 
     @Override
@@ -69,13 +67,20 @@ public class ServerMBean extends Handler.AbstractMBean
     @ManagedAttribute("The UTC startup instant")
     public String getStartupTime()
     {
-        return startup.toString();
+        ZonedDateTime zoned = getManagedObject().getStartupDateTime();
+        return String.valueOf(zoned.withZoneSameInstant(ZoneOffset.UTC));
+    }
+
+    @ManagedAttribute("The startup date time in the system timezone")
+    public String getStartupDateTime()
+    {
+        return String.valueOf(getManagedObject().getStartupDateTime());
     }
 
     @ManagedAttribute("The uptime duration in d:HH:mm:ss.SSS")
     public String getUpTime()
     {
-        Duration upTime = Duration.between(startup, Instant.now());
+        Duration upTime = Duration.ofMillis(getManagedObject().getUptimeMillis());
         return "%d:%02d:%02d:%02d.%03d".formatted(
             upTime.toDaysPart(),
             upTime.toHoursPart(),
