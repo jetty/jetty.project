@@ -144,7 +144,7 @@ class WebSocketProxy
         private void onOpenFail(Callback callback, Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("[{}] onOpenFail", this, t);
+                LOG.atDebug().setCause(t).log("[{}] onOpenFail", this);
 
             Throwable failure = t;
             try (AutoLock ignored = lock.lock())
@@ -240,7 +240,7 @@ class WebSocketProxy
         public void onError(Throwable failure, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("[{}] onError", this, failure);
+                LOG.atDebug().setCause(failure).log("[{}] onError", this);
 
             boolean failServer2Proxy;
             try (AutoLock ignored = lock.lock())
@@ -269,7 +269,7 @@ class WebSocketProxy
         public void fail(Throwable failure, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("[{}] fail", this, failure);
+                LOG.atDebug().setCause(failure).log("[{}] fail", this);
 
             Callback sendCallback = null;
             try (AutoLock ignored = lock.lock())
@@ -478,7 +478,7 @@ class WebSocketProxy
         private void onConnectFailure(Throwable t, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("[{}] onConnectFailure", this, t);
+                LOG.atDebug().setCause(t).log("[{}] onConnectFailure", this);
 
             Throwable failure = t;
             try (AutoLock ignored = lock.lock())
@@ -605,7 +605,7 @@ class WebSocketProxy
         public void onError(Throwable failure, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("[{}] onError", this, failure);
+                LOG.atDebug().setCause(failure).log("[{}] onError", this);
 
             boolean failClient2Proxy = false;
             try (AutoLock ignored = lock.lock())
@@ -660,7 +660,7 @@ class WebSocketProxy
         public void fail(Throwable failure, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("[{}] fail", this, failure);
+                LOG.atDebug().setCause(failure).log("[{}] fail", this);
 
             Callback sendCallback = null;
             try (AutoLock ignored = lock.lock())

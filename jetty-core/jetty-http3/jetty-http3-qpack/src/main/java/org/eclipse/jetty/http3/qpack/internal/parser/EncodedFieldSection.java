@@ -128,7 +128,7 @@ public class EncodedFieldSection
         catch (QpackException.StreamException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Stream decode error, stream={}", getStreamId(), x);
+                LOG.atDebug().setCause(x).log("Stream decode error, stream={}", getStreamId());
             if (x.isRequest())
                 return MetaData.Failed.newFailedMetaDataRequest(HttpVersion.HTTP_3, x);
             if (x.isResponse())
@@ -138,7 +138,7 @@ public class EncodedFieldSection
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Stream decode failure, stream={}", getStreamId(), x);
+                LOG.atDebug().setCause(x).log("Stream decode failure, stream={}", getStreamId());
             return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_3, x);
         }
     }

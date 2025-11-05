@@ -116,7 +116,7 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Failed to check alias", t);
+                LOG.atDebug().setCause(t).log("Failed to check alias");
             return false;
         }
 

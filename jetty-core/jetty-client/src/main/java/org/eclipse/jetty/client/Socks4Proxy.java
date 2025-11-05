@@ -162,7 +162,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("SOCKS4 failure", x);
+                LOG.atDebug().setCause(x).log("SOCKS4 failure");
             getEndPoint().close(x);
             @SuppressWarnings("unchecked")
             Promise<Connection> promise = (Promise<Connection>)context.get(Connection.PROMISE_CONTEXT_KEY);

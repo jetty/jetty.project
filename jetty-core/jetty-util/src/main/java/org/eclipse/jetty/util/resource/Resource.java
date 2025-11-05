@@ -457,7 +457,7 @@ public abstract class Resource implements Iterable<Resource>
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("ignored", t);
+                LOG.atDebug().setCause(t).log("ignored");
         }
         return false;
     }

@@ -276,7 +276,7 @@ public class SerializedInvoker
                 catch (Throwable t)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Failed while running {} of {}", link, SerializedInvoker.this, t);
+                        LOG.atDebug().setCause(t).log("Failed while running {} of {}", link, SerializedInvoker.this);
                     onError(task, t);
                 }
                 finally

@@ -158,7 +158,7 @@ public class MessageInputStream extends InputStream implements MessageSink
     public void fail(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("fail()", failure);
+            LOG.atDebug().setCause(failure).log("fail()");
 
         ArrayList<Entry> entries = new ArrayList<>();
         try (AutoLock.WithCondition l = lock.lock())

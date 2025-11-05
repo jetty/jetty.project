@@ -155,7 +155,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Failed to check alias", t);
+                LOG.atDebug().setCause(t).log("Failed to check alias");
             return false;
         }
     }
@@ -234,7 +234,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("ignored", t);
+                LOG.atDebug().setCause(t).log("ignored");
         }
         return false;
     }

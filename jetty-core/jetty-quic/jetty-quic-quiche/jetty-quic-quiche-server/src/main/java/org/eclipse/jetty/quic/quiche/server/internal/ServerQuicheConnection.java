@@ -191,7 +191,7 @@ public class ServerQuicheConnection extends QuicheConnection
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("produce() failure", x);
+                LOG.atDebug().setCause(x).log("produce() failure");
             buffer.release();
             fail(x);
             return null;
@@ -371,7 +371,7 @@ public class ServerQuicheConnection extends QuicheConnection
     private void fail(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failing connection {}", this, failure);
+            LOG.atDebug().setCause(failure).log("failing connection {}", this);
         ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "failure");
         for (ServerQuicheSession session : sessions.values())
         {

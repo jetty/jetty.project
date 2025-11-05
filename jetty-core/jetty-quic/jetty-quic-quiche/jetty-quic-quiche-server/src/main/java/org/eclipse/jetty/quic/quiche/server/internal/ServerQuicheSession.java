@@ -16,7 +16,6 @@ package org.eclipse.jetty.quic.quiche.server.internal;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.SSLHandshakeException;
@@ -30,7 +29,6 @@ import org.eclipse.jetty.quic.quiche.QuicheSession;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -129,7 +127,7 @@ public class ServerQuicheSession extends QuicheSession implements CyclicTimeouts
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("process failure for {}", this, x);
+                LOG.atDebug().setCause(x).log("process failure for {}", this);
             ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.CONNECTION_REFUSED_ERROR.code(), "session_failure");
             disconnect(frame, x, Promise.Invocable.noop());
             return null;

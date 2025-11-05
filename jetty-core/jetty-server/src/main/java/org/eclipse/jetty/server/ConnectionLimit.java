@@ -265,7 +265,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
         {
             _accepting--;
             if (LOG.isDebugEnabled())
-                LOG.debug("Accept failed ({}+{}) <= {} {}", _accepting, _connections, _maxConnections, channel, cause);
+                LOG.atDebug().setCause(cause).log("Accept failed ({}+{}) <= {} {}", _accepting, _connections, _maxConnections, channel);
             check();
         }
     }

@@ -261,7 +261,7 @@ public class NetworkConnectionLimit extends AbstractLifeCycle implements Selecto
         {
             _pendingConnections--;
             if (LOG.isDebugEnabled())
-                LOG.debug("Accept failed ({}+{}) <= {} {}", _pendingConnections, _connections, _maxNetworkConnections, channel, cause);
+                LOG.atDebug().setCause(cause).log("Accept failed ({}+{}) <= {} {}", _pendingConnections, _connections, _maxNetworkConnections, channel);
             lockedCheck();
         }
     }

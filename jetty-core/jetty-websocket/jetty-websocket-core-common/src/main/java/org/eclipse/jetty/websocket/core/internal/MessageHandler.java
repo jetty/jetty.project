@@ -155,7 +155,7 @@ public class MessageHandler implements FrameHandler
     public void onError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onError ", cause);
+            LOG.atDebug().setCause(cause).log("onError ");
 
         callback.succeeded();
     }

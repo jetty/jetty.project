@@ -922,7 +922,7 @@ public class MultiPartFormData
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("failure while notifying listener {}", complianceListener, x);
+                        LOG.atDebug().setCause(x).log("failure while notifying listener {}", complianceListener);
                 }
             }
 

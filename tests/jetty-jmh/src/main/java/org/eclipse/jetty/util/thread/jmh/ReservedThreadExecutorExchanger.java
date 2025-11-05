@@ -316,14 +316,14 @@ public class ReservedThreadExecutorExchanger extends ContainerLifeCycle implemen
                     catch (Throwable t)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{} task {} failure", ReservedThreadExecutorExchanger.this, task, t);
+                            LOG.atDebug().setCause(t).log("{} task {} failure", ReservedThreadExecutorExchanger.this, task);
                     }
                 }
             }
             catch (Throwable t)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} reservedThread {} failure", ReservedThreadExecutorExchanger.this, this, t);
+                    LOG.atDebug().setCause(t).log("{} reservedThread {} failure", ReservedThreadExecutorExchanger.this, this);
             }
             finally
             {

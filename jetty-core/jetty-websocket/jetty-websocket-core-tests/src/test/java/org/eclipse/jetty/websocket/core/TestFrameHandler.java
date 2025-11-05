@@ -87,7 +87,7 @@ public class TestFrameHandler implements SynchronousFrameHandler
     public void onError(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onError ", cause);
+            LOG.atDebug().setCause(cause).log("onError ");
         failure = cause;
         error.countDown();
     }
