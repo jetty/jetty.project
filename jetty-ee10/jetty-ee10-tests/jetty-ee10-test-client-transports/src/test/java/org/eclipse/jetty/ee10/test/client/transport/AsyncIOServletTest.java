@@ -1540,9 +1540,9 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testResourceServletLastWrite(TransportType transportType) throws Exception
+    public void testResourceServletLastWrite(Transport transport) throws Exception
     {
-        prepareServer(transportType, new ResourceServlet());
+        prepareServer(transport, new ResourceServlet());
         Path docRoot = workDir.getPathFile("docroot");
         FS.ensureDirExists(docRoot);
         Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
@@ -1568,9 +1568,9 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
         server.start();
-        startClient(transportType);
+        startClient(transport);
 
-        var request = client.newRequest(newURI(transportType))
+        var request = client.newRequest(newURI(transport))
             .path("/file.txt")
             .method(HttpMethod.GET)
             .timeout(15, TimeUnit.SECONDS);
