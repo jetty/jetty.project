@@ -640,7 +640,8 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             // Clean up any multipart tmp files and release any associated resources.
-            if (_request.getAttribute(MultiPartFormData.Parts.class.getName()) instanceof MultiPartFormData.Parts parts)
+            MultiPartFormData.Parts parts = MultiPartFormData.getParts(_request);
+            if (parts != null)
                 parts.close();
 
             long idleTO = getHttpConfiguration().getIdleTimeout();
