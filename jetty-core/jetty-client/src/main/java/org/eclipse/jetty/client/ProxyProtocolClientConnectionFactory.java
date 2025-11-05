@@ -496,7 +496,7 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
         @Override
         public void failed(Throwable x)
         {
-            close();
+            getEndPoint().close(x);
             Promise<?> promise = (Promise<?>)context.get(org.eclipse.jetty.client.Connection.PROMISE_CONTEXT_KEY);
             promise.failed(x);
         }

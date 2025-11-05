@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -62,6 +66,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
@@ -779,5 +784,42 @@ public class HttpClientTransportDynamicTest
             .send());
 
         assertThat(failure.getCause(), instanceOf(HttpRequestException.class));
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+        http,  h1
+        http,  h2
+        http,  h1;h2
+        https, h1
+        https, h2
+        https, h1;h2
+        """)
+    public void testServerDoesNotAcceptConnections(String scheme, String protocols) throws Exception
+    {
+        try (ServerSocketChannel server = ServerSocketChannel.open())
+        {
+            // Bind but do not call accept().
+            server.bind(new InetSocketAddress("0.0.0.0", 0));
+            int port = ((InetSocketAddress)server.getLocalAddress()).getPort();
+
+            ClientConnector clientConnector = new ClientConnector();
+            List<ClientConnectionFactory.Info> infos = new ArrayList<>();
+            for (String protocol : protocols.split(";"))
+            {
+                if ("h1".equals(protocol))
+                    infos.add(HttpClientConnectionFactory.HTTP11);
+                if ("h2".equals(protocol))
+                {
+                    HTTP2Client http2Client = new HTTP2Client(clientConnector);
+                    ClientConnectionFactory.Info http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+                    infos.add(http2);
+                }
+            }
+            startClient(clientConnector, infos.toArray(ClientConnectionFactory.Info[]::new));
+            client.setIdleTimeout(1000);
+
+            assertThrows(TimeoutException.class, () -> client.GET(scheme + "://localhost:" + port));
+        }
     }
 }
