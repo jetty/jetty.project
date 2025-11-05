@@ -20,30 +20,36 @@ import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.encoders.AvailableEncoders;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 public abstract class AbstractJakartaWebSocketFrameHandlerTest
 {
-    protected static DummyContainer container;
-    private static WebSocketComponents components;
+    protected DummyContainer container;
+    private WebSocketComponents components;
 
-    @BeforeAll
-    public static void initContainer() throws Exception
+    @BeforeEach
+    public void startContainer() throws Exception
     {
         container = new DummyContainer();
         container.start();
         components = new WebSocketComponents();
         components.start();
+
+        endpointConfig = ClientEndpointConfig.Builder.create().build();
+        encoders = new AvailableEncoders(endpointConfig, coreSession.getWebSocketComponents());
+        decoders = new AvailableDecoders(endpointConfig, coreSession.getWebSocketComponents());
+        uriParams = new HashMap<>();
     }
 
-    @AfterAll
-    public static void stopContainer() throws Exception
+    @AfterEach
+    public void stopContainer()
     {
-        components.stop();
-        container.stop();
+        LifeCycle.stop(components);
+        LifeCycle.stop(container);
     }
 
     protected AvailableEncoders encoders;
@@ -52,21 +58,12 @@ public abstract class AbstractJakartaWebSocketFrameHandlerTest
     protected EndpointConfig endpointConfig;
     protected CoreSession coreSession = new CoreSession.Empty()
     {
-
         @Override
         public WebSocketComponents getWebSocketComponents()
         {
             return components;
         }
     };
-
-    public AbstractJakartaWebSocketFrameHandlerTest()
-    {
-        endpointConfig = ClientEndpointConfig.Builder.create().build();
-        encoders = new AvailableEncoders(endpointConfig, coreSession.getWebSocketComponents());
-        decoders = new AvailableDecoders(endpointConfig, coreSession.getWebSocketComponents());
-        uriParams = new HashMap<>();
-    }
 
     protected JakartaWebSocketFrameHandler newJakartaFrameHandler(Object websocket)
     {
