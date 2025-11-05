@@ -603,7 +603,16 @@ public class ResourceServlet extends HttpServlet
                     (contentLength < 0 || contentLength > coreRequest.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize()))
                 {
                     // send the content asynchronously
-                    AsyncContext asyncContext = httpServletRequest.isAsyncStarted() ? httpServletRequest.getAsyncContext() : httpServletRequest.startAsync();
+                    AsyncContext asyncContext;
+                    if (httpServletRequest.isAsyncStarted())
+                    {
+                        asyncContext = httpServletRequest.getAsyncContext();
+                    }
+                    else
+                    {
+                        asyncContext = httpServletRequest.startAsync();
+                        asyncContext.setTimeout(0);
+                    }
                     Callback callback = new AsyncContextCallback(asyncContext, httpServletResponse);
                     _resourceService.doGet(coreRequest, coreResponse, callback, content);
                 }

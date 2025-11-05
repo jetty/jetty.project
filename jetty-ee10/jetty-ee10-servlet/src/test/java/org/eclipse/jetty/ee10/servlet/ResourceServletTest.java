@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
@@ -28,9 +30,12 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -63,6 +68,8 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Handler;
@@ -3795,6 +3802,168 @@ public class ResourceServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.toString(), response.getContent(), is("How now brown cow"));
         assertThat(rootHandler.lastWriteCounter.get(), is(1));
+    }
+
+    @Test
+    public void testServeResourceAsyncNoTimeout() throws Exception
+    {
+        // The OutputBufferSize must be smaller than the content length otherwise the request is not served async.
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setOutputBufferSize(0);
+
+        // Change the default async timeout to a short value, to avoid waiting the default 30 seconds.
+        // ResourceServlet should overwrite the async timeout to zero.
+        System.setProperty(ServletChannelState.class.getName() + ".DEFAULT_TIMEOUT", "100");
+        try
+        {
+            ResourceServlet resourceServlet = new ResourceServlet();
+            context.addServlet(resourceServlet, "/*");
+            String text = "Test";
+            Resource resource = new SlowResource(text.getBytes(UTF_8), 100);
+            resourceServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(resource, "text/plain", ByteBufferPool.SIZED_NON_POOLING));
+
+            String rawResponse = connector.getResponse("""
+                GET /context/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """);
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("" + text.getBytes(UTF_8).length));
+            assertThat(response.getContent(), is(text));
+        }
+        finally
+        {
+            System.clearProperty(ServletChannelState.class.getName() + ".DEFAULT_TIMEOUT");
+        }
+    }
+
+    private static class SlowResource extends Resource implements Content.Source.Factory
+    {
+        private final byte[] data;
+        private final long delayInMsBetweenBytes;
+
+        public SlowResource(byte[] data, long delayInMsBetweenBytes)
+        {
+            this.data = data;
+            this.delayInMsBetweenBytes = delayInMsBetweenBytes;
+        }
+
+        @Override
+        public Path getPath()
+        {
+            return null;
+        }
+
+        @Override
+        public boolean isDirectory()
+        {
+            return false;
+        }
+
+        @Override
+        public long length()
+        {
+            return data.length;
+        }
+
+        @Override
+        public boolean isReadable()
+        {
+            return true;
+        }
+
+        @Override
+        public boolean exists()
+        {
+            return true;
+        }
+
+        @Override
+        public URI getURI()
+        {
+            try
+            {
+                return new URI("file:///slow-resource");
+            }
+            catch (URISyntaxException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public String getName()
+        {
+            return "slow-resource";
+        }
+
+        @Override
+        public String getFileName()
+        {
+            return "slow-resource-filename";
+        }
+
+        @Override
+        public Resource resolve(String subUriPath)
+        {
+            return null;
+        }
+
+        @Override
+        public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
+        {
+            return new DelayingByteBufferContentSource(data, delayInMsBetweenBytes);
+        }
+    }
+
+    private static class DelayingByteBufferContentSource extends ByteBufferContentSource
+    {
+        private final Timer timer = new Timer(true);
+        private final long delayInMsBetweenBytes;
+        private boolean delay = true;
+
+        public DelayingByteBufferContentSource(byte[] data, long delayInMsBetweenBytes)
+        {
+            super(splitIntoByteBuffers(data));
+            this.delayInMsBetweenBytes = delayInMsBetweenBytes;
+        }
+
+        private static Collection<ByteBuffer> splitIntoByteBuffers(byte[] data)
+        {
+            List<ByteBuffer> buffers = new ArrayList<>();
+            for (int i = 0; i < data.length; i++)
+            {
+                buffers.add(ByteBuffer.wrap(data, i, 1));
+            }
+            return buffers;
+        }
+
+        @Override
+        public Content.Chunk read()
+        {
+            if (delay)
+            {
+                delay = false;
+                return null;
+            }
+            delay = true;
+            return super.read();
+        }
+
+        @Override
+        public void demand(Runnable demandCallback)
+        {
+            Runnable superDemand = () -> super.demand(demandCallback);
+            timer.schedule(new TimerTask()
+            {
+                @Override
+                public void run()
+                {
+                    superDemand.run();
+                }
+            }, delayInMsBetweenBytes);
+        }
     }
 
     public static class WriterFilter implements Filter
