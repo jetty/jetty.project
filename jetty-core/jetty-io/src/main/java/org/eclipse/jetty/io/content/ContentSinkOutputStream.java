@@ -78,10 +78,6 @@ public class ContentSinkOutputStream extends OutputStream
     @Override
     public void close() throws IOException
     {
-        if (closed)
-            return;
-        closed = true;
-
         try (Blocker.Callback callback = _blocking.callback())
         {
             close(callback);
