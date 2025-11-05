@@ -503,7 +503,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
         @Override
         public void failed(Throwable x)
         {
-            close();
+            getEndPoint().close(x);
             Promise<?> promise = (Promise<?>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
             promise.failed(x);
         }
