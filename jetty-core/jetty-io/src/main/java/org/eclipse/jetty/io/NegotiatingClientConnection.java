@@ -16,10 +16,12 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,6 +129,18 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
             LOG.atDebug().setCause(x).log("Unable to replace connection");
             close();
         }
+    }
+
+    @Override
+    public boolean onIdleExpired(TimeoutException timeout)
+    {
+        getEndPoint().close(timeout);
+
+        @SuppressWarnings("unchecked")
+        Promise<Connection> promise = (Promise<Connection>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
+        promise.failed(timeout);
+
+        return false;
     }
 
     @Override
