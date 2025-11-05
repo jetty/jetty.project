@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -55,6 +56,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.RateControl;
@@ -74,9 +76,11 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.parser.ServerParser;
+import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -84,6 +88,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Tag;
@@ -415,6 +420,52 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         Stream stream = streamRef.get();
         assertNotNull(stream);
         assertEquals(lastStream.get(), stream.getId());
+    }
+
+    @Test
+    public void testSetMaxLocalStreams() throws Exception
+    {
+        HTTP2CServerConnectionFactory connectionFactory = new HTTP2CServerConnectionFactory();
+        connectionFactory.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        connectionFactory.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        prepareServer(connectionFactory);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+        server.start();
+
+        prepareClient();
+        http2Client.setMaxLocalStreams(777);
+        AtomicInteger configuredMaxLocalStreams = new AtomicInteger();
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)
+        {
+            @Override
+            protected void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+            {
+                Promise<Session> p = new Promise.Wrapper<>(promise)
+                {
+                    @Override
+                    public void succeeded(Session result)
+                    {
+                        configuredMaxLocalStreams.set(((HTTP2Session)result).getMaxLocalStreams());
+                        super.succeeded(result);
+                    }
+                };
+                super.connect(address, factory, listener, p, context);
+            }
+        });
+        httpClient.start();
+
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+            .send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(configuredMaxLocalStreams.get(), is(777));
     }
 
     @Test
