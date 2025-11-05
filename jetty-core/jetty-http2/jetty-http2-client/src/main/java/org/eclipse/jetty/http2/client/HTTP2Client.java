@@ -110,6 +110,7 @@ public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
     private int initialStreamRecvWindow = 8 * 1024 * 1024;
     private int maxFrameSize = Frame.DEFAULT_MAX_SIZE;
     private int maxConcurrentPushedStreams = 32;
+    private int maxLocalStreams = -1;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private int maxDecoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
     private int maxEncoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
@@ -313,6 +314,21 @@ public class HTTP2Client extends ContainerLifeCycle implements AutoCloseable
     public void setMaxConcurrentPushedStreams(int maxConcurrentPushedStreams)
     {
         this.maxConcurrentPushedStreams = maxConcurrentPushedStreams;
+    }
+
+    @ManagedAttribute("The maximum number of concurrent local streams")
+    public int getMaxLocalStreams()
+    {
+        return maxLocalStreams;
+    }
+
+    /**
+     * @param maxLocalStreams the max number of local streams that can be opened,
+     * if the server does not send the max concurrent stream setting.
+     */
+    public void setMaxLocalStreams(int maxLocalStreams)
+    {
+        this.maxLocalStreams = maxLocalStreams;
     }
 
     @ManagedAttribute("The max number of keys in all SETTINGS frames")
