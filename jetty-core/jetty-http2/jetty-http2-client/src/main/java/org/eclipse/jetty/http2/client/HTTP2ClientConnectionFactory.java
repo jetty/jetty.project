@@ -60,6 +60,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
         HTTP2ClientSession session = new HTTP2ClientSession(client.getScheduler(), endPoint, parser, generator, listener, flowControl);
+        session.setMaxLocalStreams(client.getMaxLocalStreams());
         session.setMaxRemoteStreams(client.getMaxConcurrentPushedStreams());
         session.setMaxEncoderTableCapacity(client.getMaxEncoderTableCapacity());
         long streamIdleTimeout = client.getStreamIdleTimeout();
