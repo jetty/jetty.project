@@ -66,7 +66,7 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
      * Construct an IncludeExclude.
      *
      * @param setClass The type of {@link Set} to using internally to hold patterns. Two instances will be created.
-     * one for include patterns and one for exclude patters.  If the class is also a {@link Predicate},
+     * one for include patterns and one for exclude patterns.  If the class is also a {@link Predicate},
      * then it is also used as the item test for the set, otherwise a {@link SetContainsPredicate} instance
      * is created.
      * @param <SET> The type of {@link Set} to use as the backing store

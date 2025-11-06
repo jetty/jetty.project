@@ -469,7 +469,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
 
     private void predestroyServlet(Servlet servlet)
     {
-        // TODO We should only predestroy instnaces that we created
+        // TODO We should only predestroy instances that we created
         // TODO But this breaks tests in jetty-9, so review behaviour in jetty-10
 
         // Need to use the unwrapped servlet because lifecycle callbacks such as

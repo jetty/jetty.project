@@ -1042,7 +1042,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     }
 
     /**
-     * @param renegotiationLimit The number of renegotions allowed for this connection.
+     * @param renegotiationLimit The number of renegotiations allowed for this connection.
      * When the limit is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
      * Default 5.
      */

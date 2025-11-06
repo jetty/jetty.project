@@ -322,7 +322,7 @@ public class UnixCrypt
     }
 
     /**
-     * You can't call the constructer.
+     * You can't call the constructor.
      */
     private UnixCrypt()
     {

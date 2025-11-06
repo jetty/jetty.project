@@ -339,7 +339,7 @@ public class ExceptionUtil
 
     /**
      * <p>Combine two, possible null, {@link Throwable}s in a style to facilitate handling
-     * multiple exceptions that are accumulated as suppressed exceptions. This is freqently
+     * multiple exceptions that are accumulated as suppressed exceptions. This is frequently
      * used in the following pattern:</p>
      * <pre>
      *     Throwable multiException = null;

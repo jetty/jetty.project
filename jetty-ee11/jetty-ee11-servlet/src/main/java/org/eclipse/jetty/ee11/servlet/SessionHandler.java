@@ -611,7 +611,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         if (session == null)
             return;
         super.onSessionDestroyed(session);
-        //We annoint the calling thread with
+        //We anoint the calling thread with
         //the webapp's classloader because the calling thread may
         //come from the scavenger, rather than a request thread
         getSessionContext().run(() ->

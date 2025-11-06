@@ -113,7 +113,7 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
         }
         try
         {
-            // TODO: This is @Deprecated and not useable in the new JPMS reality
+            // TODO: This is @Deprecated and not usable in the new JPMS reality
             return Proxy.getProxyClass(hasNonPublicInterface ? nonPublicLoader : loader, classObjs);
         }
         catch (IllegalArgumentException e)
