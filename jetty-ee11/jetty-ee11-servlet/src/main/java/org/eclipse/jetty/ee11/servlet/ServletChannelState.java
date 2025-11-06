@@ -397,7 +397,7 @@ public class ServletChannelState
         {
             boolean aborted = abortResponse(failure);
             if (LOG.isDebugEnabled())
-                LOG.debug("abort={} {}", aborted, this, failure);
+                LOG.atDebug().setCause(failure).log("abort={} {}", aborted, this);
             if (aborted)
             {
                 handle = _state == State.WAITING;
@@ -663,7 +663,7 @@ public class ServletChannelState
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("errorHandlingComplete {}", toStringLocked(), failure);
+                LOG.atDebug().setCause(failure).log("errorHandlingComplete {}", toStringLocked());
 
             handle = _state == State.WAITING;
             if (handle)
@@ -863,7 +863,7 @@ public class ServletChannelState
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("asyncError {}", toStringLocked(), failure);
+                LOG.atDebug().setCause(failure).log("asyncError {}", toStringLocked());
 
             if (_state == State.WAITING && _requestState == RequestState.ASYNC)
             {
@@ -876,7 +876,7 @@ public class ServletChannelState
                 if (!QuietException.isQuiet(failure))
                     LOG.warn(failure.toString());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Async error", failure);
+                    LOG.atDebug().setCause(failure).log("Async error");
             }
         }
 

@@ -152,7 +152,7 @@ public class WebSocketProxy
         public void onWebSocketError(Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onWebSocketError()", getClass().getSimpleName(), cause);
+                LOG.atDebug().setCause(cause).log("{} onWebSocketError()", getClass().getSimpleName());
 
             proxyToServer.fail(cause);
         }
@@ -247,7 +247,7 @@ public class WebSocketProxy
         public void onWebSocketError(Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} onWebSocketError()", getClass().getSimpleName(), cause);
+                LOG.atDebug().setCause(cause).log("{} onWebSocketError()", getClass().getSimpleName());
 
             clientToProxy.fail(cause);
         }

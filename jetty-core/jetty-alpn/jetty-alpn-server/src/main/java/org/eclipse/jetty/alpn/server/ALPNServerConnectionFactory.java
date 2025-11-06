@@ -56,7 +56,7 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x.getMessage(), x);
+                    LOG.atDebug().setCause(x).log(x.getMessage());
                 if (x != failure)
                     failure.addSuppressed(x);
                 return;
@@ -70,7 +70,7 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not initialize {}", processor, x);
+                    LOG.atDebug().setCause(x).log("Could not initialize {}", processor);
                 if (x != failure)
                     failure.addSuppressed(x);
             }

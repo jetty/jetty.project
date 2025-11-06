@@ -319,7 +319,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                     catch (Throwable t)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{} task {} failure", ReservedThreadExecutor.this, task, t);
+                            LOG.atDebug().setCause(t).log("{} task {} failure", ReservedThreadExecutor.this, task);
                     }
                     finally
                     {
@@ -332,7 +332,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             catch (Throwable t)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} reservedThread {} failure", ReservedThreadExecutor.this, this, t);
+                    LOG.atDebug().setCause(t).log("{} reservedThread {} failure", ReservedThreadExecutor.this, this);
             }
             finally
             {

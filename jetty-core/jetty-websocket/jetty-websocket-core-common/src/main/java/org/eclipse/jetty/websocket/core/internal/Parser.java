@@ -233,7 +233,7 @@ public class Parser
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} Parse Error {}", this, BufferUtil.toDetailString(buffer), t);
+                LOG.atDebug().setCause(t).log("{} Parse Error {}", this, BufferUtil.toDetailString(buffer));
 
             buffer.position(buffer.limit()); // consume remaining
 

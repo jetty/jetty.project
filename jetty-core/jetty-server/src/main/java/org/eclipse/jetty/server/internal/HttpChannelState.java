@@ -355,7 +355,7 @@ public class HttpChannelState implements HttpChannel, Components
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onIdleTimeout {}", this, t);
+                LOG.atDebug().setCause(t).log("onIdleTimeout {}", this);
 
             // Either too early or too late.
             if (_stream == null || _request == null)
@@ -433,7 +433,7 @@ public class HttpChannelState implements HttpChannel, Components
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onFailure {}", this, x);
+                LOG.atDebug().setCause(x).log("onFailure {}", this);
 
             // If the channel doesn't have a stream, then the error is ignored.
             stream = _stream;
@@ -487,7 +487,7 @@ public class HttpChannelState implements HttpChannel, Components
                     try
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("invoking failure listeners {} {}", HttpChannelState.this, onFailure, x);
+                            LOG.atDebug().setCause(x).log("invoking failure listeners {} {}", HttpChannelState.this, onFailure);
                         onFailure.accept(x);
                     }
                     catch (Throwable throwable)
@@ -640,7 +640,8 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             // Clean up any multipart tmp files and release any associated resources.
-            if (_request.getAttribute(MultiPartFormData.Parts.class.getName()) instanceof MultiPartFormData.Parts parts)
+            MultiPartFormData.Parts parts = MultiPartFormData.getParts(_request);
+            if (parts != null)
                 parts.close();
 
             long idleTO = getHttpConfiguration().getIdleTimeout();
@@ -1383,7 +1384,7 @@ public class HttpChannelState implements HttpChannel, Components
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("write failed {}", this, x);
+                LOG.atDebug().setCause(x).log("write failed {}", this);
             Callback callback;
             HttpChannelState httpChannel;
             try (AutoLock ignored = _request._lock.lock())
@@ -1569,18 +1570,26 @@ public class HttpChannelState implements HttpChannel, Components
                 stream = httpChannelState._stream;
                 assert httpChannelState._callbackFailure == null;
 
-                // Turn pending demand or unconsumed input on persistent connections into failure
+                // Turn pending demand into failure.
                 if (httpChannelState._onContentAvailable != null)
+                {
                     failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
-                else if (httpChannelState.getConnectionMetaData().isPersistent())
-                    failure = ExceptionUtil.combine(failure, stream.consumeAvailable());
+                }
                 else
                 {
+                    // If consumeAvailable() cannot consume all the content, then it
+                    // makes the connection non-persistent and returns an exception.
+                    // This must not result in an error according to RFC2616 section 8.2.3.
+                    // Also, consumeAvailable must be called even when the connection is not
+                    // persistent otherwise RequestLog.log() would be able to read
+                    // x-www-form-urlencoded parameters in one case and not the other.
                     Throwable unconsumed = stream.consumeAvailable();
-                    if (failure != null)
+                    if (httpChannelState.getConnectionMetaData().isPersistent() && !httpChannelState._expects100Continue)
+                        failure = ExceptionUtil.combine(failure, unconsumed);
+                    else if (failure != null && unconsumed != null)
                         ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("consumeAvailable: {} {} ", unconsumed == null, httpChannelState);
+                        LOG.atDebug().setCause(failure).log("consumeAvailable: {} {}", unconsumed == null, httpChannelState);
                 }
 
                 // Pending writes are also failures
@@ -1822,7 +1831,7 @@ public class HttpChannelState implements HttpChannel, Components
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("ErrorWrite failed: {}", this, x);
+                LOG.atDebug().setCause(x).log("ErrorWrite failed: {}", this);
             Throwable failure;
             HttpChannelState httpChannelState;
             try (AutoLock ignored = _request._lock.lock())

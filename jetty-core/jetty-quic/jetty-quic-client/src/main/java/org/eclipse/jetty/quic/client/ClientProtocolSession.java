@@ -62,7 +62,7 @@ public class ClientProtocolSession extends ProtocolSession
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("could not create stream", x);
+                LOG.atDebug().setCause(x).log("could not create stream");
             ConnectionCloseFrame disconnect = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "start_failure");
             disconnect(disconnect, x, Promise.Invocable.noop());
         }

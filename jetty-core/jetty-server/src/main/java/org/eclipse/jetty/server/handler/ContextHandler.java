@@ -757,11 +757,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             catch (Throwable x)
             {
                 // Log as warning the first time it happens.
-                String msg = "Error setting a context classloader on thread {}";
-                if (_enterScopeSetClassloaderFailed.compareAndSet(false, true))
-                    LOG.warn(msg, Thread.currentThread(), x);
-                else if (LOG.isDebugEnabled())
-                    LOG.debug(msg, Thread.currentThread(), x);
+                (_enterScopeSetClassloaderFailed.compareAndSet(false, true) ? LOG.atWarn() : LOG.atDebug())
+                    .setCause(x)
+                    .log("Error setting a context classloader on thread {}", Thread.currentThread());
             }
         }
         notifyEnterScope(contextRequest);

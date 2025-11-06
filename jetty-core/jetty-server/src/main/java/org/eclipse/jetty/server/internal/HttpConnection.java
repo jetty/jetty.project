@@ -470,7 +470,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("caught exception {} {}", this, _httpChannel, x);
+                    LOG.atDebug().setCause(x).log("caught exception {} {}", this, _httpChannel);
                 if (_requestBuffer != null)
                     releaseRequestBuffer();
             }
@@ -583,7 +583,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
+                LOG.atDebug().setCause(x).log("Unable to fill from endpoint {}", getEndPoint());
             _parser.atEOF();
             return -1;
         }
@@ -718,7 +718,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             Runnable task = _httpChannel.onFailure(x);
             if (LOG.isDebugEnabled())
-                LOG.debug("demand failed {}", task, x);
+                LOG.atDebug().setCause(x).log("demand failed {}", task);
             ThreadPool.executeImmediately(getConnector().getExecutor(), task);
         }
 
@@ -1725,11 +1725,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (stream == null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("ignored", x);
+                    LOG.atDebug().setCause(x).log("ignored");
                 return;
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("aborting", x);
+                LOG.atDebug().setCause(x).log("aborting");
             abort(x);
             _httpChannel.setHttpStream(null);
             if (!_handling.compareAndSet(true, false))

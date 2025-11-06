@@ -185,7 +185,7 @@ public class BadNetworkTest
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("ServerEndpoint error", cause);
+                LOG.atDebug().setCause(cause).log("ServerEndpoint error");
             }
         }
     }
