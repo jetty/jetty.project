@@ -40,5 +40,5 @@ jetty.requestlog.dir?=logs
 # jetty.requestlog.append=false
 
 ## Timezone of the log file rollover
-# jetty.requestlog.timezone=GMT
+# jetty.requestlog.rollover.timezone=GMT
 # end::documentation[]

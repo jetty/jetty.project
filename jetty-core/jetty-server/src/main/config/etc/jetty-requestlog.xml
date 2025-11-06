@@ -31,7 +31,7 @@
           <Set name="filenameDateFormat"><Property name="jetty.requestlog.filenameDateFormat" default="yyyy_MM_dd"/></Set>
           <Set name="retainDays"><Property name="jetty.requestlog.retainDays" default="90"/></Set>
           <Set name="append"><Property name="jetty.requestlog.append" default="false"/></Set>
-          <Set name="timeZone"><Property name="jetty.requestlog.timezone" default="GMT"/></Set>
+          <Set name="timeZone"><Property name="jetty.requestlog.rollover.timezone" deprecated="jetty.requestlog.timezone" default="GMT"/></Set>
         </New>
       </Arg>
 
