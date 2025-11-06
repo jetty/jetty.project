@@ -31,7 +31,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -171,8 +170,7 @@ public class BlockingContentProducerTest
 
             HttpInput.Content lastContent = contentProducer.nextContent();
             assertThat(lastContent.isSpecial(), is(true));
-            assertThat(lastContent.getError(), instanceOf(IOException.class));
-            assertThat(lastContent.getError().getCause().getMessage(), is("testBlockingContentProducerErrorContentIsPassedToInterceptor error"));
+            assertThat(lastContent.getError().getMessage(), is("testBlockingContentProducerErrorContentIsPassedToInterceptor error"));
         }
 
         assertThat(interceptor.contents.size(), is(4));
