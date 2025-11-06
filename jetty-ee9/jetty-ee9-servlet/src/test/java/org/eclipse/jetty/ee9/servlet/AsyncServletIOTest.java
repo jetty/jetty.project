@@ -267,12 +267,7 @@ public class AsyncServletIOTest
         }
 
         // Assert that the blocking read throws EofException.
-        await().atMost(5, TimeUnit.SECONDS).until(() ->
-        {
-            Throwable throwable = _servletAsyncRead.exceptionRef.get();
-            System.out.println(throwable);
-            return _servletAsyncRead.exceptionRef.get() instanceof EofException;
-        });
+        await().atMost(5, TimeUnit.SECONDS).until(() -> _servletAsyncRead.exceptionRef.get() instanceof EofException);
 
         // Assert that no async event was generated as the blocking read got notified of the error.
         await().during(3, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(_servletAsyncRead.listener.events, empty()));
