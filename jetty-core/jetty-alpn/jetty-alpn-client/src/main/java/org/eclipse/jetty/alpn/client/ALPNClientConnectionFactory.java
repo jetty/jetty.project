@@ -58,7 +58,7 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to load client processor", x);
+                    LOG.atDebug().setCause(x).log("Unable to load client processor");
                 failure.addSuppressed(x);
                 return;
             }
@@ -71,7 +71,7 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not initialize {}", processor, x);
+                    LOG.atDebug().setCause(x).log("Could not initialize {}", processor);
                 failure.addSuppressed(x);
             }
         });

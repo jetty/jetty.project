@@ -27,6 +27,8 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
+import org.eclipse.jetty.http3.qpack.QpackDecoder;
+import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.ProtocolStreamListener;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
@@ -53,6 +55,16 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     private ClientHTTP3Session getClientHTTP3Session()
     {
         return (ClientHTTP3Session)getProtocolSession();
+    }
+
+    public QpackEncoder getQpackEncoder()
+    {
+        return getClientHTTP3Session().getQpackEncoder();
+    }
+
+    public QpackDecoder getQpackDecoder()
+    {
+        return getClientHTTP3Session().getQpackDecoder();
     }
 
     @Override
@@ -120,7 +132,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("could not create stream for {} on {}", endPoint, this, x);
+                LOG.atDebug().setCause(x).log("could not create stream for {} on {}", endPoint, this);
             Promise.Invocable<StreamEndPoint> p = Promise.Invocable.from(promise.getInvocationType(), s -> promise.failed(x), t -> promise.failed(x));
             endPoint.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, true, p);
             return;

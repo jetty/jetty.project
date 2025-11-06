@@ -311,7 +311,7 @@ public class FrameFlusher extends IteratingCallback
                         _releasableBuffers.add(masked);
                         _generator.generatePayload(entry.getFrame(), payload);
                     }
-                    buffers.add(payload.slice());
+                    buffers.add(payload);
                 }
 
                 // Once we have added another buffer we cannot add to the batch buffer again.
@@ -455,7 +455,7 @@ public class FrameFlusher extends IteratingCallback
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Exception while notifying success of callback {}", callback, x);
+                LOG.atDebug().setCause(x).log("Exception while notifying success of callback {}", callback);
         }
     }
 
@@ -471,7 +471,7 @@ public class FrameFlusher extends IteratingCallback
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Exception while notifying failure of callback {}", callback, x);
+                LOG.atDebug().setCause(x).log("Exception while notifying failure of callback {}", callback);
         }
     }
 

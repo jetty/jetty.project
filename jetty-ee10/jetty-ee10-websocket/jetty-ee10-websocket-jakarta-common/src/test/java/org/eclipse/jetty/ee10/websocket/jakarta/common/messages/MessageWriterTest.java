@@ -151,7 +151,9 @@ public class MessageWriterTest
         @Override
         public void sendFrame(OutgoingEntry entry)
         {
-            frames.offer(Frame.copy(entry.getFrame()));
+            Frame frame = entry.getFrame();
+            frames.add(Frame.copy(frame));
+            frame.getPayload().position(frame.getPayload().limit());
             entry.getCallback().succeeded();
         }
     }
@@ -169,7 +171,7 @@ public class MessageWriterTest
             if (frame.getOpCode() == OpCode.TEXT)
                 activeMessage = new Utf8StringBuilder();
 
-            activeMessage.append(frame.getPayload().slice());
+            activeMessage.append(frame.getPayload());
 
             if (frame.isFin())
             {

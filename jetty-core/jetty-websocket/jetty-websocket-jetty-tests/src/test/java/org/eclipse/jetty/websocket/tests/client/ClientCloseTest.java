@@ -453,7 +453,7 @@ public class ClientCloseTest
             }
             catch (Throwable t)
             {
-                LOG.debug("send text failure", t);
+                LOG.atDebug().setCause(t).log("send text failure");
                 throw new RuntimeException(t);
             }
         }
@@ -462,7 +462,7 @@ public class ClientCloseTest
         public void onWebSocketError(Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onWebSocketError(): ", cause);
+                LOG.atDebug().setCause(cause).log("onWebSocketError(): ");
         }
 
         @Override
@@ -482,7 +482,7 @@ public class ClientCloseTest
                     }
                     catch (Throwable x)
                     {
-                        LOG.debug("OOPS", x);
+                        LOG.atDebug().setCause(x).log("OOPS");
                     }
                 }
                 else if (reason.equals("abort"))

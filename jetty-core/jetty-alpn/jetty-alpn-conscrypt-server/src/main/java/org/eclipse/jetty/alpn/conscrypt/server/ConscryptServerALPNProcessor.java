@@ -108,7 +108,7 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
         public void handshakeFailed(Event event, Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("TLS handshake failed {}", alpnConnection, failure);
+                LOG.atDebug().setCause(failure).log("TLS handshake failed {}", alpnConnection);
         }
     }
 }

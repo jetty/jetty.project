@@ -121,7 +121,7 @@ public class StandardDeployer extends ContainerLifeCycle implements Deployer
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} Deploy failed {}", this, contextHandler, t);
+                LOG.atDebug().setCause(t).log("{} Deploy failed {}", this, contextHandler);
 
             ExceptionUtil.ifExceptionThrowUnchecked(t);
         }
@@ -153,7 +153,7 @@ public class StandardDeployer extends ContainerLifeCycle implements Deployer
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} Redeploy failed {}", this, newContextHandler, t);
+                LOG.atDebug().setCause(t).log("{} Redeploy failed {}", this, newContextHandler);
 
             ExceptionUtil.ifExceptionThrowUnchecked(t);
         }

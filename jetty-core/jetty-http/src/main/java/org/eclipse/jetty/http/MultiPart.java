@@ -354,7 +354,9 @@ public class MultiPart
         @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
-            return newContentSource();
+            // We call the deprecated newContentSource() to support existing subclasses.
+            // All current implementations of Part do override newContentSource(ByteBufferPool.Sized, long, long).
+            return Content.Source.from(newContentSource(), offset, length);
         }
 
         public long getLength()
@@ -475,7 +477,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Error closing part {}", this, x);
+                    LOG.atDebug().setCause(x).log("Error closing part {}", this);
             }
         }
     }
@@ -500,9 +502,18 @@ public class MultiPart
         }
 
         @Override
+        public long getLength()
+        {
+            long length = 0;
+            for (ByteBuffer b : content)
+                length += BufferUtil.length(b);
+            return length;
+        }
+
+        @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
-            return new ByteBufferContentSource(content);
+            return new ByteBufferContentSource(content, offset, length);
         }
 
         @Override
@@ -536,8 +547,20 @@ public class MultiPart
         }
 
         @Override
+        public long getLength()
+        {
+            long length = 0;
+            for (Content.Chunk c : content)
+                length += c.size();
+            return length;
+        }
+
+        @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
+            long size = getLength();
+            length = TypeUtil.checkOffsetLengthSize(offset, length, size);
+
             try (AutoLock ignored = lock.lock())
             {
                 if (closed)
@@ -556,7 +579,7 @@ public class MultiPart
                 ChunksContentSource newContentSource = new ChunksContentSource(chunks);
                 chunks.forEach(Content.Chunk::release);
                 contentSources.add(newContentSource);
-                return newContentSource;
+                return Content.Source.from(newContentSource, offset, length);
             }
         }
 
@@ -651,11 +674,18 @@ public class MultiPart
         }
 
         @Override
+        public long getLength()
+        {
+            return content.getLength();
+        }
+
+        @Override
         public Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length)
         {
+            length = TypeUtil.checkOffsetLengthSize(offset, length, content.getLength());
             Content.Source c = content;
             content = null;
-            return c;
+            return Content.Source.from(c, offset, length);
         }
 
         @Override
@@ -827,8 +857,12 @@ public class MultiPart
         {
             try (AutoLock ignored = lock.lock())
             {
-                if (errorChunk != null)
-                    return errorChunk;
+                Content.Chunk error = errorChunk;
+                if (error != null)
+                {
+                    errorChunk = Content.Chunk.next(error);
+                    return error;
+                }
             }
 
             return switch (state)
@@ -1281,7 +1315,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("parse failure {} {}", state, BufferUtil.toDetailString(buffer), x);
+                    LOG.atDebug().setCause(x).log("parse failure {} {}", state, BufferUtil.toDetailString(buffer));
                 buffer.position(buffer.limit());
                 notifyEndOfLineViolations();
                 notifyFailure(x);
@@ -1681,7 +1715,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
             }
         }
 
@@ -1694,7 +1728,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
             }
         }
 
@@ -1707,7 +1741,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
             }
         }
 
@@ -1720,7 +1754,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
             }
         }
 
@@ -1733,7 +1767,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
             }
         }
 
@@ -1746,7 +1780,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
             }
         }
 
@@ -1759,7 +1793,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
             }
         }
 
@@ -1792,7 +1826,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
             }
         }
 
@@ -1992,7 +2026,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying part {}", name, x);
+                    LOG.atDebug().setCause(x).log("failure while notifying part {}", name);
             }
         }
     }

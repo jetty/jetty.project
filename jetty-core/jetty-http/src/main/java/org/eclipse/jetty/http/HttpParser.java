@@ -45,7 +45,6 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation.NO_COLON_AFTER_FIE
 import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.UNSAFE_HOST_HEADER;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_AFTER_FIELD_NAME;
-import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_IN_PARAMETER;
 import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
 import static org.eclipse.jetty.http.HttpTokens.EOL_CRLF;
 import static org.eclipse.jetty.http.HttpTokens.EOL_LF;
@@ -1834,7 +1833,7 @@ public class HttpParser
     protected void badMessage(HttpException x)
     {
         if (debugEnabled)
-            LOG.debug("Parse exception: {} for {}", this, _handler, x);
+            LOG.atDebug().setCause((Throwable)x).log("Parse exception: {} for {}", this, _handler);
         setState(State.CLOSE);
         if (_headerComplete)
             _handler.earlyEOF();
@@ -2161,7 +2160,7 @@ public class HttpParser
 
     public HttpField newHttpField(HttpHeader header, String name, String value)
     {
-        return new ParsedHttpField(header, name, value);
+        return new CompliantHttpField(header, name, value);
     }
 
     @Override
@@ -2350,9 +2349,9 @@ public class HttpParser
         }
     }
 
-    private class ParsedHttpField extends HttpField
+    private class CompliantHttpField extends HttpField
     {
-        public ParsedHttpField(HttpHeader header, String name, String value)
+        public CompliantHttpField(HttpHeader header, String name, String value)
         {
             super(header, name, value);
         }
@@ -2360,13 +2359,31 @@ public class HttpParser
         @Override
         protected QuotedCSV newQuotedCSV(boolean keepQuotes, String value)
         {
+            if (getHeader() != null && HttpField.ETAG_HEADER.contains(this.getHeader()))
+                return new QuotedCSV.Etags(_complianceMode,
+                    (v, r) ->
+                    {
+                        try
+                        {
+                            _handler.onViolation(new ComplianceViolation.Event(_complianceMode, v, r));
+                        }
+                        catch (BadMessageException bme)
+                        {
+                            throw bme;
+                        }
+                        catch (Throwable t)
+                        {
+                            throw new BadMessageException(t.getMessage(), t);
+                        }
+                    }, value);
+
             return new QuotedCSV(keepQuotes, value)
             {
                 @Override
-                protected void onComplianceViolation(ComplianceViolation violation)
+                protected void onComplianceViolation(ComplianceViolation violation, String value)
                 {
-                    if (Violation.WHITESPACE_IN_PARAMETER.equals(violation) && _complianceMode.allows(WHITESPACE_IN_PARAMETER))
-                        _handler.onViolation(new ComplianceViolation.Event(_complianceMode, WHITESPACE_IN_PARAMETER, getValue()));
+                    if (_complianceMode.allows(violation))
+                        _handler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, value));
                     else
                         throw new BadMessageException(violation.toString());
                 }

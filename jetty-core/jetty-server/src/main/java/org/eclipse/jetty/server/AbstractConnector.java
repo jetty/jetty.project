@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -117,24 +118,24 @@ import org.slf4j.LoggerFactory;
  * connector will be configured with {@link ConnectionFactory}s for "SSL-ALPN", "h2", "http/1.1"
  * with the default protocol being "SSL-ALPN".  Thus a newly accepted connection uses "SSL-ALPN", which specifies a
  * SSLConnectionFactory with "ALPN" as the next protocol.  Thus an SSL connection instance is created chained to an ALPN
- * connection instance.  The ALPN connection then negotiates with the client to determined the next protocol, which
+ * connection instance.  The ALPN connection then negotiates with the client to determine the next protocol, which
  * could be "h2" or the default of "http/1.1".  Once the next protocol is determined, the ALPN connection
  * calls {@link #getConnectionFactory(String)} to create a connection instance that will replace the ALPN connection as
  * the connection chained to the SSL connection.
  * <h2>Acceptors</h2>
  * The connector will execute a number of acceptor tasks to the {@link Exception} service passed to the constructor.
  * The acceptor tasks run in a loop while the connector is running and repeatedly call the abstract {@link #accept(int)} method.
- * The implementation of the accept method must:
+ * The implementation of the {@code accept(int)} method must:
  * <ol>
  * <li>block waiting for new connections</li>
- * <li>accept the connection (eg socket accept)</li>
- * <li>perform any configuration of the connection (eg. socket configuration)</li>
+ * <li>accept the connection (via for example {@link ServerSocketChannel#accept()}</li>
+ * <li>perform any configuration of the connection (for example socket options configuration)</li>
  * <li>call the {@link #getDefaultConnectionFactory()} {@link ConnectionFactory#newConnection(Connector, EndPoint)}
- * method to create a new Connection instance.</li>
+ * method to create a new {@code Connection} instance.</li>
  * </ol>
- * The default number of acceptor tasks is the minimum of 1 and the number of available CPUs divided by 8. Having more acceptors may reduce
- * the latency for servers that see a high rate of new connections (eg HTTP/1.0 without keep-alive).  Typically the default is
- * sufficient for modern persistent protocols (HTTP/1.1, HTTP/2 etc.)
+ * The default number of acceptor tasks is 1. Having more acceptors may reduce the latency for servers that see
+ * a high rate of new connections (for example HTTP/1.0 without {@code Connection: keep-alive}).
+ * Typically, the default is sufficient for modern protocols (HTTP/1.1, HTTP/2 etc.), that all use persistent connections.
  */
 @ManagedObject("Abstract implementation of the Connector Interface")
 public abstract class AbstractConnector extends ContainerLifeCycle implements Connector, Dumpable

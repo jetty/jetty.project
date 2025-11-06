@@ -89,7 +89,7 @@ public class EventSocket
     public void onError(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onError(): {}", toString(), cause);
+            LOG.atDebug().setCause(cause).log("{}  onError(): {}", toString());
         error = cause;
         errorLatch.countDown();
     }

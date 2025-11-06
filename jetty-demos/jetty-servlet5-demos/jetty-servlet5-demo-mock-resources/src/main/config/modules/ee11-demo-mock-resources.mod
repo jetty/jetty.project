@@ -11,7 +11,6 @@ demo
 
 [depends]
 jdbc
-ee11-annotations
 
 [files]
 maven://org.eclipse.jetty.demos/jetty-servlet5-demo-mock-resources/${jetty.version}/jar|lib/ee11/jetty-servlet5-demo-mock-resources-${jetty.version}.jar

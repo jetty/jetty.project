@@ -521,12 +521,21 @@ public interface Request extends Attributes, Content.Source
         if (acceptable.isEmpty())
             return DEFAULT_LOCALES;
 
-        List<Locale> locales = acceptable.stream().map(Locale::forLanguageTag).toList();
-        List<Locale> known = locales.stream().filter(MimeTypes::isKnownLocale).toList();
-        if (known.size() == locales.size() && !known.isEmpty())
-            return known;
+        List<Locale> locales = acceptable.stream()
+            .map(Locale::forLanguageTag)
+            .filter(l -> !l.getLanguage().isEmpty())
+            .toList();
 
-        List<Locale> knownFirst = new ArrayList<>(known.isEmpty() ? DEFAULT_LOCALES : known);
+        if (locales.isEmpty())
+            return DEFAULT_LOCALES;
+
+        List<Locale> known = locales.stream().filter(MimeTypes::isKnownLocale).toList();
+        if (known.size() == locales.size())
+            return known;
+        if (known.isEmpty())
+            return locales;
+
+        List<Locale> knownFirst = new ArrayList<>(known);
         for (Locale locale : locales)
         {
             if (!MimeTypes.isKnownLocale(locale))
@@ -1125,7 +1134,7 @@ public interface Request extends Attributes, Content.Source
     {
         if (request.getAttribute(AuthenticationState.class.getName()) instanceof AuthenticationState authenticationState)
             return authenticationState;
-        return null;
+        return AuthenticationState.NONE;
     }
 
     /**
@@ -1143,6 +1152,8 @@ public interface Request extends Attributes, Content.Source
      */
     interface AuthenticationState
     {
+        AuthenticationState NONE = new AuthenticationState() {};
+
         /**
          * @return The authenticated user {@link Principal}, or null if the Authentication is in a non-authenticated state.
          */

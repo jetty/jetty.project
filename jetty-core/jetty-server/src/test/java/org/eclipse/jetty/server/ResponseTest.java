@@ -907,4 +907,56 @@ public class ResponseTest
             "name=test1; Domain=customized; SameSite=Lax",
             "other=test2; Domain=customized; SameSite=Lax; Attr=x"));
     }
+
+    @Test
+    public void testNullInHeaderName() throws Exception
+    {
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.getHeaders().add("X-Te\u0000st", "value");
+                Content.Sink.write(response, true, "OK", callback);
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                POST /test HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.get("X-Te.st"), is("value"));
+    }
+
+    @Test
+    public void testNullInHeaderValue() throws Exception
+    {
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.getHeaders().add("X-Test", "val\u0000ue");
+                Content.Sink.write(response, true, "OK", callback);
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                POST /test HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.get("X-Test"), is("val ue"));
+    }
 }

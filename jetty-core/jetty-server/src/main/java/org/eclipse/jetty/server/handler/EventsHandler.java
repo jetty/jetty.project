@@ -248,7 +248,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     protected void onAfterHandling(Request request, boolean handled, Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onAfterHandling of {} handled={}", request, handled, failure);
+            LOG.atDebug().setCause(failure).log("onAfterHandling of {} handled={}", request, handled);
     }
 
     /**
@@ -294,7 +294,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     protected void onResponseWriteComplete(Request request, Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onResponseWriteComplete of {}", request, failure);
+            LOG.atDebug().setCause(failure).log("onResponseWriteComplete of {}", request);
     }
 
     /**

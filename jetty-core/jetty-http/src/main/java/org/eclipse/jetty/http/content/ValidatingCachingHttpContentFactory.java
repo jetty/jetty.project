@@ -38,6 +38,10 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * a positive value indicates the number of milliseconds of the minimum time between validation checks.
  * </p>
  * <p>
+ * When the wrapped {@link HttpContent}'s {@link HttpContent#getLastModifiedInstant() last modification time} did not change,
+ * it is considered that the resource did not change too and is therefore not refreshed.
+ * </p>
+ * <p>
  * This also remember a missed entry for the time set by {@code validationTime}ms. After this has
  * elapsed the entry will be invalid and will be evicted from the cache at the next access.
  * </p>

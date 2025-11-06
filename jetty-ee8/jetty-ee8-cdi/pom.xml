@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8</groupId>
     <artifactId>jetty-ee8</artifactId>
-    <version>12.1.3-SNAPSHOT</version>
+    <version>12.1.4-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee8-cdi</artifactId>
   <name>EE8 :: CDI</name>
@@ -55,7 +55,7 @@
         <version>${maven.surefire.plugin.version}</version>
         <configuration>
           <argLine>--add-opens java.base/java.lang=ALL-UNNAMED</argLine>
-          <additionalClasspathElements></additionalClasspathElements>
+          <additionalClasspathElements/>
         </configuration>
       </plugin>
     </plugins>

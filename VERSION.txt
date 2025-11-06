@@ -1,4 +1,16 @@
-jetty-12.1.3-SNAPSHOT
+12.1.3 - 16 October 2025
+ + 13246 Missing hook or statistic for QoSHandler rejections by exceeding setMaxSuspendedRequestCount
+ + 13588 CONTAINER_JAR_PATTERN ignored on Windows
+ + 13613 HttpInput#read rethrows already thrown exception, leading to possible self-suppressing exception issue
+ + 13615 Concurrency issue, headers from different requests are mixed in Jetty 12.0.27
+ + 13626 WebAppContext.setExtraClasspath(String) entry separator
+ + 13634 Avoid sending RST_STREAM for closed streams
+ + 13681 QUICHE_ERR_STREAM_LIMIT with Jetty 12.1.2 on HTTP/3
+ + 13682 HttpClient.[maxRequest|request]HeadersSize should be consistent
+ + 13683 Badly pct-encoded Shift-JIS is not supported by Jetty 12
+ + 13703 MailSessionReference is not dereferenced in JNDI lookup
+ + 13708 Improve StateTrackingHandler reporting of incomplete callbacks
+ + 13768 Sanitizing of HTTP headers names and values should remove NUL bytes (U+0000)
 
 12.1.2 - 07 October 2025
  + 11826 NativeHelper triggers JDK warning
@@ -47,6 +59,23 @@ jetty-12.1.3-SNAPSHOT
  + 13506 HTTP/2 CONTINUATION frames may cause connection close
  + 13521 Rework `BlockingArrayQueue` growth strategy
  + 13526 `BinaryStreamTest.testMoreThanLargestMessageOneByteAtATime()` is flaky
+
+12.0.29 - 16 October 2025
+ + 13588 CONTAINER_JAR_PATTERN ignored on Windows
+ + 13613 HttpInput#read rethrows already thrown exception, leading to possible self-suppressing exception issue
+ + 13615 Concurrency issue, headers from different requests are mixed in Jetty 12.0.27
+ + 13626 WebAppContext.setExtraClasspath(String) entry separator
+ + 13634 Avoid sending RST_STREAM for closed streams
+ + 13682 HttpClient.[maxRequest|request]HeadersSize should be consistent
+ + 13683 Badly pct-encoded Shift-JIS is not supported by Jetty 12
+ + 13685 Infinite loop on Content.copy() with Content.Source.from(... , Path, ) when Path has size 0.
+ + 13768 Sanitizing of HTTP headers names and values should remove NUL bytes (U+0000)
+
+12.0.28 - 03 October 2025
+ + 13509 "No multipart configuration element" exception when getNamedDispatcher().forward() used
+ + 13583 NPE in WriteFlusher after org.eclipse.jetty.http.BadMessageException: 417
+ + 13598 Server hangs when client closes too many connections.
+ + 13603 Bad Accept-Language request headers can result in NPE during HttpServletRequest.getLocale() call
 
 12.0.27 - 11 September 2025
  + 13528 Review HttpParser._headerBytes accounting

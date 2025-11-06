@@ -157,7 +157,7 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Content failure", failure);
+            LOG.atDebug().setCause(failure).log("Content failure");
 
         chunkCallbacks.forEach(chunkCallback -> chunkCallback.releaseAndFail(failure));
     }
@@ -186,7 +186,7 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
             if (failure == null)
                 LOG.debug("Result success");
             else
-                LOG.debug("Result failure", failure);
+                LOG.atDebug().setCause(failure).log("Result failure");
         }
 
         chunkCallbacks.forEach(t -> t.releaseAndFail(failure));

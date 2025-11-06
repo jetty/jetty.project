@@ -104,7 +104,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private final DemandContentCallback _demandContentCallback = new DemandContentCallback();
     private final SendCallback _sendCallback = new SendCallback();
     private final AtomicBoolean _handling = new AtomicBoolean(false);
-    private final HttpFields.Mutable _headerBuilder = HttpFields.build();
+    private final HttpFields.Mutable _headerBuilder;
     private final int _minBufferSpace;
     private volatile RetainableByteBuffer _requestBuffer;
     private HttpFields.Mutable _trailers;
@@ -144,6 +144,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         _requestHandler = newRequestHandler();
         _parser = newHttpParser(configuration.getHttpCompliance());
         _minBufferSpace = configuration.getMinInputBufferSpace() < 0 ? Math.min(1500, configuration.getInputBufferSize()) : configuration.getMinInputBufferSpace();
+        _headerBuilder = HttpFields.build(configuration.getHttpCompliance(), configuration::notifyViolation);
 
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
@@ -469,7 +470,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("caught exception {} {}", this, _httpChannel, x);
+                    LOG.atDebug().setCause(x).log("caught exception {} {}", this, _httpChannel);
                 if (_requestBuffer != null)
                     releaseRequestBuffer();
             }
@@ -582,7 +583,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
+                LOG.atDebug().setCause(x).log("Unable to fill from endpoint {}", getEndPoint());
             _parser.atEOF();
             return -1;
         }
@@ -717,7 +718,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             Runnable task = _httpChannel.onFailure(x);
             if (LOG.isDebugEnabled())
-                LOG.debug("demand failed {}", task, x);
+                LOG.atDebug().setCause(x).log("demand failed {}", task);
             ThreadPool.executeImmediately(getConnector().getExecutor(), task);
         }
 
@@ -860,7 +861,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     {
                         int maxHeaderBytes = maxResponseHeadersSize;
                         if (maxHeaderBytes < 0)
-                            maxHeaderBytes = getHttpConfiguration().getResponseHeaderSize();
+                            maxHeaderBytes = responseHeadersSize;
                         _generator.setMaxHeaderBytes(maxHeaderBytes);
                         _header = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
@@ -1724,11 +1725,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (stream == null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("ignored", x);
+                    LOG.atDebug().setCause(x).log("ignored");
                 return;
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("aborting", x);
+                LOG.atDebug().setCause(x).log("aborting");
             abort(x);
             _httpChannel.setHttpStream(null);
             if (!_handling.compareAndSet(true, false))

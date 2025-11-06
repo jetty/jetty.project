@@ -360,7 +360,7 @@ public class HttpChannelState
         {
             boolean aborted = abortResponse(failure);
             if (LOG.isDebugEnabled())
-                LOG.debug("abort={} {}", aborted, this, failure);
+                LOG.atDebug().setCause(failure).log("abort={} {}", aborted, this);
             if (aborted)
             {
                 handle = _state == State.WAITING;
@@ -700,7 +700,7 @@ public class HttpChannelState
                             catch (Throwable x)
                             {
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("{} while invoking onTimeout listener {}", x.toString(), listener, x);
+                                    LOG.atDebug().setCause(x).log("{} while invoking onTimeout listener {}", x.toString(), listener);
                                 else
                                     LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener);
                             }
@@ -778,7 +778,7 @@ public class HttpChannelState
         try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("asyncError {}", toStringLocked(), failure);
+                LOG.atDebug().setCause(failure).log("asyncError {}", toStringLocked());
 
             if (_state == State.WAITING && _requestState == RequestState.ASYNC)
             {
@@ -791,7 +791,7 @@ public class HttpChannelState
                 if (!(failure instanceof QuietException))
                     LOG.warn(failure.toString());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Async error", failure);
+                    LOG.atDebug().setCause(failure).log("Async error");
             }
         }
 
@@ -866,7 +866,7 @@ public class HttpChannelState
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} while invoking onError listener {}", x, listener, x);
+                        LOG.atDebug().setCause(x).log("{} while invoking onError listener {}", x, listener);
                     else
                         LOG.warn("{} while invoking onError listener {}", x, listener);
                 }

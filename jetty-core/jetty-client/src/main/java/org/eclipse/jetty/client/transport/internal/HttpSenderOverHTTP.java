@@ -79,7 +79,7 @@ public class HttpSenderOverHTTP extends HttpSender
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to send headers on exchange {}", exchange, x);
+                LOG.atDebug().setCause(x).log("Unable to send headers on exchange {}", exchange);
             callback.failed(x);
         }
     }
@@ -99,7 +99,7 @@ public class HttpSenderOverHTTP extends HttpSender
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to send content on {}", exchange, x);
+                LOG.atDebug().setCause(x).log("Unable to send content on {}", exchange);
             callback.failed(x);
         }
     }
@@ -157,6 +157,7 @@ public class HttpSenderOverHTTP extends HttpSender
             HttpExchange exchange = getHttpExchange();
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             int requestHeadersSize = httpClient.getRequestBufferSize();
+            int maxRequestHeadersSize = httpClient.getMaxRequestHeadersSize();
             boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
             while (true)
             {
@@ -173,14 +174,16 @@ public class HttpSenderOverHTTP extends HttpSender
                 {
                     case NEED_HEADER:
                     {
-                        generator.setMaxHeaderBytes(getHttpChannel().getHttpDestination().getHttpClient().getMaxRequestHeadersSize());
+                        int maxHeadersSize = maxRequestHeadersSize;
+                        if (maxHeadersSize < 0)
+                            maxHeadersSize = requestHeadersSize;
+                        generator.setMaxHeaderBytes(maxHeadersSize);
                         headerBuffer = bufferPool.acquire(requestHeadersSize, useDirectByteBuffers);
                         break;
                     }
                     case HEADER_OVERFLOW:
                     {
-                        int maxRequestHeadersSize = httpClient.getMaxRequestHeadersSize();
-                        if (maxRequestHeadersSize > requestHeadersSize)
+                        if (maxRequestHeadersSize > 0 && maxRequestHeadersSize > requestHeadersSize)
                         {
                             generator.reset();
                             headerBuffer.release();

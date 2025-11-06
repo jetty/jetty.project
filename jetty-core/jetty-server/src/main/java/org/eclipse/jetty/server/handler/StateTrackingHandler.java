@@ -604,6 +604,8 @@ public class StateTrackingHandler extends Handler.Wrapper
 
         private void setHandled(boolean handled)
         {
+            if (!handled)
+                task.cancel();
             this.handled = handled;
         }
 

@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -244,7 +243,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
         {
             _state = State.STARTED;
             if (LOG.isDebugEnabled())
-                LOG.debug("STARTED @{}ms {}", Uptime.getUptime(), this);
+                LOG.debug("STARTED {}", this);
             for (EventListener listener : _eventListeners)
             {
                 if (listener instanceof Listener)

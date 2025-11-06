@@ -349,13 +349,22 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Stream #{} not found on {}", streamId, this);
+
             // We must enlarge the session flow control window,
             // otherwise other requests will be stalled.
             dataConsumed(null, flowControlLength);
+
             if (isStreamClosed(streamId))
-                reset(null, new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);
+            {
+                // SPEC: this case must not be treated as an error.
+                // However, we want to rate control it.
+                if (!rateControlOnEvent(frame))
+                    onSessionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_data_frame_rate", Callback.NOOP);
+            }
             else
+            {
                 onSessionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_data_frame", Callback.NOOP);
+            }
         }
     }
 
@@ -669,7 +678,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     protected void onStreamFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Stream #{} failure {}", stream.getId(), this, failure);
+            LOG.atDebug().setCause(failure).log("Stream #{} failure {}", stream.getId(), this);
         failStream(stream, error, reason, failure, callback);
     }
 
@@ -985,7 +994,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             {
                 IllegalStateException failure = new IllegalStateException("Max local stream count " + maxCount + " exceeded: " + localCount);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not create local stream #{} for {}", streamId, this, failure);
+                    LOG.atDebug().setCause(failure).log("Could not create local stream #{} for {}", streamId, this);
                 failFn.accept(failure);
                 return null;
             }
@@ -1036,7 +1045,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             {
                 IllegalStateException failure = new IllegalStateException("Max remote stream count " + maxCount + " exceeded: " + remoteCount + "+" + remoteClosing);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not create remote stream #{} for {}", streamId, this, failure);
+                    LOG.atDebug().setCause(failure).log("Could not create remote stream #{} for {}", streamId, this);
                 reset(null, new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.from(() -> onStreamDestroyed(streamId)));
                 return null;
             }
@@ -1828,7 +1837,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("OnReset failed", x);
+                LOG.atDebug().setCause(x).log("OnReset failed");
             complete();
         }
 
@@ -2306,7 +2315,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                     default ->
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Already closed, ignored session failure {}", HTTP2Session.this, failure);
+                            LOG.atDebug().setCause(failure).log("Already closed, ignored session failure {}", HTTP2Session.this);
                         callback.succeeded();
                         return;
                     }
@@ -2314,7 +2323,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Session failure {}", HTTP2Session.this, cause);
+                LOG.atDebug().setCause(cause).log("Session failure {}", HTTP2Session.this);
 
             Invocable.InvocationType invocationType = callback.getInvocationType();
             notifyFailure(HTTP2Session.this, cause, Callback.from(invocationType, () ->
@@ -2343,7 +2352,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Write failure {}", HTTP2Session.this, x);
+                LOG.atDebug().setCause(x).log("Write failure {}", HTTP2Session.this);
 
             int error = ErrorCode.NO_ERROR.code;
             notifyFailure(HTTP2Session.this, x, Callback.from(() ->

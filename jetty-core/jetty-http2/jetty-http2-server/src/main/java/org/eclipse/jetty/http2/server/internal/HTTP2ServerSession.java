@@ -153,7 +153,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Stream #{} not found", streamId);
+                    LOG.debug("Stream #{} not found on {}", streamId, this);
                 onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_headers_frame");
             }
         }

@@ -123,7 +123,7 @@ public class HeadersBodyParser extends BodyParser
         catch (QpackException.StreamException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("decode failure", x);
+                LOG.atDebug().setCause(x).log("decode failure");
 
             // TODO: handle stream exceptions in other cases (see https://github.com/jetty/jetty.project/issues/7676).
             decoder.streamCancellation(streamId);
@@ -139,13 +139,13 @@ public class HeadersBodyParser extends BodyParser
         catch (QpackException.SessionException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("decode failure", x);
+                LOG.atDebug().setCause(x).log("decode failure");
             notifySessionFailure(x.getErrorCode(), x.getMessage(), x);
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("decode failure", x);
+                LOG.atDebug().setCause(x).log("decode failure");
             notifySessionFailure(HTTP3ErrorCode.INTERNAL_ERROR.code(), "internal_error", x);
         }
         return false;
@@ -153,9 +153,17 @@ public class HeadersBodyParser extends BodyParser
 
     private void onHeaders(MetaData metaData, boolean last, boolean wasBlocked)
     {
-        HeadersFrame frame = new HeadersFrame(metaData, last);
-        reset();
-        notifyHeaders(frame, wasBlocked);
+        Throwable failure = MetaData.Failed.getFailure(metaData);
+        if (failure == null || failure instanceof QpackException.StreamException)
+        {
+            HeadersFrame frame = new HeadersFrame(metaData, last);
+            reset();
+            notifyHeaders(frame, wasBlocked);
+        }
+        else
+        {
+            notifySessionFailure(HTTP3ErrorCode.HTTP_MESSAGE_ERROR.code(), "decode_failure", failure);
+        }
     }
 
     protected void notifyHeaders(HeadersFrame frame, boolean wasBlocked)

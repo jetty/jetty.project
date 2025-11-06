@@ -43,6 +43,11 @@ public class ResourceHttpContent implements HttpContent
     final HttpField _etag;
     final ByteBufferPool.Sized _sizedBufferPool;
 
+    public ResourceHttpContent(Resource resource, String contentType)
+    {
+        this(resource, contentType, null);
+    }
+
     public ResourceHttpContent(Resource resource, String contentType, ByteBufferPool.Sized sizedByteBufferPool)
     {
         _resource = resource;

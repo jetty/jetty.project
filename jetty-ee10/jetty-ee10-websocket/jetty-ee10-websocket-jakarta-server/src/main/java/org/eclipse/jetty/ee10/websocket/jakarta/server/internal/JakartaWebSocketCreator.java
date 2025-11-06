@@ -167,7 +167,7 @@ public class JakartaWebSocketCreator implements WebSocketCreator
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to create websocket: {}", config.getEndpointClass().getName(), x);
+                LOG.atDebug().setCause(x).log("Unable to create websocket: {}", config.getEndpointClass().getName());
             callback.failed(x);
             return null;
         }

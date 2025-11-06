@@ -61,7 +61,7 @@ public class HTTP2ClientSession extends HTTP2Session
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Stream #{} not found", streamId);
+                LOG.debug("Stream #{} not found on {}", streamId, this);
             if (isClientStream(streamId))
             {
                 // Normal stream.

@@ -90,6 +90,7 @@ public interface HttpContent
 
     /**
      * Get the last modified instant of this resource.
+     * Always return the most up-to-date value.
      *
      * @return the last modified instant, or null if that instant of this content is not known.
      * @see #getLastModified()
@@ -118,6 +119,7 @@ public interface HttpContent
      * @param sink the sink to write to.
      * @param offset the offset byte of the resource to start from.
      * @param length the length of the resource's contents to copy, -1 for the full length.
+     *               If the length is longer than the available content, the write is truncated to the available length.
      * @param callback the callback to notify when writing is done.
      */
     void writeTo(Content.Sink sink, long offset, long length, Callback callback);

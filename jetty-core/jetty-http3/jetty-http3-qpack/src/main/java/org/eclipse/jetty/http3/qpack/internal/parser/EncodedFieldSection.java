@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpTokens;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
@@ -99,26 +100,47 @@ public class EncodedFieldSection
 
     public MetaData decode(QpackContext context, int maxHeaderSize) throws QpackException
     {
-        if (context.getDynamicTable().getInsertCount() < _requiredInsertCount)
-            throw new IllegalStateException("Required Insert Count Not Reached");
-
-        MetaDataBuilder metaDataBuilder = new MetaDataBuilder(maxHeaderSize);
-        for (EncodedField encodedField : _encodedFields)
+        try
         {
-            HttpField decodedField = encodedField.decode(context);
+            if (context.getDynamicTable().getInsertCount() < _requiredInsertCount)
+                throw new IllegalStateException("Required Insert Count Not Reached");
 
-            if (!HttpTokens.isLegalH2H3FieldName(decodedField.getName()))
-                throw new QpackException.StreamException(metaDataBuilder.isRequest(), metaDataBuilder.isResponse(),
-                H3_MESSAGE_ERROR, "Invalid field name: " + decodedField.getName());
+            MetaDataBuilder metaDataBuilder = new MetaDataBuilder(maxHeaderSize);
+            for (EncodedField encodedField : _encodedFields)
+            {
+                HttpField decodedField = encodedField.decode(context);
 
-            if (!HttpTokens.isLegalFieldValue(decodedField.getValue()))
-                throw new QpackException.StreamException(metaDataBuilder.isRequest(), metaDataBuilder.isResponse(),
-                    H3_MESSAGE_ERROR, "Invalid field value: " + decodedField.getName());
+                String name = decodedField.getName();
+                if (!HttpTokens.isLegalH2H3FieldName(name))
+                    throw new QpackException.StreamException(metaDataBuilder.isRequest(), metaDataBuilder.isResponse(),
+                        H3_MESSAGE_ERROR, "Invalid field name: '" + name + "'");
 
-            metaDataBuilder.emit(decodedField);
+                String value = decodedField.getValue();
+                if (!HttpTokens.isLegalFieldValue(value))
+                    throw new QpackException.StreamException(metaDataBuilder.isRequest(), metaDataBuilder.isResponse(),
+                        H3_MESSAGE_ERROR, "Invalid field value: '" + value + "'");
+
+                metaDataBuilder.emit(decodedField);
+            }
+            metaDataBuilder.setBeginNanoTime(_beginNanoTime);
+            return metaDataBuilder.build();
         }
-        metaDataBuilder.setBeginNanoTime(_beginNanoTime);
-        return metaDataBuilder.build();
+        catch (QpackException.StreamException x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.atDebug().setCause(x).log("Stream decode error, stream={}", getStreamId());
+            if (x.isRequest())
+                return MetaData.Failed.newFailedMetaDataRequest(HttpVersion.HTTP_3, x);
+            if (x.isResponse())
+                return MetaData.Failed.newFailedMetaDataResponse(HttpVersion.HTTP_3, x);
+            return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_3, x);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.atDebug().setCause(x).log("Stream decode failure, stream={}", getStreamId());
+            return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_3, x);
+        }
     }
 
     private EncodedField parseIndexedField(ByteBuffer buffer) throws EncodingException

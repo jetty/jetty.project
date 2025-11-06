@@ -807,8 +807,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         assertThrows(IOException.class, () ->
         {
-            Socket socket = new Socket();
-            socket.connect(new InetSocketAddress(host, port), 1000);
+            try (Socket socket = new Socket())
+            {
+                socket.connect(new InetSocketAddress(host, port), 1000);
+            }
         }, "Host must not be resolvable");
 
         start(scenario, new EmptyServerHandler());
@@ -819,7 +821,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             {
                 assertTrue(result.isFailed());
                 Throwable failure = result.getFailure();
-                assertTrue(failure instanceof UnknownHostException);
+                assertInstanceOf(UnknownHostException.class, failure);
                 latch.countDown();
             });
         assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -1138,7 +1140,59 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void setOnCompleteCallbackWithBlockingSend(Scenario scenario) throws Exception
+    public void testRequestContentListenerBytesCounting(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        int length = 41;
+        ByteBuffer requestByteBuffer = BufferUtil.allocate(length * 2).limit(length);
+        AtomicInteger requestContentLength = new AtomicInteger();
+
+        class NonSlicingRequestContent implements Request.Content
+        {
+            private boolean read;
+
+            @Override
+            public Content.Chunk read()
+            {
+                if (read)
+                    return Content.Chunk.EOF;
+                read = true;
+                return Content.Chunk.from(requestByteBuffer, true);
+            }
+
+            @Override
+            public void demand(Runnable demandCallback)
+            {
+                demandCallback.run();
+            }
+
+            @Override
+            public long getLength()
+            {
+                return length;
+            }
+
+            @Override
+            public void fail(Throwable failure)
+            {
+            }
+        }
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .onRequestContent((rq, bb) -> requestContentLength.addAndGet(bb.remaining()))
+            .body(new NonSlicingRequestContent())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(requestContentLength.get(), is(length));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testSetOnCompleteCallbackWithBlockingSend(Scenario scenario) throws Exception
     {
         byte[] content = new byte[512];
         new Random().nextBytes(content);
@@ -1550,9 +1604,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 consume(input, false);
 
                 // HTTP/1.0 response, the client must not close the connection.
-                String httpResponse =
-                    "HTTP/1.0 200 OK\r\n" +
-                        "\r\n";
+                String httpResponse = """
+                    HTTP/1.0 200 OK
+                    
+                    """;
                 OutputStream output = socket.getOutputStream();
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
@@ -1576,10 +1631,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 consume(input, false);
 
-                httpResponse =
-                    "HTTP/1.1 200 OK\r\n" +
-                        "Content-Length: 0\r\n" +
-                        "\r\n";
+                httpResponse = """
+                    HTTP/1.1 200 OK
+                    Content-Length: 0
+                    
+                    """;
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
 
@@ -1720,10 +1776,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 consume(input, false);
 
                 // Send a bad response.
-                String httpResponse =
-                    "HTTP/1.1 204 No Content\r\n" +
-                        "\r\n" +
-                        "No Content";
+                String httpResponse = """
+                    HTTP/1.1 204 No Content
+                    
+                    No Content""";
                 OutputStream output = socket.getOutputStream();
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
@@ -1743,10 +1799,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 consume(input, false);
 
-                httpResponse =
-                    "HTTP/1.1 200 OK\r\n" +
-                        "Content-Length: 0\r\n" +
-                        "\r\n";
+                httpResponse = """
+                    HTTP/1.1 200 OK
+                    Content-Length: 0
+                    
+                    """;
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
 
@@ -1810,11 +1867,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testUnsolicitedResponseBytesFromServer(Scenario scenario) throws Exception
     {
-        String response = "" +
-            "HTTP/1.1 408 Request Timeout\r\n" +
-            "Content-Length: 0\r\n" +
-            "Connection: close\r\n" +
-            "\r\n";
+        String response = """
+            HTTP/1.1 408 Request Timeout
+            Content-Length: 0
+            Connection: close
+            
+            """;
         testUnsolicitedBytesFromServer(scenario, response);
     }
 
@@ -2070,12 +2128,39 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    public void testMaxRequestHeadersSizeSmallerThanRequestHeadersSize(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
+        int capacity = buffer.capacity();
+        buffer.release();
+        client.setMaxRequestHeadersSize(capacity / 4);
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .agent("A".repeat((capacity / 8)))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            // Overflow the max request headers size.
+            .agent("A".repeat(capacity / 2))
+            .timeout(5, TimeUnit.SECONDS)
+            .send());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
     public void testMaxResponseHeadersSize(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Throwable
+            protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
             {
                 int capacity = (int)request.getHeaders().getLongField("X-Capacity");
                 // Overflow the max request headers size, should generate a 500.

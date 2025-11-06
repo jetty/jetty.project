@@ -97,7 +97,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("failure while notifying listener {}", listener, x);
+                        LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
                 }
             }
         }
@@ -117,7 +117,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("failure while notifying listener {}", listener, x);
+                        LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
                 }
             }
         }

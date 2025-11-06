@@ -552,9 +552,11 @@ public class RequestTest
             Arguments.of(null, List.of(Locale.getDefault().toLanguageTag()).toString()),
             Arguments.of(";", List.of(Locale.getDefault().toLanguageTag()).toString()),
             Arguments.of(",", List.of(Locale.getDefault().toLanguageTag()).toString()),
-            Arguments.of("bogus", List.of(Locale.getDefault().toLanguageTag(), "bogus").toString()),
-            Arguments.of("en-en", List.of(Locale.getDefault().toLanguageTag(), "en-EN").toString()),
-            Arguments.of("zz", List.of(Locale.getDefault().toLanguageTag(), "zz").toString()),
+            Arguments.of("\"", List.of(Locale.getDefault().toLanguageTag()).toString()),
+            Arguments.of("bogus", List.of("bogus").toString()),
+            Arguments.of("bogus, en-US", List.of(Locale.getDefault().toLanguageTag(), "bogus").toString()),
+            Arguments.of("en-en", List.of("en-EN").toString()),
+            Arguments.of("zz", List.of("zz").toString()),
             Arguments.of("en", "[en]"),
             Arguments.of("en-gb", List.of(Locale.UK.toLanguageTag()).toString()),
             Arguments.of("en-us", List.of(Locale.US.toLanguageTag()).toString()),
@@ -569,6 +571,7 @@ public class RequestTest
     @MethodSource("localeTests")
     public void testAcceptableLocales(String acceptLanguage, String expectedLocales) throws Exception
     {
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.LEGACY);
         acceptLanguage = acceptLanguage == null ? "" : (HttpHeader.ACCEPT_LANGUAGE.asString() + ": " + acceptLanguage + "\n");
         String rawRequest = """
                 GET / HTTP/1.1

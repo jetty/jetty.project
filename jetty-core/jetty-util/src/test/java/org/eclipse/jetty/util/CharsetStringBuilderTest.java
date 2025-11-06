@@ -14,10 +14,16 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -25,6 +31,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class CharsetStringBuilderTest
@@ -51,7 +58,9 @@ public class CharsetStringBuilderTest
         assertThat(builder.build(), equalTo(test));
 
         for (byte b : bytes)
+        {
             builder.append(b);
+        }
         assertThat(builder.build(), equalTo(test));
 
         builder.append(bytes[0]);
@@ -71,34 +80,210 @@ public class CharsetStringBuilderTest
 
     @ParameterizedTest
     @MethodSource("charsets")
-    public void testBasicApi(Charset charset) throws Exception
+    public void testAppendByteBuffersOnly(Charset charset) throws Exception
+    {
+        String input = "123456789ABC";
+        // Generate a ByteBuffer encoded with the provided charset of the input String.
+        CharsetEncoder encoder = charset.newEncoder();
+        ByteBuffer bb = ByteBuffer.allocate(input.length() * 4);
+        encoder.encode(CharBuffer.wrap(input), bb, true);
+        bb.flip();
+
+        // using only append(ByteBuffer) recreate the input
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        int sliceSize = 3;
+        int len = bb.remaining();
+        int offset = 0;
+        while (offset < len)
+        {
+            ByteBuffer slice = bb.slice();
+            slice.position(offset);
+            int limit = Math.min(slice.position() + sliceSize, len);
+            slice.limit(limit);
+            builder.append(slice);
+            offset = slice.position();
+        }
+
+        assertThat(builder.build(), is(input));
+    }
+
+    @ParameterizedTest
+    @MethodSource("charsets")
+    public void testAppendByteOnly(Charset charset) throws Exception
+    {
+        String input = "123456789ABC";
+
+        // Generate a byte buffer encoded with the provided charset of the input String.
+        byte[] buf = input.getBytes(charset);
+
+        // using only append(byte) recreate the input
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        for (byte b : buf)
+        {
+            builder.append(b);
+        }
+
+        assertThat(builder.build(), is(input));
+    }
+
+    @ParameterizedTest
+    @MethodSource("charsets")
+    public void testAppendByteOffsetLengthOnly(Charset charset) throws Exception
+    {
+        String input = "123456789ABC";
+
+        // Generate a byte buffer encoded with the provided charset of the input String.
+        byte[] buf = input.getBytes(charset);
+
+        // using only append(byte, offset, length) recreate the input
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        int sliceSize = 3;
+        int offset = 0;
+        while (offset < buf.length)
+        {
+            int len = Math.min(sliceSize, buf.length - offset);
+            builder.append(buf, offset, len);
+            offset += sliceSize;
+        }
+
+        assertThat(builder.build(), is(input));
+    }
+
+    @ParameterizedTest
+    @MethodSource("charsets")
+    public void testAppendCharOnly(Charset charset) throws Exception
+    {
+        String input = "123456789ABC";
+
+        // using only append(char) recreate the input
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        for (char c : input.toCharArray())
+        {
+            builder.append(c);
+        }
+
+        assertThat(builder.build(), is(input));
+    }
+
+    @ParameterizedTest
+    @MethodSource("charsets")
+    public void testAppendCharSequenceOffsetLengthOnly(Charset charset) throws Exception
+    {
+        String input = "123456789ABC";
+
+        // using only append(CharSequence, offset, length) recreate the input
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        char[] chars = input.toCharArray();
+        int sliceSize = 3;
+        int offset = 0;
+        while (offset < chars.length)
+        {
+            int len = Math.min(sliceSize, chars.length - offset);
+            builder.append(input, offset, len);
+            offset += sliceSize;
+        }
+
+        assertThat(builder.build(), is(input));
+    }
+
+    @Test
+    public void testSjisEncoding() throws CharacterCodingException
+    {
+        Charset sjisCharset = Charset.forName("Shift_JIS");
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(sjisCharset);
+
+        builder.append((byte)0x83);
+        builder.append((char)'z');
+
+        assertEquals("ホ", builder.build());
+    }
+
+    public static Stream<Arguments> japaneseCharsetTests()
+    {
+        List<Arguments> args = new ArrayList<>();
+        for (Charset charset : List.of(
+            StandardCharsets.UTF_8,
+            StandardCharsets.UTF_16,
+            Charset.forName("Shift_JIS"),
+            Charset.forName("EUC-JP")
+        ))
+        {
+            for (String string : List.of(
+                // Has ASCII 'O' (0x30) in UTF-16
+                "ホ",
+                // Has ASCII 'O' (0x30) in UTF-16
+                // Has ASCII 'J' (0x4A), ASCII '^' (0x5E), and ASCII 'i' (0x69) in Shift_JIS
+                "カタカナ",
+                // Has ASCII 'v' (0x76) in UTF-16
+                "ｶﾞｯﾂﾎﾟｰｽﾞ"
+            ))
+            {
+                args.add(Arguments.of(charset, string));
+            }
+        }
+        return args.stream();
+    }
+
+    /**
+     * Paranoid test, showing badly mixed API usage.
+     */
+    @ParameterizedTest
+    @MethodSource("japaneseCharsetTests")
+    public void testJapaneseCharsetsMixedAppend(Charset charset, String string) throws Exception
     {
         CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
-        ByteBuffer encoded = charset.encode("1");
-        while (encoded.hasRemaining())
-            builder.append(encoded.get());
+        byte[] bytes = string.getBytes(charset);
+        for (byte b : bytes)
+        {
+            // if a raw byte is one of the ASCII characters, add it as a character??
+            if (b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9')
+                builder.append((char)b);
+            else
+                builder.append(b);
+        }
+        assertThat(builder.build(), is(string));
+    }
 
-        builder.append('2');
+    /**
+     * This mimics the usage behavior as seen in ContentSourceString.
+     */
+    @ParameterizedTest
+    @MethodSource("japaneseCharsetTests")
+    public void testJapaneseCharsetsAppendByteBufferOnly(Charset charset, String string) throws Exception
+    {
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        byte[] bytes = string.getBytes(charset);
+        ByteBuffer buf = ByteBuffer.wrap(bytes);
 
-        builder.append(charset.encode("34"));
+        // Let's write it in two ByteBuffer's
+        int midway = buf.remaining() / 2;
 
-        encoded = charset.encode("abc");
-        int offset = encoded.remaining();
-        encoded = charset.encode("abc56");
-        int length = encoded.remaining() - offset;
-        encoded = charset.encode("abc56xyz");
-        byte[] bytes = new byte[1028];
-        encoded.get(bytes, 0, encoded.remaining());
-        builder.append(bytes, offset, length);
+        ByteBuffer slice1 = buf.slice();
+        slice1.position(0);
+        slice1.limit(midway);
 
-        encoded = charset.encode("abc78xyz");
-        encoded.position(offset);
-        encoded.limit(offset + length);
-        builder.append(encoded);
+        ByteBuffer slice2 = buf.slice();
+        slice2.position(midway);
 
-        builder.append("9A", 0, 2);
-        builder.append("xyzBCpqy", 3, 2);
+        builder.append(slice1);
+        builder.append(slice2);
 
-        assertThat(builder.build(), is("123456789ABC"));
+        assertThat(builder.build(), is(string));
+    }
+
+    /**
+     * This mimics how the UrlParameterDecoder operates.
+     * (char by char, not byte by byte)
+     */
+    @ParameterizedTest
+    @MethodSource("japaneseCharsetTests")
+    public void testJapaneseCharsetsAppendCharOnly(Charset charset, String string) throws Exception
+    {
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        for (char c: string.toCharArray())
+        {
+            builder.append(c);
+        }
+        assertThat(builder.build(), is(string));
     }
 }

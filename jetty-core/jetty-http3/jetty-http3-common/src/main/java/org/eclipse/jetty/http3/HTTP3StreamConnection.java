@@ -84,7 +84,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     public void onFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onFailure on {}", this, failure);
+            LOG.atDebug().setCause(failure).log("onFailure on {}", this);
         tryReleaseData(true);
     }
 
@@ -196,7 +196,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failure processing frames on {}", this, x);
+                    LOG.atDebug().setCause(x).log("failure processing frames on {}", this);
                 tryReleaseData(true);
                 throw x;
             }
@@ -299,7 +299,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("failure reading data on {}", this, x);
+                LOG.atDebug().setCause(x).log("failure reading data on {}", this);
             tryReleaseData(true);
             return Content.Chunk.from(x);
         }
@@ -349,7 +349,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("parse+fill failure on {}", this, x);
+                LOG.atDebug().setCause(x).log("parse+fill failure on {}", this);
             throw x;
         }
     }

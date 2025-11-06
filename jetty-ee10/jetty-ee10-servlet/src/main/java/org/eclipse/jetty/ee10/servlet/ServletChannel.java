@@ -16,17 +16,24 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import jakarta.servlet.AsyncContext;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpUpgradeHandler;
 import org.eclipse.jetty.ee10.servlet.ServletChannelState.Action;
+import org.eclipse.jetty.ee10.servlet.internal.JettyWebConnection;
+import org.eclipse.jetty.ee10.servlet.internal.UpgradedServletInputStream;
+import org.eclipse.jetty.ee10.servlet.internal.UpgradedServletOutputStream;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
@@ -83,6 +90,7 @@ public class ServletChannel
     private Response _response;
     private Callback _callback;
     private boolean _completeAttempted;
+    private HttpUpgradeHandler _upgradeHandler;
 
     public ServletChannel(ServletContextHandler servletContextHandler, Request request)
     {
@@ -509,7 +517,7 @@ public class ServletChannel
                             else
                                 ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Could not perform error handling, aborting", cause);
+                                LOG.atDebug().setCause(cause).log("Could not perform error handling, aborting");
 
                             try
                             {
@@ -555,8 +563,21 @@ public class ServletChannel
                         break;
                     }
 
+                    case UPGRADE:
+                    {
+                        doUpgrade(_upgradeHandler);
+                        break;
+                    }
+
                     case COMPLETE:
                     {
+                        if (_upgradeHandler != null)
+                        {
+                            AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
+                            asyncContextEvent.getAsyncContext().complete();
+                            _upgradeHandler.destroy();
+                        }
+
                         ServletContextResponse response = getServletContextResponse();
                         if (!response.isCommitted())
                         {
@@ -607,6 +628,48 @@ public class ServletChannel
             LOG.debug("!handle {} {}", action, this);
     }
 
+    public void upgrade(HttpUpgradeHandler upgradeHandler)
+    {
+        _upgradeHandler = upgradeHandler;
+        _state.upgrade();
+    }
+
+    private void doUpgrade(HttpUpgradeHandler upgradeHandler) throws IOException
+    {
+        Response response = _servletContextRequest.getServletContextResponse();
+        if (response.getStatus() != HttpStatus.SWITCHING_PROTOCOLS_101)
+            throw new IllegalStateException("Response status should be 101");
+        if (response.getHeaders().get("Upgrade") == null)
+            throw new IllegalStateException("Missing Upgrade header");
+        if (!"Upgrade".equalsIgnoreCase(response.getHeaders().get("Connection")))
+            throw new IllegalStateException("Invalid Connection header");
+        if (response.isCommitted())
+            throw new IllegalStateException("Cannot upgrade committed response");
+        if (getConnectionMetaData().getHttpVersion() != HttpVersion.HTTP_1_1)
+            throw new IllegalStateException("Only requests over HTTP/1.1 can be upgraded");
+
+        UpgradedServletOutputStream out = new UpgradedServletOutputStream(_httpOutput);
+        UpgradedServletInputStream in = new UpgradedServletInputStream(_httpInput);
+
+        AsyncContext asyncContext = _servletContextRequest.getServletApiRequest().forceStartAsync();
+        CompletableFuture.allOf(in.getCompletableFuture(), out.getCompletableFuture())
+            .whenComplete((result, failure) -> asyncContext.complete());
+
+        Connection connection = _servletContextRequest.getConnectionMetaData().getConnection();
+        if (connection instanceof Connection.Tunnel upgradeableConnection)
+        {
+            out.flush(); // commit the 101 response
+            upgradeableConnection.startTunnel();
+        }
+        else
+        {
+            LOG.warn("Unexpected connection type {}", connection);
+            throw new IllegalStateException();
+        }
+
+        upgradeHandler.init(new JettyWebConnection(in, out));
+    }
+
     private void reopen()
     {
         _servletContextRequest.getServletContextResponse().getHttpOutput().reopen();
@@ -631,7 +694,7 @@ public class ServletChannel
         if (quiet != null || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(_servletContextRequest.getServletApiRequest().getRequestURI(), failure);
+                LOG.atDebug().setCause(failure).log(_servletContextRequest.getServletApiRequest().getRequestURI());
         }
         else if (noStack != null)
         {

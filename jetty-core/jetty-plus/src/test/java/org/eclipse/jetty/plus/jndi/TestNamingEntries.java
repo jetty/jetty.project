@@ -19,6 +19,7 @@ import java.util.List;
 import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.naming.LinkRef;
 import javax.naming.Name;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -61,6 +62,36 @@ public class TestNamingEntries
 
     public class ScopeB extends ScopeA
     {
+    }
+
+    public static class SomeObjectReferenceFactory extends Reference implements ObjectFactory
+    {
+        private int value;
+
+        public SomeObjectReferenceFactory()
+        {
+            super("SomeObject", SomeObjectReferenceFactory.class.getName(), null);
+        }
+
+        public void setValue(int i)
+        {
+            add(new StringRefAddr("val", String.valueOf(i)));
+        }
+
+        @Override
+        public Object getObjectInstance(Object arg0, Name arg1, Context arg2, Hashtable arg3) throws Exception
+        {
+            Reference ref = (Reference)arg0;
+
+            RefAddr refAddr = ref.get(0);
+            String valueName = refAddr.getType();
+            if (!valueName.equalsIgnoreCase("val"))
+                throw new RuntimeException("Unrecognized refaddr type = " + valueName);
+
+            String value = (String)refAddr.getContent();
+
+            return new SomeObject(Integer.parseInt(value.trim()));
+        }
     }
 
     public static class SomeObject
@@ -322,6 +353,32 @@ public class TestNamingEntries
         assertNotNull(o);
         assertTrue(o instanceof SomeOtherObject);
         assertEquals(((SomeOtherObject)o).getValue(), 100);
+    }
+
+    @Test
+    public void testResourceReferenceObjectFactory() throws Exception
+    {
+        SomeObjectReferenceFactory someObjectReferenceFactory = new SomeObjectReferenceFactory();
+        someObjectReferenceFactory.setValue(99);
+
+        InitialContext icontext = new InitialContext();
+        Resource resource = new Resource(null, "resourceByRef", someObjectReferenceFactory);
+        NamingEntry ne = NamingEntryUtil.lookupNamingEntry(null, "resourceByRef");
+        assertNotNull(ne);
+        assertTrue(ne instanceof Resource);
+
+        Object o = icontext.lookup("resourceByRef");
+        assertNotNull(o);
+        assertTrue(o instanceof SomeObject);
+        assertEquals(((SomeObject)o).getValue(), 99);
+
+       Context comp = (Context)icontext.lookup("java:comp/");
+       Context env = comp.createSubcontext("env");
+
+       NamingEntryUtil.bindToENC("", "linkedRef", "resourceByRef");
+       Object linkedObj = icontext.lookup("java:comp/env/linkedRef");
+       assertTrue(linkedObj instanceof SomeObject);
+       assertEquals(((SomeObject)o).getValue(), 99);
     }
 
     @Test

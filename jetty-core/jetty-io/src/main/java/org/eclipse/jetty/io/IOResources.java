@@ -20,12 +20,14 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -146,10 +148,14 @@ public class IOResources
      *
      * @param resource the resource from which to get a {@link Content.Source}.
      * @param bufferPool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
-     * @param offset the offset byte from which to read from.
-     * @param length the length of the content to read, -1 for the full length.
-     * @return the {@link Content.Source}.
+     * @param offset the offset byte of the resource to start from.
+     * Must be greater than or equal to 0 and less than the resource length (if known).
+     * @param length the length of the content to make available, -1 for the full length,
+     * otherwise must be greater than 0 and less than or equal to the resource length (if known) minus the offset.
+     * @return a {@link Content.Source}.
+     * @throws IndexOutOfBoundsException if the offset or length are out of range.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
+     * @see Objects#checkFromIndexSize(long, long, long)
      */
     public static Content.Source asContentSource(Resource resource, ByteBufferPool.Sized bufferPool, long offset, long length) throws IllegalArgumentException
     {
@@ -164,6 +170,8 @@ public class IOResources
         Path path = resource.getPath();
         if (path != null)
             return Content.Source.from(bufferPool, path, offset, length);
+
+        length = TypeUtil.checkOffsetLengthSize(offset, length, resource.length());
 
         // Try an optimization for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
@@ -236,6 +244,8 @@ public class IOResources
                 Content.copy(source, sink, callback);
                 return;
             }
+
+            length = TypeUtil.checkOffsetLengthSize(offset, length, resource.length());
 
             // Save a Content.Source allocation for resources with a Path.
             Path path = resource.getPath();

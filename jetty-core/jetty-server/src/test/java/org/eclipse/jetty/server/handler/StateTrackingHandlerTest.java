@@ -39,7 +39,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -239,6 +241,37 @@ public class StateTrackingHandlerTest
         assertNull(response);
         assertThat(listener.events(), contains("handler"));
         assertNull(threadInfoRef.get());
+    }
+
+    @Test
+    public void testHandlerReturnsFalseHandlerCallbackNotCompleteHandlerCallbackTimeoutDoesNotFire() throws Exception
+    {
+        long timeout = 500;
+        EventsListener listener = new EventsListener();
+        StateTrackingHandler stateTrackingHandler = new StateTrackingHandler(listener);
+        stateTrackingHandler.setHandlerCallbackTimeout(timeout);
+        stateTrackingHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Do not handle.
+                return false;
+            }
+        });
+        start(stateTrackingHandler);
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+            GET / HTTP/1.1
+            Host: localhost
+            
+            """));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+
+        await().atMost(3 * timeout, TimeUnit.MILLISECONDS)
+            .during(2 * timeout, TimeUnit.MILLISECONDS).until(listener::events, not(contains("handler")));
     }
 
     @Test

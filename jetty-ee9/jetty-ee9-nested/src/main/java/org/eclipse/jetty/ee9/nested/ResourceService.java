@@ -24,6 +24,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import jakarta.servlet.AsyncContext;
@@ -32,6 +33,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.EtagUtils;
@@ -46,6 +48,7 @@ import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.PreCompressedHttpContent;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.ResourceListing;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
@@ -505,15 +508,17 @@ public class ResourceService
     {
         try
         {
+            HttpConfiguration httpConfiguration;
             String ifm = null;
             String ifnm = null;
             String ifms = null;
             String ifums = null;
 
-            if (request instanceof Request)
+            if (request instanceof Request baseRequest)
             {
+                httpConfiguration = baseRequest.getHttpChannel().getHttpConfiguration();
                 // Find multiple fields by iteration as an optimization 
-                for (HttpField field : ((Request)request).getHttpFields())
+                for (HttpField field : baseRequest.getHttpFields())
                 {
                     if (field.getHeader() != null)
                     {
@@ -532,6 +537,8 @@ public class ResourceService
             }
             else
             {
+                Request baseRequest = Request.getBaseRequest(request);
+                httpConfiguration = baseRequest == null ? null : baseRequest.getHttpChannel().getHttpConfiguration();
                 ifm = request.getHeader(HttpHeader.IF_MATCH.asString());
                 ifnm = request.getHeader(HttpHeader.IF_NONE_MATCH.asString());
                 ifms = request.getHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
@@ -540,13 +547,16 @@ public class ResourceService
 
             if (_etags)
             {
+                ComplianceViolation.Mode mode = httpConfiguration == null ? null : httpConfiguration.getHttpCompliance();
+                BiConsumer<ComplianceViolation, String> notify = httpConfiguration == null ? null : httpConfiguration::notifyViolation;
+
                 String etag = content.getETagValue();
                 if (ifm != null)
                 {
                     boolean match = false;
                     if (etag != null)
                     {
-                        QuotedCSV quoted = new QuotedCSV(true, ifm);
+                        QuotedCSV quoted = new QuotedCSV.Etags(mode, notify, ifm);
                         for (String etagWithSuffix : quoted)
                         {
                             if (EtagUtils.matches(etag, etagWithSuffix))
@@ -574,7 +584,8 @@ public class ResourceService
                     }
 
                     // Handle list of tags
-                    QuotedCSV quoted = new QuotedCSV(true, ifnm);
+
+                    QuotedCSV quoted = new QuotedCSV.Etags(mode, notify, ifnm);
                     for (String tag : quoted)
                     {
                         if (EtagUtils.matches(etag, tag))
@@ -667,7 +678,7 @@ public class ResourceService
         response.getOutputStream().write(data);
     }
 
-    protected void sendData(HttpServletRequest request,
+    protected boolean sendData(HttpServletRequest request,
                                HttpServletResponse response,
                                boolean include,
                                final HttpContent content,
@@ -735,7 +746,7 @@ public class ResourceService
                         {
                             String msg = "Failed to send content";
                             if (x instanceof IOException)
-                                LOG.debug(msg, x);
+                                LOG.atDebug().setCause(x).log(msg);
                             else
                                 LOG.warn(msg, x);
                             context.complete();
@@ -753,7 +764,7 @@ public class ResourceService
                             return String.format("ResourceService@%x$CB", ResourceService.this.hashCode());
                         }
                     });
-                    return;
+                    return false;
                 }
                 // otherwise write content blocking
                 ((HttpOutput)out).sendContent(content);
@@ -771,7 +782,7 @@ public class ResourceService
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     InclusiveByteRange.to416HeaderRangeString(content_length));
                 sendStatus(response, HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE, null);
-                return;
+                return true;
             }
 
             //  if there is only a single valid range (must be satisfiable
@@ -787,7 +798,7 @@ public class ResourceService
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     singleSatisfiableRange.toHeaderRangeString(content_length));
                 writeContent(content, out, singleSatisfiableRange.getFirst(), singleLength);
-                return;
+                return true;
             }
 
             //  multiple non-overlapping valid ranges cause a multipart
@@ -847,6 +858,7 @@ public class ResourceService
 
             multi.close();
         }
+        return true;
     }
 
     private static void writeContent(HttpContent content, OutputStream out, long start, long contentLength) throws IOException
