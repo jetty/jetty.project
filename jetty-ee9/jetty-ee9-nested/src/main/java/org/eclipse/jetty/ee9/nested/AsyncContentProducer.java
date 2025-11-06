@@ -42,7 +42,6 @@ class AsyncContentProducer implements ContentProducer
     private HttpInput.Content _rawContent;
     private HttpInput.Content _transformedContent;
     private boolean _error;
-    private Throwable _originalError;
     private long _firstByteNanoTime = Long.MIN_VALUE;
     private long _rawContentArrived;
 
@@ -314,7 +313,8 @@ class AsyncContentProducer implements ContentProducer
             {
                 if (_transformedContent.isSpecial() || !_transformedContent.isEmpty())
                 {
-                    if (_transformedContent.getError() != null && !_error)
+                    Throwable transformedError = _transformedContent.getError();
+                    if (transformedError != null && !_error)
                     {
                         // In case the _rawContent was set by consumeAll(), check the httpChannel
                         // to see if it has a more precise error. Otherwise, the exact same
@@ -322,17 +322,20 @@ class AsyncContentProducer implements ContentProducer
                         // if the _error flag was set, meaning the current error is definitive.
                         HttpInput.Content refreshedRawContent = produceRawContent();
                         if (refreshedRawContent != null)
-                            _rawContent = _transformedContent = refreshedRawContent;
-                        _originalError = _rawContent.getError();
-                        _error = _originalError != null;
+                        {
+                            Throwable refreshedError = refreshedRawContent.getError();
+                            // Retain the refreshedError only if it has not been just wrapped.
+                            if (refreshedError == null || refreshedError.getCause() != transformedError)
+                                _rawContent = _transformedContent = refreshedRawContent;
+                        }
+                        _error = _rawContent.getError() != null;
                         if (LOG.isDebugEnabled())
                             LOG.debug("refreshed raw content: {} {}", _rawContent, this);
-                        return _transformedContent;
                     }
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("transformed content not yet depleted, returning it {}", this);
-                    return _transformedContent = refreshIfError(_transformedContent);
+                    return _transformedContent;
                 }
                 else
                 {
@@ -360,24 +363,6 @@ class AsyncContentProducer implements ContentProducer
                 LOG.debug("transforming raw content {}", this);
             transformRawContent();
         }
-    }
-
-    // this is an adaptation to EE9 of the exception-refreshing logic of Content.Chunk.next()
-    private HttpInput.Content refreshIfError(HttpInput.Content content)
-    {
-        if (content == null || content.getError() == null || _originalError == null)
-            return content;
-        return new HttpInput.SpecialContent()
-        {
-            private Throwable failure;
-            @Override
-            public Throwable getError()
-            {
-                if (failure == null)
-                    failure = new IOException(_originalError);
-                return failure;
-            }
-        };
     }
 
     private void transformRawContent()
