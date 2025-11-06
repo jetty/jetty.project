@@ -11,7 +11,6 @@ demo
 
 [depends]
 jdbc
-ee8-annotations
 
 [files]
 maven://org.eclipse.jetty.demos/jetty-servlet4-demo-mock-resources/${jetty.version}/jar|lib/ee8/ee8-demo-mock-resources-${jetty.version}.jar

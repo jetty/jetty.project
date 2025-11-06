@@ -30,7 +30,7 @@ public class FutureCallback extends org.eclipse.jetty.util.FutureCallback implem
     public void fail(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug(".writeFailed", cause);
+            LOG.atDebug().setCause(cause).log(".writeFailed");
         failed(cause);
     }
 

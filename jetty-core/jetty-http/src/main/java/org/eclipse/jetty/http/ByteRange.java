@@ -155,7 +155,7 @@ public record ByteRange(long first, long last)
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("could not parse range {}", header, x);
+                        LOG.atDebug().setCause(x).log("could not parse range {}", header);
                 }
             }
         }

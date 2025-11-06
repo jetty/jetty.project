@@ -328,8 +328,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("onWriteComplete({},{}) {}->{} c={} cb={} w={}",
-                last, failure, state, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake, failure);
+            LOG.atDebug().setCause(failure).log("onWriteComplete({},{}) {}->{} c={} cb={} w={}",
+                last, failure, state, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake);
 
         try
         {
@@ -1350,7 +1350,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to send resource {}", resource, x);
+                LOG.atDebug().setCause(x).log("Unable to send resource {}", resource);
             callback.failed(x);
         }
     }
@@ -1395,7 +1395,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to send http content {}", httpContent, x);
+                LOG.atDebug().setCause(x).log("Unable to send http content {}", httpContent);
             _channel.abort(x);
             callback.failed(x);
         }
@@ -1573,7 +1573,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             if (LOG.isDebugEnabled())
             {
                 t.addSuppressed(error);
-                LOG.debug("Failed in call onError on {}", _writeListener, t);
+                LOG.atDebug().setCause(t).log("Failed in call onError on {}", _writeListener);
             }
         }
         finally

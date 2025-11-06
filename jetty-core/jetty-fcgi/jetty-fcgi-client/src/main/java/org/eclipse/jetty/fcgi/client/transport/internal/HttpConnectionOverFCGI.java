@@ -239,7 +239,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         catch (Exception x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to fill from endpoint {}", endPoint, x);
+                LOG.atDebug().setCause(x).log("Unable to fill from endpoint {}", endPoint);
             close(x);
             return false;
         }
@@ -528,7 +528,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         public void onFailure(int request, Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onFailure request={}", request, failure);
+                LOG.atDebug().setCause(failure).log("onFailure request={}", request);
             failAndClose(failure);
         }
     }

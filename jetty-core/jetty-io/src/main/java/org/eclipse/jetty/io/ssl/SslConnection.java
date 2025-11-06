@@ -636,7 +636,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             try (AutoLock ignored = _lock.lock())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("onFillableFail {}", SslConnection.this, failure);
+                    LOG.atDebug().setCause(failure).log("onFillableFail {}", SslConnection.this);
 
                 _fillState = FillState.IDLE;
                 if (_flushState == FlushState.WAIT_FOR_FILL)
@@ -987,7 +987,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(SslConnection.this.toString(), x);
+                    LOG.atDebug().setCause(x).log(SslConnection.this.toString());
                 close(x);
                 throw x;
             }
@@ -1016,7 +1016,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             if (_handshake.compareAndSet(HandshakeState.HANDSHAKE, HandshakeState.FAILED))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("handshake failed {}", SslConnection.this, failure);
+                    LOG.atDebug().setCause(failure).log("handshake failed {}", SslConnection.this);
                 if (!(failure instanceof SSLHandshakeException))
                     failure = new SSLHandshakeException(failure.getMessage()).initCause(failure);
                 notifyHandshakeFailed(_sslEngine, failure);
@@ -1350,7 +1350,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(SslConnection.this.toString(), x);
+                    LOG.atDebug().setCause(x).log(SslConnection.this.toString());
                 close(x);
                 throw x;
             }
@@ -1448,7 +1448,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to close outbound", x);
+                    LOG.atDebug().setCause(x).log("Unable to close outbound");
             }
         }
 
@@ -1606,13 +1606,13 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 {
                     _failure = x;
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} stored {} exception", this, context, x);
+                        LOG.atDebug().setCause(x).log("{} stored {} exception", this, context);
                 }
                 else
                 {
                     ExceptionUtil.addSuppressedIfNotAssociated(_failure, x);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} suppressed {} exception", this, context, x);
+                        LOG.atDebug().setCause(x).log("{} suppressed {} exception", this, context);
                 }
                 return _failure;
             }
@@ -1681,7 +1681,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 try (AutoLock ignored = _lock.lock())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("IncompleteWriteCB failed {}", SslConnection.this, x);
+                        LOG.atDebug().setCause(x).log("IncompleteWriteCB failed {}", SslConnection.this);
 
                     lockedDiscardEncryptedOutputBuffer();
 

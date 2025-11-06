@@ -681,7 +681,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                 public void failed(Throwable failure)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} P2C failed to write content {}", requestId(clientToProxyRequest), BufferUtil.toDetailString(serverToProxyContent), failure);
+                        LOG.atDebug().setCause(failure).log("{} P2C failed to write content {}", requestId(clientToProxyRequest), BufferUtil.toDetailString(serverToProxyContent));
                     serverToProxyChunk.release();
                     // Cannot write towards the client, abort towards the server.
                     serverToProxyResponse.abort(failure);
@@ -720,7 +720,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                     else
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{} P2C response failure {}", requestId(clientToProxyRequest), proxyToClientResponse, failure);
+                            LOG.atDebug().setCause(failure).log("{} P2C response failure {}", requestId(clientToProxyRequest), proxyToClientResponse);
                         onProxyToClientResponseFailure(clientToProxyRequest, proxyToServerRequest, result.getResponse(), proxyToClientResponse, proxyToClientCallback, failure);
                     }
                 });
@@ -763,7 +763,7 @@ public abstract class ProxyHandler extends Handler.Abstract
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} P2C response failure {}", requestId(clientToProxyRequest), proxyToClientResponse, x);
+                LOG.atDebug().setCause(x).log("{} P2C response failure {}", requestId(clientToProxyRequest), proxyToClientResponse);
             onProxyToClientResponseFailure(clientToProxyRequest, proxyToServerRequest, serverToProxyResponse, proxyToClientResponse, proxyToClientCallback, x);
         }
 

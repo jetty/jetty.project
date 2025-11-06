@@ -180,7 +180,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Failure while invoking listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("Failure while invoking listener {}", listener);
             }
         }
     }
@@ -374,7 +374,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not create WebSocket endpoint", x);
+                    LOG.atDebug().setCause(x).log("Could not create WebSocket endpoint");
                 cb.failed(x);
                 return null;
             }

@@ -300,7 +300,7 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         catch (CancelledKeyException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Ignoring key update for cancelled key {}", this, x);
+                LOG.atDebug().setCause(x).log("Ignoring key update for cancelled key {}", this);
             close();
         }
         catch (Throwable x)

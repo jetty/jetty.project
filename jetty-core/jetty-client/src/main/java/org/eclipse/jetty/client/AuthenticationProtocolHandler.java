@@ -238,7 +238,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Authentication failed", x);
+                    LOG.atDebug().setCause(x).log("Authentication failed");
                 forwardFailureComplete(request, null, response, x);
             }
         }

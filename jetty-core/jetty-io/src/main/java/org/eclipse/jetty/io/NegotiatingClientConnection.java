@@ -109,7 +109,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
         }
         catch (IOException x)
         {
-            LOG.debug("Unable to fill from endpoint", x);
+            LOG.atDebug().setCause(x).log("Unable to fill from endpoint");
             close();
             return -1;
         }
@@ -124,7 +124,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
         }
         catch (Throwable x)
         {
-            LOG.debug("Unable to replace connection", x);
+            LOG.atDebug().setCause(x).log("Unable to replace connection");
             close();
         }
     }

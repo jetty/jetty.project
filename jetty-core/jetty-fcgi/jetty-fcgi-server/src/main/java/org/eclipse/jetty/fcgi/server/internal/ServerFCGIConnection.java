@@ -206,7 +206,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         catch (Exception x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to fill endpoint", x);
+                LOG.atDebug().setCause(x).log("Unable to fill endpoint");
             inputBuffer.clear();
             releaseInputBuffer();
             // TODO: fail and close ?
@@ -279,7 +279,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Could not fill from {}", this, x);
+                LOG.atDebug().setCause(x).log("Could not fill from {}", this);
             return -1;
         }
     }
@@ -399,7 +399,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         public void onFailure(int request, Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Request {} failure on {}", request, stream, failure);
+                LOG.atDebug().setCause(failure).log("Request {} failure on {}", request, stream);
             if (stream != null)
                 ThreadPool.executeImmediately(getExecutor(), stream.getHttpChannel().onFailure(new BadMessageException(null, failure)));
             stream = null;

@@ -187,7 +187,7 @@ public class ResponseContentParser extends StreamContentParser
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Exception while invoking listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("Exception while invoking listener {}", listener);
             }
         }
 
@@ -200,7 +200,7 @@ public class ResponseContentParser extends StreamContentParser
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Exception while invoking listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("Exception while invoking listener {}", listener);
             }
         }
 
@@ -213,7 +213,7 @@ public class ResponseContentParser extends StreamContentParser
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Exception while invoking listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("Exception while invoking listener {}", listener);
             }
         }
 
@@ -237,7 +237,7 @@ public class ResponseContentParser extends StreamContentParser
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Exception while invoking listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("Exception while invoking listener {}", listener);
                 return false;
             }
         }
@@ -273,7 +273,7 @@ public class ResponseContentParser extends StreamContentParser
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Exception while invoking listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("Exception while invoking listener {}", listener);
                 return false;
             }
         }
@@ -313,7 +313,7 @@ public class ResponseContentParser extends StreamContentParser
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Exception while invoking listener {}", listener, x);
+                    LOG.atDebug().setCause(x).log("Exception while invoking listener {}", listener);
             }
         }
     }
