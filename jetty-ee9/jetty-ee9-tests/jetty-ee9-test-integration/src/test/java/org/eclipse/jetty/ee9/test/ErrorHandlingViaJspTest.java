@@ -159,8 +159,8 @@ public class ErrorHandlingViaJspTest
                 .send();
 
             // Ensure that handling of UnsupportedOperationException is done by /error.jsp and not the default ErrorHandler.
-            assertThat(response.getStatus(), Matchers.is(HttpStatus.IM_A_TEAPOT_418));
             assertThat(response.getContentAsString(), containsString("(From JSP Error Handler)"));
+            assertThat(response.getStatus(), Matchers.is(HttpStatus.IM_A_TEAPOT_418));
         }
     }
 
