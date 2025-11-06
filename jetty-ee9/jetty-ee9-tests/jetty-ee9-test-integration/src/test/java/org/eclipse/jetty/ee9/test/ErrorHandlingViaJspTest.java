@@ -22,9 +22,12 @@ import java.nio.file.Path;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FormRequestContent;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.ee9.test.servlets.AlwaysUnsupportedServlet;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -35,6 +38,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -129,6 +133,7 @@ public class ErrorHandlingViaJspTest
             ERROR_REQUEST_URI    : <%= request.getAttribute("jakarta.servlet.error.request_uri") %>
             ERROR_SERVLET_NAME   : <%= request.getAttribute("jakarta.servlet.error.servlet_name") %>
             ERROR_STATUS_CODE    : <%= request.getAttribute("jakarta.servlet.error.status_code") %>
+            <% response.setStatus(418); %>
             """, StandardCharsets.UTF_8);
 
         WebAppContext webAppContext = new WebAppContext();
@@ -146,14 +151,17 @@ public class ErrorHandlingViaJspTest
             form.add("n" + i, "helo" + i);
         }
 
-        ContentResponse response = client.newRequest(serverURI.resolve("/toss/form"))
-            .method(HttpMethod.POST)
-            .body(new FormRequestContent(form))
-            .send();
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
+        {
+            ContentResponse response = client.newRequest(serverURI.resolve("/toss/form"))
+                .method(HttpMethod.POST)
+                .body(new FormRequestContent(form))
+                .send();
 
-        // TODO: pick right status code assertThat(response.getStatus(), is(200));
-        // Ensure that handling of UnsupportedOperationException is done by /error.jsp and not the default ErrorHandler.
-        assertThat(response.getContentAsString(), containsString("(From JSP Error Handler)"));
+            // Ensure that handling of UnsupportedOperationException is done by /error.jsp and not the default ErrorHandler.
+            assertThat(response.getStatus(), Matchers.is(HttpStatus.IM_A_TEAPOT_418));
+            assertThat(response.getContentAsString(), containsString("(From JSP Error Handler)"));
+        }
     }
 
     private void copyClass(Class<?> clazz, Path classesDir) throws IOException
