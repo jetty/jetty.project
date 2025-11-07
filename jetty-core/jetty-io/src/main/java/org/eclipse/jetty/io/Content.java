@@ -369,7 +369,7 @@ public class Content
          * @param maxSize The maximum size to read, or -1 for no limit
          * @return A {@link CompletableFuture} that will be completed when the complete content is read or
          * failed if the max size is exceeded or there is a read error.
-         * @deprecated no replacement
+         * @deprecated use {@link #asByteArrayAsync(Source, int, Promise.Invocable)}
          */
         @Deprecated(forRemoval = true, since = "12.0.15")
         static CompletableFuture<byte[]> asByteArrayAsync(Source source, int maxSize)
@@ -381,6 +381,18 @@ public class Content
                 rbb.get(bytes, 0, remaining);
                 return bytes;
             });
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@code byte} array.</p>
+         *
+         * @param source the source to read
+         * @param maxSize The maximum size to read, or -1 for no limit
+         * @param promise the {@link Promise.Invocable} to notify when the whole content has been read into a byte array.
+         */
+        static void asByteArrayAsync(Source source, int maxSize, Promise.Invocable<byte[]> promise)
+        {
+            asRetainableByteBuffer(source, null, false, maxSize, Promise.Invocable.toPromise(promise, RetainableByteBuffer::takeByteArray));
         }
 
         /**
