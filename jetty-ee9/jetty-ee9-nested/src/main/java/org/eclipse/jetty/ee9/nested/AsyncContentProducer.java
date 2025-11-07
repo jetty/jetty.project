@@ -325,7 +325,7 @@ class AsyncContentProducer implements ContentProducer
                         {
                             Throwable refreshedError = refreshedRawContent.getError();
                             // Retain the refreshedError only if it has not been just wrapped.
-                            if (refreshedError != null && refreshedError.getCause() != transformedError)
+                            if (refreshedError == null || refreshedError.getCause() != transformedError)
                                 _rawContent = _transformedContent = refreshedRawContent;
                         }
                         _error = _rawContent.getError() != null;
