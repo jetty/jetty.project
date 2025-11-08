@@ -15,8 +15,12 @@
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.server.*</spotbugs.onlyAnalyze>
   </properties>
-
   <dependencies>
+    <dependency>
+      <groupId>com.github.luben</groupId>
+      <artifactId>zstd-jni</artifactId>
+      <version>1.5.7-6</version>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
@@ -29,6 +33,10 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.compression</groupId>
+      <artifactId>jetty-compression-brotli</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
