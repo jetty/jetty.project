@@ -152,6 +152,8 @@ public class RequestLogTest
                     // Use API that would trigger a read of the request
                     Fields params = Request.getParameters(request);
 
+                    params.forEach(System.err::println);
+
                     // This should result in only params from the query string, not from request body, as nothing is read during RequestLog execution
                     requestLogLines.add(String.format("method:%s|uri:%s|params.size:%d|status:%d", request.getMethod(), request.getHttpURI(), params.getSize(), response1.getStatus()));
                 }
@@ -174,6 +176,7 @@ public class RequestLogTest
                 {
                     form.append((char)i).append("=").append(i).append("&");
                 }
+                System.err.println("form: " + form);
 
                 byte[] bufForm = form.toString().getBytes(UTF_8);
 

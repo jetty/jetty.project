@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.ResponseUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.TunnelSupport;
@@ -1566,26 +1567,33 @@ public class HttpChannelState implements HttpChannel, Components
                 stream = httpChannelState._stream;
                 assert httpChannelState._callbackFailure == null;
 
-                // Turn pending demand into failure.
+                // If there is pending demand then we hard fail failure.
                 if (httpChannelState._onContentAvailable != null)
                 {
                     failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
                 }
                 else
                 {
-                    // ensure the request is fully consumed or failed.
-                    Throwable unconsumed = stream.consumeAvailable();
-                    if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(failure).log("consumeAvailable: {} {}", unconsumed == null, httpChannelState);
+                    // If the connection is persistent, ensure that the request is fully consumed
+                    Throwable unconsumed = httpChannelState.getConnectionMetaData().isPersistent() ? stream.consumeAvailable() : null;
                     if (unconsumed != null)
                     {
-                        // If the connection is persistent, and we are not closing due to expectations...
-                        if (httpChannelState.getConnectionMetaData().isPersistent() && !httpChannelState._expects100Continue)
-                            // then unconsumed input is a real failure
+                        if (LOG.isDebugEnabled())
+                            LOG.atDebug().setCause(unconsumed).log("consumeAvailable: {}", httpChannelState);
+
+                        // If the response is committed,
+                        if (response.isCommitted())
+                            // we do a hard fail
                             failure = ExceptionUtil.combine(failure, unconsumed);
-                        else if (failure != null)
-                            // otherwise the failure is just associated with any existing failure else ignored
-                            ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
+                        else
+                        {
+                            // we can make the response non persistent
+                            ResponseUtils.ensureNotPersistent(request, response);
+
+                            // associate with failure if we have one
+                            if (failure != null)
+                                ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
+                        }
                     }
                 }
 
