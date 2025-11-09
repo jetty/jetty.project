@@ -76,13 +76,26 @@ public class ConnectorServerTest
         connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi:///jmxrmi"), objectName);
         connectorServer.start();
 
-        // Verify that I can connect to the RMI registry using a non-loopback address.
-        new Socket(InetAddress.getLocalHost(), 1099).close();
-        assertThrows(ConnectException.class, () ->
+        InetAddress localHost = InetAddress.getLocalHost();
+        InetAddress loopback = InetAddress.getLoopbackAddress();
+        
+        // Verify that RMI registry binds to whatever InetAddress.getLocalHost() returns
+        new Socket(localHost, 1099).close();
+        
+        // Only test loopback restriction if localhost resolves to a non-loopback address
+        if (!localHost.isLoopbackAddress())
         {
-            // Verify that I cannot connect to the RMI registry using the loopback address.
-            new Socket(InetAddress.getLoopbackAddress(), 1099).close();
-        });
+            assertThrows(ConnectException.class, () ->
+            {
+                // Verify that I cannot connect to the RMI registry using the loopback address.
+                new Socket(loopback, 1099).close();
+            });
+        }
+        else
+        {
+            // If localhost is loopback, verify both work (they're the same address)
+            new Socket(loopback, 1099).close();
+        }
     }
 
     @Test
@@ -94,13 +107,26 @@ public class ConnectorServerTest
         connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi://:" + registryPort + "/jmxrmi"), objectName);
         connectorServer.start();
 
-        // Verify that I can connect to the RMI registry using a non-loopback address.
-        new Socket(InetAddress.getLocalHost(), registryPort).close();
-        assertThrows(ConnectException.class, () ->
+        InetAddress localHost = InetAddress.getLocalHost();
+        InetAddress loopback = InetAddress.getLoopbackAddress();
+
+        // Verify that RMI registry binds to whatever InetAddress.getLocalHost() returns
+        new Socket(localHost, registryPort).close();
+        
+        // Only test loopback restriction if localhost resolves to a non-loopback address
+        if (!localHost.isLoopbackAddress())
         {
-            // Verify that I cannot connect to the RMI registry using the loopback address.
-            new Socket(InetAddress.getLoopbackAddress(), registryPort).close();
-        });
+            assertThrows(ConnectException.class, () ->
+            {
+                // Verify that I cannot connect to the RMI registry using the loopback address.
+                new Socket(loopback, registryPort).close();
+            });
+        }
+        else
+        {
+            // If localhost is loopback, verify both work (they're the same address)
+            new Socket(loopback, registryPort).close();
+        }
     }
 
     @Test
@@ -144,13 +170,26 @@ public class ConnectorServerTest
         connectorServer = new ConnectorServer(new JMXServiceURL("service:jmx:rmi:///jndi/rmi:///jmxrmi"), objectName);
         connectorServer.start();
 
-        // Verify that I can connect to the RMI server using a non-loopback address.
-        new Socket(InetAddress.getLocalHost(), connectorServer.getAddress().getPort()).close();
-        assertThrows(ConnectException.class, () ->
+        InetAddress localHost = InetAddress.getLocalHost();
+        InetAddress loopback = InetAddress.getLoopbackAddress();
+        
+        // Verify that RMI server binds to whatever InetAddress.getLocalHost() returns
+        new Socket(localHost, connectorServer.getAddress().getPort()).close();
+        
+        // Only test loopback restriction if localhost resolves to a non-loopback address
+        if (!localHost.isLoopbackAddress())
         {
-            // Verify that I cannot connect to the RMI server using the loopback address.
-            new Socket(InetAddress.getLoopbackAddress(), connectorServer.getAddress().getPort()).close();
-        });
+            assertThrows(ConnectException.class, () ->
+            {
+                // Verify that I cannot connect to the RMI server using the loopback address.
+                new Socket(loopback, connectorServer.getAddress().getPort()).close();
+            });
+        }
+        else
+        {
+            // If localhost is loopback, verify both work (they're the same address)
+            new Socket(loopback, connectorServer.getAddress().getPort()).close();
+        }
     }
 
     @Test
