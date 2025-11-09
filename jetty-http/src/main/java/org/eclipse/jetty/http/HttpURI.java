@@ -1072,7 +1072,8 @@ public interface HttpURI
                         switch (c)
                         {
                             case '/':
-                                mark = i;
+                                pathMark = mark = i;
+                                segment = mark + 1;
                                 state = State.HOST_OR_PATH;
                                 break;
                             case ';':
@@ -1110,6 +1111,8 @@ public interface HttpURI
                                 pathMark = segment = i;
                                 state = State.PATH;
                                 break;
+                            case ':':
+                                throw new IllegalArgumentException("Bad Scheme");
                             default:
                                 mark = i;
                                 if (_scheme == null)
@@ -1130,28 +1133,32 @@ public interface HttpURI
                         {
                             case ':':
                                 // must have been a scheme
-                                _scheme = uri.substring(mark, i);
+                                _scheme = URIUtil.validateScheme(uri.substring(mark, i));
                                 // Start again with scheme set
                                 state = State.START;
                                 break;
                             case '/':
                                 // must have been in a path and still are
+                                validateSegment(uri, mark, i);
                                 segment = i + 1;
                                 state = State.PATH;
                                 break;
                             case ';':
                                 // must have been in a path
+                                validateSegment(uri, mark, i);
                                 mark = i + 1;
                                 state = State.PARAM;
                                 break;
                             case '?':
                                 // must have been in a path
+                                validateSegment(uri, mark, i);
                                 _path = uri.substring(mark, i);
                                 mark = i + 1;
                                 state = State.QUERY;
                                 break;
                             case '%':
                                 // must have been in an encoded path
+                                validateSegment(uri, mark, i);
                                 encoded = true;
                                 encodedCharacters = 2;
                                 encodedValue = 0;
@@ -1159,6 +1166,7 @@ public interface HttpURI
                                 break;
                             case '#':
                                 // must have been in a path
+                                validateSegment(uri, mark, i);
                                 _path = uri.substring(mark, i);
                                 state = State.FRAGMENT;
                                 break;
@@ -1235,8 +1243,19 @@ public interface HttpURI
                                 encoded = true;
                                 break;
                             case '#':
+                            case '?':
                             case ';':
-                                throw new IllegalArgumentException("Bad authority");
+                                if (encodedCharacters > 0)
+                                    throw new IllegalArgumentException("Bad authority");
+                                _host = uri.substring(mark, i);
+                                if (_host.isEmpty())
+                                    throw new IllegalArgumentException("Bad authority");
+                                encoded = false;
+                                pathMark = mark = i;
+                                segment = mark + 1;
+                                state = State.PATH;
+                                i--;
+                                break;
 
                             default:
                                 if (encodedCharacters > 0)
@@ -1260,8 +1279,13 @@ public interface HttpURI
                             case '/':
                                 throw new IllegalArgumentException("No closing ']' for ipv6 in " + uri);
                             case ']':
-                                c = uri.charAt(++i);
-                                _host = uri.substring(mark, i);
+                                i++;
+                                String host = uri.substring(mark, i);
+                                URIUtil.validateInetAddress(host);
+                                _host = host;
+                                if (i == end)
+                                    break;
+                                c = uri.charAt(i);
                                 if (c == ':')
                                 {
                                     mark = i + 1;
@@ -1276,7 +1300,7 @@ public interface HttpURI
                             case ':':
                                 break;
                             default:
-                                if (!isHexDigit(c))
+                                if (!isHexDigit(c) && c != '.')
                                     throw new IllegalArgumentException("Bad authority");
                                 break;
                         }
@@ -1444,6 +1468,8 @@ public interface HttpURI
                     break;
                 case SCHEME_OR_PATH:
                 case HOST_OR_PATH:
+                    validateSegment(uri, segment, end);
+                    checkSegment(uri, segment, end, false);
                     _path = uri.substring(mark, end);
                     break;
                 case HOST:
@@ -1489,6 +1515,11 @@ public interface HttpURI
                 if (_decodedPath == null)
                     throw new IllegalArgumentException("Bad URI");
             }
+        }
+
+        private void validateSegment(String uri, int start, int end)
+        {
+            // No validation done.
         }
 
         /**
