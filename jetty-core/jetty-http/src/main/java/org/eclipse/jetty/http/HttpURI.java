@@ -743,7 +743,7 @@ public interface HttpURI
         {
             _uri = null;
 
-            _scheme = URIUtil.normalizeScheme(scheme);
+            _scheme = scheme == null ? null : URIUtil.normalizeScheme(scheme);
             _host = host;
             _port = (port > 0) ? port : URIUtil.UNDEFINED_PORT;
 
@@ -1172,7 +1172,8 @@ public interface HttpURI
                         switch (c)
                         {
                             case '/':
-                                mark = i;
+                                pathMark = mark = i;
+                                segment = mark + 1;
                                 state = State.HOST_OR_PATH;
                                 break;
                             case ';':
@@ -1210,6 +1211,8 @@ public interface HttpURI
                                 pathMark = segment = i;
                                 state = State.PATH;
                                 break;
+                            case ':':
+                                throw new IllegalArgumentException("Bad Scheme");
                             default:
                                 mark = i;
                                 if (_scheme == null)
@@ -1230,22 +1233,26 @@ public interface HttpURI
                         {
                             case ':':
                                 // must have been a scheme
-                                _scheme = URIUtil.normalizeScheme(uri.substring(mark, i));
+                                _scheme = URIUtil.validateScheme(uri.substring(mark, i));
+
                                 // Start again with scheme set
                                 state = State.START;
                                 break;
                             case '/':
                                 // must have been in a path and still are
+                                validateSegment(uri, mark, i);
                                 segment = i + 1;
                                 state = State.PATH;
                                 break;
                             case ';':
                                 // must have been in a path
+                                validateSegment(uri, mark, i);
                                 mark = i + 1;
                                 state = State.PARAM;
                                 break;
                             case '?':
                                 // must have been in a path
+                                validateSegment(uri, mark, i);
                                 checkSegment(uri, false, segment, i, false);
                                 _path = uri.substring(mark, i);
                                 mark = i + 1;
@@ -1253,6 +1260,7 @@ public interface HttpURI
                                 break;
                             case '%':
                                 // must have been in an encoded path
+                                validateSegment(uri, mark, i);
                                 encoded = true;
                                 encodedCharacters = 2;
                                 encodedValue = 0;
@@ -1260,6 +1268,7 @@ public interface HttpURI
                                 break;
                             case '#':
                                 // must have been in a path
+                                validateSegment(uri, mark, i);
                                 _path = uri.substring(mark, i);
                                 addViolation(Violation.FRAGMENT);
                                 state = State.FRAGMENT;
@@ -1383,23 +1392,32 @@ public interface HttpURI
                             case '/':
                                 throw new IllegalArgumentException("No closing ']' for ipv6 in " + uri);
                             case ']':
-                                c = uri.charAt(++i);
-                                _host = uri.substring(mark, i);
+                                i++;
+                                String host = uri.substring(mark, i);
+                                URIUtil.validateInetAddress(host);
+                                _host = host;
+                                if (i == end)
+                                    break;
+                                c = uri.charAt(i);
                                 if (c == ':')
                                 {
                                     mark = i + 1;
                                     state = State.PORT_OR_PASSWORD;
                                 }
-                                else
+                                else if (c == '/')
                                 {
                                     pathMark = mark = i;
                                     state = State.PATH;
+                                }
+                                else
+                                {
+                                    throw new IllegalArgumentException("Bad authority");
                                 }
                                 break;
                             case ':':
                                 break;
                             default:
-                                if (!isHexDigit(c))
+                                if (!isHexDigit(c) && c != '.')
                                     throw new IllegalArgumentException("Bad authority");
                                 break;
                         }
@@ -1613,6 +1631,8 @@ public interface HttpURI
                     break;
                 case SCHEME_OR_PATH:
                 case HOST_OR_PATH:
+                    validateSegment(uri, segment, end);
+                    checkSegment(uri, false, segment, end, false);
                     _path = uri.substring(mark, end);
                     break;
                 case HOST_OR_USER:
@@ -1667,6 +1687,18 @@ public interface HttpURI
                 _canonicalPath = URIUtil.canonicalPath(_path, this::onBadUtf8);
                 if (_canonicalPath == null)
                     throw new IllegalArgumentException("Bad URI");
+            }
+        }
+
+        private void validateSegment(String uri, int start, int end)
+        {
+            for (int i = start; i < end; i++)
+            {
+                char c = uri.charAt(i);
+                if (c > __pathCharacters.length || !__pathCharacters[c])
+                    addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
+                if (c < __suspiciousPathCharacters.length && __suspiciousPathCharacters[c])
+                    addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
             }
         }
 
