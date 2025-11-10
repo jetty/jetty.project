@@ -15,14 +15,22 @@ package org.eclipse.jetty.io.content;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentSinkOutputStreamTest
@@ -45,5 +53,35 @@ public class ContentSinkOutputStreamTest
             // fails with IllegalArgumentException: Self-suppression not permitted.
         });
         assertThat(failure, sameInstance(eofException));
+    }
+
+    @Test
+    public void testIdempotentClose() throws Exception
+    {
+        Queue<String> events = new ArrayDeque<>();
+        Content.Sink sink = (last, byteBuffer, callback) ->
+        {
+            events.add("last=%s, buffer=%s".formatted(last, BufferUtil.toString(byteBuffer)));
+            callback.succeeded();
+        };
+
+        ContentSinkOutputStream outputStream = new ContentSinkOutputStream(sink);
+        outputStream.write('a');
+        assertThat(events.poll(), equalTo("last=false, buffer=a"));
+
+        // First close should do the last write.
+        outputStream.close();
+        assertThat(events.poll(), equalTo("last=true, buffer=null"));
+
+        // Subsequent closes should be no-ops.
+        outputStream.close();
+        assertNull(events.poll());
+
+        // Close with callback should be no-op but succeed the callback.
+        FutureCallback callback = new FutureCallback();
+        outputStream.close(callback);
+        assertNull(events.poll());
+        assertTrue(callback.isDone());
+        assertFalse(callback.isFailed());
     }
 }
