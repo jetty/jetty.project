@@ -1,3 +1,5 @@
+jetty-12.1.5-SNAPSHOT
+
 12.1.4 - 10 November 2025
  + 3515 Review Uptime
  + 12023 [12.1.x] Remove deprecated classes/methods
