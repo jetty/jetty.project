@@ -29,7 +29,6 @@ labels: Build
       Such updates should only be included in the week before a release if there is a compelling security or stability reason to do so.
 - [ ] Wait 24 hours from last change to the issues/PRs included in FROZEN GitHub Project(s).
 - [ ] Verify target [project(s)](https://github.com/jetty/jetty.project/projects) are complete.
-- [ ] Verify that branch `jetty-12.0.x` is merged to branch `jetty-12.1.x`.
 - [ ] Assign issue to "build manager", who will stage the releases.
   - [ ] Create and use branches `release/<ver>` to perform version specific release work from.
   - [ ] Ensure `git fetch --tags` (as we potentially rewrite tag when re staging local tag can be out of sync and this command will fail and so fail the release script)
