@@ -24,6 +24,7 @@
 ** xref:server/http3.adoc[]
 ** xref:server/compliance.adoc[]
 ** xref:server/session.adoc[]
+** xref:server/deploy.adoc[]
 ** xref:server/websocket.adoc[]
 ** xref:server/fastcgi.adoc[]
 ** xref:server/io-arch.adoc[]

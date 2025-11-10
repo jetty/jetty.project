@@ -1,0 +1,210 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Web Application Deployment
+
+When using the xref:server/index.adoc[Jetty server libraries] in your code, web applications are typically assembled by composing the required ``Handler``s, as explained in xref:server/http.adoc#handler[this section].
+
+When the `Server` instance is started, web applications are also started; there typically is no deployer component that can deploy web applications after the `Server` instance is started.
+
+The deployer component is the key component to deploy web applications when using Jetty as a standalone server, and it is detailed xref:operations-guide:deploy/index.adoc[here].
+
+However, it is possible to use the Jetty server libraries in your code with the deployer component, so that you can deploy web applications after the `Server` instance is started.
+
+The Maven artifact coordinates are:
+
+[,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-deploy</artifactId>
+  <version>{jetty-version}</version>
+</dependency>
+----
+
+The main components to set up are:
+
+* A `Deployer`, by default `org.eclipse.jetty.deploy.StandardDeployer`.
+The deployer component is responsible for adding and removing a `ContextHandler` (or subclass) instance, that represents a web application, from the `Handler` tree, and is responsible for the lifecycle (starting and stopping) the `ContextHandler`.
+* A `DeploymentScanner`, that scans directories for files or directories that represent web applications.
+Typical web application files are `+*.war+`, `+*.properties+` and `+*.xml+` files.
+When a web application file or directory is added/updated/removed, `DeploymentScanner` creates or retrieves (depending on the event) the corresponding `ContextHandler` and calls the `Deployer` to deploy/redeploy/undeploy the web application.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant WebDir as "Web Application Directory"
+participant DeploymentScanner
+participant Deployer
+participant ContextHandlerCollection
+
+DeploymentScanner -> WebDir : monitors for changes
+-> WebDir : create webapp.war
+DeploymentScanner -> Deployer : deploy ContextHandler
+Deployer -> ContextHandlerCollection : deployHandler() + start
+-> WebDir : delete webapp.war
+DeploymentScanner -> Deployer : undeploy ContextHandler
+Deployer -> ContextHandlerCollection : stop + removeHandler()
+----
+
+Each web application is deployed to a specific _environment_.
+
+The environment allows you to specify environmental properties that will be available to all web applications, as well as a `ClassLoader` that loads classes that are specific to the environment.
+
+Furthermore, the environment determines how the web application file should be interpreted: if it is a directory, whether it should be interpreted as a xref:operations-guide:deploy/index.adoc#web-application-format-static[Jetty Static web application], or as a xref:operations-guide:deploy/index.adoc#web-application-format-core[Jetty Core web application], or as a xref:operations-guide:deploy/index.adoc#web-application-format-jakarta[Jakarta EE exploded `+*.war+`].
+
+By default, there are no environments; you must always create at least one, depending on the type of deployment you want for your web applications.
+
+[[simple]]
+== Simple Deployer Setup
+
+The simplest deployer setup is when you deploy a web application via xref:operations-guide:deploy/index.adoc#context-xml[Jetty context XML file]:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/deploy/DeployDocs.java[tags=simple]
+----
+
+With this simple setup, you can only deploy Jetty context XML files.
+In the Jetty context XML files, you can only reference classes that you have in the class-path or module-path, for example:
+
+.acme-webapp.xml
+[,xml]
+----
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+<Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+  <Set name="contextPath">/acme</Set>
+  <Set name="handler">
+    <New class="com.acme.WebAppHandler" /> <!--1-->
+  </Set>
+</Configure>
+----
+<1> This class must be in the class-path or module-path.
+
+WARNING: Do not be tempted to use this simple setup to deploy Jetty Core web applications, Jetty Static web applications, or Jakarta web applications; their setup is described their respective sections below.
+
+[[static]]
+== Jetty Static Deployer Setup
+
+For xref:operations-guide:deploy/index.adoc#web-application-format-static[Jetty Static web applications], the setup is the following:
+
+[,java,indent=0,subs=+attributes]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/deploy/DeployDocs.java[tags=static]
+----
+<1> The environment is configured with its own class-path.
+<2> Jetty Static web applications use `StaticAppContext` as their `ContextHandler`, so web application directories are interpreted as having the xref:operations-guide:deploy/index.adoc#web-application-format-static[Jetty Static web application format].
+
+Your Jetty Static web application is a directory, for example `acme-asset/`, under `/path/to/webapps/`:
+
+[,bash]
+----
+/path/to/webapps/
+└── acme-assets/
+    ├── css/
+    │   └── styles.css
+    └── index.html
+----
+
+[[core]]
+== Jetty Core Deployer Setup
+
+For xref:operations-guide:deploy/index.adoc#web-application-format-core[Jetty Core web applications], the setup is the following:
+
+[,java,indent=0,subs=+attributes]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/deploy/DeployDocs.java[tags=core]
+----
+<1> The environment is configured with its own class-path.
+<2> Jetty Core web applications use `CoreAppContext` as their `ContextHandler`, so web application directories are interpreted as having the xref:operations-guide:deploy/index.adoc#web-application-format-core[Jetty Core web application format].
+
+Your Jetty Core web application is a directory, for example `acme-core-app/` under `/path/to/webapps/`:
+
+[,bash]
+----
+/path/to/webapps/
+└── acme-core-app/
+    ├── static         # Static files are served from this directory.
+    │   └── favicon.ico
+    ├── classes        # Where web application Java classes reside.
+    │   └── com
+    │       └── acme
+    │           └── AcmeHandler.class
+    ├── lib            # Where web application Java libraries reside.
+    │   └── acme-util.jar
+    └── jetty-web.xml  # Web application specific configuration.
+----
+
+With this setup you have the following class loader hierarchy, with the standard _parent first_ model for class loading:
+
+[,bash,subs=+attributes]
+----
+System ClassLoader                 # jetty-server-{jetty-version}.jar, etc.
+└── Environment ClassLoader        # jetty-coreapp-{jetty-version}.jar
+    └── Jetty Core App ClassLoader # acme-core-app/classes/:acme-core-app/lib/acme-util.jar
+----
+
+[[jakarta]]
+== Jakarta Deployer Setup
+
+For xref:operations-guide:deploy/index.adoc#web-application-format-jakarta[Jakarta web applications], the setup is the following:
+
+[,java,indent=0,subs=+attributes]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/deploy/DeployDocs.java[tags=jakarta]
+----
+<1> The environment is configured with its own class-path, that includes the Servlet API `+*.jar+` and the Jetty implementation `+*.jar+`s of the Servlet APIs.
+<2> Jakarta web applications use `WebAppContext` as their `ContextHandler`, so web application `+*.war+` files or directories are interpreted as having the xref:operations-guide:deploy/index.adoc#web-application-format-jakarta[Jakarta web application format].
+
+Your Jakarta web application is a `+*.war+` file, for example `acme.war` under `/path/to/webapps/`:
+
+[,bash]
+----
+/path/to/webapps/
+└── acme.war
+----
+
+With this setup you have the following class loader hierarchy, with the standard Jakarta _web application first_ model for class loading:
+
+[,bash,subs=+attributes]
+----
+System ClassLoader                  # jetty-server-{jetty-version}.jar: etc.
+└── Environment ClassLoader         # jakarta.servlet-api-{servlet-current-version}.jar: etc.
+    └── Jakarta Web App ClassLoader # acme.war!/WEB-INF/classes/:acme.war!/WEB-INF/lib/*.jar
+----
+
+[[multi]]
+== Multiple Environments
+
+If you need to deploy web applications to different environments, for example `core` and `{ee-current}`, the setup is the following:
+
+[,java,indent=0,subs=+attributes]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/deploy/DeployDocs.java[tags=multi]
+----
+
+The class loader hierarchy is the following:
+
+[,bash,subs=+attributes]
+----
+System ClassLoader
+├── core Environment ClassLoader
+│   └── Jetty Core App ClassLoader
+└── ee11 Environment ClassLoader
+    └── Jakarta Web App ClassLoader
+----
+
+With multiple environments, it is good practice to specify the web application `+*.properties+` file, as described in xref:operations-guide:deploy/index.adoc#web-application-files[this section].
