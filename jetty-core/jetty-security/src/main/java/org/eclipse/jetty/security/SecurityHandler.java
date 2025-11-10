@@ -30,7 +30,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -489,7 +488,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
         if (constraint.getAuthorization() == Authorization.FORBIDDEN)
         {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            doWriteError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return true;
         }
 
@@ -521,44 +520,15 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
             if (authenticationState instanceof AuthenticationState.ServeAs serveAs)
             {
-                HttpURI uri = request.getHttpURI();
-                request = serveAs.wrap(request);
-                if (!uri.equals(request.getHttpURI()))
-                {
-                    // URI is replaced, so filter out all metadata for the old URI
-                    response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), HttpHeaderValue.NO_CACHE.asString());
-                    response.getHeaders().putDate(HttpHeader.EXPIRES.asString(), 1);
-                    HttpFields.Mutable headers = new HttpFields.Mutable.Wrapper(response.getHeaders())
-                    {
-                        @Override
-                        public HttpField onAddField(HttpField field)
-                        {
-                            if (field.getHeader() == null)
-                                return field;
-                            return switch (field.getHeader())
-                            {
-                                case CACHE_CONTROL, PRAGMA, ETAG, EXPIRES, LAST_MODIFIED, AGE -> null;
-                                default -> field;
-                            };
-                        }
-                    };
-
-                    response = new Response.Wrapper(request, response)
-                    {
-                        @Override
-                        public HttpFields.Mutable getHeaders()
-                        {
-                            return headers;
-                        }
-                    };
-                }
-
+                response = serveAsWrap(request, response, serveAs);
+                request = response.getRequest();
                 authenticationState = _deferred;
             }
             else if (mustValidate && !isAuthorized(constraint, authenticationState))
             {
-                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!authorized");
-                return true;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("!authorized {}", authenticationState);
+                return doWriteError(request, response, callback, HttpStatus.FORBIDDEN_403);
             }
             else if (authenticationState == null)
             {
@@ -588,6 +558,83 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
             Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
             return true;
         }
+    }
+
+    private boolean doWriteError(Request request, Response response, Callback callback, int status)
+    {
+        AuthenticationState authenticationState = AuthenticationState.writeError(request, response, callback, status);
+        if (authenticationState instanceof AuthenticationState.ServeAs serveAs)
+        {
+            response = serveAsWrap(request, response, serveAs);
+            request = response.getRequest();
+            authenticationState = _deferred;
+
+            AuthenticationState.setAuthenticationState(request, authenticationState);
+            IdentityService.Association association =
+                (authenticationState instanceof AuthenticationState.Succeeded user)
+                    ? _identityService.associate(user.getUserIdentity(), null) : null;
+
+            try
+            {
+                //process the request by other handlers
+                return getHandler().handle(_authenticator.prepareRequest(request, authenticationState), response, callback);
+            }
+            catch (Throwable t)
+            {
+                Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, t.getMessage());
+            }
+            finally
+            {
+                if (association == null && authenticationState instanceof AuthenticationState.Deferred deferred)
+                    association = deferred.getAssociation();
+                if (association != null)
+                    association.close();
+            }
+        }
+
+        return true;
+    }
+
+    private Response serveAsWrap(Request request, Response response, AuthenticationState.ServeAs serveAs)
+    {
+        Request wrappedRequest = serveAs.wrap(request);
+        HttpFields.Mutable headers = response.getHeaders();
+        if (!request.getHttpURI().equals(wrappedRequest.getHttpURI()))
+        {
+            // URI is replaced, so filter out all metadata for the old URI
+            response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), HttpHeaderValue.NO_CACHE.asString());
+            response.getHeaders().putDate(HttpHeader.EXPIRES.asString(), 1);
+            headers = new HttpFields.Mutable.Wrapper(headers)
+            {
+                @Override
+                public HttpField onAddField(HttpField field)
+                {
+                    if (field.getHeader() == null)
+                        return field;
+                    return switch (field.getHeader())
+                    {
+                        case CACHE_CONTROL, PRAGMA, ETAG, EXPIRES, LAST_MODIFIED, AGE -> null;
+                        default -> field;
+                    };
+                }
+            };
+        }
+
+        HttpFields.Mutable finalHeaders = headers;
+        return new Response.Wrapper(wrappedRequest, response)
+        {
+            @Override
+            public HttpFields.Mutable getHeaders()
+            {
+                return finalHeaders;
+            }
+
+            @Override
+            public Request getRequest()
+            {
+                return wrappedRequest;
+            }
+        };
     }
 
     public static SecurityHandler getCurrentSecurityHandler()

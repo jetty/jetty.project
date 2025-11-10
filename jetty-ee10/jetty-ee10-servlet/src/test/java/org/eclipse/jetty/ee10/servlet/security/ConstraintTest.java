@@ -802,7 +802,7 @@ public class ConstraintTest
                 "GET /ctx/admin/info HTTP/1.0\r\n" +
                     "Authorization: Basic " + authBase64("user:password") + "\r\n" +
                     "\r\n",
-                HttpStatus.FORBIDDEN_403, response -> assertThat(response.getContent(), containsString("!authorized"))
+                HttpStatus.FORBIDDEN_403, response -> assertThat(response.getContent(), containsString("Forbidden"))
             )
         ));
 
@@ -1100,7 +1100,7 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!authorized"));
+        assertThat(response, containsString("Forbidden"));
     }
 
     @Test
@@ -1163,7 +1163,7 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!authorized"));
+        assertThat(response, containsString("Forbidden"));
         assertThat(response, not(containsString("JSESSIONID=" + session)));
     }
 
@@ -1322,7 +1322,7 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!authorized"));
+        assertThat(response, containsString("Forbidden"));
     }
 
     @Test
@@ -1439,7 +1439,7 @@ public class ConstraintTest
         response = _connector.getResponse("GET /ctx/admin/info;jsessionid=" + session + ";other HTTP/1.0\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!authorized"));
+        assertThat(response, containsString("Forbidden"));
     }
 
     /**
@@ -1667,7 +1667,7 @@ public class ConstraintTest
             "\r\n");
 
         assertThat(response, startsWith("HTTP/1.1 403 "));
-        assertThat(response, containsString("!authorized"));
+        assertThat(response, containsString("Forbidden"));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
             "Authorization: Basic " + authBase64("admin:password") + "\r\n" +
@@ -1726,13 +1726,13 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!authorized"));
+        assertThat(response, containsString("Forbidden"));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!authorized"));
+        assertThat(response, containsString("Forbidden"));
 
         // log in again as user2
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
@@ -1760,7 +1760,7 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!authorized"));
+        assertThat(response, containsString("Forbidden"));
 
         // log in again as admin
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
@@ -1833,13 +1833,13 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!authorized"));
+        assertThat(response, containsString("Forbidden"));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!authorized"));
+        assertThat(response, containsString("Forbidden"));
 
         // log in again as user2
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
@@ -1868,7 +1868,7 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 403"));
-        assertThat(response, containsString("!authorized"));
+        assertThat(response, containsString("Forbidden"));
 
         //log in as user3, who doesn't have a valid role, but we are checking a constraint
         //of ** which just means they have to be authenticated
