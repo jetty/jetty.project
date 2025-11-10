@@ -1,3 +1,45 @@
+12.1.4 - 10 November 2025
+ + 3515 Review Uptime
+ + 12023 [12.1.x] Remove deprecated classes/methods
+ + 12720 Error attributes not set on request in Jetty 12
+ + 13290 Consider changing 12.1 websocket-core to consume frame buffers on sendFrame
+ + 13323 jetty.requestlog.timezone not working
+ + 13335 Servlet Upgrade Support is too eager
+ + 13470 Jetty 12.0: ManagedSession issues due to recursion and/pr multiple completions of the stream.
+ + 13512 disable detectOfflineLinks of m-javadoc-plugin and add test to ensure javadoc:jar still works fine with eclipse-release profile
+ + 13619 AbstractConnector Javadoc continues to reference legacy default acceptor thread calculation
+ + 13634 Avoid sending RST_STREAM for closed streams
+ + 13672 Improve CSV Compliance
+ + 13677 Make `ContextHandler` catch and ignore exceptions thrown by `Thread.setContextClassLoader()` 
+ + 13685 Infinite loop on Content.copy() with Content.Source.from(... , Path, ) when Path has size 0.
+ + 13689 eeX-demo-mock-resources.mod incorrectly depends on eeX-annotations
+ + 13768 Sanitizing of HTTP headers names and values should remove NUL bytes (U+0000)
+ + 13806 Improved Credential to allow stronger password checksums.
+ + 13812 NullPointerException in GzipEncoderSink, breaking all requests with CompressionHandler
+ + 13832 Introduced `SecurityHandler.PathMethodMapped`
+ + 13833 CompressionHandler shouldn't compress response with specific status codes
+ + 13837 Limit ReservedThread creation (@arsenalzp)
+ + 13841 Warn the first time the TCCL fails to be set
+ + 13849 Connection reset on HTTP/2 when using CompressionHandler with default WindowRateControl
+ + 13850 FileMappingHttpContentFactory change in 12.1.x still serves old files, even when last modified date on file changes
+ + 13883 Invalid logger usage in HttpOutput
+ + 13886 Servlet filter mappings not working with quickstart
+ + 13896 listener.onContent( ... ) clears that ByteBuffer before the call.
+ + 13915 You can not have both Frame and Text handler in 12.1.x Jetty websocket
+ + 13922 ResourceServlet Download link broken
+ + 13923 Merge to 12.0.x to 12.1.x (@julianladisch, @guptas6est)
+ + 13924 Merge PR #13887 to 12.1.x - fix servlet filter mappings with quickstart
+ + 13931 Introduce ConditionalHandler.NextElseReject
+ + 13936 Version12.1.3 breaks BINARY compatibility with 12.0.29: HttpContent.getByteBuffer() and more
+ + 13939 Add an asByteArrayAsync method taking promise for Content.Source
+ + 13945 Document deployment in programming guide
+ + 13962 HTTP/2 Client connection timeout does not work
+ + 13971 ContentSinkOutputStream does not have idempotent close
+ + 13973 Fix Multipart cleanup in HttpChannelState
+ + 13976 Allow configuring the default max local streams on the H2 client
+ + 13985 Fix error handling from jsp with post form
+ + 14004 Fix NPE in SecurityHandler, List can have restrictions on contains(null)
+
 12.1.3 - 16 October 2025
  + 13246 Missing hook or statistic for QoSHandler rejections by exceeding setMaxSuspendedRequestCount
  + 13588 CONTAINER_JAR_PATTERN ignored on Windows
