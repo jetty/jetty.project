@@ -1139,26 +1139,26 @@ public interface HttpURI
                                 break;
                             case '/':
                                 // must have been in a path and still are
-                                validateSegment(uri, mark, i);
+                                // No validation done.
                                 segment = i + 1;
                                 state = State.PATH;
                                 break;
                             case ';':
                                 // must have been in a path
-                                validateSegment(uri, mark, i);
+                                // No validation done.
                                 mark = i + 1;
                                 state = State.PARAM;
                                 break;
                             case '?':
                                 // must have been in a path
-                                validateSegment(uri, mark, i);
+                                // No validation done.
                                 _path = uri.substring(mark, i);
                                 mark = i + 1;
                                 state = State.QUERY;
                                 break;
                             case '%':
                                 // must have been in an encoded path
-                                validateSegment(uri, mark, i);
+                                // No validation done.
                                 encoded = true;
                                 encodedCharacters = 2;
                                 encodedValue = 0;
@@ -1166,7 +1166,7 @@ public interface HttpURI
                                 break;
                             case '#':
                                 // must have been in a path
-                                validateSegment(uri, mark, i);
+                                // No validation done.
                                 _path = uri.substring(mark, i);
                                 state = State.FRAGMENT;
                                 break;
@@ -1468,7 +1468,7 @@ public interface HttpURI
                     break;
                 case SCHEME_OR_PATH:
                 case HOST_OR_PATH:
-                    validateSegment(uri, segment, end);
+                    // No validation done.
                     checkSegment(uri, segment, end, false);
                     _path = uri.substring(mark, end);
                     break;
@@ -1515,11 +1515,6 @@ public interface HttpURI
                 if (_decodedPath == null)
                     throw new IllegalArgumentException("Bad URI");
             }
-        }
-
-        private void validateSegment(String uri, int start, int end)
-        {
-            // No validation done.
         }
 
         /**
