@@ -536,8 +536,8 @@ public class ResponseTest
     {
         return Stream.of(
             Arguments.of(null, "http://[bad]:xyz/", HttpStatus.FOUND_302, null),
-            Arguments.of(UriCompliance.UNSAFE, "http://[bad]:xyz/", HttpStatus.INTERNAL_SERVER_ERROR_500, "Bad authority"),
-            Arguments.of(UriCompliance.DEFAULT, "http://[bad]:xyz/", HttpStatus.INTERNAL_SERVER_ERROR_500, "Bad authority"),
+            Arguments.of(UriCompliance.UNSAFE, "http://[bad]:xyz/", HttpStatus.INTERNAL_SERVER_ERROR_500, "Bad [IPv6]"),
+            Arguments.of(UriCompliance.DEFAULT, "http://[bad]:xyz/", HttpStatus.INTERNAL_SERVER_ERROR_500, "Bad [IPv6]"),
             Arguments.of(null, "http://user:password@host.com/", HttpStatus.FOUND_302, null),
             Arguments.of(UriCompliance.DEFAULT, "http://user:password@host.com/", HttpStatus.INTERNAL_SERVER_ERROR_500, "Deprecated User Info"),
             Arguments.of(UriCompliance.LEGACY, "http://user:password@host.com/", HttpStatus.FOUND_302, null),
