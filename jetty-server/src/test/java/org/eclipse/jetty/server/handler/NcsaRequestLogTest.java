@@ -358,9 +358,9 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET http://[:1]/foo HTTP/1.1\nReferer: http://other.site\n\n");
+        _connector.getResponse("GET http://[::1]/foo HTTP/1.1\nReferer: http://other.site\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
-        assertThat(log, containsString("GET http://[:1]/foo "));
+        assertThat(log, containsString("GET http://[::1]/foo "));
         assertThat(log, containsString(" 400 50 \"http://other.site\" \"-\""));
     }
 
@@ -371,9 +371,9 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET http://[:1]/foo HTTP/1.1\nReferer: http://other.site\nUser-Agent: Mozilla/5.0 (test)\n\n");
+        _connector.getResponse("GET http://[::1]/foo HTTP/1.1\nReferer: http://other.site\nUser-Agent: Mozilla/5.0 (test)\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
-        assertThat(log, containsString("GET http://[:1]/foo "));
+        assertThat(log, containsString("GET http://[::1]/foo "));
         assertThat(log, containsString(" 400 50 \"http://other.site\" \"Mozilla/5.0 (test)\""));
     }
 

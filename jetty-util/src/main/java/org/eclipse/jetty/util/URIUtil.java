@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -1343,6 +1344,74 @@ public class URIUtil
         encodePath(buf, path, offset);
 
         return URI.create(buf.toString());
+    }
+
+    private static boolean isHexDigit(char c)
+    {
+        return (((c >= 'a') && (c <= 'f')) || // ALPHA (lower)
+            ((c >= 'A') && (c <= 'F')) ||  // ALPHA (upper)
+            ((c >= '0') && (c <= '9')));
+    }
+
+    /**
+     * Validate an IPv4 or IPv6 address.
+     * @param inetAddress the address to validate
+     * @throws IllegalArgumentException if the address is not valid
+     */
+    public static void validateInetAddress(String inetAddress)
+    {
+        try
+        {
+            InetAddress ignored = InetAddress.getByName(inetAddress);
+        }
+        catch (Throwable e)
+        {
+            throw new IllegalArgumentException("Bad [IPv6] address", e);
+        }
+    }
+
+    /**
+     * Validate and normalize the scheme,
+     *
+     * @param scheme The scheme to normalize
+     * @return The normalized version of the scheme
+     * @throws IllegalArgumentException If the scheme is not valid
+     */
+    public static String validateScheme(String scheme)
+    {
+        if (scheme == null || scheme.isEmpty())
+            throw new IllegalArgumentException("Bad scheme");
+
+        //  scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+        StringBuilder toLowerCase = null;
+        for (int i = 0; i < scheme.length(); i++)
+        {
+            char c = scheme.charAt(i);
+            if (c >= 'A' && c <= 'Z')
+            {
+                if (toLowerCase == null)
+                {
+                    toLowerCase = new StringBuilder(scheme.length());
+                    toLowerCase.append(scheme, 0, i);
+                }
+                toLowerCase.append(Character.toLowerCase(c));
+            }
+            else if (c >= 'a' && c <= 'z' ||
+                (i > 0 && (c >= '0' && c <= '9' ||
+                    c == '.' ||
+                    c == '+' ||
+                    c == '-')))
+            {
+                if (toLowerCase != null)
+                    toLowerCase.append(c);
+            }
+            else
+            {
+                throw new IllegalArgumentException("Bad scheme");
+            }
+        }
+
+        return toLowerCase == null ? scheme : toLowerCase.toString();
     }
 
     /**
