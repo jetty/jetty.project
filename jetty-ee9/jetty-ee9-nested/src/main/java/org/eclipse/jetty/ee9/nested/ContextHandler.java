@@ -969,10 +969,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
         catch (IOException | ServletException | RuntimeException e)
         {
+            Throwable existing = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+            if (existing != null)
+                existing.addSuppressed(e);
             throw e;
         }
         catch (Throwable t)
         {
+            Throwable existing = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+            if (existing != null)
+                existing.addSuppressed(t);
             throw new ServletException("Unexpected Exception", t);
         }
         finally
