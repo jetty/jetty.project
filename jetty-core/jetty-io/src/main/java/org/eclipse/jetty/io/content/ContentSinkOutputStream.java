@@ -34,6 +34,7 @@ public class ContentSinkOutputStream extends OutputStream
     private final Blocker.Shared _blocking = new Blocker.Shared();
     private final Content.Sink sink;
     private boolean failed;
+    private boolean closed;
 
     public ContentSinkOutputStream(Content.Sink sink)
     {
@@ -90,6 +91,13 @@ public class ContentSinkOutputStream extends OutputStream
 
     public void close(Callback callback) throws IOException
     {
+        if (closed)
+        {
+            callback.succeeded();
+            return;
+        }
+
+        closed = true;
         sink.write(true, null, callback);
     }
 

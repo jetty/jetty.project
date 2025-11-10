@@ -964,7 +964,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
          */
         public void put(PathSpec pathSpec, List<String> methods, Constraint constraint)
         {
-            if (methods.isEmpty() || methods.contains(ALL_METHODS) || methods.contains(null))
+            if (methods.isEmpty() || methods.contains(ALL_METHODS))
                 throw new IllegalArgumentException("Invalid method list");
             methods.forEach(method -> put(pathSpec, method, constraint));
         }

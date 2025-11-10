@@ -181,8 +181,8 @@
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.1</buildnumber.maven.plugin.version>
     <checkstyle.version>10.26.1</checkstyle.version>
-    <commons-codec.version>1.19.0</commons-codec.version>
-    <commons-io.version>2.20.0</commons-io.version>
+    <commons-codec.version>1.20.0</commons-codec.version>
+    <commons-io.version>2.21.0</commons-io.version>
     <commons-lang3.version>3.19.0</commons-lang3.version>
     <commons.compress.version>1.28.0</commons.compress.version>
     <commons.io.version>2.16.1</commons.io.version>
@@ -477,12 +477,12 @@
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-annotation</artifactId>
-        <version>2.13.9</version>
+        <version>2.14.0</version>
       </dependency>
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-cpu</artifactId>
-        <version>2.13.9</version>
+        <version>2.14.0</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
