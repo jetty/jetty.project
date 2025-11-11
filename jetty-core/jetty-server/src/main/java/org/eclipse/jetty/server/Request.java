@@ -272,6 +272,7 @@ public interface Request extends Attributes, Content.Source
      * there is no content currently available, or it reaches EOF.
      * The {@link HttpConfiguration#setMaxUnconsumedRequestContentReads(int)} configuration can be used
      * to configure how many reads will be attempted by this method.
+     * If the content was not fully consumed, the underlying connection may be made non-persistent.
      * @return true if the content was fully consumed.
      */
     boolean consumeAvailable();

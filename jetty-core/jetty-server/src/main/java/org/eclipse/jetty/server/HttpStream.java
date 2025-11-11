@@ -105,6 +105,11 @@ public interface HttpStream extends Callback
         return null;
     }
 
+    /**
+     * Consume all content currently available.
+     * If not all content could be consumed, the underlying connection may be made non-persistent.
+     * @return {@code null} if all content could be consumed, any {@link Throwable} instance otherwise.
+     */
     Throwable consumeAvailable();
 
     static Throwable consumeAvailable(HttpStream stream, HttpConfiguration httpConfig)
