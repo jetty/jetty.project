@@ -26,9 +26,10 @@ public class ResponseUtils
 {
     public static void ensureConsumeAvailableOrNotPersistent(Request request, Response response)
     {
-        if (request.consumeAvailable())
-            return;
-        ensureNotPersistent(request, response);
+        request.consumeAvailable();
+//        if (request.consumeAvailable())
+//            return;
+//        ensureNotPersistent(request, response);
     }
 
     public static void ensureNotPersistent(Request request, Response response)
