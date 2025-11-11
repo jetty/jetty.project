@@ -265,11 +265,13 @@ public class ServletCoreRequest implements Request
         {
             try
             {
+                // TODO this blocks but shouldn't
                 Content.Source.consumeAll(source());
                 return true;
             }
             catch (IOException e)
             {
+                // TODO the underlying connection should be made non-persistent
                 return false;
             }
         }

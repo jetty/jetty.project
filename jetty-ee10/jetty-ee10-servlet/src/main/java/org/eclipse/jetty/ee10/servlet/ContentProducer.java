@@ -32,12 +32,14 @@ public interface ContentProducer
     void reopen();
 
     /**
-     * Fail all content currently available in this {@link ContentProducer} instance
-     * as well as in the underlying {@link Content.Source}.
+     * Consume all content currently available in this {@link ContentProducer} instance
+     * as well as in the underlying {@link Content.Source}. If not all content could be
+     * consumed (i.e.: EOF was not reached), then the underlying connection may be
+     * made non-persistent.
      *
      * This call is always non-blocking.
      * Doesn't change state.
-     * @return true if EOF was reached.
+     * @return true if EOF was reached, false otherwise.
      */
     boolean consumeAvailable();
 
