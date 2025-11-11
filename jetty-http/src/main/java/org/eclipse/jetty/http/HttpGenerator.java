@@ -519,7 +519,7 @@ public class HttpGenerator
     {
         header.put(StringUtil.getBytes(request.getMethod()));
         header.put((byte)' ');
-        header.put(StringUtil.getBytes(request.getURIString()));
+        header.put(HttpMethod.CONNECT.is(request.getMethod()) ? StringUtil.getBytes(request.getURI().getAuthority()) : StringUtil.getBytes(request.getURIString()));
         header.put((byte)' ');
         header.put(request.getHttpVersion().toBytes());
         header.put(HttpTokens.CRLF);
