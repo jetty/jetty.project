@@ -615,7 +615,7 @@ public interface Response extends Content.Sink
             return;
         }
 
-        ResponseUtils.ensureConsumeAvailableOrNotPersistent(request, response);
+        request.consumeAvailable();
 
         if (status <= 0)
             status = HttpStatus.INTERNAL_SERVER_ERROR_500;
