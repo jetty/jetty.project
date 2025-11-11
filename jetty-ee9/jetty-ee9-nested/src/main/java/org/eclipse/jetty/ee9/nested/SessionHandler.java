@@ -686,7 +686,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
                 if (partitioned)
                     _sessionManager.setPartitioned(partitioned);
 
-                _sessionManager.setSessionComment(Response.HttpCookieFacade.getCommentWithoutAttributes(comment));
+                _sessionManager.setSessionComment(comment);
             }
         }
 
