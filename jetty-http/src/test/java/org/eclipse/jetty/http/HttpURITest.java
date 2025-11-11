@@ -960,4 +960,22 @@ public class HttpURITest
         assertThat(httpURI.getQuery(), is(query));
         assertThat(httpURI.getFragment(), is(fragment));
     }
+
+    public static Stream<Arguments> connectURIs()
+    {
+        return Stream.of(
+            Arguments.of("localhost:8080"),
+            Arguments.of("127.0.0.1:8080"),
+            Arguments.of("[::1]:8080")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("connectURIs")
+    public void testConnect(String authority)
+    {
+        HttpURI httpURI = new HttpURI();
+        httpURI.parseRequestTarget(HttpMethod.CONNECT.asString(), authority);
+        assertThat(httpURI.getAuthority(), is(authority));
+    }
 }

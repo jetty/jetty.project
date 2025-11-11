@@ -198,7 +198,9 @@ public class HttpSenderOverHTTP extends HttpSender
             String query = request.getQuery();
             if (query != null)
                 path += "?" + query;
-            metaData = new MetaData.Request(request.getMethod(), new HttpURI(path), request.getVersion(), request.getHeaders(), contentLength);
+            HttpURI uri = new HttpURI();
+            uri.parseRequestTarget(request.getMethod(), path);
+            metaData = new MetaData.Request(request.getMethod(), uri, request.getVersion(), request.getHeaders(), contentLength);
             metaData.setTrailerSupplier(request.getTrailers());
 
             if (!expects100Continue(request))
