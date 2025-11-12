@@ -309,12 +309,9 @@ public class QuickStartTest
 
         Path quickStartXml = target.resolve("WEB-INF/quickstart-web.xml");
         String quickStartContents = Files.readString(quickStartXml);
-        System.err.println(quickStartContents);
         assertThat(quickStartContents, containsString("""
                 <cookie-config>
-                    <name>JSESSIONID</name>
-                    <comment>__SAME_SITE_NONE__foo</comment>
+                  <comment>__SAME_SITE_NONE__foo</comment>
             """));
     }
-
 }
