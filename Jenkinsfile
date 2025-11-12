@@ -68,10 +68,14 @@ pipeline {
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
-              recordCoverage id: "coverage-jdk17", name: "Coverage jdk17",
-                             tools: [[parser: 'JACOCO'], [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/TEST*.xml,**/target/invoker-reports/TEST*.xml']],
-                             sourceCodeRetention: 'MODIFIED',
-                             sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']]
+              script {
+                if (isMainBranch()) {
+                  recordCoverage id: "coverage-jdk17", name: "Coverage jdk17",
+                      tools: [[parser: 'JACOCO'], [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/TEST*.xml,**/target/invoker-reports/TEST*.xml']],
+                      sourceCodeRetention: 'MODIFIED',
+                      sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']]
+                }
+              }
             }
           }
         }
@@ -197,10 +201,14 @@ def saveHome() {
   return false;
 }
 
+def isMainBranch() {
+  return (env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x' || env.BRANCH_NAME == 'jetty-12.1.x')
+}
+
 def websiteBuild() {
   script {
     try {
-      if (env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x') {
+      if (isMainBranch()) {
         build(job: 'website/jetty.website/main', propagate: false, wait: false)
       }
     } catch (Exception e) {
