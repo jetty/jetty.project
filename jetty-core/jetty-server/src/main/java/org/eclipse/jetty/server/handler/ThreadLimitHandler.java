@@ -346,8 +346,15 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             super.demand(new DemandTask(Invocable.getInvocationType(onContent)));
         }
 
-        private void onContent()
+        private void onContent(InvocationType invocationType)
         {
+            // If the invocation type is NON_BLOCKING we do not require a permit.
+            if (invocationType == InvocationType.NON_BLOCKING)
+            {
+                onPermittedContent(null);
+                return;
+            }
+
             Permit permit = _remote.acquire();
             if (permit.isAllocated())
                 onPermittedContent(permit);
@@ -364,7 +371,8 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             }
             finally
             {
-                permit.release();
+                if (permit != null)
+                    permit.release();
             }
         }
 
@@ -378,7 +386,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             @Override
             public void run()
             {
-                onContent();
+                onContent(getInvocationType());
             }
         }
     }
@@ -405,6 +413,13 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         @Override
         public void succeeded()
         {
+            Callback callback = _writeCallback.get();
+            if (callback.getInvocationType() == InvocationType.NON_BLOCKING)
+            {
+                permittedSuccess(null);
+                return;
+            }
+
             Permit permit = _remote.acquire();
             if (permit.isAllocated())
                 permittedSuccess(permit);
@@ -420,13 +435,21 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             }
             finally
             {
-                permit.release();
+                if (permit != null)
+                    permit.release();
             }
         }
 
         @Override
         public void failed(Throwable x)
         {
+            Callback callback = _writeCallback.get();
+            if (callback.getInvocationType() == InvocationType.NON_BLOCKING)
+            {
+                permittedFailure(null, x);
+                return;
+            }
+
             Permit permit = _remote.acquire();
             if (permit.isAllocated())
                 permittedFailure(permit, x);
@@ -442,7 +465,8 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             }
             finally
             {
-                permit.release();
+                if (permit != null)
+                    permit.release();
             }
         }
 
