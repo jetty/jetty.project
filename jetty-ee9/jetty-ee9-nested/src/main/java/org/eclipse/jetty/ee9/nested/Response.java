@@ -1494,7 +1494,7 @@ public class Response implements HttpServletResponse
         }
     }
 
-    protected static class HttpCookieFacade implements HttpCookie
+    public static class HttpCookieFacade implements HttpCookie
     {
         private final Cookie _cookie;
         private final String _comment;
@@ -1617,17 +1617,17 @@ public class Response implements HttpServletResponse
             return HttpCookie.toString(this);
         }
 
-        private static boolean isHttpOnlyInComment(String comment)
+        public static boolean isHttpOnlyInComment(String comment)
         {
             return comment != null && comment.contains(HTTP_ONLY_COMMENT);
         }
 
-        protected static boolean isPartitionedInComment(String comment)
+        public static boolean isPartitionedInComment(String comment)
         {
             return comment != null && comment.contains(PARTITIONED_COMMENT);
         }
 
-        protected static SameSite getSameSiteFromComment(String comment)
+        public static SameSite getSameSiteFromComment(String comment)
         {
             if (comment == null)
                 return null;
@@ -1640,7 +1640,7 @@ public class Response implements HttpServletResponse
             return null;
         }
 
-        protected static String getCommentWithoutAttributes(String comment)
+        public static String getCommentWithoutAttributes(String comment)
         {
             if (comment == null)
                 return null;
@@ -1654,6 +1654,44 @@ public class Response implements HttpServletResponse
             strippedComment = StringUtil.strip(strippedComment, SAME_SITE_STRICT_COMMENT);
 
             return strippedComment.isEmpty() ? null : strippedComment;
+        }
+
+        public static String getCommentWithAttributes(String comment, boolean isPartitioned, HttpCookie.SameSite sameSite)
+        {
+            if (comment == null && sameSite == null)
+                return null;
+
+            StringBuilder builder = new StringBuilder();
+            if (StringUtil.isNotBlank(comment))
+            {
+                comment = getCommentWithoutAttributes(comment);
+                if (StringUtil.isNotBlank(comment))
+                    builder.append(comment);
+            }
+            if (isPartitioned)
+                builder.append(PARTITIONED_COMMENT);
+
+            if (sameSite != null)
+            {
+                switch (sameSite)
+                {
+                    case NONE:
+                        builder.append(SAME_SITE_NONE_COMMENT);
+                        break;
+                    case STRICT:
+                        builder.append(SAME_SITE_STRICT_COMMENT);
+                        break;
+                    case LAX:
+                        builder.append(SAME_SITE_LAX_COMMENT);
+                        break;
+                    default:
+                        throw new IllegalArgumentException(sameSite.toString());
+                }
+            }
+
+            if (builder.isEmpty())
+                return null;
+            return builder.toString();
         }
     }
 }

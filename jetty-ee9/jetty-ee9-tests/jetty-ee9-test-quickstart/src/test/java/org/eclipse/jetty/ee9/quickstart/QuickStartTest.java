@@ -311,7 +311,7 @@ public class QuickStartTest
         String quickStartContents = Files.readString(quickStartXml);
         assertThat(quickStartContents, containsString("""
                 <cookie-config>
-                  <comment>__SAME_SITE_NONE__foo</comment>
+                  <comment>foo__SAME_SITE_NONE__</comment>
             """));
     }
 }
