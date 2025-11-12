@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import jakarta.servlet.ServletInputStream;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -25,6 +24,7 @@ import java.util.function.Predicate;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
