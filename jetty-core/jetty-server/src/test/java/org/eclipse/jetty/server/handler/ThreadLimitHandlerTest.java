@@ -394,6 +394,7 @@ public class ThreadLimitHandlerTest
         handler.setThreadLimit(1);
 
         CompletableFuture<Throwable> future = new CompletableFuture<>();
+        AtomicReference<Thread> threadReference = new AtomicReference<>();
         handler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -401,6 +402,7 @@ public class ThreadLimitHandlerTest
             {
                 try
                 {
+                    threadReference.set(Thread.currentThread());
                     while (true)
                     {
                         try (Blocker.Callback blocking = Blocker.callback())
@@ -432,7 +434,11 @@ public class ThreadLimitHandlerTest
 
         // Delay to let the write side get TCP blocked, then close the connection.
         // This ensures the server write callback will be failed by a different thread.
-        Thread.sleep(1000);
+        await().atMost(5, TimeUnit.SECONDS).pollDelay(1, TimeUnit.SECONDS).until(() ->
+        {
+            Thread thread = threadReference.get();
+            return thread != null && thread.getState() == Thread.State.WAITING;
+        });
         client.close();
 
         // The blocker callback will be failed by a different thread than the handling thread.

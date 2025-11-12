@@ -348,18 +348,28 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
 
         private void onContent(InvocationType invocationType)
         {
-            // If the invocation type is NON_BLOCKING we do not require a permit.
-            if (invocationType == InvocationType.NON_BLOCKING)
+            switch (invocationType)
             {
-                onPermittedContent(null);
-                return;
+                case NON_BLOCKING ->
+                {
+                    Runnable onContent = _onContent.getAndSet(null);
+                    onContent.run();
+                }
+                case EITHER ->
+                {
+                    Runnable onContent = _onContent.getAndSet(null);
+                    Invocable.invokeNonBlocking(onContent);
+                }
+                case BLOCKING ->
+                {
+                    Permit permit = _remote.acquire();
+                    if (permit.isAllocated())
+                        onPermittedContent(permit);
+                    else
+                        permit.whenAllocated(this::onPermittedContent);
+                }
+                default -> throw new IllegalStateException(invocationType.name());
             }
-
-            Permit permit = _remote.acquire();
-            if (permit.isAllocated())
-                onPermittedContent(permit);
-            else
-                permit.whenAllocated(this::onPermittedContent);
         }
 
         private void onPermittedContent(Permit permit)
@@ -371,8 +381,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             }
             finally
             {
-                if (permit != null)
-                    permit.release();
+                permit.release();
             }
         }
 
@@ -414,10 +423,27 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         public void succeeded()
         {
             Callback callback = _writeCallback.get();
-            if (callback.getInvocationType() == InvocationType.NON_BLOCKING)
+            switch (callback.getInvocationType())
             {
-                permittedSuccess(null);
-                return;
+                case NON_BLOCKING ->
+                {
+                    _writeCallback.set(null);
+                    callback.succeeded();
+                }
+                case EITHER ->
+                {
+                    _writeCallback.set(null);
+                    Invocable.invokeNonBlocking(callback::succeeded);
+                }
+                case BLOCKING ->
+                {
+                    Permit permit = _remote.acquire();
+                    if (permit.isAllocated())
+                        permittedSuccess(permit);
+                    else
+                        permit.whenAllocated(this::permittedSuccess);
+                }
+                default -> throw new IllegalStateException(callback.getInvocationType().name());
             }
 
             Permit permit = _remote.acquire();
@@ -435,8 +461,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             }
             finally
             {
-                if (permit != null)
-                    permit.release();
+                permit.release();
             }
         }
 
@@ -444,17 +469,28 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         public void failed(Throwable x)
         {
             Callback callback = _writeCallback.get();
-            if (callback.getInvocationType() == InvocationType.NON_BLOCKING)
+            switch (callback.getInvocationType())
             {
-                permittedFailure(null, x);
-                return;
+                case NON_BLOCKING ->
+                {
+                    _writeCallback.set(null);
+                    callback.failed(x);
+                }
+                case EITHER ->
+                {
+                    _writeCallback.set(null);
+                    Invocable.invokeNonBlocking(() -> callback.failed(x));
+                }
+                case BLOCKING ->
+                {
+                    Permit permit = _remote.acquire();
+                    if (permit.isAllocated())
+                        permittedFailure(permit, x);
+                    else
+                        permit.whenAllocated(p -> permittedFailure(p, x));
+                }
+                default -> throw new IllegalStateException(callback.getInvocationType().name());
             }
-
-            Permit permit = _remote.acquire();
-            if (permit.isAllocated())
-                permittedFailure(permit, x);
-            else
-                permit.whenAllocated(p -> permittedFailure(p, x));
         }
 
         private void permittedFailure(Permit permit, Throwable x)
@@ -465,8 +501,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
             }
             finally
             {
-                if (permit != null)
-                    permit.release();
+                permit.release();
             }
         }
 
