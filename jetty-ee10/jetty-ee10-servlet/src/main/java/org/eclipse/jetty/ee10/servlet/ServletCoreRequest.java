@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import jakarta.servlet.ServletInputStream;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -28,7 +29,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -263,22 +266,32 @@ public class ServletCoreRequest implements Request
     {
         if (_wrapped)
         {
+            // Deplete the wrapping request's ServletInputStream using only non-blocking API, then
+            // eventually delegate to consumeAvailable() to make the response non-persistent if needed.
+            ByteBufferPool byteBufferPool = _servletContextRequest.getComponents().getByteBufferPool();
+            RetainableByteBuffer rbb = byteBufferPool.acquire(8192, false);
             try
             {
-                // TODO this blocks but shouldn't
-                Content.Source.consumeAll(source());
-                return true;
+                ServletInputStream sis = getServletRequest().getInputStream();
+                byte[] array = rbb.getByteBuffer().array();
+                while (sis.isReady() && !sis.isFinished())
+                {
+                    int read = sis.read(array);
+                    if (read == -1)
+                        break;
+                }
             }
-            catch (IOException e)
+            catch (Throwable x)
             {
-                // TODO the underlying connection should be made non-persistent
-                return false;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("ignored exception while depleting wrapped ServletInputStream", x);
+            }
+            finally
+            {
+                rbb.release();
             }
         }
-        else
-        {
-            return _servletContextRequest.consumeAvailable();
-        }
+        return _servletContextRequest.consumeAvailable();
     }
 
     @Override

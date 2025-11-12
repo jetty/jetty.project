@@ -50,6 +50,8 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.servlet.http.Part;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -68,8 +70,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -77,6 +79,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -84,7 +87,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CrossContextDispatcherTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(CrossContextDispatcherTest.class);
     public static final String MULTIPART = "--AaB03x\r\n" +
         "content-disposition: form-data; name=\"field1\"\r\n" +
         "\r\n" +
@@ -386,6 +388,57 @@ public class CrossContextDispatcherTest
         params = params.substring(params.indexOf("=") + 1);
         params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testCrossContextIncludeWithRequestWrappingFilter(boolean fullContent) throws Exception
+    {
+        _targetServletContextHandler.addServlet(VerifyIncludeServlet.class, "/verify/*");
+        _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
+        _contextHandler.addFilter((request, response, chain) -> chain.doFilter(new HttpServletRequestWrapper((HttpServletRequest)request), response),
+            "/dispatch/*", EnumSet.allOf(DispatcherType.class));
+
+        String rawRequest = """
+            POST /context/dispatch/?include=/verify HTTP/1.1\r
+            Host: localhost\r
+            Content-length: 10\r
+            \r
+            """;
+        rawRequest += fullContent ? "0123456789" : "";
+        String rawResponse = _connector.getResponse(rawRequest);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        String content = response.getContent();
+        String[] contentLines = content.split("\\n");
+
+        //verify include attributes
+        assertThat(content, containsString("Verified!"));
+        assertThat(content, containsString("jakarta.servlet.include.context_path=/foreign"));
+        assertThat(content, containsString("jakarta.servlet.include.servlet_path=/verify"));
+        assertThat(content, containsString("jakarta.servlet.include.path_info=/pinfo"));
+        String includeMapping = extractLine(contentLines, "jakarta.servlet.include.mapping=");
+        assertThat(includeMapping, containsString("VerifyIncludeServlet"));
+        assertThat(content, containsString("jakarta.servlet.include.request_uri=/foreign/verify/pinfo"));
+        //verify request values
+        assertThat(content, containsString("CONTEXT_PATH=/context"));
+        assertThat(content, containsString("SERVLET_PATH=/dispatch"));
+        assertThat(content, containsString("PATH_INFO=/"));
+        String mapping = extractLine(contentLines, "MAPPING=");
+        assertThat(mapping, containsString("CrossContextDispatchServlet"));
+        assertThat(content, containsString("QUERY_STRING=include=/verify"));
+        assertThat(content, containsString("REQUEST_URI=/context/dispatch/"));
+        String params = extractLine(contentLines, "PARAMS=");
+        assertNotNull(params);
+        params = params.substring(params.indexOf("=") + 1);
+        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
+        //verify that the content was consumed
+        HttpField connectionField = response.getField(HttpHeader.CONNECTION);
+        if (fullContent)
+            assertThat(connectionField, nullValue());
+        else
+            assertThat(connectionField.getValue(), is("close"));
     }
 
     @Test
