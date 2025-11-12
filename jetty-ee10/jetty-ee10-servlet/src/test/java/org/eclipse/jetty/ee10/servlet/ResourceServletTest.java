@@ -35,6 +35,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -106,6 +107,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeader;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerValue;
@@ -3859,7 +3861,7 @@ public class ResourceServletTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.toString(), response.getContent(), is("How now brown cow"));
-        assertThat(rootHandler.lastWriteCounter.get(), is(1));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(rootHandler.lastWriteCounter.get(), is(1)));
     }
 
     @Test
