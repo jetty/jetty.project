@@ -51,6 +51,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.servlet.http.Part;
 import org.eclipse.jetty.ee.test.resources.TestEEResources;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -68,6 +70,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -75,6 +79,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -99,6 +104,10 @@ public class CrossContextDispatcherTest
         "Connection: close\r\n";
 
     public static final String GET_INCLUDE = "GET /context/dispatch/?include=/reader HTTP/1.1\r\n";
+    public static final String MULTIPART_INCLUDE_REQUEST = GET_INCLUDE +
+        MULTIPART_HEADERS +
+        "\r\n" +
+        MULTIPART;
 
     public static final String GET_FORWARD = "GET /context/dispatch/?forward=/reader HTTP/1.1\r\n";
 
@@ -135,18 +144,19 @@ public class CrossContextDispatcherTest
         _targetServletContextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(_targetServletContextHandler);
 
-        _rootContextHandler = new ServletContextHandler();
-        _rootContextHandler.setContextPath("/");
-        _rootContextHandler.setBaseResourceAsPath(TestEEResources.getResourceAsPathDir("/docroot"));
-        _rootContextHandler.setCrossContextDispatchSupported(true);
-        contextCollection.addHandler(_rootContextHandler);
-
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setBaseResource(ResourceFactory.root().newResource(TestEEResources.getResourceAsPathDir("/dispatchResourceTest")));
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
         resourceContextHandler.setHandler(resourceHandler);
         resourceContextHandler.setCrossContextDispatchSupported(true);
         contextCollection.addHandler(resourceContextHandler);
+
+        _rootContextHandler = new ServletContextHandler();
+        _rootContextHandler.setContextPath("/");
+        _rootContextHandler.setBaseResourceAsPath(TestEEResources.getResourceAsPathDir("/docroot"));
+        _rootContextHandler.setCrossContextDispatchSupported(true);
+        contextCollection.addHandler(_rootContextHandler);
+
         _server.setHandler(contextCollection);
         _server.addConnector(_connector);
 
@@ -346,7 +356,7 @@ public class CrossContextDispatcherTest
         _targetServletContextHandler.addServlet(VerifyIncludeServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-         String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponse("""
             GET /context/dispatch/?include=/verify HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -378,6 +388,57 @@ public class CrossContextDispatcherTest
         params = params.substring(params.indexOf("=") + 1);
         params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testCrossContextIncludeWithRequestWrappingFilter(boolean fullContent) throws Exception
+    {
+        _targetServletContextHandler.addServlet(VerifyIncludeServlet.class, "/verify/*");
+        _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
+        _contextHandler.addFilter((request, response, chain) -> chain.doFilter(new HttpServletRequestWrapper((HttpServletRequest)request), response),
+            "/dispatch/*", EnumSet.allOf(DispatcherType.class));
+
+        String rawRequest = """
+            POST /context/dispatch/?include=/verify HTTP/1.1\r
+            Host: localhost\r
+            Content-length: 10\r
+            \r
+            """;
+        rawRequest += fullContent ? "0123456789" : "";
+        String rawResponse = _connector.getResponse(rawRequest);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        String content = response.getContent();
+        String[] contentLines = content.split("\\n");
+
+        //verify include attributes
+        assertThat(content, containsString("Verified!"));
+        assertThat(content, containsString("jakarta.servlet.include.context_path=/foreign"));
+        assertThat(content, containsString("jakarta.servlet.include.servlet_path=/verify"));
+        assertThat(content, containsString("jakarta.servlet.include.path_info=/pinfo"));
+        String includeMapping = extractLine(contentLines, "jakarta.servlet.include.mapping=");
+        assertThat(includeMapping, containsString("VerifyIncludeServlet"));
+        assertThat(content, containsString("jakarta.servlet.include.request_uri=/foreign/verify/pinfo"));
+        //verify request values
+        assertThat(content, containsString("CONTEXT_PATH=/context"));
+        assertThat(content, containsString("SERVLET_PATH=/dispatch"));
+        assertThat(content, containsString("PATH_INFO=/"));
+        String mapping = extractLine(contentLines, "MAPPING=");
+        assertThat(mapping, containsString("CrossContextDispatchServlet"));
+        assertThat(content, containsString("QUERY_STRING=include=/verify"));
+        assertThat(content, containsString("REQUEST_URI=/context/dispatch/"));
+        String params = extractLine(contentLines, "PARAMS=");
+        assertNotNull(params);
+        params = params.substring(params.indexOf("=") + 1);
+        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
+        //verify that the content was consumed
+        HttpField connectionField = response.getField(HttpHeader.CONNECTION);
+        if (fullContent)
+            assertThat(connectionField, nullValue());
+        else
+            assertThat(connectionField.getValue(), is("close"));
     }
 
     @Test
@@ -511,12 +572,12 @@ public class CrossContextDispatcherTest
         String form = "a=xxx";
         String rawResponse = _connector.getResponse(
             "POST /context/dispatch/?forward=/reader HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Content-Length: " + form.length() + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-             form);
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: " + form.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                form);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("a="));
@@ -525,33 +586,33 @@ public class CrossContextDispatcherTest
     @Test
     public void testParamsAfterCrossContextForward() throws Exception
     {
-         _targetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
-         CountDownLatch latch = new CountDownLatch(2);
-         Servlet dispatcher = new CrossContextDispatchServlet()
-         {
-             @Override
-             protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-             {
-                 super.doGet(request, response);
+        _targetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
+        CountDownLatch latch = new CountDownLatch(2);
+        Servlet dispatcher = new CrossContextDispatchServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                super.doGet(request, response);
 
-                 if (!StringUtil.isBlank(request.getParameter("param")))
-                     latch.countDown();
-                 if (!StringUtil.isBlank(request.getParameter("a")))
-                     latch.countDown();
-             }
-         };
+                if (!StringUtil.isBlank(request.getParameter("param")))
+                    latch.countDown();
+                if (!StringUtil.isBlank(request.getParameter("a")))
+                    latch.countDown();
+            }
+        };
 
         _contextHandler.addServlet(new ServletHolder(dispatcher), "/dispatch/*");
 
         String form = "a=xxx";
         String rawResponse = _connector.getResponse(
             "POST /context/dispatch/?forward=/reader&param=a HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Content-Length: " + form.length() + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-             form);
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: " + form.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                form);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
@@ -872,7 +933,6 @@ public class CrossContextDispatcherTest
             String ctx = request.getParameter("ctx");
             if (StringUtil.isBlank(ctx))
                 ctx = "/foreign";
-
             if (request.getParameter("forward") != null)
             {
                 ServletContext foreign = getServletContext().getContext(ctx);
@@ -880,7 +940,7 @@ public class CrossContextDispatcherTest
                 dispatcher = foreign.getRequestDispatcher(URIUtil.encodePath(request.getParameter("forward")) + "/pinfo?a=b");
 
                 if (dispatcher == null)
-                       response.sendError(404, "No dispatcher for forward");
+                    response.sendError(404, "No dispatcher for forward");
                 else
                     dispatcher.forward(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
             }
@@ -1061,7 +1121,7 @@ public class CrossContextDispatcherTest
 
     public static class VerifyIncludeServlet extends GenericServlet
     {
-         @Override
+        @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             if (DispatcherType.INCLUDE.equals(req.getDispatcherType()))

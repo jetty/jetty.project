@@ -42,7 +42,6 @@ import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.ResponseUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextRequest;
@@ -55,7 +54,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_CONTEXT;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 /**
@@ -481,13 +479,12 @@ public class ServletChannel
 
                             // The handling of the original dispatch failed, and we are now going to either generate
                             // and error response ourselves or dispatch for an error page.  If there is content left over
-                            // from the failed dispatch, then we try to consume it here and if we fail we add a
-                            // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
+                            // from the failed dispatch, then we try to consume it here. If we fail, the connection may be
+                            // made non-persistent. This can't be deferred to COMPLETE as the response will be committed
                             // by then.
-                            if (!_httpInput.consumeAvailable())
-                                ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
+                            _httpInput.consumeAvailable();
 
-                            ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ERROR_CONTEXT);
+                            ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(org.eclipse.jetty.server.handler.ErrorHandler.ERROR_CONTEXT);
                             Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body or have no ErrorHandler, then create a minimal error response.
@@ -542,7 +539,7 @@ public class ServletChannel
                         finally
                         {
                             // clean up the context that was set in Response.sendError
-                            _servletContextRequest.removeAttribute(ERROR_CONTEXT);
+                            _servletContextRequest.removeAttribute(ErrorHandler.ERROR_CONTEXT);
                         }
                         break;
                     }
@@ -584,7 +581,7 @@ public class ServletChannel
                         {
                             // Indicate Connection:close if we can't consume all.
                             if (response.getStatus() >= 200)
-                                ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, response);
+                                _servletContextRequest.consumeAvailable();
                         }
 
                         // RFC 7230, section 3.3.  We do this here so that a servlet error page can be sent.

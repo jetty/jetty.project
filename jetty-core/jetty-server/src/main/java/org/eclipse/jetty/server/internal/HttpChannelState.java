@@ -1577,8 +1577,8 @@ public class HttpChannelState implements HttpChannel, Components
                 }
                 else
                 {
-                    // If consumeAvailable() cannot consume all the content, then it
-                    // makes the connection non-persistent and returns an exception.
+                    // If consumeAvailable() cannot consume all the content, it returns an exception
+                    // and may also make the connection non-persistent.
                     // This must not result in an error according to RFC2616 section 8.2.3.
                     // Also, consumeAvailable must be called even when the connection is not
                     // persistent otherwise RequestLog.log() would be able to read

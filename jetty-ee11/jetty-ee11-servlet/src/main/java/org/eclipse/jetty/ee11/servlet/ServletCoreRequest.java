@@ -24,11 +24,14 @@ import java.util.function.Predicate;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -39,6 +42,7 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 
 import static org.eclipse.jetty.util.URIUtil.addEncodedPaths;
@@ -263,20 +267,32 @@ public class ServletCoreRequest implements Request
     {
         if (_wrapped)
         {
+            // Deplete the wrapping request's ServletInputStream using only non-blocking API, then
+            // eventually delegate to consumeAvailable() to make the response non-persistent if needed.
+            ByteBufferPool byteBufferPool = _servletContextRequest.getComponents().getByteBufferPool();
+            RetainableByteBuffer rbb = byteBufferPool.acquire(IO.DEFAULT_BUFFER_SIZE, false);
             try
             {
-                Content.Source.consumeAll(source());
-                return true;
+                ServletInputStream sis = getServletRequest().getInputStream();
+                byte[] array = rbb.getByteBuffer().array();
+                while (sis.isReady() && !sis.isFinished())
+                {
+                    int read = sis.read(array);
+                    if (read == -1)
+                        break;
+                }
             }
-            catch (IOException e)
+            catch (Throwable x)
             {
-                return false;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("ignored exception while depleting wrapped ServletInputStream", x);
+            }
+            finally
+            {
+                rbb.release();
             }
         }
-        else
-        {
-            return _servletContextRequest.consumeAvailable();
-        }
+        return _servletContextRequest.consumeAvailable();
     }
 
     @Override
