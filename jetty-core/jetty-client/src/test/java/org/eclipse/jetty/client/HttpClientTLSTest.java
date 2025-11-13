@@ -1258,9 +1258,7 @@ public class HttpClientTLSTest
             .send();
         assertEquals(HttpStatus.OK_200, response2.getStatus());
     }
-
-
-
+    
     @Test
     public void testBytesInBytesOut() throws Exception
     {
