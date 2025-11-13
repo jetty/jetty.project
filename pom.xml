@@ -258,8 +258,8 @@
     <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
-    <junit.platform.version>1.14.1</junit.platform.version>
-    <junit.version>5.14.1</junit.version>
+    <junit.platform.version>${junit.version}</junit.platform.version>
+    <junit.version>6.0.1</junit.version>
     <kerb-simplekdc.version>2.1.1</kerb-simplekdc.version>
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
