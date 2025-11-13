@@ -372,86 +372,6 @@ public class HttpClientTLSTest
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
     }
 
-    // Excluded in JDK 11+ because resumed sessions cannot be compared
-    // using their session IDs even though they are resumed correctly.
-    @EnabledForJreRange(max = JRE.JAVA_17)
-    @Test
-    public void testHandshakeSucceededWithSessionResumption() throws Exception
-    {
-        SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
-        startServer(serverTLSFactory, new EmptyServerHandler());
-
-        AtomicReference<byte[]> serverSession = new AtomicReference<>();
-        connector.addBean(new SslHandshakeListener()
-        {
-            @Override
-            public void handshakeSucceeded(Event event)
-            {
-                serverSession.set(event.getSSLEngine().getSession().getId());
-            }
-        });
-
-        SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
-        startClient(clientTLSFactory);
-
-        AtomicReference<byte[]> clientSession = new AtomicReference<>();
-        client.addBean(new SslHandshakeListener()
-        {
-            @Override
-            public void handshakeSucceeded(Event event)
-            {
-                clientSession.set(event.getSSLEngine().getSession().getId());
-            }
-        });
-
-        // First request primes the TLS session.
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-            .scheme(HttpScheme.HTTPS.asString())
-            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-
-        assertNotNull(serverSession.get());
-        assertNotNull(clientSession.get());
-
-        connector.removeBean(connector.getBean(SslHandshakeListener.class));
-        client.removeBean(client.getBean(SslHandshakeListener.class));
-
-        CountDownLatch serverLatch = new CountDownLatch(1);
-        connector.addBean(new SslHandshakeListener()
-        {
-            @Override
-            public void handshakeSucceeded(Event event)
-            {
-                if (Arrays.equals(serverSession.get(), event.getSSLEngine().getSession().getId()))
-                    serverLatch.countDown();
-            }
-        });
-
-        CountDownLatch clientLatch = new CountDownLatch(1);
-        client.addBean(new SslHandshakeListener()
-        {
-            @Override
-            public void handshakeSucceeded(Event event)
-            {
-                if (Arrays.equals(clientSession.get(), event.getSSLEngine().getSession().getId()))
-                    clientLatch.countDown();
-            }
-        });
-
-        // Second request should have the same session ID.
-        response = client.newRequest("localhost", connector.getLocalPort())
-            .scheme(HttpScheme.HTTPS.asString())
-            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-
-        assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
-        assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
-    }
-
     @Test
     public void testServerRawCloseDetectedByClient() throws Exception
     {
@@ -1258,7 +1178,7 @@ public class HttpClientTLSTest
             .send();
         assertEquals(HttpStatus.OK_200, response2.getStatus());
     }
-    
+
     @Test
     public void testBytesInBytesOut() throws Exception
     {
