@@ -33,6 +33,7 @@ import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
 import jakarta.servlet.descriptor.TaglibDescriptor;
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee9.nested.ServletConstraint;
+import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.ConstraintAware;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
@@ -64,6 +65,8 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlAppendable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.ee9.nested.Response.HttpCookieFacade.getCommentWithAttributes;
 
 /**
  * QuickStartGeneratorConfiguration
@@ -424,14 +427,15 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //session-config
-        if (context.getSessionHandler() != null)
+        SessionHandler sessionHandler = context.getSessionHandler();
+        if (sessionHandler != null)
         {
             out.openTag("session-config");
-            int maxInactiveSec = context.getSessionHandler().getMaxInactiveInterval();
+            int maxInactiveSec = sessionHandler.getMaxInactiveInterval();
             out.tag("session-timeout", (maxInactiveSec == 0 ? "0" : Integer.toString(maxInactiveSec / 60)));
 
             //cookie-config
-            SessionCookieConfig cookieConfig = context.getSessionHandler().getSessionCookieConfig();
+            SessionCookieConfig cookieConfig = sessionHandler.getSessionCookieConfig();
             if (cookieConfig != null)
             {
                 out.openTag("cookie-config");
@@ -445,8 +449,9 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 if (cookieConfig.getPath() != null)
                     out.tag("path", origin(md, "cookie-config.path"), cookieConfig.getPath());
 
-                if (cookieConfig.getComment() != null)
-                    out.tag("comment", origin(md, "cookie-config.comment"), cookieConfig.getComment());
+                String comment = getCommentWithAttributes(cookieConfig.getComment(), sessionHandler.isPartitioned(), sessionHandler.getSameSite());
+                if (comment != null)
+                    out.tag("comment", origin(md, "cookie-config.comment"), comment);
 
                 out.tag("http-only", origin(md, "cookie-config.http-only"), Boolean.toString(cookieConfig.isHttpOnly()));
                 out.tag("secure", origin(md, "cookie-config.secure"), Boolean.toString(cookieConfig.isSecure()));
@@ -455,7 +460,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             }
 
             // tracking-modes
-            Set<SessionTrackingMode> modes = context.getSessionHandler().getEffectiveSessionTrackingModes();
+            Set<SessionTrackingMode> modes = sessionHandler.getEffectiveSessionTrackingModes();
             if (modes != null)
             {
                 for (SessionTrackingMode mode : modes)
