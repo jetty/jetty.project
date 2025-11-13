@@ -270,11 +270,13 @@ public interface Request extends Attributes, Content.Source
     Content.Chunk read();
 
     /**
-     * Consume any available content. This bypasses any request wrappers to process the content in
+     * <p>Consume any available content. This bypasses any request wrappers to process the content in
      * {@link Request#read()} and reads directly from the {@link HttpStream}. This reads until
      * there is no content currently available, or it reaches EOF.
      * The {@link HttpConfiguration#setMaxUnconsumedRequestContentReads(int)} configuration can be used
-     * to configure how many reads will be attempted by this method.
+     * to configure how many reads will be attempted by this method.</p>
+     * <p>If the content was not fully consumed, the underlying connection may be made non-persistent.</p>
+     * <p>This call is always non-blocking.</p>
      * @return true if the content was fully consumed.
      */
     boolean consumeAvailable();

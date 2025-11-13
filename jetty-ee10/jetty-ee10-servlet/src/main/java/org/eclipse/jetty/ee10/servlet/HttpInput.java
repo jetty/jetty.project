@@ -127,6 +127,13 @@ public class HttpInput extends ServletInputStream
         }
     }
 
+    /**
+     * Consume all content currently available in this instance. If not
+     * all content could be consumed, then the underlying connection
+     * may be made non-persistent.
+     *
+     * @return true if all content could be consumed, false otherwise.
+     */
     public boolean consumeAvailable()
     {
         try (AutoLock ignored = _lock.lock())
