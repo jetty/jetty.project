@@ -434,7 +434,7 @@ public class ThreadLimitHandlerTest
 
         // Delay to let the write side get TCP blocked, then close the connection.
         // This ensures the server write callback will be failed by a different thread.
-        await().atMost(5, TimeUnit.SECONDS).pollDelay(1, TimeUnit.SECONDS).until(() ->
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
         {
             Thread thread = threadReference.get();
             return thread != null && thread.getState() == Thread.State.WAITING;

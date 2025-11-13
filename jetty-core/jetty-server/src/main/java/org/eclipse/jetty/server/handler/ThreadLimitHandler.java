@@ -445,12 +445,6 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
                 }
                 default -> throw new IllegalStateException(callback.getInvocationType().name());
             }
-
-            Permit permit = _remote.acquire();
-            if (permit.isAllocated())
-                permittedSuccess(permit);
-            else
-                permit.whenAllocated(this::permittedSuccess);
         }
 
         private void permittedSuccess(Permit permit)
