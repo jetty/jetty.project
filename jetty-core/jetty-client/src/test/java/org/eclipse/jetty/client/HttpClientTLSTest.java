@@ -73,6 +73,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
@@ -378,7 +379,7 @@ public class HttpClientTLSTest
 
     // Excluded in JDK 11+ because resumed sessions cannot be compared
     // using their session IDs even though they are resumed correctly.
-    @EnabledForJreRange(max = JRE.JAVA_10)
+    @EnabledForJreRange(max = JRE.JAVA_17)
     @Test
     public void testHandshakeSucceededWithSessionResumption() throws Exception
     {
@@ -458,6 +459,7 @@ public class HttpClientTLSTest
 
     // Excluded in JDK 11+ because resumed sessions cannot be compared
     // using their session IDs even though they are resumed correctly.
+    @Disabled("Minimum jdk is 17")
     @EnabledForJreRange(max = JRE.JAVA_10)
     @Test
     public void testClientRawCloseDoesNotInvalidateSession() throws Exception
@@ -1320,6 +1322,7 @@ public class HttpClientTLSTest
     }
 
     @Test
+    @Disabled("Minimum jdk is 17")
     @EnabledForJreRange(max = JRE.JAVA_16, disabledReason = "Since Java 17, SNI host names can only have letter|digit|hyphen characters.")
     public void testForcedNonDomainSNIWithIPv6() throws Exception
     {
