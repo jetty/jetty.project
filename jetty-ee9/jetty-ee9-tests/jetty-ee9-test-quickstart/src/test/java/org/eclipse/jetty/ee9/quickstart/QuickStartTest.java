@@ -291,4 +291,27 @@ public class QuickStartTest
               </filter-mapping>
             """));
     }
+
+    @Test
+    public void testSameSiteCookie() throws Exception
+    {
+        Path workdir = MavenPaths.targetTestDir(PreconfigureSpecWar.class.getSimpleName());
+        FS.ensureEmpty(workdir);
+        Path target = workdir.resolve("test-cookie_samesite");
+        FS.ensureEmpty(target);
+        FS.ensureDirExists(target.resolve("WEB-INF"));
+
+        Path sourceWebXml = MavenPaths.findTestResourceFile("cookie-web.xml");
+        Files.copy(sourceWebXml, target.resolve("WEB-INF/web.xml"));
+        System.setProperty("jetty.home", target.toString());
+
+        PreconfigureQuickStartWar.main(target.toString());
+
+        Path quickStartXml = target.resolve("WEB-INF/quickstart-web.xml");
+        String quickStartContents = Files.readString(quickStartXml);
+        assertThat(quickStartContents, containsString("""
+                <cookie-config>
+                  <comment>foo__SAME_SITE_NONE__</comment>
+            """));
+    }
 }
