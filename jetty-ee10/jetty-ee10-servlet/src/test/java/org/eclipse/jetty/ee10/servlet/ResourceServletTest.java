@@ -3803,7 +3803,7 @@ public class ResourceServletTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.toString(), response.getContent(), is("How now brown cow"));
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(rootHandler.lastWriteCounter.get(), is(1)));
+        await().atMost(5, TimeUnit.SECONDS).untilAtomic(rootHandler.lastWriteCounter, is(1));
     }
 
     @Test
