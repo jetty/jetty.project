@@ -747,7 +747,7 @@ public interface HttpURI
         {
             _uri = null;
 
-            _scheme = scheme == null ? null : URIUtil.normalizeScheme(scheme);
+            _scheme = URIUtil.normalizeScheme(scheme);
             _host = host;
             _port = (port > 0) ? port : URIUtil.UNDEFINED_PORT;
 

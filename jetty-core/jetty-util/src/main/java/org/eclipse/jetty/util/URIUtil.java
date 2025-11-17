@@ -2110,7 +2110,7 @@ public final class URIUtil
         }
         catch (Throwable e)
         {
-            throw new IllegalArgumentException("Bad [IPv6] address", e);
+            throw new IllegalArgumentException("Bad [IPv6] address: " + inetAddress, e);
         }
     }
 
