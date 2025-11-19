@@ -29,7 +29,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,7 +38,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -726,8 +724,11 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
 
         HttpTester.Response response = executeRequest(httpVersion);
 
-        assertThat(response.getStatus(), is(500));
-        assertThat(handler.failure(), instanceOf(RuntimeIOException.class));
+        assertThat(response.getStatus(), is(200));
+        // jetty truncates the body when content-length is reached.! This is correct and desired behaviour?
+        assertThat(response.getContent(), is("foo"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "3"));
+        assertThat(handler.failure(), is(nullValue()));
     }
 
     @ParameterizedTest
@@ -739,7 +740,19 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         server.start();
 
         HttpTester.Response response = executeRequest(httpVersion);
-        assertThat(response.getStatus(), is(500));
+
+        if (inWait)
+        {
+            // too late!
+            assertThat(response.getStatus(), is(500));
+        }
+        else
+        {
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getContent(), is("foo"));
+            assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "3"));
+        }
+        assertThat(handler.failure(), is(nullValue()));
     }
 
     private class SetContentLengthAndWriteMoreBytesHandler extends ThrowExceptionOnDemandHandler
@@ -773,10 +786,9 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                         else
                             asyncContext.complete();
                     }
-                    catch (Throwable e)
+                    catch (IOException e)
                     {
                         markFailed(e);
-                        asyncContext.complete();
                     }
                 });
             }

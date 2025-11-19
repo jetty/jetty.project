@@ -982,16 +982,12 @@ public class Response implements HttpServletResponse
 
     public boolean isAllContentWritten(long written)
     {
-        if (_contentLength < 0 || written < _contentLength)
-            return false;
-        if (written == _contentLength)
-            return true;
-        throw new RuntimeIOException(String.format("too much content written %s > %s", written, _contentLength));
+        return (_contentLength >= 0 && written >= _contentLength);
     }
 
     public boolean isContentComplete(long written)
     {
-        return (_contentLength < 0 || written == _contentLength);
+        return (_contentLength < 0 || written >= _contentLength);
     }
 
     public void closeOutput() throws IOException

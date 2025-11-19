@@ -571,7 +571,9 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
         HttpTester.Response response = executeRequest(httpVersion);
 
-        assertThat("response code", response.getStatus(), is(500));
+        assertThat("response code", response.getStatus(), is(200));
+        assertThat("response body", response.getContent(), is("foo"));
+        assertThat(response, containsHeaderValue("content-length", "3"));
     }
 
     @ParameterizedTest
@@ -584,7 +586,8 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
         HttpTester.Response response = executeRequest(httpVersion);
 
         // Setting the content-length and then writing the bytes commits the response
-        assertThat("response code", response.getStatus(), is(500));
+        assertThat("response code", response.getStatus(), is(200));
+        assertThat("response body", response.getContent(), is("foo"));
     }
 
     private class SetContentLengthAndWriteMoreBytesHandler extends ThrowExceptionOnDemandHandler

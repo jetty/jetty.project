@@ -1405,13 +1405,6 @@ public final class URIUtil
         return URI.create(buf.toString());
     }
 
-    private static boolean isHexDigit(char c)
-    {
-        return (((c >= 'a') && (c <= 'f')) || // ALPHA (lower)
-            ((c >= 'A') && (c <= 'F')) ||  // ALPHA (upper)
-            ((c >= '0') && (c <= '9')));
-    }
-
     /**
      * Validate an IPv4 or IPv6 address.
      * @param inetAddress the address to validate
