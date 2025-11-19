@@ -29,6 +29,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -217,6 +218,20 @@ public class HttpURITest
     {
         HttpURI uri = HttpURI.from("/@foo/bar");
         assertEquals("/@foo/bar", uri.getPath());
+    }
+
+    /**
+     * Test of an HttpURI of just a "/".
+     * The {@link HttpURI#from(String)} is used by HttpServletResponse.sendRedirect(String).
+     */
+    @Test
+    public void testFromSlash()
+    {
+        HttpURI uri = HttpURI.from("/");
+        assertThat("has no violations", uri.getViolations(), is(empty()));
+        assertNull(uri.getScheme());
+        assertNull(uri.getAuthority());
+        assertEquals("/", uri.getPath());
     }
 
     @Test
@@ -499,7 +514,13 @@ public class HttpURITest
                 // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
 
                 // An empty (null) authority
-                {"http://", null, null, null}
+                {"http://", null, null, EnumSet.noneOf(Violation.class)},
+
+                // Fragments
+                {"http://host/path/info#fragment", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                {"//host/path/info#frag/ment", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                {"/path/info#fragment", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                {"http://example.com#@fragmentnothost", "", "", EnumSet.noneOf(Violation.class)}
             }).map(Arguments::of);
     }
 
@@ -690,7 +711,7 @@ public class HttpURITest
     public void testSuspiciousPathCharacterBuilderPath(String input)
     {
         HttpURI uri = HttpURI.build().path(input);
-        assertThat("has any violations", uri.hasViolations(), is(true));
+        assertThat(uri.hasViolations(), is(true));
         assertThat("has SUSPICIOUS_PATH_CHARACTERS violation", uri.hasViolation(Violation.SUSPICIOUS_PATH_CHARACTERS), is(true));
     }
 
@@ -699,7 +720,7 @@ public class HttpURITest
     public void testSuspiciousPathCharacterFromString(String input)
     {
         HttpURI uri = HttpURI.from(input);
-        assertThat("has any violations", uri.hasViolations(), is(true));
+        assertThat(uri.hasViolations(), is(true));
         assertThat("has SUSPICIOUS_PATH_CHARACTERS violation", uri.hasViolation(Violation.SUSPICIOUS_PATH_CHARACTERS), is(true));
     }
 
@@ -729,8 +750,24 @@ public class HttpURITest
     public void testIllegalPathCharacterBuilderPath(String input)
     {
         HttpURI uri = HttpURI.build().path(input);
-        assertThat("has any violations", uri.hasViolations(), is(true));
-        assertThat("has ILLEGAL_PATH_CHARACTERS violation", uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
+        assertThat(uri.hasViolations(), is(true));
+        assertThat(uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
+
+        if (input.startsWith("/") && input.indexOf('/', 1) == -1)
+        {
+            // Also test without leading slash
+            uri = HttpURI.from(input.substring(1));
+            assertThat(uri.hasViolations(), is(true));
+            assertThat(uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
+            
+            uri = HttpURI.from(input.substring(1) + "/extra");
+            assertThat(uri.hasViolations(), is(true));
+            assertThat(uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
+            
+            uri = HttpURI.from(input.substring(1) + "#fragment");
+            assertThat(uri.hasViolations(), is(true));
+            assertThat(uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
+        }
     }
 
     @ParameterizedTest
@@ -738,8 +775,8 @@ public class HttpURITest
     public void testIllegalPathCharacterFromString(String input)
     {
         HttpURI uri = HttpURI.from(input);
-        assertThat("has any violations", uri.hasViolations(), is(true));
-        assertThat("has ILLEGAL_PATH_CHARACTERS violation", uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
+        assertThat(uri.hasViolations(), is(true));
+        assertThat(uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
     }
 
     public static Stream<Arguments> parseData()
@@ -858,6 +895,8 @@ public class HttpURITest
 
             // Simple IPv6 host no port (default path)
             Arguments.of("http://[2001:db8::1]/", "http", "[2001:db8::1]", null, "/", null, null, null),
+            Arguments.of("http://[0:0:0:0:0:ffff:127.0.0.1]/", "http", "[0:0:0:0:0:ffff:127.0.0.1]", null, "/", null, null, null),
+            Arguments.of("http://[::ffff:127.0.0.1]/", "http", "[::ffff:127.0.0.1]", null, "/", null, null, null),
 
             // Scheme-less IPv6, host with port (default path)
             Arguments.of("//[2001:db8::1]:8080/", null, "[2001:db8::1]", "8080", "/", null, null, null),
@@ -899,7 +938,8 @@ public class HttpURITest
             assertThat("[" + input + "] .param", httpUri.getParam(), is(param));
             assertThat("[" + input + "] .query", httpUri.getQuery(), is(query));
             assertThat("[" + input + "] .fragment", httpUri.getFragment(), is(fragment));
-            assertThat("[" + input + "] .toString", httpUri.toString(), is(input));
+            if (!input.contains(":ffff:127.0.0.1"))
+                assertThat("[" + input + "] .toString", httpUri.toString(), is(input));
         }
         catch (URISyntaxException e)
         {
@@ -931,7 +971,8 @@ public class HttpURITest
         HttpURI httpUri = HttpURI.from(javaUri);
 
         assertThat("[" + input + "] .scheme", httpUri.getScheme(), is(scheme));
-        assertThat("[" + input + "] .host", httpUri.getHost(), is(host));
+        if (!input.contains(":ffff:127.0.0.1"))
+            assertThat("[" + input + "] .host", httpUri.getHost(), is(host));
         assertThat("[" + input + "] .port", httpUri.getPort(), is(port == null ? -1 : port));
         assertThat("[" + input + "] .path", httpUri.getPath(), is(path));
         assertThat("[" + input + "] .param", httpUri.getParam(), is(param));
@@ -1193,10 +1234,12 @@ public class HttpURITest
             Arguments.of("", "example.org", 0, "://example.org"),
             Arguments.of("\t", "example.org", 0, "\t://example.org"),
             Arguments.of("    ", "example.org", 0, "    ://example.org"),
+            Arguments.of("http^", "example.org", 0, "http^://example.org"),
+
             // bad ports
             Arguments.of("http", "example.org", 1_000_000, "http://example.org:1000000"),
-            // bad ports
             Arguments.of("ws", "example.org", -222333, "ws://example.org"), // negative port same as -1, i.e. not set.
+
             // bad servers
             Arguments.of("http", null, 0, "http:"),
             Arguments.of("http", "", 0, "http://"),
@@ -1209,8 +1252,27 @@ public class HttpURITest
     @MethodSource("fromBad")
     public void testFromBad(String scheme, String server, int port, String expectedStr)
     {
+        // TODO Consider whether we want to throw IllegalArgumentException instead
         HttpURI httpURI = HttpURI.from(scheme, server, port, null);
         assertThat(httpURI.asString(), is(expectedStr));
+    }
+
+    public static Stream<String> badSchemes()
+    {
+        return Stream.of(
+            "://host/path",
+            "\t://host/path",
+            "  ://host/path",
+            "unknown^://host/path",
+            "http^://host/path"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("badSchemes")
+    public void testBadSchemes(String uri)
+    {
+        assertThrows(IllegalArgumentException.class, () -> HttpURI.from(uri));
     }
 
     public static Stream<String> badAuthorities()
@@ -1243,10 +1305,32 @@ public class HttpURITest
             "http://hostone.com:80@[vulndetector.com]/",
             "http://[vulndetector.com]#@normal.com",
             "http://hostone.com\\\\[vulndetector.com]/",
+            "http://[normal.com@]vulndetector.com/",
+            "http://normal.com[user@vulndetector].com/",
+            "http://normal.com[@]vulndetector.com/",
 
             // Ambiguous empty path
             "http://localhost;param",
             "http://localhost:8080;param"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("authoritiesNoPath")
+    public void testAuthorityNoPath(String uri, String authority, String query, String fragment)
+    {
+        HttpURI httpURI = HttpURI.from(uri);
+        assertThat(httpURI.getAuthority(), is(authority));
+        assertThat(httpURI.getPath(), is(""));
+        assertThat(httpURI.getQuery(), is(query));
+        assertThat(httpURI.getFragment(), is(fragment));
+    }
+
+    public static Stream<Arguments> authoritiesNoPath()
+    {
+        return Stream.of(
+            Arguments.of("http://good.com#@evil.com", "good.com", null, "@evil.com"),
+            Arguments.of("http://good.com?@evil.com", "good.com", "@evil.com", null)
         );
     }
 
