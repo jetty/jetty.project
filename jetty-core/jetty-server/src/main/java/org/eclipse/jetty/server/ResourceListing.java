@@ -84,12 +84,10 @@ public class ResourceListing
                     case "D" -> sortOrderAscending = false;
                 }
             }
-            if (StringUtil.isNotBlank(paramC))
+            if (StringUtil.isNotBlank(paramC)) &&
+                (paramC.equals("N") || paramC.equals("M") || paramC.equals("S")) // Refatorado
             {
-                if (paramC.equals("N") || paramC.equals("M") || paramC.equals("S"))
-                {
-                    sortColumn = paramC;
-                }
+                sortColumn = paramC;
             }
         }
 

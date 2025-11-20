@@ -1905,6 +1905,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             ChannelRequest request;
             boolean callbackCompleted;
+            //Refatorado
             try (AutoLock ignore = _lock.lock())
             {
                 callbackCompleted = _callbackCompleted;
