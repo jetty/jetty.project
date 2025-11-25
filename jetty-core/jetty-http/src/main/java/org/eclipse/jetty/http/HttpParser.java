@@ -379,8 +379,9 @@ public class HttpParser
 
     protected void reportComplianceViolation(Violation violation, String reason)
     {
+        boolean allowed = _complianceMode.allows(violation);
         if (_requestParser)
-            _requestHandler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, reason));
+            _requestHandler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, reason, allowed));
     }
 
     protected String caseInsensitiveHeader(String orig, String normative)
@@ -2223,6 +2224,16 @@ public class HttpParser
         }
 
         /**
+         * Get the request specific {@link ComplianceViolation.Listener}
+         *
+         * @return the ComplianceViolation.Listener belonging to this HttpChannel.
+         */
+        default ComplianceViolation.Listener getComplianceViolationListener()
+        {
+            return ComplianceViolation.Listener.NOOP;
+        }
+
+        /**
          * Called to signal that a bad HTTP message has been received.
          *
          * @param failure the failure with the bad message information
@@ -2360,34 +2371,9 @@ public class HttpParser
         protected QuotedCSV newQuotedCSV(boolean keepQuotes, String value)
         {
             if (getHeader() != null && HttpField.ETAG_HEADER.contains(this.getHeader()))
-                return new QuotedCSV.Etags(_complianceMode,
-                    (v, r) ->
-                    {
-                        try
-                        {
-                            _handler.onViolation(new ComplianceViolation.Event(_complianceMode, v, r));
-                        }
-                        catch (BadMessageException bme)
-                        {
-                            throw bme;
-                        }
-                        catch (Throwable t)
-                        {
-                            throw new BadMessageException(t.getMessage(), t);
-                        }
-                    }, value);
+                return new HttpQuotedCSV.Etags(_complianceMode, _handler.getComplianceViolationListener(), value);
 
-            return new QuotedCSV(keepQuotes, value)
-            {
-                @Override
-                protected void onComplianceViolation(ComplianceViolation violation, String value)
-                {
-                    if (_complianceMode.allows(violation))
-                        _handler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, value));
-                    else
-                        throw new BadMessageException(violation.toString());
-                }
-            };
+            return new HttpQuotedCSV(_complianceMode, _handler.getComplianceViolationListener(), keepQuotes, value);
         }
     }
 }

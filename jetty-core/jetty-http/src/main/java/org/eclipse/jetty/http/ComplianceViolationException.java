@@ -19,7 +19,7 @@ public class ComplianceViolationException extends IllegalArgumentException
 
     public ComplianceViolationException(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
     {
-        this(new ComplianceViolation.Event(mode, violation, details));
+        this(new ComplianceViolation.Event(mode, violation, details, false));
     }
 
     public ComplianceViolationException(ComplianceViolation.Event event)

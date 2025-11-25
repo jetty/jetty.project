@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -381,6 +382,41 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         return new HttpCompliance(name, remainder);
     }
 
+    /**
+     * Assert that the specified Violation is allowed.
+     *
+     * @param violation the violation to check if allowed
+     * @param listener the listener to report to
+     * @param error the function to produce a Throwable if not allowed
+     * @param <T> the type of Throwable
+     * @throws T Throwable if not allowed
+     */
+    public <T extends Throwable> void assertAllowed(HttpCompliance.Violation violation, ComplianceViolation.Listener listener, Function<String, T> error) throws T
+    {
+        assertAllowed(violation, listener, violation.getDescription(), error);
+    }
+
+    /**
+     * Assert that the specified Violation is allowed.
+     *
+     * @param violation the violation to check if allowed
+     * @param listener the listener to report to
+     * @param detail the detail of violation
+     * @param error the function to produce a Throwable if not allowed
+     * @param <T> the type of Throwable
+     * @throws T Throwable if not allowed
+     */
+    public <T extends Throwable> void assertAllowed(HttpCompliance.Violation violation, ComplianceViolation.Listener listener, String detail, Function<String, T> error) throws T
+    {
+        boolean allowed = this.allows(violation);
+
+        // Always report violation to listeners
+        listener.onComplianceViolation(new ComplianceViolation.Event(this, violation, detail, allowed));
+
+        if (!allowed)
+            throw error.apply(violation.getDescription());
+    }
+
     @Override
     public String toString()
     {
@@ -401,8 +437,14 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         return EnumSet.copyOf(violations);
     }
 
-    public static void checkHttpCompliance(MetaData.Request request, HttpCompliance mode,
-                             ComplianceViolation.Listener listener)
+    /**
+     * Check the provided Request against configured {@link HttpCompliance}.
+     *
+     * @param request the request to check
+     * @param listener the notification method for violations.  (Tip: use the Request specific Listener from the {@code HttpChannelState})
+     * @throws BadMessageException if there is a violation that wasn't allowed
+     */
+    public void check(MetaData.Request request, ComplianceViolation.Listener listener)
     {
         boolean seenContentLength = false;
         boolean seenTransferEncoding = false;
@@ -419,43 +461,43 @@ public final class HttpCompliance implements ComplianceViolation.Mode
                 case CONTENT_LENGTH ->
                 {
                     if (seenContentLength)
-                        assertAllowed(Violation.MULTIPLE_CONTENT_LENGTHS, mode, listener);
+                        assertAllowed(Violation.MULTIPLE_CONTENT_LENGTHS, listener, BadMessageException::new);
                     String[] lengths = httpField.getValues();
                     if (lengths.length > 1)
-                        assertAllowed(Violation.MULTIPLE_CONTENT_LENGTHS, mode, listener);
+                        assertAllowed(Violation.MULTIPLE_CONTENT_LENGTHS, listener, BadMessageException::new);
                     if (seenTransferEncoding)
-                        assertAllowed(Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, mode, listener);
+                        assertAllowed(Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, listener, BadMessageException::new);
                     seenContentLength = true;
                 }
                 case TRANSFER_ENCODING ->
                 {
                     if (seenContentLength)
-                        assertAllowed(Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, mode, listener);
+                        assertAllowed(Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, listener, BadMessageException::new);
                     seenTransferEncoding = true;
                 }
                 case HOST ->
                 {
                     if (seenHostHeader)
-                        assertAllowed(Violation.DUPLICATE_HOST_HEADERS, mode, listener);
+                        assertAllowed(Violation.DUPLICATE_HOST_HEADERS, listener, BadMessageException::new);
                     String[] hostValues = httpField.getValues();
                     if (hostValues.length > 1)
-                        assertAllowed(Violation.DUPLICATE_HOST_HEADERS, mode, listener);
+                        assertAllowed(Violation.DUPLICATE_HOST_HEADERS, listener, BadMessageException::new);
                     for (String hostValue: hostValues)
                         if (StringUtil.isBlank(hostValue))
-                            assertAllowed(Violation.UNSAFE_HOST_HEADER, mode, listener);
+                            assertAllowed(Violation.UNSAFE_HOST_HEADER, listener, BadMessageException::new);
                     seenHostHeader = true;
                 }
             }
         }
     }
 
-    private static void assertAllowed(Violation violation, HttpCompliance mode, ComplianceViolation.Listener listener)
+    /**
+     * @deprecated use {@link #check(MetaData.Request, ComplianceViolation.Listener)} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.1.5")
+    public static void checkHttpCompliance(MetaData.Request request, HttpCompliance httpCompliance,
+                                           ComplianceViolation.Listener listener)
     {
-        if (mode.allows(violation))
-            listener.onComplianceViolation(new ComplianceViolation.Event(
-                mode, violation, violation.getDescription()
-            ));
-        else
-            throw new BadMessageException(violation.getDescription());
+        httpCompliance.check(request, listener);
     }
 }

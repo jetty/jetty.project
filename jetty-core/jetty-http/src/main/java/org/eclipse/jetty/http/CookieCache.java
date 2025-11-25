@@ -164,7 +164,10 @@ public class CookieCache implements CookieParser.Handler, ComplianceViolation.Li
         }
 
         if (_violations != null && !_violations.isEmpty())
+        {
+            CookieCompliance cookieCompliance = _parser.getCookieCompliance();
             _violations.forEach(complianceViolationListener::onComplianceViolation);
+        }
 
         return _cookieList == null ? Collections.emptyList() : _cookieList;
     }

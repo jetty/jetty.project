@@ -18,7 +18,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
@@ -324,42 +323,6 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
                 getValue(),
                 getWeight(),
                 _index);
-        }
-    }
-
-    public static class Compliant extends QuotedQualityCSV
-    {
-        private final ComplianceViolation.Mode _complianceMode;
-        private final BiConsumer<ComplianceViolation, String> _violationNotifier;
-
-        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, String[] preferredOrder)
-        {
-            super(preferredOrder);
-            _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
-        }
-
-        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, List<String> preferredOrder)
-        {
-            super(preferredOrder);
-            _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
-        }
-
-        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, ToIntFunction<String> secondaryOrdering)
-        {
-            super(secondaryOrdering);
-            _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
-        }
-
-        @Override
-        protected void onComplianceViolation(ComplianceViolation violation, String value)
-        {
-            if (_complianceMode != null && _complianceMode.allows(violation))
-                _violationNotifier.accept(violation, value);
-            else
-                super.onComplianceViolation(violation, value);
         }
     }
 }

@@ -30,6 +30,8 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.CookieCompliance;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -39,6 +41,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
@@ -149,6 +152,71 @@ public class HttpChannelState implements HttpChannel, Components
             case 1 -> listeners.get(0).initialize();
             default -> new InitializedCompositeComplianceViolationListener(listeners);
         };
+    }
+
+    /**
+     * Assert that the specified Violation is allowed.
+     *
+     * @param violation the violation to check if allowed
+     * @param detail the detail on the listener event
+     * @param error the function to produce a Throwable if not allowed
+     * @param <T> the type of Throwable
+     * @throws T Throwable if not allowed
+     */
+    @Override
+    public <T extends Throwable> void complianceAssert(ComplianceViolation violation, String detail, Function<String, T> error) throws T
+    {
+        ComplianceViolation.Mode mode;
+
+        if (violation instanceof UriCompliance.Violation)
+            mode = getHttpConfiguration().getUriCompliance();
+        else if (violation instanceof HttpCompliance.Violation)
+            mode = getHttpConfiguration().getHttpCompliance();
+        else if (violation instanceof MultiPartCompliance.Violation)
+            mode = getHttpConfiguration().getMultiPartCompliance();
+        else if (violation instanceof CookieCompliance.Violation)
+            mode = getHttpConfiguration().getRequestCookieCompliance();
+        else
+            throw new UnsupportedOperationException("Unsupported ComplianceViolation type: " + violation.getClass().getName());
+
+        boolean allowed = mode.allows(violation);
+
+        // Always report violation to listener
+        _complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(mode, violation, detail, allowed));
+
+        if (!allowed)
+            throw error.apply(violation.getDescription());
+    }
+
+    /**
+     * Assert that the specified Violation is allowed.
+     *
+     * @param violation the violation to check if allowed
+     * @param detail the detail on the listener event
+     * @return boolean true if the violation is allowed, false otherwise.
+     */
+    @Override
+    public boolean complianceAllows(ComplianceViolation violation, String detail)
+    {
+        ComplianceViolation.Mode mode;
+
+        if (violation instanceof UriCompliance.Violation)
+            mode = getHttpConfiguration().getUriCompliance();
+        else if (violation instanceof HttpCompliance.Violation)
+            mode = getHttpConfiguration().getHttpCompliance();
+        else if (violation instanceof MultiPartCompliance.Violation)
+            mode = getHttpConfiguration().getMultiPartCompliance();
+        else if (violation instanceof CookieCompliance.Violation)
+            mode = getHttpConfiguration().getRequestCookieCompliance();
+        else
+            throw new UnsupportedOperationException("Unsupported ComplianceViolation type: " + violation.getClass().getName());
+
+        boolean allowed = mode.allows(violation);
+
+        // Always report violation to listeners
+        _complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(mode, violation, detail, allowed));
+
+        return allowed;
     }
 
     @Override
@@ -651,8 +719,7 @@ public class HttpChannelState implements HttpChannel, Components
         finally
         {
             ComplianceViolation.Listener listener = getComplianceViolationListener();
-            if (listener != null)
-                listener.onRequestEnd(_request);
+            listener.onRequestEnd(_request);
 
             // This is THE ONLY PLACE the stream is succeeded or failed.
             if (failure == null)
@@ -698,9 +765,13 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpURI uri = request.getHttpURI();
                 if (uri.hasViolations())
                 {
-                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri, HttpChannel.from(request).getComplianceViolationListener());
-                    if (badMessage != null)
-                        throw new BadMessageException(badMessage);
+                    HttpConfiguration httpConfiguration = getConnectionMetaData().getHttpConfiguration();
+                    UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
+                    uriCompliance.assertAllowed(
+                        uri,
+                        getComplianceViolationListener(),
+                        BadMessageException::new
+                    );
                 }
 
                 // Customize before processing.

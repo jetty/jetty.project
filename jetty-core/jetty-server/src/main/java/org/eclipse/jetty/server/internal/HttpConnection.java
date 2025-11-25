@@ -144,7 +144,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         _requestHandler = newRequestHandler();
         _parser = newHttpParser(configuration.getHttpCompliance());
         _minBufferSpace = configuration.getMinInputBufferSpace() < 0 ? Math.min(1500, configuration.getInputBufferSize()) : configuration.getMinInputBufferSpace();
-        _headerBuilder = HttpFields.build(configuration.getHttpCompliance(), configuration::notifyViolation);
+        _headerBuilder = HttpFields.build(configuration.getHttpCompliance(), _httpChannel.getComplianceViolationListener());
 
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
@@ -1141,9 +1141,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
+        public ComplianceViolation.Listener getComplianceViolationListener()
+        {
+            return getHttpChannel().getComplianceViolationListener();
+        }
+
+        @Override
         public void onViolation(ComplianceViolation.Event event)
         {
-            getHttpChannel().getComplianceViolationListener().onComplianceViolation(event);
+            getComplianceViolationListener().onComplianceViolation(event);
         }
 
         @Override
@@ -1331,13 +1337,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         public Runnable headerComplete()
         {
-            UriCompliance compliance;
+            HttpConfiguration httpConfiguration = getHttpConfiguration();
+
             if (_uri.hasViolations())
             {
-                compliance = getHttpConfiguration().getUriCompliance();
-                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, getHttpChannel().getComplianceViolationListener());
-                if (badMessage != null)
-                    throw new BadMessageException(badMessage);
+                UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
+                uriCompliance.assertAllowed(_uri,
+                    getHttpChannel().getComplianceViolationListener(),
+                    BadMessageException::new);
             }
 
             // Check host field matches the authority in the absolute URI or is not blank
@@ -1347,11 +1354,9 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 {
                     if (!_hostField.getValue().equals(_uri.getAuthority()))
                     {
-                        HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
-                        if (httpCompliance.allows(MISMATCHED_AUTHORITY))
-                            getHttpChannel().getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
-                        else
-                            throw new BadMessageException("Authority!=Host");
+                        getHttpChannel().complianceAssert(MISMATCHED_AUTHORITY,
+                            "Authority!=Host",
+                            BadMessageException::new);
                     }
                 }
                 else
@@ -1392,7 +1397,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             _requests.incrementAndGet();
 
             Request request = _httpChannel.getRequest();
-            getHttpChannel().getComplianceViolationListener().onRequestBegin(request);
+            _httpChannel.getComplianceViolationListener().onRequestBegin(request);
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {

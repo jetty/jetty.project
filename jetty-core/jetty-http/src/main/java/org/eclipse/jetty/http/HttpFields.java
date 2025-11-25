@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -150,9 +149,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return new org.eclipse.jetty.http.MutableHttpFields(fields, removeFields);
     }
 
-    static Mutable build(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyViolation)
+    static Mutable build(HttpCompliance httpCompliance, ComplianceViolation.Listener listener)
     {
-        return new org.eclipse.jetty.http.MutableHttpFields.Compliant(httpCompliance, notifyViolation);
+        return new org.eclipse.jetty.http.MutableHttpFields.Compliant(httpCompliance, listener);
     }
 
     /**

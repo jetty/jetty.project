@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.http.ComplianceViolation;
@@ -130,7 +131,13 @@ public interface HttpChannel extends Invocable
      */
     void initialize();
 
+    boolean complianceAllows(ComplianceViolation violation, String detail);
+
+    <T extends Throwable> void complianceAssert(ComplianceViolation violation, String detail, Function<String, T> error) throws T;
+
     /**
+     * Get the request specific {@link ComplianceViolation.Listener}.
+     *
      * @return the active {@link ComplianceViolation.Listener}
      */
     ComplianceViolation.Listener getComplianceViolationListener();

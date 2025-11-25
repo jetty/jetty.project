@@ -18,6 +18,7 @@ module org.eclipse.jetty.http3.server
     requires transitive org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.quic.server;
     requires transitive org.eclipse.jetty.server;
+    requires org.eclipse.jetty.http;
 
     exports org.eclipse.jetty.http3.server;
 }

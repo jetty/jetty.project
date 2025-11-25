@@ -596,7 +596,13 @@ public interface Request extends Attributes, Content.Source
                 {
                     HttpChannel httpChannel = HttpChannel.from(request);
                     if (httpChannel != null && httpChannel.getComplianceViolationListener() != null)
-                        httpChannel.getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, "query=" + query));
+                    {
+                        // TODO: We should ALWAYS report this violation, how can HttpChannel be null??
+                        uriCompliance.assertAllowed(UriCompliance.Violation.BAD_UTF8_ENCODING,
+                            httpChannel.getComplianceViolationListener(),
+                            "query=" + query,
+                            BadMessageException::new);
+                    }
                 }
             }
             else

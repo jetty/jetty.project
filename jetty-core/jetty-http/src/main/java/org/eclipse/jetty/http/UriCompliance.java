@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,6 +103,9 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
         /**
          * Allow Truncated UTF-8 encodings to be substituted by the replacement character in query strings
+         * <p>
+         * Note: This violation allows a subset of {@link #BAD_UTF8_ENCODING} behaviors meant to replicate LEGACY behaviors, and will be reported as {@link #BAD_UTF8_ENCODING}.
+         * </p>
          */
         TRUNCATED_UTF8_ENCODING("https://datatracker.ietf.org/doc/html/rfc5987#section-3.2.1", "Truncated UTF-8 encoding"),
 
@@ -117,7 +121,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
         /**
          * Allow path characters not allowed in the path portion of the URI and HTTP specs.
-         * <p>This would allow characters that fall outside of the {@code unreserved / pct-encoded / sub-delims / ":" / "@"} ABNF</p>
+         * <p>This would allow characters that fall outside the {@code unreserved / pct-encoded / sub-delims / ":" / "@"} ABNF</p>
          */
         ILLEGAL_PATH_CHARACTERS("https://datatracker.ietf.org/doc/html/rfc3986#section-3.3", "Illegal Path Character"),
 
@@ -448,6 +452,64 @@ public final class UriCompliance implements ComplianceViolation.Mode
         return PATH_VIOLATIONS.contains(violation);
     }
 
+    /**
+     * Assert that the specified Violation is allowed.
+     *
+     * @param violation the violation to check if allowed
+     * @param listener the listener to report to
+     * @param error the function to produce a Throwable if not allowed
+     * @param <T> the type of Throwable
+     * @throws T Throwable if not allowed
+     */
+    public <T extends Throwable> void assertAllowed(UriCompliance.Violation violation, ComplianceViolation.Listener listener, String detail, Function<String, T> error) throws T
+    {
+        boolean allowed = allows(violation);
+
+        listener.onComplianceViolation(new ComplianceViolation.Event(this, violation, detail, allowed));
+
+        if (!allowed)
+        {
+            throw error.apply(detail);
+        }
+    }
+
+    /**
+     * Assert that the specified Violation is allowed.
+     *
+     * @param uri the HttpURI to check for violations
+     * @param listener the listener to report to
+     * @param error the function to produce a Throwable if not allowed
+     * @param <T> the type of Throwable
+     * @throws T Throwable if not allowed
+     */
+    public <T extends Throwable> void assertAllowed(HttpURI uri, ComplianceViolation.Listener listener, Function<String, T> error) throws T
+    {
+        if (!uri.hasViolations())
+            return;
+
+        StringBuilder violations = null;
+        for (UriCompliance.Violation violation : uri.getViolations())
+        {
+            boolean allowed = allows(violation);
+
+            listener.onComplianceViolation(new ComplianceViolation.Event(this, violation, violation.getDescription(), allowed));
+
+            // Only trigger a failure of the HttpURI for compliance reasons if the compliance doesn't allow for violation detected
+            if (!allowed)
+            {
+                if (violations == null)
+                    violations = new StringBuilder();
+                else
+                    violations.append(", ");
+                violations.append(violation.getDescription());
+            }
+        }
+        if (violations != null)
+        {
+            throw error.apply(violations.toString());
+        }
+    }
+
     @Override
     public String toString()
     {
@@ -468,6 +530,19 @@ public final class UriCompliance implements ComplianceViolation.Mode
         return EnumSet.copyOf(violations);
     }
 
+    /**
+     * Check the {@link HttpURI} against a configured {@link UriCompliance} to see if any detected violations
+     * are allowed by the configured {@link UriCompliance}.
+     *
+     * @param compliance the configured {@link UriCompliance}.
+     * @param uri the HttpURI.
+     * @param listener listener to report violations to.
+     * @return A string representing the violations that were not allowed by the configured {@link UriCompliance}, null if
+     *         the provided HttpURI either has no violations, or only had violations that are allowed by the {@link UriCompliance}
+     * @deprecated replaced with {@link #assertAllowed(HttpURI, ComplianceViolation.Listener, Function)}
+     * @see #assertAllowed(HttpURI, ComplianceViolation.Listener, Function)
+     */
+    @Deprecated(since = "12.1.5", forRemoval = true)
     public static String checkUriCompliance(UriCompliance compliance, HttpURI uri, ComplianceViolation.Listener listener)
     {
         if (uri.hasViolations())
@@ -475,11 +550,15 @@ public final class UriCompliance implements ComplianceViolation.Mode
             StringBuilder violations = null;
             for (UriCompliance.Violation violation : uri.getViolations())
             {
-                if (compliance == null || !compliance.allows(violation))
-                {
-                    if (listener != null)
-                        listener.onComplianceViolation(new ComplianceViolation.Event(compliance, violation, uri.toString()));
+                boolean allowed = compliance.allows(violation);
 
+                // Always report violation to listeners
+                if (listener != null)
+                    listener.onComplianceViolation(new ComplianceViolation.Event(compliance, violation, uri.toString(), allowed));
+
+                // Only trigger a failure of the HttpURI for compliance reasons if the compliance doesn't allow for violation detected
+                if (!allowed)
+                {
                     if (violations == null)
                         violations = new StringBuilder();
                     else

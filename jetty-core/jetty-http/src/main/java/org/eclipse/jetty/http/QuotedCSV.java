@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 /**
  * Implements a quoted comma-separated list of values
@@ -192,47 +191,5 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
             list.add(s);
         }
         return list.toString();
-    }
-
-    public static class Compliant extends QuotedCSV
-    {
-        private final ComplianceViolation.Mode _complianceMode;
-        private final BiConsumer<ComplianceViolation, String> _violationNotifier;
-
-        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier)
-        {
-            this(complianceMode, violationNotifier, true);
-        }
-
-        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, boolean keepQuotes, String... values)
-        {
-            super(keepQuotes, values);
-            _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
-        }
-
-        @Override
-        protected void onComplianceViolation(ComplianceViolation violation, String value)
-        {
-            if (_complianceMode != null && _complianceMode.allows(violation))
-                _violationNotifier.accept(violation, value);
-            else
-                super.onComplianceViolation(violation, value);
-        }
-    }
-
-    public static class Etags extends Compliant
-    {
-        public Etags(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, String... values)
-        {
-            super(complianceMode, violationNotifier, true, values);
-        }
-
-        @Override
-        protected void openingQuoteInValue(String value, int i)
-        {
-            if (i < 1 || Character.toLowerCase(value.charAt(i - 2)) != 'w' || value.charAt(i - 1) != '/')
-                super.openingQuoteInValue(value, i);
-        }
     }
 }

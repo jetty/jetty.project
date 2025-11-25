@@ -52,6 +52,8 @@ public interface CookieParser
             parseField(field);
     }
 
+    CookieCompliance getCookieCompliance();
+
     /**
      * The handler of parsed cookies.
      */

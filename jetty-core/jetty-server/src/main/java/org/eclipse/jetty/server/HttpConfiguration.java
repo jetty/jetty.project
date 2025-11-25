@@ -782,6 +782,13 @@ public class HttpConfiguration implements Dumpable
 
     /**
      * Get the list of configured {@link ComplianceViolation.Listener} to use.
+     *
+     * <p>
+     *     This is the default list of listeners, for request specific
+     *     listeners, see {@code HttpChannelState} and its
+     *     {@code ComplianceViolation.Listener} (which might be
+     *     a composite listener).
+     * </p>
      * @return the list of configured listeners
      */
     public List<ComplianceViolation.Listener> getComplianceViolationListeners()
@@ -797,14 +804,23 @@ public class HttpConfiguration implements Dumpable
      */
     public void notifyViolation(ComplianceViolation violation, String details)
     {
+        ComplianceViolation.Mode mode;
+
         if (violation instanceof UriCompliance.Violation)
-            ComplianceViolation.notify(getComplianceViolationListeners(), getUriCompliance(), violation, details);
+            mode = getUriCompliance();
         else if (violation instanceof HttpCompliance.Violation)
-            ComplianceViolation.notify(getComplianceViolationListeners(), getHttpCompliance(), violation, details);
+            mode = getHttpCompliance();
         else if (violation instanceof MultiPartCompliance.Violation)
-            ComplianceViolation.notify(getComplianceViolationListeners(), getMultiPartCompliance(), violation, details);
+            mode = getMultiPartCompliance();
         else if (violation instanceof CookieCompliance.Violation)
-            ComplianceViolation.notify(getComplianceViolationListeners(), getRequestCookieCompliance(), violation, details);
+            mode = getRequestCookieCompliance();
+        else
+            throw new UnsupportedOperationException("Unsupported ComplianceViolation type: " + violation.getClass().getName());
+
+        boolean allowed = mode.allows(violation);
+
+        // Always report violation to listeners
+        ComplianceViolation.notify(getComplianceViolationListeners(), mode, violation, details, allowed);
     }
 
     /**

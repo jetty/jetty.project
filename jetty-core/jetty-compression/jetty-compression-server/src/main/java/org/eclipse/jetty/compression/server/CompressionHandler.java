@@ -34,7 +34,7 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -271,16 +271,13 @@ public class CompressionHandler extends Handler.Wrapper
                     // Collect all Accept-Encoding headers.
                     if (qualityCSV == null)
                     {
-                        HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
+                        HttpChannel httpChannel = HttpChannel.from(request);
                         qualityCSV = new QuotedQualityCSV()
                         {
                             @Override
                             protected void onComplianceViolation(ComplianceViolation violation, String value)
                             {
-                                if (httpConfiguration.getHttpCompliance().allows(violation))
-                                    httpConfiguration.notifyViolation(violation, value);
-                                else
-                                    throw new BadMessageException(violation.toString());
+                                httpChannel.complianceAssert(violation, value, BadMessageException::new);
                             }
                         };
                     }

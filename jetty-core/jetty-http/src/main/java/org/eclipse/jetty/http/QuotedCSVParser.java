@@ -342,7 +342,7 @@ public abstract class QuotedCSVParser
     @Deprecated(since = "12.1.3", forRemoval = true)
     protected void onComplianceViolation(ComplianceViolation violation)
     {
-        throw new IllegalArgumentException(violation.getDescription());
+        onComplianceViolation(violation, null);
     }
 
     /**
@@ -350,6 +350,6 @@ public abstract class QuotedCSVParser
      */
     protected void onComplianceViolation(ComplianceViolation violation, String value)
     {
-        onComplianceViolation(violation);
+        throw new IllegalArgumentException(violation.getDescription() + (value != null ? ": " + value : ""));
     }
 }

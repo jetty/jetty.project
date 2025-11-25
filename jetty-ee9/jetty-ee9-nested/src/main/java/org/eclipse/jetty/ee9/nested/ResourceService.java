@@ -24,7 +24,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import jakarta.servlet.AsyncContext;
@@ -37,10 +36,12 @@ import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.EtagUtils;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpDateTime;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpQuotedCSV;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
@@ -547,8 +548,10 @@ public class ResourceService
 
             if (_etags)
             {
-                ComplianceViolation.Mode mode = httpConfiguration == null ? null : httpConfiguration.getHttpCompliance();
-                BiConsumer<ComplianceViolation, String> notify = httpConfiguration == null ? null : httpConfiguration::notifyViolation;
+                Request baseRequest = Request.getBaseRequest(request);
+                HttpChannel httpChannel = (baseRequest == null) ? null : baseRequest.getHttpChannel();
+                HttpCompliance httpCompliance = (httpChannel == null) ? null : httpChannel.getHttpConfiguration().getHttpCompliance();
+                ComplianceViolation.Listener complianceListener = (baseRequest == null) ? null : baseRequest.getComplianceViolationListener();
 
                 String etag = content.getETagValue();
                 if (ifm != null)
@@ -556,7 +559,7 @@ public class ResourceService
                     boolean match = false;
                     if (etag != null)
                     {
-                        QuotedCSV quoted = new QuotedCSV.Etags(mode, notify, ifm);
+                        QuotedCSV quoted = new HttpQuotedCSV.Etags(httpCompliance, complianceListener, ifm);
                         for (String etagWithSuffix : quoted)
                         {
                             if (EtagUtils.matches(etag, etagWithSuffix))
@@ -585,7 +588,7 @@ public class ResourceService
 
                     // Handle list of tags
 
-                    QuotedCSV quoted = new QuotedCSV.Etags(mode, notify, ifnm);
+                    QuotedCSV quoted = new HttpQuotedCSV.Etags(httpCompliance, complianceListener, ifnm);
                     for (String tag : quoted)
                     {
                         if (EtagUtils.matches(etag, tag))
