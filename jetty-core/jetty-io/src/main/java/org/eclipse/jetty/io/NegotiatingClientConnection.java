@@ -90,12 +90,19 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
         while (true)
         {
             int filled = fill();
-            if (completed || filled < 0)
+            if (completed)
             {
                 replaceConnection();
                 break;
             }
-            if (filled == 0)
+            if (filled < 0)
+            {
+                @SuppressWarnings("unchecked")
+                Promise<Connection> promise = (Promise<Connection>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
+                promise.failed(new EofException());
+                break;
+            }
+            else if (filled == 0)
             {
                 fillInterested();
                 break;
