@@ -64,6 +64,12 @@ public class ZstandardEncoderSink extends EncoderSink
     }
 
     @Override
+    protected void release()
+    {
+        compressCtx.close();
+    }
+
+    @Override
     protected WriteRecord encode(boolean last, ByteBuffer content)
     {
         State initialState = state.get();

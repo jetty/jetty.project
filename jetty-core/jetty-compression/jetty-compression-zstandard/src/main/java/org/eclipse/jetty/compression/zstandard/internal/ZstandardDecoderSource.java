@@ -52,4 +52,10 @@ public class ZstandardDecoderSource extends DecoderSource
         dst.getByteBuffer().flip();
         return Content.Chunk.asChunk(dst.getByteBuffer(), last, dst);
     }
+
+    @Override
+    protected void release()
+    {
+        decompressCtx.close();
+    }
 }
