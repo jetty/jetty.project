@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.compression.zstandard;
 
+import com.github.luben.zstd.BufferPool;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -143,10 +146,7 @@ public class ZstandardCompression extends Compression
     @Override
     public InputStream newDecoderInputStream(InputStream in, DecoderConfig config) throws IOException
     {
-        ZstandardDecoderConfig zstandardDecoderConfig = (ZstandardDecoderConfig)config;
-        ZstdInputStreamNoFinalizer inputStream = new ZstdInputStreamNoFinalizer(in);
-        config.setBufferSize(zstandardDecoderConfig.getBufferSize());
-        return inputStream;
+        return new ZstdInputStreamNoFinalizer(in, new BufferPoolAdapter(getByteBufferPool(), false));
     }
 
     @Override
@@ -160,7 +160,7 @@ public class ZstandardCompression extends Compression
     public OutputStream newEncoderOutputStream(OutputStream out, EncoderConfig config) throws IOException
     {
         ZstandardEncoderConfig zstandardEncoderConfig = (ZstandardEncoderConfig)config;
-        ZstdOutputStreamNoFinalizer outputStream = new ZstdOutputStreamNoFinalizer(out, zstandardEncoderConfig.getCompressionLevel());
+        ZstdOutputStreamNoFinalizer outputStream = new ZstdOutputStreamNoFinalizer(out, new BufferPoolAdapter(getByteBufferPool(), false), zstandardEncoderConfig.getCompressionLevel());
         if (zstandardEncoderConfig.getStrategy() >= 0)
             outputStream.setStrategy(zstandardEncoderConfig.getStrategy());
         return outputStream;
@@ -178,5 +178,35 @@ public class ZstandardCompression extends Compression
         // https://datatracker.ietf.org/doc/html/rfc8478
         // Zstandard is LITTLE_ENDIAN
         return ByteOrder.LITTLE_ENDIAN;
+    }
+
+    private static class BufferPoolAdapter implements BufferPool
+    {
+        private final IdentityHashMap<ByteBuffer, RetainableByteBuffer> buffers = new IdentityHashMap<>();
+        private final ByteBufferPool byteBufferPool;
+        private final boolean direct;
+
+        public BufferPoolAdapter(ByteBufferPool byteBufferPool, boolean direct)
+        {
+            this.byteBufferPool = byteBufferPool;
+            this.direct = direct;
+        }
+
+        @Override
+        public ByteBuffer get(int capacity)
+        {
+            RetainableByteBuffer.Mutable retainableByteBuffer = byteBufferPool.acquire(capacity, direct);
+            ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
+            buffers.put(byteBuffer, retainableByteBuffer);
+            return byteBuffer;
+        }
+
+        @Override
+        public void release(ByteBuffer buffer)
+        {
+            RetainableByteBuffer removed = buffers.remove(buffer);
+            if (removed != null)
+                removed.release();
+        }
     }
 }
