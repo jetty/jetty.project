@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.compression.zstandard;
 
-import com.github.luben.zstd.BufferPool;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,6 +23,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
 
+import com.github.luben.zstd.BufferPool;
 import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
 import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
 import com.github.luben.zstd.util.Native;
