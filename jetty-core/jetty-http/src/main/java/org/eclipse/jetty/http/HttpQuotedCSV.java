@@ -25,10 +25,18 @@ public class HttpQuotedCSV extends QuotedCSV
 
     public HttpQuotedCSV(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, boolean keepQuotes, String... values)
     {
-        super(keepQuotes, values);
-        // TODO: why use this if complianceMode or listener are null?
+        // Do not pass in `values` here.
+        super(keepQuotes);
         this.complianceMode = complianceMode;
         this.listener = listener;
+        // Need to parse AFTER the complianceMode and listener are set.
+        if (values != null)
+        {
+            for (String value : values)
+            {
+                addValue(value);
+            }
+        }
     }
 
     @Override
@@ -40,10 +48,6 @@ public class HttpQuotedCSV extends QuotedCSV
             listener.onComplianceViolation(new ComplianceViolation.Event(complianceMode, violation, value, allowed));
             if (!allowed)
                 throw new BadMessageException("Invalid quoted: " + value);
-        }
-        else
-        {
-            throw new BadMessageException("Invalid quoted: " + value);
         }
     }
 

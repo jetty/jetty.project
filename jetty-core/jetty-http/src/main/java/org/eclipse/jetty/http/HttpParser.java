@@ -379,9 +379,11 @@ public class HttpParser
 
     protected void reportComplianceViolation(Violation violation, String reason)
     {
-        boolean allowed = _complianceMode.allows(violation);
         if (_requestParser)
+        {
+            boolean allowed = _complianceMode.allows(violation);
             _requestHandler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, reason, allowed));
+        }
     }
 
     protected String caseInsensitiveHeader(String orig, String normative)
@@ -2221,6 +2223,7 @@ public class HttpParser
          */
         default void onViolation(ComplianceViolation.Event event)
         {
+            getComplianceViolationListener().onComplianceViolation(event);
         }
 
         /**

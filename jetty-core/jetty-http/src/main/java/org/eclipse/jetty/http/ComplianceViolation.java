@@ -109,7 +109,7 @@ public interface ComplianceViolation
         @Override
         public String toString()
         {
-            return String.format("%s (see %s) in mode %s for %s during %s (%s)",
+            return String.format("%s (see %s) in mode %s for %s (%s)",
                 violation.getDescription(), violation.getURL(), mode, details, allowed ? "allowed" : "forbidden");
         }
     }
