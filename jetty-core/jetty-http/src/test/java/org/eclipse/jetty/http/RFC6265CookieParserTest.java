@@ -100,8 +100,12 @@ public class RFC6265CookieParserTest
         TestRFC6265CookieParser parser = new TestRFC6265CookieParser(cookieCompliance);
         List<Cookie> cookies = parser.parseFields(rawCookie);
 
-        // Normal cookies, quoted values.
-        assertThat(parser.violations.size(), is(0));
+        String[] expectedViolations = {
+            "STRIPPED_QUOTES(forbidden): \"1\"",
+            "STRIPPED_QUOTES(forbidden): \"WILE_E_COYOTE\"",
+            "STRIPPED_QUOTES(forbidden): \"/acme\""
+        };
+        assertHasViolations(parser, expectedViolations);
 
         assertThat("Cookies.length", cookies.size(), is(3));
         assertCookie("Cookies[0]", cookies.get(0), "$Version", "\"1\"", 0, null);
@@ -176,10 +180,10 @@ public class RFC6265CookieParserTest
 
         String[] expectedViolations = {
             "STRIPPED_QUOTES: 1",
-            "ATTRIBUTES: $Version",
+            "ATTRIBUTES(forbidden): $Version",
             "STRIPPED_QUOTES: WILE_E_COYOTE",
             "STRIPPED_QUOTES: /acme",
-            "ATTRIBUTES: $Path"
+            "ATTRIBUTES(forbidden): $Path"
         };
         assertHasViolations(parser, expectedViolations);
 
@@ -203,8 +207,8 @@ public class RFC6265CookieParserTest
         String[] expectedViolations = {
             "STRIPPED_QUOTES: WILE_E_COYOTE",
             "STRIPPED_QUOTES: toon",
-            "ATTRIBUTES: $Type",
-            "INVALID_COOKIES: $Type"
+            "ATTRIBUTES(forbidden): $Type",
+            "INVALID_COOKIES: Invalid Cookie attribute [$Type]"
         };
         assertHasViolations(parser, expectedViolations);
 
@@ -215,7 +219,9 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC2965ModeParseObsoleteDoubleCookie()
     {
-        // Example from RFC2965
+        // Example from RFC2965 of two cookies on 1 string.
+        // The goal is to parse both the `Customer` and `Part_Number` as separate cookies.
+        // In reality, this violates RFC6265 as there should only be 1 cookie (with attributes) per string.
         String rawCookie = "$Version=\"1\"; " +
             "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
             "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"";
@@ -290,7 +296,14 @@ public class RFC6265CookieParserTest
         TestRFC6265CookieParser cutter = new TestRFC6265CookieParser(cookieCompliance);
         List<Cookie> cookies = cutter.parseFields(rawCookie);
 
-        assertThat("No violations present", cutter.violations, empty());
+        String[] expectedViolations = {
+            "STRIPPED_QUOTES(forbidden): \"1\"",
+            "STRIPPED_QUOTES(forbidden): \"WILE_E_COYOTE\"",
+            "STRIPPED_QUOTES(forbidden): \"/acme\"",
+            "STRIPPED_QUOTES(forbidden): \"Rocket_Launcher_0001\"",
+            "STRIPPED_QUOTES(forbidden): \"/acme\""
+        };
+        assertHasViolations(cutter, expectedViolations);
 
         assertThat("Cookies.length", cookies.size(), is(5));
         assertCookie("Cookies[0]", cookies.get(0), "$Version", "\"1\"", 0, null);
@@ -349,13 +362,13 @@ public class RFC6265CookieParserTest
 
         String[] expectedViolations = {
             "STRIPPED_QUOTES: 1",
-            "ATTRIBUTES: $Version",
+            "ATTRIBUTES(forbidden): $Version",
             "STRIPPED_QUOTES: WILE_E_COYOTE",
             "STRIPPED_QUOTES: /acme",
-            "ATTRIBUTES: $Path",
+            "ATTRIBUTES(forbidden): $Path",
             "STRIPPED_QUOTES: Rocket_Launcher_0001",
             "STRIPPED_QUOTES: /acme",
-            "ATTRIBUTES: $Path",
+            "ATTRIBUTES(forbidden): $Path",
             };
         assertHasViolations(cutter, expectedViolations);
 
@@ -399,7 +412,9 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC2965ParseObsoleteTripleCookie()
     {
-        // Example from RFC2965
+        // Example from RFC2965 of three cookies in 1 string, separated by a `,`
+        // This violates RFC6265, which says there should only ever be 1 cookie per String.
+        // And the continued use of `$Version="1"` is also a violation.
         String rawCookie = "$Version=\"1\"; " +
             "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
             "Part_Number=\"Rocket_Launcher_0001\"; $Path=\"/acme\"; " +
@@ -467,6 +482,8 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC2109CookieSpoofingExample()
     {
+        // These are semicolon separated, making each entry technically an attribute.
+        // They should be comma-delimited to be conforming to spec.
         String rawCookie = "$Version=\"1\"; " +
             "session_id=\"1234\"; " +
             "session_id=\"1111\"; $Domain=\".cracker.edu\"";
@@ -496,6 +513,9 @@ public class RFC6265CookieParserTest
     @Test
     public void testRFC2965ParseCookieSpoofingExample()
     {
+        // Example from RFC2965 of two cookies in 1 string, separated by a `,`
+        // This violates RFC6265, which says there should only ever be 1 cookie per String.
+        // And the continued use of `$Version="1"` is also a violation.
         String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +
             "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
 
@@ -534,6 +554,7 @@ public class RFC6265CookieParserTest
         String[] expectedViolations = {
             "STRIPPED_QUOTES: 1",
             "STRIPPED_QUOTES: 1234",
+            "COMMA_SEPARATOR(forbidden): " + rawCookie,
             "INVALID_COOKIES: Illegal character ',' in " + rawCookie,
             "STRIPPED_QUOTES: 1111",
             "STRIPPED_QUOTES: .cracker.edu",
@@ -623,8 +644,7 @@ public class RFC6265CookieParserTest
     }
 
     /**
-     * Basic name=value, following RFC6265 rules.
-     * This shouldn't be seen as a Reserved $NAME from RFC2965, but just a normal name=value cookie.
+     * Attribute $name=value, following RFC6265 rules.
      */
     @Test
     public void testDollarName()
@@ -712,6 +732,7 @@ public class RFC6265CookieParserTest
 
         String[] expectedViolations = {
             "STRIPPED_QUOTES: double\"quote",
+            "ESCAPE_IN_QUOTES: A=\"double\\\"quote\""
         };
         assertHasViolations(cutter, expectedViolations);
 
@@ -760,20 +781,31 @@ public class RFC6265CookieParserTest
             Arguments.of("A=\"1; B=2\"; C=3",
                 List.of("C=3"),
                 new String[]{
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [;] is not allowed - A=\"1; B=2\"; C=3",
                     "INVALID_COOKIES: Illegal character ';' in quoted section in A=\"1; B=2\"; C=3",
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [ ] is not allowed - A=\"1; B=2\"; C=3",
                     "SPACE_IN_VALUES: A=\"1; B=2\"; C=3",
                     "STRIPPED_QUOTES: 1; B=2",
                 }),
             Arguments.of("A=\"1; B=2; C=3",
                 List.of(),
                 new String[]{
-                    "INVALID_COOKIES: Illegal character ';' in quoted section in A=\"1; B=2; C=3", // TODO: unclosed quote?
+                    // TODO: Review violations, as this can get quite spammy.
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [;] is not allowed - A=\"1; B=2; C=3",
+                    "INVALID_COOKIES: Illegal character ';' in quoted section in A=\"1; B=2; C=3",
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [ ] is not allowed - A=\"1; B=2; C=3",
                     "SPACE_IN_VALUES: A=\"1; B=2; C=3",
-                    "SPACE_IN_VALUES: A=\"1; B=2; C=3"
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [;] is not allowed - A=\"1; B=2; C=3",
+                    "INVALID_COOKIES: Illegal character ';' in quoted section in A=\"1; B=2; C=3",
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [ ] is not allowed - A=\"1; B=2; C=3",
+                    "SPACE_IN_VALUES: A=\"1; B=2; C=3",
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [;] is not allowed - A=\"1; B=2; C=3",
+                    "INVALID_COOKIES: Illegal character ';' in quoted section in A=\"1; B=2; C=3"
                 }),
             Arguments.of("A=\"1 B=2\"; C=3",
                 List.of("A=1 B=2", "C=3"),
                 new String[]{
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [ ] is not allowed - A=\"1 B=2\"; C=3",
                     "SPACE_IN_VALUES: A=\"1 B=2\"; C=3",
                     "STRIPPED_QUOTES: 1 B=2",
                 }),
@@ -812,23 +844,28 @@ public class RFC6265CookieParserTest
             Arguments.of("A=\" 1\"; B=2; C=3",
                 List.of("A= 1", "B=2", "C=3"),
                 new String[]{
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [ ] is not allowed - A=\" 1\"; B=2; C=3",
                     "SPACE_IN_VALUES: A=\" 1\"; B=2; C=3",
                     "STRIPPED_QUOTES:  1",
                 }),
             Arguments.of("A=\"1 \"; B=2; C=3",
                 List.of("A=1 ", "B=2", "C=3"),
                 new String[]{
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [ ] is not allowed - A=\"1 \"; B=2; C=3",
                     "SPACE_IN_VALUES: A=\"1 \"; B=2; C=3",
                     "STRIPPED_QUOTES: 1 ",
                 }),
             Arguments.of("A=1,; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
+                    "COMMA_SEPARATOR(forbidden): A=1,; B=2; C=3",
                     "INVALID_COOKIES: Illegal character ',' in A=1,; B=2; C=3"
                 }),
             Arguments.of("A=\"1,\"; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [,] is not allowed - A=\"1,\"; B=2; C=3",
+                    "COMMA_NOT_VALID_OCTET(forbidden): A=\"1,\"; B=2; C=3",
                     "INVALID_COOKIES: Illegal character ',' in quoted section in A=\"1,\"; B=2; C=3",
                     "STRIPPED_QUOTES: 1,",
                 }),
@@ -840,6 +877,8 @@ public class RFC6265CookieParserTest
             Arguments.of("A=\"\\1\"; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
+                    "ESCAPE_IN_QUOTES(forbidden): A=\"\\1\"; B=2; C=3",
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [\\] is not allowed - A=\"\\1\"; B=2; C=3",
                     "INVALID_COOKIES: Illegal character '\\' in quoted section in A=\"\\1\"; B=2; C=3",
                     "STRIPPED_QUOTES: \\1",
                 }),
@@ -851,12 +890,15 @@ public class RFC6265CookieParserTest
             Arguments.of("A=\"1\u0007\"; B=2; C=3",
                 List.of("B=2", "C=3"),
                 new String[]{
+                    "SPECIAL_CHARS_IN_QUOTES(forbidden): Character [\u0007] is not allowed - A=\"1\u0007\"; B=2; C=3",
                     "INVALID_COOKIES: Illegal character '\u0007' in quoted section in A=\"1\u0007\"; B=2; C=3",
                     "STRIPPED_QUOTES: 1\u0007",
                 }),
             Arguments.of("€",
                 List.of(),
-                NO_VIOLATIONS), // TODO: should this be a violation about an invalid cookie?
+                new String[]{
+                    "INVALID_COOKIES: €"
+                }),
             Arguments.of("@={}",
                 List.of(),
                 new String[]{
@@ -891,11 +933,11 @@ public class RFC6265CookieParserTest
     private void assertHasViolations(TestRFC6265CookieParser cutter, String[] expectedViolations)
     {
         List<String> actualViolations = cutter.violations.stream()
-            .map(v -> String.format("%s: %s", v.violation().getName(), v.details()))
+            .map(v -> String.format("%s%s: %s", v.violation().getName(), (!v.allowed() ? "(forbidden)" : ""), v.details()))
             .toList();
         assertThat("Actual Violations " + actualViolations.stream()
                 .map(Objects::toString)
-                .collect(Collectors.joining(", ", "[", "]")),
+                .collect(Collectors.joining(",  \n", "[\n  ", "\n]")),
             actualViolations, containsInAnyOrder(expectedViolations));
     }
 

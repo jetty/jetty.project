@@ -102,7 +102,7 @@ public class RFC6265CookieParser implements CookieParser
 
                     if (token.isRfc2616Token())
                     {
-                        if (!StringUtil.isBlank(cookieName) && !(c == '$' && (complianceAllows(ATTRIBUTES, field) || complianceAllows(ATTRIBUTE_VALUES, field))))
+                        if (StringUtil.isNotBlank(cookieName) && !(c == '$' && supportObsoleteAttributes))
                         {
                             _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
                             cookieName = null;
@@ -151,7 +151,7 @@ public class RFC6265CookieParser implements CookieParser
                     {
                         string.append(c);
                     }
-                    else if (complianceAllows(INVALID_COOKIES, field))
+                    else if (complianceAllows(INVALID_COOKIES, string.toString()))
                     {
                         state = c == ';' ? State.START : State.INVALID_COOKIE;
                     }
@@ -192,7 +192,8 @@ public class RFC6265CookieParser implements CookieParser
                     string.setLength(0);
                     if (c == '"')
                     {
-                        if (!complianceAllows(STRIPPED_QUOTES, field))
+                        // We notify this violation later
+                        if (!_complianceMode.allows(STRIPPED_QUOTES))
                             string.append(c);
                         state = State.IN_QUOTED_VALUE;
                     }
@@ -272,14 +273,16 @@ public class RFC6265CookieParser implements CookieParser
                 case IN_QUOTED_VALUE:
                     if (c == '"')
                     {
-                        if (complianceAllows(STRIPPED_QUOTES, field))
+                        if (_complianceMode.allows(STRIPPED_QUOTES))
                         {
                             value = string.toString();
+                            complianceNotify(STRIPPED_QUOTES, value, true);
                         }
                         else
                         {
                             string.append(c);
                             value = string.toString();
+                            complianceNotify(STRIPPED_QUOTES, value, false);
                         }
                         state = State.AFTER_QUOTED_VALUE;
                     }
@@ -371,9 +374,11 @@ public class RFC6265CookieParser implements CookieParser
                     }
                     else
                     {
+                        boolean complianceAllowsAttributes = _complianceMode.allows(ATTRIBUTES);
                         // We have an attribute.
-                        if (complianceAllows(ATTRIBUTE_VALUES, field))
+                        if (_complianceMode.allows(ATTRIBUTE_VALUES))
                         {
+                            complianceNotify(ATTRIBUTES, attributeName, complianceAllowsAttributes);
                             // Handle $NAME entries from the older https://www.rfc-editor.org/rfc/rfc2965#section-3.4 spec
                             switch (attributeName.toLowerCase(Locale.ENGLISH))
                             {
@@ -384,19 +389,19 @@ public class RFC6265CookieParser implements CookieParser
                                 // Known and Valid attribute $NAMES that we don't do anything special with.
                                 case "$expires", "$max-age", "$commenturl", "$comment", "$discard", "$secure" ->
                                 {
-                                    // ignore
+                                    // Ignored. Not an invalid cookie, nor a compliance violation.
                                 }
                                 default ->
                                 {
-                                    if (!complianceAllows(INVALID_COOKIES, "Invalid Cookie attribute [%s] in [%s]".formatted(attributeName, field)))
+                                    if (!complianceAllows(INVALID_COOKIES, "Invalid Cookie attribute [%s]".formatted(attributeName)))
                                         throw new IllegalArgumentException("Invalid Cookie attribute: " + attributeName);
                                     state = State.INVALID_COOKIE;
                                 }
                             }
                         }
-                        else if (complianceAllows(ATTRIBUTES, "Invalid attribute [%s] in [%s]".formatted(attributeName, field)))
+                        else if (complianceAllowsAttributes)
                         {
-                            // TODO: throw an IllegalArgumentException here?
+                            complianceNotify(ATTRIBUTES, attributeName, true);
                         }
                         else
                         {
@@ -430,6 +435,16 @@ public class RFC6265CookieParser implements CookieParser
             _handler.addCookie(cookieName, cookieValue, cookieVersion, cookieDomain, cookiePath, cookieComment);
     }
 
+    private boolean isObsoleteAttributeName(String name)
+    {
+        return switch (name.toLowerCase(Locale.ENGLISH))
+        {
+            case "$path", "$domain", "$port", "$version", "$expires", "$max-age", "$commenturl", "$comment", "$discard",
+                 "$secure" -> true;
+            default -> false;
+        };
+    }
+
     @Override
     public CookieCompliance getCookieCompliance()
     {
@@ -439,8 +454,13 @@ public class RFC6265CookieParser implements CookieParser
     private boolean complianceAllows(ComplianceViolation violation, String reason)
     {
         boolean allowed = _complianceMode.allows(violation);
+        complianceNotify(violation, reason, allowed);
+        return allowed;
+    }
+
+    private void complianceNotify(ComplianceViolation violation, String reason, boolean allowed)
+    {
         if (_complianceListener != null)
             _complianceListener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, reason, allowed));
-        return allowed;
     }
 }
