@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.compression.zstandard.internal;
 
+import java.lang.ref.Cleaner;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicReference;
@@ -49,6 +50,7 @@ public class ZstandardEncoderSink extends EncoderSink
     private final ZstdCompressCtx compressCtx;
     private final int bufferSize;
     private final AtomicReference<State> state = new AtomicReference<>(State.CONTINUE);
+    private final Cleaner.Cleanable cleanable;
 
     public ZstandardEncoderSink(ZstandardCompression compression, Content.Sink sink, ZstandardEncoderConfig config)
     {
@@ -56,6 +58,7 @@ public class ZstandardEncoderSink extends EncoderSink
         this.compression = compression;
         this.bufferSize = config.getBufferSize();
         this.compressCtx = new ZstdCompressCtx();
+        this.cleanable = compression.getCleaner().register(this, compressCtx::close);
         this.compressCtx.setLevel(config.getCompressionLevel());
         if (config.getStrategy() >= 0)
             this.compressCtx.setStrategy(config.getStrategy());
@@ -66,7 +69,7 @@ public class ZstandardEncoderSink extends EncoderSink
     @Override
     protected void release()
     {
-        compressCtx.close();
+        cleanable.clean();
     }
 
     @Override

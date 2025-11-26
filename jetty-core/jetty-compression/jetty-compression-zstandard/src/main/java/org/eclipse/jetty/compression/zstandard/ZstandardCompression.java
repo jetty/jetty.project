@@ -17,6 +17,7 @@ import com.github.luben.zstd.BufferPool;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.Cleaner;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.IdentityHashMap;
@@ -59,6 +60,7 @@ public class ZstandardCompression extends Compression
     private static final int DEFAULT_MIN_ZSTD_SIZE = 48;
     private static final List<String> EXTENSIONS = List.of("zst");
 
+    private final Cleaner cleaner = Cleaner.create();
     private ZstandardEncoderConfig defaultEncoderConfig = new ZstandardEncoderConfig();
     private ZstandardDecoderConfig defaultDecoderConfig = new ZstandardDecoderConfig();
 
@@ -178,6 +180,11 @@ public class ZstandardCompression extends Compression
         // https://datatracker.ietf.org/doc/html/rfc8478
         // Zstandard is LITTLE_ENDIAN
         return ByteOrder.LITTLE_ENDIAN;
+    }
+
+    public Cleaner getCleaner()
+    {
+        return cleaner;
     }
 
     private static class BufferPoolAdapter implements BufferPool

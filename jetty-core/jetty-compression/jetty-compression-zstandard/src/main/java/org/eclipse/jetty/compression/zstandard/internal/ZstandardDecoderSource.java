@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.compression.zstandard.internal;
 
+import java.lang.ref.Cleaner;
 import java.nio.ByteBuffer;
 
 import com.github.luben.zstd.ZstdDecompressCtx;
@@ -26,6 +27,7 @@ public class ZstandardDecoderSource extends DecoderSource
 {
     private final ZstandardCompression compression;
     private final ZstdDecompressCtx decompressCtx;
+    private final Cleaner.Cleanable cleanable;
 
     public ZstandardDecoderSource(Content.Source source, ZstandardCompression compression, ZstandardDecoderConfig config)
     {
@@ -33,6 +35,7 @@ public class ZstandardDecoderSource extends DecoderSource
         this.compression = compression;
         this.decompressCtx = new ZstdDecompressCtx();
         this.decompressCtx.setMagicless(config.isMagicless());
+        this.cleanable = compression.getCleaner().register(this, decompressCtx::close);
     }
 
     @Override
@@ -54,8 +57,8 @@ public class ZstandardDecoderSource extends DecoderSource
     }
 
     @Override
-    protected void release()
+    public void release()
     {
-        decompressCtx.close();
+        cleanable.clean();
     }
 }
