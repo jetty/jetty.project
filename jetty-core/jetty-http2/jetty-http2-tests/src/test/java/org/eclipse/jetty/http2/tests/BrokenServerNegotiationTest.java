@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import javax.net.ssl.SSLHandshakeException;
-
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLHandshakeException;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
@@ -29,7 +28,6 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
 
