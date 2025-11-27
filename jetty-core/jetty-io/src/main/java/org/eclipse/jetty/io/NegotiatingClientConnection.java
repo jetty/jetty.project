@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.io;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLHandshakeException;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -87,40 +87,41 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
     @Override
     public void onFillable()
     {
-        while (true)
-        {
-            int filled = fill();
-            if (completed)
-            {
-                replaceConnection();
-                break;
-            }
-            if (filled < 0)
-            {
-                @SuppressWarnings("unchecked")
-                Promise<Connection> promise = (Promise<Connection>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
-                promise.failed(new EofException());
-                break;
-            }
-            else if (filled == 0)
-            {
-                fillInterested();
-                break;
-            }
-        }
-    }
-
-    private int fill()
-    {
+        Throwable failure = null;
         try
         {
-            return getEndPoint().fill(BufferUtil.EMPTY_BUFFER);
+            while (true)
+            {
+                int filled = getEndPoint().fill(BufferUtil.EMPTY_BUFFER);
+                if (completed)
+                {
+                    replaceConnection();
+                    break;
+                }
+                if (filled < 0)
+                {
+                    failure = new SSLHandshakeException("Abruptly closed by peer");
+                    break;
+                }
+                else if (filled == 0)
+                {
+                    fillInterested();
+                    break;
+                }
+            }
         }
-        catch (IOException x)
+        catch (Throwable x)
         {
-            LOG.atDebug().setCause(x).log("Unable to fill from endpoint");
+            failure = x;
+        }
+
+        if (failure != null)
+        {
+            LOG.atDebug().setCause(failure).log("Unable to fill from endpoint");
             close();
-            return -1;
+            @SuppressWarnings("unchecked")
+            Promise<Connection> promise = (Promise<Connection>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
+            promise.failed(failure);
         }
     }
 

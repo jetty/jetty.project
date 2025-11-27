@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import javax.net.ssl.SSLHandshakeException;
+
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutionException;
@@ -73,7 +75,7 @@ public class BrokenServerNegotiationTest
         client.start();
 
         ExecutionException ee = assertThrows(ExecutionException.class, () -> client.GET("https://localhost:" + port.get() + "/hello"));
-        assertInstanceOf(EofException.class, ee.getCause());
+        assertInstanceOf(SSLHandshakeException.class, ee.getCause());
 
         LifeCycle.stop(client);
         serverSocketRef.get().close();
