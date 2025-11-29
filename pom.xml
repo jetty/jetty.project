@@ -297,7 +297,7 @@
     <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
     <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
     <maven.version>3.9.9</maven.version>
-    <maven.war.plugin.version>3.5.0</maven.war.plugin.version>
+    <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <modify-sources-plugin.version>1.0.13</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.6.1</mongodb.version>
@@ -342,7 +342,7 @@
     <testcontainers.version>1.21.3</testcontainers.version>
     <testng.version>7.11.0</testng.version>
     <tinybundles.version>4.0.1</tinybundles.version>
-    <versions.maven.plugin.version>2.19.1</versions.maven.plugin.version>
+    <versions.maven.plugin.version>2.20.1</versions.maven.plugin.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
     <wildfly.elytron.version>2.7.0.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.9</xmemcached.version>
