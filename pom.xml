@@ -166,7 +166,7 @@
     <asm.version>9.9</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
     <bndlib.version>6.4.1</bndlib.version>
-    <bouncycastle.version>1.82</bouncycastle.version>
+    <bouncycastle.version>1.83</bouncycastle.version>
     <build-helper.maven.plugin.version>3.6.1</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.2.1</buildnumber.maven.plugin.version>
@@ -244,7 +244,7 @@
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.25.2</log4j2.version>
     <logback.version>1.5.21</logback.version>
-    <lucene.version>9.11.1</lucene.version>
+    <lucene.version>9.12.0</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.6</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
