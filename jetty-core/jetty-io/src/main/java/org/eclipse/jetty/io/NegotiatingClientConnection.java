@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
@@ -20,7 +21,6 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +61,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
     protected void completed(String protocol)
     {
         this.protocol = protocol;
-        completed = true;
+        this.completed = true;
     }
 
     @Override
@@ -79,8 +79,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
         catch (Throwable x)
         {
             close();
-            // TODO: should we not fail the promise in the context here?
-            throw ExceptionUtil.asRuntimeException(x);
+            failConnectionPromise(x);
         }
     }
 
@@ -98,7 +97,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
                     replaceConnection();
                     break;
                 }
-                if (filled < 0)
+                else if (filled < 0)
                 {
                     failure = new SSLHandshakeException("Abruptly closed by peer");
                     break;
@@ -119,23 +118,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
         {
             LOG.atDebug().setCause(failure).log("Unable to fill from endpoint");
             close();
-            @SuppressWarnings("unchecked")
-            Promise<Connection> promise = (Promise<Connection>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
-            promise.failed(failure);
-        }
-    }
-
-    private void replaceConnection()
-    {
-        EndPoint endPoint = getEndPoint();
-        try
-        {
-            endPoint.upgrade(connectionFactory.newConnection(endPoint, context));
-        }
-        catch (Throwable x)
-        {
-            LOG.atDebug().setCause(x).log("Unable to replace connection");
-            close();
+            failConnectionPromise(failure);
         }
     }
 
@@ -143,11 +126,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
     public boolean onIdleExpired(TimeoutException timeout)
     {
         getEndPoint().close(timeout);
-
-        @SuppressWarnings("unchecked")
-        Promise<Connection> promise = (Promise<Connection>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
-        promise.failed(timeout);
-
+        failConnectionPromise(timeout);
         return false;
     }
 
@@ -157,5 +136,17 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
         // Gentler close for SSL.
         getEndPoint().shutdownOutput();
         super.close();
+    }
+
+    private void replaceConnection() throws IOException
+    {
+        getEndPoint().upgrade(connectionFactory.newConnection(getEndPoint(), context));
+    }
+
+    private void failConnectionPromise(Throwable failure)
+    {
+        @SuppressWarnings("unchecked")
+        Promise<Connection> promise = (Promise<Connection>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
+        promise.failed(failure);
     }
 }
