@@ -203,7 +203,10 @@ public interface ComplianceViolation
         @Override
         public Listener initialize()
         {
-            return new CapturingListener(new ArrayList<>());
+            List<Event> requestEvents = new ArrayList<>();
+            if (events != null)
+                requestEvents.addAll(events);
+            return new CapturingListener(requestEvents);
         }
 
         @Override

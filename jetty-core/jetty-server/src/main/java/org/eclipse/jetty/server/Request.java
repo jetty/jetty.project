@@ -66,6 +66,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.UrlParameterViolationListener;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -588,22 +589,42 @@ public interface Request extends Attributes, Content.Source
 
             if (charset == null || StandardCharsets.UTF_8.equals(charset))
             {
+                HttpChannel httpChannel = HttpChannel.from(request);
                 uriCompliance = request.getConnectionMetaData().getHttpConfiguration().getUriCompliance();
+                ComplianceViolation.Listener complianceViolationListener = httpChannel.getComplianceViolationListener();
                 boolean allowBadPercent = uriCompliance.allows(UriCompliance.Violation.BAD_PERCENT_ENCODING);
                 boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
                 boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
-                if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8))
+                UrlParameterViolationListener parameterViolationListener = new UrlParameterViolationListener()
                 {
-                    HttpChannel httpChannel = HttpChannel.from(request);
-                    if (httpChannel != null && httpChannel.getComplianceViolationListener() != null)
+                    private void onViolation(UriCompliance.Violation violation, String cause, boolean allowed)
                     {
-                        // TODO: We should ALWAYS report this violation, how can HttpChannel be null??
-                        uriCompliance.assertAllowed(UriCompliance.Violation.BAD_UTF8_ENCODING,
-                            httpChannel.getComplianceViolationListener(),
-                            "query=" + query,
-                            BadMessageException::new);
+                        complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(
+                            uriCompliance,  violation, cause, allowed
+                        ));
+                        if (!allowed)
+                            throw new BadMessageException("Bad query");
                     }
-                }
+
+                    @Override
+                    public void onBadEncoding(String cause, boolean allowed)
+                    {
+                        onViolation(UriCompliance.Violation.BAD_UTF8_ENCODING, cause, allowed);
+                    }
+
+                    @Override
+                    public void onBadPrecent(String cause, boolean allowed)
+                    {
+                        onViolation(UriCompliance.Violation.BAD_PERCENT_ENCODING, cause, allowed);
+                    }
+
+                    @Override
+                    public void onTruncatedEncoding(String cause, boolean allowed)
+                    {
+                        onViolation(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING, cause, allowed);
+                    }
+                };
+                UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8, parameterViolationListener);
             }
             else
             {

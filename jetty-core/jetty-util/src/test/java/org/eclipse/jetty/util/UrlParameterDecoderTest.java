@@ -450,7 +450,7 @@ public class UrlParameterDecoderTest
         boolean allowBadEncoding = true;
         boolean allowBadPercent = true;
         boolean allowTruncatedEncoding = true;
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, allowBadEncoding, allowBadPercent, allowTruncatedEncoding);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, allowBadEncoding, allowBadPercent, allowTruncatedEncoding, UrlParameterViolationListener.NOOP);
 
         assertEquals(badInput, decoder.parse(input), badInput ? "Has coding errors" : "No coding errors");
 
@@ -551,7 +551,7 @@ public class UrlParameterDecoderTest
         boolean allowBadEncoding = false;
         boolean allowBadPercent = false;
         boolean allowTruncatedEncoding = true;
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, allowBadEncoding, allowBadPercent, allowTruncatedEncoding);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, allowBadEncoding, allowBadPercent, allowTruncatedEncoding, UrlParameterViolationListener.NOOP);
 
         assertEquals(badInput, decoder.parse(input), badInput ? "Has coding errors" : "No coding errors");
 
@@ -648,7 +648,7 @@ public class UrlParameterDecoderTest
         boolean allowBadEncoding = false;
         boolean allowBadPercent = false;
         boolean allowTruncatedEncoding = true;
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, allowBadEncoding, allowBadPercent, allowTruncatedEncoding);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, allowBadEncoding, allowBadPercent, allowTruncatedEncoding, UrlParameterViolationListener.NOOP);
 
         assertThrows(IllegalArgumentException.class, () -> decoder.parse(input));
     }
@@ -692,7 +692,7 @@ public class UrlParameterDecoderTest
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true, UrlParameterViolationListener.NOOP);
         assertTrue(decoder.parse(query), "Has coding errors");
         Fields.Field field = fields.get(expectedName);
         assertThat("Name exists", field, notNullValue());
@@ -769,7 +769,7 @@ public class UrlParameterDecoderTest
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true, UrlParameterViolationListener.NOOP);
 
         // When using new String(byte[], Charset) with invalid bytes, the UTF-8 replacement character is automatically applied.
         String s = new String(input, UTF_8);
@@ -794,7 +794,7 @@ public class UrlParameterDecoderTest
     {
         Fields fields = new Fields();
         CharsetStringBuilder charsetStringBuilder = CharsetStringBuilder.forCharset(UTF_8, CodingErrorAction.REPLACE, CodingErrorAction.REPLACE);
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, fields::add, -1, -1, true, true, true, UrlParameterViolationListener.NOOP);
 
         try (InputStream is = new ByteArrayInputStream(input))
         {

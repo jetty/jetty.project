@@ -645,7 +645,10 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                         if (key.equalsIgnoreCase("content-type"))
                             contentType = value;
                         if (key.equals("content-transfer-encoding"))
-                            contentTransferEncoding = value;
+                        {
+                            if (complianceAllows(MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value))
+                                contentTransferEncoding = value;
+                        }
                     }
                 }
 
@@ -704,43 +707,35 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 part.open();
 
                 InputStream partInput = null;
-                if ("base64".equalsIgnoreCase(contentTransferEncoding))
+                // If the MultiPartCompliance doesn't CONTENT_TRANSFER_ENCODING, then `contentTransferEncoding` will be null.
+                // The BASE64_TRANSFER_ENCODING and QUOTED_PRINTABLE_TRANSFER_ENCODING violations just control how the Content-Transfer-Encoding is handled.
+                if ("base64".equalsIgnoreCase(contentTransferEncoding) && _multiPartCompliance.allows(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING))
                 {
-                    if (complianceAllows(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING, contentTransferEncoding))
-                        //noinspection removal
-                        partInput = new Base64InputStream((ReadLineInputStream)_in);
-                    else
-                        partInput = _in;
+                    //noinspection removal
+                    partInput = new Base64InputStream((ReadLineInputStream)_in);
                 }
-                else if ("quoted-printable".equalsIgnoreCase(contentTransferEncoding))
+                else if ("quoted-printable".equalsIgnoreCase(contentTransferEncoding) && _multiPartCompliance.allows(MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING))
                 {
-                    if (complianceAllows(MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING, contentTransferEncoding))
+                    partInput = new FilterInputStream(_in)
                     {
-                        partInput = new FilterInputStream(_in)
+                        @Override
+                        public int read() throws IOException
                         {
-                            @Override
-                            public int read() throws IOException
+                            int c = in.read();
+                            if (c >= 0 && c == '=')
                             {
-                                int c = in.read();
-                                if (c >= 0 && c == '=')
+                                int hi = in.read();
+                                int lo = in.read();
+                                if (hi < 0 || lo < 0)
                                 {
-                                    int hi = in.read();
-                                    int lo = in.read();
-                                    if (hi < 0 || lo < 0)
-                                    {
-                                        throw new IOException("Unexpected end to quoted-printable byte");
-                                    }
-                                    char[] chars = new char[]{(char)hi, (char)lo};
-                                    c = Integer.parseInt(new String(chars), 16);
+                                    throw new IOException("Unexpected end to quoted-printable byte");
                                 }
-                                return c;
+                                char[] chars = new char[]{(char)hi, (char)lo};
+                                c = Integer.parseInt(new String(chars), 16);
                             }
-                        };
-                    }
-                    else
-                    {
-                        partInput = _in;
-                    }
+                            return c;
+                        }
+                    };
                 }
                 else
                     partInput = _in;

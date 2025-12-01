@@ -74,7 +74,7 @@ public class MultiPartParserTest
     @ArgumentsSource(MultiPartFormArgumentsProvider.class)
     public void testMultiPartFormDataParserLegacyAllowBase64(MultiPartRequest formRequest, Charset defaultCharset, MultiPartExpectations formExpectations) throws Exception
     {
-        MultiPartCompliance legacyAllowBase64 = MultiPartCompliance.from("LEGACY_BASE64,BASE64_TRANSFER_ENCODING");
+        MultiPartCompliance legacyAllowBase64 = MultiPartCompliance.from("LEGACY_BASE64,CONTENT_TRANSFER_ENCODING,BASE64_TRANSFER_ENCODING");
 
         // Handle different sha1sum due to base64 auto decoding.
         if (formRequest.getFormName().equals("multipart-base64.raw"))

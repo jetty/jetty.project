@@ -245,6 +245,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
      *     <li>{@link Violation#TRUNCATED_UTF8_ENCODING}</li>
      *     <li>{@link Violation#UTF16_ENCODINGS}</li>
      *     <li>{@link Violation#USER_INFO}</li>
+     *     <li>{@link Violation#FRAGMENT}</li>
      * </ul>
      * <p>
      *     Note: this mode allows URL/URIs that the Servlet spec will reject.

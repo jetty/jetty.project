@@ -21,8 +21,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
@@ -595,24 +597,24 @@ class MutableHttpFields implements HttpFields.Mutable
     public static class Compliant extends org.eclipse.jetty.http.MutableHttpFields
     {
         private final HttpCompliance _httpCompliance;
-        private final ComplianceViolation.Listener _listener;
+        private final Supplier<ComplianceViolation.Listener> _listenerSupplier;
 
-        public Compliant(HttpCompliance httpCompliance, ComplianceViolation.Listener listener)
+        public Compliant(HttpCompliance httpCompliance, Supplier<ComplianceViolation.Listener> listenerSupplier)
         {
-            _httpCompliance = httpCompliance;
-            _listener = listener;
+            _httpCompliance = Objects.requireNonNull(httpCompliance);
+            _listenerSupplier = Objects.requireNonNull(listenerSupplier);
         }
 
         @Override
         public QuotedCSV newQuotedCSV(boolean keepQuotes)
         {
-            return new QuotedCSV.Compliant(_httpCompliance, _listener, keepQuotes);
+            return new QuotedCSV.Compliant(_httpCompliance, _listenerSupplier.get(), keepQuotes);
         }
 
         @Override
         public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
         {
-            return new QuotedQualityCSV.Compliant(_httpCompliance, _listener, secondaryOrdering);
+            return new QuotedQualityCSV.Compliant(_httpCompliance, _listenerSupplier.get(), secondaryOrdering);
         }
 
         @Override
@@ -623,13 +625,13 @@ class MutableHttpFields implements HttpFields.Mutable
                 @Override
                 public QuotedCSV newQuotedCSV(boolean keepQuotes)
                 {
-                    return new QuotedCSV.Compliant(_httpCompliance, _listener, keepQuotes);
+                    return new QuotedCSV.Compliant(_httpCompliance, _listenerSupplier.get(), keepQuotes);
                 }
 
                 @Override
                 public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
                 {
-                    return new QuotedQualityCSV.Compliant(_httpCompliance, _listener, secondaryOrdering);
+                    return new QuotedQualityCSV.Compliant(_httpCompliance, _listenerSupplier.get(), secondaryOrdering);
                 }
             };
         }

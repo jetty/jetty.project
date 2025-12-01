@@ -144,14 +144,16 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public void initialize()
     {
-        // TODO this should be moved somewhere common?
-        List<ComplianceViolation.Listener> listeners = _connectionMetaData.getHttpConfiguration().getComplianceViolationListeners();
-        _complianceViolationListener = switch (listeners.size())
+        if (_complianceViolationListener == null)
         {
-            case 0 -> ComplianceViolation.Listener.NOOP;
-            case 1 -> listeners.get(0).initialize();
-            default -> new InitializedCompositeComplianceViolationListener(listeners);
-        };
+            List<ComplianceViolation.Listener> listeners = _connectionMetaData.getHttpConfiguration().getComplianceViolationListeners();
+            _complianceViolationListener = switch (listeners.size())
+            {
+                case 0 -> ComplianceViolation.Listener.NOOP;
+                case 1 -> listeners.get(0).initialize();
+                default -> new InitializedCompositeComplianceViolationListener(listeners);
+            };
+        }
     }
 
     /**
@@ -185,6 +187,7 @@ public class HttpChannelState implements HttpChannel, Components
         _complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(mode, violation, detail, allowed));
 
         if (!allowed)
+
             throw error.apply(violation.getDescription());
     }
 

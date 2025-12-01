@@ -144,7 +144,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         _requestHandler = newRequestHandler();
         _parser = newHttpParser(configuration.getHttpCompliance());
         _minBufferSpace = configuration.getMinInputBufferSpace() < 0 ? Math.min(1500, configuration.getInputBufferSize()) : configuration.getMinInputBufferSpace();
-        _headerBuilder = HttpFields.build(configuration.getHttpCompliance(), _httpChannel.getComplianceViolationListener());
+        _headerBuilder = HttpFields.build(configuration.getHttpCompliance(), _httpChannel::getComplianceViolationListener);
 
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
