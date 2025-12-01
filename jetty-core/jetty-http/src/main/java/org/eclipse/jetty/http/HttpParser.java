@@ -2374,9 +2374,9 @@ public class HttpParser
         protected QuotedCSV newQuotedCSV(boolean keepQuotes, String value)
         {
             if (getHeader() != null && HttpField.ETAG_HEADER.contains(this.getHeader()))
-                return new HttpQuotedCSV.Etags(_complianceMode, _handler.getComplianceViolationListener(), value);
+                return new QuotedCSV.Etags(_complianceMode, _handler.getComplianceViolationListener(), value);
 
-            return new HttpQuotedCSV(_complianceMode, _handler.getComplianceViolationListener(), keepQuotes, value);
+            return new QuotedCSV.Compliant(_complianceMode, _handler.getComplianceViolationListener(), keepQuotes, value);
         }
     }
 }

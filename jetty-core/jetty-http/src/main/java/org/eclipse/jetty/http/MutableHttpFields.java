@@ -606,13 +606,13 @@ class MutableHttpFields implements HttpFields.Mutable
         @Override
         public QuotedCSV newQuotedCSV(boolean keepQuotes)
         {
-            return new HttpQuotedCSV(_httpCompliance, _listener, keepQuotes);
+            return new QuotedCSV.Compliant(_httpCompliance, _listener, keepQuotes);
         }
 
         @Override
         public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
         {
-            return new HttpQuotedQualityCSV(_httpCompliance, _listener, secondaryOrdering);
+            return new QuotedQualityCSV.Compliant(_httpCompliance, _listener, secondaryOrdering);
         }
 
         @Override
@@ -623,13 +623,13 @@ class MutableHttpFields implements HttpFields.Mutable
                 @Override
                 public QuotedCSV newQuotedCSV(boolean keepQuotes)
                 {
-                    return new HttpQuotedCSV(_httpCompliance, _listener, keepQuotes);
+                    return new QuotedCSV.Compliant(_httpCompliance, _listener, keepQuotes);
                 }
 
                 @Override
                 public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
                 {
-                    return new HttpQuotedQualityCSV(_httpCompliance, _listener, secondaryOrdering);
+                    return new QuotedQualityCSV.Compliant(_httpCompliance, _listener, secondaryOrdering);
                 }
             };
         }

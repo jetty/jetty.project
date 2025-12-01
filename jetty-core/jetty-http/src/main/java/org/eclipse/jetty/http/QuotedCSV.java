@@ -192,4 +192,58 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
         }
         return list.toString();
     }
+
+    public static class Compliant extends QuotedCSV
+    {
+        private final ComplianceViolation.Mode _complianceMode;
+        private final ComplianceViolation.Listener _listener;
+
+        public Compliant(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener)
+        {
+            this(complianceMode, listener, true);
+        }
+
+        public Compliant(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, boolean keepQuotes, String... values)
+        {
+            // Do not pass in `values` here.
+            super(keepQuotes);
+            _complianceMode = complianceMode;
+            _listener = listener;
+            // Need to parse AFTER the complianceMode and listener are set.
+            if (values != null)
+            {
+                for (String value : values)
+                {
+                    addValue(value);
+                }
+            }
+        }
+
+        @Override
+        protected void onComplianceViolation(ComplianceViolation violation, String value)
+        {
+            if (_complianceMode != null)
+            {
+                boolean allowed = _complianceMode.allows(violation);
+                _listener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, value, allowed));
+                if (!allowed)
+                    throw new BadMessageException("Invalid quoted: " + value);
+            }
+        }
+    }
+
+    public static class Etags extends Compliant
+    {
+        public Etags(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, String... values)
+        {
+            super(complianceMode, listener, true, values);
+        }
+
+        @Override
+        protected void openingQuoteInValue(String value, int i)
+        {
+            if (i < 1 || Character.toLowerCase(value.charAt(i - 2)) != 'w' || value.charAt(i - 1) != '/')
+                super.openingQuoteInValue(value, i);
+        }
+    }
 }

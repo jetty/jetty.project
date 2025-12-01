@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpDateTime;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpQuotedCSV;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MultiPart;
@@ -453,7 +452,7 @@ public class ResourceService
         //   If-Match: W/"abc,xyz", "123456"
         // This means we have to parse with QuotedCSV all the time, as we cannot just
         // test for the existence of a "," (comma) in the value to know if it's delimited or not
-        QuotedCSV quoted = new HttpQuotedCSV.Etags(httpConfiguration.getHttpCompliance(), httpChannel.getComplianceViolationListener(), requestEtag);
+        QuotedCSV quoted = new QuotedCSV.Etags(httpConfiguration.getHttpCompliance(), httpChannel.getComplianceViolationListener(), requestEtag);
         for (String tag : quoted)
         {
             if (EtagUtils.matches(contentETag, tag))

@@ -41,7 +41,6 @@ import org.eclipse.jetty.http.HttpDateTime;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpQuotedCSV;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
@@ -559,7 +558,7 @@ public class ResourceService
                     boolean match = false;
                     if (etag != null)
                     {
-                        QuotedCSV quoted = new HttpQuotedCSV.Etags(httpCompliance, complianceListener, ifm);
+                        QuotedCSV quoted = new QuotedCSV.Etags(httpCompliance, complianceListener, ifm);
                         for (String etagWithSuffix : quoted)
                         {
                             if (EtagUtils.matches(etag, etagWithSuffix))
@@ -588,7 +587,7 @@ public class ResourceService
 
                     // Handle list of tags
 
-                    QuotedCSV quoted = new HttpQuotedCSV.Etags(httpCompliance, complianceListener, ifnm);
+                    QuotedCSV quoted = new QuotedCSV.Etags(httpCompliance, complianceListener, ifnm);
                     for (String tag : quoted)
                     {
                         if (EtagUtils.matches(etag, tag))

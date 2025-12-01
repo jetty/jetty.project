@@ -325,4 +325,40 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
                 _index);
         }
     }
+
+    public static class Compliant extends QuotedQualityCSV
+    {
+        private final ComplianceViolation.Mode _complianceMode;
+        private final ComplianceViolation.Listener _listener;
+
+        public Compliant(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, String[] preferredOrder)
+        {
+            super(preferredOrder);
+            _complianceMode = complianceMode;
+            _listener = listener;
+        }
+
+        public Compliant(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, List<String> preferredOrder)
+        {
+            super(preferredOrder);
+            _complianceMode = complianceMode;
+            _listener = listener;
+        }
+
+        public Compliant(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, ToIntFunction<String> secondaryOrdering)
+        {
+            super(secondaryOrdering);
+            _complianceMode = complianceMode;
+            _listener = listener;
+        }
+
+        @Override
+        protected void onComplianceViolation(ComplianceViolation violation, String value)
+        {
+            boolean allowed = _complianceMode.allows(violation);
+            _listener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, value, allowed));
+            if (!allowed)
+                throw new BadMessageException("Invalid quoted-quality: " + value);
+        }
+    }
 }
