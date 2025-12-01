@@ -351,6 +351,7 @@ public class HttpChannelState implements HttpChannel, Components
                 throw new IllegalStateException("No HttpStream");
             if (_request != null)
                 throw new IllegalStateException("duplicate request");
+            initialize();
             _request = new ChannelRequest(this, request);
             _response = new ChannelResponse(_request);
             _expects100Continue = request.is100ContinueExpected();
