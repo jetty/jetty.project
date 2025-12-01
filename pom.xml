@@ -216,11 +216,11 @@
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>3.0</hamcrest.version>
     <hazelcast.version>5.6.0</hazelcast.version>
-    <hibernate.search.version>7.2.5.Final</hibernate.search.version>
+    <hibernate.search.version>8.1.2.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
     <infinispan.docker.image.version>15.2.1.Final</infinispan.docker.image.version>
     <infinispan.protostream.version>5.0.15.Final</infinispan.protostream.version>
-    <infinispan.version>15.2.6.Final</infinispan.version>
+    <infinispan.version>16.0.2</infinispan.version>
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
