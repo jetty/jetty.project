@@ -140,7 +140,8 @@ public abstract class NegotiatingClientConnection extends AbstractConnection.Non
 
     private void replaceConnection() throws IOException
     {
-        getEndPoint().upgrade(connectionFactory.newConnection(getEndPoint(), context));
+        EndPoint endPoint = getEndPoint();
+        endPoint.upgrade(connectionFactory.newConnection(endPoint, context));
     }
 
     private void failConnectionPromise(Throwable failure)
