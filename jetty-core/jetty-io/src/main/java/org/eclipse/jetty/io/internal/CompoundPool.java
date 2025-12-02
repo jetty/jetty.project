@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Pool;
+import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * <p>A {@link Pool} implementation that uses a primary pool which overflows to a secondary pool.</p>
@@ -114,5 +115,15 @@ public class CompoundPool<P> implements Pool<P>
     public int getTerminatedCount()
     {
         return primaryPool.getTerminatedCount() + secondaryPool.getTerminatedCount();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[primary=%s,secondary=%s]",
+            TypeUtil.toShortName(getClass()),
+            hashCode(),
+            primaryPool,
+            secondaryPool);
     }
 }

@@ -664,7 +664,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s]", TypeUtil.toShortName(this.getClass()), hashCode(), getStatistics());
+            return String.format("%s@%x[stats=%s,pool=%s]", TypeUtil.toShortName(this.getClass()), hashCode(), getStatistics(), _pool);
         }
 
         private record Statistics(int capacity, int inUseEntries, int totalEntries, long pooled, long acquires,

@@ -25,6 +25,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Pool;
+import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * <p>A {@link Queue} based implementation of {@link Pool}.</p>
@@ -193,6 +194,17 @@ public class QueuedPool<P> implements Pool<P>
     public int getTerminatedCount()
     {
         return 0;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[size=%d,max=%d,terminated=%b]",
+            TypeUtil.toShortName(getClass()),
+            hashCode(),
+            size(),
+            getMaxSize(),
+            isTerminated());
     }
 
     private static class QueuedEntry<P> implements Entry<P>
