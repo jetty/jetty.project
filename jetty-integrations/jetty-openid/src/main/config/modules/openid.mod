@@ -4,11 +4,11 @@
 Adds OpenId Connect authentication to the server.
 
 [depend]
-security
 client
+json
+security
 
 [lib]
-lib/jetty-util-ajax-${jetty.version}.jar
 lib/jetty-openid-${jetty.version}.jar
 
 [files]
