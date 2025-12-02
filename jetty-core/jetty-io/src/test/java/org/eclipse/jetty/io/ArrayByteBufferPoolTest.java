@@ -432,7 +432,7 @@ public class ArrayByteBufferPoolTest
     @ParameterizedTest
     @CsvSource(useHeadersInDisplayName = true, textBlock = """
         minCapacity, maxCapacity, buckets
-                 -1,          -1, 1024;2048;4096;8192;16384;32768;65536;131072;262144
+                 -1,          -1, 1024;2048;4096;8192;16384;32768;65536
                 100,         800, 128;256;512;1024
                   2,         200, 2;4;8;16;32;64;128;256
         """)
