@@ -36,7 +36,7 @@ public class ZstandardEncoderConfig implements EncoderConfig
         // Get the recommended buffer size from zstd-jni (actually comes from zstandard lib),
         // but put some upper limit on it for our default buffer size.
         // The user can still configure the buffer size to be higher if they want to.
-        long bufferSizeCeiling = 256_000;
+        long bufferSizeCeiling = 64 * 1024L; // this is the default ArrayByteBufferPool maxCapacity
         long bufferSize = ZstdOutputStreamNoFinalizer.recommendedCOutSize();
         if (bufferSize > bufferSizeCeiling)
         {
@@ -67,12 +67,13 @@ public class ZstandardEncoderConfig implements EncoderConfig
      * {@link ZstandardCompression#newEncoderSink(Content.Sink, EncoderConfig)} or
      * {@link ZstandardCompression#newEncoderSink(Content.Sink)}.
      * </p>
-     * <p>>
+     * <p>
      * Note: not applied when using
      * {@link ZstandardCompression#newEncoderOutputStream(OutputStream, EncoderConfig)} or
      * {@link ZstandardCompression#newEncoderOutputStream(OutputStream)}
      * </p>
-     *
+     * <p>Make sure that the {@link ZstandardCompression#getByteBufferPool()} instance can pool the specified value otherwise
+     * direct buffers have to be allocated then left to be collected by the GC, which has serious performance implications.</p>
      * @param size size of output buffer.
      */
     @Override

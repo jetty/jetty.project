@@ -35,7 +35,7 @@ public class ZstandardDecoderConfig implements DecoderConfig
         // Get the recommended buffer size from zstd-jni (actually comes from zstandard lib),
         // but put some upper limit on it for our default buffer size.
         // The user can still configure the buffer size to be higher if they want to.
-        long bufferSizeCeiling = 256_000;
+        long bufferSizeCeiling = 64 * 1024L; // this is the default ArrayByteBufferPool maxCapacity
         long bufferSize = ZstdInputStreamNoFinalizer.recommendedDOutSize();
         if (bufferSize > bufferSizeCeiling)
         {
@@ -55,6 +55,13 @@ public class ZstandardDecoderConfig implements DecoderConfig
         return bufferSize;
     }
 
+    /**
+     * Set Decoder input buffer size.
+     *
+     * <p>Make sure that the {@link ZstandardCompression#getByteBufferPool()} instance can pool the specified value otherwise
+     * direct buffers have to be allocated then left to be collected by the GC, which has serious performance implications.</p>
+     * @param size size of input buffer.
+     */
     @Override
     public void setBufferSize(int size)
     {
