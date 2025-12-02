@@ -260,18 +260,23 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private void recordNoBucketAcquire(int size, boolean direct)
     {
+        ConcurrentMap<Integer, Long> map = direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires;
+        int key;
         if (isStatisticsEnabled())
         {
-            ConcurrentMap<Integer, Long> map = direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires;
             int idx = _bucketIndexFor.applyAsInt(size);
-            int key = _bucketCapacityFor.applyAsInt(idx);
-            map.compute(key, (k, v) ->
-            {
-                if (v == null)
-                    return 1L;
-                return v + 1L;
-            });
+            key = _bucketCapacityFor.applyAsInt(idx);
         }
+        else
+        {
+            key = 0;
+        }
+        map.compute(key, (k, v) ->
+        {
+            if (v == null)
+                return 1L;
+            return v + 1L;
+        });
     }
 
     private void reserve(RetainedBucket bucket, ByteBuffer byteBuffer)
