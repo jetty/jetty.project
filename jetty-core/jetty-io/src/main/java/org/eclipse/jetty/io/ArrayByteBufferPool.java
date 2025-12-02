@@ -1005,6 +1005,21 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 .collect(Collectors.joining(System.lineSeparator()));
         }
 
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            Dumpable.dumpObjects(
+                out,
+                indent,
+                this,
+                DumpableCollection.fromArray("direct", ((ArrayByteBufferPool)this)._direct),
+                new DumpableMap("direct non-pooled acquisitions", ((ArrayByteBufferPool)this)._noBucketDirectAcquires),
+                DumpableCollection.fromArray("indirect", ((ArrayByteBufferPool)this)._indirect),
+                new DumpableMap("heap non-pooled acquisitions", ((ArrayByteBufferPool)this)._noBucketIndirectAcquires),
+                DumpableCollection.from("leaks", getLeaks().stream().map(TrackedBuffer::dump).toList())
+            );
+        }
+
         public class TrackedBuffer extends RetainableByteBuffer.FixedCapacity
         {
             private final int size;
