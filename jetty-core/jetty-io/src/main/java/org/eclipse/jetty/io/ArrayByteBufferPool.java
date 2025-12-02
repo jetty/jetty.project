@@ -33,6 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
@@ -78,8 +79,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final IntUnaryOperator _bucketCapacityFor;
     private final AtomicBoolean _evictor = new AtomicBoolean(false);
     private final AtomicLong _reserved = new AtomicLong();
-    private final ConcurrentMap<Integer, Long> _noBucketDirectAcquires = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Integer, Long> _noBucketIndirectAcquires = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, NoBucketData> _noBucketDirectAcquires = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, NoBucketData> _noBucketIndirectAcquires = new ConcurrentHashMap<>();
     private boolean _statisticsEnabled;
 
     /**
@@ -260,7 +261,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private void recordNoBucketAcquire(int size, boolean direct)
     {
-        ConcurrentMap<Integer, Long> map = direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires;
+        ConcurrentMap<Integer, NoBucketData> map = direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires;
         int key;
         if (isStatisticsEnabled())
         {
@@ -271,11 +272,15 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             key = 0;
         }
+        Throwable acquireStack = new Throwable("Acquired by " + Thread.currentThread().getName());
         map.compute(key, (k, v) ->
         {
             if (v == null)
-                return 1L;
-            return v + 1L;
+                return new NoBucketData(1L, acquireStack);
+            // incrementing the volatile is fine as this lambda is only ever
+            // called by a single thread at a time, as guaranteed by CHM.compute().
+            v.counter++;
+            return v;
         });
     }
 
@@ -503,7 +508,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private Map<Integer, Long> getNoBucketAcquires(boolean direct)
     {
-        return new HashMap<>(direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires);
+        ConcurrentMap<Integer, NoBucketData> map = direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires;
+        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().counter));
     }
 
     @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
@@ -547,6 +553,27 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             _direct.length,
             getHeapMemory(), _maxHeapMemory,
             getDirectMemory(), _maxDirectMemory);
+    }
+
+    private static class NoBucketData
+    {
+        private volatile long counter;
+        private final Throwable acquireStack;
+
+        private NoBucketData(long counter, Throwable acquireStack)
+        {
+            this.counter = counter;
+            this.acquireStack = acquireStack;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringWriter w = new StringWriter();
+            PrintWriter pw = new PrintWriter(w);
+            acquireStack.printStackTrace(pw);
+            return counter + " from " + w;
+        }
     }
 
     private class RetainedBucket

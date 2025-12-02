@@ -62,16 +62,16 @@ public class ArrayByteBufferPoolTest
         if (statsEnabled)
         {
             assertThat(dump, containsString("direct non-pooled acquisitions size=5\n"));
-            assertThat(dump, containsString("110: 10\n"));
-            assertThat(dump, containsString("120: 10\n"));
-            assertThat(dump, containsString("130: 10\n"));
-            assertThat(dump, containsString("140: 10\n"));
-            assertThat(dump, containsString("150: 10\n"));
+            assertThat(dump, containsString("110: 10 from "));
+            assertThat(dump, containsString("120: 10 from "));
+            assertThat(dump, containsString("130: 10 from "));
+            assertThat(dump, containsString("140: 10 from "));
+            assertThat(dump, containsString("150: 10 from "));
         }
         else
         {
             assertThat(dump, containsString("direct non-pooled acquisitions size=1\n"));
-            assertThat(dump, containsString("0: 50\n"));
+            assertThat(dump, containsString("0: 50 from"));
         }
         pool.clear();
         assertThat(pool.dump(), containsString("direct non-pooled acquisitions size=0\n"));
@@ -529,9 +529,9 @@ public class ArrayByteBufferPoolTest
             pool.acquire(800, false).release();
             pool.acquire(150, false).release();
             String dump = pool.dump();
-            assertThat(dump, containsString("200: 2\n"));
-            assertThat(dump, containsString("300: 1\n"));
-            assertThat(dump, containsString("800: 1\n"));
+            assertThat(dump, containsString("200: 2 from "));
+            assertThat(dump, containsString("300: 1 from "));
+            assertThat(dump, containsString("800: 1 from "));
         }
         {
             ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(1, 7, 50, 100);
@@ -541,16 +541,16 @@ public class ArrayByteBufferPoolTest
             pool.acquire(800, false).release();
             pool.acquire(150, false).release();
             String dump = pool.dump();
-            assertThat(dump, containsString("200: 2\n"));
-            assertThat(dump, containsString("300: 1\n"));
-            assertThat(dump, containsString("800: 1\n"));
+            assertThat(dump, containsString("200: 2 from "));
+            assertThat(dump, containsString("300: 1 from "));
+            assertThat(dump, containsString("800: 1 from "));
         }
         {
             ArrayByteBufferPool pool = new ArrayByteBufferPool.WithBucketCapacities(128, 512, 2048);
             pool.setStatisticsEnabled(true);
             pool.acquire(8192, false).release();
             String dump = pool.dump();
-            assertThat(dump, containsString("8192: 1\n"));
+            assertThat(dump, containsString("8192: 1 from "));
         }
     }
 
@@ -574,8 +574,8 @@ public class ArrayByteBufferPoolTest
         String dump = pool.dump();
         assertThat(dump, containsString("[stats=capacity=1024,in-use=0/1,pooled/acquires/releases=4/5/5(80.000%),avgSize=1023,non-pooled/evicts/removes=0/0/0,pool"));
         assertThat(dump, containsString("[stats=capacity=65536,in-use=0/1,pooled/acquires/releases=3/4/4(75.000%),avgSize=4096,non-pooled/evicts/removes=0/0/0,pool"));
-        assertThat(dump, containsString("131072: 2\n"));
-        assertThat(dump, containsString("196608: 2\n"));
+        assertThat(dump, containsString("131072: 2 from "));
+        assertThat(dump, containsString("196608: 2 from "));
     }
 
     @Test
