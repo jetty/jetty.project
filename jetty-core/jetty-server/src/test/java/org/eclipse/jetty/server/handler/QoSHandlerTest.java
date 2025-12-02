@@ -244,11 +244,14 @@ public class QoSHandlerTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
-    @Test
-    public void testSuspendedRequestTimesOut() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testSuspendedRequestTimesOut(boolean changeStatus) throws Exception
     {
         int maxRequests = 1;
         QoSHandler qosHandler = new QoSHandler();
+        if (changeStatus)
+            qosHandler.setThrottledStatus(HttpStatus.IM_A_TEAPOT_418);
         qosHandler.setMaxRequestCount(maxRequests);
         long timeout = 1000;
         qosHandler.setMaxSuspend(Duration.ofMillis(timeout));
@@ -287,7 +290,7 @@ public class QoSHandlerTest
 
         String text = endPoint1.getResponse(false, 5, TimeUnit.SECONDS);
         HttpTester.Response response = HttpTester.parseResponse(text);
-        assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
+        assertEquals(changeStatus ? HttpStatus.IM_A_TEAPOT_418 : HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
 
         // Complete the first request callback, e.g. by failing it.
         callbacks.remove(0).failed(new EofException());
@@ -511,11 +514,23 @@ public class QoSHandlerTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
-    @Test
-    public void testMaxSuspendedRequests() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testMaxSuspendedRequests(boolean addHeaderAndChangeStatus) throws Exception
     {
         int delay = 1000;
-        QoSHandler qosHandler = new QoSHandler();
+        QoSHandler qosHandler = new QoSHandler()
+        {
+            @Override
+            protected void writeUnavailable(Response response, int status, Callback callback)
+            {
+                if (addHeaderAndChangeStatus)
+                    response.getHeaders().add("x-test-header", "abcde");
+                super.writeUnavailable(response, status, callback);
+            }
+        };
+        if (addHeaderAndChangeStatus)
+            qosHandler.setThrottledStatus(HttpStatus.IM_A_TEAPOT_418);
         qosHandler.setMaxRequestCount(2);
         qosHandler.setMaxSuspendedRequestCount(2);
         AtomicInteger handling = new AtomicInteger();
@@ -570,7 +585,9 @@ public class QoSHandlerTest
                 Host: localhost
                 
                 """.formatted(i)));
-            assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
+            if (addHeaderAndChangeStatus)
+                assertEquals("abcde", response.get().get("x-test-header"));
+            assertEquals(addHeaderAndChangeStatus ? HttpStatus.IM_A_TEAPOT_418 : HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
         }
         await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getTotalExceededRequestCount, is(2L));
 

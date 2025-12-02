@@ -55,7 +55,8 @@ import org.slf4j.LoggerFactory;
  * <p>The maximum number of suspended request can be set with
  * {@link #setMaxSuspendedRequestCount(int)} to avoid out of memory errors.
  * When this limit is reached, the request will fail fast
- * with status code {@code 503} (not available).</p>
+ * with {@link #getThrottledStatus()} status code, which defaults to
+ * {@code 503} (not available).</p>
  * <p>Priorities are determined via {@link #getPriority(Request)},
  * that should return values between {@code 0} (the lowest priority)
  * and positive numbers, typically in the range {@code 0-10}.</p>
@@ -93,6 +94,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     private int maxRequests;
     private int maxSuspendedRequests = 1024;
     private Duration maxSuspend = Duration.ZERO;
+    private int throttledStatus = HttpStatus.SERVICE_UNAVAILABLE_503;
 
     public QoSHandler()
     {
@@ -141,8 +143,8 @@ public class QoSHandler extends ConditionalHandler.Abstract
     /**
      * <p>Sets the max number of suspended requests.</p>
      * <p>Once the max suspended request limit is reached,
-     * the request is failed with an HTTP status of
-     * {@code 503 Service unavailable}.</p>
+     * the request is failed with an HTTP status
+     * {{@link #getThrottledStatus()}.</p>
      * <p>A negative value indicate an unlimited number
      * of suspended requests.</p>
      *
@@ -167,7 +169,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     /**
      * <p>Sets the max duration of time a request may stay suspended.</p>
      * <p>Once the duration expires, the request is failed with an HTTP
-     * status of {@code 503 Service Unavailable}.</p>
+     * status {@link #getThrottledStatus()}.</p>
      * <p>{@link Duration#ZERO} means that the request may stay suspended forever.</p>
      *
      * @param maxSuspend the max duration of time a request may stay suspended
@@ -177,6 +179,24 @@ public class QoSHandler extends ConditionalHandler.Abstract
         if (maxSuspend.isNegative())
             throw new IllegalArgumentException("Invalid maxSuspend duration");
         this.maxSuspend = maxSuspend;
+    }
+
+    /**
+     * Get the http status written for throttled requests.
+     * @return the http status
+     */
+    public int getThrottledStatus()
+    {
+        return throttledStatus;
+    }
+
+    /**
+     * Change the default http status written for throttled requests from its default of {@link HttpStatus#SERVICE_UNAVAILABLE_503}.
+     * @param throttledStatus the http status
+     */
+    public void setThrottledStatus(int throttledStatus)
+    {
+        this.throttledStatus = throttledStatus;
     }
 
     @ManagedAttribute("The current number of suspended requests")
@@ -276,7 +296,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
                 if (maxSuspended >= 0 && Math.abs(permits) > maxSuspended)
                 {
                     // Reached the limit of suspended requests,
-                    // complete the request with 503 unavailable.
+                    // complete the request with getThrottledStatus()
                     state.incrementAndGet();
                     tooManyRequests = true;
                 }
@@ -294,7 +314,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
                 else
                 {
                     // This is a request that was suspended, it expired, and was re-handled.
-                    // Do not suspend it again, just complete it with 503 unavailable.
+                    // Do not suspend it again, just complete it with getThrottledStatus().
                     state.incrementAndGet();
                     expiredReHandled = true;
                 }
@@ -334,12 +354,26 @@ public class QoSHandler extends ConditionalHandler.Abstract
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} rejecting {}", this, response.getRequest());
-        response.setStatus(HttpStatus.SERVICE_UNAVAILABLE_503);
         if (response.isCommitted())
             callback.failed(new IllegalStateException("Response already committed"));
         else
-            response.write(true, null, callback);
+            writeUnavailable(response, getThrottledStatus(), callback);
         return true;
+    }
+
+    /**
+     * <p>Write the unavailable status and response.</p>
+     * <p>This method is called only for either new or resumed unsuspended
+     * requests exceeding the limit.</p>
+     *
+     * @param response the response to write to
+     * @param status the status to write
+     * @param callback the callback to complete
+     */
+    protected void writeUnavailable(Response response, int status, Callback callback)
+    {
+        response.setStatus(status);
+        response.write(true, null, callback);
     }
 
     /**
@@ -375,7 +409,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     }
 
     /**
-     * <p>Fails the given suspended request/response with status code {@value HttpStatus#SERVICE_UNAVAILABLE_503}
+     * <p>Fails the given suspended request/response with status code {@link #getThrottledStatus()}
      * and a {@link TimeoutException} failure.</p>
      * <p>By default, calls {@link #failSuspended(Request, Response, Callback, int, Throwable)}.</p>
      *
@@ -386,7 +420,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     protected void expireSuspended(Request request, Response response, Callback callback)
     {
         expiredCount.incrementAndGet();
-        failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException());
+        failSuspended(request, response, callback, getThrottledStatus(), new TimeoutException());
     }
 
     private boolean handleWithPermit(Request request, Response response, Callback callback) throws Exception
