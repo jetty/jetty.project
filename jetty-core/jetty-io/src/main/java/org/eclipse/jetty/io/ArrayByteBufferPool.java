@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
 public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 {
     static final int DEFAULT_FACTOR = 4096;
-    static final int DEFAULT_MAX_CAPACITY_BY_FACTOR = 16;
+    static final int DEFAULT_MAX_CAPACITY_BY_FACTOR = 64;
 
     private final RetainedBucket[] _direct;
     private final RetainedBucket[] _indirect;
