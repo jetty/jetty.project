@@ -71,7 +71,7 @@ public class ArrayByteBufferPoolTest
         else
         {
             assertThat(dump, containsString("direct non-pooled acquisitions size=1\n"));
-            assertThat(dump, containsString("0: 50 from"));
+            assertThat(dump, containsString("0: 50\n"));
         }
         pool.clear();
         assertThat(pool.dump(), containsString("direct non-pooled acquisitions size=0\n"));

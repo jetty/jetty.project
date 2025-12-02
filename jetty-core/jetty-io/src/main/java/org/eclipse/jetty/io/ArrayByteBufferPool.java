@@ -272,11 +272,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             key = 0;
         }
-        Throwable acquireStack = new Throwable("Acquired by " + Thread.currentThread().getName());
         map.compute(key, (k, v) ->
         {
             if (v == null)
-                return new NoBucketData(1L, acquireStack);
+                return new NoBucketData(1L, isStatisticsEnabled() ? new Throwable("Acquired by " + Thread.currentThread().getName()) : null);
             // incrementing the volatile is fine as this lambda is only ever
             // called by a single thread at a time, as guaranteed by CHM.compute().
             v.counter++;
@@ -569,6 +568,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         @Override
         public String toString()
         {
+            if (acquireStack == null)
+                return Long.toString(counter);
             StringWriter w = new StringWriter();
             PrintWriter pw = new PrintWriter(w);
             acquireStack.printStackTrace(pw);
