@@ -192,16 +192,9 @@ public abstract class AbstractCompressionTest
         compression.setByteBufferPool(pool);
     }
 
-    protected void startCompression(Class<? extends Compression> compressionClass, int bufferSize) throws Exception
-    {
-        newCompression(compressionClass);
-        if (bufferSize > 0)
-            compression.setBufferSize(bufferSize);
-        compression.start();
-    }
-
     protected void startCompression(Class<? extends Compression> compressionClass) throws Exception
     {
-        startCompression(compressionClass, -1);
+        newCompression(compressionClass);
+        compression.start();
     }
 }

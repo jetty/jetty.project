@@ -67,7 +67,7 @@ public class CompressionDecoderSourceTest extends AbstractCompressionTest
     @MethodSource("compressions")
     public void testBigBlockWithExtraBytes(Class<Compression> compressionClass) throws Exception
     {
-        startCompression(compressionClass, 64);
+        startCompression(compressionClass);
         String data1 = "0123456789ABCDEF".repeat(10);
         ByteBuffer bytes1 = ByteBuffer.wrap(compress(data1));
         String data2 = "HELLO";

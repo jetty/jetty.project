@@ -27,6 +27,7 @@ public class ZstandardDecoderSource extends DecoderSource
 {
     private final ZstandardCompression compression;
     private final ZstdDecompressCtx decompressCtx;
+    private final int bufferSize;
     private final Cleaner.Cleanable cleanable;
 
     public ZstandardDecoderSource(Content.Source source, ZstandardCompression compression, ZstandardDecoderConfig config)
@@ -35,6 +36,7 @@ public class ZstandardDecoderSource extends DecoderSource
         this.compression = compression;
         this.decompressCtx = new ZstdDecompressCtx();
         this.decompressCtx.setMagicless(config.isMagicless());
+        this.bufferSize = config.getBufferSize();
         this.cleanable = compression.getCleaner().register(this, decompressCtx::close);
     }
 
@@ -46,7 +48,7 @@ public class ZstandardDecoderSource extends DecoderSource
             return inputChunk;
         if (!input.isDirect())
             throw new IllegalArgumentException("Read Chunk is not a Direct ByteBuffer");
-        RetainableByteBuffer dst = compression.acquireByteBuffer(compression.getBufferSize());
+        RetainableByteBuffer dst = compression.acquireByteBuffer(bufferSize);
         boolean last = inputChunk.isLast();
         dst.getByteBuffer().clear();
         boolean fullyFlushed = decompressCtx.decompressDirectByteBufferStream(dst.getByteBuffer(), input);

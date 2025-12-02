@@ -35,7 +35,6 @@ public class GzipCompressionTest extends AbstractGzipTest
     @Test
     public void testBigBlockWithExtraBytesViaGzipInputStream() throws Exception
     {
-        startGzip(64);
         String data1 = "0123456789ABCDEF".repeat(10);
         ByteBuffer bytes1 = ByteBuffer.wrap(compress(data1));
         String data2 = "HELLO";

@@ -37,7 +37,6 @@ public abstract class Compression extends ContainerLifeCycle
     private final Pattern etagSuffixPattern;
     private ByteBufferPool byteBufferPool;
     private Container container;
-    private int bufferSize = 2048;
     private int minCompressSize;
 
     public Compression(String encoding)
@@ -80,18 +79,6 @@ public abstract class Compression extends ContainerLifeCycle
         if (etag.charAt(end) == '"')
             return etag.substring(0, end) + etagSuffixQuote;
         return etag + etagSuffix;
-    }
-
-    public int getBufferSize()
-    {
-        return bufferSize;
-    }
-
-    public void setBufferSize(int size)
-    {
-        if (size <= 0)
-            throw new IllegalArgumentException("Invalid buffer size: " + size);
-        this.bufferSize = size;
     }
 
     public ByteBufferPool getByteBufferPool()
