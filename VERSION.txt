@@ -1,3 +1,5 @@
+jetty-12.1.6-SNAPSHOT
+
 12.1.5 - 03 December 2025
  + 13960 Ensure demand is called after MessageInputStream.close()
  + 13962 HTTP/2 Client connection timeout does not work
