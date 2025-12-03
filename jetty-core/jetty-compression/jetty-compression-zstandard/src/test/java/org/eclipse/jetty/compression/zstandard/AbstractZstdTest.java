@@ -76,6 +76,15 @@ public abstract class AbstractZstdTest
     {
         zstd = new ZstandardCompression();
         zstd.setByteBufferPool(pool);
+
+        ZstandardEncoderConfig encCfg = new ZstandardEncoderConfig();
+        encCfg.setBufferSize(13);
+        zstd.setDefaultEncoderConfig(encCfg);
+
+        ZstandardDecoderConfig decCfg = new ZstandardDecoderConfig();
+        decCfg.setBufferSize(17);
+        zstd.setDefaultDecoderConfig(decCfg);
+
         zstd.start();
     }
 }

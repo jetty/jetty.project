@@ -16,43 +16,12 @@ package org.eclipse.jetty.compression.zstandard;
 import java.io.OutputStream;
 
 import com.github.luben.zstd.Zstd;
-import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
 import org.eclipse.jetty.compression.EncoderConfig;
 import org.eclipse.jetty.io.Content;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/**
- * <p>Make sure that the {@link ZstandardCompression#getByteBufferPool()} instance can pool the value returned by
- * {@link #getBufferSize()} (typically 132 KB but YMMV) otherwise direct buffers have to be allocated then left to
- * be collected by the GC, which may have serious performance implications.</p>
- */
 public class ZstandardEncoderConfig implements EncoderConfig
 {
-    /**
-     * Default Buffer Size as found in zstd-jni.
-     */
-    private static final int DEFAULT_BUFFER_SIZE;
-    private static final int MIN_BUFFER_SIZE = 32;
-    private static final Logger LOG = LoggerFactory.getLogger(ZstandardEncoderConfig.class);
-
-    static
-    {
-        // Get the recommended buffer size from zstd-jni (actually comes from zstandard lib),
-        // but put some upper limit on it for our default buffer size.
-        // The user can still configure the buffer size to be higher if they want to.
-        long bufferSizeCeiling = 256_000;
-        long bufferSize = ZstdOutputStreamNoFinalizer.recommendedCOutSize();
-        if (bufferSize > bufferSizeCeiling)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Lowering zstd-jni recommended/default encoder buffer size of: {} to {}", bufferSize, bufferSizeCeiling);
-            bufferSize = bufferSizeCeiling;
-        }
-        DEFAULT_BUFFER_SIZE = (int)bufferSize;
-    }
-
-    private int bufferSize = DEFAULT_BUFFER_SIZE;
+    private int bufferSize = org.eclipse.jetty.util.IO.DEFAULT_BUFFER_SIZE;
     private int level = Zstd.defaultCompressionLevel();
     private int strategy = -1;
     private boolean magicless = false;
@@ -85,7 +54,7 @@ public class ZstandardEncoderConfig implements EncoderConfig
     @Override
     public void setBufferSize(int size)
     {
-        this.bufferSize = Math.max(MIN_BUFFER_SIZE, size);
+        this.bufferSize = size;
     }
 
     /**

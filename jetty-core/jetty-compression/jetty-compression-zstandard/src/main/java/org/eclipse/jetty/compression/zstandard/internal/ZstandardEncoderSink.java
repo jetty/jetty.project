@@ -144,7 +144,9 @@ public class ZstandardEncoderSink extends EncoderSink
             while (inputBuf.hasRemaining())
             {
                 outputBuf.getByteBuffer().clear();
+                int inputBufRemainingBeforeCompression = inputBuf.remaining();
                 compressCtx.compressDirectByteBufferStream(outputBuf.getByteBuffer(), inputBuf.getByteBuffer(), EndDirective.CONTINUE);
+                int inputBufConsumedByCompression = inputBufRemainingBeforeCompression - inputBuf.remaining();
                 outputBuf.getByteBuffer().flip();
                 if (outputBuf.getByteBuffer().hasRemaining())
                 {
@@ -152,7 +154,7 @@ public class ZstandardEncoderSink extends EncoderSink
                     if (inputBuf.hasRemaining())
                     {
                         // rollback unprocessed inputBuf to content buffer position.
-                        content.position(content.position() - inputBuf.remaining());
+                        content.position(content.position() - inputBufConsumedByCompression);
                     }
                     // we are about to return, release inputBuffer
                     inputBuf.release();
