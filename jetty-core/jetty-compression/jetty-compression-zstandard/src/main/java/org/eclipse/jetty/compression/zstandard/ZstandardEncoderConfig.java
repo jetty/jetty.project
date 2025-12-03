@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.compression.zstandard;
 
-import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
 import java.io.OutputStream;
 
 import com.github.luben.zstd.Zstd;
+import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
 import org.eclipse.jetty.compression.EncoderConfig;
 import org.eclipse.jetty.io.Content;
 import org.slf4j.Logger;

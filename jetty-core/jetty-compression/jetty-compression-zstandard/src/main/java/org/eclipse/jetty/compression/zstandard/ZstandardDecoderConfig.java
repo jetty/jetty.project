@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.compression.zstandard;
 
-import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
 import java.io.InputStream;
 
+import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
 import org.eclipse.jetty.compression.DecoderConfig;
 import org.eclipse.jetty.io.Content;
 import org.slf4j.Logger;
