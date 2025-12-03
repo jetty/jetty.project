@@ -26,6 +26,8 @@ import org.eclipse.jetty.util.ConcurrentPool;
 import org.eclipse.jetty.util.Pool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -81,11 +83,12 @@ public class ArrayByteBufferPoolTest
         assertThat(dump, containsString("[capacity=4096,in-use=0/0,pooled/acquires/releases=512/1024/1024(50.000%),non-pooled/evicts/removes=0/0/512]"));
     }
 
-    @Test
-    public void testDump()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testDump(boolean statsEnabled)
     {
         ArrayByteBufferPool pool = new ArrayByteBufferPool(0, 10, 100, Integer.MAX_VALUE, 200, 200);
-        pool.setStatisticsEnabled(true);
+        pool.setStatisticsEnabled(statsEnabled);
 
         List<RetainableByteBuffer> buffers = new ArrayList<>();
 
@@ -95,12 +98,20 @@ public class ArrayByteBufferPoolTest
         buffers.forEach(RetainableByteBuffer::release);
 
         String dump = pool.dump();
-        assertThat(dump, containsString("direct non-pooled acquisitions size=5\n"));
-        assertThat(dump, containsString("110: 10\n"));
-        assertThat(dump, containsString("120: 10\n"));
-        assertThat(dump, containsString("130: 10\n"));
-        assertThat(dump, containsString("140: 10\n"));
-        assertThat(dump, containsString("150: 10\n"));
+        if (statsEnabled)
+        {
+            assertThat(dump, containsString("direct non-pooled acquisitions size=5\n"));
+            assertThat(dump, containsString("110: 10 from "));
+            assertThat(dump, containsString("120: 10 from "));
+            assertThat(dump, containsString("130: 10 from "));
+            assertThat(dump, containsString("140: 10 from "));
+            assertThat(dump, containsString("150: 10 from "));
+        }
+        else
+        {
+            assertThat(dump, containsString("direct non-pooled acquisitions size=1\n"));
+            assertThat(dump, containsString("0: 50\n"));
+        }
         pool.clear();
         assertThat(pool.dump(), containsString("direct non-pooled acquisitions size=0\n"));
     }
