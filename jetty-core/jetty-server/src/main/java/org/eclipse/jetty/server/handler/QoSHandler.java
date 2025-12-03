@@ -184,6 +184,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     /**
      * @return the http status for rejected requests
      */
+    @ManagedAttribute(value = "The reject HTTP status code")
     public int getRejectStatusCode()
     {
         return rejectStatusCode;
