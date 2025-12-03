@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import javax.net.ssl.SSLHandshakeException;
-
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLHandshakeException;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
