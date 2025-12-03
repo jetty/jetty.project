@@ -30,7 +30,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public abstract class Compression extends ContainerLifeCycle
 {
-
     private final String encodingName;
     private final String etagSuffix;
     private final String etagSuffixQuote;
@@ -79,6 +78,25 @@ public abstract class Compression extends ContainerLifeCycle
         if (etag.charAt(end) == '"')
             return etag.substring(0, end) + etagSuffixQuote;
         return etag + etagSuffix;
+    }
+
+    /**
+     * This always returns 0.
+     * @deprecated use {@link EncoderConfig#getBufferSize()} or {@link DecoderConfig#getBufferSize()} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.1.5")
+    public int getBufferSize()
+    {
+        return 0;
+    }
+
+    /**
+     * This has no effect.
+     * @deprecated use {@link EncoderConfig#setBufferSize(int)} or {@link DecoderConfig#setBufferSize(int)} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.1.5")
+    public void setBufferSize(int size)
+    {
     }
 
     public ByteBufferPool getByteBufferPool()
