@@ -33,7 +33,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
@@ -577,7 +576,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
     }
 
-    private class RetainedBucket
+    private class RetainedBucket implements Dumpable
     {
         private final LongAdder _acquires = new LongAdder();
         private final LongAdder _totalAcquired = new LongAdder();
@@ -690,9 +689,15 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
 
         @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            Dumpable.dumpObjects(out, indent, this, _pool);
+        }
+
+        @Override
         public String toString()
         {
-            return String.format("%s@%x[stats=%s,pool=%s]", TypeUtil.toShortName(this.getClass()), hashCode(), getStatistics(), _pool);
+            return String.format("%s@%x[%s]", TypeUtil.toShortName(this.getClass()), hashCode(), getStatistics());
         }
 
         private record Statistics(int capacity, int inUseEntries, int totalEntries, long pooled, long acquires,
