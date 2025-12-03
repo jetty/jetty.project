@@ -64,7 +64,6 @@ public class GzipCompressionTest extends AbstractGzipTest
     @Test
     public void testTwoSmallBlocksViaGzipInputStream() throws Exception
     {
-        startGzip();
         String data1 = "0";
         // Entire Gzip Buffer (headers + content + trailers)
         ByteBuffer bytes1 = ByteBuffer.wrap(compress(data1));
