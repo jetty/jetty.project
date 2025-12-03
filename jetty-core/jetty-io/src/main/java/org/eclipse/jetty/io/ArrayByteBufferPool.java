@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.IntUnaryOperator;
 import java.util.function.ToLongFunction;
@@ -74,8 +75,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final IntUnaryOperator _bucketIndexFor;
     private final IntUnaryOperator _bucketCapacity;
     private final AtomicBoolean _evictor = new AtomicBoolean(false);
-    private final ConcurrentMap<Integer, Long> _noBucketDirectAcquires = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Integer, Long> _noBucketIndirectAcquires = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, NoBucketData> _noBucketDirectAcquires = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, NoBucketData> _noBucketIndirectAcquires = new ConcurrentHashMap<>();
     private boolean _statisticsEnabled;
 
     /**
@@ -239,18 +240,24 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private void recordNoBucketAcquire(int size, boolean direct)
     {
+        ConcurrentMap<Integer, NoBucketData> map = direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires;
+        int key;
         if (isStatisticsEnabled())
         {
-            ConcurrentMap<Integer, Long> map = direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires;
             int idx = _bucketIndexFor.applyAsInt(size);
-            int key = _bucketCapacity.applyAsInt(idx);
-            map.compute(key, (k, v) ->
-            {
-                if (v == null)
-                    return 1L;
-                return v + 1L;
-            });
+            key = _bucketCapacity.applyAsInt(idx);
         }
+        else
+        {
+            key = 0;
+        }
+        map.compute(key, (k, v) ->
+        {
+            if (v == null)
+                return new NoBucketData(1L, isStatisticsEnabled() ? new Throwable("Acquired by " + Thread.currentThread().getName()) : null);
+            v.counter.incrementAndGet();
+            return v;
+        });
     }
 
     @Override
@@ -504,7 +511,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private Map<Integer, Long> getNoBucketAcquires(boolean direct)
     {
-        return new HashMap<>(direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires);
+        ConcurrentMap<Integer, NoBucketData> map = direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires;
+        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().counter.get()));
     }
 
     @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
@@ -549,7 +557,30 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             getDirectMemory(), _maxDirectMemory);
     }
 
-    private class RetainedBucket
+    private static class NoBucketData
+    {
+        private final AtomicLong counter;
+        private final Throwable acquireStack;
+
+        private NoBucketData(long counter, Throwable acquireStack)
+        {
+            this.counter = new AtomicLong(counter);
+            this.acquireStack = acquireStack;
+        }
+
+        @Override
+        public String toString()
+        {
+            if (acquireStack == null)
+                return Long.toString(counter.get());
+            StringWriter w = new StringWriter();
+            PrintWriter pw = new PrintWriter(w);
+            acquireStack.printStackTrace(pw);
+            return counter + " from " + w;
+        }
+    }
+
+    private class RetainedBucket implements Dumpable
     {
         private final LongAdder _acquires = new LongAdder();
         private final LongAdder _pooled = new LongAdder();
@@ -653,6 +684,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             _removes.reset();
             _releases.reset();
             getPool().stream().forEach(Pool.Entry::remove);
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            Dumpable.dumpObjects(out, indent, this, _pool);
         }
 
         @Override
@@ -859,6 +896,21 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             return getLeaks().stream()
                 .map(Buffer::dump)
                 .collect(Collectors.joining(System.lineSeparator()));
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            Dumpable.dumpObjects(
+                out,
+                indent,
+                this,
+                DumpableCollection.fromArray("direct", ((ArrayByteBufferPool)this)._direct),
+                new DumpableMap("direct non-pooled acquisitions", ((ArrayByteBufferPool)this)._noBucketDirectAcquires),
+                DumpableCollection.fromArray("indirect", ((ArrayByteBufferPool)this)._indirect),
+                new DumpableMap("heap non-pooled acquisitions", ((ArrayByteBufferPool)this)._noBucketIndirectAcquires),
+                DumpableCollection.from("leaks", getLeaks().stream().map(Buffer::dump).toList())
+            );
         }
 
         public class Buffer extends RetainableByteBuffer.Wrapper
