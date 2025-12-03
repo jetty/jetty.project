@@ -251,7 +251,7 @@ public class QoSHandlerTest
         int maxRequests = 1;
         QoSHandler qosHandler = new QoSHandler();
         if (changeStatus)
-            qosHandler.setThrottledStatus(HttpStatus.IM_A_TEAPOT_418);
+            qosHandler.setRejectStatusCode(HttpStatus.IM_A_TEAPOT_418);
         qosHandler.setMaxRequestCount(maxRequests);
         long timeout = 1000;
         qosHandler.setMaxSuspend(Duration.ofMillis(timeout));
@@ -522,15 +522,15 @@ public class QoSHandlerTest
         QoSHandler qosHandler = new QoSHandler()
         {
             @Override
-            protected void writeUnavailable(Response response, int status, Callback callback)
+            protected void reject(Request request, Response response, Callback callback, int status)
             {
                 if (addHeaderAndChangeStatus)
                     response.getHeaders().add("x-test-header", "abcde");
-                super.writeUnavailable(response, status, callback);
+                super.reject(request, response, callback, status);
             }
         };
         if (addHeaderAndChangeStatus)
-            qosHandler.setThrottledStatus(HttpStatus.IM_A_TEAPOT_418);
+            qosHandler.setRejectStatusCode(HttpStatus.IM_A_TEAPOT_418);
         qosHandler.setMaxRequestCount(2);
         qosHandler.setMaxSuspendedRequestCount(2);
         AtomicInteger handling = new AtomicInteger();
