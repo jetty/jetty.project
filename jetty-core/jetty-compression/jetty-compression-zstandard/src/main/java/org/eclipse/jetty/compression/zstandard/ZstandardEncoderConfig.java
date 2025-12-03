@@ -13,14 +13,19 @@
 
 package org.eclipse.jetty.compression.zstandard;
 
+import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
 import java.io.OutputStream;
 
 import com.github.luben.zstd.Zstd;
 import org.eclipse.jetty.compression.EncoderConfig;
 import org.eclipse.jetty.io.Content;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ZstandardEncoderConfig implements EncoderConfig
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ZstandardEncoderConfig.class);
+
     private int bufferSize = org.eclipse.jetty.util.IO.DEFAULT_BUFFER_SIZE;
     private int level = Zstd.defaultCompressionLevel();
     private int strategy = -1;
@@ -54,6 +59,9 @@ public class ZstandardEncoderConfig implements EncoderConfig
     @Override
     public void setBufferSize(int size)
     {
+        if (size < ZstdOutputStreamNoFinalizer.recommendedCOutSize())
+            LOG.warn("encoder buffer size ({}) below zstd recommended value of {}", size, ZstdOutputStreamNoFinalizer.recommendedCOutSize());
+
         this.bufferSize = size;
     }
 

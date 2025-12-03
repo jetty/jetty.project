@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Objects;
 
 import com.github.luben.zstd.BufferPool;
-import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
-import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
+import com.github.luben.zstd.ZstdInputStream;
+import com.github.luben.zstd.ZstdOutputStream;
 import com.github.luben.zstd.util.Native;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.DecoderConfig;
@@ -148,7 +148,7 @@ public class ZstandardCompression extends Compression
     @Override
     public InputStream newDecoderInputStream(InputStream in, DecoderConfig config) throws IOException
     {
-        return new ZstdInputStreamNoFinalizer(in, new BufferPoolAdapter(getByteBufferPool(), false));
+        return new ZstdInputStream(in, new BufferPoolAdapter(getByteBufferPool(), false));
     }
 
     @Override
@@ -162,7 +162,7 @@ public class ZstandardCompression extends Compression
     public OutputStream newEncoderOutputStream(OutputStream out, EncoderConfig config) throws IOException
     {
         ZstandardEncoderConfig zstandardEncoderConfig = (ZstandardEncoderConfig)config;
-        ZstdOutputStreamNoFinalizer outputStream = new ZstdOutputStreamNoFinalizer(out, new BufferPoolAdapter(getByteBufferPool(), false), zstandardEncoderConfig.getCompressionLevel());
+        ZstdOutputStream outputStream = new ZstdOutputStream(out, new BufferPoolAdapter(getByteBufferPool(), false), zstandardEncoderConfig.getCompressionLevel());
         if (zstandardEncoderConfig.getStrategy() >= 0)
             outputStream.setStrategy(zstandardEncoderConfig.getStrategy());
         return outputStream;

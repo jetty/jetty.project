@@ -13,13 +13,18 @@
 
 package org.eclipse.jetty.compression.zstandard;
 
+import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
 import java.io.InputStream;
 
 import org.eclipse.jetty.compression.DecoderConfig;
 import org.eclipse.jetty.io.Content;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ZstandardDecoderConfig implements DecoderConfig
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ZstandardDecoderConfig.class);
+
     private int bufferSize = org.eclipse.jetty.util.IO.DEFAULT_BUFFER_SIZE;
     private boolean magicless = false;
 
@@ -40,6 +45,9 @@ public class ZstandardDecoderConfig implements DecoderConfig
     @Override
     public void setBufferSize(int size)
     {
+        if (size < ZstdInputStreamNoFinalizer.recommendedDOutSize())
+            LOG.warn("decoder buffer size ({}) below zstd recommended value of {}", size, ZstdInputStreamNoFinalizer.recommendedDOutSize());
+
         this.bufferSize = size;
     }
 
