@@ -137,6 +137,7 @@ public class ZstandardEncoderSink extends EncoderSink
         // process content (input) buffer using zstd-jni CONTINUE directive
         while (BufferUtil.hasContent(content))
         {
+            int originalPosition = content.position();
             // content must be a direct bytebuffer, and we have to assume that the size
             // of the content buffer can be huge (multi megabyte or bigger), so lets
             // process the content one limited direct buffer at a time.
@@ -144,9 +145,7 @@ public class ZstandardEncoderSink extends EncoderSink
             while (inputBuf.hasRemaining())
             {
                 outputBuf.getByteBuffer().clear();
-                int inputBufRemainingBeforeCompression = inputBuf.remaining();
                 compressCtx.compressDirectByteBufferStream(outputBuf.getByteBuffer(), inputBuf.getByteBuffer(), EndDirective.CONTINUE);
-                int inputBufConsumedByCompression = inputBufRemainingBeforeCompression - inputBuf.remaining();
                 outputBuf.getByteBuffer().flip();
                 if (outputBuf.getByteBuffer().hasRemaining())
                 {
@@ -154,7 +153,7 @@ public class ZstandardEncoderSink extends EncoderSink
                     if (inputBuf.hasRemaining())
                     {
                         // rollback unprocessed inputBuf to content buffer position.
-                        content.position(content.position() - inputBufConsumedByCompression);
+                        content.position(originalPosition);
                     }
                     // we are about to return, release inputBuffer
                     inputBuf.release();
