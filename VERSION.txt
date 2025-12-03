@@ -1,3 +1,20 @@
+12.1.5 - 03 December 2025
+ + 13960 Ensure demand is called after MessageInputStream.close()
+ + 13962 HTTP/2 Client connection timeout does not work
+ + 13964 HTTP/2 Client infinite reconnection loop
+ + 13993 Jetty 12 server deadlock
+ + 14014 Regular handling of bad URIs
+ + 14025 Fix cookie-config web.xml attributes when used with quickstart - Jetty 12.1
+ + 14026 Rework `consumeAvailable()` mechanism
+ + 14028 Native memory leak in zstd compression handler
+ + 14063 Add `test` scope to `jetty-quic-util` JUnit dependency
+ + 14070 Invalid logger usage in ThreadPool
+ + 14085 QoSHandler: Allow customization of rejection status code (429 vs 503) and improve extensibility
+ + 14086 Replace reflection-based BundleClassLoaderHelper with spec-compliant BundleDelegatingClassLoader (@Copilot)
+ + 14097 Can't use Jetty when the default Locale is Azerbaijan
+ + 14123 Improve buffer pools stats and dump
+ + 14126 Introduced Jetty module `json.mod`.
+
 jetty-12.1.5-SNAPSHOT
 
 12.1.4 - 10 November 2025

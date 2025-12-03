@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee11</groupId>
     <artifactId>jetty-ee11-tests</artifactId>
-    <version>12.1.5-SNAPSHOT</version>
+    <version>12.1.5</version>
   </parent>
   <artifactId>jetty-ee11-test-cdi</artifactId>
   <packaging>jar</packaging>

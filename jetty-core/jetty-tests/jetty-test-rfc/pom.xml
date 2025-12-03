@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>jetty-tests</artifactId>
-    <version>12.1.5-SNAPSHOT</version>
+    <version>12.1.5</version>
   </parent>
   <artifactId>jetty-test-rfc</artifactId>
   <name>Core :: Tests :: RFC</name>

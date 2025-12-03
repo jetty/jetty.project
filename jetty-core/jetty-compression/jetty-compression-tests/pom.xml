@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.compression</groupId>
     <artifactId>jetty-compression</artifactId>
-    <version>12.1.5-SNAPSHOT</version>
+    <version>12.1.5</version>
   </parent>
   <artifactId>jetty-compression-tests</artifactId>
   <packaging>jar</packaging>
