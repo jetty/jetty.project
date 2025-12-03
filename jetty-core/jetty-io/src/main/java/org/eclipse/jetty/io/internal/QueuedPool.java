@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io.internal;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
@@ -25,6 +26,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Pool;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 
 /**
  * <p>A {@link Queue} based implementation of {@link Pool}.</p>
@@ -37,7 +41,7 @@ import org.eclipse.jetty.util.Pool;
  *
  * @param <P> the type of the pooled objects
  */
-public class QueuedPool<P> implements Pool<P>
+public class QueuedPool<P> implements Pool<P>, Dumpable
 {
     // All code that uses these three fields is fully thread-safe.
     private final int maxSize;
@@ -193,6 +197,23 @@ public class QueuedPool<P> implements Pool<P>
     public int getTerminatedCount()
     {
         return 0;
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, new DumpableCollection("entries", queue));
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[size=%d,max=%d,terminated=%b]",
+            TypeUtil.toShortName(getClass()),
+            hashCode(),
+            size(),
+            getMaxSize(),
+            isTerminated());
     }
 
     private static class QueuedEntry<P> implements Entry<P>

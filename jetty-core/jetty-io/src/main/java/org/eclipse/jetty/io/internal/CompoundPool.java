@@ -13,18 +13,20 @@
 
 package org.eclipse.jetty.io.internal;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Pool;
+import org.eclipse.jetty.util.component.Dumpable;
 
 /**
  * <p>A {@link Pool} implementation that uses a primary pool which overflows to a secondary pool.</p>
  *
  * @param <P> the type of the pooled objects
  */
-public class CompoundPool<P> implements Pool<P>
+public class CompoundPool<P> implements Pool<P>, Dumpable
 {
     private final Pool<P> primaryPool;
     private final Pool<P> secondaryPool;
@@ -114,5 +116,11 @@ public class CompoundPool<P> implements Pool<P>
     public int getTerminatedCount()
     {
         return primaryPool.getTerminatedCount() + secondaryPool.getTerminatedCount();
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, primaryPool, secondaryPool);
     }
 }
