@@ -275,9 +275,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         {
             if (v == null)
                 return new NoBucketData(1L, isStatisticsEnabled() ? new Throwable("Acquired by " + Thread.currentThread().getName()) : null);
-            // incrementing the volatile is fine as this lambda is only ever
-            // called by a single thread at a time, as guaranteed by CHM.compute().
-            v.counter++;
+            v.counter.incrementAndGet();
             return v;
         });
     }
@@ -507,7 +505,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private Map<Integer, Long> getNoBucketAcquires(boolean direct)
     {
         ConcurrentMap<Integer, NoBucketData> map = direct ? _noBucketDirectAcquires : _noBucketIndirectAcquires;
-        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().counter));
+        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().counter.get()));
     }
 
     @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
@@ -555,12 +553,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private static class NoBucketData
     {
-        private volatile long counter;
+        private final AtomicLong counter;
         private final Throwable acquireStack;
 
         private NoBucketData(long counter, Throwable acquireStack)
         {
-            this.counter = counter;
+            this.counter = new AtomicLong(counter);
             this.acquireStack = acquireStack;
         }
 
@@ -568,7 +566,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public String toString()
         {
             if (acquireStack == null)
-                return Long.toString(counter);
+                return Long.toString(counter.get());
             StringWriter w = new StringWriter();
             PrintWriter pw = new PrintWriter(w);
             acquireStack.printStackTrace(pw);
