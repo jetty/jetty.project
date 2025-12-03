@@ -22,6 +22,11 @@ import org.eclipse.jetty.io.Content;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>Make sure that the {@link ZstandardCompression#getByteBufferPool()} instance can pool the value returned by
+ * {@link #getBufferSize()} (typically 132 KB but YMMV) otherwise direct buffers have to be allocated then left to
+ * be collected by the GC, which may have serious performance implications.</p>
+ */
 public class ZstandardEncoderConfig implements EncoderConfig
 {
     /**
@@ -36,7 +41,7 @@ public class ZstandardEncoderConfig implements EncoderConfig
         // Get the recommended buffer size from zstd-jni (actually comes from zstandard lib),
         // but put some upper limit on it for our default buffer size.
         // The user can still configure the buffer size to be higher if they want to.
-        long bufferSizeCeiling = 64 * 1024L; // this is the default ArrayByteBufferPool maxCapacity
+        long bufferSizeCeiling = 256_000;
         long bufferSize = ZstdOutputStreamNoFinalizer.recommendedCOutSize();
         if (bufferSize > bufferSizeCeiling)
         {
@@ -72,8 +77,9 @@ public class ZstandardEncoderConfig implements EncoderConfig
      * {@link ZstandardCompression#newEncoderOutputStream(OutputStream, EncoderConfig)} or
      * {@link ZstandardCompression#newEncoderOutputStream(OutputStream)}
      * </p>
-     * <p>Make sure that the {@link ZstandardCompression#getByteBufferPool()} instance can pool the specified value otherwise
-     * direct buffers have to be allocated then left to be collected by the GC, which has serious performance implications.</p>
+     * <p>Make sure that the {@link ZstandardCompression#getByteBufferPool()} instance can pool
+     * the specified value otherwise direct buffers have to be allocated then left to be
+     * collected by the GC, which may have serious performance implications.</p>
      * @param size size of output buffer.
      */
     @Override
