@@ -1,3 +1,12 @@
+12.0.31 - 03 December 2025
+ + 13962 HTTP/2 Client connection timeout does not work
+ + 13993 Fixes for ThreadLimitHandler with NON_BLOCKING invocation type
+ + 14013 Regular handling of bad URIs
+ + 14017 Fix cookie-config web.xml attributes when used with quickstart
+ + 14097 Can't use Jetty when the default Locale is Azerbaijan
+ + 14130 12.0.x: Improve buffer pools stats and dump
+ + 14132 12.0.x: Fix loop caused by `NegotiatingClientConnection` talking to broken server
+
 12.0.30 - 10 November 2025
  + 13413 Fix `<license><name>` by using SPDX in pom.xml (@julianladisch)
  + 13470 Jetty 12.0: ManagedSession issues due to recursion and/pr multiple completions of the stream.
