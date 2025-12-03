@@ -94,8 +94,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
                 }
                 else if (filled < 0)
                 {
-                    failure = new SSLHandshakeException("Abruptly closed by peer");
-                    break;
+                    throw new SSLHandshakeException("Abruptly closed by peer");
                 }
                 else if (filled == 0)
                 {
