@@ -11,9 +11,17 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.quic.util
-{
-    requires org.eclipse.jetty.io;
+package org.eclipse.jetty.quic.tls.message;
 
-    exports org.eclipse.jetty.quic.util;
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
+
+public record QuicTransportParametersExtension(TransportParameters parameters) implements Extension
+{
+    public static final int TYPE = 0x0039;
+
+    @Override
+    public int type()
+    {
+        return TYPE;
+    }
 }

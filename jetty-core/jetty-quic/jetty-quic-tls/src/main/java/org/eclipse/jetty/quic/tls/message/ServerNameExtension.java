@@ -11,9 +11,23 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.quic.util
-{
-    requires org.eclipse.jetty.io;
+package org.eclipse.jetty.quic.tls.message;
 
-    exports org.eclipse.jetty.quic.util;
+import org.eclipse.jetty.util.StringUtil;
+
+public record ServerNameExtension(String serverName) implements Extension
+{
+    public static final int TYPE = 0x0000;
+
+    public ServerNameExtension
+    {
+        if (StringUtil.isBlank(serverName))
+            throw new IllegalArgumentException("invalid server name '%s'".formatted(serverName));
+    }
+
+    @Override
+    public int type()
+    {
+        return TYPE;
+    }
 }

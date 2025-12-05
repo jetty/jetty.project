@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.util;
 
 import java.nio.ByteBuffer;
 import java.util.function.LongConsumer;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 
 /**
  * <p>Encodes and decodes {@code long} values as specified by
@@ -183,10 +184,32 @@ public class VarLenInt
         for (int i = length - 1; i > 0; --i)
         {
             byteBuffer.put(position + i, (byte)(value & 0xFF));
-            value = value >>> 8;
+            value = value >>> Byte.SIZE;
         }
         byteBuffer.put(position, (byte)((value & VALUE_MASK) | (encoding << 6)));
         byteBuffer.position(position + length);
+    }
+
+    /**
+     * <p>Variable-length encodes the given {@code long} value into the given
+     * {@code RetainableByteBuffer.Mutable}.</p>
+     *
+     * @param buffer the {@code RetainableByteBuffer.Mutable} to encode into
+     * @param value the {@code long} value to encode
+     */
+    public static void encode(RetainableByteBuffer.Mutable buffer, long value)
+    {
+        int length = length(value);
+        int encoding = 31 - Integer.numberOfLeadingZeros(length);
+        // Shift the value and work only on the least significant byte by masking.
+        int shift = (length - 1) * Byte.SIZE;
+        byte msb = (byte)(((value >>> shift) & VALUE_MASK) | (encoding << 6));
+        buffer.put(msb);
+        while (shift > 0)
+        {
+            shift -= Byte.SIZE;
+            buffer.put((byte)((value >>> shift) & 0xFF));
+        }
     }
 
     /**

@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.quic</groupId>
     <artifactId>jetty-quic</artifactId>
-    <version>13.0.0-SNAPSHOT</version>
+    <version>12.1.5-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-quic-util</artifactId>
-  <name>Core :: QUIC :: Utilities</name>
-  <description>Jetty QUIC Utilities Artifact</description>
+  <artifactId>jetty-quic-tls</artifactId>
+  <name>Core :: QUIC :: TLS</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.util</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.tls</bundle-symbolic-name>
   </properties>
 
   <dependencies>
@@ -20,11 +18,25 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-io</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>jetty-quic-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>jetty-quic-util</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
+
 </project>

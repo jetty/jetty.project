@@ -11,9 +11,14 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.quic.util
-{
-    requires org.eclipse.jetty.io;
+package org.eclipse.jetty.quic.tls.internal.generator;
 
-    exports org.eclipse.jetty.quic.util;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.tls.message.Extension;
+
+public interface ExtensionGenerator
+{
+    int getType();
+
+    int generate(RetainableByteBuffer.Mutable accumulator, Extension extension);
 }

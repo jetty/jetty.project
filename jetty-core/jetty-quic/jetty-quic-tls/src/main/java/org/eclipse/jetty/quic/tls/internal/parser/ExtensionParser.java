@@ -11,9 +11,13 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.quic.util
-{
-    requires org.eclipse.jetty.io;
+package org.eclipse.jetty.quic.tls.internal.parser;
 
-    exports org.eclipse.jetty.quic.util;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+
+public interface ExtensionParser
+{
+    int getType();
+
+    int parse(RetainableByteBuffer buffer);
 }

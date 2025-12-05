@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.quic.util
-{
-    requires org.eclipse.jetty.io;
+package org.eclipse.jetty.quic.tls.message;
 
-    exports org.eclipse.jetty.quic.util;
+public interface Extension
+{
+    int type();
 }

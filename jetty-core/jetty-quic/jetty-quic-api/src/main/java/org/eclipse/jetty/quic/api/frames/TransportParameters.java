@@ -15,10 +15,11 @@ package org.eclipse.jetty.quic.api.frames;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongFunction;
-
 import org.eclipse.jetty.util.TypeUtil;
 
 /**
@@ -34,7 +35,7 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
 
     public TransportParameters()
     {
-        this.parameters = new HashMap<>();
+        this.parameters = new LinkedHashMap<>();
     }
 
     @Override
@@ -73,6 +74,20 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
     public int size()
     {
         return parameters.size();
+    }
+
+    @Override
+    public boolean equals(Object object)
+    {
+        if (object instanceof TransportParameters that)
+            return Objects.equals(parameters, that.parameters);
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hashCode(parameters);
     }
 
     @Override
@@ -192,7 +207,7 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
      *
      * @param <T> the type of the value
      */
-    public abstract static class Id<T>
+    public abstract static sealed class Id<T> permits LongId, BytesId
     {
         private final long id;
 
@@ -227,10 +242,9 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         {
             return "%s[%d]".formatted(TypeUtil.toShortName(getClass()), id);
         }
-
     }
 
-    public static class LongId extends Id<Long>
+    public static final class LongId extends Id<Long>
     {
         public LongId(long id)
         {
@@ -238,7 +252,7 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         }
     }
 
-    public static class BytesId extends Id<byte[]>
+    public static final class BytesId extends Id<byte[]>
     {
         public BytesId(long id)
         {

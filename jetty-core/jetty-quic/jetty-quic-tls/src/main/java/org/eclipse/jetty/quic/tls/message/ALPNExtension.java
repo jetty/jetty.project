@@ -11,9 +11,27 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.quic.util
-{
-    requires org.eclipse.jetty.io;
+package org.eclipse.jetty.quic.tls.message;
 
-    exports org.eclipse.jetty.quic.util;
+import java.util.List;
+import org.eclipse.jetty.util.StringUtil;
+
+public record ALPNExtension(List<String> protocols) implements Extension
+{
+    public static final int TYPE = 0x0010;
+
+    public ALPNExtension
+    {
+        for (String protocol : protocols)
+        {
+            if (StringUtil.isBlank(protocol))
+                throw new IllegalArgumentException("invalid protocol '%s'".formatted(protocol));
+        }
+    }
+
+    @Override
+    public int type()
+    {
+        return TYPE;
+    }
 }

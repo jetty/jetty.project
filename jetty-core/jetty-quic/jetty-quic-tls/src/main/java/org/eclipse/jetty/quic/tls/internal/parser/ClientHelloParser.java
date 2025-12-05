@@ -11,9 +11,8 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.quic.util
-{
-    requires org.eclipse.jetty.io;
+package org.eclipse.jetty.quic.tls.internal.parser;
 
-    exports org.eclipse.jetty.quic.util;
+public class ClientHelloParser
+{
 }

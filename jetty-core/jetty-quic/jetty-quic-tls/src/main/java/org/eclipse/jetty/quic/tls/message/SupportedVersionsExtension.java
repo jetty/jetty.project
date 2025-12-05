@@ -11,9 +11,16 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.quic.util
-{
-    requires org.eclipse.jetty.io;
+package org.eclipse.jetty.quic.tls.message;
 
-    exports org.eclipse.jetty.quic.util;
+public record SupportedVersionsExtension(int... versions) implements Extension
+{
+    public static final int TYPE = 0x002B;
+    public static final int TLS_1_3 = 0x0304;
+
+    @Override
+    public int type()
+    {
+        return TYPE;
+    }
 }
