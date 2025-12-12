@@ -340,6 +340,27 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     /**
      * Testing how CompressionHandler acts with a single compression implementation added.
      * Using default configuration which excludes {@code font/*} mime types from compression.
+     * <p>
+     * The test font file was generated using Python fonttools to avoid licensing issues:
+     * </p>
+     * <pre>
+     * from fontTools.fontBuilder import FontBuilder
+     * from fontTools.pens.ttGlyphPen import TTGlyphPen
+     * fb = FontBuilder(1000, isTTF=True)
+     * fb.setupGlyphOrder([".notdef", "space"])
+     * fb.setupCharacterMap({32: "space"})
+     * pen = TTGlyphPen(None)
+     * emptyGlyph = pen.glyph()
+     * fb.setupGlyf({".notdef": emptyGlyph, "space": emptyGlyph})
+     * fb.setupHorizontalMetrics({".notdef": (500, 0), "space": (500, 0)})
+     * fb.setupHorizontalHeader(ascent=800, descent=-200)
+     * fb.setupNameTable({"familyName": "Test", "styleName": "Regular"})
+     * fb.setupOS2(sTypoAscender=800, usWinAscent=800, usWinDescent=200)
+     * fb.setupPost()
+     * fb.setupHead(unitsPerEm=1000)
+     * fb.font.flavor = "woff2"
+     * fb.save("test.woff2")
+     * </pre>
      */
     @ParameterizedTest
     @MethodSource("compressions")
