@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.tls.internal;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -25,8 +26,10 @@ import org.eclipse.jetty.quic.tls.internal.generator.ExtensionsGenerator;
 import org.eclipse.jetty.quic.tls.internal.parser.ExtensionsParser;
 import org.eclipse.jetty.quic.tls.message.ALPNExtension;
 import org.eclipse.jetty.quic.tls.message.Extension;
+import org.eclipse.jetty.quic.tls.message.NamedGroup;
 import org.eclipse.jetty.quic.tls.message.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.tls.message.ServerNameExtension;
+import org.eclipse.jetty.quic.tls.message.SupportedGroupsExtension;
 import org.eclipse.jetty.quic.tls.message.SupportedVersionsExtension;
 import org.junit.jupiter.api.Test;
 
@@ -142,6 +145,42 @@ public class ExtensionsGenerateParseTest
         assertEquals(1, listener.extensions.size());
         result = (SupportedVersionsExtension)listener.extensions.getFirst();
         assertArrayEquals(expected.versions(), result.versions());
+    }
+
+    @Test
+    public void testGenerateParseSupportedGroupsExtension()
+    {
+        ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+
+        SupportedGroupsExtension expected = new SupportedGroupsExtension(new LinkedHashSet<>(List.of(NamedGroup.SECP256R1, NamedGroup.FFDHE2048)));
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool);
+        generator.generate(accumulator, List.of(expected));
+
+        TestListener listener = new TestListener();
+        ExtensionsParser parser = new ExtensionsParser(listener);
+        assertTrue(parser.parse(accumulator));
+
+        assertEquals(1, listener.extensions.size());
+        SupportedGroupsExtension result = (SupportedGroupsExtension)listener.extensions.getFirst();
+        assertEquals(expected.namedGroups(), result.namedGroups());
+
+        // Parse again one byte at a time.
+        listener.extensions.clear();
+        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
+        while (byteBuffer.hasRemaining())
+        {
+            int position = byteBuffer.position();
+            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
+            byteBuffer.position(position + 1);
+            boolean parsed = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
+            if (!byteBuffer.hasRemaining())
+                assertTrue(parsed);
+        }
+
+        assertEquals(1, listener.extensions.size());
+        result = (SupportedGroupsExtension)listener.extensions.getFirst();
+        assertEquals(expected.namedGroups(), result.namedGroups());
     }
 
     @Test

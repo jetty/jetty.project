@@ -30,6 +30,7 @@ public class ExtensionsGenerator
         this.byteBufferPool = byteBufferPool;
         put(new ServerNameExtensionGenerator());
         put(new ALPNExtensionGenerator());
+        put(new SupportedGroupsExtensionGenerator());
         put(new SupportedVersionsExtensionGenerator());
         put(new QuicTransportParametersExtensionGenerator());
     }

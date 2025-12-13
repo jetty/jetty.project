@@ -18,22 +18,18 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.Extension;
 import org.eclipse.jetty.quic.tls.message.ServerNameExtension;
 
-public class ServerNameExtensionGenerator implements ExtensionGenerator
-{
+public class ServerNameExtensionGenerator implements ExtensionGenerator {
     @Override
-    public int getType()
-    {
+    public int getType() {
         return ServerNameExtension.TYPE;
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
-    {
+    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension) {
         return generate(accumulator, (ServerNameExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, ServerNameExtension extension)
-    {
+    private int generate(RetainableByteBuffer.Mutable accumulator, ServerNameExtension extension) {
         accumulator.putShort((short)extension.type());
         String serverName = extension.serverName();
         // RFC 6066, section 3: names are ASCII.
