@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.quic.tls.message;
 
-public record SupportedVersionsExtension(int... versions) implements Extension {
-    public static final int TYPE = 0x002B;
-    public static final int TLS_1_3 = 0x0304;
+// TODO: has client and server variants?
+public record PreSharedKeyExtension() implements Extension {
+    public static final int TYPE = 0x0029;
 
     @Override
     public int type() {
