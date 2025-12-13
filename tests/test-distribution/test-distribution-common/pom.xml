@@ -16,7 +16,7 @@
     <jetty.home>${project.build.directory}/jetty-home</jetty.home>
     <!--    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>-->
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
-    <testcontainers-keycloak.version>3.9.0</testcontainers-keycloak.version>
+    <testcontainers-keycloak.version>3.9.1</testcontainers-keycloak.version>
   </properties>
 
   <dependencies>
