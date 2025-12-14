@@ -198,7 +198,7 @@ public abstract class ProxyHandler extends Handler.Abstract
         {
             httpClient.setExecutor(getServer().getThreadPool());
         }
-        else if (httpClient.getExecutor() == null)
+        else
         {
             QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
             proxyClientThreads.setName("proxy-client");

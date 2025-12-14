@@ -36,7 +36,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -471,9 +470,6 @@ public class ReverseProxyTest extends AbstractProxyTest
     private static HttpClient newProxyHttpClient()
     {
         ClientConnector proxyClientConnector = new ClientConnector();
-        QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
-        proxyClientThreads.setName("proxy-client");
-        proxyClientConnector.setExecutor(proxyClientThreads);
         HTTP2Client proxyHTTP2Client = new HTTP2Client(proxyClientConnector);
         return new HttpClient(new HttpClientTransportDynamic(proxyClientConnector, HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(proxyHTTP2Client)));
     }
