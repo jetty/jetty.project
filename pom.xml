@@ -272,7 +272,7 @@
     <maven-build-cache.version>1.2.1</maven-build-cache.version>
     <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.2.0</maven.antrun.plugin.version>
-    <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
+    <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
     <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
     <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
@@ -289,12 +289,12 @@
     <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.15.2</maven.plugin-tools.version>
-    <maven.release.plugin.version>3.2.0</maven.release.plugin.version>
+    <maven.release.plugin.version>3.3.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.3.0</maven.remote-resources-plugin.version>
     <maven.resolver.version>1.9.25</maven.resolver.version>
-    <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
+    <maven.resources.plugin.version>3.4.0</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.6.1</maven.shade.plugin.version>
-    <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
+    <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
     <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
     <maven.version>3.9.9</maven.version>
     <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
