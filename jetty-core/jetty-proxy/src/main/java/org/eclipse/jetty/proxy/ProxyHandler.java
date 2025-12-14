@@ -194,6 +194,16 @@ public abstract class ProxyHandler extends Handler.Abstract
     private HttpClient createHttpClient()
     {
         HttpClient httpClient = newHttpClient();
+        if (isUseServerThreadPool())
+        {
+            httpClient.setExecutor(getServer().getThreadPool());
+        }
+        else if (httpClient.getExecutor() == null)
+        {
+            QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
+            proxyClientThreads.setName("proxy-client");
+            httpClient.setExecutor(proxyClientThreads);
+        }
         configureHttpClient(httpClient);
         LifeCycle.start(httpClient);
         httpClient.getContentDecoderFactories().clear();
@@ -206,29 +216,19 @@ public abstract class ProxyHandler extends Handler.Abstract
     }
 
     /**
-     * <p>Creates a new {@link HttpClient} instance, by default with a thread
-     * pool named {@code proxy-client} and with the
+     * <p>Creates a new {@link HttpClient} instance with the
      * {@link HttpClientTransportDynamic dynamic transport} configured only
      * with HTTP/1.1.</p>
-     * <p>If {@link #isUseServerThreadPool()} returns {@code true}, the
-     * Server's thread pool is used instead of creating a dedicated one.</p>
+     * <p>The executor is set after this method returns: if
+     * {@link #isUseServerThreadPool()} returns {@code true}, the Server's
+     * thread pool is used; otherwise, if no executor was set by this method,
+     * a dedicated thread pool named "proxy-client" is created.</p>
      *
      * @return a new {@code HttpClient} instance
      */
     protected HttpClient newHttpClient()
     {
-        ClientConnector clientConnector = new ClientConnector();
-        if (isUseServerThreadPool())
-        {
-            clientConnector.setExecutor(getServer().getThreadPool());
-        }
-        else
-        {
-            QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
-            proxyClientThreads.setName("proxy-client");
-            clientConnector.setExecutor(proxyClientThreads);
-        }
-        return new HttpClient(new HttpClientTransportDynamic(clientConnector));
+        return new HttpClient(new HttpClientTransportDynamic(new ClientConnector()));
     }
 
     /**

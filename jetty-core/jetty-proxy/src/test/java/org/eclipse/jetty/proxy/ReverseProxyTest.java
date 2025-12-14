@@ -440,19 +440,7 @@ public class ReverseProxyTest extends AbstractProxyTest
             @Override
             protected HttpClient newHttpClient()
             {
-                ClientConnector proxyClientConnector = new ClientConnector();
-                if (isUseServerThreadPool())
-                {
-                    proxyClientConnector.setExecutor(getServer().getThreadPool());
-                }
-                else
-                {
-                    QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
-                    proxyClientThreads.setName("proxy-client");
-                    proxyClientConnector.setExecutor(proxyClientThreads);
-                }
-                HTTP2Client proxyHTTP2Client = new HTTP2Client(proxyClientConnector);
-                return new HttpClient(new HttpClientTransportDynamic(proxyClientConnector, HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(proxyHTTP2Client)));
+                return newProxyHttpClient();
             }
 
             @Override
