@@ -16,8 +16,8 @@ package org.eclipse.jetty.proxy;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
@@ -37,20 +37,30 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReverseProxyTest extends AbstractProxyTest
 {
+    public static Stream<Arguments> httpVersionsAndThreadPools()
+    {
+        return Stream.of(
+            Arguments.of(HttpVersion.HTTP_1_1, false),
+            Arguments.of(HttpVersion.HTTP_1_1, true),
+            Arguments.of(HttpVersion.HTTP_2, false),
+            Arguments.of(HttpVersion.HTTP_2, true)
+        );
+    }
+
     @ParameterizedTest
-    @MethodSource("httpVersions")
-    public void testSimple(HttpVersion httpVersion) throws Exception
+    @MethodSource("httpVersionsAndThreadPools")
+    public void testSimple(HttpVersion httpVersion, boolean useServerThreadPool) throws Exception
     {
         String clientContent = "hello";
         String serverContent = "world";
@@ -66,7 +76,7 @@ public class ReverseProxyTest extends AbstractProxyTest
             }
         });
 
-        startProxy(new ProxyHandler.Reverse(clientToProxyRequest ->
+        ProxyHandler.Reverse proxyHandler = new ProxyHandler.Reverse(clientToProxyRequest ->
             HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
         {
             @Override
@@ -82,7 +92,9 @@ public class ReverseProxyTest extends AbstractProxyTest
                 return super.newProxyToServerRequest(clientToProxyRequest, newHttpURI)
                     .version(httpVersion);
             }
-        });
+        };
+        proxyHandler.setUseServerThreadPool(useServerThreadPool);
+        startProxy(proxyHandler);
 
         startClient();
 
@@ -416,55 +428,6 @@ public class ReverseProxyTest extends AbstractProxyTest
             .send());
 
         assertTrue(responseFailureLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    @ParameterizedTest
-    @MethodSource("httpVersions")
-    public void testUseServerThreadPool(HttpVersion httpVersion) throws Exception
-    {
-        String serverContent = "hello";
-        startServer(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                Content.Sink.write(response, true, serverContent, callback);
-                return true;
-            }
-        });
-
-        ProxyHandler.Reverse proxyHandler = new ProxyHandler.Reverse(clientToProxyRequest ->
-            HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
-        {
-            @Override
-            protected HttpClient newHttpClient()
-            {
-                return newProxyHttpClient();
-            }
-
-            @Override
-            protected org.eclipse.jetty.client.Request newProxyToServerRequest(Request clientToProxyRequest, HttpURI newHttpURI)
-            {
-                return super.newProxyToServerRequest(clientToProxyRequest, newHttpURI)
-                    .version(httpVersion);
-            }
-        };
-        proxyHandler.setUseServerThreadPool(true);
-        startProxy(proxyHandler);
-
-        // Verify the HttpClient uses the server's thread pool.
-        HttpClient proxyHttpClient = proxyHandler.getHttpClient();
-        assertNotNull(proxyHttpClient);
-        Executor clientExecutor = proxyHttpClient.getExecutor();
-        assertSame(proxy.getThreadPool(), clientExecutor);
-
-        startClient();
-
-        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
-            .version(httpVersion)
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
-        assertEquals(serverContent, response.getContentAsString());
     }
 
     private static HttpClient newProxyHttpClient()
