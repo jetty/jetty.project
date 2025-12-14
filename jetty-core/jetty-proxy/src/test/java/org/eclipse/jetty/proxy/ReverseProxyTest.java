@@ -16,6 +16,7 @@ package org.eclipse.jetty.proxy;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.CompletableResponseListener;
@@ -42,6 +43,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -415,6 +417,67 @@ public class ReverseProxyTest extends AbstractProxyTest
             .send());
 
         assertTrue(responseFailureLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testUseServerThreadPool(HttpVersion httpVersion) throws Exception
+    {
+        String serverContent = "hello";
+        startServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, true, serverContent, callback);
+                return true;
+            }
+        });
+
+        ProxyHandler.Reverse proxyHandler = new ProxyHandler.Reverse(clientToProxyRequest ->
+            HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
+        {
+            @Override
+            protected HttpClient newHttpClient()
+            {
+                ClientConnector proxyClientConnector = new ClientConnector();
+                if (isUseServerThreadPool())
+                {
+                    proxyClientConnector.setExecutor(getServer().getThreadPool());
+                }
+                else
+                {
+                    QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
+                    proxyClientThreads.setName("proxy-client");
+                    proxyClientConnector.setExecutor(proxyClientThreads);
+                }
+                HTTP2Client proxyHTTP2Client = new HTTP2Client(proxyClientConnector);
+                return new HttpClient(new HttpClientTransportDynamic(proxyClientConnector, HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(proxyHTTP2Client)));
+            }
+
+            @Override
+            protected org.eclipse.jetty.client.Request newProxyToServerRequest(Request clientToProxyRequest, HttpURI newHttpURI)
+            {
+                return super.newProxyToServerRequest(clientToProxyRequest, newHttpURI)
+                    .version(httpVersion);
+            }
+        };
+        proxyHandler.setUseServerThreadPool(true);
+        startProxy(proxyHandler);
+
+        // Verify the HttpClient uses the server's thread pool.
+        HttpClient proxyHttpClient = proxyHandler.getHttpClient();
+        assertNotNull(proxyHttpClient);
+        Executor clientExecutor = proxyHttpClient.getExecutor();
+        assertSame(proxy.getThreadPool(), clientExecutor);
+
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+            .version(httpVersion)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertEquals(serverContent, response.getContentAsString());
     }
 
     private static HttpClient newProxyHttpClient()
