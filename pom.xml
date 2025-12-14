@@ -278,7 +278,7 @@
     <maven.version>3.9.9</maven.version>
     <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
-    <mongodb.version>5.6.1</mongodb.version>
+    <mongodb.version>5.6.2</mongodb.version>
     <netty.version>4.2.8.Final</netty.version>
     <njord.version>0.8.7</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
@@ -298,7 +298,7 @@
     <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
     <osgi-util-version>3.7.400</osgi-util-version>
     <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
-    <osgi-version>3.23.200</osgi-version>
+    <osgi-version>3.24.0</osgi-version>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.debug.remote>false</pax.exam.debug.remote>
     <pax.exam.version>4.14.0</pax.exam.version>
@@ -323,7 +323,7 @@
     <tinybundles.version>4.0.1</tinybundles.version>
     <versions.maven.plugin.version>2.20.1</versions.maven.plugin.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
-    <wildfly.elytron.version>2.7.0.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.7.1.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.9</xmemcached.version>
   </properties>
 
