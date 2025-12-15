@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
@@ -146,6 +148,7 @@ public abstract class ProxyHandler extends Handler.Abstract
      * Get whether the proxy should use the server's thread pool.
      * @return true if using the server's thread pool
      */
+    @ManagedAttribute("whether the proxy uses the server's thread pool")
     public boolean isUseServerThreadPool()
     {
         return useServerThreadPool;
@@ -194,15 +197,19 @@ public abstract class ProxyHandler extends Handler.Abstract
     private HttpClient createHttpClient()
     {
         HttpClient httpClient = newHttpClient();
-        if (isUseServerThreadPool())
+        Executor executor = httpClient.getExecutor();
+        if (executor == null)
         {
-            httpClient.setExecutor(getServer().getThreadPool());
-        }
-        else
-        {
-            QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
-            proxyClientThreads.setName("proxy-client");
-            httpClient.setExecutor(proxyClientThreads);
+            if (isUseServerThreadPool())
+            {
+                httpClient.setExecutor(getServer().getThreadPool());
+            }
+            else
+            {
+                QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
+                proxyClientThreads.setName("proxy-client");
+                httpClient.setExecutor(proxyClientThreads);
+            }
         }
         configureHttpClient(httpClient);
         LifeCycle.start(httpClient);

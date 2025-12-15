@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
  * request that is sent to the FastCGI server, and viceversa for the response.</p>
  *
  * @see TryPathsHandler
- * @see ProxyHandler#setUseServerThreadPool(boolean)
  */
 public class FastCGIProxyHandler extends ProxyHandler.Reverse
 {
