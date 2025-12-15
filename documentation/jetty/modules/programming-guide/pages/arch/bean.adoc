@@ -108,6 +108,59 @@ If you need component tree features such as automatic xref:arch/jmx.adoc[export 
 You can make the long-lived container efficient at adding/removing the short-lived components using a data structure that is not part of the component tree, and make the long-lived container handle the JMX and dump features for the short-lived components.
 ====
 
+[[bean-collections]]
+== Bean Container Collections
+
+Jetty provides specialized collection classes that automatically manage their elements as beans in a `ContainerLifeCycle`.
+When elements are added to these collections, they are registered as managed beans; when removed, they are unregistered.
+This ensures that lifecycle events (start, stop) are properly propagated to collection elements.
+
+[[attribute-container-map]]
+=== AttributeContainerMap
+
+`AttributeContainerMap` implements the `Attributes` interface while managing attribute values as beans.
+When you set an attribute, the value is added as a managed bean; when you remove an attribute, the bean is removed.
+
+[,java,indent=0]
+----
+AttributeContainerMap attributes = new AttributeContainerMap();
+
+// Add a LifeCycle as an attribute - it becomes a managed bean
+attributes.setAttribute("myService", new MyService());
+
+// Start the container - all managed attribute values are started
+attributes.start();
+
+// Remove the attribute - the bean is stopped and removed
+attributes.removeAttribute("myService");
+----
+
+[[container-lifecycle-map]]
+=== ContainerLifeCycleMap
+
+`ContainerLifeCycleMap<K, V extends LifeCycle>` implements the `Map` interface while managing map values as beans.
+This is useful when you need to maintain a keyed collection of lifecycle-managed components.
+
+[,java,indent=0]
+----
+ContainerLifeCycleMap<String, Connector> connectors = new ContainerLifeCycleMap<>();
+
+// Add connectors - they become managed beans
+connectors.put("http", new ServerConnector(server));
+connectors.put("https", new ServerConnector(server, sslContextFactory));
+
+// Start the container - all connectors are started
+connectors.start();
+
+// Access connectors by key
+Connector http = connectors.get("http");
+
+// Remove a connector - it is stopped and removed as a bean
+connectors.remove("http");
+----
+
+The collection views returned by `keySet()`, `values()`, and `entrySet()` are wrapped to properly manage beans when elements are removed through these views.
+
 [[listener]]
 == Jetty Component Listeners
 
