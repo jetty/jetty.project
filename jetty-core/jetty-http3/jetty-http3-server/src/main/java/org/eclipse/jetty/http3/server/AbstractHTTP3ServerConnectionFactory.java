@@ -83,6 +83,11 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
         this.connector = connector;
     }
 
+    protected Connector getConnector()
+    {
+        return connector;
+    }
+
     @Override
     protected void doStart() throws Exception
     {

@@ -52,15 +52,22 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         configuration.addCustomizer(new AltSvcCustomizer());
     }
 
-    private static class AltSvcCustomizer implements HttpConfiguration.Customizer
+    private class AltSvcCustomizer implements HttpConfiguration.Customizer
     {
         @Override
         public Request customize(Request request, HttpFields.Mutable responseHeaders)
         {
             ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
-            Connector connector = connectionMetaData.getConnector();
-            if (connector instanceof NetworkConnector networkConnector && HttpVersion.HTTP_2 == connectionMetaData.getHttpVersion())
-                responseHeaders.add(HttpHeader.ALT_SVC, String.format("h3=\":%d\"", networkConnector.getLocalPort()));
+            if (HttpVersion.HTTP_2 == connectionMetaData.getHttpVersion())
+            {
+                Connector h3Connector = HTTP3ServerConnectionFactory.this.getConnector();
+                if (h3Connector instanceof NetworkConnector nc)
+                {
+                    int port = nc.getLocalPort();
+                    if (port > 0)
+                        responseHeaders.add(HttpHeader.ALT_SVC, String.format("h3=\":%d\"", port));
+                }
+            }
             return request;
         }
     }
