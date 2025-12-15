@@ -39,6 +39,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V2;
@@ -139,7 +141,7 @@ public class HttpClientProxyProtocolTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
-                Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);
+                Content.Sink.write(response, true, Request.getRemotePort(request) + "\n" + request.isSecure(), callback);
                 return true;
             }
         });
@@ -154,7 +156,40 @@ public class HttpClientProxyProtocolTest
             .tag(tag)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals(String.valueOf(clientPort), response.getContentAsString());
+        assertEquals(clientPort + "\nfalse", response.getContentAsString());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testClientProxyProtocolV2RequestIsSecure(boolean connectedOverTls) throws Exception
+    {
+        startServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
+                Content.Sink.write(response, true, Request.getRemotePort(request) + "\n" + request.isSecure(), callback);
+                return true;
+            }
+        });
+        startClient();
+
+        int serverPort = connector.getLocalPort();
+
+        int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
+        // See PROXY protocol specification chapter 2.2.6: The PP2_TYPE_SSL type and subtypes
+        List<V2.Tag.TLV> tlvs = List.of(new V2.Tag.TLV(
+            0x20,                                   // 0x20 == PP2_TYPE_SSL
+            new byte[]{(byte)(connectedOverTls ? 1 : 2)} // PP2_CLIENT_SSL (bit 0), i.e.: the flag indicates that the client connected over SSL/TLS
+        ));
+        V2.Tag tag = new V2.Tag("127.0.0.1", clientPort, tlvs);
+
+        ContentResponse response = client.newRequest("localhost", serverPort)
+            .tag(tag)
+            .send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(clientPort + "\n" + connectedOverTls, response.getContentAsString());
     }
 
     @Test
