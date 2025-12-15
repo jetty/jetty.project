@@ -229,8 +229,8 @@ public class AttributeContainerMapTest
     private static class TestLifeCycle extends AbstractLifeCycle
     {
         private final String _name;
-        final AtomicInteger started = new AtomicInteger();
-        final AtomicInteger stopped = new AtomicInteger();
+        private final AtomicInteger started = new AtomicInteger();
+        private final AtomicInteger stopped = new AtomicInteger();
 
         TestLifeCycle(String name)
         {
