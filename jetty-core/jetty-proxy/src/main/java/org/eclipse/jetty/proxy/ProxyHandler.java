@@ -33,6 +33,7 @@ import org.eclipse.jetty.client.ContentSourceRequestContent;
 import org.eclipse.jetty.client.ContinueProtocolHandler;
 import org.eclipse.jetty.client.EarlyHintsProtocolHandler;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProcessingProtocolHandler;
 import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.Result;
@@ -145,24 +146,23 @@ public abstract class ProxyHandler extends Handler.Abstract
     }
 
     /**
-     * Get whether the proxy should use the server's thread pool.
-     * @return true if using the server's thread pool
+     * @return whether the proxy's {@code HttpClient} should use the server's thread pool
      */
-    @ManagedAttribute("whether the proxy uses the server's thread pool")
+    @ManagedAttribute("whether the proxy client uses the server's thread pool")
     public boolean isUseServerThreadPool()
     {
         return useServerThreadPool;
     }
 
     /**
-     * <p>Sets whether the proxy's HttpClient should share the Server's thread pool.</p>
+     * <p>Sets whether the proxy's {@code HttpClient} should use the {@code Server}'s thread pool.</p>
      * <p>If {@code true}, the HttpClient will use the Server's thread pool.
-     * If {@code false} (the default), a dedicated thread pool named "proxy-client" is created.</p>
-     * <p>Sharing the Server's thread pool simplifies memory management, but threads will
-     * retain the server pool's name in logs, making it harder to distinguish server-side
-     * processing from proxy client-side processing.</p>
+     * If {@code false} (the default), HttpClient will use a dedicated thread pool named "proxy-client".</p>
+     * <p>Sharing the server's thread pool simplifies memory management and configuration, but threads
+     * will retain the server thread pool name in logs, making it harder to distinguish server-side
+     * processing from proxy-client-side processing.</p>
      *
-     * @param useServerThreadPool true to share the Server's thread pool
+     * @param useServerThreadPool true to use the server's thread pool in the proxy client
      */
     public void setUseServerThreadPool(boolean useServerThreadPool)
     {
@@ -197,6 +197,8 @@ public abstract class ProxyHandler extends Handler.Abstract
     private HttpClient createHttpClient()
     {
         HttpClient httpClient = newHttpClient();
+
+        // Default configuration that can be overridden by configureHttpClient().
         Executor executor = httpClient.getExecutor();
         if (executor == null)
         {
@@ -211,8 +213,12 @@ public abstract class ProxyHandler extends Handler.Abstract
                 httpClient.setExecutor(proxyClientThreads);
             }
         }
+
+        // Allow subclasses to configure HttpClient.
         configureHttpClient(httpClient);
         LifeCycle.start(httpClient);
+
+        // Proxy-specific configuration that should not be customized.
         httpClient.getContentDecoderFactories().clear();
         ProtocolHandlers protocolHandlers = httpClient.getProtocolHandlers();
         protocolHandlers.clear();
@@ -226,10 +232,8 @@ public abstract class ProxyHandler extends Handler.Abstract
      * <p>Creates a new {@link HttpClient} instance with the
      * {@link HttpClientTransportDynamic dynamic transport} configured only
      * with HTTP/1.1.</p>
-     * <p>The executor is set after this method returns: if
-     * {@link #isUseServerThreadPool()} returns {@code true}, the Server's
-     * thread pool is used; otherwise, if no executor was set by this method,
-     * a dedicated thread pool named "proxy-client" is created.</p>
+     * <p>Override this method to customize the instantiation of the
+     * {@link HttpClient}, for example when using a specific {@link HttpClientTransport}.</p>
      *
      * @return a new {@code HttpClient} instance
      */
