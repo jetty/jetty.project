@@ -40,7 +40,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.TryPathsHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -269,11 +268,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
     @Override
     protected HttpClient newHttpClient()
     {
-        ClientConnector clientConnector = new ClientConnector();
-        QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
-        proxyClientThreads.setName("proxy-client");
-        clientConnector.setExecutor(proxyClientThreads);
-        return new HttpClient(new ProxyHttpClientTransportOverFCGI(clientConnector, getScriptRoot()));
+        return new HttpClient(new ProxyHttpClientTransportOverFCGI(new ClientConnector(), getScriptRoot()));
     }
 
     @Override
