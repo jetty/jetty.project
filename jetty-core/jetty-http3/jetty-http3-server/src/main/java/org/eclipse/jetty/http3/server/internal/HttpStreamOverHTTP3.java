@@ -116,24 +116,20 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 throw new HttpException.RuntimeException(HttpStatus.EXPECTATION_FAILED_417);
 
             InvocationType invocationType = Invocable.getInvocationType(handler);
-            return new ReadyTask(invocationType, handler)
+            return Invocable.from(invocationType, () ->
             {
-                @Override
-                public void run()
+                if (stream.isClosed())
                 {
-                    if (stream.isClosed())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("HTTP3 request #{}/{} skipped handling, stream already closed {}",
-                                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                                stream);
-                    }
-                    else
-                    {
-                        super.run();
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP3 request #{}/{} skipped handling, stream already closed {}",
+                            stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                            stream);
                 }
-            };
+                else
+                {
+                    handler.run();
+                }
+            });
         }
         catch (Throwable x)
         {
@@ -260,7 +256,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     @Override
     public Runnable cancelSend(Throwable cause, Callback appCallback)
     {
-        return () -> stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), cause, new Promise.Invocable.Abstract<>(appCallback.getInvocationType())
+        return Invocable.from(appCallback.getInvocationType(), () -> stream.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), cause, new Promise.Invocable.Abstract<>(appCallback.getInvocationType())
         {
             @Override
             public void succeeded(Stream result)
@@ -278,7 +274,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             {
                 appCallback.failed(cause);
             }
-        });
+        }));
     }
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)

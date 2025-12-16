@@ -130,24 +130,20 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 throw new HttpException.RuntimeException(HttpStatus.EXPECTATION_FAILED_417);
 
             InvocationType invocationType = Invocable.getInvocationType(handler);
-            return new ReadyTask(invocationType, handler)
+            return Invocable.from(invocationType, () ->
             {
-                @Override
-                public void run()
+                if (_stream.isClosed())
                 {
-                    if (_stream.isClosed())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("HTTP2 request #{}/{} skipped handling, stream already closed {}",
-                                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                                _stream);
-                    }
-                    else
-                    {
-                        super.run();
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP2 request #{}/{} skipped handling, stream already closed {}",
+                            _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
+                            _stream);
                 }
-            };
+                else
+                {
+                    handler.run();
+                }
+            });
         }
         catch (Throwable x)
         {
@@ -459,16 +455,16 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         // Append a ResetFrame into the H2 flusher and complete the appCallback once all the frames
         // up to and including the reset one have been flushed; it is needed to wait to make sure
         // the completion listeners aren't called while a write is still pending.
-        return () ->
+        return Invocable.from(appCallback.getInvocationType(), () ->
         {
             _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-            _stream.getSession().flush(Callback.from(() ->
+            _stream.getSession().flush(Callback.from(appCallback.getInvocationType(), () ->
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("cancelSend reset and flushed");
                 appCallback.failed(cause);
             }));
-        };
+        });
     }
 
     private HttpFields retrieveTrailers()
@@ -758,7 +754,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
     }
 
-    private static class FailureTask implements Runnable
+    private static class FailureTask implements Invocable.Task
     {
         private final Runnable task;
         private final Callback callback;
@@ -767,6 +763,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         {
             this.task = task;
             this.callback = Objects.requireNonNull(callback);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return Invocable.combine(Invocable.getInvocationType(task), callback.getInvocationType());
         }
 
         @Override

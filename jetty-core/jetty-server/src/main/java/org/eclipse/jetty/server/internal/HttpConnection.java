@@ -1574,7 +1574,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             // so we can just return a Runnable that fails the combination of the cancellation of any
             // send in progress with the passed in appCallback. At worst, we may be deferred whilst another thread finishes
             // processing a send/write before it notices the cancel.  It never blocks on IO itself
-            return () -> Callback.combine(_sendCallback.cancel(cause), appCallback).failed(cause);
+            Callback combined = Callback.combine(_sendCallback.cancel(cause), appCallback);
+            return Invocable.from(combined.getInvocationType(), () -> combined.failed(cause));
         }
 
         @Override

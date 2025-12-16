@@ -402,6 +402,8 @@ public class HttpChannelState implements HttpChannel, Components
                     {
                         // If the idle timeout listener(s) returns true or throws,
                         // then we call onFailure and run any task it returns.
+                        // TODO ideally, we would have the InvocationType of the onFailure runnable
+                        //  available before creating the IdleTimeoutTask instance.
                         Runnable task = onFailure(t);
                         if (task != null)
                             task.run();
@@ -455,7 +457,7 @@ public class HttpChannelState implements HttpChannel, Components
                 if (LOG.isDebugEnabled())
                     LOG.debug("failing request not yet handled {} {}", _request, this);
                 Callback callback = _request._callback;
-                task = () -> callback.failed(x);
+                task = Invocable.from(callback.getInvocationType(), () -> callback.failed(x));
             }
             else
             {
@@ -496,8 +498,12 @@ public class HttpChannelState implements HttpChannel, Components
                     }
                 };
 
-                // Serialize all the error actions.
-                task = Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure), _readInvoker.offer(invokeOnFailureListeners));
+                // Serialize all the error actions, keep each call on a separate line to help with debugging.
+                task = Invocable.combine(
+                    _readInvoker.offer(invokeOnContentAvailable),
+                    _writeInvoker.offer(invokeWriteFailure),
+                    _readInvoker.offer(invokeOnFailureListeners)
+                );
             }
         }
 
@@ -1320,14 +1326,14 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (writeFailure == NOTHING_TO_SEND)
                 {
-                    httpChannelState._writeInvoker.run(new ReadyTask(callback.getInvocationType(), callback::succeeded));
+                    httpChannelState._writeInvoker.run(Invocable.from(callback.getInvocationType(), callback::succeeded));
                     return;
                 }
                 // Have we failed in some way?
                 if (writeFailure != null)
                 {
                     Throwable failure = writeFailure;
-                    httpChannelState._writeInvoker.run(() -> HttpChannelState.failed(callback, failure));
+                    httpChannelState._writeInvoker.run(Invocable.from(callback.getInvocationType(), () -> HttpChannelState.failed(callback, failure)));
                     return;
                 }
 
@@ -1367,7 +1373,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (callback != null)
-                httpChannel._writeInvoker.run(new ReadyTask(callback.getInvocationType(), callback::succeeded));
+                httpChannel._writeInvoker.run(Invocable.from(callback.getInvocationType(), callback::succeeded));
         }
 
         /**
@@ -1397,7 +1403,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (callback != null)
-                httpChannel._writeInvoker.run(() -> HttpChannelState.failed(callback, x));
+                httpChannel._writeInvoker.run(Invocable.from(callback.getInvocationType(), () -> HttpChannelState.failed(callback, x)));
         }
 
         @Override
@@ -1809,7 +1815,8 @@ public class HttpChannelState implements HttpChannel, Components
             if (needLastWrite)
             {
                 _stream.send(_request._metaData, responseMetaData, true, null,
-                    Callback.from(() -> httpChannelState._lastWriteCallback.failed(failure),
+                    Callback.from(httpChannelState._lastWriteCallback.getInvocationType(),
+                        () -> httpChannelState._lastWriteCallback.failed(failure),
                         x ->
                         {
                             ExceptionUtil.addSuppressedIfNotAssociated(failure, x);

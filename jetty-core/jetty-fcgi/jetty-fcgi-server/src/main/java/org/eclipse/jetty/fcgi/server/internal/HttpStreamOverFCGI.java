@@ -254,7 +254,8 @@ public class HttpStreamOverFCGI implements HttpStream
     @Override
     public Runnable cancelSend(Throwable cause, Callback appCallback)
     {
-        return () -> Callback.combine(_connection.getFlusher().cancel(cause), appCallback).failed(cause);
+        Callback combined = Callback.combine(_connection.getFlusher().cancel(cause), appCallback);
+        return Invocable.from(combined.getInvocationType(), () -> combined.failed(cause));
     }
 
     private void commit(MetaData.Response info, boolean head, boolean last, ByteBuffer content, Callback callback)

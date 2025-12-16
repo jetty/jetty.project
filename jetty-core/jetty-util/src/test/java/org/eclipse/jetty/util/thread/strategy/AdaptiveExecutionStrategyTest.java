@@ -63,7 +63,7 @@ public class AdaptiveExecutionStrategyTest
         {
             AtomicReference<Throwable> detector = new AtomicReference<>();
             CountDownLatch latch = new CountDownLatch(2);
-            BlockingQueue<Invocable.ReadyTask> tasks = new LinkedBlockingQueue<>();
+            BlockingQueue<Invocable.Task> tasks = new LinkedBlockingQueue<>();
             startAES(() ->
             {
                 boolean proceed = detector.compareAndSet(null, new Throwable());
@@ -92,7 +92,7 @@ public class AdaptiveExecutionStrategyTest
             // Start production in another thread.
             aes.dispatch();
 
-            tasks.offer(new Invocable.ReadyTask(Invocable.InvocationType.BLOCKING, () ->
+            tasks.offer(Invocable.from(Invocable.InvocationType.BLOCKING, () ->
             {
                 try
                 {

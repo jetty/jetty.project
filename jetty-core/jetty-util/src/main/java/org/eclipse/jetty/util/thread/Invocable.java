@@ -238,6 +238,8 @@ public interface Invocable
      */
     static InvocationType combine(InvocationType it1, InvocationType it2)
     {
+        if (it1 == null && it2 == null)
+            return InvocationType.NON_BLOCKING;
         if (it1 != null && it2 != null)
         {
             if (it1 == it2)
@@ -253,7 +255,7 @@ public interface Invocable
     static InvocationType combineTypes(InvocationType... it)
     {
         if (it == null || it.length == 0)
-            return InvocationType.BLOCKING;
+            return InvocationType.NON_BLOCKING;
         InvocationType type = it[0];
         for (int i = 1; i < it.length; i++)
             type = combine(type, it[i]);
@@ -269,6 +271,8 @@ public interface Invocable
      */
     static InvocationType getInvocationType(Object o)
     {
+        if (o == null)
+            return InvocationType.NON_BLOCKING;
         if (o instanceof Invocable i)
             return i.getInvocationType();
         return InvocationType.BLOCKING;
