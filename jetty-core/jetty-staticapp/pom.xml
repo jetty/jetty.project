@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-staticapp</artifactId>
   <name>Core :: Static App</name>
-  <description>Jetty static content application packaging.</description>
+  <description>Jetty Static App</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.static</bundle-symbolic-name>

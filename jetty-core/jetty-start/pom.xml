@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-start</artifactId>
   <name>Core :: Start</name>
-  <description>Jetty startup and bootstrap module.</description>
+  <description>Jetty Home Start Module.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.start</bundle-symbolic-name>
     <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>

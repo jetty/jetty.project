@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-deploy</artifactId>
   <name>Core :: Deployers</name>
-  <description>Jetty web application deployment support.</description>
+  <description>Jetty deployers</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.deploy</bundle-symbolic-name>

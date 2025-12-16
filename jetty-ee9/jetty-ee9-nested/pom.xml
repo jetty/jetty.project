@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee9-nested</artifactId>
   <name>EE9 :: Nested</name>
-  <description>Jetty core handler adapter for EE9 (jakarta.servlet 5.0) environments.</description>
+  <description>Jetty EE9 (jakarta.servlet) nested implementation.</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
