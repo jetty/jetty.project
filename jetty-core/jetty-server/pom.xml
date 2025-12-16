@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-server</artifactId>
   <name>Core :: Server</name>
-  <description>The legacy jetty server artifact.</description>
+  <description>The core Jetty server implementation.</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>

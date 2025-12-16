@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-plus</artifactId>
   <name>Core :: Plus</name>
-  <description>JNDI support</description>
+  <description>JNDI and JavaEE integration support for Jetty.</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.plus</bundle-symbolic-name>

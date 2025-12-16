@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-jmx</artifactId>
   <name>Core :: JMX</name>
-  <description>JMX management artifact for jetty.</description>
+  <description>JMX management support for Jetty.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jmx</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.jmx.*</spotbugs.onlyAnalyze>

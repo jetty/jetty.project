@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee8-nested</artifactId>
   <name>EE8 :: Nested</name>
-  <description>The jetty core handler adapted to legacy ee8 handler.</description>
+  <description>Jetty core handler adapter for EE8 (javax.servlet) environments.</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>

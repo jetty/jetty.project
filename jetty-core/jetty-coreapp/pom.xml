@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-coreapp</artifactId>
   <name>Core :: App</name>
-  <description>Jetty Core App</description>
+  <description>Jetty Core application packaging support.</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.coreapp</bundle-symbolic-name>
