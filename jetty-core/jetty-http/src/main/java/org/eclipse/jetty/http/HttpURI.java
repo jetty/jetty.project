@@ -200,8 +200,8 @@ public interface HttpURI
 
     /**
      * <p>Get a URI path parameter.</p>
-     * <p>Path parameters (also known as matrix parameters) were defined in
-     * <a href="https://tools.ietf.org/html/rfc2396#section-3.3">RFC2396</a> and appear
+     * <p>Path parameters were defined in
+     * <a href="https://www.rfc-editor.org/rfc/rfc2068">RFC 2068</a> and appear
      * after a semicolon in the path, such as {@code /path;param}. This is distinct from
      * query parameters which appear after the {@code ?} character.</p>
      * @return The last path parameter, or {@code null} if no path parameter is present.
