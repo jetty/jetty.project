@@ -673,8 +673,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 }
             }
         }
-        _httpChannel.recycle();
-        _connection.offerHttpChannel(_httpChannel);
+
+        if (_connection.isRecycleHttpChannels())
+        {
+            _httpChannel.recycle();
+            _connection.offerHttpChannel(_httpChannel);
+        }
     }
 
     @Override

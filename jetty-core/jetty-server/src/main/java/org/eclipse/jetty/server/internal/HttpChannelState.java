@@ -496,8 +496,12 @@ public class HttpChannelState implements HttpChannel, Components
                     }
                 };
 
-                // Serialize all the error actions.
-                task = Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure), _readInvoker.offer(invokeOnFailureListeners));
+                // Serialize all the error actions, keep each call on a separate line to help with debugging.
+                task = Invocable.combine(
+                    _readInvoker.offer(invokeOnContentAvailable),
+                    _writeInvoker.offer(invokeWriteFailure),
+                    _readInvoker.offer(invokeOnFailureListeners)
+                );
             }
         }
 
@@ -1204,9 +1208,31 @@ public class HttpChannelState implements HttpChannel, Components
             Callback writeCallback = _writeCallback;
             if (writeCallback == null)
                 return null;
-            _writeCallback = null;
 
-            Runnable cancellation = _request.getHttpStream().cancelSend(x, writeCallback);
+            // Do not complete _writeCallback a 2nd time if it has already been completed and nulled.
+            Runnable cancellation = _request.getHttpStream().cancelSend(x, Callback.from(writeCallback.getInvocationType(),
+                () ->
+                {
+                    Callback wc;
+                    try (AutoLock ignore = _request._lock.lock())
+                    {
+                        wc = _writeCallback;
+                        _writeCallback = null;
+                    }
+                    if (wc != null)
+                        wc.succeeded();
+                },
+                failure ->
+                {
+                    Callback wc;
+                    try (AutoLock ignore = _request._lock.lock())
+                    {
+                        wc = _writeCallback;
+                        _writeCallback = null;
+                    }
+                    if (wc != null)
+                        wc.failed(failure);
+                }));
 
             _writeFailure = ExceptionUtil.combine(_writeFailure, x);
             return cancellation;
