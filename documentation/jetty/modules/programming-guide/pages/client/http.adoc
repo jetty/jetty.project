@@ -972,6 +972,25 @@ The included and excluded address sets support patterns for flexible matching:
 * *IP range*: `10.0.0.1-10.0.0.10` matches IP addresses within the inclusive range
 * *Port specification*: Any pattern can include a port, e.g., `*.example.com:8080` to match only on that specific port
 
+[NOTE]
+====
+*Pattern Limitations:*
+
+* Wildcards (`*`) are only supported at the start (`*.example.com`) or end (`internal.*`), not in the middle
+* The dot in wildcard patterns is a literal dot, not a regex "any character"
+* Patterns cannot contain `@` (userinfo) or `/` (path components)
+====
+
+[IMPORTANT]
+====
+*DNS Resolution:*
+
+IP-based patterns (CIDR notation like `192.168.0.0/16` and IP ranges like `10.0.0.1-10.0.0.10`)
+require DNS resolution when matching against hostnames. This adds network latency and will
+fail to match if DNS is unavailable. For better performance, prefer hostname wildcards
+(`*.internal.corp`) over CIDR patterns when possible.
+====
+
 Configured in this way, `HttpClient` makes requests to the HTTP proxy (for plain-text HTTP requests) or establishes a tunnel via HTTP `CONNECT` (for encrypted HTTPS requests).
 
 Proxying is supported for any version of the HTTP protocol.

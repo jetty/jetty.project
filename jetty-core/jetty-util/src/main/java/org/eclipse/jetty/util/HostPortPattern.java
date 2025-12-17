@@ -28,10 +28,12 @@ import java.util.function.Predicate;
  * <dd>An exact hostname match (case-insensitive). eg. "example.com", "localhost:8080"</dd>
  * <dt>Hostname wildcard prefix</dt>
  * <dd>A hostname pattern starting with "*." to match any subdomain.
- * eg. "*.example.com" matches "foo.example.com" and "bar.baz.example.com"</dd>
+ * eg. "*.example.com" matches "foo.example.com", "bar.baz.example.com", and "example.com" itself</dd>
  * <dt>Hostname wildcard suffix</dt>
  * <dd>A hostname pattern ending with ".*" to match any domain suffix.
- * eg. "internal.*" matches "internal.corp" and "internal.local"</dd>
+ * eg. "internal.*" matches "internal.corp", "internal.local", and "internal" itself</dd>
+ * <dt>Match all</dt>
+ * <dd>A single "*" matches all hosts</dd>
  * <dt>InetAddress pattern</dt>
  * <dd>Any pattern supported by {@link InetAddressPattern} including CIDR notation
  * and IP ranges. eg. "192.168.0.0/16", "10.0.0.1-10.0.0.255"</dd>
@@ -39,6 +41,16 @@ import java.util.function.Predicate;
  *
  * <p>All patterns may optionally include a port specification after a colon.
  * If no port is specified, the pattern matches any port.</p>
+ *
+ * <p><b>Limitations:</b></p>
+ * <ul>
+ * <li>Wildcards are only supported at the start ({@code *.example.com})
+ *     or end ({@code internal.*}), not in the middle</li>
+ * <li>The dot in wildcard patterns is a literal dot, not a regex "any character"</li>
+ * <li>Patterns cannot contain '@' (userinfo) or '/' (path components)</li>
+ * <li>IP-based patterns (CIDR, ranges) require DNS resolution when matching
+ *     hostnames, which adds latency and fails if DNS is unavailable</li>
+ * </ul>
  *
  * <p>Based on ideas from PR #10538 by @sugilite.</p>
  *
@@ -111,6 +123,9 @@ public abstract class HostPortPattern implements Predicate<HostPort>
             }
         }
 
+        // Validate the host pattern
+        validateHostPattern(hostPattern);
+
         // Determine pattern type
         if (hostPattern.startsWith("*."))
         {
@@ -170,6 +185,36 @@ public abstract class HostPortPattern implements Predicate<HostPort>
         }
         // IPv6 addresses have multiple colons
         return colonCount > 1;
+    }
+
+    /**
+     * Validate that the host pattern does not contain invalid characters or constructs.
+     *
+     * @param hostPattern the host pattern to validate (without port)
+     * @throws IllegalArgumentException if the pattern is invalid
+     */
+    private static void validateHostPattern(String hostPattern)
+    {
+        // Reject patterns with @ (userinfo)
+        if (hostPattern.contains("@"))
+            throw new IllegalArgumentException("Pattern cannot contain '@' (userinfo not allowed): " + hostPattern);
+
+        // Reject patterns with / (path) - but allow CIDR notation which is handled separately
+        if (hostPattern.contains("/") && !looksLikeIpPattern(hostPattern))
+            throw new IllegalArgumentException("Pattern cannot contain '/' (path not allowed): " + hostPattern);
+
+        // Reject wildcards in invalid positions
+        int starIndex = hostPattern.indexOf('*');
+        if (starIndex >= 0)
+        {
+            // Only allow: *.suffix, prefix.*, or standalone *
+            boolean validWildcard = hostPattern.equals("*") ||
+                                    hostPattern.startsWith("*.") ||
+                                    hostPattern.endsWith(".*");
+            if (!validWildcard)
+                throw new IllegalArgumentException(
+                    "Wildcard '*' only supported at start (*.example.com) or end (prefix.*): " + hostPattern);
+        }
     }
 
     private static int parsePort(String portStr)
