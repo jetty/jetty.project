@@ -1057,7 +1057,7 @@ public class ServletApiRequest implements HttpServletRequest
         return parameters == null ? ServletContextRequest.NO_PARAMS : parameters;
     }
 
-    private void extractContentParameters() throws BadMessageException
+    private void extractContentParameters() throws HttpException.IllegalStateException
     {
         // Extract content parameters; these cannot be replaced by a forward()
         // once extracted and may have already been extracted by getParts() or
@@ -1082,7 +1082,7 @@ public class ServletApiRequest implements HttpServletRequest
                         }
                         catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
-                            throw new BadMessageException("Unable to parse form content", e);
+                            throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, "Unable to parse form content", e);
                         }
                     }
                     else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
@@ -1097,20 +1097,19 @@ public class ServletApiRequest implements HttpServletRequest
                             String msg = "Unable to extract content parameters";
                             if (LOG.isDebugEnabled())
                                 LOG.debug(msg, e);
-                            throw new UncheckedIOException(msg, e);
+                            throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, msg, new IOException(msg, e));
                         }
                         catch (ServletException e)
                         {
                             Throwable cause = e.getCause();
-                            if (cause instanceof BadMessageException badMessageException)
-                                throw badMessageException;
+                            HttpException.throwIfHttpException(cause);
 
                             String msg = "Unable to extract content parameters";
                             if (LOG.isDebugEnabled())
                                 LOG.debug(msg, e);
                             if (cause instanceof IOException ioe)
                                 throw new UncheckedIOException(msg, ioe);
-                            throw new RuntimeException(msg, e);
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg, e);
                         }
                     }
                     else
@@ -1121,7 +1120,8 @@ public class ServletApiRequest implements HttpServletRequest
                         }
                         catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
-                            throw new BadMessageException("Unable to parse form content", e);
+                            HttpException.throwAsUncheckedHttpException(e);
+                            throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, "Unable to parse form content", e);
                         }
                     }
                 }
@@ -1131,7 +1131,9 @@ public class ServletApiRequest implements HttpServletRequest
             }
             catch (IllegalStateException | IllegalArgumentException e)
             {
-                throw new BadMessageException("Unable to parse form content", e);
+                _contentParameters = ServletContextRequest.BAD_PARAMS;
+                HttpException.throwIfHttpException(e);
+                throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, "Unable to parse form content", e);
             }
         }
     }
@@ -1154,7 +1156,8 @@ public class ServletApiRequest implements HttpServletRequest
                 catch (IllegalStateException | IllegalArgumentException e)
                 {
                     _queryParameters = ServletContextRequest.BAD_PARAMS;
-                    throw new BadMessageException("Unable to parse URI query", e);
+                    HttpException.throwIfHttpException(e);
+                    throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, "Unable to parse form content", e);
                 }
             }
         }

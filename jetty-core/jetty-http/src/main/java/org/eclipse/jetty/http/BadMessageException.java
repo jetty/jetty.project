@@ -15,8 +15,9 @@ package org.eclipse.jetty.http;
 
 /**
  * <p>Exception thrown to indicate a Bad HTTP Message has either been received
- * or attempted to be generated.  Typically these are handled with either 400
+ * or attempted to be generated.  Typically, these are handled with either 400
  * responses.</p>
+ * @see HttpException
  */
 public class BadMessageException extends HttpException.RuntimeException
 {
@@ -48,6 +49,5 @@ public class BadMessageException extends HttpException.RuntimeException
     public BadMessageException(int code, String reason, Throwable cause)
     {
         super(code, reason, cause);
-        assert HttpStatus.isClientError(code);
     }
 }

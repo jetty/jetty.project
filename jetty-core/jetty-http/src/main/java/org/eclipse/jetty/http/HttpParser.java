@@ -2367,13 +2367,9 @@ public class HttpParser
                         {
                             _handler.onViolation(new ComplianceViolation.Event(_complianceMode, v, r));
                         }
-                        catch (BadMessageException bme)
-                        {
-                            throw bme;
-                        }
                         catch (Throwable t)
                         {
-                            throw new BadMessageException(t.getMessage(), t);
+                            HttpException.throwAsUncheckedHttpException(t);
                         }
                     }, value);
 
