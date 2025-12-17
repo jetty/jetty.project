@@ -278,4 +278,28 @@ public class HostPortPatternTest
 
         assertFalse(pattern.test(new HostPort("[::1]", 80)));
     }
+
+    @Test
+    public void testRejectPatternWithUserinfo()
+    {
+        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("user@example.com"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("user:pass@example.com"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("user@*.example.com"));
+    }
+
+    @Test
+    public void testRejectPatternWithPath()
+    {
+        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("example.com/admin"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("*.example.com/path"));
+    }
+
+    @Test
+    public void testRejectMiddleWildcard()
+    {
+        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("foo.*.bar.com"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("*foo.example.com"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("foo*.example.com"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("example.*com"));
+    }
 }
