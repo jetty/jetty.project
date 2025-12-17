@@ -628,12 +628,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (_channelInUse.compareAndSet(false, true))
         {
             boolean remote = failure instanceof EOFException;
-            Runnable failureTask = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
-            task = new ReadyTask(Invocable.getInvocationType(failureTask), () ->
-            {
-                failureTask.run();
-                _channelInUse.set(false);
-            });
+            task = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
         }
         else
         {
