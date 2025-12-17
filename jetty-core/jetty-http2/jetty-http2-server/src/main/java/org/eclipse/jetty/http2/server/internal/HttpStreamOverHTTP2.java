@@ -66,8 +66,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private final AutoLock lock = new AutoLock();
     private final HTTP2ServerConnection _connection;
     private final HttpChannel _httpChannel;
-    private boolean _channelCaptured;
-    private boolean _recycleChannel;
+    private boolean _channelInUse;
     private final HTTP2Stream _stream;
     private MetaData.Request _requestMetaData;
     private MetaData.Response _responseMetaData;
@@ -626,37 +625,31 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         boolean remote = failure instanceof EOFException;
 
-        boolean captured;
+        boolean canUseChannel;
         try (AutoLock ignored = lock.lock())
         {
-            if (!_channelCaptured)
+            if (!_channelInUse)
             {
-                _channelCaptured = true;
-                captured = true;
+                _channelInUse = true;
+                canUseChannel = true;
             }
             else
             {
-                captured = false;
+                canUseChannel = false;
             }
         }
 
         Runnable task;
-        if (!captured)
+        if (canUseChannel)
         {
             Runnable failureTask = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
             task = new ReadyTask(Invocable.getInvocationType(failureTask), () ->
             {
                 failureTask.run();
-                boolean recycle;
                 try (AutoLock ignored = lock.lock())
                 {
-                    // There is a slight race here: another thread may be about to set the _recycleChannel flag to true but
-                    // hasn't yet. In such case, the channel isn't recycled and becomes garbage, which is still correct.
-                    recycle = _recycleChannel;
-                    _channelCaptured = false;
+                    _channelInUse = false;
                 }
-                if (recycle)
-                    recycleChannel();
             });
         }
         else
@@ -714,22 +707,22 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             }
         }
 
-        boolean recycleNow;
+        // Do not recycle when we are racing against the execution of onFailure()'s Runnable.
+        boolean recycle;
         try (AutoLock ignored = lock.lock())
         {
-            if (_channelCaptured)
+            if (_channelInUse)
             {
-                _recycleChannel = true;
-                recycleNow = false;
+                recycle = false;
             }
             else
             {
-                _channelCaptured = true;
-                recycleNow = true;
+                _channelInUse = true;
+                recycle = true;
             }
         }
 
-        if (recycleNow)
+        if (recycle)
             recycleChannel();
     }
 
