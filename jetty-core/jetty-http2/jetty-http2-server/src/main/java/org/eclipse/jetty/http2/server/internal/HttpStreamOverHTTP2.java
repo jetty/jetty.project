@@ -17,6 +17,7 @@ import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -66,7 +67,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private final AutoLock lock = new AutoLock();
     private final HTTP2ServerConnection _connection;
     private final HttpChannel _httpChannel;
-    private boolean _channelInUse;
+    private final AtomicBoolean _channelInUse = new AtomicBoolean();
     private final HTTP2Stream _stream;
     private MetaData.Request _requestMetaData;
     private MetaData.Response _responseMetaData;
@@ -623,40 +624,21 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
-        boolean remote = failure instanceof EOFException;
-
-        boolean canUseChannel;
-        try (AutoLock ignored = lock.lock())
-        {
-            if (!_channelInUse)
-            {
-                _channelInUse = true;
-                canUseChannel = true;
-            }
-            else
-            {
-                canUseChannel = false;
-            }
-        }
-
         Runnable task;
-        if (canUseChannel)
+        if (_channelInUse.compareAndSet(false, true))
         {
+            boolean remote = failure instanceof EOFException;
             Runnable failureTask = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
             task = new ReadyTask(Invocable.getInvocationType(failureTask), () ->
             {
                 failureTask.run();
-                try (AutoLock ignored = lock.lock())
-                {
-                    _channelInUse = false;
-                }
+                _channelInUse.set(false);
             });
         }
         else
         {
             task = null;
         }
-
         return new FailureTask(task, callback);
     }
 
@@ -708,21 +690,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
 
         // Do not recycle when we are racing against the execution of onFailure()'s Runnable.
-        boolean recycle;
-        try (AutoLock ignored = lock.lock())
-        {
-            if (_channelInUse)
-            {
-                recycle = false;
-            }
-            else
-            {
-                _channelInUse = true;
-                recycle = true;
-            }
-        }
-
-        if (recycle)
+        if (_channelInUse.compareAndSet(false, true))
             recycleChannel();
     }
 
