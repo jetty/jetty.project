@@ -338,6 +338,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         } while (--retries > 0);
 
         //if we got here we never got a useable session
+        if (LOG.isDebugEnabled())
+            LOG.debug("Retries to get resident session {} exhausted", id);
         return null;
     }
 
