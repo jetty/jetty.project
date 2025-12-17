@@ -161,30 +161,18 @@ public abstract class HostPortPattern implements Predicate<HostPort>
     }
 
     /**
-     * Check if the pattern looks like an IP address pattern (not a hostname).
-     * IP patterns start with a digit (IPv4) or '[' (IPv6), or contain '/' (CIDR) or '-' (range).
+     * Check if the pattern is a CIDR or IP range pattern that requires InetAddress matching.
+     * Only CIDR notation (contains '/') and IP ranges (contains '-') should use InetAddressPattern.
+     * Plain IP addresses should use ExactHostPattern for backward-compatible string comparison.
      */
     private static boolean looksLikeIpPattern(String pattern)
     {
         if (pattern.isEmpty())
             return false;
 
-        char first = pattern.charAt(0);
-        // IPv6 literal
-        if (first == '[')
-            return true;
-        // IPv4 address (starts with digit)
-        if (Character.isDigit(first))
-            return true;
-        // Could be IPv6 without brackets (contains multiple colons)
-        int colonCount = 0;
-        for (int i = 0; i < pattern.length(); i++)
-        {
-            if (pattern.charAt(i) == ':')
-                colonCount++;
-        }
-        // IPv6 addresses have multiple colons
-        return colonCount > 1;
+        // Only match CIDR notation (192.168.0.0/16) or IP ranges (10.0.0.1-10.0.0.10)
+        // Plain IP addresses use ExactHostPattern for string comparison
+        return pattern.contains("/") || pattern.contains("-");
     }
 
     /**
