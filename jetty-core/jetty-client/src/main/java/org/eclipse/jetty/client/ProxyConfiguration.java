@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.net.URI;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -23,6 +22,8 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.HostPortSet;
+import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
@@ -86,9 +87,7 @@ public class ProxyConfiguration
 
     public abstract static class Proxy
     {
-        // TODO use InetAddressSet? Or IncludeExcludeSet?
-        private final Set<String> included = new HashSet<>();
-        private final Set<String> excluded = new HashSet<>();
+        private final IncludeExcludeSet<String, HostPort> _addresses = new IncludeExcludeSet<>(HostPortSet.class);
         private final Origin origin;
         private final SslContextFactory.Client sslContextFactory;
 
@@ -141,23 +140,45 @@ public class ProxyConfiguration
         }
 
         /**
+         * <p>Returns the set of origins that must be proxied.</p>
+         * <p>The set supports patterns including:</p>
+         * <ul>
+         * <li>Exact hostname match: {@code example.com}</li>
+         * <li>Hostname wildcard prefix: {@code *.example.com}</li>
+         * <li>Hostname wildcard suffix: {@code internal.*}</li>
+         * <li>CIDR notation: {@code 192.168.0.0/16}</li>
+         * <li>IP range: {@code 10.0.0.1-10.0.0.10}</li>
+         * <li>Port specification: {@code example.com:8080}</li>
+         * </ul>
+         *
          * @return the set of origins that must be proxied
          * @see #matches(Origin)
          * @see #getExcludedAddresses()
          */
         public Set<String> getIncludedAddresses()
         {
-            return included;
+            return _addresses.getIncluded();
         }
 
         /**
-         * @return the set of origins that must not be proxied.
+         * <p>Returns the set of origins that must not be proxied.</p>
+         * <p>The set supports patterns including:</p>
+         * <ul>
+         * <li>Exact hostname match: {@code example.com}</li>
+         * <li>Hostname wildcard prefix: {@code *.example.com}</li>
+         * <li>Hostname wildcard suffix: {@code internal.*}</li>
+         * <li>CIDR notation: {@code 192.168.0.0/16}</li>
+         * <li>IP range: {@code 10.0.0.1-10.0.0.10}</li>
+         * <li>Port specification: {@code example.com:8080}</li>
+         * </ul>
+         *
+         * @return the set of origins that must not be proxied
          * @see #matches(Origin)
          * @see #getIncludedAddresses()
          */
         public Set<String> getExcludedAddresses()
         {
-            return excluded;
+            return _addresses.getExcluded();
         }
 
         /**
@@ -180,34 +201,9 @@ public class ProxyConfiguration
             if (getAddress().equals(origin.getAddress()))
                 return false;
 
-            boolean result = included.isEmpty();
             Origin.Address address = origin.getAddress();
-            for (String included : this.included)
-            {
-                if (matches(address, included))
-                {
-                    result = true;
-                    break;
-                }
-            }
-            for (String excluded : this.excluded)
-            {
-                if (matches(address, excluded))
-                {
-                    result = false;
-                    break;
-                }
-            }
-            return result;
-        }
-
-        private boolean matches(Origin.Address address, String pattern)
-        {
-            // TODO: add support for CIDR notation like 192.168.0.0/24, see DoSFilter
-            HostPort hostPort = new HostPort(pattern);
-            String host = hostPort.getHost();
-            int port = hostPort.getPort();
-            return host.equals(address.getHost()) && (port <= 0 || port == address.getPort());
+            HostPort hostPort = new HostPort(address.getHost(), address.getPort());
+            return _addresses.test(hostPort);
         }
 
         /**

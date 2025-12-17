@@ -963,6 +963,15 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 
 You specify the proxy host and proxy port, and optionally also the addresses that you do not want to be proxied, and then add the proxy configuration on the `ProxyConfiguration` instance.
 
+The included and excluded address sets support patterns for flexible matching:
+
+* *Exact hostname*: `example.com` matches only that exact hostname
+* *Wildcard prefix*: `*.example.com` matches any subdomain of example.com, e.g., `www.example.com`, `api.example.com`, as well as `example.com` itself
+* *Wildcard suffix*: `internal.*` matches any hostname starting with `internal.`, e.g., `internal.corp`, `internal.local`, `internal.evil.corp`
+* *CIDR notation*: `192.168.0.0/16` matches any IP address in the subnet
+* *IP range*: `10.0.0.1-10.0.0.10` matches IP addresses within the inclusive range
+* *Port specification*: Any pattern can include a port, e.g., `*.example.com:8080` to match only on that specific port
+
 Configured in this way, `HttpClient` makes requests to the HTTP proxy (for plain-text HTTP requests) or establishes a tunnel via HTTP `CONNECT` (for encrypted HTTPS requests).
 
 Proxying is supported for any version of the HTTP protocol.
