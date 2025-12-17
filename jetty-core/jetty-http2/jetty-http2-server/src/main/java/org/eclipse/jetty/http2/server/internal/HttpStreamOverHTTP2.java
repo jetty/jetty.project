@@ -66,6 +66,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private final AutoLock lock = new AutoLock();
     private final HTTP2ServerConnection _connection;
     private final HttpChannel _httpChannel;
+    private boolean _channelCaptured;
+    private boolean _recycleChannel;
     private final HTTP2Stream _stream;
     private MetaData.Request _requestMetaData;
     private MetaData.Response _responseMetaData;
@@ -623,7 +625,45 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     public Runnable onFailure(Throwable failure, Callback callback)
     {
         boolean remote = failure instanceof EOFException;
-        Runnable task = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
+
+        boolean captured;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (!_channelCaptured)
+            {
+                _channelCaptured = true;
+                captured = true;
+            }
+            else
+            {
+                captured = false;
+            }
+        }
+
+        Runnable task;
+        if (!captured)
+        {
+            Runnable failureTask = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
+            task = new ReadyTask(Invocable.getInvocationType(failureTask), () ->
+            {
+                failureTask.run();
+                boolean recycle;
+                try (AutoLock ignored = lock.lock())
+                {
+                    // There is a slight race here: another thread may be about to set the _recycleChannel flag to true but
+                    // hasn't yet. In such case, the channel isn't recycled and becomes garbage, which is still correct.
+                    recycle = _recycleChannel;
+                    _channelCaptured = false;
+                }
+                if (recycle)
+                    recycleChannel();
+            });
+        }
+        else
+        {
+            task = null;
+        }
+
         return new FailureTask(task, callback);
     }
 
@@ -673,8 +713,33 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 }
             }
         }
-        _httpChannel.recycle();
-        _connection.offerHttpChannel(_httpChannel);
+
+        boolean recycleNow;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (_channelCaptured)
+            {
+                _recycleChannel = true;
+                recycleNow = false;
+            }
+            else
+            {
+                _channelCaptured = true;
+                recycleNow = true;
+            }
+        }
+
+        if (recycleNow)
+            recycleChannel();
+    }
+
+    private void recycleChannel()
+    {
+        if (_connection.isRecycleHttpChannels())
+        {
+            _httpChannel.recycle();
+            _connection.offerHttpChannel(_httpChannel);
+        }
     }
 
     @Override
