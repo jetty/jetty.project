@@ -970,7 +970,7 @@ The included and excluded address sets support patterns for flexible matching:
 * *Wildcard suffix*: `internal.*` matches any hostname starting with `internal.`, e.g., `internal.corp`, `internal.local`, `internal.evil.corp`
 * *CIDR notation*: `192.168.0.0/16` matches any IP address in the subnet
 * *IP range*: `10.0.0.1-10.0.0.10` matches IP addresses within the inclusive range
-* *Port specification*: Any pattern can include a port, e.g., `*.example.com:8080` to match only on that specific port
+* *Port specification*: Any pattern can include a port, e.g., `*.example.com:8080` to match only on that specific port. Patterns without a port match any port.
 
 [NOTE]
 ====

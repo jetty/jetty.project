@@ -302,4 +302,31 @@ public class HostPortPatternTest
         assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("foo*.example.com"));
         assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("example.*com"));
     }
+
+    @Test
+    public void testNoPortMatchesAnyPort()
+    {
+        // Pattern without port should match any port
+        HostPortPattern pattern = HostPortPattern.from("example.com");
+
+        assertTrue(pattern.test(new HostPort("example.com", 80)));
+        assertTrue(pattern.test(new HostPort("example.com", 443)));
+        assertTrue(pattern.test(new HostPort("example.com", 8080)));
+        // Port 0 means "unspecified" - pattern without port matches it too
+        assertTrue(pattern.test(new HostPort("example.com", 0)));
+    }
+
+    @Test
+    public void testSpecificPortMatchesOnlyThatPort()
+    {
+        // Pattern with port should match only that specific port
+        HostPortPattern pattern = HostPortPattern.from("example.com:8080");
+
+        assertTrue(pattern.test(new HostPort("example.com", 8080)));
+
+        assertFalse(pattern.test(new HostPort("example.com", 80)));
+        assertFalse(pattern.test(new HostPort("example.com", 443)));
+        // Port 0 means "unspecified" - does not match specific port pattern
+        assertFalse(pattern.test(new HostPort("example.com", 0)));
+    }
 }
