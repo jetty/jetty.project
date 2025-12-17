@@ -627,11 +627,13 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         Runnable task;
         if (_channelInUse.compareAndSet(false, true))
         {
+            // This branch prevents the recycling of channels going through on[Remote]Failure().
             boolean remote = failure instanceof EOFException;
             task = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
         }
         else
         {
+            // This branch prevents going through on[Remote]Failure() for recycled channels.
             task = null;
         }
         return new FailureTask(task, callback);
