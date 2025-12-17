@@ -17,7 +17,7 @@ import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -67,7 +67,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private final AutoLock lock = new AutoLock();
     private final HTTP2ServerConnection _connection;
     private final HttpChannel _httpChannel;
-    private final AtomicBoolean _channelInUse = new AtomicBoolean();
+    private final AtomicReference<RecycleState> _recycle = new AtomicReference<>(RecycleState.CAN_RECYCLE);
     private final HTTP2Stream _stream;
     private MetaData.Request _requestMetaData;
     private MetaData.Response _responseMetaData;
@@ -76,6 +76,48 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private Content.Chunk _trailer;
     private boolean committed;
     private boolean _demand;
+
+    /**
+     * This state machine tracks if the {@link #_httpChannel} can be recycled or not.
+     * The on*() methods race against succeeded() and they need to figure out if they
+     * can use the _httpChannel or if it has been recycled, while succeeded() needs to
+     * know if it can safely recycle the _httpChannel because no on*() method was
+     * called, or if it cannot.
+     */
+    private enum RecycleState
+    {
+        /**
+         * start state
+         */
+        CAN_RECYCLE,
+
+        /**
+         * terminal state
+         */
+        RECYCLED,
+
+        /**
+         * terminal state
+         */
+        CANNOT_RECYCLE;
+
+        /**
+         * Change the current state if it isn't a terminal state.
+         * @param reference the {@code AtomicReference} containing the state.
+         * @param newStateIfCanRecycle the state to change to if the current state is {@link #CAN_RECYCLE}.
+         * @return the previous state.
+         */
+        private static RecycleState changeState(AtomicReference<RecycleState> reference, RecycleState newStateIfCanRecycle)
+        {
+            assert newStateIfCanRecycle != CAN_RECYCLE;
+            return reference.getAndUpdate(currentState -> switch (currentState)
+            {
+                case CAN_RECYCLE -> newStateIfCanRecycle;
+                case RECYCLED -> RECYCLED;
+                case CANNOT_RECYCLE -> CANNOT_RECYCLE;
+            });
+        }
+    }
 
     public HttpStreamOverHTTP2(HTTP2ServerConnection connection, HttpChannel httpChannel, HTTP2Stream stream)
     {
@@ -162,6 +204,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (LOG.isDebugEnabled())
             LOG.debug("badMessage {} {}", this, x);
 
+        RecycleState previousState = RecycleState.changeState(_recycle, RecycleState.CANNOT_RECYCLE);
+        if (previousState == RecycleState.RECYCLED)
+            return null;
         Throwable failure = (Throwable)x;
         return _httpChannel.onFailure(failure);
     }
@@ -617,6 +662,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void onTimeout(TimeoutException timeout, BiConsumer<Runnable, Boolean> consumer)
     {
+        RecycleState previousState = RecycleState.changeState(_recycle, RecycleState.CANNOT_RECYCLE);
+        if (previousState == RecycleState.RECYCLED)
+            return;
         HttpChannel.IdleTimeoutTask task = _httpChannel.onIdleTimeout(timeout);
         consumer.accept(task.action(), !task.handlingRequest());
     }
@@ -624,18 +672,11 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
-        Runnable task;
-        if (_channelInUse.compareAndSet(false, true))
-        {
-            // This branch prevents the recycling of channels going through on[Remote]Failure().
-            boolean remote = failure instanceof EOFException;
-            task = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
-        }
-        else
-        {
-            // This branch prevents going through on[Remote]Failure() for recycled channels.
-            task = null;
-        }
+        RecycleState previousState = RecycleState.changeState(_recycle, RecycleState.CANNOT_RECYCLE);
+        if (previousState == RecycleState.RECYCLED)
+            return new FailureTask(null, callback);
+        boolean remote = failure instanceof EOFException;
+        Runnable task = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
         return new FailureTask(task, callback);
     }
 
@@ -686,8 +727,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             }
         }
 
-        // Do not recycle when we are racing against the execution of onFailure()'s Runnable.
-        if (_channelInUse.compareAndSet(false, true))
+        RecycleState previousState = RecycleState.changeState(_recycle, RecycleState.RECYCLED);
+        if (previousState == RecycleState.CAN_RECYCLE)
         {
             if (_connection.isRecycleHttpChannels())
             {
@@ -720,6 +761,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 LOG.atDebug().setCause(x).log("HTTP2 response #{}/{}: failed {}", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), errorCode);
             _stream.reset(new ResetFrame(_stream.getId(), errorCode.code), Callback.NOOP);
         }
+        // Change the state just to make the content of _recycle less surprising when debugging.
+        _recycle.set(RecycleState.CANNOT_RECYCLE);
     }
 
     private class SendTrailers extends Callback.Nested
