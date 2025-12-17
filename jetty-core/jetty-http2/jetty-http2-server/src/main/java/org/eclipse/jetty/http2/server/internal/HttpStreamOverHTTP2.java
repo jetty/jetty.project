@@ -688,15 +688,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
         // Do not recycle when we are racing against the execution of onFailure()'s Runnable.
         if (_channelInUse.compareAndSet(false, true))
-            recycleChannel();
-    }
-
-    private void recycleChannel()
-    {
-        if (_connection.isRecycleHttpChannels())
         {
-            _httpChannel.recycle();
-            _connection.offerHttpChannel(_httpChannel);
+            if (_connection.isRecycleHttpChannels())
+            {
+                _httpChannel.recycle();
+                _connection.offerHttpChannel(_httpChannel);
+            }
         }
     }
 
