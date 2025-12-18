@@ -96,14 +96,7 @@ public abstract class AbstractGzipTest
 
     protected void startGzip() throws Exception
     {
-        startGzip(-1);
-    }
-
-    protected void startGzip(int bufferSize) throws Exception
-    {
         gzip = new GzipCompression();
-        if (bufferSize > 0)
-            gzip.setBufferSize(bufferSize);
         gzip.setByteBufferPool(pool);
         gzip.start();
     }

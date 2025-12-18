@@ -16,12 +16,16 @@ package org.eclipse.jetty.compression.zstandard;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.Cleaner;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
 
-import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
-import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
+import com.github.luben.zstd.BufferPool;
+import com.github.luben.zstd.ZstdInputStream;
+import com.github.luben.zstd.ZstdOutputStream;
 import com.github.luben.zstd.util.Native;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.DecoderConfig;
@@ -56,6 +60,7 @@ public class ZstandardCompression extends Compression
     private static final int DEFAULT_MIN_ZSTD_SIZE = 48;
     private static final List<String> EXTENSIONS = List.of("zst");
 
+    private final Cleaner cleaner = Cleaner.create();
     private ZstandardEncoderConfig defaultEncoderConfig = new ZstandardEncoderConfig();
     private ZstandardDecoderConfig defaultDecoderConfig = new ZstandardDecoderConfig();
 
@@ -143,10 +148,7 @@ public class ZstandardCompression extends Compression
     @Override
     public InputStream newDecoderInputStream(InputStream in, DecoderConfig config) throws IOException
     {
-        ZstandardDecoderConfig zstandardDecoderConfig = (ZstandardDecoderConfig)config;
-        ZstdInputStreamNoFinalizer inputStream = new ZstdInputStreamNoFinalizer(in);
-        config.setBufferSize(zstandardDecoderConfig.getBufferSize());
-        return inputStream;
+        return new ZstdInputStream(in, new BufferPoolAdapter(getByteBufferPool(), false));
     }
 
     @Override
@@ -160,7 +162,7 @@ public class ZstandardCompression extends Compression
     public OutputStream newEncoderOutputStream(OutputStream out, EncoderConfig config) throws IOException
     {
         ZstandardEncoderConfig zstandardEncoderConfig = (ZstandardEncoderConfig)config;
-        ZstdOutputStreamNoFinalizer outputStream = new ZstdOutputStreamNoFinalizer(out, zstandardEncoderConfig.getCompressionLevel());
+        ZstdOutputStream outputStream = new ZstdOutputStream(out, new BufferPoolAdapter(getByteBufferPool(), false), zstandardEncoderConfig.getCompressionLevel());
         if (zstandardEncoderConfig.getStrategy() >= 0)
             outputStream.setStrategy(zstandardEncoderConfig.getStrategy());
         return outputStream;
@@ -178,5 +180,40 @@ public class ZstandardCompression extends Compression
         // https://datatracker.ietf.org/doc/html/rfc8478
         // Zstandard is LITTLE_ENDIAN
         return ByteOrder.LITTLE_ENDIAN;
+    }
+
+    public Cleaner getCleaner()
+    {
+        return cleaner;
+    }
+
+    private static class BufferPoolAdapter implements BufferPool
+    {
+        private final IdentityHashMap<ByteBuffer, RetainableByteBuffer> buffers = new IdentityHashMap<>();
+        private final ByteBufferPool byteBufferPool;
+        private final boolean direct;
+
+        public BufferPoolAdapter(ByteBufferPool byteBufferPool, boolean direct)
+        {
+            this.byteBufferPool = byteBufferPool;
+            this.direct = direct;
+        }
+
+        @Override
+        public ByteBuffer get(int capacity)
+        {
+            RetainableByteBuffer.Mutable retainableByteBuffer = byteBufferPool.acquire(capacity, direct);
+            ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
+            buffers.put(byteBuffer, retainableByteBuffer);
+            return byteBuffer;
+        }
+
+        @Override
+        public void release(ByteBuffer buffer)
+        {
+            RetainableByteBuffer removed = buffers.remove(buffer);
+            if (removed != null)
+                removed.release();
+        }
     }
 }

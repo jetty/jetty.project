@@ -83,7 +83,7 @@ public abstract class EncoderSink implements Content.Sink
         public EncodeBufferCallback(boolean last, ByteBuffer content, Callback callback)
         {
             super(callback);
-            this.content = content;
+            this.content = content == null ? BufferUtil.EMPTY_BUFFER : content;
             this.last = last;
         }
 

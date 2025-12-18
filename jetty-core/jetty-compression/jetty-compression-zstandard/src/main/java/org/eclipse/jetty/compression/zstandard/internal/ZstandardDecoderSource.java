@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.compression.zstandard.internal;
 
+import java.lang.ref.Cleaner;
 import java.nio.ByteBuffer;
 
 import com.github.luben.zstd.ZstdDecompressCtx;
@@ -26,6 +27,8 @@ public class ZstandardDecoderSource extends DecoderSource
 {
     private final ZstandardCompression compression;
     private final ZstdDecompressCtx decompressCtx;
+    private final int bufferSize;
+    private final Cleaner.Cleanable cleanable;
 
     public ZstandardDecoderSource(Content.Source source, ZstandardCompression compression, ZstandardDecoderConfig config)
     {
@@ -33,6 +36,8 @@ public class ZstandardDecoderSource extends DecoderSource
         this.compression = compression;
         this.decompressCtx = new ZstdDecompressCtx();
         this.decompressCtx.setMagicless(config.isMagicless());
+        this.bufferSize = config.getBufferSize();
+        this.cleanable = compression.getCleaner().register(this, decompressCtx::close);
     }
 
     @Override
@@ -43,7 +48,7 @@ public class ZstandardDecoderSource extends DecoderSource
             return inputChunk;
         if (!input.isDirect())
             throw new IllegalArgumentException("Read Chunk is not a Direct ByteBuffer");
-        RetainableByteBuffer dst = compression.acquireByteBuffer(compression.getBufferSize());
+        RetainableByteBuffer dst = compression.acquireByteBuffer(bufferSize);
         boolean last = inputChunk.isLast();
         dst.getByteBuffer().clear();
         boolean fullyFlushed = decompressCtx.decompressDirectByteBufferStream(dst.getByteBuffer(), input);
@@ -51,5 +56,11 @@ public class ZstandardDecoderSource extends DecoderSource
             last = false;
         dst.getByteBuffer().flip();
         return Content.Chunk.asChunk(dst.getByteBuffer(), last, dst);
+    }
+
+    @Override
+    public void release()
+    {
+        cleanable.clean();
     }
 }

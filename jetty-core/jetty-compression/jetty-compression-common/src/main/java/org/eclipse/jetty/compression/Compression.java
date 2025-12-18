@@ -30,14 +30,12 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public abstract class Compression extends ContainerLifeCycle
 {
-
     private final String encodingName;
     private final String etagSuffix;
     private final String etagSuffixQuote;
     private final Pattern etagSuffixPattern;
     private ByteBufferPool byteBufferPool;
     private Container container;
-    private int bufferSize = 2048;
     private int minCompressSize;
 
     public Compression(String encoding)
@@ -82,16 +80,23 @@ public abstract class Compression extends ContainerLifeCycle
         return etag + etagSuffix;
     }
 
+    /**
+     * This always returns 0.
+     * @deprecated use {@link EncoderConfig#getBufferSize()} or {@link DecoderConfig#getBufferSize()} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.1.5")
     public int getBufferSize()
     {
-        return bufferSize;
+        return 0;
     }
 
+    /**
+     * This has no effect.
+     * @deprecated use {@link EncoderConfig#setBufferSize(int)} or {@link DecoderConfig#setBufferSize(int)} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.1.5")
     public void setBufferSize(int size)
     {
-        if (size <= 0)
-            throw new IllegalArgumentException("Invalid buffer size: " + size);
-        this.bufferSize = size;
     }
 
     public ByteBufferPool getByteBufferPool()

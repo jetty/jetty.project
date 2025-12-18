@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-distribution</artifactId>
-    <version>12.1.5-SNAPSHOT</version>
+    <version>12.1.6-SNAPSHOT</version>
   </parent>
   <artifactId>test-distribution-common</artifactId>
   <packaging>jar</packaging>
@@ -18,7 +18,7 @@
     <junit.jupiter.execution.parallel.config.dynamic.factor>0.4</junit.jupiter.execution.parallel.config.dynamic.factor>
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
     <!--    <junit.jupiter.execution.parallel.config.strategy>fixed</junit.jupiter.execution.parallel.config.strategy>-->
-    <testcontainers-keycloak.version>3.9.0</testcontainers-keycloak.version>
+    <testcontainers-keycloak.version>3.9.1</testcontainers-keycloak.version>
   </properties>
 
   <dependencies>

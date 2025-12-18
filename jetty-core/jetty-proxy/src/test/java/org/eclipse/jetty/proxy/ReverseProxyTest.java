@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
@@ -35,8 +36,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,9 +48,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReverseProxyTest extends AbstractProxyTest
 {
+    public static Stream<Arguments> httpVersionsAndThreadPools()
+    {
+        return Stream.of(
+            Arguments.of(HttpVersion.HTTP_1_1, false),
+            Arguments.of(HttpVersion.HTTP_1_1, true),
+            Arguments.of(HttpVersion.HTTP_2, false),
+            Arguments.of(HttpVersion.HTTP_2, true)
+        );
+    }
+
     @ParameterizedTest
-    @MethodSource("httpVersions")
-    public void testSimple(HttpVersion httpVersion) throws Exception
+    @MethodSource("httpVersionsAndThreadPools")
+    public void testSimple(HttpVersion httpVersion, boolean useServerThreadPool) throws Exception
     {
         String clientContent = "hello";
         String serverContent = "world";
@@ -65,7 +76,7 @@ public class ReverseProxyTest extends AbstractProxyTest
             }
         });
 
-        startProxy(new ProxyHandler.Reverse(clientToProxyRequest ->
+        ProxyHandler.Reverse proxyHandler = new ProxyHandler.Reverse(clientToProxyRequest ->
             HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
         {
             @Override
@@ -81,7 +92,9 @@ public class ReverseProxyTest extends AbstractProxyTest
                 return super.newProxyToServerRequest(clientToProxyRequest, newHttpURI)
                     .version(httpVersion);
             }
-        });
+        };
+        proxyHandler.setUseServerThreadPool(useServerThreadPool);
+        startProxy(proxyHandler);
 
         startClient();
 
@@ -420,9 +433,6 @@ public class ReverseProxyTest extends AbstractProxyTest
     private static HttpClient newProxyHttpClient()
     {
         ClientConnector proxyClientConnector = new ClientConnector();
-        QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
-        proxyClientThreads.setName("proxy-client");
-        proxyClientConnector.setExecutor(proxyClientThreads);
         HTTP2Client proxyHTTP2Client = new HTTP2Client(proxyClientConnector);
         return new HttpClient(new HttpClientTransportDynamic(proxyClientConnector, HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(proxyHTTP2Client)));
     }

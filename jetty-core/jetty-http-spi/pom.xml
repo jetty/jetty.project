@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
-    <version>12.1.5-SNAPSHOT</version>
+    <version>12.1.6-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-http-spi</artifactId>
   <name>Core :: HTTP SPI</name>

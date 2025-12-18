@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -32,6 +33,7 @@ import org.eclipse.jetty.client.ContentSourceRequestContent;
 import org.eclipse.jetty.client.ContinueProtocolHandler;
 import org.eclipse.jetty.client.EarlyHintsProtocolHandler;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.ProcessingProtocolHandler;
 import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.Result;
@@ -51,6 +53,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
@@ -90,6 +93,7 @@ public abstract class ProxyHandler extends Handler.Abstract
     private HttpClient httpClient;
     private String proxyToServerHost;
     private String viaHost;
+    private boolean useServerThreadPool;
 
     public HttpClient getHttpClient()
     {
@@ -141,6 +145,30 @@ public abstract class ProxyHandler extends Handler.Abstract
         this.viaHost = viaHost;
     }
 
+    /**
+     * @return whether the proxy's {@code HttpClient} should use the server's thread pool
+     */
+    @ManagedAttribute("whether the proxy client uses the server's thread pool")
+    public boolean isUseServerThreadPool()
+    {
+        return useServerThreadPool;
+    }
+
+    /**
+     * <p>Sets whether the proxy's {@code HttpClient} should use the {@code Server}'s thread pool.</p>
+     * <p>If {@code true}, the HttpClient will use the Server's thread pool.
+     * If {@code false} (the default), HttpClient will use a dedicated thread pool named "proxy-client".</p>
+     * <p>Sharing the server's thread pool simplifies memory management and configuration, but threads
+     * will retain the server thread pool name in logs, making it harder to distinguish server-side
+     * processing from proxy-client-side processing.</p>
+     *
+     * @param useServerThreadPool true to use the server's thread pool in the proxy client
+     */
+    public void setUseServerThreadPool(boolean useServerThreadPool)
+    {
+        this.useServerThreadPool = useServerThreadPool;
+    }
+
     private static String viaHost()
     {
         try
@@ -169,8 +197,28 @@ public abstract class ProxyHandler extends Handler.Abstract
     private HttpClient createHttpClient()
     {
         HttpClient httpClient = newHttpClient();
+
+        // Default configuration that can be overridden by configureHttpClient().
+        Executor executor = httpClient.getExecutor();
+        if (executor == null)
+        {
+            if (isUseServerThreadPool())
+            {
+                httpClient.setExecutor(getServer().getThreadPool());
+            }
+            else
+            {
+                QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
+                proxyClientThreads.setName("proxy-client");
+                httpClient.setExecutor(proxyClientThreads);
+            }
+        }
+
+        // Allow subclasses to configure HttpClient.
         configureHttpClient(httpClient);
         LifeCycle.start(httpClient);
+
+        // Proxy-specific configuration that should not be customized.
         httpClient.getContentDecoderFactories().clear();
         ProtocolHandlers protocolHandlers = httpClient.getProtocolHandlers();
         protocolHandlers.clear();
@@ -181,20 +229,17 @@ public abstract class ProxyHandler extends Handler.Abstract
     }
 
     /**
-     * <p>Creates a new {@link HttpClient} instance, by default with a thread
-     * pool named {@code proxy-client} and with the
+     * <p>Creates a new {@link HttpClient} instance with the
      * {@link HttpClientTransportDynamic dynamic transport} configured only
      * with HTTP/1.1.</p>
+     * <p>Override this method to customize the instantiation of the
+     * {@link HttpClient}, for example when using a specific {@link HttpClientTransport}.</p>
      *
      * @return a new {@code HttpClient} instance
      */
     protected HttpClient newHttpClient()
     {
-        ClientConnector clientConnector = new ClientConnector();
-        QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
-        proxyClientThreads.setName("proxy-client");
-        clientConnector.setExecutor(proxyClientThreads);
-        return new HttpClient(new HttpClientTransportDynamic(clientConnector));
+        return new HttpClient(new HttpClientTransportDynamic(new ClientConnector()));
     }
 
     /**

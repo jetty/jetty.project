@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.compression.zstandard.internal;
 
+import java.lang.ref.Cleaner;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicReference;
@@ -49,6 +50,7 @@ public class ZstandardEncoderSink extends EncoderSink
     private final ZstdCompressCtx compressCtx;
     private final int bufferSize;
     private final AtomicReference<State> state = new AtomicReference<>(State.CONTINUE);
+    private final Cleaner.Cleanable cleanable;
 
     public ZstandardEncoderSink(ZstandardCompression compression, Content.Sink sink, ZstandardEncoderConfig config)
     {
@@ -56,11 +58,18 @@ public class ZstandardEncoderSink extends EncoderSink
         this.compression = compression;
         this.bufferSize = config.getBufferSize();
         this.compressCtx = new ZstdCompressCtx();
+        this.cleanable = compression.getCleaner().register(this, compressCtx::close);
         this.compressCtx.setLevel(config.getCompressionLevel());
         if (config.getStrategy() >= 0)
             this.compressCtx.setStrategy(config.getStrategy());
         this.compressCtx.setMagicless(config.isMagicless());
         this.compressCtx.setChecksum(config.isChecksum());
+    }
+
+    @Override
+    protected void release()
+    {
+        cleanable.clean();
     }
 
     @Override
@@ -128,6 +137,7 @@ public class ZstandardEncoderSink extends EncoderSink
         // process content (input) buffer using zstd-jni CONTINUE directive
         while (BufferUtil.hasContent(content))
         {
+            int originalPosition = content.position();
             // content must be a direct bytebuffer, and we have to assume that the size
             // of the content buffer can be huge (multi megabyte or bigger), so lets
             // process the content one limited direct buffer at a time.
@@ -143,7 +153,7 @@ public class ZstandardEncoderSink extends EncoderSink
                     if (inputBuf.hasRemaining())
                     {
                         // rollback unprocessed inputBuf to content buffer position.
-                        content.position(content.position() - inputBuf.remaining());
+                        content.position(originalPosition);
                     }
                     // we are about to return, release inputBuffer
                     inputBuf.release();

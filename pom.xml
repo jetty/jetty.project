@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.1.5-SNAPSHOT</version>
+  <version>12.1.6-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
@@ -175,7 +175,7 @@
 
     -->
     <bndlib.version>6.4.1</bndlib.version>
-    <bouncycastle.version>1.82</bouncycastle.version>
+    <bouncycastle.version>1.83</bouncycastle.version>
     <brotli4j.version>1.20.0</brotli4j.version>
     <build-helper.maven.plugin.version>3.6.1</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
@@ -183,7 +183,7 @@
     <checkstyle.version>10.26.1</checkstyle.version>
     <commons-codec.version>1.20.0</commons-codec.version>
     <commons-io.version>2.21.0</commons-io.version>
-    <commons-lang3.version>3.19.0</commons-lang3.version>
+    <commons-lang3.version>3.20.0</commons-lang3.version>
     <commons.compress.version>1.28.0</commons.compress.version>
     <commons.io.version>2.16.1</commons.io.version>
     <compiler.release>17</compiler.release>
@@ -194,7 +194,7 @@
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
     <detectOfflineLinks>false</detectOfflineLinks>
     <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
-    <eclipse.jdt.ecj.version>3.43.0</eclipse.jdt.ecj.version>
+    <eclipse.jdt.ecj.version>3.44.0</eclipse.jdt.ecj.version>
 
     <ee10.jakarta.bom.version>10.0.0</ee10.jakarta.bom.version>
     <ee11.jakarta.bom.version>11.0.0</ee11.jakarta.bom.version>
@@ -210,7 +210,7 @@
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.7.3</flatten.maven.plugin.version>
     <groovy.version>4.0.26</groovy.version>
-    <grpc.version>1.76.0</grpc.version>
+    <grpc.version>1.77.0</grpc.version>
     <gson.version>2.13.2</gson.version>
     <guava.version>33.5.0-jre</guava.version>
     <guice.version>7.0.0</guice.version>
@@ -228,7 +228,7 @@
     <jacoco.maven.plugin.version>0.8.14</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
     <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
-    <jboss-threads.version>3.9.1</jboss-threads.version>
+    <jboss-threads.version>3.9.2</jboss-threads.version>
     <jboss.logging.annotations.version>3.0.4.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>3.0.4.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.6.1.Final</jboss.logging.version>
@@ -260,19 +260,19 @@
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
     <junit.platform.version>1.14.1</junit.platform.version>
     <junit.version>5.14.1</junit.version>
-    <kerb-simplekdc.version>2.1.0</kerb-simplekdc.version>
+    <kerb-simplekdc.version>2.1.1</kerb-simplekdc.version>
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.25.2</log4j2.version>
-    <logback.version>1.5.21</logback.version>
+    <logback.version>1.5.22</logback.version>
     <lucene.version>9.11.1</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.6</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven-build-cache.version>1.2.0</maven-build-cache.version>
+    <maven-build-cache.version>1.2.1</maven-build-cache.version>
     <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.2.0</maven.antrun.plugin.version>
-    <maven.assembly.plugin.version>3.7.1</maven.assembly.plugin.version>
+    <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
     <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
     <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
@@ -289,20 +289,20 @@
     <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.15.2</maven.plugin-tools.version>
-    <maven.release.plugin.version>3.2.0</maven.release.plugin.version>
+    <maven.release.plugin.version>3.3.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.3.0</maven.remote-resources-plugin.version>
-    <maven.resolver.version>1.9.24</maven.resolver.version>
-    <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
+    <maven.resolver.version>1.9.25</maven.resolver.version>
+    <maven.resources.plugin.version>3.4.0</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.6.1</maven.shade.plugin.version>
-    <maven.source.plugin.version>3.3.1</maven.source.plugin.version>
+    <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
     <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
     <maven.version>3.9.9</maven.version>
-    <maven.war.plugin.version>3.5.0</maven.war.plugin.version>
+    <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <modify-sources-plugin.version>1.0.13</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
-    <mongodb.version>5.6.1</mongodb.version>
-    <netty.version>4.2.7.Final</netty.version>
-    <njord.version>0.8.6</njord.version>
+    <mongodb.version>5.6.2</mongodb.version>
+    <netty.version>4.2.8.Final</netty.version>
+    <njord.version>0.8.7</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -320,7 +320,7 @@
     <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
     <osgi-util-version>3.7.400</osgi-util-version>
     <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
-    <osgi-version>3.23.200</osgi-version>
+    <osgi-version>3.24.0</osgi-version>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.14.0</pax.exam.version>
     <pax.url.version>3.0.1</pax.url.version>
@@ -328,7 +328,7 @@
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
     <plexus-xml.version>4.1.0</plexus-xml.version>
-    <project.build.outputTimestamp>2025-11-10T18:06:16Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-12-03T22:31:40Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <settings.path/>
@@ -342,10 +342,10 @@
     <testcontainers.version>1.21.3</testcontainers.version>
     <testng.version>7.11.0</testng.version>
     <tinybundles.version>4.0.1</tinybundles.version>
-    <versions.maven.plugin.version>2.19.1</versions.maven.plugin.version>
+    <versions.maven.plugin.version>2.20.1</versions.maven.plugin.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
-    <wildfly.elytron.version>2.7.0.Final</wildfly.elytron.version>
-    <xmemcached.version>2.4.8</xmemcached.version>
+    <wildfly.elytron.version>2.7.1.Final</wildfly.elytron.version>
+    <xmemcached.version>2.4.9</xmemcached.version>
   </properties>
 
   <dependencyManagement>

@@ -338,6 +338,78 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     }
 
     /**
+     * Testing how CompressionHandler acts with a single compression implementation added.
+     * Using default configuration which excludes {@code font/*} mime types from compression.
+     * <p>
+     * The test font file was generated using Python fonttools to avoid licensing issues:
+     * </p>
+     * <pre>
+     * from fontTools.fontBuilder import FontBuilder
+     * from fontTools.pens.ttGlyphPen import TTGlyphPen
+     * fb = FontBuilder(1000, isTTF=True)
+     * fb.setupGlyphOrder([".notdef", "space"])
+     * fb.setupCharacterMap({32: "space"})
+     * pen = TTGlyphPen(None)
+     * emptyGlyph = pen.glyph()
+     * fb.setupGlyf({".notdef": emptyGlyph, "space": emptyGlyph})
+     * fb.setupHorizontalMetrics({".notdef": (500, 0), "space": (500, 0)})
+     * fb.setupHorizontalHeader(ascent=800, descent=-200)
+     * fb.setupNameTable({"familyName": "Test", "styleName": "Regular"})
+     * fb.setupOS2(sTypoAscender=800, usWinAscent=800, usWinDescent=200)
+     * fb.setupPost()
+     * fb.setupHead(unitsPerEm=1000)
+     * fb.font.flavor = "woff2"
+     * fb.save("test.woff2")
+     * </pre>
+     */
+    @ParameterizedTest
+    @MethodSource("compressions")
+    public void testDefaultCompressionExcludesFonts(Class<Compression> compressionClass) throws Exception
+    {
+        newCompression(compressionClass);
+        Path resourcePath = MavenPaths.findTestResourceFile("fonts/test.woff2");
+        byte[] resourceBody = Files.readAllBytes(resourcePath);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(compression);
+        CompressionConfig config = CompressionConfig.builder()
+            .defaults()
+            .build();
+        compressionHandler.putConfiguration("/", config);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "font/woff2");
+                response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
+            .method(HttpMethod.GET)
+            .headers((headers) ->
+            {
+                headers.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
+            })
+            .path("/fonts/test.woff2")
+            .send();
+        dumpResponse(response);
+        assertThat(response.getStatus(), is(200));
+        // Font should NOT be compressed
+        assertFalse(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING));
+        byte[] content = response.getContent();
+        assertThat(content, is(resourceBody));
+    }
+
+    /**
      * Test Default configuration, where all Compression implementations are discovered
      * via the ServiceLoader.
      */

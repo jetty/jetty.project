@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>jetty-servlet6-demos</artifactId>
-    <version>12.1.5-SNAPSHOT</version>
+    <version>12.1.6-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-servlet6-demo-simple-webapp</artifactId>
   <packaging>war</packaging>

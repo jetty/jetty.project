@@ -18,17 +18,15 @@ import org.osgi.framework.Bundle;
 /**
  * BundleClassLoaderHelper
  * <p>
- * Is there a clean OSGi way to go from the Bundle object to the classloader of
- * the Bundle ? You can certainly take a class inside the bundle and get the
- * bundle's classloader that way. Getting the classloader directly from the
- * bundle would be nice.
+ * Provides a ClassLoader for an OSGi Bundle.
  * <p>
- * We could use fragments that are specific to each OSGi implementation. Using
- * introspection here to keep packaging simple and avoid the multiplication of
- * the jars.
+ * The default implementation uses a specification-compliant approach that
+ * delegates to the standard OSGi Bundle API methods (Bundle.loadClass,
+ * Bundle.getResource, Bundle.getResources) instead of using reflection
+ * to access container-specific internal classloaders.
  * <p>
- * The default implementation relies on introspection and supports equinox-3.5
- * and felix-2.0.0
+ * Custom implementations can be provided via OSGi fragments by implementing
+ * a class with the name specified by {@link #CLASS_NAME}.
  */
 public interface BundleClassLoaderHelper
 {
@@ -39,14 +37,16 @@ public interface BundleClassLoaderHelper
     public static final String CLASS_NAME = "org.eclipse.jetty.osgi.util.BundleClassLoaderHelperImpl";
 
     /**
-     * The default instance supports felix and equinox
+     * The default instance uses specification-compliant OSGi APIs
      */
     public static BundleClassLoaderHelper DEFAULT = new DefaultBundleClassLoaderHelper();
 
     /**
+     * Returns a ClassLoader for the given bundle that can be used to load
+     * classes and resources from the bundle.
+     *
      * @param bundle the bundle
-     * @return The classloader of a given bundle. Assuming the bundle is
-     * started.
+     * @return a ClassLoader for the bundle
      */
     public ClassLoader getBundleClassLoader(Bundle bundle);
 }

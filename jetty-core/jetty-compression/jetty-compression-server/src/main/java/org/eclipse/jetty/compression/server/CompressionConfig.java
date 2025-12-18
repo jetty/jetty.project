@@ -600,7 +600,8 @@ public class CompressionConfig extends AbstractLifeCycle
                 }
                 else if (type.startsWith("image/") ||
                          type.startsWith("audio/") ||
-                         type.startsWith("video/"))
+                         type.startsWith("video/") ||
+                         type.startsWith("font/"))
                 {
                     compressExcludeMimeType(type);
                     decompressExcludeMimeType(type);
