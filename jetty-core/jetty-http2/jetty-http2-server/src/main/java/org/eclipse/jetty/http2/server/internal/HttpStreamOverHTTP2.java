@@ -64,17 +64,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP2.class);
 
-    private final AutoLock lock = new AutoLock();
+    private final AutoLock _lock = new AutoLock();
     private final HTTP2ServerConnection _connection;
     private final HttpChannel _httpChannel;
     private final AtomicReference<RecycleState> _recycle = new AtomicReference<>(RecycleState.CAN_RECYCLE);
     private final HTTP2Stream _stream;
     private MetaData.Request _requestMetaData;
     private MetaData.Response _responseMetaData;
-    private TunnelSupport tunnelSupport;
+    private TunnelSupport _tunnelSupport;
     private Content.Chunk _chunk;
     private Content.Chunk _trailer;
-    private boolean committed;
+    private boolean _committed;
     private boolean _demand;
 
     /**
@@ -86,33 +86,34 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
      */
     private enum RecycleState
     {
-        /**
-         * start state
-         */
-        CAN_RECYCLE,
+        CAN_RECYCLE(false),
+        RECYCLED(true),
+        CANNOT_RECYCLE(true);
+
+        private final boolean terminal;
+
+        RecycleState(boolean terminal)
+        {
+            this.terminal = terminal;
+        }
+
+        public boolean isTerminal()
+        {
+            return terminal;
+        }
 
         /**
-         * terminal state
-         */
-        RECYCLED,
-
-        /**
-         * terminal state
-         */
-        CANNOT_RECYCLE;
-
-        /**
-         * Change the current state if it isn't a terminal state.
+         * Changes the current state if it isn't a terminal state.
          * @param reference the {@code AtomicReference} containing the state.
-         * @param newStateIfCanRecycle the state to change to if the current state is {@link #CAN_RECYCLE}.
+         * @param newStateIfNotTerminal the state to change to if the current state is not already a terminal one.
          * @return the previous state.
          */
-        private static RecycleState changeState(AtomicReference<RecycleState> reference, RecycleState newStateIfCanRecycle)
+        private static RecycleState tryUpdate(AtomicReference<RecycleState> reference, RecycleState newStateIfNotTerminal)
         {
-            assert newStateIfCanRecycle != CAN_RECYCLE;
+            assert newStateIfNotTerminal.isTerminal();
             return reference.getAndUpdate(currentState -> switch (currentState)
             {
-                case CAN_RECYCLE -> newStateIfCanRecycle;
+                case CAN_RECYCLE -> newStateIfNotTerminal;
                 case RECYCLED -> RECYCLED;
                 case CANNOT_RECYCLE -> CANNOT_RECYCLE;
             });
@@ -149,7 +150,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             if (frame.isEndStream())
             {
-                try (AutoLock ignored = lock.lock())
+                try (AutoLock ignored = _lock.lock())
                 {
                     _chunk = Content.Chunk.EOF;
                 }
@@ -158,7 +159,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             HttpFields fields = _requestMetaData.getHttpFields();
 
             if (_requestMetaData instanceof MetaData.ConnectRequest)
-                tunnelSupport = new TunnelSupportOverHTTP2(_requestMetaData.getProtocol());
+                _tunnelSupport = new TunnelSupportOverHTTP2(_requestMetaData.getProtocol());
 
             if (LOG.isDebugEnabled())
             {
@@ -204,11 +205,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (LOG.isDebugEnabled())
             LOG.debug("badMessage {} {}", this, x);
 
-        RecycleState previousState = RecycleState.changeState(_recycle, RecycleState.CANNOT_RECYCLE);
-        if (previousState == RecycleState.RECYCLED)
-            return null;
         Throwable failure = (Throwable)x;
-        return _httpChannel.onFailure(failure);
+        return onFailure(failure, Callback.NOOP);
     }
 
     @Override
@@ -216,12 +214,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         // Tunnel requests do not have HTTP content, avoid
         // returning chunks meant for a different protocol.
-        if (tunnelSupport != null)
+        if (_tunnelSupport != null)
             return null;
 
         // Check if there already is a chunk, e.g. EOF.
         Content.Chunk chunk;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             chunk = _chunk;
             _chunk = Content.Chunk.next(chunk);
@@ -237,7 +235,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (data.frame().isEndStream())
         {
             Content.Chunk trailer;
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock ignored = _lock.lock())
             {
                 trailer = _trailer;
                 if (trailer != null)
@@ -254,7 +252,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         // the two actions cancel each other, no need to further retain or release.
         chunk = createChunk(data);
 
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             _chunk = Content.Chunk.next(chunk);
         }
@@ -266,7 +264,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         boolean notify = false;
         boolean demand = false;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (_chunk != null || _trailer != null)
                 notify = true;
@@ -292,7 +290,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Runnable onDataAvailable()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             _demand = false;
         }
@@ -311,7 +309,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     public Runnable onTrailer(HeadersFrame frame)
     {
         HttpFields trailers = frame.getMetaData().getHttpFields().asImmutable();
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             _trailer = new Trailers(trailers);
         }
@@ -378,7 +376,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
         else
         {
-            committed = true;
+            _committed = true;
             if (last)
             {
                 long realContentLength = BufferUtil.length(content);
@@ -627,7 +625,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public boolean isCommitted()
     {
-        return committed;
+        return _committed;
     }
 
     @Override
@@ -640,13 +638,13 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public TunnelSupport getTunnelSupport()
     {
-        return tunnelSupport;
+        return _tunnelSupport;
     }
 
     @Override
     public Throwable consumeAvailable()
     {
-        if (tunnelSupport != null)
+        if (_tunnelSupport != null)
             return null;
         Throwable result = HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
         if (result != null)
@@ -662,8 +660,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void onTimeout(TimeoutException timeout, BiConsumer<Runnable, Boolean> consumer)
     {
-        RecycleState previousState = RecycleState.changeState(_recycle, RecycleState.CANNOT_RECYCLE);
-        if (previousState == RecycleState.RECYCLED)
+        RecycleState previousState = RecycleState.tryUpdate(_recycle, RecycleState.CANNOT_RECYCLE);
+        if (previousState.isTerminal())
             return;
         HttpChannel.IdleTimeoutTask task = _httpChannel.onIdleTimeout(timeout);
         consumer.accept(task.action(), !task.handlingRequest());
@@ -672,8 +670,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
-        RecycleState previousState = RecycleState.changeState(_recycle, RecycleState.CANNOT_RECYCLE);
-        if (previousState == RecycleState.RECYCLED)
+        RecycleState previousState = RecycleState.tryUpdate(_recycle, RecycleState.CANNOT_RECYCLE);
+        if (previousState.isTerminal())
             return new FailureTask(null, callback);
         boolean remote = failure instanceof EOFException;
         Runnable task = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
@@ -696,7 +694,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 }
                 else
                 {
-                    EndPoint endPoint = tunnelSupport.getEndPoint();
+                    EndPoint endPoint = _tunnelSupport.getEndPoint();
                     _stream.setAttachment(endPoint);
                     endPoint.upgrade(connection);
                 }
@@ -727,14 +725,11 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             }
         }
 
-        RecycleState previousState = RecycleState.changeState(_recycle, RecycleState.RECYCLED);
-        if (previousState == RecycleState.CAN_RECYCLE)
+        RecycleState previousState = RecycleState.tryUpdate(_recycle, RecycleState.RECYCLED);
+        if (!previousState.isTerminal())
         {
-            if (_connection.isRecycleHttpChannels())
-            {
-                _httpChannel.recycle();
-                _connection.offerHttpChannel(_httpChannel);
-            }
+            _httpChannel.recycle();
+            _connection.offerHttpChannel(_httpChannel);
         }
     }
 
@@ -761,7 +756,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 LOG.atDebug().setCause(x).log("HTTP2 response #{}/{}: failed {}", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), errorCode);
             _stream.reset(new ResetFrame(_stream.getId(), errorCode.code), Callback.NOOP);
         }
-        // Change the state just to make the content of _recycle less surprising when debugging.
         _recycle.set(RecycleState.CANNOT_RECYCLE);
     }
 
