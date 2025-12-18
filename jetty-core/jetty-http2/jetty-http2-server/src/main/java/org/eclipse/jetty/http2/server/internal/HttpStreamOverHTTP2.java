@@ -619,7 +619,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         boolean wasRecycled = !_recycle.compareAndSet(false, true);
         if (wasRecycled)
+        {
+            consumer.accept(null, false);
             return;
+        }
         HttpChannel.IdleTimeoutTask task = _httpChannel.onIdleTimeout(timeout);
         consumer.accept(task.action(), !task.handlingRequest());
     }
