@@ -796,32 +796,6 @@ public class HttpConfiguration implements Dumpable
         return this._complianceViolationListeners;
     }
 
-    /**
-     * Utility to notify a violation for the appropriate compliance mode
-     *
-     * @param violation The violation to notify
-     * @param details Details of the violation
-     */
-    public void notifyViolation(ComplianceViolation violation, String details)
-    {
-        ComplianceViolation.Mode mode;
-
-        if (violation instanceof UriCompliance.Violation)
-            mode = getUriCompliance();
-        else if (violation instanceof HttpCompliance.Violation)
-            mode = getHttpCompliance();
-        else if (violation instanceof MultiPartCompliance.Violation)
-            mode = getMultiPartCompliance();
-        else if (violation instanceof CookieCompliance.Violation)
-            mode = getRequestCookieCompliance();
-        else
-            throw new UnsupportedOperationException("Unsupported ComplianceViolation type: " + violation.getClass().getName());
-
-        boolean allowed = mode.allows(violation);
-
-        // Always report violation to listeners
-        ComplianceViolation.notify(getComplianceViolationListeners(), mode, violation, details, allowed);
-    }
 
     /**
      * Set whether remote errors, when detected, are notified to async applications.
