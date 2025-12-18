@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.StringUtil;
 
@@ -85,6 +86,8 @@ public class CookieCache implements CookieParser.Handler, ComplianceViolation.Li
 
     public List<HttpCookie> getCookies(HttpFields headers, ComplianceViolation.Listener complianceViolationListener)
     {
+        Objects.requireNonNull(complianceViolationListener);
+
         boolean building = false;
         ListIterator<String> raw = _rawFields.listIterator();
         // For each of the headers
@@ -165,7 +168,6 @@ public class CookieCache implements CookieParser.Handler, ComplianceViolation.Li
 
         if (_violations != null && !_violations.isEmpty())
         {
-            CookieCompliance cookieCompliance = _parser.getCookieCompliance();
             _violations.forEach(complianceViolationListener::onComplianceViolation);
         }
 

@@ -371,12 +371,6 @@ public class CookieCutter implements CookieParser
         }
     }
 
-    @Override
-    public CookieCompliance getCookieCompliance()
-    {
-        return _complianceMode;
-    }
-
     protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)
     {
         boolean allows = _complianceMode.allows(violation);

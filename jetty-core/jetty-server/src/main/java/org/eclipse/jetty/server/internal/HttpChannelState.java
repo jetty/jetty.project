@@ -191,37 +191,6 @@ public class HttpChannelState implements HttpChannel, Components
             throw error.apply(violation.getDescription());
     }
 
-    /**
-     * Assert that the specified Violation is allowed.
-     *
-     * @param violation the violation to check if allowed
-     * @param detail the detail on the listener event
-     * @return boolean true if the violation is allowed, false otherwise.
-     */
-    @Override
-    public boolean complianceAllows(ComplianceViolation violation, String detail)
-    {
-        ComplianceViolation.Mode mode;
-
-        if (violation instanceof UriCompliance.Violation)
-            mode = getHttpConfiguration().getUriCompliance();
-        else if (violation instanceof HttpCompliance.Violation)
-            mode = getHttpConfiguration().getHttpCompliance();
-        else if (violation instanceof MultiPartCompliance.Violation)
-            mode = getHttpConfiguration().getMultiPartCompliance();
-        else if (violation instanceof CookieCompliance.Violation)
-            mode = getHttpConfiguration().getRequestCookieCompliance();
-        else
-            throw new UnsupportedOperationException("Unsupported ComplianceViolation type: " + violation.getClass().getName());
-
-        boolean allowed = mode.allows(violation);
-
-        // Always report violation to listeners
-        _complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(mode, violation, detail, allowed));
-
-        return allowed;
-    }
-
     @Override
     public ComplianceViolation.Listener getComplianceViolationListener()
     {

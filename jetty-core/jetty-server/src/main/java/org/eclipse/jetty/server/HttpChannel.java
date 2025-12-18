@@ -131,8 +131,15 @@ public interface HttpChannel extends Invocable
      */
     void initialize();
 
-    boolean complianceAllows(ComplianceViolation violation, String detail);
-
+    /**
+     * Assert that the specified Violation is allowed in this specific channel.
+     *
+     * @param violation the violation to check if allowed
+     * @param detail the detail on the listener event
+     * @param error the function to produce a Throwable if not allowed
+     * @param <T> the type of Throwable
+     * @throws T Throwable if not allowed
+     */
     <T extends Throwable> void complianceAssert(ComplianceViolation violation, String detail, Function<String, T> error) throws T;
 
     /**

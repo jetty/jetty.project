@@ -445,12 +445,6 @@ public class RFC6265CookieParser implements CookieParser
         };
     }
 
-    @Override
-    public CookieCompliance getCookieCompliance()
-    {
-        return _complianceMode;
-    }
-
     private boolean complianceAllows(ComplianceViolation violation, String reason)
     {
         boolean allowed = _complianceMode.allows(violation);
