@@ -309,14 +309,15 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * 
      * @param id The session to retrieve
      * @param enter if true, the usage count of the session will be incremented
-     * @return the session if it exists, null otherwise
+     * @return the session if it exists either in the cache or the store,, null otherwise
      * @throws Exception if the session cannot be loaded
      */
     protected ManagedSession getAndEnter(String id, boolean enter) throws Exception
     {
+        //As a session may be in the process of being evicted we might need to retry to get it afresh
         int retries = 10;
 
-        do
+        while (retries-- > 0)
         {
             ManagedSession session = computeIfAbsent(id);
 
@@ -335,7 +336,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
                 //session is not resident, it might have just been evicted, we should try again
             }
-        } while (--retries > 0);
+        }
 
         //if we got here we never got a useable session
         if (LOG.isDebugEnabled())
