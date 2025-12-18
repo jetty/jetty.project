@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.xml.XmlParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,11 +38,16 @@ public class MetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(MetaData.class);
 
-    public static final String VALIDATE_XML = "org.eclipse.jetty.ee9.webapp.validateXml";
+    /**
+     * @deprecated use {@link WebAppContext#VALIDATE_XML} instead
+     */
+    @Deprecated(since = "12.1.6", forRemoval = true)
+    public static final String VALIDATE_XML = WebAppContext.VALIDATE_XML;
     public static final String ORDERED_LIBS = "jakarta.servlet.context.orderedLibs";
 
     private final AutoLock _lock = new AutoLock();
     protected Map<String, OriginInfo> _origins = new HashMap<>();
+    protected XmlParser _xmlParser = new XmlParser(false);
     protected WebDescriptor _webDefaultsRoot;
     protected WebDescriptor _webXmlRoot;
     protected final List<WebDescriptor> _webOverrideRoots = new ArrayList<>();
@@ -57,7 +63,6 @@ public class MetaData
     protected final List<Resource> _orderedWebInfResources = new ArrayList<>();
     protected Ordering _ordering; //can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
-    protected boolean _validateXml = false;
 
     public enum Complete
     {
@@ -193,7 +198,7 @@ public class MetaData
         throws Exception
     {
         _webDefaultsRoot = descriptor;
-        _webDefaultsRoot.parse(WebDescriptor.getParser(isValidateXml()));
+        _webDefaultsRoot.parse(_xmlParser);
         if (_webDefaultsRoot.isOrdered())
         {
             Ordering ordering = getOrdering();
@@ -222,7 +227,7 @@ public class MetaData
         throws Exception
     {
         _webXmlRoot = descriptor;
-        _webXmlRoot.parse(WebDescriptor.getParser(isValidateXml()));
+        _webXmlRoot.parse(_xmlParser);
         _metaDataComplete = WebDescriptor.isMetaDataComplete(_webXmlRoot);
 
         if (_webXmlRoot.isOrdered())
@@ -253,7 +258,7 @@ public class MetaData
     public void addOverrideDescriptor(OverrideDescriptor descriptor)
         throws Exception
     {
-        descriptor.parse(WebDescriptor.getParser(isValidateXml()));
+        descriptor.parse(_xmlParser);
 
         switch (descriptor.getMetaDataComplete())
         {
@@ -308,7 +313,7 @@ public class MetaData
         //Metadata-complete is not set, or there is no web.xml
         _webFragmentResourceMap.put(jarResource, descriptor);
         _webFragmentRoots.add(descriptor);
-        descriptor.parse(WebDescriptor.getParser(isValidateXml()));
+        descriptor.parse(_xmlParser);
 
         if (descriptor.getName() != null)
         {
@@ -748,7 +753,7 @@ public class MetaData
      */
     public boolean isValidateXml()
     {
-        return _validateXml;
+        return _xmlParser.isValidating();
     }
 
     /**
@@ -757,7 +762,33 @@ public class MetaData
      */
     public void setValidateXml(boolean validateXml)
     {
-        _validateXml = validateXml;
+        if (_xmlParser.isValidating() != validateXml)
+        {
+            _xmlParser = new XmlParser(validateXml);
+        }
+    }
+
+    /**
+     * Set the XmlParser to use for handling metadata.
+     *
+     * <p>This is useful when you want to configure a custom XML Parser
+     * with a variety of custom attributes and configurations.</p>
+     *
+     * @param xmlParser the XML parser to use.
+     */
+    public void setXmlParser(XmlParser xmlParser)
+    {
+        _xmlParser = xmlParser;
+    }
+
+    /**
+     * The XmlParser in use for this metadata.
+     *
+     * @return the in use XML Parser
+     */
+    public XmlParser getXmlParser()
+    {
+        return _xmlParser;
     }
 
     public Map<String, OriginInfo> getOrigins()

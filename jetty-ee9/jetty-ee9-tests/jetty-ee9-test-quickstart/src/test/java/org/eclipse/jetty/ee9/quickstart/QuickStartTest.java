@@ -31,6 +31,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.eclipse.jetty.xml.XmlParser;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -99,7 +100,7 @@ public class QuickStartTest
 
         Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
         WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource(webXmlPath));
-        descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
+        descriptor.parse(new XmlParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertNotNull(node);
 
@@ -153,7 +154,7 @@ public class QuickStartTest
         assertTrue(Files.exists(webXmlPath), "Path should exist:" + webXmlPath);
 
         WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource(webXmlPath));
-        descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
+        descriptor.parse(new XmlParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertNotNull(node);
 
@@ -217,7 +218,7 @@ public class QuickStartTest
         Path webXmlPath = targetDir.resolve("WEB-INF/quickstart-web.xml");
         assertTrue(Files.exists(webXmlPath), "Exists: " + webXmlPath);
         WebDescriptor descriptor = new WebDescriptor(webapp.getResourceFactory().newResource(webXmlPath));
-        descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
+        descriptor.parse(new XmlParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertNotNull(node);
 

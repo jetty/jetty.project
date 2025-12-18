@@ -48,7 +48,7 @@ public class WebDescriptorTest
 
         Resource xmlRes = ResourceFactory.root().newResource(xml);
         WebDescriptor webDescriptor = new WebDescriptor(xmlRes);
-        XmlParser xmlParser = WebDescriptor.newParser(true);
+        XmlParser xmlParser = new XmlParser(true);
         // This should not throw an exception, if it does then you have a bad state.
         // Such as missing required XML resource entities.
         webDescriptor.parse(xmlParser);

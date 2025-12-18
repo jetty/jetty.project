@@ -91,6 +91,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee9/webapp/webdefault-ee9.xml";
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
+    public static final String VALIDATE_XML = "org.eclipse.jetty.ee9.webapp.validateXml";
     /**
      * @deprecated use {@link WebAppClassLoading#PROTECTED_CLASSES_ATTRIBUTE} instead.
      */
@@ -576,8 +577,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         try
         {
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
-            Boolean validate = (Boolean)getAttribute(MetaData.VALIDATE_XML);
-            _metadata.setValidateXml((validate != null && validate));
+            Boolean validate = (Boolean)getAttribute(WebAppContext.VALIDATE_XML);
+            // don't set validate unless it is declared.
+            // user might be using a custom XmlParser will not want that XmlParser replaced.
+            if (validate != null)
+                _metadata.setValidateXml(validate);
             wrapConfigurations();
             preConfigure();
             Thread.currentThread().setContextClassLoader(getClassLoader());
@@ -686,7 +690,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      *
      * @return Returns the defaultsDescriptor.
      */
-    @ManagedAttribute(value = "default web.xml deascriptor applied before standard web.xml", readonly = true)
+    @ManagedAttribute(value = "default web.xml descriptor applied before standard web.xml", readonly = true)
     public String getDefaultsDescriptor()
     {
         return _defaultsDescriptor;
@@ -709,7 +713,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      *
      * @return Returns the Override Descriptor list
      */
-    @ManagedAttribute(value = "web.xml deascriptors applied after standard web.xml", readonly = true)
+    @ManagedAttribute(value = "web.xml descriptors applied after standard web.xml", readonly = true)
     public List<String> getOverrideDescriptors()
     {
         return Collections.unmodifiableList(_overrideDescriptors);
@@ -1389,8 +1393,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 _configurations.get(i).deconfigure(this);
             }
 
-            if (_metadata != null)
-                _metadata.clear();
+            _metadata.clear();
             _metadata = new MetaData();
         }
         finally

@@ -34,6 +34,10 @@ public class WebDescriptor extends Descriptor
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebDescriptor.class);
 
+    /**
+     * @deprecated no direct replacement, use of {@link MetaData#getXmlParser()} is encouraged.
+     */
+    @Deprecated(since = "12.1.6", forRemoval = true)
     public static XmlParser __nonValidatingStaticParser = newParser(false);
     protected MetaData.Complete _metaDataComplete;
     protected int _majorVersion = 4; //default to container version
@@ -61,13 +65,12 @@ public class WebDescriptor extends Descriptor
      *
      * @param validating true if the parser should validate syntax, false otherwise
      * @return an XmlParser for web descriptors
+     * @deprecated use {@link MetaData#getXmlParser()} to control parser behavior.
      */
+    @Deprecated(since = "12.1.6", forRemoval = true)
     public static XmlParser getParser(boolean validating)
     {
-        if (!validating)
-            return __nonValidatingStaticParser;
-        else
-            return newParser(true);
+        return newParser(validating);
     }
 
     /**
@@ -75,7 +78,9 @@ public class WebDescriptor extends Descriptor
      *
      * @param validating if true, the parser will validate syntax
      * @return an XmlParser
+     * @deprecated use {@link MetaData#getXmlParser()} to control parser behavior.
      */
+    @Deprecated(since = "12.1.6", forRemoval = true)
     public static XmlParser newParser(boolean validating)
     {
         try
