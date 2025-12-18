@@ -162,12 +162,18 @@ public abstract class HostPortPattern implements Predicate<HostPort>
 
     /**
      * Check if the pattern is a CIDR or IP range pattern that requires InetAddress matching.
-     * Only CIDR notation (contains '/') and IP ranges (contains '-') should use InetAddressPattern.
-     * Plain IP addresses should use ExactHostPattern for backward-compatible string comparison.
+     * Only CIDR notation (e.g., 192.168.0.0/16) and IP ranges (e.g., 10.0.0.1-10.0.0.10)
+     * should use InetAddressPattern. Plain IP addresses use ExactHostPattern for
+     * backward-compatible string comparison.
      */
     private static boolean looksLikeIpPattern(String pattern)
     {
         if (pattern.isEmpty())
+            return false;
+
+        // Must start with a digit (IPv4) or '[' (IPv6) to be an IP pattern
+        char first = pattern.charAt(0);
+        if (!Character.isDigit(first) && first != '[')
             return false;
 
         // Only match CIDR notation (192.168.0.0/16) or IP ranges (10.0.0.1-10.0.0.10)
