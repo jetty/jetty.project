@@ -246,8 +246,8 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
                 UnixDomainSocketAddress unixSrc = src instanceof UnixDomainSocketAddress ? (UnixDomainSocketAddress)src : null;
                 InetSocketAddress inetSrc = src instanceof InetSocketAddress ? (InetSocketAddress)src : null;
                 InetAddress srcAddress = inetSrc == null ? null : inetSrc.getAddress();
-                String srcAddr = unixSrc != null ? unixSrc.getPath().toString() :
-                    srcAddress != null ? srcAddress.getHostAddress() : null;
+                String srcAddr = unixSrc != null ? unixSrc.getPath().toString()
+                    : srcAddress != null ? srcAddress.getHostAddress() : null;
 
                 int srcPort = inetSrc != null ? inetSrc.getPort() : 0;
 
@@ -263,8 +263,8 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
                 UnixDomainSocketAddress unixDst = dst instanceof UnixDomainSocketAddress ? (UnixDomainSocketAddress)dst : null;
                 InetSocketAddress inetDst = dst instanceof InetSocketAddress ? (InetSocketAddress)dst : null;
                 InetAddress dstAddress = inetDst == null ? null : inetDst.getAddress();
-                String dstAddr = unixDst != null ? unixDst.getPath().toString() :
-                    dstAddress != null ? dstAddress.getHostAddress() : null;
+                String dstAddr = unixDst != null ? unixDst.getPath().toString()
+                    : dstAddress != null ? dstAddress.getHostAddress() : null;
 
                 int dstPort = inetDst != null ? inetDst.getPort() : 0;
 
@@ -279,15 +279,15 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
                     length += 1 + 2 + cipherBytes.length;
                     byte[] value = new byte[length];
                     ByteBuffer byteBuffer = ByteBuffer.wrap(value);
-                    byteBuffer.put((byte)TLV.CLIENT_SSL);
+                    byteBuffer.put((byte)TLV.PP2_CLIENT_SSL);
                     byteBuffer.putInt(1); // Verify.
                     if (cipherSuite != null)
                     {
-                        byteBuffer.put((byte)TLV.SUBTYPE_SSL_CIPHER);
+                        byteBuffer.put((byte)TLV.PP2_SUBTYPE_SSL_CIPHER);
                         byteBuffer.putShort((short)cipherBytes.length);
                         byteBuffer.put(cipherBytes);
                     }
-                    tlvs = List.of(new TLV(TLV.TYPE_SSL, value));
+                    tlvs = List.of(new TLV(TLV.PP2_TYPE_SSL, value));
                 }
 
                 return new Tag(Command.PROXY, family, protocol, srcAddr, srcPort, dstAddr, dstPort, tlvs);
@@ -447,10 +447,10 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
 
             public static class TLV
             {
-                public static final int TYPE_SSL = 0x20;
-                public static final int CLIENT_SSL = 0x01;
-                public static final int SUBTYPE_SSL_VERSION = 0x21;
-                public static final int SUBTYPE_SSL_CIPHER = 0x23;
+                public static final int PP2_TYPE_SSL = 0x20;
+                public static final int PP2_CLIENT_SSL = 0x01;
+                public static final int PP2_SUBTYPE_SSL_VERSION = 0x21;
+                public static final int PP2_SUBTYPE_SSL_CIPHER = 0x23;
 
                 private final int type;
                 private final byte[] value;

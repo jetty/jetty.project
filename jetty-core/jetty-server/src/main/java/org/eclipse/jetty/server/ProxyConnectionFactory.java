@@ -689,7 +689,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         }
                     }
 
-                    proxyEndPoint = new ProxyEndPoint(endPoint, local, remote, tlvs, (client & PP2_CLIENT_SSL) == 0 ? null : EndPoint.SslSessionData.from(null, null, sslCipher, null));
+                    proxyEndPoint = new ProxyEndPoint(endPoint, local, remote, tlvs, client == 0 ? null : EndPoint.SslSessionData.from(null, null, sslCipher, null));
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("Proxy v2 {} {}", endPoint, proxyEndPoint);

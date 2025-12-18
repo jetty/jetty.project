@@ -179,9 +179,8 @@ public class HttpClientProxyProtocolTest
         });
         startClient();
 
-        List<V2.Tag.TLV> tlvs = List.of();
-        if (secure)
-            tlvs = List.of(new V2.Tag.TLV(V2.Tag.TLV.TYPE_SSL, new byte[]{V2.Tag.TLV.CLIENT_SSL}));
+        byte pp2Client = (byte)(secure ? V2.Tag.TLV.PP2_CLIENT_SSL : 0);
+        List<V2.Tag.TLV> tlvs = List.of(new V2.Tag.TLV(V2.Tag.TLV.PP2_TYPE_SSL, new byte[]{pp2Client}));
         V2.Tag tag = new V2.Tag("127.0.0.1", clientPort, tlvs);
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
@@ -217,7 +216,7 @@ public class HttpClientProxyProtocolTest
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
                 if (Request.getPathInContext(request).equals("/tls_version"))
                 {
-                    assertNotNull(proxyEndPoint.getTLV(V2.Tag.TLV.TYPE_SSL));
+                    assertNotNull(proxyEndPoint.getTLV(V2.Tag.TLV.PP2_TYPE_SSL));
                     assertNotNull(proxyEndPoint.getSslSessionData());
                 }
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
@@ -231,12 +230,12 @@ public class HttpClientProxyProtocolTest
 
         int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
         byte[] dataTLS = new byte[1 + 4 + (1 + 2 + tlsVersionBytes.length)];
-        dataTLS[0] = V2.Tag.TLV.CLIENT_SSL;
-        dataTLS[5] = V2.Tag.TLV.SUBTYPE_SSL_VERSION;
+        dataTLS[0] = V2.Tag.TLV.PP2_CLIENT_SSL;
+        dataTLS[5] = V2.Tag.TLV.PP2_SUBTYPE_SSL_VERSION;
         dataTLS[6] = 0; // Length, hi byte.
         dataTLS[7] = (byte)tlsVersionBytes.length; // Length, lo byte.
         System.arraycopy(tlsVersionBytes, 0, dataTLS, 8, tlsVersionBytes.length);
-        V2.Tag.TLV tlv = new V2.Tag.TLV(V2.Tag.TLV.TYPE_SSL, dataTLS);
+        V2.Tag.TLV tlv = new V2.Tag.TLV(V2.Tag.TLV.PP2_TYPE_SSL, dataTLS);
         V2.Tag tag = new V2.Tag("127.0.0.1", clientPort, Collections.singletonList(tlv));
 
         ContentResponse response = client.newRequest("localhost", serverPort)
@@ -247,7 +246,7 @@ public class HttpClientProxyProtocolTest
         assertEquals(String.valueOf(clientPort), response.getContentAsString());
 
         // Make another request with the same address information, but different TLV.
-        V2.Tag.TLV tlv2 = new V2.Tag.TLV(V2.Tag.TLV.CLIENT_SSL, "http/1.1".getBytes(StandardCharsets.UTF_8));
+        V2.Tag.TLV tlv2 = new V2.Tag.TLV(V2.Tag.TLV.PP2_CLIENT_SSL, "http/1.1".getBytes(StandardCharsets.UTF_8));
         V2.Tag tag2 = new V2.Tag("127.0.0.1", clientPort, Collections.singletonList(tlv2));
         response = client.newRequest("localhost", serverPort)
             .tag(tag2)
