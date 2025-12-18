@@ -29,7 +29,7 @@ import org.eclipse.jetty.ee11.servlet.ServletChannelState.Action;
 import org.eclipse.jetty.ee11.servlet.internal.JettyWebConnection;
 import org.eclipse.jetty.ee11.servlet.internal.UpgradedServletInputStream;
 import org.eclipse.jetty.ee11.servlet.internal.UpgradedServletOutputStream;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -687,7 +687,7 @@ public class ServletChannel
     {
         // Unwrap wrapping Jetty and Servlet exceptions.
         Throwable quiet = unwrap(failure, QuietException.class);
-        Throwable noStack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
+        Throwable noStack = unwrap(failure, HttpException.class, IOException.class, TimeoutException.class);
 
         if (quiet != null || !getServer().isRunning())
         {
@@ -968,7 +968,7 @@ public class ServletChannel
             //dispatch is to a specific path
             String encodedPathQuery = URIUtil.normalizePath(URIUtil.addEncodedPaths(targetContextHandler.getContextPath(), dispatchPathInContext));
             if (encodedPathQuery == null)
-                throw new BadMessageException(500, "Bad dispatch path");
+                throw new HttpException.IllegalStateException(500, "Bad dispatch path");
 
             //Add in any query params
             if (asyncContextEvent.getBaseURI() != null)

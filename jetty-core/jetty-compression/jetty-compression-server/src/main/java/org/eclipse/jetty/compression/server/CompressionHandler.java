@@ -21,7 +21,6 @@ import java.util.TreeMap;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.server.internal.CompressionResponse;
 import org.eclipse.jetty.compression.server.internal.DecompressionRequest;
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -280,7 +279,7 @@ public class CompressionHandler extends Handler.Wrapper
                                 if (httpConfiguration.getHttpCompliance().allows(violation))
                                     httpConfiguration.notifyViolation(violation, value);
                                 else
-                                    throw new BadMessageException(violation.toString());
+                                    throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, violation.toString());
                             }
                         };
                     }

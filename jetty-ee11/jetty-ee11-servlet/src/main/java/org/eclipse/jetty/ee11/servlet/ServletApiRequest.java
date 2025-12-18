@@ -61,7 +61,6 @@ import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler.ServletRequestInfo;
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpException;
@@ -117,7 +116,7 @@ public class ServletApiRequest implements HttpServletRequest
         }
 
         @Override
-        protected void extractQueryParameters() throws BadMessageException
+        protected void extractQueryParameters() throws HttpException.IllegalStateException
         {
             // Extract query string parameters; these may be replaced by a forward()
             // and may have already been extracted by mergeQueryParameters().
@@ -204,7 +203,7 @@ public class ServletApiRequest implements HttpServletRequest
         }
 
         @Override
-        protected void extractQueryParameters() throws BadMessageException
+        protected void extractQueryParameters() throws HttpException.IllegalStateException
         {
             // Extract query string parameters; these may be replaced by a forward()
             // and may have already been extracted by mergeQueryParameters().
@@ -735,7 +734,7 @@ public class ServletApiRequest implements HttpServletRequest
                 if (cause instanceof IOException ioException)
                     throw ioException;
 
-                throw new ServletException(new BadMessageException("bad multipart", cause));
+                throw new ServletException(new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, "bad multipart", cause));
             }
         }
 
@@ -1138,7 +1137,7 @@ public class ServletApiRequest implements HttpServletRequest
         }
     }
 
-    protected void extractQueryParameters() throws BadMessageException
+    protected void extractQueryParameters() throws HttpException.IllegalStateException
     {
         // Extract query string parameters; these may be replaced by a forward()
         // and may have already been extracted by mergeQueryParameters().

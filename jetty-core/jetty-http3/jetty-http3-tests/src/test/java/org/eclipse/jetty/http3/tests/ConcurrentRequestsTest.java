@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -142,7 +142,7 @@ public class ConcurrentRequestsTest extends AbstractClientServerTest
                 int status = response.getStatus();
                 result.set(status == HttpStatus.OK_200 && frame.isLast());
                 if (status != HttpStatus.OK_200)
-                    failures.add(new BadMessageException("expected 200, got " + status + " id=" + id));
+                    failures.add(new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "expected 200, got " + status + " id=" + id));
                 if (!frame.isLast())
                     stream.demand();
                 else
@@ -217,7 +217,7 @@ public class ConcurrentRequestsTest extends AbstractClientServerTest
                 int status = response.getStatus();
                 result.set(status == HttpStatus.BAD_REQUEST_400);
                 if (status != HttpStatus.BAD_REQUEST_400)
-                    failures.add(new BadMessageException("expected 400, got " + status + " id=" + id));
+                    failures.add(new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "expected 400, got " + status + " id=" + id));
                 if (!frame.isLast())
                     stream.demand();
                 else

@@ -159,7 +159,7 @@ public class CookieCache implements CookieParser.Handler, ComplianceViolation.Li
             }
             catch (CookieParser.InvalidCookieException invalidCookieException)
             {
-                throw new BadMessageException(invalidCookieException.getMessage(), invalidCookieException);
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, invalidCookieException.getMessage(), invalidCookieException);
             }
         }
 

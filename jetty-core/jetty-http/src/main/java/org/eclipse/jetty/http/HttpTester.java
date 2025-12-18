@@ -491,7 +491,7 @@ public class HttpTester
 
                         case HEADER_OVERFLOW:
                             if (header.capacity() >= 32 * 1024)
-                                throw new BadMessageException(500, "Header too large");
+                                throw new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, "Header too large");
                             header = BufferUtil.allocate(32 * 1024);
                             continue;
 

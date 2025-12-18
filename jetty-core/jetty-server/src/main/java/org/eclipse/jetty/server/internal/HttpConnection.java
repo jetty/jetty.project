@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
@@ -1337,7 +1336,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 compliance = getHttpConfiguration().getUriCompliance();
                 String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, getHttpChannel().getComplianceViolationListener());
                 if (badMessage != null)
-                    throw new BadMessageException(badMessage);
+                    throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, badMessage);
             }
 
             // Check host field matches the authority in the absolute URI or is not blank
@@ -1351,13 +1350,13 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         if (httpCompliance.allows(MISMATCHED_AUTHORITY))
                             getHttpChannel().getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
                         else
-                            throw new BadMessageException("Authority!=Host");
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
                     }
                 }
                 else
                 {
                     if (StringUtil.isBlank(_hostField.getHostPort().getHost()))
-                        throw new BadMessageException("Blank Host");
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Blank Host");
                 }
             }
 
@@ -1424,7 +1423,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 case HTTP_1_1:
                 {
                     if (_unknownExpectation)
-                        throw new BadMessageException(HttpStatus.EXPECTATION_FAILED_417);
+                        throw new HttpException.RuntimeException(HttpStatus.EXPECTATION_FAILED_417);
 
                     persistent = getHttpConfiguration().isPersistentConnectionsEnabled() &&
                         !_connectionClose ||
@@ -1456,7 +1455,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
                     // TODO is this sufficient?
                     _parser.close();
-                    throw new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426, "Upgrade Required");
+                    throw new HttpException.RuntimeException(HttpStatus.UPGRADE_REQUIRED_426, "Upgrade Required");
                 }
                 default:
                 {
@@ -1609,7 +1608,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             @SuppressWarnings("ReferenceEquality")
             boolean isPriorKnowledgeH2C = _upgrade == PREAMBLE_UPGRADE_H2C;
             if (!isPriorKnowledgeH2C  && !_connectionUpgrade)
-                throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400);
 
             // Find the upgrade factory.
             ConnectionFactory.Upgrading factory = getConnector().getConnectionFactories().stream()
