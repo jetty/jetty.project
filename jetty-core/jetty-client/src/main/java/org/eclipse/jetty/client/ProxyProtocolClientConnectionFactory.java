@@ -17,6 +17,7 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.UnixDomainSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -31,6 +32,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
@@ -207,23 +209,7 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
             Executor executor = destination.getHttpClient().getExecutor();
             Tag tag = (Tag)destination.getOrigin().getTag();
             if (tag == null)
-            {
-                SocketAddress local = endPoint.getLocalSocketAddress();
-                InetSocketAddress inetLocal = local instanceof InetSocketAddress ? (InetSocketAddress)local : null;
-                InetAddress localAddress = inetLocal == null ? null : inetLocal.getAddress();
-                SocketAddress remote = endPoint.getRemoteSocketAddress();
-                InetSocketAddress inetRemote = remote instanceof InetSocketAddress ? (InetSocketAddress)remote : null;
-                InetAddress remoteAddress = inetRemote == null ? null : inetRemote.getAddress();
-                Tag.Family family = local == null || inetLocal == null ? Tag.Family.UNSPEC : localAddress instanceof Inet4Address ? Tag.Family.INET4 : Tag.Family.INET6;
-                tag = new Tag(Tag.Command.PROXY,
-                    family,
-                    Tag.Protocol.STREAM,
-                    localAddress == null ? null : localAddress.getHostAddress(),
-                    inetLocal == null ? 0 : inetLocal.getPort(),
-                    remoteAddress == null ? null : remoteAddress.getHostAddress(),
-                    inetRemote == null ? 0 : inetRemote.getPort(),
-                    null);
-            }
+                tag = Tag.from(endPoint, true);
             return new ProxyProtocolConnectionV2(endPoint, executor, getWrapped(), context, tag);
         }
 
@@ -240,6 +226,72 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
              * The PROXY V2 Tag typically used to "ping" the server.
              */
             public static final Tag LOCAL = new Tag(Command.LOCAL, Family.UNSPEC, Protocol.UNSPEC, null, 0, null, 0, null);
+
+            /**
+             * <p>Creates a {@code Tag} from the given {@link EndPoint}.</p>
+             * <p>The {@code source} parameter indicates whether the {@code EndPoint}
+             * is the local {@code EndPoint} (typical for clients), or the
+             * remote {@code EndPoint} (typical for proxies).
+             * In the latter case, the proxy wants to forward to the server the
+             * information about the remote client so the {@code EndPoint} must
+             * be that connected to the remote client (not to the server).</p>
+             *
+             * @param endPoint the {@code EndPoint} to create the {@code Tag} from
+             * @param local whether the {@code EndPoint} is local or remote
+             * @return a new {@code Tag} from the given {@code EndPoint}
+             */
+            public static Tag from(EndPoint endPoint, boolean local)
+            {
+                SocketAddress src = local ? endPoint.getLocalSocketAddress() : endPoint.getRemoteSocketAddress();
+                UnixDomainSocketAddress unixSrc = src instanceof UnixDomainSocketAddress ? (UnixDomainSocketAddress)src : null;
+                InetSocketAddress inetSrc = src instanceof InetSocketAddress ? (InetSocketAddress)src : null;
+                InetAddress srcAddress = inetSrc == null ? null : inetSrc.getAddress();
+                String srcAddr = unixSrc != null ? unixSrc.getPath().toString() :
+                    srcAddress != null ? srcAddress.getHostAddress() : null;
+
+                int srcPort = inetSrc != null ? inetSrc.getPort() : 0;
+
+                Family family = Family.UNSPEC;
+                if (unixSrc != null)
+                    family = Family.UNIX;
+                else if (inetSrc != null)
+                    family = srcAddress instanceof Inet4Address ? V2.Tag.Family.INET4 : V2.Tag.Family.INET6;
+
+                Protocol protocol = src == null ? Protocol.UNSPEC : Protocol.STREAM;
+
+                SocketAddress dst = local ? endPoint.getRemoteSocketAddress() : endPoint.getLocalSocketAddress();
+                UnixDomainSocketAddress unixDst = dst instanceof UnixDomainSocketAddress ? (UnixDomainSocketAddress)dst : null;
+                InetSocketAddress inetDst = dst instanceof InetSocketAddress ? (InetSocketAddress)dst : null;
+                InetAddress dstAddress = inetDst == null ? null : inetDst.getAddress();
+                String dstAddr = unixDst != null ? unixDst.getPath().toString() :
+                    dstAddress != null ? dstAddress.getHostAddress() : null;
+
+                int dstPort = inetDst != null ? inetDst.getPort() : 0;
+
+                List<TLV> tlvs = null;
+                EndPoint.SslSessionData sslSessionData = endPoint.getSslSessionData();
+                int length;
+                if (sslSessionData != null)
+                {
+                    length = 5;
+                    String cipherSuite = sslSessionData.cipherSuite();
+                    byte[] cipherBytes = cipherSuite == null ? BufferUtil.EMPTY_BYTES : cipherSuite.getBytes(StandardCharsets.US_ASCII);
+                    length += 1 + 2 + cipherBytes.length;
+                    byte[] value = new byte[length];
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(value);
+                    byteBuffer.put((byte)TLV.CLIENT_SSL);
+                    byteBuffer.putInt(1); // Verify.
+                    if (cipherSuite != null)
+                    {
+                        byteBuffer.put((byte)TLV.SUBTYPE_SSL_CIPHER);
+                        byteBuffer.putShort((short)cipherBytes.length);
+                        byteBuffer.put(cipherBytes);
+                    }
+                    tlvs = List.of(new TLV(TLV.TYPE_SSL, value));
+                }
+
+                return new Tag(Command.PROXY, family, protocol, srcAddr, srcPort, dstAddr, dstPort, tlvs);
+            }
 
             private final Command command;
             private final Family family;
@@ -285,6 +337,7 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
 
             /**
              * <p>Creates a Tag with the given metadata.</p>
+             * <p>Missing metadata will be derived from the underlying EndPoint.</p>
              *
              * @param command the LOCAL or PROXY command
              * @param family the protocol family
@@ -394,6 +447,11 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
 
             public static class TLV
             {
+                public static final int TYPE_SSL = 0x20;
+                public static final int CLIENT_SSL = 0x01;
+                public static final int SUBTYPE_SSL_VERSION = 0x21;
+                public static final int SUBTYPE_SSL_CIPHER = 0x23;
+
                 private final int type;
                 private final byte[] value;
 
@@ -571,6 +629,7 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
     private static class ProxyProtocolConnectionV2 extends ProxyProtocolConnection
     {
         private static final byte[] MAGIC = {0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A};
+        private static final int UNIX_ADDRESS_MAX_LENGTH = 108;
 
         private final V2.Tag tag;
 
@@ -589,87 +648,116 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
                 capacity += 1; // version and command
                 capacity += 1; // family and protocol
                 capacity += 2; // length
-                capacity += 216; // max address length
+                capacity += 2 * UNIX_ADDRESS_MAX_LENGTH; // max address length
                 List<V2.Tag.TLV> tlvs = tag.getTLVs();
                 int vectorsLength = tlvs == null ? 0 : tlvs.stream()
                     .mapToInt(tlv -> 1 + 2 + tlv.getValue().length)
                     .sum();
                 capacity += vectorsLength;
                 ByteBuffer buffer = ByteBuffer.allocateDirect(capacity);
+
                 buffer.put(MAGIC);
+
                 V2.Tag.Command command = tag.getCommand();
                 int versionAndCommand = (2 << 4) | (command.ordinal() & 0x0F);
                 buffer.put((byte)versionAndCommand);
-                V2.Tag.Family family = tag.getFamily();
+
                 String srcAddr = tag.getSourceAddress();
                 SocketAddress local = endPoint.getLocalSocketAddress();
+                UnixDomainSocketAddress unixLocal = local instanceof UnixDomainSocketAddress ? (UnixDomainSocketAddress)local : null;
                 InetSocketAddress inetLocal = local instanceof InetSocketAddress ? (InetSocketAddress)local : null;
                 InetAddress localAddress = inetLocal == null ? null : inetLocal.getAddress();
-                if (srcAddr == null && localAddress != null)
-                    srcAddr = localAddress.getHostAddress();
+                if (srcAddr == null)
+                {
+                    if (unixLocal != null)
+                        srcAddr = unixLocal.getPath().toString();
+                    else if (localAddress != null)
+                        srcAddr = localAddress.getHostAddress();
+                }
+
                 int srcPort = tag.getSourcePort();
                 if (srcPort <= 0 && inetLocal != null)
                     srcPort = inetLocal.getPort();
+
+                V2.Tag.Family family = tag.getFamily();
                 if (family == null)
-                    family = local == null || inetLocal == null ? V2.Tag.Family.UNSPEC : localAddress instanceof Inet4Address ? V2.Tag.Family.INET4 : V2.Tag.Family.INET6;
+                {
+                    if (unixLocal != null)
+                        family = V2.Tag.Family.UNIX;
+                    else if (inetLocal != null)
+                        family = localAddress instanceof Inet4Address ? V2.Tag.Family.INET4 : V2.Tag.Family.INET6;
+                    else
+                        family = V2.Tag.Family.UNSPEC;
+                }
+
                 V2.Tag.Protocol protocol = tag.getProtocol();
                 if (protocol == null)
                     protocol = local == null ? V2.Tag.Protocol.UNSPEC : V2.Tag.Protocol.STREAM;
+
                 int familyAndProtocol = (family.ordinal() << 4) | protocol.ordinal();
                 buffer.put((byte)familyAndProtocol);
-                int length = 0;
-                switch (family)
+
+                int length = switch (family)
                 {
-                    case UNSPEC:
-                        break;
-                    case INET4:
-                        length = 12;
-                        break;
-                    case INET6:
-                        length = 36;
-                        break;
-                    case UNIX:
-                        length = 216;
-                        break;
-                    default:
-                        throw new IllegalStateException();
-                }
+                    case UNSPEC -> 0;
+                    case INET4 -> 12;
+                    case INET6 -> 36;
+                    case UNIX -> 2 * UNIX_ADDRESS_MAX_LENGTH;
+                };
                 length += vectorsLength;
                 buffer.putShort((short)length);
+
                 String dstAddr = tag.getDestinationAddress();
                 SocketAddress remote = endPoint.getRemoteSocketAddress();
+                UnixDomainSocketAddress unixRemote = remote instanceof UnixDomainSocketAddress ? (UnixDomainSocketAddress)remote : null;
                 InetSocketAddress inetRemote = remote instanceof InetSocketAddress ? (InetSocketAddress)remote : null;
                 InetAddress remoteAddress = inetRemote == null ? null : inetRemote.getAddress();
-                if (dstAddr == null && remoteAddress != null)
-                    dstAddr = remoteAddress.getHostAddress();
+                if (dstAddr == null)
+                {
+                    if (unixRemote != null)
+                        dstAddr = unixRemote.getPath().toString();
+                    else if (remoteAddress != null)
+                        dstAddr = remoteAddress.getHostAddress();
+                }
+
                 int dstPort = tag.getDestinationPort();
                 if (dstPort <= 0 && inetRemote != null)
                     dstPort = inetRemote.getPort();
+
                 switch (family)
                 {
-                    case UNSPEC:
-                        break;
-                    case INET4:
-                    case INET6:
+                    case UNSPEC ->
+                    {
+                        // Nothing to do.
+                    }
+                    case INET4, INET6 ->
+                    {
                         buffer.put(InetAddress.getByName(srcAddr).getAddress());
                         buffer.put(InetAddress.getByName(dstAddr).getAddress());
                         buffer.putShort((short)srcPort);
                         buffer.putShort((short)dstPort);
-                        break;
-                    case UNIX:
+                    }
+                    case UNIX ->
+                    {
                         int position = buffer.position();
                         if (srcAddr != null)
-                            buffer.put(srcAddr.getBytes(StandardCharsets.US_ASCII));
-                        position = position + 108;
+                        {
+                            byte[] bytes = srcAddr.getBytes(StandardCharsets.US_ASCII);
+                            buffer.put(bytes, 0, Math.min(bytes.length, UNIX_ADDRESS_MAX_LENGTH));
+                        }
+                        position = position + UNIX_ADDRESS_MAX_LENGTH;
                         buffer.position(position);
                         if (dstAddr != null)
-                            buffer.put(dstAddr.getBytes(StandardCharsets.US_ASCII));
-                        position = position + 108;
+                        {
+                            byte[] bytes = dstAddr.getBytes(StandardCharsets.US_ASCII);
+                            buffer.put(bytes, 0, Math.min(bytes.length, UNIX_ADDRESS_MAX_LENGTH));
+                        }
+                        position = position + UNIX_ADDRESS_MAX_LENGTH;
                         buffer.position(position);
-                        break;
-                    default:
-                        throw new IllegalStateException();
+                    }
+                    default -> throw new IllegalStateException();
                 }
+
                 if (tlvs != null)
                 {
                     for (V2.Tag.TLV tlv : tlvs)
@@ -680,6 +768,7 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
                         buffer.put(data);
                     }
                 }
+
                 buffer.flip();
                 endPoint.write(callback, buffer);
             }
