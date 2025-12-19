@@ -47,7 +47,7 @@ public class MetaData
 
     private final AutoLock _lock = new AutoLock();
     protected Map<String, OriginInfo> _origins = new HashMap<>();
-    protected XmlParser _xmlParser = new XmlParser(false);
+    protected XmlParser _xmlParser;
     protected WebDescriptor _webDefaultsRoot;
     protected WebDescriptor _webXmlRoot;
     protected final List<WebDescriptor> _webOverrideRoots = new ArrayList<>();
@@ -198,7 +198,7 @@ public class MetaData
         throws Exception
     {
         _webDefaultsRoot = descriptor;
-        _webDefaultsRoot.parse(_xmlParser);
+        _webDefaultsRoot.parse(getXmlParser());
         if (_webDefaultsRoot.isOrdered())
         {
             Ordering ordering = getOrdering();
@@ -227,7 +227,7 @@ public class MetaData
         throws Exception
     {
         _webXmlRoot = descriptor;
-        _webXmlRoot.parse(_xmlParser);
+        _webXmlRoot.parse(getXmlParser());
         _metaDataComplete = WebDescriptor.isMetaDataComplete(_webXmlRoot);
 
         if (_webXmlRoot.isOrdered())
@@ -258,7 +258,7 @@ public class MetaData
     public void addOverrideDescriptor(OverrideDescriptor descriptor)
         throws Exception
     {
-        descriptor.parse(_xmlParser);
+        descriptor.parse(getXmlParser());
 
         switch (descriptor.getMetaDataComplete())
         {
@@ -313,7 +313,7 @@ public class MetaData
         //Metadata-complete is not set, or there is no web.xml
         _webFragmentResourceMap.put(jarResource, descriptor);
         _webFragmentRoots.add(descriptor);
-        descriptor.parse(_xmlParser);
+        descriptor.parse(getXmlParser());
 
         if (descriptor.getName() != null)
         {
@@ -753,7 +753,7 @@ public class MetaData
      */
     public boolean isValidateXml()
     {
-        return _xmlParser.isValidating();
+        return getXmlParser().isValidating();
     }
 
     /**
@@ -789,6 +789,8 @@ public class MetaData
      */
     public XmlParser getXmlParser()
     {
+        if (_xmlParser == null)
+            setXmlParser(new XmlParser(false)); // defaults to false
         return _xmlParser;
     }
 
