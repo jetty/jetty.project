@@ -762,14 +762,15 @@ public class MetaData
      */
     public void setValidateXml(boolean validateXml)
     {
-        if (_xmlParser.isValidating() != validateXml)
-        {
-            _xmlParser = new XmlParser(validateXml);
-        }
+        if (_xmlParser != null)
+            throw new IllegalStateException("XmlParser previously set");
+
+        setXmlParser(new XmlParser(validateXml));
     }
 
     /**
-     * Set the XmlParser to use for handling metadata.
+     * Set the XmlParser to use for handling metadata, this will
+     * also add an environment specific catalog to the XmlParser.
      *
      * <p>This is useful when you want to configure a custom XML Parser
      * with a variety of custom attributes and configurations.</p>
@@ -778,7 +779,7 @@ public class MetaData
      */
     public void setXmlParser(XmlParser xmlParser)
     {
-        _xmlParser = xmlParser;
+        _xmlParser = WebDescriptor.addDescriptorCatalog(Objects.requireNonNull(xmlParser));
     }
 
     /**

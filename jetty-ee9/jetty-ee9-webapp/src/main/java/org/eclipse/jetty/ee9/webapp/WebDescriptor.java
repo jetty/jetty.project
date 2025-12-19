@@ -83,27 +83,24 @@ public class WebDescriptor extends Descriptor
     @Deprecated(since = "12.1.6", forRemoval = true)
     public static XmlParser newParser(boolean validating)
     {
+        return addDescriptorCatalog(new XmlParser(validating));
+    }
+
+    protected static XmlParser addDescriptorCatalog(XmlParser xmlParser) throws IllegalStateException
+    {
+        String catalogName = "catalog-%s.xml".formatted(ContextHandler.ENVIRONMENT.getName());
+        URL url = WebDescriptor.class.getResource(catalogName);
+        if (url == null)
+            throw new IllegalStateException("Catalog not found: %s/%s".formatted(WebDescriptor.class.getPackageName(), catalogName));
         try
         {
-            return new WebDescriptorParser(validating);
+            xmlParser.addCatalog(URI.create(url.toExternalForm()), Servlet.class);
         }
         catch (IOException e)
         {
-            throw new IllegalStateException("Unable to instantiate WebDescriptorParser", e);
+            throw new IllegalStateException("Unable to add catalog: " + url, e);
         }
-    }
-
-    private static class WebDescriptorParser extends XmlParser
-    {
-        public WebDescriptorParser(boolean validating) throws IOException
-        {
-            super(validating);
-            String catalogName = "catalog-%s.xml".formatted(ContextHandler.ENVIRONMENT.getName());
-            URL url = WebDescriptor.class.getResource(catalogName);
-            if (url == null)
-                throw new IllegalStateException("Catalog not found: %s/%s".formatted(WebDescriptor.class.getPackageName(), catalogName));
-            addCatalog(URI.create(url.toExternalForm()), Servlet.class);
-        }
+        return xmlParser;
     }
 
     public WebDescriptor(Resource xml)
