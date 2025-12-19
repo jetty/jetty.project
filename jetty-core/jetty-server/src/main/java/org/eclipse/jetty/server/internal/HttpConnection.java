@@ -53,7 +53,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -1363,7 +1362,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             // Set the scheme in the URI
             if (!_uri.isAbsolute())
-                _uri.scheme(getEndPoint() instanceof SslConnection.SslEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
+                _uri.scheme(getEndPoint().getSslSessionData() != null ? HttpScheme.HTTPS : HttpScheme.HTTP);
 
             // Set the authority (if not already set) in the URI
             if (_uri.getAuthority() == null && !HttpMethod.CONNECT.is(_method))
