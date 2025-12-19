@@ -433,7 +433,7 @@ public class HttpChannelState implements HttpChannel, Components
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("onFailure {}", this);
+                LOG.atDebug().setCause(x).log("onFailure remote={} {}", remote, this);
 
             // If the channel doesn't have a stream, then the error is ignored.
             stream = _stream;
