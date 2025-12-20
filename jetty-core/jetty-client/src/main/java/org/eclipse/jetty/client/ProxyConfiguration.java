@@ -87,7 +87,7 @@ public class ProxyConfiguration
 
     public abstract static class Proxy
     {
-        private final IncludeExcludeSet<String, HostPort> _addresses = new IncludeExcludeSet<>(HostPortSet.class);
+        private final IncludeExcludeSet<String, HostPort> addresses = new IncludeExcludeSet<>(HostPortSet.class);
         private final Origin origin;
         private final SslContextFactory.Client sslContextFactory;
 
@@ -157,7 +157,7 @@ public class ProxyConfiguration
          */
         public Set<String> getIncludedAddresses()
         {
-            return _addresses.getIncluded();
+            return addresses.getIncluded();
         }
 
         /**
@@ -178,7 +178,7 @@ public class ProxyConfiguration
          */
         public Set<String> getExcludedAddresses()
         {
-            return _addresses.getExcluded();
+            return addresses.getExcluded();
         }
 
         /**
@@ -203,7 +203,7 @@ public class ProxyConfiguration
 
             Origin.Address address = origin.getAddress();
             HostPort hostPort = new HostPort(address.getHost(), address.getPort());
-            return _addresses.test(hostPort);
+            return addresses.test(hostPort);
         }
 
         /**
