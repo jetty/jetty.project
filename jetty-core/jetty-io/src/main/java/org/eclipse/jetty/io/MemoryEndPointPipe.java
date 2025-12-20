@@ -85,7 +85,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
         private static final Logger LOG = LoggerFactory.getLogger(MemoryEndPoint.class);
 
         // Sentinel to mark EOF in the queue - ensures EOF is delivered after all data
-        private static final RetainableByteBuffer EOF = RetainableByteBuffer.wrap(BufferUtil.EMPTY_BUFFER);
+        private static final RetainableByteBuffer EOF = RetainableByteBuffer.EMPTY;
 
         private final AutoLock lock = new AutoLock();
         private final Deque<RetainableByteBuffer> buffers = new ArrayDeque<>();
@@ -206,7 +206,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
 
         /**
          * Copy data from source RetainableByteBuffer to destination ByteBuffer.
-         * Uses flipToFill/flipToFlush to handle buffer state properly, allowing
+         * Uses flipToFill/flipToFlush to handle buffer state, allowing
          * the buffer to be reused across multiple fill calls.
          *
          * @param src the source buffer to copy from
@@ -215,7 +215,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
          */
         private int copyTo(RetainableByteBuffer src, ByteBuffer dest)
         {
-            // flipToFill must be called first to properly prepare the buffer,
+            // flipToFill must be called first to prepare the buffer,
             // especially when position == limit (buffer fully consumed)
             int pos = BufferUtil.flipToFill(dest);
             try
