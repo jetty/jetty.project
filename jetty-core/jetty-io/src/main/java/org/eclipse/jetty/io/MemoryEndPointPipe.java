@@ -173,66 +173,49 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             return filled;
         }
 
-        private int fillInto(ByteBuffer buffer)
+        private int fillInto(ByteBuffer dest)
         {
             int filled = 0;
-            try (AutoLock ignored = lock.lock())
-            {
-                while (true)
-                {
-                    RetainableByteBuffer data = buffers.peek();
-                    if (data == null)
-                        return filled;
-                    if (data == EOF)
-                        return filled > 0 ? filled : -1;
-
-                    int sizeBefore = (int)data.size();
-                    int copied = copyTo(data, buffer);
-                    capacity -= copied;
-                    filled += copied;
-
-                    if (copied < sizeBefore)
-                    {
-                        // Destination buffer is full, can't copy more
-                        return filled;
-                    }
-
-                    // Fully consumed this buffer, release and remove
-                    data.release();
-                    buffers.poll();
-                }
-            }
-        }
-
-        /**
-         * Copy data from source RetainableByteBuffer to destination ByteBuffer.
-         * Uses flipToFill/flipToFlush to handle buffer state, allowing
-         * the buffer to be reused across multiple fill calls.
-         *
-         * @param src the source buffer to copy from
-         * @param dest the destination buffer to copy to
-         * @return the number of bytes copied
-         */
-        private int copyTo(RetainableByteBuffer src, ByteBuffer dest)
-        {
-            // flipToFill must be called first to prepare the buffer,
-            // especially when position == limit (buffer fully consumed)
             int pos = BufferUtil.flipToFill(dest);
             try
             {
-                int space = dest.remaining();
-                if (space == 0)
-                    return 0;
+                try (AutoLock ignored = lock.lock())
+                {
+                    while (true)
+                    {
+                        RetainableByteBuffer data = buffers.peek();
+                        if (data == null)
+                            return filled;
+                        if (data == EOF)
+                            return filled > 0 ? filled : -1;
 
-                int toCopy = (int)Math.min(space, src.size());
-                if (toCopy == 0)
-                    return 0;
+                        int space = dest.remaining();
+                        if (space == 0)
+                            return filled;
 
-                byte[] temp = new byte[toCopy];
-                int read = src.get(temp, 0, toCopy);
-                dest.put(temp, 0, read);
+                        int available = (int)data.size();
+                        int toCopy = Math.min(space, available);
 
-                return read;
+                        if (toCopy == available)
+                        {
+                            // Copy all and consume
+                            data.putTo(dest);
+                            data.release();
+                            buffers.poll();
+                        }
+                        else
+                        {
+                            // Partial copy using slice
+                            RetainableByteBuffer slice = data.slice(toCopy);
+                            slice.putTo(dest);
+                            slice.release();
+                            data.skip(toCopy);
+                        }
+
+                        capacity -= toCopy;
+                        filled += toCopy;
+                    }
+                }
             }
             finally
             {
