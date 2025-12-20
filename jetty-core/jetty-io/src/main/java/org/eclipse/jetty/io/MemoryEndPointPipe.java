@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>Memory-based implementation of {@link EndPoint.Pipe}.</p>
+ * <p>This implementation uses {@link RetainableByteBuffer.DynamicCapacity} for efficient
+ * buffer management in {@link #flush(ByteBuffer...)}, avoiding per-write ByteBuffer allocations.</p>
  */
 public class MemoryEndPointPipe implements EndPoint.Pipe
 {
@@ -65,19 +67,28 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
     {
         localEndPoint.setMaxCapacity(maxCapacity);
     }
-    
+
     public void setRemoteEndPointMaxCapacity(int maxCapacity)
     {
         remoteEndPoint.setMaxCapacity(maxCapacity);
     }
 
+    /**
+     * <p>Memory-based {@link EndPoint} that uses {@link RetainableByteBuffer.DynamicCapacity}
+     * for efficient buffer management.</p>
+     * <p>Data written via {@link #flush(ByteBuffer...)} is stored in RetainableByteBuffers in a queue,
+     * and read via {@link #fill(ByteBuffer)} from the peer's queue. EOF is tracked using a sentinel
+     * in the queue to ensure proper ordering of data and EOF signals.</p>
+     */
     private class MemoryEndPoint extends AbstractEndPoint
     {
         private static final Logger LOG = LoggerFactory.getLogger(MemoryEndPoint.class);
-        private static final ByteBuffer EOF = ByteBuffer.allocate(0);
+
+        // Sentinel to mark EOF in the queue - ensures EOF is delivered after all data
+        private static final RetainableByteBuffer EOF = RetainableByteBuffer.EMPTY;
 
         private final AutoLock lock = new AutoLock();
-        private final Deque<ByteBuffer> byteBuffers = new ArrayDeque<>();
+        private final Deque<RetainableByteBuffer> byteBuffers = new ArrayDeque<>();
         private final SocketAddress localAddress;
         private MemoryEndPoint peerEndPoint;
         private Invocable.Task fillableTask;
@@ -165,23 +176,50 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
         private int fillInto(ByteBuffer buffer)
         {
             int filled = 0;
-            try (AutoLock ignored = lock.lock())
+            int pos = BufferUtil.flipToFill(buffer);
+            try
             {
-                while (true)
+                try (AutoLock ignored = lock.lock())
                 {
-                    ByteBuffer data = byteBuffers.peek();
-                    if (data == null)
-                        return filled;
-                    if (data == EOF)
-                        return filled > 0 ? filled : -1;
-                    int length = data.remaining();
-                    int copied = BufferUtil.append(buffer, data);
-                    capacity -= copied;
-                    filled += copied;
-                    if (copied < length)
-                        return filled;
-                    byteBuffers.poll();
+                    while (true)
+                    {
+                        RetainableByteBuffer data = byteBuffers.peek();
+                        if (data == null)
+                            return filled;
+                        if (data == EOF)
+                            return filled > 0 ? filled : -1;
+
+                        int space = buffer.remaining();
+                        if (space == 0)
+                            return filled;
+
+                        int available = data.remaining();
+                        int toCopy = Math.min(space, available);
+
+                        if (toCopy == available)
+                        {
+                            // Copy all and consume
+                            data.putTo(buffer);
+                            data.release();
+                            byteBuffers.poll();
+                        }
+                        else
+                        {
+                            // Partial copy using slice
+                            RetainableByteBuffer slice = data.slice(toCopy);
+                            slice.putTo(buffer);
+                            slice.release();
+                            data.skip(toCopy);
+                        }
+
+                        capacity -= toCopy;
+                        filled += toCopy;
+                    }
                 }
+            }
+            finally
+            {
+                BufferUtil.flipToFlush(buffer, pos);
             }
         }
 
@@ -247,7 +285,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                     // The buffer must be copied, otherwise a write() would complete
                     // and return it to the buffer pool where its backing store would
                     // be overwritten before it is read by the peer EndPoint.
-                    ByteBuffer copy = lockedCopy(buffer);
+                    RetainableByteBuffer copy = lockedCopy(buffer);
                     if (copy == null)
                     {
                         result = false;
@@ -277,7 +315,14 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             return result;
         }
 
-        private ByteBuffer lockedCopy(ByteBuffer buffer)
+        /**
+         * Creates a copy of data from the source buffer, respecting maxCapacity.
+         * Uses {@link RetainableByteBuffer.DynamicCapacity} for efficient buffer management.
+         *
+         * @param buffer the source buffer to copy from
+         * @return a RetainableByteBuffer containing the copied data, or null if at capacity
+         */
+        private RetainableByteBuffer lockedCopy(ByteBuffer buffer)
         {
             int length = buffer.remaining();
             long maxCapacity = getMaxCapacity();
@@ -288,10 +333,22 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                     return null;
                 length = (int)Math.min(length, space);
             }
-            // TODO: Use RetainableByteBuffer.DynamicCapacity in Jetty 12.1.x.
-            ByteBuffer copy = buffer.isDirect() ? ByteBuffer.allocateDirect(length) : ByteBuffer.allocate(length);
-            copy.put(0, buffer, buffer.position(), length);
-            buffer.position(buffer.position() + length);
+
+            // Use DynamicCapacity to efficiently copy the data
+            RetainableByteBuffer.DynamicCapacity copy = new RetainableByteBuffer.DynamicCapacity();
+            if (length < buffer.remaining())
+            {
+                // Partial copy: temporarily reduce limit to copy only 'length' bytes,
+                // then restore the original limit so caller sees remaining data.
+                int limit = buffer.limit();
+                buffer.limit(buffer.position() + length);
+                copy.append(buffer);
+                buffer.limit(limit);
+            }
+            else
+            {
+                copy.append(buffer);
+            }
             return copy;
         }
 
@@ -312,7 +369,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             super.doClose();
             try (AutoLock ignored = lock.lock())
             {
-                ByteBuffer last = byteBuffers.peekLast();
+                RetainableByteBuffer last = byteBuffers.peekLast();
                 if (last != EOF)
                     byteBuffers.offer(EOF);
             }

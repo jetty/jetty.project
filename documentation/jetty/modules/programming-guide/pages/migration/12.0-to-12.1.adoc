@@ -120,6 +120,15 @@ In Jetty 12.1.x, `RetainableByteBuffer` has broader usage within the xref:migrat
 This class is useful to retain or copy other buffers such as ``Content.Chunk``s.
 Dynamic capacity buffers are particularly effective to read and accumulate data efficiently (for example for later processing), when processing server-side request content, client-side response content, or WebSocket binary messages.
 
+[[api-changes-memoryendpointpipe]]
+=== `MemoryEndPointPipe`
+
+`MemoryEndPointPipe` is an internal class that provides an in-memory implementation of `EndPoint.Pipe` for testing and internal use.
+
+In Jetty 12.0.x, `MemoryEndPointPipe` allocated `ByteBuffer` instances directly for buffering data between endpoints.
+
+In Jetty 12.1.x, `MemoryEndPointPipe` uses `RetainableByteBuffer.DynamicCapacity` for more efficient buffer management and integration with buffer pooling.
+
 [[api-changes-httpconfig-maxresponseheadersize]]
 === `HttpConfiguration.maxResponseHeaderSize`
 
