@@ -193,7 +193,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                         if (space == 0)
                             return filled;
 
-                        int available = (int)data.size();
+                        int available = data.remaining();
                         int toCopy = Math.min(space, available);
 
                         if (toCopy == available)
@@ -292,7 +292,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                         break;
                     }
                     byteBuffers.offer(copy);
-                    int length = (int)copy.size();
+                    int length = copy.remaining();
                     capacity += length;
                     flushed += length;
                     if (length < remaining)
