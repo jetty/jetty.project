@@ -173,10 +173,10 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             return filled;
         }
 
-        private int fillInto(ByteBuffer dest)
+        private int fillInto(ByteBuffer buffer)
         {
             int filled = 0;
-            int pos = BufferUtil.flipToFill(dest);
+            int pos = BufferUtil.flipToFill(buffer);
             try
             {
                 try (AutoLock ignored = lock.lock())
@@ -189,7 +189,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                         if (data == EOF)
                             return filled > 0 ? filled : -1;
 
-                        int space = dest.remaining();
+                        int space = buffer.remaining();
                         if (space == 0)
                             return filled;
 
@@ -199,7 +199,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                         if (toCopy == available)
                         {
                             // Copy all and consume
-                            data.putTo(dest);
+                            data.putTo(buffer);
                             data.release();
                             byteBuffers.poll();
                         }
@@ -207,7 +207,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                         {
                             // Partial copy using slice
                             RetainableByteBuffer slice = data.slice(toCopy);
-                            slice.putTo(dest);
+                            slice.putTo(buffer);
                             slice.release();
                             data.skip(toCopy);
                         }
@@ -219,7 +219,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             }
             finally
             {
-                BufferUtil.flipToFlush(dest, pos);
+                BufferUtil.flipToFlush(buffer, pos);
             }
         }
 
@@ -291,7 +291,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                         result = false;
                         break;
                     }
-                    this.byteBuffers.offer(copy);
+                    byteBuffers.offer(copy);
                     int length = (int)copy.size();
                     capacity += length;
                     flushed += length;
