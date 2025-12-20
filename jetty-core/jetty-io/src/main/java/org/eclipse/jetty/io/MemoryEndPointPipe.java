@@ -16,8 +16,6 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.HexFormat;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -71,19 +69,22 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
         remoteEndPoint.setMaxCapacity(maxCapacity);
     }
 
+    /**
+     * <p>Memory-based {@link EndPoint} that uses {@link RetainableByteBuffer.DynamicCapacity}
+     * for efficient buffer management.</p>
+     */
     private class MemoryEndPoint extends AbstractEndPoint
     {
         private static final Logger LOG = LoggerFactory.getLogger(MemoryEndPoint.class);
-        private static final ByteBuffer EOF = ByteBuffer.allocate(0);
 
         private final AutoLock lock = new AutoLock();
-        private final Deque<ByteBuffer> byteBuffers = new ArrayDeque<>();
+        private final RetainableByteBuffer.DynamicCapacity buffer = new RetainableByteBuffer.DynamicCapacity();
         private final SocketAddress localAddress;
         private MemoryEndPoint peerEndPoint;
         private Invocable.Task fillableTask;
         private Invocable.Task completeWriteTask;
         private long maxCapacity;
-        private long capacity;
+        private boolean eof;
 
         private MemoryEndPoint(Scheduler scheduler, SocketAddress localAddress)
         {
@@ -162,25 +163,49 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             return filled;
         }
 
-        private int fillInto(ByteBuffer buffer)
+        private int fillInto(ByteBuffer dest)
         {
-            int filled = 0;
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
-                while (true)
+                // Check for data or EOF
+                if (buffer.isEmpty())
                 {
-                    ByteBuffer data = byteBuffers.peek();
-                    if (data == null)
-                        return filled;
-                    if (data == EOF)
+                    return eof ? -1 : 0;
+                }
+
+                // Use flipToFill/flipToFlush to properly handle the destination buffer state.
+                // This allows the buffer to be reused across multiple fill calls.
+                int pos = BufferUtil.flipToFill(dest);
+                try
+                {
+                    int filled = 0;
+                    while (!buffer.isEmpty())
+                    {
+                        int space = dest.remaining();
+                        if (space == 0)
+                        {
+                            break;
+                        }
+
+                        int available = (int)Math.min(space, buffer.size());
+                        byte[] temp = new byte[available];
+                        int read = buffer.get(temp, 0, available);
+                        dest.put(temp, 0, read);
+                        filled += read;
+                    }
+
+                    // If we filled some data and buffer is now empty with EOF pending,
+                    // return what we got; next call will return -1
+                    if (buffer.isEmpty() && eof)
+                    {
                         return filled > 0 ? filled : -1;
-                    int length = data.remaining();
-                    int copied = BufferUtil.append(buffer, data);
-                    capacity -= copied;
-                    filled += copied;
-                    if (copied < length)
-                        return filled;
-                    byteBuffers.poll();
+                    }
+
+                    return filled;
+                }
+                finally
+                {
+                    BufferUtil.flipToFlush(dest, pos);
                 }
             }
         }
@@ -195,33 +220,41 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
         @Override
         public void fillInterested(Callback callback)
         {
-            try (AutoLock ignored = lock.lock())
+            // Must hold peer's lock to safely check peer's buffer state.
+            try (AutoLock peerLock = peerEndPoint.lock.lock())
             {
                 // Checking for data and setting the callback must be atomic,
                 // otherwise the notification issued by a write() may be lost.
-                if (peerEndPoint.byteBuffers.isEmpty())
+                if (peerEndPoint.buffer.isEmpty() && !peerEndPoint.eof)
                 {
                     super.fillInterested(callback);
                     return;
                 }
             }
             if (LOG.isDebugEnabled())
+            {
                 LOG.debug("fill interested, data available {}", this);
+            }
             callback.succeeded();
         }
 
         @Override
         public boolean tryFillInterested(Callback callback)
         {
-            try (AutoLock ignored = lock.lock())
+            // Must hold peer's lock to safely check peer's buffer state.
+            try (AutoLock peerLock = peerEndPoint.lock.lock())
             {
                 // Checking for data and setting the callback must be atomic,
                 // otherwise the notification issued by a write() may be lost.
-                if (peerEndPoint.byteBuffers.isEmpty())
+                if (peerEndPoint.buffer.isEmpty() && !peerEndPoint.eof)
+                {
                     return super.tryFillInterested(callback);
+                }
             }
             if (LOG.isDebugEnabled())
+            {
                 LOG.debug("try fill interested, data available {}", this);
+            }
             callback.succeeded();
             return false;
         }
@@ -238,24 +271,23 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             boolean result = true;
             try (AutoLock ignored = lock.lock())
             {
-                for (ByteBuffer buffer : buffers)
+                for (ByteBuffer buf : buffers)
                 {
-                    int remaining = buffer.remaining();
+                    int remaining = buf.remaining();
                     if (remaining == 0)
                         continue;
 
-                    // The buffer must be copied, otherwise a write() would complete
-                    // and return it to the buffer pool where its backing store would
-                    // be overwritten before it is read by the peer EndPoint.
-                    ByteBuffer copy = lockedCopy(buffer);
-                    if (copy == null)
+                    // The buffer content is copied into the DynamicCapacity buffer,
+                    // otherwise a write() would complete and return it to the buffer
+                    // pool where its backing store would be overwritten before it is
+                    // read by the peer EndPoint.
+                    int before = buf.remaining();
+                    if (!lockedAppend(buf))
                     {
                         result = false;
                         break;
                     }
-                    byteBuffers.offer(copy);
-                    int length = copy.remaining();
-                    capacity += length;
+                    int length = before - buf.remaining();
                     flushed += length;
                     if (length < remaining)
                     {
@@ -277,22 +309,40 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             return result;
         }
 
-        private ByteBuffer lockedCopy(ByteBuffer buffer)
+        /**
+         * Appends data from src to the internal buffer, respecting maxCapacity.
+         * When maxCapacity limits how much can be appended, only a portion of src
+         * is copied: the limit is temporarily reduced to expose only the allowed
+         * bytes, then restored so the caller sees the remaining unconsumed data.
+         *
+         * @param src the source buffer to append from
+         * @return true if any bytes were appended, false if buffer is at capacity
+         */
+        private boolean lockedAppend(ByteBuffer src)
         {
-            int length = buffer.remaining();
-            long maxCapacity = getMaxCapacity();
-            if (maxCapacity > 0)
+            int length = src.remaining();
+            long maxCap = getMaxCapacity();
+            if (maxCap > 0)
             {
-                long space = maxCapacity - capacity;
+                long space = maxCap - buffer.size();
                 if (space == 0)
-                    return null;
+                    return false;
                 length = (int)Math.min(length, space);
             }
-            // TODO: Use RetainableByteBuffer.DynamicCapacity in Jetty 12.1.x.
-            ByteBuffer copy = buffer.isDirect() ? ByteBuffer.allocateDirect(length) : ByteBuffer.allocate(length);
-            copy.put(0, buffer, buffer.position(), length);
-            buffer.position(buffer.position() + length);
-            return copy;
+            if (length < src.remaining())
+            {
+                // Partial append: temporarily reduce limit to copy only 'length' bytes,
+                // then restore the original limit so caller sees remaining data.
+                int limit = src.limit();
+                src.limit(src.position() + length);
+                buffer.append(src);
+                src.limit(limit);
+            }
+            else
+            {
+                buffer.append(src);
+            }
+            return true;
         }
 
         @Override
@@ -301,7 +351,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             super.doShutdownOutput();
             try (AutoLock ignored = lock.lock())
             {
-                byteBuffers.offer(EOF);
+                eof = true;
             }
             onFlushed();
         }
@@ -312,9 +362,9 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             super.doClose();
             try (AutoLock ignored = lock.lock())
             {
-                ByteBuffer last = byteBuffers.peekLast();
-                if (last != EOF)
-                    byteBuffers.offer(EOF);
+                // Set EOF but don't clear the buffer - data should remain
+                // readable until EOF is encountered.
+                eof = true;
             }
             onFlushed();
         }
