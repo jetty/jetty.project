@@ -325,10 +325,10 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
         private RetainableByteBuffer lockedCopy(ByteBuffer buffer)
         {
             int length = buffer.remaining();
-            long maxCap = getMaxCapacity();
-            if (maxCap > 0)
+            long maxCapacity = getMaxCapacity();
+            if (maxCapacity > 0)
             {
-                long space = maxCap - capacity;
+                long space = maxCapacity - capacity;
                 if (space == 0)
                     return null;
                 length = (int)Math.min(length, space);
