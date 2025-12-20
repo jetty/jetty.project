@@ -163,7 +163,7 @@
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asm.version>9.9</asm.version>
+    <asm.version>9.9.1</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
     <bndlib.version>6.4.1</bndlib.version>
     <bouncycastle.version>1.83</bouncycastle.version>
@@ -242,11 +242,11 @@
     <kerb-simplekdc.version>2.1.1</kerb-simplekdc.version>
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <log4j2.version>2.25.2</log4j2.version>
+    <log4j2.version>2.25.3</log4j2.version>
     <logback.version>1.5.22</logback.version>
-    <lucene.version>9.11.1</lucene.version>
+    <lucene.version>9.12.0</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <mariadb.version>3.5.6</mariadb.version>
+    <mariadb.version>3.5.7</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.2.1</maven-build-cache.version>
     <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
@@ -279,7 +279,7 @@
     <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.6.2</mongodb.version>
-    <netty.version>4.2.8.Final</netty.version>
+    <netty.version>4.2.9.Final</netty.version>
     <njord.version>0.8.7</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
