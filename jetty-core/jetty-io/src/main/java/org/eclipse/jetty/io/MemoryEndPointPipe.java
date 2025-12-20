@@ -88,7 +88,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
         private static final RetainableByteBuffer EOF = RetainableByteBuffer.EMPTY;
 
         private final AutoLock lock = new AutoLock();
-        private final Deque<RetainableByteBuffer> buffers = new ArrayDeque<>();
+        private final Deque<RetainableByteBuffer> byteBuffers = new ArrayDeque<>();
         private final SocketAddress localAddress;
         private MemoryEndPoint peerEndPoint;
         private Invocable.Task fillableTask;
@@ -183,7 +183,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                 {
                     while (true)
                     {
-                        RetainableByteBuffer data = buffers.peek();
+                        RetainableByteBuffer data = byteBuffers.peek();
                         if (data == null)
                             return filled;
                         if (data == EOF)
@@ -201,7 +201,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                             // Copy all and consume
                             data.putTo(dest);
                             data.release();
-                            buffers.poll();
+                            byteBuffers.poll();
                         }
                         else
                         {
@@ -237,7 +237,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             {
                 // Checking for data and setting the callback must be atomic,
                 // otherwise the notification issued by a write() may be lost.
-                if (peerEndPoint.buffers.isEmpty())
+                if (peerEndPoint.byteBuffers.isEmpty())
                 {
                     super.fillInterested(callback);
                     return;
@@ -255,7 +255,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             {
                 // Checking for data and setting the callback must be atomic,
                 // otherwise the notification issued by a write() may be lost.
-                if (peerEndPoint.buffers.isEmpty())
+                if (peerEndPoint.byteBuffers.isEmpty())
                     return super.tryFillInterested(callback);
             }
             if (LOG.isDebugEnabled())
@@ -291,7 +291,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                         result = false;
                         break;
                     }
-                    this.buffers.offer(copy);
+                    this.byteBuffers.offer(copy);
                     int length = (int)copy.size();
                     capacity += length;
                     flushed += length;
@@ -358,7 +358,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             super.doShutdownOutput();
             try (AutoLock ignored = lock.lock())
             {
-                buffers.offer(EOF);
+                byteBuffers.offer(EOF);
             }
             onFlushed();
         }
@@ -369,9 +369,9 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
             super.doClose();
             try (AutoLock ignored = lock.lock())
             {
-                RetainableByteBuffer last = buffers.peekLast();
+                RetainableByteBuffer last = byteBuffers.peekLast();
                 if (last != EOF)
-                    buffers.offer(EOF);
+                    byteBuffers.offer(EOF);
             }
             onFlushed();
         }
