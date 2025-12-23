@@ -14,8 +14,13 @@
 package org.eclipse.jetty.client.ssl;
 
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
@@ -39,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -242,5 +248,56 @@ public class NeedWantClientAuthTest
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testTrustManagerWrapperAccessToInvalidCert() throws Exception
+    {
+        // Track certificate chain from failed validation
+        AtomicReference<X509Certificate[]> failedCerts = new AtomicReference<>();
+
+        SslContextFactory.Server serverSSL = createServerSslContextFactory();
+        serverSSL.setNeedClientAuth(true);
+        // Trust only server cert, not the client cert
+        serverSSL.setTrustStorePath("src/test/resources/keystore.p12");
+        serverSSL.setTrustStorePassword("storepwd");
+
+        // Wrap TrustManager to capture certificate chain on failure
+        serverSSL.setTrustManagerWrapper(delegate ->
+            new SslContextFactory.X509ExtendedTrustManagerWrapper(delegate)
+            {
+                @Override
+                public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
+                    throws CertificateException
+                {
+                    try
+                    {
+                        super.checkClientTrusted(chain, authType, engine);
+                    }
+                    catch (CertificateException e)
+                    {
+                        failedCerts.set(chain);
+                        throw e;
+                    }
+                }
+            });
+
+        startServer(serverSSL, new EmptyServerHandler());
+
+        // Client presents an untrusted certificate
+        SslContextFactory.Client clientSSL = new SslContextFactory.Client(true);
+        clientSSL.setKeyStorePath("src/test/resources/client_keystore.p12");
+        clientSSL.setKeyStorePassword("storepwd");
+        startClient(clientSSL);
+
+        // Request should fail due to untrusted client cert
+        assertThrows(ExecutionException.class, () ->
+            client.newRequest("https://localhost:" + connector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
+
+        // But we should have captured the failed certificate chain
+        assertNotNull(failedCerts.get());
+        assertTrue(failedCerts.get().length > 0);
     }
 }
