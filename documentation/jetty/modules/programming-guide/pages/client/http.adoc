@@ -797,6 +797,25 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 
 The example above will retain only cookies that come from the `google.com` domain or sub-domains.
 
+=== Cookie Name Prefixes
+
+Jetty's `HttpClient` validates cookie name prefixes as defined in https://datatracker.ietf.org/doc/draft-ietf-httpbis-rfc6265bis/[RFC 6265bis].
+
+Cookies with the `+__Secure-+` prefix are only accepted if:
+
+* The cookie has the `Secure` attribute set.
+* The cookie was received over a secure (HTTPS) connection.
+
+Cookies with the `+__Host-+` prefix are only accepted if:
+
+* The cookie has the `Secure` attribute set.
+* The cookie was received over a secure (HTTPS) connection.
+* The cookie does not have a `Domain` attribute (making it a host-only cookie).
+* The cookie has `Path=/` explicitly set.
+
+These prefixes allow servers to "lock down" cookies with additional security guarantees.
+Cookies that violate these requirements are silently discarded by the `HttpCookieStore`.
+
 // TODO: move this section to server-side
 === Special Characters in Cookies
 
