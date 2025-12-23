@@ -1,0 +1,109 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Glossary
+
+This glossary defines common terms used throughout the Jetty documentation.
+
+[[bean]]
+Bean::
+A component instance added to a `ContainerLifeCycle` container.
+Beans can be _managed_ (lifecycle tied to container), _unmanaged_ (independent lifecycle), or _POJO_ (plain objects without lifecycle).
+See xref:programming-guide:arch/bean.adoc[] for details.
+
+[[connector]]
+Connector::
+A component that listens on a network port for incoming connections.
+Connectors are associated with one or more `ConnectionFactory` instances that create protocol-specific connections (HTTP/1.1, HTTP/2, HTTP/3).
+See xref:server/index.adoc[] for server configuration.
+
+[[container-lifecycle]]
+ContainerLifeCycle::
+A `LifeCycle` implementation that can contain other components (beans).
+It manages the lifecycle of its managed beans, starting and stopping them together with the container.
+See xref:programming-guide:arch/bean.adoc[] for the component architecture.
+
+[[context-handler]]
+ContextHandler::
+A `Handler` that scopes HTTP requests to a specific context path.
+It provides the foundation for web application deployment, managing attributes, MIME types, and class loaders.
+See xref:deploy/index.adoc[] for deployment information.
+
+[[context-xml]]
+Context XML file::
+An XML configuration file used to deploy web applications in Jetty.
+Context XML files use Jetty's XML configuration syntax to instantiate and configure `ContextHandler` instances.
+See xref:xml/index.adoc[] for XML configuration syntax and xref:deploy/index.adoc[] for deployment examples.
+
+[[handler]]
+Handler::
+The fundamental abstraction for processing HTTP requests in Jetty.
+Handlers form a tree structure where requests flow from the server through various handlers.
+A handler returns `true` if it handled the request, `false` otherwise.
+See xref:programming-guide:server/index.adoc[] for the server programming guide.
+
+[[jetty-base]]
+`$JETTY_BASE`::
+The directory containing your Jetty server customizations and configurations.
+You can have multiple `$JETTY_BASE` directories, each with different configurations, all referencing the same `$JETTY_HOME`.
+See xref:arch/index.adoc#jetty-base[Architecture Overview] for details.
+
+[[jetty-home]]
+`$JETTY_HOME`::
+The directory containing the Jetty distribution binaries and default configuration.
+This directory should not be modified; all customizations should go in `$JETTY_BASE`.
+See xref:arch/index.adoc#jetty-base[Architecture Overview] for details.
+
+[[lifecycle]]
+LifeCycle::
+An interface implemented by Jetty components that can be started and stopped.
+Components implementing `LifeCycle` participate in the container's lifecycle management.
+See xref:programming-guide:arch/bean.adoc#lifecycle[Component Lifecycle] for details.
+
+[[module]]
+Module::
+A reusable unit that provides one or more Jetty features.
+Modules are enabled in `$JETTY_BASE` and declare dependencies on other modules.
+Examples include `http`, `https`, `http2`, `deploy`, and `logging`.
+See xref:modules/index.adoc[] for the module system documentation.
+
+[[server]]
+Server::
+The root component of a Jetty server application.
+It contains connectors, handlers, and thread pools, forming the top of the component tree.
+See xref:server/index.adoc[] for server configuration.
+
+[[server-connector]]
+ServerConnector::
+The standard TCP/IP connector implementation for accepting network connections.
+It supports multiple protocols through `ConnectionFactory` instances.
+See xref:server/index.adoc[] for connector configuration.
+
+[[thread-pool]]
+ThreadPool::
+A component that manages worker threads for processing requests.
+The default implementation is `QueuedThreadPool`.
+See xref:programming-guide:arch/threads.adoc[] for thread architecture details.
+
+[[web-application]]
+Web Application::
+A collection of code, resources, and configuration deployed to a Jetty server.
+Web applications can be Jakarta EE applications (WAR files), Jetty Core applications (using Handler APIs), or static file applications.
+Each web application is deployed to a specific context path.
+See xref:deploy/index.adoc[] for deployment options.
+
+[[webapp-context]]
+WebAppContext::
+A `ContextHandler` subclass specifically for Jakarta EE web applications.
+It handles WAR file extraction, `web.xml` parsing, and servlet lifecycle management.
+See xref:deploy/index.adoc[] for deployment information.
