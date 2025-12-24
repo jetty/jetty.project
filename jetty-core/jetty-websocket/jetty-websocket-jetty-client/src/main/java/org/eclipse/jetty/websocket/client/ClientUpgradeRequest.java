@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
@@ -35,6 +36,11 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
  */
 public final class ClientUpgradeRequest implements UpgradeRequest
 {
+    /**
+     * ABNF from RFC 2616, RFC 822, and RFC 6455 specified characters requiring quoting.
+     */
+    public static final String ABNF_REQUIRED_QUOTING = "\"'\\\n\r\t\f\b%+ ;=";
+
     private final List<String> subProtocols = new ArrayList<>(1);
     private final List<ExtensionConfig> extensions = new ArrayList<>(1);
     private final List<HttpCookie> cookies = new ArrayList<>(1);
@@ -42,6 +48,7 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     private final URI requestURI;
     private long timeout;
     private String httpVersion;
+    private Object tag;
 
     /**
      * @deprecated use {@link #ClientUpgradeRequest(URI)} instead.
@@ -349,9 +356,24 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     }
 
     /**
-     * ABNF from RFC 2616, RFC 822, and RFC 6455 specified characters requiring quoting.
+     * <p>Tags this request with the given metadata tag.</p>
+
+     * @param tag the metadata to tag the request with
+     * @see Request#tag(Object).
      */
-    public static final String ABNF_REQUIRED_QUOTING = "\"'\\\n\r\t\f\b%+ ;=";
+    public void tag(Object tag)
+    {
+        this.tag = tag;
+    }
+
+    /**
+     * @return the metadata this request has been tagged with
+     * @see Request#getTag()
+     */
+    public Object getTag()
+    {
+        return tag;
+    }
 
     public static String joinValues(List<String> values)
     {
