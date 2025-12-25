@@ -261,7 +261,7 @@
     <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
     <maven.deps.version>3.9.12</maven.deps.version>
     <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
-    <maven.exec.plugin.version>3.6.2</maven.exec.plugin.version>
+    <maven.exec.plugin.version>3.6.3</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.9.1</maven.invoker.plugin.version>
