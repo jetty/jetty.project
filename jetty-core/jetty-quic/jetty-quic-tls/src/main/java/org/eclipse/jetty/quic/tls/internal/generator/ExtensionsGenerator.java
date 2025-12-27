@@ -16,6 +16,7 @@ package org.eclipse.jetty.quic.tls.internal.generator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.Extension;
@@ -30,6 +31,7 @@ public class ExtensionsGenerator
         this.byteBufferPool = byteBufferPool;
         put(new ServerNameExtensionGenerator());
         put(new ALPNExtensionGenerator());
+        put(new KeyShareExtensionGenerator());
         put(new SupportedGroupsExtensionGenerator());
         put(new SupportedVersionsExtensionGenerator());
         put(new QuicTransportParametersExtensionGenerator());

@@ -16,6 +16,7 @@ package org.eclipse.jetty.quic.tls.internal.parser;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.Extension;
 
@@ -31,6 +32,7 @@ public class ExtensionsParser
     {
         put(new ServerNameExtensionParser(listener));
         put(new ALPNExtensionParser(listener));
+        put(new KeyShareExtensionParser(listener));
         put(new SupportedGroupsExtensionParser(listener));
         put(new SupportedVersionsExtensionParser(listener));
         put(new QuicTransportParametersExtensionParser(listener));

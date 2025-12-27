@@ -13,11 +13,15 @@
 
 package org.eclipse.jetty.quic.api;
 
+/// The QUIC protocol version.
 public enum Version
 {
+    /// QUIC V1, defined by [RFC 9000](https://datatracker.ietf.org/doc/html/rfc9000).
     V1,
+    /// QUIC V2, defined by [RFC 9369](https://datatracker.ietf.org/doc/html/rfc9369).
     V2;
 
+    /// @return the version number in QUIC long headers packets
     public int version()
     {
         return switch (this)
@@ -27,6 +31,7 @@ public enum Version
         };
     }
 
+    /// @return the salt used to derive initial secrets.
     public byte[] initialSalt()
     {
         return switch (this)
@@ -46,6 +51,7 @@ public enum Version
         };
     }
 
+    /// @return the QUIC label used to derive the AEAD key.
     public String encryptionLabel()
     {
         return switch (this)
@@ -55,6 +61,7 @@ public enum Version
         };
     }
 
+    /// @return the QUIC label used to derive the initialization vector.
     public String initializationVectorLabel()
     {
         return switch (this)
@@ -64,6 +71,7 @@ public enum Version
         };
     }
 
+    /// @return the QUIC label used to derive the header protection.
     public String headerProtectionLabel()
     {
         return switch (this)
