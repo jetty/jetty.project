@@ -17,34 +17,34 @@ import java.util.List;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.Extension;
-import org.eclipse.jetty.quic.tls.message.SupportedVersionsExtension;
-import org.eclipse.jetty.quic.tls.message.TLSVersion;
+import org.eclipse.jetty.quic.tls.message.SignatureAlgorithm;
+import org.eclipse.jetty.quic.tls.message.SignatureAlgorithmsExtension;
 
-public class SupportedVersionsExtensionGenerator implements ExtensionGenerator
+public class SignatureAlgorithmsExtensionGenerator implements ExtensionGenerator
 {
     @Override
     public int getType()
     {
-        return SupportedVersionsExtension.TYPE;
+        return SignatureAlgorithmsExtension.TYPE;
     }
 
     @Override
     public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
     {
-        return generate(accumulator, (SupportedVersionsExtension)extension);
+        return generate(accumulator, (SignatureAlgorithmsExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, SupportedVersionsExtension extension)
+    private int generate(RetainableByteBuffer.Mutable accumulator, SignatureAlgorithmsExtension extension)
     {
         accumulator.putShort((short)extension.type());
-        List<TLSVersion> versions = extension.versions();
-        int listLength = 2 * versions.size();
-        int totalLength = 1 + listLength;
+        List<SignatureAlgorithm> algorithms = extension.signatureAlgorithms();
+        int listLength = 2 * algorithms.size();
+        int totalLength = 2 + listLength;
         accumulator.putShort((short)totalLength);
-        accumulator.put((byte)listLength);
-        for (TLSVersion version : versions)
+        accumulator.putShort((short)listLength);
+        for (SignatureAlgorithm algorithm : algorithms)
         {
-            accumulator.putShort((short)version.value());
+            accumulator.putShort((short)algorithm.value());
         }
         return totalLength;
     }

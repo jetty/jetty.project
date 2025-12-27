@@ -14,8 +14,8 @@
 package org.eclipse.jetty.quic.tls.internal.parser;
 
 import java.nio.ByteBuffer;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.KeyShare;
@@ -24,7 +24,7 @@ import org.eclipse.jetty.quic.tls.message.NamedGroup;
 
 public class KeyShareExtensionParser implements ExtensionParser
 {
-    private final Set<KeyShare> keyShares = new LinkedHashSet<>();
+    private final List<KeyShare> shares = new ArrayList<>();
     private final ExtensionsParser.Listener listener;
     private State state = State.TOTAL_LENGTH;
     private int totalLength;
@@ -179,17 +179,17 @@ public class KeyShareExtensionParser implements ExtensionParser
         NamedGroup namedGroup = NamedGroup.from(group);
         if (namedGroup == null)
             throw new IllegalArgumentException("unknown named group " + Integer.toHexString(group));
-        keyShares.add(new KeyShare(namedGroup, keyExchange));
+        shares.add(new KeyShare(namedGroup, keyExchange));
         group = 0;
         keyExchange = null;
         if (listLength == 0)
         {
             int result = totalLength;
             totalLength = 0;
-            LinkedHashSet<KeyShare> shares = new LinkedHashSet<>(keyShares);
-            keyShares.clear();
+            List<KeyShare> keyShares = List.copyOf(shares);
+            shares.clear();
             state = State.TOTAL_LENGTH;
-            listener.onExtension(new KeyShareExtension(shares));
+            listener.onExtension(new KeyShareExtension(keyShares));
             return result;
         }
         else

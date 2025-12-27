@@ -33,6 +33,7 @@ public class ExtensionsParser
         put(new ServerNameExtensionParser(listener));
         put(new ALPNExtensionParser(listener));
         put(new KeyShareExtensionParser(listener));
+        put(new SignatureAlgorithmsExtensionParser(listener));
         put(new SupportedGroupsExtensionParser(listener));
         put(new SupportedVersionsExtensionParser(listener));
         put(new QuicTransportParametersExtensionParser(listener));

@@ -15,9 +15,9 @@ package org.eclipse.jetty.quic.tls.message;
 
 import java.util.List;
 
-public record SupportedVersionsExtension(List<TLSVersion> versions) implements Extension
+public record SignatureAlgorithmsExtension(List<SignatureAlgorithm> signatureAlgorithms) implements Extension
 {
-    public static final int TYPE = 0x002B;
+    public static final int TYPE = 0x000D;
 
     @Override
     public int type()

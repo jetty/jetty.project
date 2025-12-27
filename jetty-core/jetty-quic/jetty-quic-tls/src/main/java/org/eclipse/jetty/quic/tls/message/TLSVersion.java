@@ -13,15 +13,34 @@
 
 package org.eclipse.jetty.quic.tls.message;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-public record SupportedVersionsExtension(List<TLSVersion> versions) implements Extension
+public enum TLSVersion
 {
-    public static final int TYPE = 0x002B;
+    TLS_1_2(0x0303),
+    TLS_1_3(0x0304);
 
-    @Override
-    public int type()
+    private final int value;
+
+    TLSVersion(int value)
     {
-        return TYPE;
+        this.value = value;
+        Values.VALUES.put(value, this);
+    }
+
+    public int value()
+    {
+        return value;
+    }
+
+    public static TLSVersion from(int value)
+    {
+        return Values.VALUES.get(value);
+    }
+
+    private static class Values
+    {
+        private static final Map<Integer, TLSVersion> VALUES = new HashMap<>();
     }
 }

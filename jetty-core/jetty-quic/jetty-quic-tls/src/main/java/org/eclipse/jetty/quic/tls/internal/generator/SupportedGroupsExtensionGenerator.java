@@ -1,6 +1,7 @@
 package org.eclipse.jetty.quic.tls.internal.generator;
 
-import java.util.SequencedSet;
+import java.util.List;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.Extension;
 import org.eclipse.jetty.quic.tls.message.NamedGroup;
@@ -19,7 +20,7 @@ public class SupportedGroupsExtensionGenerator implements ExtensionGenerator {
 
     private int generate(RetainableByteBuffer.Mutable accumulator, SupportedGroupsExtension extension) {
         accumulator.putShort((short)extension.type());
-        SequencedSet<NamedGroup> groups = extension.namedGroups();
+        List<NamedGroup> groups = extension.namedGroups();
         int listLength = 2 * groups.size();
         int totalLength = 2 + listLength;
         accumulator.putShort((short)totalLength);

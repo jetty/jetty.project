@@ -16,12 +16,14 @@ package org.eclipse.jetty.quic.tls.internal.parser;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.SupportedVersionsExtension;
+import org.eclipse.jetty.quic.tls.message.TLSVersion;
 
 public class SupportedVersionsExtensionParser implements ExtensionParser
 {
-    private final List<Integer> versions = new ArrayList<>();
+    private final List<TLSVersion> versions = new ArrayList<>();
     private final ExtensionsParser.Listener listener;
     private State state = State.TOTAL_LENGTH;
     private int totalLength;
@@ -120,16 +122,16 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
 
     private int versionComplete()
     {
-        versions.add(version);
+        versions.add(TLSVersion.from(version));
         version = 0;
         if (listLength == 0)
         {
             int result = totalLength;
             totalLength = 0;
-            int[] v = versions.stream().mapToInt(Integer::intValue).toArray();
+            List<TLSVersion> tlsVersions = List.copyOf(versions);
             versions.clear();
             state = State.TOTAL_LENGTH;
-            listener.onExtension(new SupportedVersionsExtension(v));
+            listener.onExtension(new SupportedVersionsExtension(tlsVersions));
             return result;
         }
         else

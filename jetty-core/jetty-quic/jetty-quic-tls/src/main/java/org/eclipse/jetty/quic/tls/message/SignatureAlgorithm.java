@@ -16,33 +16,29 @@ package org.eclipse.jetty.quic.tls.message;
 import java.util.HashMap;
 import java.util.Map;
 
-public enum NamedGroup
+public enum SignatureAlgorithm
 {
-    // Elliptic Curve Groups (ECDHE).
-    SECP256R1(0x0017),
-    SECP384R1(0x0018),
-    SECP521R1(0x0019),
-    X25519(0x001D),
-    X448(0x001E),
+    // RSASSA-PKCS1-v1_5 algorithms.
+    RSA_PKCS1_SHA256(0X0401),
+    RSA_PKCS1_SHA384(0X0501),
+    RSA_PKCS1_SHA512(0X0601),
 
-    // Finite Field Groups (DHE).
-    FFDHE2048(0x0100),
-    FFDHE3072(0x0101),
-    FFDHE4096(0x0102),
-    FFDHE6144(0x0103),
-    FFDHE8192(0x0104);
+    // ECDSA algorithms.
+    ECDSA_SECP256R1_SHA256(0X0403),
+    ECDSA_SECP384R1_SHA384(0X0503),
+    ECDSA_SECP521R1_SHA512(0X0603),
+
+    // RSASSA-PSS algorithms with public key OID RSAEncryption.
+    RSA_PSS_RSAE_SHA256(0X0804),
+    RSA_PSS_RSAE_SHA384(0X0805),
+    RSA_PSS_RSAE_SHA512(0X0806);
 
     private final int value;
 
-    NamedGroup(int value)
+    SignatureAlgorithm(int value)
     {
         this.value = value;
         Values.VALUES.put(value, this);
-    }
-
-    public static NamedGroup from(int group)
-    {
-        return Values.VALUES.get(group);
     }
 
     public int value()
@@ -50,8 +46,13 @@ public enum NamedGroup
         return value;
     }
 
+    public static SignatureAlgorithm from(int value)
+    {
+        return Values.VALUES.get(value);
+    }
+
     private static class Values
     {
-        private static final Map<Integer, NamedGroup> VALUES = new HashMap<>();
+        private static final Map<Integer, SignatureAlgorithm> VALUES = new HashMap<>();
     }
 }

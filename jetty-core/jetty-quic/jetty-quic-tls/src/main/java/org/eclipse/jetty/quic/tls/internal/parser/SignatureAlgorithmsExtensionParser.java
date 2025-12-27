@@ -18,25 +18,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.tls.message.NamedGroup;
-import org.eclipse.jetty.quic.tls.message.SupportedGroupsExtension;
+import org.eclipse.jetty.quic.tls.message.SignatureAlgorithm;
+import org.eclipse.jetty.quic.tls.message.SignatureAlgorithmsExtension;
 
-public class SupportedGroupsExtensionParser implements ExtensionParser {
-    private final List<NamedGroup> groups = new ArrayList<>();
+public class SignatureAlgorithmsExtensionParser implements ExtensionParser {
+    private final List<SignatureAlgorithm> algorithms = new ArrayList<>();
     private final ExtensionsParser.Listener listener;
     private State state = State.TOTAL_LENGTH;
     private int totalLength;
     private int listLength;
-    private int group;
+    private int algorithm;
     private int cursor;
 
-    public SupportedGroupsExtensionParser(ExtensionsParser.Listener listener) {
+    public SignatureAlgorithmsExtensionParser(ExtensionsParser.Listener listener) {
         this.listener = listener;
     }
 
     @Override
     public int getType() {
-        return SupportedGroupsExtension.TYPE;
+        return SignatureAlgorithmsExtension.TYPE;
     }
 
     @Override
@@ -52,7 +52,7 @@ public class SupportedGroupsExtensionParser implements ExtensionParser {
                     if (remaining > 1) {
                         totalLength = byteBuffer.getShort() & 0xFFFF;
                         if (totalLength < 4) {
-                            throw new IllegalStateException("invalid supported groups extension length " + totalLength);
+                            throw new IllegalStateException("invalid signature algorithms extension length " + totalLength);
                         }
                         state = State.LIST_LENGTH;
                     } else {
@@ -66,7 +66,7 @@ public class SupportedGroupsExtensionParser implements ExtensionParser {
                     totalLength += b << (8 * cursor);
                     if (cursor == 0) {
                         if (totalLength < 4) {
-                            throw new IllegalStateException("invalid supported groups extension length " + totalLength);
+                            throw new IllegalStateException("invalid signature algorithms extension length " + totalLength);
                         }
                         state = State.LIST_LENGTH;
                     }
@@ -75,9 +75,9 @@ public class SupportedGroupsExtensionParser implements ExtensionParser {
                     if (remaining > 1) {
                         listLength = byteBuffer.getShort() & 0xFFFF;
                         if (listLength == 0 || listLength % 2 != 0) {
-                            throw new IllegalStateException("invalid supported groups list length " + listLength);
+                            throw new IllegalStateException("invalid signature algorithms list length " + listLength);
                         }
-                        state = State.GROUP;
+                        state = State.ALGORITHM;
                     } else {
                         cursor = 2;
                         state = State.LIST_LENGTH_BYTES;
@@ -89,31 +89,31 @@ public class SupportedGroupsExtensionParser implements ExtensionParser {
                     listLength += b << (8 * cursor);
                     if (cursor == 0) {
                         if (listLength == 0 || listLength % 2 != 0) {
-                            throw new IllegalStateException("invalid supported groups list length " + listLength);
+                            throw new IllegalStateException("invalid signature algorithms list length " + listLength);
                         }
-                        state = State.GROUP;
+                        state = State.ALGORITHM;
                     }
                 }
-                case GROUP -> {
+                case ALGORITHM -> {
                     if (remaining > 1) {
-                        group = byteBuffer.getShort() & 0xFFFF;
+                        algorithm = byteBuffer.getShort() & 0xFFFF;
                         listLength -= 2;
-                        int result = groupComplete();
+                        int result = algorithmComplete();
                         if (result > 0) {
                             return result;
                         }
                     } else {
                         cursor = 2;
-                        state = State.GROUP_BYTES;
+                        state = State.ALGORITHM_BYTES;
                     }
                 }
-                case GROUP_BYTES -> {
+                case ALGORITHM_BYTES -> {
                     int b = byteBuffer.get() & 0xFF;
                     --cursor;
-                    group += b << (8 * cursor);
+                    algorithm += b << (8 * cursor);
                     if (cursor == 0) {
                         listLength -= 2;
-                        int result = groupComplete();
+                        int result = algorithmComplete();
                         if (result > 0) {
                             return result;
                         }
@@ -123,23 +123,23 @@ public class SupportedGroupsExtensionParser implements ExtensionParser {
         }
     }
 
-    private int groupComplete() {
-        NamedGroup namedGroup = NamedGroup.from(group);
-        if (namedGroup == null) {
-            throw new IllegalArgumentException("unknown named group " + Integer.toHexString(group));
+    private int algorithmComplete() {
+        SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.from(algorithm);
+        if (signatureAlgorithm == null) {
+            throw new IllegalArgumentException("unknown signature algorithm " + Integer.toHexString(algorithm));
         }
-        groups.add(namedGroup);
-        group = 0;
+        algorithms.add(signatureAlgorithm);
+        algorithm = 0;
         if (listLength == 0) {
             int result = totalLength;
             totalLength = 0;
-            List<NamedGroup> namedGroups = List.copyOf(groups);
-            groups.clear();
+            List<SignatureAlgorithm> signatureAlgorithms = List.copyOf(algorithms);
+            algorithms.clear();
             state = State.TOTAL_LENGTH;
-            listener.onExtension(new SupportedGroupsExtension(namedGroups));
+            listener.onExtension(new SignatureAlgorithmsExtension(signatureAlgorithms));
             return result;
         } else {
-            state = State.GROUP;
+            state = State.ALGORITHM;
             return -1;
         }
     }
@@ -149,7 +149,7 @@ public class SupportedGroupsExtensionParser implements ExtensionParser {
         TOTAL_LENGTH_BYTES,
         LIST_LENGTH,
         LIST_LENGTH_BYTES,
-        GROUP,
-        GROUP_BYTES
+        ALGORITHM,
+        ALGORITHM_BYTES
     }
 }

@@ -32,6 +32,7 @@ public class ExtensionsGenerator
         put(new ServerNameExtensionGenerator());
         put(new ALPNExtensionGenerator());
         put(new KeyShareExtensionGenerator());
+        put(new SignatureAlgorithmsExtensionGenerator());
         put(new SupportedGroupsExtensionGenerator());
         put(new SupportedVersionsExtensionGenerator());
         put(new QuicTransportParametersExtensionGenerator());
