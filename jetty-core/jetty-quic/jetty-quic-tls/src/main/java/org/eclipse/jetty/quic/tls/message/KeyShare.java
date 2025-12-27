@@ -13,14 +13,24 @@
 
 package org.eclipse.jetty.quic.tls.message;
 
-// TODO: has client and server variants?
-public record PreSharedKeyExtension() implements Extension
+import java.util.Arrays;
+import java.util.Objects;
+
+public record KeyShare(NamedGroup group, byte[] keyExchange)
 {
-    public static final int TYPE = 0x0029;
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(group, Arrays.hashCode(keyExchange));
+    }
 
     @Override
-    public int type()
+    public boolean equals(Object obj)
     {
-        return TYPE;
+        if (obj == this)
+            return true;
+        if (obj instanceof KeyShare(NamedGroup thatGroup, byte[] thatKeyExchange))
+            return Objects.equals(group, thatGroup) && Arrays.equals(keyExchange, thatKeyExchange);
+        return false;
     }
 }

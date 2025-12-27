@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.quic.tls.message;
 
-// TODO: has client and server variants?
-public record PreSharedKeyExtension() implements Extension
+import java.util.SequencedSet;
+
+public record KeyShareExtension(SequencedSet<KeyShare> keyShares) implements Extension
 {
-    public static final int TYPE = 0x0029;
+    public static final int TYPE = 0x001D;
 
     @Override
     public int type()

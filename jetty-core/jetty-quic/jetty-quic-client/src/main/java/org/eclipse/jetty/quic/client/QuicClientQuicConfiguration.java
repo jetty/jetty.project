@@ -11,16 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.tls.message;
+package org.eclipse.jetty.quic.client;
 
-// TODO: has client and server variants?
-public record PreSharedKeyExtension() implements Extension
+public class QuicClientQuicConfiguration extends ClientQuicConfiguration
 {
-    public static final int TYPE = 0x0029;
-
-    @Override
-    public int type()
-    {
-        return TYPE;
-    }
 }

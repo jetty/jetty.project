@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -26,6 +28,8 @@ import org.eclipse.jetty.quic.tls.internal.generator.ExtensionsGenerator;
 import org.eclipse.jetty.quic.tls.internal.parser.ExtensionsParser;
 import org.eclipse.jetty.quic.tls.message.ALPNExtension;
 import org.eclipse.jetty.quic.tls.message.Extension;
+import org.eclipse.jetty.quic.tls.message.KeyShare;
+import org.eclipse.jetty.quic.tls.message.KeyShareExtension;
 import org.eclipse.jetty.quic.tls.message.NamedGroup;
 import org.eclipse.jetty.quic.tls.message.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.tls.message.ServerNameExtension;
@@ -39,42 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ExtensionsGenerateParseTest
 {
-    @Test
-    public void testGenerateParseServerNameExtension()
-    {
-        ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
-
-        ServerNameExtension expected = new ServerNameExtension("webtide.com");
-        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool);
-        generator.generate(accumulator, List.of(expected));
-
-        TestListener listener = new TestListener();
-        ExtensionsParser parser = new ExtensionsParser(listener);
-        assertTrue(parser.parse(accumulator));
-
-        assertEquals(1, listener.extensions.size());
-        ServerNameExtension result = (ServerNameExtension)listener.extensions.getFirst();
-        assertEquals(expected.serverName(), result.serverName());
-
-        // Parse again one byte at a time.
-        listener.extensions.clear();
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
-        {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            boolean parsed = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-            if (!byteBuffer.hasRemaining())
-                assertTrue(parsed);
-        }
-
-        assertEquals(1, listener.extensions.size());
-        result = (ServerNameExtension)listener.extensions.getFirst();
-        assertEquals(expected.serverName(), result.serverName());
-    }
-
     @Test
     public void testGenerateParseALPNExtension()
     {
@@ -109,6 +77,84 @@ public class ExtensionsGenerateParseTest
         assertEquals(1, listener.extensions.size());
         result = (ALPNExtension)listener.extensions.getFirst();
         assertEquals(expected.protocols(), result.protocols());
+    }
+
+    @Test
+    public void testGenerateParseKeyShareExtension()
+    {
+        ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+
+        byte[] keyExchange1 = new byte[32];
+        ThreadLocalRandom.current().nextBytes(keyExchange1);
+        KeyShare keyShare1 = new KeyShare(NamedGroup.X25519, keyExchange1);
+        byte[] keyExchange2 = new byte[32];
+        ThreadLocalRandom.current().nextBytes(keyExchange2);
+        KeyShare keyShare2 = new KeyShare(NamedGroup.SECP256R1, keyExchange2);
+        KeyShareExtension expected = new KeyShareExtension(new LinkedHashSet<>(List.of(keyShare1, keyShare2)));
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool);
+        generator.generate(accumulator, List.of(expected));
+
+        TestListener listener = new TestListener();
+        ExtensionsParser parser = new ExtensionsParser(listener);
+        assertTrue(parser.parse(accumulator));
+
+        assertEquals(1, listener.extensions.size());
+        KeyShareExtension result = (KeyShareExtension)listener.extensions.getFirst();
+        assertEquals(expected.keyShares(), result.keyShares());
+
+        // Parse again one byte at a time.
+        listener.extensions.clear();
+        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
+        while (byteBuffer.hasRemaining())
+        {
+            int position = byteBuffer.position();
+            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
+            byteBuffer.position(position + 1);
+            boolean parsed = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
+            if (!byteBuffer.hasRemaining())
+                assertTrue(parsed);
+        }
+
+        assertEquals(1, listener.extensions.size());
+        result = (KeyShareExtension)listener.extensions.getFirst();
+        assertEquals(expected.keyShares(), result.keyShares());
+    }
+
+    @Test
+    public void testGenerateParseServerNameExtension()
+    {
+        ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+
+        ServerNameExtension expected = new ServerNameExtension("webtide.com");
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool);
+        generator.generate(accumulator, List.of(expected));
+
+        TestListener listener = new TestListener();
+        ExtensionsParser parser = new ExtensionsParser(listener);
+        assertTrue(parser.parse(accumulator));
+
+        assertEquals(1, listener.extensions.size());
+        ServerNameExtension result = (ServerNameExtension)listener.extensions.getFirst();
+        assertEquals(expected.serverName(), result.serverName());
+
+        // Parse again one byte at a time.
+        listener.extensions.clear();
+        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
+        while (byteBuffer.hasRemaining())
+        {
+            int position = byteBuffer.position();
+            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
+            byteBuffer.position(position + 1);
+            boolean parsed = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
+            if (!byteBuffer.hasRemaining())
+                assertTrue(parsed);
+        }
+
+        assertEquals(1, listener.extensions.size());
+        result = (ServerNameExtension)listener.extensions.getFirst();
+        assertEquals(expected.serverName(), result.serverName());
     }
 
     @Test
