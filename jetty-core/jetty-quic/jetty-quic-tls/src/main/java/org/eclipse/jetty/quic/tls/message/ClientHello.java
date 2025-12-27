@@ -15,7 +15,7 @@ package org.eclipse.jetty.quic.tls.message;
 
 import java.util.List;
 
-public class ClientHello
+public final class ClientHello implements Message
 {
     public List<Extension> getExtensions()
     {
