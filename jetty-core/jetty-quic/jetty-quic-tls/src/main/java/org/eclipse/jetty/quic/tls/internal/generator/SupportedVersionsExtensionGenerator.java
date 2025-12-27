@@ -13,30 +13,38 @@
 
 package org.eclipse.jetty.quic.tls.internal.generator;
 
+import java.util.List;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.Extension;
 import org.eclipse.jetty.quic.tls.message.SupportedVersionsExtension;
+import org.eclipse.jetty.quic.tls.message.TLSVersion;
 
-public class SupportedVersionsExtensionGenerator implements ExtensionGenerator {
+public class SupportedVersionsExtensionGenerator implements ExtensionGenerator
+{
     @Override
-    public int getType() {
+    public int getType()
+    {
         return SupportedVersionsExtension.TYPE;
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension) {
+    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
+    {
         return generate(accumulator, (SupportedVersionsExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, SupportedVersionsExtension extension) {
+    private int generate(RetainableByteBuffer.Mutable accumulator, SupportedVersionsExtension extension)
+    {
         accumulator.putShort((short)extension.type());
-        int[] versions = extension.versions();
-        int listLength = 2 * versions.length;
+        List<TLSVersion> versions = extension.versions();
+        int listLength = 2 * versions.size();
         int totalLength = 1 + listLength;
         accumulator.putShort((short)totalLength);
         accumulator.put((byte)listLength);
-        for (int version : versions) {
-            accumulator.putShort((short)version);
+        for (TLSVersion version : versions)
+        {
+            accumulator.putShort((short)version.value());
         }
         return totalLength;
     }

@@ -14,14 +14,15 @@
 package org.eclipse.jetty.quic.tls.internal.parser;
 
 import java.nio.ByteBuffer;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.NamedGroup;
 import org.eclipse.jetty.quic.tls.message.SupportedGroupsExtension;
 
 public class SupportedGroupsExtensionParser implements ExtensionParser {
-    private final Set<NamedGroup> namedGroups = new LinkedHashSet<>();
+    private final List<NamedGroup> groups = new ArrayList<>();
     private final ExtensionsParser.Listener listener;
     private State state = State.TOTAL_LENGTH;
     private int totalLength;
@@ -127,15 +128,15 @@ public class SupportedGroupsExtensionParser implements ExtensionParser {
         if (namedGroup == null) {
             throw new IllegalArgumentException("unknown named group " + Integer.toHexString(group));
         }
-        namedGroups.add(namedGroup);
+        groups.add(namedGroup);
         group = 0;
         if (listLength == 0) {
             int result = totalLength;
             totalLength = 0;
-            LinkedHashSet<NamedGroup> groups = new LinkedHashSet<>(namedGroups);
-            namedGroups.clear();
+            List<NamedGroup> namedGroups = List.copyOf(groups);
+            groups.clear();
             state = State.TOTAL_LENGTH;
-            listener.onExtension(new SupportedGroupsExtension(groups));
+            listener.onExtension(new SupportedGroupsExtension(namedGroups));
             return result;
         } else {
             state = State.GROUP;

@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.quic.tls.message;
 
-import java.util.SequencedSet;
+import java.util.List;
 
-public record KeyShareExtension(SequencedSet<KeyShare> keyShares) implements Extension
+public record KeyShareExtension(List<KeyShare> keyShares) implements Extension
 {
     public static final int TYPE = 0x001D;
 

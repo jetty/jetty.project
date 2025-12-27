@@ -13,7 +13,11 @@
 
 package org.eclipse.jetty.quic.tls.message;
 
-public enum NamedGroup {
+import java.util.HashMap;
+import java.util.Map;
+
+public enum NamedGroup
+{
     // Elliptic Curve Groups (ECDHE).
     SECP256R1(0x0017),
     SECP384R1(0x0018),
@@ -30,27 +34,24 @@ public enum NamedGroup {
 
     private final int value;
 
-    NamedGroup(int value) {
+    NamedGroup(int value)
+    {
         this.value = value;
+        Values.VALUES.put(value, this);
     }
 
-    public static NamedGroup from(int group) {
-        return switch (group) {
-            case 0x0017 -> SECP256R1;
-            case 0x0018 -> SECP384R1;
-            case 0x0019 -> SECP521R1;
-            case 0x001D -> X25519;
-            case 0x001E -> X448;
-            case 0x0100 -> FFDHE2048;
-            case 0x0101 -> FFDHE3072;
-            case 0x0102 -> FFDHE4096;
-            case 0x0103 -> FFDHE6144;
-            case 0x0104 -> FFDHE8192;
-            default -> null;
-        };
+    public static NamedGroup from(int group)
+    {
+        return Values.VALUES.get(group);
     }
 
-    public int value() {
+    public int value()
+    {
         return value;
+    }
+
+    private static class Values
+    {
+        private static final Map<Integer, NamedGroup> VALUES = new HashMap<>();
     }
 }

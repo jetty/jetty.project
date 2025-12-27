@@ -1,8 +1,8 @@
 package org.eclipse.jetty.quic.tls.message;
 
-import java.util.SequencedSet;
+import java.util.List;
 
-public record SupportedGroupsExtension(SequencedSet<NamedGroup> namedGroups) implements Extension {
+public record SupportedGroupsExtension(List<NamedGroup> namedGroups) implements Extension {
     public static final int TYPE = 0x000A;
 
     @Override

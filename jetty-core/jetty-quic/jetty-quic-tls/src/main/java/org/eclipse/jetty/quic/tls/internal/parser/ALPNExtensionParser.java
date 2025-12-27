@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.ALPNExtension;
 
@@ -155,10 +156,10 @@ public class ALPNExtensionParser implements ExtensionParser
         {
             int result = totalLength;
             totalLength = 0;
-            List<String> p = List.copyOf(protocols);
+            List<String> alpnProtocols = List.copyOf(protocols);
             protocols.clear();
             state = State.TOTAL_LENGTH;
-            listener.onExtension(new ALPNExtension(p));
+            listener.onExtension(new ALPNExtension(alpnProtocols));
             return result;
         }
         else
