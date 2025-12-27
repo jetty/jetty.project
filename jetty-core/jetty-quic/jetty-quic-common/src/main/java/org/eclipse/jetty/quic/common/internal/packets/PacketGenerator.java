@@ -11,14 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.tls.message;
+package org.eclipse.jetty.quic.common.internal.packets;
 
-import java.util.List;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.common.packets.Packet;
 
-public final class ClientHello implements Message
+public interface PacketGenerator
 {
-    public List<Extension> getExtensions()
-    {
-        return null;
-    }
+    void generate(RetainableByteBuffer.Mutable accumulator, Packet packet) throws Exception;
 }

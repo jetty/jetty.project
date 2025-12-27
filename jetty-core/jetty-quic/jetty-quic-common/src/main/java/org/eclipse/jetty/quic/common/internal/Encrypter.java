@@ -11,14 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.tls.message;
+package org.eclipse.jetty.quic.common.internal;
 
-import java.util.List;
+import java.nio.ByteBuffer;
 
-public final class ClientHello implements Message
+import org.eclipse.jetty.quic.api.Version;
+import org.eclipse.jetty.quic.common.internal.packets.PacketNumber;
+
+public interface Encrypter
 {
-    public List<Extension> getExtensions()
-    {
-        return null;
-    }
+    void allocateInitialKeys(Version version, byte[] input) throws Exception;
+
+    void encrypt(EncryptionLevel encryptionLevel, PacketNumber packetNumber, ByteBuffer header, ByteBuffer headerOutput, ByteBuffer payload, ByteBuffer payloadOutput) throws Exception;
 }

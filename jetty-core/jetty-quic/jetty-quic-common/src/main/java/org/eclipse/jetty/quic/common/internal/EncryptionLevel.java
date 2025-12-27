@@ -11,14 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.tls.message;
+package org.eclipse.jetty.quic.common.internal;
 
-import java.util.List;
-
-public final class ClientHello implements Message
+public enum EncryptionLevel
 {
-    public List<Extension> getExtensions()
-    {
-        return null;
-    }
+    INITIAL
 }

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -761,10 +762,15 @@ public class StringUtil
 
     public static String toHexString(byte[] b, int offset, int length)
     {
+        return toHexString(ByteBuffer.wrap(b, offset, length));
+    }
+
+    public static String toHexString(ByteBuffer byteBuffer)
+    {
         StringBuilder buf = new StringBuilder();
-        for (int i = offset; i < offset + length; i++)
+        for (int i = byteBuffer.position(); i < byteBuffer.limit(); i++)
         {
-            int bi = 0xff & b[i];
+            int bi = 0xff & byteBuffer.get(i);
             int c = '0' + (bi / 16) % 16;
             if (c > '9')
                 c = 'A' + (c - '0' - 10);

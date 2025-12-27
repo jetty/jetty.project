@@ -11,14 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.tls.message;
+package org.eclipse.jetty.quic.common.internal.packets;
 
-import java.util.List;
-
-public final class ClientHello implements Message
+// TODO: this abstraction is necessary because
+//  encoding packet numbers requires to know the largets acked
+//  packet number, and decoding them requires the largest acked too.
+//  So it needs to store the largest acked too, and also
+//  managed packet number spaces, that are different from
+//  EncryptionLevels.
+public class PacketNumbers
 {
-    public List<Extension> getExtensions()
+    public PacketNumber newPacketNumber(long packetNumber)
     {
-        return null;
+        return new PacketNumber(2, 2, 4);
     }
 }

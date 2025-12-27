@@ -1,0 +1,48 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+package org.eclipse.jetty.quic.common.packets;
+
+import java.util.List;
+
+import org.eclipse.jetty.quic.api.frames.Frame;
+
+public final class InitialPacket extends LongHeaderPacket
+{
+    private final byte[] token;
+    private final long packetNumber;
+    private final List<Frame> frames;
+
+    public InitialPacket(org.eclipse.jetty.quic.api.Version version, byte[] sourceConnectionId, byte[] destinationConnectionId, byte[] token, long packetNumber, List<Frame> frames)
+    {
+        super(PacketType.INITIAL, version, sourceConnectionId, destinationConnectionId);
+        this.token = token;
+        this.packetNumber = packetNumber;
+        this.frames = frames;
+    }
+
+    public byte[] getToken()
+    {
+        return token;
+    }
+
+    public long getPacketNumber()
+    {
+        return packetNumber;
+    }
+
+    public List<Frame> getFrames()
+    {
+        return frames;
+    }
+}

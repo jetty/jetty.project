@@ -11,14 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.tls.message;
+package org.eclipse.jetty.quic.common.packets;
 
-import java.util.List;
-
-public final class ClientHello implements Message
+public abstract sealed class Packet permits LongHeaderPacket
 {
-    public List<Extension> getExtensions()
-    {
-        return null;
-    }
 }
