@@ -87,34 +87,18 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
     @Override
     public void succeeded()
     {
-        try
-        {
-            // We need to write nothing here to intercept the committing of the
-            // response and possibly change headers in case write is never called.
-            if (_last)
-                _callback.succeeded();
-            else
-                write(true, null, _callback);
-        }
-        finally
-        {
-            if (getRequest() instanceof GzipRequest gzipRequest)
-                gzipRequest.destroy();
-        }
+        // We need to write nothing here to intercept the committing of the
+        // response and possibly change headers in case write is never called.
+        if (_last)
+            _callback.succeeded();
+        else
+            write(true, null, _callback);
     }
 
     @Override
     public void failed(Throwable x)
     {
-        try
-        {
-            _callback.failed(x);
-        }
-        finally
-        {
-            if (getRequest() instanceof GzipRequest gzipRequest)
-                gzipRequest.destroy();
-        }
+        _callback.failed(x);
     }
 
     @Override
