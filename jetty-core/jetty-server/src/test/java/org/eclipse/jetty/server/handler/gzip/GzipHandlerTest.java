@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.Inflater;
@@ -71,8 +72,12 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.compression.CompressionPool;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -86,6 +91,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
@@ -944,6 +950,10 @@ public class GzipHandlerTest
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), is(data));
+
+        InflaterPool inflaterPool = _gzipHandler.getBean(InflaterPool.class);
+        Pool<CompressionPool<Inflater>.Entry> pool = inflaterPool.getPool();
+        await().atMost(5, TimeUnit.SECONDS).until(pool::getInUseCount, is(0));
     }
 
     @Test
@@ -1307,6 +1317,10 @@ public class GzipHandlerTest
         {
             assertEquals(CONTENT, new String(Arrays.copyOfRange(bytes, i * CONTENT_BYTES.length, (i + 1) * CONTENT_BYTES.length), StandardCharsets.UTF_8), "chunk " + i);
         }
+
+        DeflaterPool deflaterPool = _gzipHandler.getBean(DeflaterPool.class);
+        Pool<CompressionPool<Deflater>.Entry> pool = deflaterPool.getPool();
+        await().atMost(5, TimeUnit.SECONDS).until(pool::getInUseCount, is(0));
     }
 
     /**
