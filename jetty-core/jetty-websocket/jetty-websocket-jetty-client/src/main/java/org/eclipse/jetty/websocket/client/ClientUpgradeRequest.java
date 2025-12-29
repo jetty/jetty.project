@@ -359,7 +359,7 @@ public final class ClientUpgradeRequest implements UpgradeRequest
      * <p>Tags this request with the given metadata tag.</p>
 
      * @param tag the metadata to tag the request with
-     * @see Request#tag(Object).
+     * @see Request#tag(Object)
      */
     public void tag(Object tag)
     {
