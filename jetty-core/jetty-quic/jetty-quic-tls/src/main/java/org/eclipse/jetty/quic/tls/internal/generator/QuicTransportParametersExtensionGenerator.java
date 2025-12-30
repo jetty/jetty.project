@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.quic.tls.internal.generator;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.tls.message.Extension;
@@ -24,9 +24,9 @@ import org.eclipse.jetty.quic.util.VarLenInt;
 public class QuicTransportParametersExtensionGenerator implements ExtensionGenerator
 {
     @Override
-    public int getType()
+    public Extension.Type type()
     {
-        return QuicTransportParametersExtension.TYPE;
+        return Extension.Type.QUIC_TRANSPORT_PARAMETERS;
     }
 
     @Override
@@ -37,7 +37,7 @@ public class QuicTransportParametersExtensionGenerator implements ExtensionGener
 
     private int generate(RetainableByteBuffer.Mutable accumulator, QuicTransportParametersExtension extension)
     {
-        accumulator.putShort((short)extension.type());
+        accumulator.putShort((short)extension.type().code());
         TransportParameters parameters = extension.parameters();
         int listLength = 0;
         for (Map.Entry<TransportParameters.Id<?>, Object> entry : parameters)
@@ -78,12 +78,6 @@ public class QuicTransportParametersExtensionGenerator implements ExtensionGener
                 case TransportParameters.BytesId bytesId -> accumulator.put(parameters.get(bytesId));
             }
         }
-        return totalLength;
-    }
-
-    static void main()
-    {
-        long v = VarLenInt.decodeLong(ByteBuffer.wrap(new byte[]{(byte)0xFF, 0x02, (byte)0xDE, 0x1A}));
-        System.err.println("v = " + v);
+        return 2 + totalLength;
     }
 }

@@ -14,23 +14,28 @@
 package org.eclipse.jetty.quic.tls.internal.generator;
 
 import java.nio.charset.StandardCharsets;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.Extension;
 import org.eclipse.jetty.quic.tls.message.ServerNameExtension;
 
-public class ServerNameExtensionGenerator implements ExtensionGenerator {
+public class ServerNameExtensionGenerator implements ExtensionGenerator
+{
     @Override
-    public int getType() {
-        return ServerNameExtension.TYPE;
+    public Extension.Type type()
+    {
+        return Extension.Type.SERVER_NAME;
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension) {
+    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
+    {
         return generate(accumulator, (ServerNameExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, ServerNameExtension extension) {
-        accumulator.putShort((short)extension.type());
+    private int generate(RetainableByteBuffer.Mutable accumulator, ServerNameExtension extension)
+    {
+        accumulator.putShort((short)extension.type().code());
         String serverName = extension.serverName();
         // RFC 6066, section 3: names are ASCII.
         byte[] bytes = serverName.getBytes(StandardCharsets.US_ASCII);
@@ -45,6 +50,6 @@ public class ServerNameExtensionGenerator implements ExtensionGenerator {
         // Name length.
         accumulator.putShort((short)bytes.length);
         accumulator.put(bytes);
-        return totalLength;
+        return 2 + totalLength;
     }
 }

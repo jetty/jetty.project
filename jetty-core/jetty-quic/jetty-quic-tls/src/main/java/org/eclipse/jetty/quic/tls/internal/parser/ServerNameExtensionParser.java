@@ -17,7 +17,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.tls.message.Extension;
 import org.eclipse.jetty.quic.tls.message.ServerNameExtension;
 
 /// Extension format:
@@ -34,7 +36,7 @@ import org.eclipse.jetty.quic.tls.message.ServerNameExtension;
 public class ServerNameExtensionParser implements ExtensionParser
 {
     private final List<String> names = new ArrayList<>();
-    private final ExtensionsParser.Listener listener;
+    private final ExtensionParser.Listener listener;
     private State state = State.TOTAL_LENGTH;
     private int totalLength;
     private int listLength;
@@ -42,15 +44,15 @@ public class ServerNameExtensionParser implements ExtensionParser
     private byte[] name;
     private int cursor;
 
-    public ServerNameExtensionParser(ExtensionsParser.Listener listener)
+    public ServerNameExtensionParser(Listener listener)
     {
         this.listener = listener;
     }
 
     @Override
-    public int getType()
+    public Extension.Type type()
     {
-        return ServerNameExtension.TYPE;
+        return Extension.Type.SERVER_NAME;
     }
 
     @Override

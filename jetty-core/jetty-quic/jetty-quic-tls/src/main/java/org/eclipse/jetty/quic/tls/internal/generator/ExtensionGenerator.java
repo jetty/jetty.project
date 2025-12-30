@@ -16,9 +16,15 @@ package org.eclipse.jetty.quic.tls.internal.generator;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.Extension;
 
+/// A generator for a TLS extension.
 public interface ExtensionGenerator
 {
-    int getType();
+    /// @return the TLS extension type
+    Extension.Type type();
 
+    /// @param accumulator the accumulator to generate the extension bytes into
+    /// @param extension the extension to generate
+    /// @return the number of bytes generated for the extension,
+    /// including the extension type, length and body
     int generate(RetainableByteBuffer.Mutable accumulator, Extension extension);
 }

@@ -23,9 +23,9 @@ import org.eclipse.jetty.quic.tls.message.SignatureAlgorithmsExtension;
 public class SignatureAlgorithmsExtensionGenerator implements ExtensionGenerator
 {
     @Override
-    public int getType()
+    public Extension.Type type()
     {
-        return SignatureAlgorithmsExtension.TYPE;
+        return Extension.Type.SIGNATURE_ALGORITHMS;
     }
 
     @Override
@@ -36,7 +36,7 @@ public class SignatureAlgorithmsExtensionGenerator implements ExtensionGenerator
 
     private int generate(RetainableByteBuffer.Mutable accumulator, SignatureAlgorithmsExtension extension)
     {
-        accumulator.putShort((short)extension.type());
+        accumulator.putShort((short)extension.type().code());
         List<SignatureAlgorithm> algorithms = extension.signatureAlgorithms();
         int listLength = 2 * algorithms.size();
         int totalLength = 2 + listLength;
@@ -44,8 +44,8 @@ public class SignatureAlgorithmsExtensionGenerator implements ExtensionGenerator
         accumulator.putShort((short)listLength);
         for (SignatureAlgorithm algorithm : algorithms)
         {
-            accumulator.putShort((short)algorithm.value());
+            accumulator.putShort((short)algorithm.code());
         }
-        return totalLength;
+        return 2 + totalLength;
     }
 }

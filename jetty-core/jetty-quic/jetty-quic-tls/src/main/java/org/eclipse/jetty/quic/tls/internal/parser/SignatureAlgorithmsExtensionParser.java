@@ -18,119 +18,138 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.tls.message.Extension;
 import org.eclipse.jetty.quic.tls.message.SignatureAlgorithm;
 import org.eclipse.jetty.quic.tls.message.SignatureAlgorithmsExtension;
 
-public class SignatureAlgorithmsExtensionParser implements ExtensionParser {
+public class SignatureAlgorithmsExtensionParser implements ExtensionParser
+{
     private final List<SignatureAlgorithm> algorithms = new ArrayList<>();
-    private final ExtensionsParser.Listener listener;
+    private final ExtensionParser.Listener listener;
     private State state = State.TOTAL_LENGTH;
     private int totalLength;
     private int listLength;
     private int algorithm;
     private int cursor;
 
-    public SignatureAlgorithmsExtensionParser(ExtensionsParser.Listener listener) {
+    public SignatureAlgorithmsExtensionParser(Listener listener)
+    {
         this.listener = listener;
     }
 
     @Override
-    public int getType() {
-        return SignatureAlgorithmsExtension.TYPE;
+    public Extension.Type type()
+    {
+        return Extension.Type.SIGNATURE_ALGORITHMS;
     }
 
     @Override
-    public int parse(RetainableByteBuffer buffer) {
-        while (true) {
+    public int parse(RetainableByteBuffer buffer)
+    {
+        while (true)
+        {
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             int remaining = byteBuffer.remaining();
-            if (remaining == 0) {
+            if (remaining == 0)
                 return -1;
-            }
-            switch (state) {
-                case TOTAL_LENGTH -> {
-                    if (remaining > 1) {
+            switch (state)
+            {
+                case TOTAL_LENGTH ->
+                {
+                    if (remaining > 1)
+                    {
                         totalLength = byteBuffer.getShort() & 0xFFFF;
-                        if (totalLength < 4) {
+                        if (totalLength < 4)
                             throw new IllegalStateException("invalid signature algorithms extension length " + totalLength);
-                        }
                         state = State.LIST_LENGTH;
-                    } else {
+                    }
+                    else
+                    {
                         cursor = 2;
                         state = State.TOTAL_LENGTH_BYTES;
                     }
                 }
-                case TOTAL_LENGTH_BYTES -> {
+                case TOTAL_LENGTH_BYTES ->
+                {
                     int b = byteBuffer.get() & 0xFF;
                     --cursor;
                     totalLength += b << (8 * cursor);
-                    if (cursor == 0) {
-                        if (totalLength < 4) {
+                    if (cursor == 0)
+                    {
+                        if (totalLength < 4)
                             throw new IllegalStateException("invalid signature algorithms extension length " + totalLength);
-                        }
                         state = State.LIST_LENGTH;
                     }
                 }
-                case LIST_LENGTH -> {
-                    if (remaining > 1) {
+                case LIST_LENGTH ->
+                {
+                    if (remaining > 1)
+                    {
                         listLength = byteBuffer.getShort() & 0xFFFF;
-                        if (listLength == 0 || listLength % 2 != 0) {
+                        if (listLength == 0 || listLength % 2 != 0)
                             throw new IllegalStateException("invalid signature algorithms list length " + listLength);
-                        }
                         state = State.ALGORITHM;
-                    } else {
+                    }
+                    else
+                    {
                         cursor = 2;
                         state = State.LIST_LENGTH_BYTES;
                     }
                 }
-                case LIST_LENGTH_BYTES -> {
+                case LIST_LENGTH_BYTES ->
+                {
                     int b = byteBuffer.get() & 0xFF;
                     --cursor;
                     listLength += b << (8 * cursor);
-                    if (cursor == 0) {
-                        if (listLength == 0 || listLength % 2 != 0) {
+                    if (cursor == 0)
+                    {
+                        if (listLength == 0 || listLength % 2 != 0)
                             throw new IllegalStateException("invalid signature algorithms list length " + listLength);
-                        }
                         state = State.ALGORITHM;
                     }
                 }
-                case ALGORITHM -> {
-                    if (remaining > 1) {
+                case ALGORITHM ->
+                {
+                    if (remaining > 1)
+                    {
                         algorithm = byteBuffer.getShort() & 0xFFFF;
                         listLength -= 2;
                         int result = algorithmComplete();
-                        if (result > 0) {
+                        if (result > 0)
                             return result;
-                        }
-                    } else {
+                    }
+                    else
+                    {
                         cursor = 2;
                         state = State.ALGORITHM_BYTES;
                     }
                 }
-                case ALGORITHM_BYTES -> {
+                case ALGORITHM_BYTES ->
+                {
                     int b = byteBuffer.get() & 0xFF;
                     --cursor;
                     algorithm += b << (8 * cursor);
-                    if (cursor == 0) {
+                    if (cursor == 0)
+                    {
                         listLength -= 2;
                         int result = algorithmComplete();
-                        if (result > 0) {
+                        if (result > 0)
                             return result;
-                        }
                     }
                 }
             }
         }
     }
 
-    private int algorithmComplete() {
+    private int algorithmComplete()
+    {
         SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.from(algorithm);
-        if (signatureAlgorithm == null) {
+        if (signatureAlgorithm == null)
             throw new IllegalArgumentException("unknown signature algorithm " + Integer.toHexString(algorithm));
-        }
         algorithms.add(signatureAlgorithm);
         algorithm = 0;
-        if (listLength == 0) {
+        if (listLength == 0)
+        {
             int result = totalLength;
             totalLength = 0;
             List<SignatureAlgorithm> signatureAlgorithms = List.copyOf(algorithms);
@@ -138,13 +157,16 @@ public class SignatureAlgorithmsExtensionParser implements ExtensionParser {
             state = State.TOTAL_LENGTH;
             listener.onExtension(new SignatureAlgorithmsExtension(signatureAlgorithms));
             return result;
-        } else {
+        }
+        else
+        {
             state = State.ALGORITHM;
             return -1;
         }
     }
 
-    private enum State {
+    private enum State
+    {
         TOTAL_LENGTH,
         TOTAL_LENGTH_BYTES,
         LIST_LENGTH,

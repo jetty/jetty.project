@@ -14,10 +14,44 @@
 package org.eclipse.jetty.quic.tls.internal.parser;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.tls.message.Extension;
 
+/// Parser for TLS [Extension]s.
+///
+/// Since TLS extensions are only a part of some TLS messages,
+/// parsing requires two return values: the extension object
+/// and how many bytes have been parsed for that extension.
 public interface ExtensionParser
 {
-    int getType();
+    /// @return the TLS extension type
+    Extension.Type type();
 
+    /// Parses the given buffer for one TLS [Extension].
+    ///
+    /// The parsing may not have enough bytes, in which case
+    /// a negative value is returned by this method.
+    ///
+    /// Otherwise, enough bytes could be parsed to decode
+    /// a TLS extension, which is notified to a [Listener]
+    /// and this method returns with the number of bytes
+    /// consumed to parse the TLS extension.
+    /// The buffer may not be fully consumed if it contains
+    /// multiple TLS extensions.
+    ///
+    /// @param buffer the buffer to parse
+    /// @return the number of bytes consumed to decode a
+    /// TLS extension, or a negative value if not enough
+    /// bytes were available
     int parse(RetainableByteBuffer buffer);
+
+    /// The listener to notify of a successfully parsed
+    /// TLS [Extension].
+    interface Listener
+    {
+        /// The method invoked when a TLS extension is
+        /// successfully parsed.
+        ///
+        /// @param extension the TLS extension that was parsed
+        void onExtension(Extension extension);
+    }
 }

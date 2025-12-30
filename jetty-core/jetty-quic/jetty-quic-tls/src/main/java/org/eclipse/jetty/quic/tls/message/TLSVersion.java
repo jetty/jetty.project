@@ -21,26 +21,26 @@ public enum TLSVersion
     TLS_1_2(0x0303),
     TLS_1_3(0x0304);
 
-    private final int value;
+    private final int code;
 
-    TLSVersion(int value)
+    TLSVersion(int code)
     {
-        this.value = value;
-        Values.VALUES.put(value, this);
+        this.code = code;
+        Codes.CODES.put(code, this);
     }
 
-    public int value()
+    public int code()
     {
-        return value;
+        return code;
     }
 
-    public static TLSVersion from(int value)
+    public static TLSVersion from(int code)
     {
-        return Values.VALUES.get(value);
+        return Codes.CODES.get(code);
     }
 
-    private static class Values
+    private static class Codes
     {
-        private static final Map<Integer, TLSVersion> VALUES = new HashMap<>();
+        private static final Map<Integer, TLSVersion> CODES = new HashMap<>();
     }
 }

@@ -14,12 +14,11 @@
 package org.eclipse.jetty.quic.tls.message;
 
 import java.util.List;
+
 import org.eclipse.jetty.util.StringUtil;
 
 public record ALPNExtension(List<String> protocols) implements Extension
 {
-    public static final int TYPE = 0x0010;
-
     public ALPNExtension
     {
         for (String protocol : protocols)
@@ -30,8 +29,8 @@ public record ALPNExtension(List<String> protocols) implements Extension
     }
 
     @Override
-    public int type()
+    public Type type()
     {
-        return TYPE;
+        return Type.ALPN;
     }
 }

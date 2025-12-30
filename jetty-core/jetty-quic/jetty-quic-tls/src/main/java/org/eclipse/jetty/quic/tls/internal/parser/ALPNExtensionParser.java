@@ -20,11 +20,12 @@ import java.util.List;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.ALPNExtension;
+import org.eclipse.jetty.quic.tls.message.Extension;
 
 public class ALPNExtensionParser implements ExtensionParser
 {
     private final List<String> protocols = new ArrayList<>();
-    private final ExtensionsParser.Listener listener;
+    private final Listener listener;
     private State state = State.TOTAL_LENGTH;
     private int totalLength;
     private int listLength;
@@ -32,15 +33,15 @@ public class ALPNExtensionParser implements ExtensionParser
     private byte[] protocol;
     private int cursor;
 
-    public ALPNExtensionParser(ExtensionsParser.Listener listener)
+    public ALPNExtensionParser(Listener listener)
     {
         this.listener = listener;
     }
 
     @Override
-    public int getType()
+    public Extension.Type type()
     {
-        return ALPNExtension.TYPE;
+        return Extension.Type.ALPN;
     }
 
     @Override

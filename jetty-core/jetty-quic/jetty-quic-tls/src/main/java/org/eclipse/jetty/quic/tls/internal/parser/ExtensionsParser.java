@@ -14,22 +14,29 @@
 package org.eclipse.jetty.quic.tls.internal.parser;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.Extension;
 
+/// A parser for a list of TLS extensions carried in a TLS message.
 public class ExtensionsParser
 {
-    private final Map<Integer, ExtensionParser> parsers = new HashMap<>();
+    private final Map<Extension.Type, ExtensionParser> parsers = new EnumMap<>(Extension.Type.class);
+    private final List<Extension>  extensions = new ArrayList<>();
     private State state = State.LENGTH;
-    private int length;
-    private int type;
     private int cursor;
+    private int length;
+    private int consumed;
+    private int code;
+    private Extension.Type type;
 
-    public ExtensionsParser(Listener listener)
+    public ExtensionsParser()
     {
+        ExtensionParser.Listener listener = extensions::add;
         put(new ServerNameExtensionParser(listener));
         put(new ALPNExtensionParser(listener));
         put(new KeyShareExtensionParser(listener));
@@ -41,17 +48,17 @@ public class ExtensionsParser
 
     public ExtensionParser put(ExtensionParser parser)
     {
-        return parsers.put(parser.getType(), parser);
+        return parsers.put(parser.type(), parser);
     }
 
-    public boolean parse(RetainableByteBuffer buffer)
+    public List<Extension> parse(RetainableByteBuffer buffer)
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (true)
         {
             int remaining = byteBuffer.remaining();
             if (remaining == 0)
-                return false;
+                return null;
             switch (state)
             {
                 case LENGTH ->
@@ -79,7 +86,11 @@ public class ExtensionsParser
                 {
                     if (remaining > 1)
                     {
-                        type = (byteBuffer.getShort() & 0xFFFF);
+                        code = (byteBuffer.getShort() & 0xFFFF);
+                        type = Extension.Type.from(code);
+                        if (type == null)
+                            throw new UnsupportedOperationException("could not parse unsupported TLS extension 0x" + Integer.toHexString(code));
+                        consumed += 2;
                         state = State.BODY;
                     }
                     else
@@ -92,24 +103,34 @@ public class ExtensionsParser
                 {
                     int b = byteBuffer.get() & 0xFF;
                     --cursor;
-                    type += b << (8 * cursor);
+                    code += b << (8 * cursor);
                     if (cursor == 0)
+                    {
+                        type = Extension.Type.from(code);
+                        if (type == null)
+                            throw new UnsupportedOperationException("could not parse unsupported TLS extension 0x" + Integer.toHexString(code));
+                        consumed += 2;
                         state = State.BODY;
+                    }
                 }
                 case BODY ->
                 {
                     ExtensionParser parser = parsers.get(type);
                     if (parser == null)
-                        throw new UnsupportedOperationException("could not parse unsupported TLS extension 0x" + Integer.toHexString(type));
+                        throw new UnsupportedOperationException("could not parse unsupported TLS extension 0x" + Integer.toHexString(code));
                     int parsed = parser.parse(buffer);
                     if (parsed < 0)
-                        return false;
-                    type = 0;
-                    length -= parsed;
-                    if (length == 0)
+                        return null;
+                    code = 0;
+                    consumed += parsed;
+                    if (consumed == length)
                     {
                         state = State.LENGTH;
-                        return true;
+                        length = 0;
+                        consumed = 0;
+                        List<Extension> result = List.copyOf(extensions);
+                        extensions.clear();
+                        return result;
                     }
                     else
                     {
@@ -118,11 +139,6 @@ public class ExtensionsParser
                 }
             }
         }
-    }
-
-    public interface Listener
-    {
-        void onExtension(Extension extension);
     }
 
     private enum State

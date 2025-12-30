@@ -17,11 +17,9 @@ import java.util.List;
 
 public record KeyShareExtension(List<KeyShare> keyShares) implements Extension
 {
-    public static final int TYPE = 0x001D;
-
     @Override
-    public int type()
+    public Type type()
     {
-        return TYPE;
+            return Type.KEY_SHARE;
     }
 }

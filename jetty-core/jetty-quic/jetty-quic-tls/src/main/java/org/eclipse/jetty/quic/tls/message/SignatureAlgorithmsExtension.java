@@ -17,11 +17,9 @@ import java.util.List;
 
 public record SignatureAlgorithmsExtension(List<SignatureAlgorithm> signatureAlgorithms) implements Extension
 {
-    public static final int TYPE = 0x000D;
-
     @Override
-    public int type()
+    public Type type()
     {
-        return TYPE;
+        return Type.SIGNATURE_ALGORITHMS;
     }
 }
