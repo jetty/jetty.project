@@ -13,34 +13,74 @@
 
 package org.eclipse.jetty.quic.tls.internal.generator;
 
-import java.security.SecureRandom;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.tls.message.ClientHello;
+import java.util.List;
 
-public class ClientHelloGenerator
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.tls.message.CipherSuite;
+import org.eclipse.jetty.quic.tls.message.ClientHello;
+import org.eclipse.jetty.quic.tls.message.Message;
+
+public class ClientHelloGenerator extends MessageGenerator
 {
-    private final SecureRandom random;
     private final ExtensionsGenerator extensionsGenerator;
 
-    public ClientHelloGenerator(SecureRandom random, ExtensionsGenerator extensionsGenerator)
+    public ClientHelloGenerator(ByteBufferPool byteBufferPool, ExtensionsGenerator extensionsGenerator)
     {
-        this.random = random;
+        super(byteBufferPool);
         this.extensionsGenerator = extensionsGenerator;
     }
 
-    public void generate(RetainableByteBuffer.Mutable accumulator, ClientHello clientHello)
+    @Override
+    public void generate(RetainableByteBuffer.Mutable accumulator, Message message)
     {
+        generate(accumulator, (ClientHello)message);
+    }
+
+    private void generate(RetainableByteBuffer.Mutable accumulator, ClientHello clientHello)
+    {
+        List<CipherSuite> cipherSuites = clientHello.getCipherSuites();
+        int cipherSuitesLength = 2 * cipherSuites.size();
+
+        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getBufferPool(), true, -1, 0, 0);
+        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, clientHello.getExtensions());
+
+        // RFC 8446, 4.1.2.
+        // Field                             | (bytes)
+        // ----------------------------------+--------
+        // Legacy version                    | (2)
+        // Random                            | (32)
+        // Legacy session ID length          | (1)
+        // CipherSuites length               | (2)
+        // CipherSuites                      | (N)
+        // Legacy compression methods Length | (1)
+        // Legacy compression methods        | (1)
+        // Extensions length                 | (2)
+        // Extensions                        | (M)
+        int length = 2 + 32 + 1 + 2 + cipherSuitesLength + 1 + 1 + 2 + extensionsLength;
+        if (length > 0xFFFFFF)
+            throw new IllegalStateException("could not generate ClientHello, too long");
+
+        int typeAndLength = (clientHello.type().type() << 24) | length;
+        accumulator.putInt(typeAndLength);
+
         accumulator.putShort((short)0x0303);
-        byte[] rnd = new byte[32];
-        random.nextBytes(rnd);
-        accumulator.put(rnd);
+
+        byte[] random = clientHello.getRandom();
+        accumulator.put(random);
+
         // Legacy session ID.
         accumulator.put((byte)0x00);
+
         // Cipher suites.
-        // TODO: BouncyCastle has a CipherSuite class, just a collection of static ints.
-//        clientHello.getCipherSuites().forEach(e -> generateCipherSuite(accumulator, e));
-        // Legacy compression methods.
+        accumulator.putShort((short)cipherSuitesLength);
+        cipherSuites.forEach(c -> accumulator.putShort((short)c.code()));
+
+        // Legacy compression methods (one method, no compression).
+        accumulator.put((byte)0x01);
         accumulator.put((byte)0x00);
-        extensionsGenerator.generate(accumulator, clientHello.getExtensions());
+
+        accumulator.putShort((short)extensionsLength);
+        accumulator.add(extensionsAccumulator);
     }
 }

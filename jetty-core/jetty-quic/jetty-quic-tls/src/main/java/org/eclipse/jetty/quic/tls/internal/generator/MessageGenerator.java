@@ -13,18 +13,23 @@
 
 package org.eclipse.jetty.quic.tls.internal.generator;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.tls.message.Extension;
+import org.eclipse.jetty.quic.tls.message.Message;
 
-/// A generator for a TLS extension.
-public interface ExtensionGenerator
+public abstract class MessageGenerator
 {
-    /// @return the TLS extension type
-    Extension.Type type();
+    private final ByteBufferPool bufferPool;
 
-    /// @param accumulator the accumulator to generate the extension bytes into
-    /// @param extension the extension to generate
-    /// @return the number of bytes generated for the extension,
-    /// including the extension type, length and body
-    int generate(RetainableByteBuffer.Mutable accumulator, Extension extension);
+    protected MessageGenerator(ByteBufferPool bufferPool)
+    {
+        this.bufferPool = bufferPool;
+    }
+
+    public ByteBufferPool getBufferPool()
+    {
+        return bufferPool;
+    }
+
+    public abstract void generate(RetainableByteBuffer.Mutable accumulator, Message message);
 }

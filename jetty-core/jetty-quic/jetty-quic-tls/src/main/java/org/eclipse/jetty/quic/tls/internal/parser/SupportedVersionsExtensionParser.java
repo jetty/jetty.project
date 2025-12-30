@@ -18,28 +18,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.tls.message.Extension;
 import org.eclipse.jetty.quic.tls.message.SupportedVersionsExtension;
 import org.eclipse.jetty.quic.tls.message.TLSVersion;
 
 public class SupportedVersionsExtensionParser implements ExtensionParser
 {
     private final List<TLSVersion> versions = new ArrayList<>();
-    private final ExtensionsParser.Listener listener;
+    private final ExtensionParser.Listener listener;
     private State state = State.TOTAL_LENGTH;
     private int totalLength;
     private int listLength;
     private int version;
     private int cursor;
 
-    public SupportedVersionsExtensionParser(ExtensionsParser.Listener listener)
+    public SupportedVersionsExtensionParser(Listener listener)
     {
         this.listener = listener;
     }
 
     @Override
-    public int getType()
+    public Extension.Type type()
     {
-        return SupportedVersionsExtension.TYPE;
+        return Extension.Type.SUPPORTED_VERSIONS;
     }
 
     @Override
@@ -58,7 +59,7 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
                     if (remaining > 1)
                     {
                         totalLength = byteBuffer.getShort() & 0xFFFF;
-                        if (totalLength < 4)
+                        if (totalLength < 3)
                             throw new IllegalStateException("invalid supported versions extension length " + totalLength);
                         state = State.LIST_LENGTH;
                     }
@@ -75,7 +76,7 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
                     {
-                        if (totalLength < 4)
+                        if (totalLength < 3)
                             throw new IllegalStateException("invalid supported versions extension length " + totalLength);
                         state = State.LIST_LENGTH;
                     }

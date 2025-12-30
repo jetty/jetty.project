@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.tls.internal.generator;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.ALPNExtension;
 import org.eclipse.jetty.quic.tls.message.Extension;
@@ -22,9 +23,9 @@ import org.eclipse.jetty.quic.tls.message.Extension;
 public class ALPNExtensionGenerator implements ExtensionGenerator
 {
     @Override
-    public int getType()
+    public Extension.Type type()
     {
-        return ALPNExtension.TYPE;
+        return Extension.Type.ALPN;
     }
 
     @Override
@@ -35,7 +36,7 @@ public class ALPNExtensionGenerator implements ExtensionGenerator
 
     private int generate(RetainableByteBuffer.Mutable accumulator, ALPNExtension extension)
     {
-        accumulator.putShort((short)extension.type());
+        accumulator.putShort((short)extension.type().code());
         List<String> protocols = extension.protocols();
         // RFC 7301: protocols are UTF-8 strings.
         List<byte[]> bytes = protocols.stream().map(p -> p.getBytes(StandardCharsets.UTF_8)).toList();
@@ -51,6 +52,6 @@ public class ALPNExtensionGenerator implements ExtensionGenerator
             accumulator.put((byte)b.length);
             accumulator.put(b);
         }
-        return totalLength;
+        return 2 + totalLength;
     }
 }

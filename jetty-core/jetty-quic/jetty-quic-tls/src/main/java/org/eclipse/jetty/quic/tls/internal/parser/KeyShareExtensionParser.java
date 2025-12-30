@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.tls.message.Extension;
 import org.eclipse.jetty.quic.tls.message.KeyShare;
 import org.eclipse.jetty.quic.tls.message.KeyShareExtension;
 import org.eclipse.jetty.quic.tls.message.NamedGroup;
@@ -25,7 +26,7 @@ import org.eclipse.jetty.quic.tls.message.NamedGroup;
 public class KeyShareExtensionParser implements ExtensionParser
 {
     private final List<KeyShare> shares = new ArrayList<>();
-    private final ExtensionsParser.Listener listener;
+    private final ExtensionParser.Listener listener;
     private State state = State.TOTAL_LENGTH;
     private int totalLength;
     private int listLength;
@@ -34,15 +35,15 @@ public class KeyShareExtensionParser implements ExtensionParser
     private byte[] keyExchange;
     private int cursor;
 
-    public KeyShareExtensionParser(ExtensionsParser.Listener listener)
+    public KeyShareExtensionParser(Listener listener)
     {
         this.listener = listener;
     }
 
     @Override
-    public int getType()
+    public Extension.Type type()
     {
-        return KeyShareExtension.TYPE;
+        return Extension.Type.KEY_SHARE;
     }
 
     @Override

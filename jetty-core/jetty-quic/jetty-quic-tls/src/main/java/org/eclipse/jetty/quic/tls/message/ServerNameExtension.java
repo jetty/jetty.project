@@ -17,8 +17,6 @@ import org.eclipse.jetty.util.StringUtil;
 
 public record ServerNameExtension(String serverName) implements Extension
 {
-    public static final int TYPE = 0x0000;
-
     public ServerNameExtension
     {
         if (StringUtil.isBlank(serverName))
@@ -26,8 +24,8 @@ public record ServerNameExtension(String serverName) implements Extension
     }
 
     @Override
-    public int type()
+    public Type type()
     {
-        return TYPE;
+        return Type.SERVER_NAME;
     }
 }

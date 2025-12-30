@@ -17,11 +17,9 @@ import java.util.List;
 
 public record SupportedVersionsExtension(List<TLSVersion> versions) implements Extension
 {
-    public static final int TYPE = 0x002B;
-
     @Override
-    public int type()
+    public Type type()
     {
-        return TYPE;
+        return Type.SUPPORTED_VERSIONS;
     }
 }

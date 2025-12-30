@@ -23,9 +23,9 @@ import org.eclipse.jetty.quic.tls.message.TLSVersion;
 public class SupportedVersionsExtensionGenerator implements ExtensionGenerator
 {
     @Override
-    public int getType()
+    public Extension.Type type()
     {
-        return SupportedVersionsExtension.TYPE;
+        return Extension.Type.SUPPORTED_VERSIONS;
     }
 
     @Override
@@ -36,7 +36,7 @@ public class SupportedVersionsExtensionGenerator implements ExtensionGenerator
 
     private int generate(RetainableByteBuffer.Mutable accumulator, SupportedVersionsExtension extension)
     {
-        accumulator.putShort((short)extension.type());
+        accumulator.putShort((short)extension.type().code());
         List<TLSVersion> versions = extension.versions();
         int listLength = 2 * versions.size();
         int totalLength = 1 + listLength;
@@ -44,8 +44,8 @@ public class SupportedVersionsExtensionGenerator implements ExtensionGenerator
         accumulator.put((byte)listLength);
         for (TLSVersion version : versions)
         {
-            accumulator.putShort((short)version.value());
+            accumulator.putShort((short)version.code());
         }
-        return totalLength;
+        return 2 + totalLength;
     }
 }

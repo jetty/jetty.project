@@ -33,26 +33,26 @@ public enum SignatureAlgorithm
     RSA_PSS_RSAE_SHA384(0X0805),
     RSA_PSS_RSAE_SHA512(0X0806);
 
-    private final int value;
+    private final int code;
 
-    SignatureAlgorithm(int value)
+    SignatureAlgorithm(int code)
     {
-        this.value = value;
-        Values.VALUES.put(value, this);
+        this.code = code;
+        Codes.CODES.put(code, this);
     }
 
-    public int value()
+    public int code()
     {
-        return value;
+        return code;
     }
 
-    public static SignatureAlgorithm from(int value)
+    public static SignatureAlgorithm from(int code)
     {
-        return Values.VALUES.get(value);
+        return Codes.CODES.get(code);
     }
 
-    private static class Values
+    private static class Codes
     {
-        private static final Map<Integer, SignatureAlgorithm> VALUES = new HashMap<>();
+        private static final Map<Integer, SignatureAlgorithm> CODES = new HashMap<>();
     }
 }

@@ -17,11 +17,9 @@ import org.eclipse.jetty.quic.api.frames.TransportParameters;
 
 public record QuicTransportParametersExtension(TransportParameters parameters) implements Extension
 {
-    public static final int TYPE = 0x0039;
-
     @Override
-    public int type()
+    public Type type()
     {
-        return TYPE;
+        return Type.QUIC_TRANSPORT_PARAMETERS;
     }
 }

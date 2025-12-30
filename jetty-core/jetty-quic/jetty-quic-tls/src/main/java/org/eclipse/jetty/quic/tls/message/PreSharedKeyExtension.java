@@ -16,11 +16,9 @@ package org.eclipse.jetty.quic.tls.message;
 // TODO: has client and server variants?
 public record PreSharedKeyExtension() implements Extension
 {
-    public static final int TYPE = 0x0029;
-
     @Override
-    public int type()
+    public Type type()
     {
-        return TYPE;
+        return Type.PRE_SHARED_KEY;
     }
 }

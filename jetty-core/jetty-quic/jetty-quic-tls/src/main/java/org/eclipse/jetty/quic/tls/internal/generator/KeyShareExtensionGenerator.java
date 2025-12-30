@@ -8,9 +8,9 @@ import org.eclipse.jetty.quic.tls.message.KeyShareExtension;
 public class KeyShareExtensionGenerator implements ExtensionGenerator
 {
     @Override
-    public int getType()
+    public Extension.Type type()
     {
-        return KeyShareExtension.TYPE;
+        return Extension.Type.KEY_SHARE;
     }
 
     @Override
@@ -21,7 +21,7 @@ public class KeyShareExtensionGenerator implements ExtensionGenerator
 
     private int generate(RetainableByteBuffer.Mutable accumulator, KeyShareExtension extension)
     {
-        accumulator.putShort((short)extension.type());
+        accumulator.putShort((short)extension.type().code());
         int listLength = extension.keyShares().stream()
             .mapToInt(keyShare -> 2 + 2 + keyShare.keyExchange().length)
             .sum();
@@ -30,11 +30,11 @@ public class KeyShareExtensionGenerator implements ExtensionGenerator
         accumulator.putShort((short)listLength);
         for (KeyShare keyShare : extension.keyShares())
         {
-            accumulator.putShort((short)keyShare.group().value());
+            accumulator.putShort((short)keyShare.group().code());
             byte[] keyExchange = keyShare.keyExchange();
             accumulator.putShort((short)keyExchange.length);
             accumulator.put(keyExchange);
         }
-        return totalLength;
+        return 2 + totalLength;
     }
 }

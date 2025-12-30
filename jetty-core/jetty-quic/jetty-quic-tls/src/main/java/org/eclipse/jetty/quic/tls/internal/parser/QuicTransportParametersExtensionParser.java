@@ -14,15 +14,17 @@
 package org.eclipse.jetty.quic.tls.internal.parser;
 
 import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
+import org.eclipse.jetty.quic.tls.message.Extension;
 import org.eclipse.jetty.quic.tls.message.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
 public class QuicTransportParametersExtensionParser implements ExtensionParser
 {
     private final VarLenInt varLenInt = new VarLenInt();
-    private final ExtensionsParser.Listener listener;
+    private final ExtensionParser.Listener listener;
     private TransportParameters transportParameters;
     private State state = State.TOTAL_LENGTH;
     private int totalLength;
@@ -33,15 +35,15 @@ public class QuicTransportParametersExtensionParser implements ExtensionParser
     private byte[] value;
     private int cursor;
 
-    public QuicTransportParametersExtensionParser(ExtensionsParser.Listener listener)
+    public QuicTransportParametersExtensionParser(Listener listener)
     {
         this.listener = listener;
     }
 
     @Override
-    public int getType()
+    public Extension.Type type()
     {
-        return QuicTransportParametersExtension.TYPE;
+        return Extension.Type.QUIC_TRANSPORT_PARAMETERS;
     }
 
     @Override

@@ -11,20 +11,26 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.tls.internal.generator;
+package org.eclipse.jetty.quic.tls.internal.parser;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.tls.message.Extension;
+import org.eclipse.jetty.quic.tls.message.Message;
 
-/// A generator for a TLS extension.
-public interface ExtensionGenerator
+/// Parser for TLS [Message]s.
+///
+/// TLS messages are delivered in a stream of bytes,
+/// as CRYPTO frames are similar to STREAM frames.
+/// As such, parsing just continues until there are
+/// no more bytes, and returns TLS messages as they
+/// are parsed, possibly not fully consuming the
+/// buffer, which may contain bytes from the next
+/// TLS message.
+public interface MessageParser
 {
-    /// @return the TLS extension type
-    Extension.Type type();
+    Message parse(RetainableByteBuffer buffer);
 
-    /// @param accumulator the accumulator to generate the extension bytes into
-    /// @param extension the extension to generate
-    /// @return the number of bytes generated for the extension,
-    /// including the extension type, length and body
-    int generate(RetainableByteBuffer.Mutable accumulator, Extension extension);
+    interface Listener
+    {
+        void onMessage(Message message);
+    }
 }

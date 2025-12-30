@@ -13,49 +13,48 @@
 
 package org.eclipse.jetty.quic.tls.internal.generator;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.tls.message.Extension;
 
+/// A generator for many TLS extensions.
 public class ExtensionsGenerator
 {
-    private final Map<Integer, ExtensionGenerator> generators = new HashMap<>();
-    private final ByteBufferPool byteBufferPool;
+    private final Map<Extension.Type, ExtensionGenerator> generators = new EnumMap<>(Extension.Type.class);
 
-    public ExtensionsGenerator(ByteBufferPool byteBufferPool)
+    public ExtensionsGenerator()
     {
-        this.byteBufferPool = byteBufferPool;
-        put(new ServerNameExtensionGenerator());
         put(new ALPNExtensionGenerator());
         put(new KeyShareExtensionGenerator());
+        put(new QuicTransportParametersExtensionGenerator());
+        put(new ServerNameExtensionGenerator());
         put(new SignatureAlgorithmsExtensionGenerator());
         put(new SupportedGroupsExtensionGenerator());
         put(new SupportedVersionsExtensionGenerator());
-        put(new QuicTransportParametersExtensionGenerator());
     }
 
     public ExtensionGenerator put(ExtensionGenerator generator)
     {
-        return generators.put(generator.getType(), generator);
+        return generators.put(generator.type(), generator);
     }
 
-    public void generate(RetainableByteBuffer.Mutable accumulator, List<Extension> extensions)
+    /// @param accumulator the accumulator to generate the extensions bytes into
+    /// @param extensions the extensions to generate
+    /// @return the number of bytes generated for all the extensions.
+    public int generate(RetainableByteBuffer.Mutable accumulator, List<Extension> extensions)
     {
         int totalLength = 0;
-        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
         for (Extension extension : extensions)
         {
             ExtensionGenerator generator = generators.get(extension.type());
             if (generator != null)
-                totalLength += generator.generate(extensionsAccumulator, extension);
+                totalLength += generator.generate(accumulator, extension);
             else
                 throw new UnsupportedOperationException("could not generate unsupported TLS extension " + extensions);
         }
-        accumulator.putShort((short)totalLength);
-        accumulator.add(extensionsAccumulator);
+        return totalLength;
     }
 }

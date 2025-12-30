@@ -16,42 +16,45 @@ package org.eclipse.jetty.quic.tls.message;
 import java.util.HashMap;
 import java.util.Map;
 
+/// The named groups specified in RFC 8442, RFC 8446 and RFC 7919.
+///
+/// The constant name is lower-case and matches the Java security provider names.
 public enum NamedGroup
 {
     // Elliptic Curve Groups (ECDHE).
-    SECP256R1(0x0017),
-    SECP384R1(0x0018),
-    SECP521R1(0x0019),
-    X25519(0x001D),
-    X448(0x001E),
+    secp256r1(0x0017),
+    secp384r1(0x0018),
+    secp521r1(0x0019),
+    x25519(0x001d),
+    x448(0x001e),
 
     // Finite Field Groups (DHE).
-    FFDHE2048(0x0100),
-    FFDHE3072(0x0101),
-    FFDHE4096(0x0102),
-    FFDHE6144(0x0103),
-    FFDHE8192(0x0104);
+    ffdhe2048(0x0100),
+    ffdhe3072(0x0101),
+    ffdhe4096(0x0102),
+    ffdhe6144(0x0103),
+    ffdhe8192(0x0104);
 
-    private final int value;
+    private final int code;
 
-    NamedGroup(int value)
+    NamedGroup(int code)
     {
-        this.value = value;
-        Values.VALUES.put(value, this);
+        this.code = code;
+        Codes.CODES.put(code, this);
     }
 
-    public static NamedGroup from(int group)
+    public static NamedGroup from(int code)
     {
-        return Values.VALUES.get(group);
+        return Codes.CODES.get(code);
     }
 
-    public int value()
+    public int code()
     {
-        return value;
+        return code;
     }
 
-    private static class Values
+    private static class Codes
     {
-        private static final Map<Integer, NamedGroup> VALUES = new HashMap<>();
+        private static final Map<Integer, NamedGroup> CODES = new HashMap<>();
     }
 }

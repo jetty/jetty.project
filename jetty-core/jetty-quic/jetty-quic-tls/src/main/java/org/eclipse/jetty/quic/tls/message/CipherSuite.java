@@ -13,13 +13,35 @@
 
 package org.eclipse.jetty.quic.tls.message;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-public record SignatureAlgorithmsExtension(List<SignatureAlgorithm> signatureAlgorithms) implements Extension
+public enum CipherSuite
 {
-    @Override
-    public Type type()
+    TLS_AES_128_GCM_SHA256(0x1301),
+    TLS_AES_256_GCM_SHA384(0x1302),
+    TLS_CHACHA20_POLY1305_SHA256(0x1303);
+
+    private final int code;
+
+    CipherSuite(int code)
     {
-        return Type.SIGNATURE_ALGORITHMS;
+        this.code = code;
+        Codes.CODES.put(code, this);
+    }
+
+    public int code()
+    {
+        return code;
+    }
+
+    public static CipherSuite from(int code)
+    {
+        return Codes.CODES.get(code);
+    }
+
+    private static class Codes
+    {
+        private static final Map<Integer, CipherSuite> CODES = new HashMap<>();
     }
 }
