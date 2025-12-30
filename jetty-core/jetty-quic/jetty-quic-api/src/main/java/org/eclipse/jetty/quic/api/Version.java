@@ -22,7 +22,7 @@ public enum Version
     V2;
 
     /// @return the version number in QUIC long headers packets
-    public int version()
+    public int code()
     {
         return switch (this)
         {

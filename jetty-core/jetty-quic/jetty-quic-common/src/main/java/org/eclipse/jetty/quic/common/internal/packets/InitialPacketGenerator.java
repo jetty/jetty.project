@@ -66,7 +66,7 @@ public class InitialPacketGenerator implements PacketGenerator
         int msb = form | type | (packetNumber.encodedPacketNumberLength() - 1);
         headerAccumulator.put((byte)msb);
 
-        headerAccumulator.putInt(packet.getVersion().version());
+        headerAccumulator.putInt(packet.getVersion().code());
 
         byte[] dstConnectionId = packet.getDestinationConnectionId();
         headerAccumulator.put((byte)dstConnectionId.length);
