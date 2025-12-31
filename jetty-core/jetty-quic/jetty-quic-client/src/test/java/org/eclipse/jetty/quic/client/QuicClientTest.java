@@ -84,7 +84,7 @@ public class QuicClientTest
             }
         });
 
-        QuicClient client = new QuicClient();
+        QuicClient client = new QuicClient(null, null);
         client.start();
 
         Promise.Completable<Session> completable = new Promise.Completable<>();

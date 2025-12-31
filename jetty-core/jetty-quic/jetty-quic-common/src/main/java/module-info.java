@@ -16,8 +16,11 @@ module org.eclipse.jetty.quic.common
     requires org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.quic.api;
     requires transitive org.eclipse.jetty.quic.util;
+    requires org.eclipse.jetty.tls.common;
     requires org.slf4j;
 
     exports org.eclipse.jetty.quic.common;
     exports org.eclipse.jetty.quic.common.frames;
+    exports org.eclipse.jetty.quic.common.tls.parser;
+    exports org.eclipse.jetty.quic.common.tls.generator;
 }

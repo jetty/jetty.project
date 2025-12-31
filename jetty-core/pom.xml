@@ -48,6 +48,7 @@
     <module>jetty-util-ajax</module>
     <module>jetty-websocket</module>
     <module>jetty-xml</module>
+    <module>jetty-tls</module>
   </modules>
 
   <!-- FIXME: Remove once Servlet API usage is totally removed from jetty-core -->

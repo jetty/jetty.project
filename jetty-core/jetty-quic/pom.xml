@@ -20,7 +20,6 @@
     <module>jetty-quic-util</module>
     <module>jetty-quic-tests</module>
     <module>jetty-quic-server</module>
-    <module>jetty-quic-tls</module>
   </modules>
 
 </project>

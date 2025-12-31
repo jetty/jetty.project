@@ -57,7 +57,7 @@ public class HKDFTest
             .extractOnly();
         KDF kdf = KDF.getInstance("HKDF-SHA256");
         SecretKey prk = kdf.deriveKey("InitialPseudoRandomKey", spec);
-        SecretKey clientInitial = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk,"client in", 32));
+        SecretKey clientInitial = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "client in", 32));
         // From RFC 9001, Appendix A.1.
         String expected = "c00cf151ca5be075ed0ebfb5c80323c42d6b7db67881289af4008f1f6c357aea";
         assertThat(StringUtil.toHexString(clientInitial.getEncoded()), equalToIgnoringCase(expected));

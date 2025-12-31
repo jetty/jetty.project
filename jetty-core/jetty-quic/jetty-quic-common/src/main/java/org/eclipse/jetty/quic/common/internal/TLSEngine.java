@@ -77,7 +77,7 @@ public class TLSEngine implements Encrypter
             KDF kdf = KDF.getInstance("HKDF-SHA256");
             SecretKey prk = kdf.deriveKey("InitialPseudoRandomKey", spec);
 
-            SecretKey clientInitial = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk,"client in", 32));
+            SecretKey clientInitial = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "client in", 32));
             SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, version.encryptionLabel(), 16));
             SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, version.initializationVectorLabel(), 12));
             SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, version.headerProtectionLabel(), 16));
