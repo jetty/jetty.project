@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.tls.common.parser.MessagesParser;
 
 public class CryptoFrameParser implements FrameParser
 {

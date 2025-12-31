@@ -14,7 +14,9 @@
 module org.eclipse.jetty.quic.api
 {
     requires transitive org.eclipse.jetty.io;
+    requires transitive org.eclipse.jetty.tls.api;
 
     exports org.eclipse.jetty.quic.api;
     exports org.eclipse.jetty.quic.api.frames;
+    exports org.eclipse.jetty.quic.api.tls.ext;
 }

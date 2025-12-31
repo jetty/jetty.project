@@ -21,14 +21,16 @@
       <artifactId>jetty-io</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-tls-common</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
       <artifactId>jetty-quic-api</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
       <artifactId>jetty-quic-util</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
