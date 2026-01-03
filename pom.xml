@@ -280,7 +280,7 @@
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.6.2</mongodb.version>
     <netty.version>4.2.9.Final</netty.version>
-    <njord.version>0.8.7</njord.version>
+    <njord.version>0.9.1</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
