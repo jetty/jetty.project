@@ -39,11 +39,11 @@ public class ClientHelloMessageGenerator extends MessageGenerator
 
     private void generate(RetainableByteBuffer.Mutable accumulator, ClientHelloMessage message)
     {
-        List<CipherSuite> cipherSuites = message.getCipherSuites();
+        List<CipherSuite> cipherSuites = message.cipherSuites();
         int cipherSuitesLength = 2 * cipherSuites.size();
 
         RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getBufferPool(), true, -1, 0, 0);
-        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.getExtensions());
+        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
         if (extensionsLength > 0xFFFF)
             throw new IllegalStateException("could not generate ClientHello, extensions too long");
 
@@ -68,7 +68,7 @@ public class ClientHelloMessageGenerator extends MessageGenerator
 
         accumulator.putShort((short)0x0303);
 
-        byte[] random = message.getRandom();
+        byte[] random = message.random();
         accumulator.put(random);
 
         // Legacy session ID.

@@ -190,7 +190,7 @@ public class ClientHelloMessageParser implements MessageParser
                     List<Extension> extensions = extensionsParser.parse(buffer);
                     if (extensions == null)
                         return null;
-                    ClientHelloMessage message = new ClientHelloMessage();
+                    ClientHelloMessage message = new ClientHelloMessage(, , , );
                     message.setRandom(random);
                     random = null;
                     sessionId = null;
