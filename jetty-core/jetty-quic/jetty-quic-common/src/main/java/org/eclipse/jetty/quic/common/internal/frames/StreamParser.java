@@ -15,12 +15,13 @@ package org.eclipse.jetty.quic.common.internal.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class StreamParser
+public class StreamParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
@@ -48,8 +49,10 @@ public class StreamParser
         this.maxFrameSize = maxFrameSize;
     }
 
-    public StreamFrame parse(ByteBuffer byteBuffer)
+    @Override
+    public StreamFrame parse(RetainableByteBuffer buffer)
     {
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (byteBuffer.hasRemaining())
         {
             switch (state)

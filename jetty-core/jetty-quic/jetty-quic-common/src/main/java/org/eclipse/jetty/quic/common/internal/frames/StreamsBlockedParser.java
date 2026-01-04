@@ -15,10 +15,11 @@ package org.eclipse.jetty.quic.common.internal.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class StreamsBlockedParser
+public class StreamsBlockedParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
@@ -30,15 +31,17 @@ public class StreamsBlockedParser
         this.varLenInt = varLenInt;
     }
 
-    public StreamsBlockedFrame parse(ByteBuffer byteBuffer)
+    @Override
+    public StreamsBlockedFrame parse(RetainableByteBuffer buffer)
     {
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (byteBuffer.hasRemaining())
         {
             switch (state)
             {
                 case FRAME_TYPE ->
                 {
-                    bidirectional =  (byteBuffer.get() & 0xFF) == 0x16;
+                    bidirectional = (byteBuffer.get() & 0xFF) == 0x16;
                     state = State.MAX_STREAMS;
                 }
                 case MAX_STREAMS ->

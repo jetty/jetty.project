@@ -15,16 +15,17 @@ package org.eclipse.jetty.quic.common.internal.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
-public class ConnectionCloseParser
+public class ConnectionCloseParser implements FrameParser
 {
     private final VarLenInt varLenInt;
-    private int maxReasonLength = 128;
+    private int reasonMaxLength = 128;
     private State state = State.FRAME_TYPE;
     private boolean appError;
     private long errorCode;
@@ -37,13 +38,20 @@ public class ConnectionCloseParser
         this.varLenInt = varLenInt;
     }
 
-    public void setReasonMaxLength(int maxReasonLength)
+    public int getReasonMaxLength()
     {
-        this.maxReasonLength = maxReasonLength;
+        return reasonMaxLength;
     }
 
-    public ConnectionCloseFrame parse(ByteBuffer byteBuffer)
+    public void setReasonMaxLength(int reasonMaxLength)
     {
+        this.reasonMaxLength = reasonMaxLength;
+    }
+
+    @Override
+    public ConnectionCloseFrame parse(RetainableByteBuffer buffer)
+    {
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (byteBuffer.hasRemaining())
         {
             switch (state)
@@ -67,7 +75,7 @@ public class ConnectionCloseParser
                 {
                     if (varLenInt.tryDecode(byteBuffer, v -> reasonLength = v))
                     {
-                        if (reasonLength > maxReasonLength)
+                        if (reasonLength > reasonMaxLength)
                             throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_reason_length", appError ? 0x1D : 0x1C);
                         state = State.REASON;
                     }

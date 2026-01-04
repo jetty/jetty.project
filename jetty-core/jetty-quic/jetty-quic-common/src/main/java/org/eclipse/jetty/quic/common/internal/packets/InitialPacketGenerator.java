@@ -18,23 +18,42 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.frames.FrameGenerator;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.internal.EncryptionLevel;
+import org.eclipse.jetty.quic.common.internal.PacketBuffers;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InitialPacketGenerator implements PacketGenerator
 {
-    private final ByteBufferPool byteBufferPool;
+    private static final Logger LOG = LoggerFactory.getLogger(InitialPacketGenerator.class);
+
     private final PacketNumbers packetNumbers;
     private final FrameGenerator frameGenerator;
     private final Encrypter encrypter;
+    private int payloadMinLength;
 
-    public InitialPacketGenerator(ByteBufferPool byteBufferPool, PacketNumbers packetNumbers, FrameGenerator frameGenerator, Encrypter encrypter)
+    public InitialPacketGenerator(PacketNumbers packetNumbers, FrameGenerator frameGenerator, Encrypter encrypter)
     {
-        this.byteBufferPool = byteBufferPool;
         this.packetNumbers = packetNumbers;
         this.frameGenerator = frameGenerator;
         this.encrypter = encrypter;
+        // RFC 9000, 14.1: UDP payload must be at least 1200 bytes.
+        // The minimum InitialPacket header length is 11, considering
+        // empty connection IDs and empty token; the AEAD tag is 16,
+        // so 1200 - 11 - 16 = 1173 bytes.
+        this.payloadMinLength = 1173;
+    }
+
+    public int getPayloadMinimumLength()
+    {
+        return payloadMinLength;
+    }
+
+    public void setPayloadMinimumLength(int payloadMinLength)
+    {
+        this.payloadMinLength = payloadMinLength;
     }
 
     @Override
@@ -45,25 +64,40 @@ public class InitialPacketGenerator implements PacketGenerator
 
     private void generate(RetainableByteBuffer.Mutable accumulator, InitialPacket packet) throws Exception
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("generating {}", packet);
+
         // TODO: fix these deprecations.
         ByteBufferPool.Accumulator frameAccumulator = new ByteBufferPool.Accumulator();
         packet.getFrames().forEach(frame -> frameGenerator.generate(frameAccumulator, frame));
         RetainableByteBuffer.Mutable encodedFrames = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
         frameAccumulator.getByteBuffers().forEach(encodedFrames::add);
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("generated {} frame bytes for {}", encodedFrames.size(), packet);
+
+        // TODO: handle the case where framesLength is bigger than maxUDPPayloadSize?
+        //  Although we have not received it yet from the other peer.
+        //  See RFC 9000, 14 and 18.2.
+
         long framesLength = encodedFrames.size();
-        if (framesLength < 1200)
+        int payloadMinLength = getPayloadMinimumLength();
+        if (framesLength < payloadMinLength)
         {
             // A PADDING frame is just the byte 0x00.
-            byte[] padding = new byte[Math.toIntExact(1200 - framesLength)];
+            long paddingLength = payloadMinLength - framesLength;
+            byte[] padding = new byte[Math.toIntExact(paddingLength)];
             encodedFrames.put(padding);
+            if (LOG.isDebugEnabled())
+                LOG.debug("generated {} padding bytes for {}", paddingLength, packet);
         }
 
         RetainableByteBuffer.Mutable headerAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
         int form = 0b11000000;
         int type = packet.getPacketType().type(packet.getVersion()) << 4;
-        PacketNumber packetNumber = packetNumbers.newPacketNumber(packet.getPacketNumber());
-        int msb = form | type | (packetNumber.encodedPacketNumberLength() - 1);
+        long packetNumber = packet.getPacketNumber();
+        EncodedPacketNumber encodedPacketNumber = packetNumbers.encode(EncryptionLevel.INITIAL, packetNumber);
+        int msb = form | type | (encodedPacketNumber.length() - 1);
         headerAccumulator.put((byte)msb);
 
         headerAccumulator.putInt(packet.getVersion().code());
@@ -82,21 +116,18 @@ public class InitialPacketGenerator implements PacketGenerator
 
         // AEAD encryption produces 16 additional bytes.
         long encryptedFramesLength = encodedFrames.size() + 16;
-        long packetLength = packetNumber.encodedPacketNumberLength() + encryptedFramesLength;
+        long packetLength = encodedPacketNumber.length() + encryptedFramesLength;
 
         VarLenInt.encode(headerAccumulator, packetLength);
 
-        packetNumber.putTo(headerAccumulator);
+        encodedPacketNumber.putTo(headerAccumulator);
 
-        RetainableByteBuffer.Mutable encryptedHeader = byteBufferPool.acquire((int)headerAccumulator.size(), true);
-        encryptedHeader.getByteBuffer().clear();
-        RetainableByteBuffer.Mutable encryptedPayload = byteBufferPool.acquire((int)encryptedFramesLength, true);
-        encryptedPayload.getByteBuffer().clear();
-        encrypter.encrypt(EncryptionLevel.INITIAL, packetNumber,
-            headerAccumulator.getByteBuffer(), encryptedHeader.getByteBuffer(),
-            encodedFrames.getByteBuffer(), encryptedPayload.getByteBuffer());
+        PacketBuffers packetBuffers = encrypter.encrypt(EncryptionLevel.INITIAL, packetNumber, headerAccumulator.getByteBuffer(), encodedFrames.getByteBuffer());
 
-        accumulator.add(encryptedHeader);
-        accumulator.add(encryptedPayload);
+        if (LOG.isDebugEnabled())
+            LOG.debug("encrypted {} {}", packet, packetBuffers);
+
+        accumulator.add(packetBuffers.header());
+        accumulator.add(packetBuffers.payload());
     }
 }

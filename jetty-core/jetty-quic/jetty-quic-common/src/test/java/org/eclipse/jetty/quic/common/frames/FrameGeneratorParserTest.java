@@ -20,6 +20,7 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -41,7 +42,7 @@ public class FrameGeneratorParserTest
 {
     private final ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
     private final FrameGenerator generator = new FrameGenerator(byteBufferPool);
-    private final FrameParser parser = new FrameParser();
+    private final FramesParser parser = new FramesParser();
 
     @BeforeEach
     public void prepare()
@@ -61,13 +62,14 @@ public class FrameGeneratorParserTest
     {
         List<ByteBuffer> buffers = accumulator.getByteBuffers();
         int capacity = buffers.stream().mapToInt(Buffer::remaining).sum();
-        ByteBuffer buffer = ByteBuffer.allocate(capacity);
-        buffers.stream().map(ByteBuffer::slice).forEach(buffer::put);
-        buffer.flip();
+        ByteBuffer byteBuffer = ByteBuffer.allocate(capacity);
+        buffers.stream().map(ByteBuffer::slice).forEach(byteBuffer::put);
+        byteBuffer.flip();
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(byteBuffer);
 
         T frame1 = (T)parser.parse(buffer);
 
-        buffer.flip();
+        byteBuffer.flip();
 
         while (buffer.hasRemaining())
         {

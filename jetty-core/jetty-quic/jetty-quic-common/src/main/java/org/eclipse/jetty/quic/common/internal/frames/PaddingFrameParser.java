@@ -11,12 +11,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.internal;
+package org.eclipse.jetty.quic.common.internal.frames;
 
-public enum EncryptionLevel
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.api.frames.Frame;
+
+public class PaddingFrameParser implements FrameParser
 {
-    INITIAL,
-    ZERO_RTT,
-    HANDSHAKE,
-    ONE_RTT
+    private static final Frame PADDING_FRAME = new Frame(0);
+
+    @Override
+    public Frame parse(RetainableByteBuffer buffer)
+    {
+        buffer.skip(1);
+        return PADDING_FRAME;
+    }
 }

@@ -13,10 +13,19 @@
 
 package org.eclipse.jetty.quic.common.internal;
 
-public enum EncryptionLevel
+import org.eclipse.jetty.io.RetainableByteBuffer;
+
+// TODO: consider making this class non-internal to be able to write a proxy.
+/// A record for QUIC packet header and payload buffers.
+///
+/// Both buffers must be released after they have been processed.
+///
+/// @param header the packet header buffer
+/// @param payload the packet payload buffer
+public record PacketBuffers(RetainableByteBuffer header, RetainableByteBuffer payload)
 {
-    INITIAL,
-    ZERO_RTT,
-    HANDSHAKE,
-    ONE_RTT
+    public interface Listener
+    {
+        boolean onPacketBuffers(PacketBuffers buffers);
+    }
 }

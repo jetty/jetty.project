@@ -14,14 +14,22 @@
 package org.eclipse.jetty.quic.common.internal.packets;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.common.packets.Packet;
 
-public interface PacketParser
+public record EncodedPacketNumber(int number, int length)
 {
-    Packet parse(RetainableByteBuffer buffer) throws Exception;
-
-    interface Listener
+    public void putTo(RetainableByteBuffer.Mutable accumulator)
     {
-        void onPacket(Packet packet);
+        switch (length)
+        {
+            case 1 -> accumulator.put((byte)number);
+            case 2 -> accumulator.putShort((short)number);
+            case 3 ->
+            {
+                accumulator.put((byte)(number >>> 16));
+                accumulator.put((byte)(number >>> 8));
+                accumulator.put((byte)number);
+            }
+            case 4 -> accumulator.putInt(number);
+        }
     }
 }

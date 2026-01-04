@@ -217,7 +217,7 @@ public class FrameGenerator
         int capacity = VarLenInt.length(frameType);
         long offset = frame.getOffset();
         capacity += VarLenInt.length(offset);
-        ByteBuffer data = frame.getData();
+        RetainableByteBuffer data = frame.getData();
         int length = data.remaining();
         capacity += VarLenInt.length(length);
 
@@ -231,7 +231,7 @@ public class FrameGenerator
         VarLenInt.encode(byteBuffer, length);
         BufferUtil.flipToFlush(byteBuffer, position);
 
-        accumulator.append(RetainableByteBuffer.wrap(data));
+        accumulator.append(data);
 
         return capacity + length;
     }

@@ -66,4 +66,16 @@ public class Frame
             return "%s#%d".formatted(super.toString(), getStreamId());
         }
     }
+
+    public interface WithOffset
+    {
+        long getOffset();
+
+        long getLength();
+    }
+
+    public interface Listener
+    {
+        void onFrame(Frame frame);
+    }
 }

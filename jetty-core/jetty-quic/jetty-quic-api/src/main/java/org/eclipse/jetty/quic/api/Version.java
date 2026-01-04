@@ -21,6 +21,16 @@ public enum Version
     /// QUIC V2, defined by [RFC 9369](https://datatracker.ietf.org/doc/html/rfc9369).
     V2;
 
+    public static Version from(int code)
+    {
+        return switch (code)
+        {
+            case 1 -> V1;
+            case 0x6B3343CF -> V2;
+            default -> throw new IllegalArgumentException("invalid QUIC version: " + code);
+        };
+    }
+
     /// @return the version number in QUIC long headers packets
     public int code()
     {

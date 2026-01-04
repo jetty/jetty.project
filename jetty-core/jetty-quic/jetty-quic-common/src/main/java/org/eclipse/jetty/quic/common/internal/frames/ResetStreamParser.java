@@ -15,10 +15,11 @@ package org.eclipse.jetty.quic.common.internal.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.ResetFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class ResetStreamParser
+public class ResetStreamParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
@@ -31,8 +32,10 @@ public class ResetStreamParser
         this.varLenInt = varLenInt;
     }
 
-    public ResetFrame parse(ByteBuffer byteBuffer)
+    @Override
+    public ResetFrame parse(RetainableByteBuffer buffer)
     {
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (byteBuffer.hasRemaining())
         {
             switch (state)

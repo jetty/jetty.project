@@ -15,10 +15,11 @@ package org.eclipse.jetty.quic.common.internal.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class MaxDataParser
+public class MaxDataParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
@@ -29,8 +30,10 @@ public class MaxDataParser
         this.varLenInt = varLenInt;
     }
 
-    public MaxDataFrame parse(ByteBuffer byteBuffer)
+    @Override
+    public MaxDataFrame parse(RetainableByteBuffer buffer)
     {
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (byteBuffer.hasRemaining())
         {
             switch (state)

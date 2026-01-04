@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.Promise;
 /**
  * <p>A QUIC frame carrying stream data bytes.</p>
  */
-public class StreamFrame extends Frame.WithStreamId
+public class StreamFrame extends Frame.WithStreamId implements Frame.WithOffset, Comparable<StreamFrame>
 {
     public static final long END_STREAM_MASK = 0x01;
     public static final long LENGTH_MASK = 0x02;
@@ -118,6 +118,7 @@ public class StreamFrame extends Frame.WithStreamId
     /**
      * @return the stream offset of the data bytes carried by this frame
      */
+    @Override
     public long getOffset()
     {
         return offset;
@@ -134,7 +135,8 @@ public class StreamFrame extends Frame.WithStreamId
     /**
      * @return the number of data bytes
      */
-    public int getLength()
+    @Override
+    public long getLength()
     {
         return length;
     }
@@ -153,6 +155,12 @@ public class StreamFrame extends Frame.WithStreamId
     public boolean isEndData()
     {
         return endData;
+    }
+
+    @Override
+    public int compareTo(StreamFrame that)
+    {
+        return Long.compare(offset, that.offset);
     }
 
     @Override

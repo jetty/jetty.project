@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.quic.common.internal;
 
-public enum EncryptionLevel
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.io.RetainableByteBuffer;
+
+public interface Decrypter
 {
-    INITIAL,
-    ZERO_RTT,
-    HANDSHAKE,
-    ONE_RTT
+    PacketBuffers decryptLongHeaderPacket(EncryptionLevel encryptionLevel, RetainableByteBuffer encrypted) throws Exception;
+
+    PacketBuffers decryptShortHeaderPacket(byte[] dstConnectionId, ByteBuffer encrypted) throws Exception;
 }
