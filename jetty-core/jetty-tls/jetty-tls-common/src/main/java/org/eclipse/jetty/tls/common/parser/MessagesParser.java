@@ -34,6 +34,7 @@ public class MessagesParser
         parsers.put(Message.Type.CLIENT_HELLO, new ClientHelloParser(extensionsParser));
         parsers.put(Message.Type.SERVER_HELLO, new ServerHelloParser(extensionsParser));
         parsers.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsParser(extensionsParser));
+        parsers.put(Message.Type.CERTIFICATE_REQUEST, new CertificateRequestParser(extensionsParser));
     }
 
     public Message parse(RetainableByteBuffer buffer)

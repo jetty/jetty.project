@@ -63,7 +63,7 @@ public class ClientHelloGenerator extends MessageGenerator
         if (length > 0xFFFFFF)
             throw new IllegalStateException("could not generate ClientHello, too long");
 
-        int typeAndLength = (clientHello.type().type() << 24) | length;
+        int typeAndLength = (clientHello.getType().type() << 24) | length;
         accumulator.putInt(typeAndLength);
 
         accumulator.putShort((short)0x0303);

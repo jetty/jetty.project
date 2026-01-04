@@ -16,9 +16,9 @@ package org.eclipse.jetty.tls;
 import java.util.HashMap;
 import java.util.Map;
 
-public sealed interface Message permits ClientHello, EncryptedExtensions, ServerHello
+public sealed interface Message permits ClientHello, ServerHello, EncryptedExtensions, CertificateRequest
 {
-    Type type();
+    Type getType();
 
     enum Type
     {

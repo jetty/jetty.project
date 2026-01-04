@@ -75,7 +75,7 @@ public final class ClientHello implements Message
     private List<Extension> extensions;
 
     @Override
-    public Type type()
+    public Type getType()
     {
         return Type.CLIENT_HELLO;
     }
