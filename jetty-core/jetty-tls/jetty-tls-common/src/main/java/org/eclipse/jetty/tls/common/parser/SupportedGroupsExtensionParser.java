@@ -165,7 +165,7 @@ public class SupportedGroupsExtensionParser implements ExtensionParser
         group = 0;
         if (listLength == 0)
         {
-            int result = totalLength;
+            int result = 2 + totalLength;
             totalLength = 0;
             List<NamedGroup> namedGroups = List.copyOf(groups);
             groups.clear();

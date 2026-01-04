@@ -11,25 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tls.common.generator;
+package org.eclipse.jetty.tls;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.tls.Message;
+import java.security.cert.X509Certificate;
+import java.util.List;
 
-public abstract class MessageGenerator
+import org.eclipse.jetty.tls.ext.Extension;
+
+public record CertificateMessage(byte[] context, List<Entry> entries) implements Message
 {
-    private final ByteBufferPool bufferPool;
-
-    protected MessageGenerator(ByteBufferPool bufferPool)
+    @Override
+    public Type type()
     {
-        this.bufferPool = bufferPool;
+        return Type.CERTIFICATE;
     }
 
-    public ByteBufferPool getBufferPool()
+    public record Entry(X509Certificate certificate, List<Extension> extensions)
     {
-        return bufferPool;
     }
-
-    public abstract void generate(RetainableByteBuffer.Mutable accumulator, Message message) throws Exception;
 }

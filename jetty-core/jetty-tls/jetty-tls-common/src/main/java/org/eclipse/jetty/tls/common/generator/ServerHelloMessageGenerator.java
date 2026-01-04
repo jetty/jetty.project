@@ -16,13 +16,13 @@ package org.eclipse.jetty.tls.common.generator;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.Message;
-import org.eclipse.jetty.tls.ServerHello;
+import org.eclipse.jetty.tls.ServerHelloMessage;
 
-public class ServerHelloGenerator extends MessageGenerator
+public class ServerHelloMessageGenerator extends MessageGenerator
 {
     private final ExtensionsGenerator extensionsGenerator;
 
-    public ServerHelloGenerator(ByteBufferPool byteBufferPool, ExtensionsGenerator extensionsGenerator)
+    public ServerHelloMessageGenerator(ByteBufferPool byteBufferPool, ExtensionsGenerator extensionsGenerator)
     {
         super(byteBufferPool);
         this.extensionsGenerator = extensionsGenerator;
@@ -31,15 +31,15 @@ public class ServerHelloGenerator extends MessageGenerator
     @Override
     public void generate(RetainableByteBuffer.Mutable accumulator, Message message)
     {
-        generate(accumulator, (ServerHello)message);
+        generate(accumulator, (ServerHelloMessage)message);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, ServerHello serverHello)
+    private void generate(RetainableByteBuffer.Mutable accumulator, ServerHelloMessage message)
     {
-        byte[] sessionId = serverHello.getSessionId();
+        byte[] sessionId = message.sessionId();
 
         RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getBufferPool(), true, -1, 0, 0);
-        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, serverHello.getExtensions());
+        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
         if (extensionsLength > 0xFFFF)
             throw new IllegalStateException("could not generate ServerHello, extensions too long");
 
@@ -58,12 +58,12 @@ public class ServerHelloGenerator extends MessageGenerator
         if (length > 0xFFFFFF)
             throw new IllegalStateException("could not generate ServerHello, too long");
 
-        int typeAndLength = (serverHello.getType().type() << 24) | length;
+        int typeAndLength = (message.type().type() << 24) | length;
         accumulator.putInt(typeAndLength);
 
         accumulator.putShort((short)0x0303);
 
-        byte[] random = serverHello.getRandom();
+        byte[] random = message.random();
         accumulator.put(random);
 
         // Legacy session ID.
@@ -71,7 +71,7 @@ public class ServerHelloGenerator extends MessageGenerator
         accumulator.put(sessionId);
 
         // Cipher suite.
-        accumulator.putShort((short)serverHello.getCipherSuite().code());
+        accumulator.putShort((short)message.cipherSuite().code());
 
         // Legacy compression methods (no methods).
         accumulator.put((byte)0x00);

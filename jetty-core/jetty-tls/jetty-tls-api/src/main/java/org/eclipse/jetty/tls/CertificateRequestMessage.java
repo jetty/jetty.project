@@ -17,30 +17,11 @@ import java.util.List;
 
 import org.eclipse.jetty.tls.ext.Extension;
 
-public final class CertificateRequest implements Message
+public record CertificateRequestMessage(byte[] context, List<Extension> extensions) implements Message
 {
-    private final byte[] context;
-    private final List<Extension> extensions;
-
-    public CertificateRequest(byte[] context, List<Extension> extensions)
-    {
-        this.context = context;
-        this.extensions = extensions;
-    }
-
     @Override
-    public Type getType()
+    public Type type()
     {
         return Type.CERTIFICATE_REQUEST;
-    }
-
-    public byte[] getContext()
-    {
-        return context;
-    }
-
-    public List<Extension> getExtensions()
-    {
-        return extensions;
     }
 }

@@ -14,17 +14,19 @@
 package org.eclipse.jetty.tls.common.parser;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CipherSuite;
+import org.eclipse.jetty.tls.ClientHelloMessage;
 import org.eclipse.jetty.tls.Message;
-import org.eclipse.jetty.tls.ServerHello;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.ext.Extension;
 
-public class ServerHelloParser implements MessageParser
+public class ClientHelloMessageParser implements MessageParser
 {
+    private final List<CipherSuite> cipherSuites = new ArrayList<>();
     private final ExtensionsParser extensionsParser;
     private State state = State.VERSION;
     private int cursor;
@@ -32,9 +34,9 @@ public class ServerHelloParser implements MessageParser
     private int version;
     private byte[] random;
     private byte[] sessionId;
-    private CipherSuite cipherSuite;
+    private int cipher;
 
-    public ServerHelloParser(ExtensionsParser extensionsParser)
+    public ClientHelloMessageParser(ExtensionsParser extensionsParser)
     {
         this.extensionsParser = extensionsParser;
     }
@@ -56,7 +58,7 @@ public class ServerHelloParser implements MessageParser
                     {
                         version = byteBuffer.getShort() & 0xFFFF;
                         if (version != TLSVersion.TLS_1_2.code())
-                            throw new IllegalStateException("invalid ServerHello TLS version 0x" + Integer.toHexString(version));
+                            throw new IllegalStateException("invalid ClientHello TLS version 0x" + Integer.toHexString(version));
                         version = 0;
                         random = new byte[32];
                         state = State.RANDOM;
@@ -75,7 +77,7 @@ public class ServerHelloParser implements MessageParser
                     if (cursor == 0)
                     {
                         if (version != TLSVersion.TLS_1_2.code())
-                            throw new IllegalStateException("invalid ServerHello TLS version 0x" + Integer.toHexString(version));
+                            throw new IllegalStateException("invalid ClientHello TLS version 0x" + Integer.toHexString(version));
                         version = 0;
                         random = new byte[32];
                         state = State.RANDOM;
@@ -109,16 +111,42 @@ public class ServerHelloParser implements MessageParser
                     {
                         cursor = 0;
                         value = 0;
+                        state = State.CIPHER_SUITES_LENGTH;
+                    }
+                }
+                case CIPHER_SUITES_LENGTH ->
+                {
+                    if (remaining > 1)
+                    {
+                        value = byteBuffer.getShort() & 0xFFFF;
                         state = State.CIPHER_SUITE;
                     }
+                    else
+                    {
+                        cursor = 2;
+                        state = State.CIPHER_SUITES_LENGTH_BYTES;
+                    }
+                }
+                case CIPHER_SUITES_LENGTH_BYTES ->
+                {
+                    int b = byteBuffer.get() & 0xFF;
+                    --cursor;
+                    value += b << (8 * cursor);
+                    if (cursor == 0)
+                        state = State.CIPHER_SUITE;
                 }
                 case CIPHER_SUITE ->
                 {
                     if (remaining > 1)
                     {
-                        int cipher = byteBuffer.getShort() & 0xFFFF;
-                        cipherSuite = CipherSuite.from(cipher);
-                        state = State.COMPRESSION_METHOD;
+                        cipher = byteBuffer.getShort() & 0xFFFF;
+                        value -= 2;
+                        CipherSuite cipherSuite = CipherSuite.from(cipher);
+                        if (cipherSuite != null)
+                            cipherSuites.add(cipherSuite);
+                        cipher = 0;
+                        if (value == 0)
+                            state = State.COMPRESSION_METHODS_LENGTH;
                     }
                     else
                     {
@@ -130,35 +158,47 @@ public class ServerHelloParser implements MessageParser
                 {
                     int b = byteBuffer.get() & 0xFF;
                     --cursor;
-                    value += b << (8 * cursor);
+                    cipher += b << (8 * cursor);
                     if (cursor == 0)
                     {
-                        cipherSuite = CipherSuite.from(value);
-                        value = 0;
-                        state = State.COMPRESSION_METHOD;
+                        value -= 2;
+                        CipherSuite cipherSuite = CipherSuite.from(cipher);
+                        if (cipherSuite != null)
+                            cipherSuites.add(cipherSuite);
+                        cipher = 0;
+                        if (value == 0)
+                            state = State.COMPRESSION_METHODS_LENGTH;
+                        else
+                            state = State.CIPHER_SUITE;
                     }
                 }
-                case COMPRESSION_METHOD ->
+                case COMPRESSION_METHODS_LENGTH ->
                 {
-                    // Skip the compression method.
+                    cursor = byteBuffer.get() & 0xFF;
+                    state = State.COMPRESSION_METHODS;
+                }
+                case COMPRESSION_METHODS ->
+                {
+                    // Skip compression methods.
                     byteBuffer.get();
-                    state = State.EXTENSIONS;
+                    --cursor;
+                    if (cursor == 0)
+                        state = State.EXTENSIONS;
                 }
                 case EXTENSIONS ->
                 {
                     List<Extension> extensions = extensionsParser.parse(buffer);
                     if (extensions == null)
                         return null;
-                    ServerHello serverHello = new ServerHello();
-                    serverHello.setRandom(random);
+                    ClientHelloMessage message = new ClientHelloMessage();
+                    message.setRandom(random);
                     random = null;
-                    serverHello.setSessionId(sessionId);
                     sessionId = null;
-                    serverHello.setCipherSuite(cipherSuite);
-                    cipherSuite = null;
-                    serverHello.setExtensions(extensions);
+                    message.setCipherSuites(List.copyOf(cipherSuites));
+                    cipherSuites.clear();
+                    message.setExtensions(extensions);
                     state = State.VERSION;
-                    return serverHello;
+                    return message;
                 }
             }
         }
@@ -171,9 +211,12 @@ public class ServerHelloParser implements MessageParser
         RANDOM,
         SESSION_ID_LENGTH,
         SESSION_ID,
+        CIPHER_SUITES_LENGTH,
+        CIPHER_SUITES_LENGTH_BYTES,
         CIPHER_SUITE,
         CIPHER_SUITE_BYTES,
-        COMPRESSION_METHOD,
+        COMPRESSION_METHODS_LENGTH,
+        COMPRESSION_METHODS,
         EXTENSIONS
     }
 }

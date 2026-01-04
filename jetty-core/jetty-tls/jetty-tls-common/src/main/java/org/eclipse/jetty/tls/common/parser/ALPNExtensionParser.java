@@ -154,7 +154,7 @@ public class ALPNExtensionParser implements ExtensionParser
         protocol = null;
         if (listLength == 0)
         {
-            int result = totalLength;
+            int result = 2 + totalLength;
             totalLength = 0;
             List<String> alpnProtocols = List.copyOf(protocols);
             protocols.clear();

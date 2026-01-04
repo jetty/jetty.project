@@ -46,6 +46,6 @@ public class SupportedGroupsExtensionGenerator implements ExtensionGenerator
         {
             accumulator.putShort((short)group.code());
         }
-        return 2 + totalLength;
+        return 2 + 2 + totalLength;
     }
 }

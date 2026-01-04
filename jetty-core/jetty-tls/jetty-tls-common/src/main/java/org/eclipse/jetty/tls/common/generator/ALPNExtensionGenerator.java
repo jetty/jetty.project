@@ -52,6 +52,6 @@ public class ALPNExtensionGenerator implements ExtensionGenerator
             accumulator.put((byte)b.length);
             accumulator.put(b);
         }
-        return 2 + totalLength;
+        return 2 + 2 + totalLength;
     }
 }

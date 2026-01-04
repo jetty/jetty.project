@@ -126,7 +126,7 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
         version = 0;
         if (listLength == 0)
         {
-            int result = totalLength;
+            int result = 2 + totalLength;
             totalLength = 0;
             List<TLSVersion> tlsVersions = List.copyOf(versions);
             versions.clear();

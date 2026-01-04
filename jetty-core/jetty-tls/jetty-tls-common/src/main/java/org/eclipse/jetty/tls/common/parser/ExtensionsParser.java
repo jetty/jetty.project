@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntConsumer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.Extension;
@@ -55,6 +56,11 @@ public class ExtensionsParser implements ExtensionParser.Listener
     }
 
     public List<Extension> parse(RetainableByteBuffer buffer)
+    {
+        return parse(buffer, _ -> {});
+    }
+
+    public List<Extension> parse(RetainableByteBuffer buffer, IntConsumer lengthConsumer)
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (true)
@@ -123,6 +129,7 @@ public class ExtensionsParser implements ExtensionParser.Listener
                     if (consumed == length)
                     {
                         state = State.LENGTH;
+                        lengthConsumer.accept(2 + length);
                         length = 0;
                         consumed = 0;
                         List<Extension> result = List.copyOf(extensions);

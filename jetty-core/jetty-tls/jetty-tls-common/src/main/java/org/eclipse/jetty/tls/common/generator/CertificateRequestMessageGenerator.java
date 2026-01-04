@@ -15,14 +15,14 @@ package org.eclipse.jetty.tls.common.generator;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.tls.CertificateRequest;
+import org.eclipse.jetty.tls.CertificateRequestMessage;
 import org.eclipse.jetty.tls.Message;
 
-public class CertificateRequestGenerator extends MessageGenerator
+public class CertificateRequestMessageGenerator extends MessageGenerator
 {
     private final ExtensionsGenerator extensionsGenerator;
 
-    protected CertificateRequestGenerator(ByteBufferPool bufferPool, ExtensionsGenerator extensionsGenerator)
+    protected CertificateRequestMessageGenerator(ByteBufferPool bufferPool, ExtensionsGenerator extensionsGenerator)
     {
         super(bufferPool);
         this.extensionsGenerator = extensionsGenerator;
@@ -31,22 +31,22 @@ public class CertificateRequestGenerator extends MessageGenerator
     @Override
     public void generate(RetainableByteBuffer.Mutable accumulator, Message message)
     {
-        generate(accumulator, (CertificateRequest)message);
+        generate(accumulator, (CertificateRequestMessage)message);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, CertificateRequest certificateRequest)
+    private void generate(RetainableByteBuffer.Mutable accumulator, CertificateRequestMessage message)
     {
-        byte[] context = certificateRequest.getContext();
+        byte[] context = message.context();
 
         RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getBufferPool(), true, -1, 0, 0);
-        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, certificateRequest.getExtensions());
+        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
         if (extensionsLength > 0xFFFF)
             throw new IllegalStateException("could not generate ClientHello, extensions too long");
 
         // RFC 8446, 4.3.2.
         int length = 1 + context.length + 2 + extensionsLength;
 
-        int typeAndLength = (certificateRequest.getType().type() << 24) | length;
+        int typeAndLength = (message.type().type() << 24) | length;
         accumulator.putInt(typeAndLength);
 
         accumulator.put((byte)context.length);

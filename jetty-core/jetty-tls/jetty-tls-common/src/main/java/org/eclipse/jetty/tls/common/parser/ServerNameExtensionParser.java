@@ -196,7 +196,7 @@ public class ServerNameExtensionParser implements ExtensionParser
             if (names.size() > 1)
                 throw new IllegalStateException("invalid server name list " + names);
             String serverName = names.getFirst();
-            int result = totalLength;
+            int result = 2 + totalLength;
             totalLength = 0;
             names.clear();
             state = State.TOTAL_LENGTH;

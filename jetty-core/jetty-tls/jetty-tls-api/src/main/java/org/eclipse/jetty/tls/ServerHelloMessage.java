@@ -11,25 +11,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tls.common.generator;
+package org.eclipse.jetty.tls;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.tls.Message;
+import java.util.List;
 
-public abstract class MessageGenerator
+import org.eclipse.jetty.tls.ext.Extension;
+
+public record ServerHelloMessage(byte[] random, byte[] sessionId, CipherSuite cipherSuite, List<Extension> extensions) implements Message
 {
-    private final ByteBufferPool bufferPool;
-
-    protected MessageGenerator(ByteBufferPool bufferPool)
+    @Override
+    public Type type()
     {
-        this.bufferPool = bufferPool;
+        return Type.SERVER_HELLO;
     }
-
-    public ByteBufferPool getBufferPool()
-    {
-        return bufferPool;
-    }
-
-    public abstract void generate(RetainableByteBuffer.Mutable accumulator, Message message) throws Exception;
 }

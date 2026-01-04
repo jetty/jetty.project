@@ -184,7 +184,7 @@ public class KeyShareExtensionParser implements ExtensionParser
         keyExchange = null;
         if (listLength == 0)
         {
-            int result = totalLength;
+            int result = 2 + totalLength;
             totalLength = 0;
             List<KeyShare> keyShares = List.copyOf(shares);
             shares.clear();
