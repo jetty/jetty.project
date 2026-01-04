@@ -48,6 +48,6 @@ public class KeyShareExtensionGenerator implements ExtensionGenerator
             accumulator.putShort((short)keyExchange.length);
             accumulator.put(keyExchange);
         }
-        return 2 + totalLength;
+        return 2 + 2 + totalLength;
     }
 }

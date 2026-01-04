@@ -27,19 +27,20 @@ import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
 import org.eclipse.jetty.util.BufferUtil;
 
-public final class ClientHello implements Message
+// TODO: convert to record.
+public final class ClientHelloMessage implements Message
 {
-    public static ClientHello newClientHello() throws Exception
+    public static ClientHelloMessage newClientHello() throws Exception
     {
-        ClientHello clientHello = new ClientHello();
+        ClientHelloMessage message = new ClientHelloMessage();
 
         SecureRandom random = new SecureRandom();
         byte[] randomBytes = new byte[32];
         random.nextBytes(randomBytes);
-        clientHello.setRandom(randomBytes);
+        message.setRandom(randomBytes);
 
         // Known TLS 1.3 supported cipher suites.
-        clientHello.setCipherSuites(List.of(CipherSuite.TLS_AES_128_GCM_SHA256, CipherSuite.TLS_AES_256_GCM_SHA384));
+        message.setCipherSuites(List.of(CipherSuite.TLS_AES_128_GCM_SHA256, CipherSuite.TLS_AES_256_GCM_SHA384));
 
         // Add default extensions, only dealing with
         // those that do not need external information.
@@ -48,24 +49,24 @@ public final class ClientHello implements Message
 
         // Known supported named groups.
         List<NamedGroup> groups = List.of(NamedGroup.x25519, NamedGroup.secp256r1);
-        clientHello.addExtension(new SupportedGroupsExtension(groups));
+        message.addExtension(new SupportedGroupsExtension(groups));
 
         // KeyPairs and KeyShares.
         for (NamedGroup group : groups)
         {
             GroupKeyPair from = GroupKeyPair.from(group);
-            clientHello.groupKeyPairs.add(from);
+            message.groupKeyPairs.add(from);
         }
-        List<KeyShare> keyShares = clientHello.groupKeyPairs.stream()
+        List<KeyShare> keyShares = message.groupKeyPairs.stream()
             .map(GroupKeyPair::toKeyShare)
             .toList();
-        clientHello.addExtension(new KeyShareExtension(keyShares));
+        message.addExtension(new KeyShareExtension(keyShares));
 
-        clientHello.addExtension(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3)));
+        message.addExtension(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3)));
 
-        clientHello.addExtension(new SignatureAlgorithmsExtension(List.of(SignatureAlgorithm.RSA_PKCS1_SHA256, SignatureAlgorithm.ECDSA_SECP256R1_SHA256)));
+        message.addExtension(new SignatureAlgorithmsExtension(List.of(SignatureAlgorithm.RSA_PKCS1_SHA256, SignatureAlgorithm.ECDSA_SECP256R1_SHA256)));
 
-        return clientHello;
+        return message;
     }
 
     private final List<GroupKeyPair> groupKeyPairs = new ArrayList<>();
@@ -75,7 +76,7 @@ public final class ClientHello implements Message
     private List<Extension> extensions;
 
     @Override
-    public Type getType()
+    public Type type()
     {
         return Type.CLIENT_HELLO;
     }

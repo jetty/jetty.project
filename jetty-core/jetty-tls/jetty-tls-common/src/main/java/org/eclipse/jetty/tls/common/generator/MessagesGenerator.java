@@ -27,15 +27,16 @@ public class MessagesGenerator
     public MessagesGenerator(ByteBufferPool byteBufferPool)
     {
         ExtensionsGenerator extensionsGenerator = new ExtensionsGenerator();
-        generators.put(Message.Type.CLIENT_HELLO, new ClientHelloGenerator(byteBufferPool,  extensionsGenerator));
-        generators.put(Message.Type.SERVER_HELLO, new ServerHelloGenerator(byteBufferPool,  extensionsGenerator));
-        generators.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsGenerator(byteBufferPool,  extensionsGenerator));
-        generators.put(Message.Type.CERTIFICATE_REQUEST, new CertificateRequestGenerator(byteBufferPool,  extensionsGenerator));
+        generators.put(Message.Type.CLIENT_HELLO, new ClientHelloMessageGenerator(byteBufferPool, extensionsGenerator));
+        generators.put(Message.Type.SERVER_HELLO, new ServerHelloMessageGenerator(byteBufferPool, extensionsGenerator));
+        generators.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsMessageGenerator(byteBufferPool, extensionsGenerator));
+        generators.put(Message.Type.CERTIFICATE_REQUEST, new CertificateRequestMessageGenerator(byteBufferPool, extensionsGenerator));
+        generators.put(Message.Type.CERTIFICATE, new CertificateMessageGenerator(byteBufferPool, extensionsGenerator));
     }
 
-    public void generate(RetainableByteBuffer.Mutable accumulator, Message message)
+    public void generate(RetainableByteBuffer.Mutable accumulator, Message message) throws Exception
     {
-        MessageGenerator messageGenerator = generators.get(message.getType());
+        MessageGenerator messageGenerator = generators.get(message.type());
         if (messageGenerator == null)
             throw new UnsupportedOperationException("could not generate unsupported TLS message " + message);
         messageGenerator.generate(accumulator, message);

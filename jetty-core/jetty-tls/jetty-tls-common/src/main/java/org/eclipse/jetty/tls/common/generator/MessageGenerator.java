@@ -31,5 +31,5 @@ public abstract class MessageGenerator
         return bufferPool;
     }
 
-    public abstract void generate(RetainableByteBuffer.Mutable accumulator, Message message);
+    public abstract void generate(RetainableByteBuffer.Mutable accumulator, Message message) throws Exception;
 }

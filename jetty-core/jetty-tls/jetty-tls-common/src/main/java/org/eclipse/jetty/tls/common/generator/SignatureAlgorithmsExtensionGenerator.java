@@ -46,6 +46,6 @@ public class SignatureAlgorithmsExtensionGenerator implements ExtensionGenerator
         {
             accumulator.putShort((short)algorithm.code());
         }
-        return 2 + totalLength;
+        return 2 + 2 + totalLength;
     }
 }

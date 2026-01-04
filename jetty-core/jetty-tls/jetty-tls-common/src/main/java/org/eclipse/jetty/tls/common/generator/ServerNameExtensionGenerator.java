@@ -50,6 +50,6 @@ public class ServerNameExtensionGenerator implements ExtensionGenerator
         // Name length.
         accumulator.putShort((short)bytes.length);
         accumulator.put(bytes);
-        return 2 + totalLength;
+        return 2 + 2 + totalLength;
     }
 }

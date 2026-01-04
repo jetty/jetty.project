@@ -17,19 +17,18 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.tls.CertificateRequest;
+import org.eclipse.jetty.tls.CertificateRequestMessage;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.ext.Extension;
 
-public class CertificateRequestParser implements MessageParser
+public class CertificateRequestMessageParser implements MessageParser
 {
     private final ExtensionsParser extensionsParser;
     private State state = State.CONTEXT_LENGTH;
     private int cursor;
-    private int contextLength;
     private byte[] context;
 
-    public CertificateRequestParser(ExtensionsParser extensionsParser)
+    public CertificateRequestMessageParser(ExtensionsParser extensionsParser)
     {
         this.extensionsParser = extensionsParser;
     }
@@ -47,17 +46,17 @@ public class CertificateRequestParser implements MessageParser
             {
                 case CONTEXT_LENGTH ->
                 {
-                    contextLength = byteBuffer.get() & 0xFF;
-                    context = new byte[contextLength];
+                    int length = byteBuffer.get() & 0xFF;
+                    context = new byte[length];
                     state = State.CONTEXT;
                 }
                 case CONTEXT ->
                 {
                     int offset = cursor;
-                    int length = Math.min(contextLength - cursor, remaining);
+                    int length = Math.min(context.length - cursor, remaining);
                     byteBuffer.get(context, offset, length);
                     cursor += length;
-                    if (cursor == contextLength)
+                    if (cursor == context.length)
                     {
                         cursor = 0;
                         state = State.EXTENSIONS;
@@ -68,11 +67,10 @@ public class CertificateRequestParser implements MessageParser
                     List<Extension> extensions = extensionsParser.parse(buffer);
                     if (extensions == null)
                         return null;
-                    CertificateRequest certificateRequest = new CertificateRequest(context, extensions);
-                    contextLength = 0;
+                    CertificateRequestMessage message = new CertificateRequestMessage(context, extensions);
                     context = null;
                     state = State.CONTEXT_LENGTH;
-                    return certificateRequest;
+                    return message;
                 }
             }
         }

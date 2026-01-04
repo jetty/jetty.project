@@ -149,7 +149,7 @@ public class SignatureAlgorithmsExtensionParser implements ExtensionParser
         algorithm = 0;
         if (listLength == 0)
         {
-            int result = totalLength;
+            int result = 2 + totalLength;
             totalLength = 0;
             List<SignatureAlgorithm> signatureAlgorithms = List.copyOf(algorithms);
             algorithms.clear();

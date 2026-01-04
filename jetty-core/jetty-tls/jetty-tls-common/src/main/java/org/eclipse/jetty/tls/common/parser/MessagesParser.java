@@ -31,13 +31,14 @@ public class MessagesParser
     public MessagesParser()
     {
         ExtensionsParser extensionsParser = new ExtensionsParser();
-        parsers.put(Message.Type.CLIENT_HELLO, new ClientHelloParser(extensionsParser));
-        parsers.put(Message.Type.SERVER_HELLO, new ServerHelloParser(extensionsParser));
-        parsers.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsParser(extensionsParser));
-        parsers.put(Message.Type.CERTIFICATE_REQUEST, new CertificateRequestParser(extensionsParser));
+        parsers.put(Message.Type.CLIENT_HELLO, new ClientHelloMessageParser(extensionsParser));
+        parsers.put(Message.Type.SERVER_HELLO, new ServerHelloMessageParser(extensionsParser));
+        parsers.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsMessageParser(extensionsParser));
+        parsers.put(Message.Type.CERTIFICATE_REQUEST, new CertificateRequestMessageParser(extensionsParser));
+        parsers.put(Message.Type.CERTIFICATE, new CertificateMessageParser(extensionsParser));
     }
 
-    public Message parse(RetainableByteBuffer buffer)
+    public Message parse(RetainableByteBuffer buffer) throws Exception
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (true)

@@ -15,14 +15,14 @@ package org.eclipse.jetty.tls.common.generator;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.tls.EncryptedExtensions;
+import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
 import org.eclipse.jetty.tls.Message;
 
-public class EncryptedExtensionsGenerator extends MessageGenerator
+public class EncryptedExtensionsMessageGenerator extends MessageGenerator
 {
     private final ExtensionsGenerator extensionsGenerator;
 
-    public EncryptedExtensionsGenerator(ByteBufferPool byteBufferPool, ExtensionsGenerator extensionsGenerator)
+    public EncryptedExtensionsMessageGenerator(ByteBufferPool byteBufferPool, ExtensionsGenerator extensionsGenerator)
     {
         super(byteBufferPool);
         this.extensionsGenerator = extensionsGenerator;
@@ -31,20 +31,20 @@ public class EncryptedExtensionsGenerator extends MessageGenerator
     @Override
     public void generate(RetainableByteBuffer.Mutable accumulator, Message message)
     {
-        generate(accumulator, (EncryptedExtensions)message);
+        generate(accumulator, (EncryptedExtensionsMessage)message);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, EncryptedExtensions encryptedExtensions)
+    private void generate(RetainableByteBuffer.Mutable accumulator, EncryptedExtensionsMessage message)
     {
         RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getBufferPool(), true, -1, 0, 0);
-        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, encryptedExtensions.getExtensions());
+        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
         if (extensionsLength > 0xFFFF)
             throw new IllegalStateException("could not generate EncryptedExtensions, extensions too long");
 
         // RFC 8446, 4.3.1.
         int length = 2 + extensionsLength;
 
-        int typeAndLength = (encryptedExtensions.getType().type() << 24) | length;
+        int typeAndLength = (message.type().type() << 24) | length;
         accumulator.putInt(typeAndLength);
 
         accumulator.putShort((short)extensionsLength);

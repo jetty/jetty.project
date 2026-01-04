@@ -17,15 +17,15 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.tls.EncryptedExtensions;
+import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.ext.Extension;
 
-public class EncryptedExtensionsParser implements MessageParser
+public class EncryptedExtensionsMessageParser implements MessageParser
 {
     private final ExtensionsParser extensionsParser;
 
-    public EncryptedExtensionsParser(ExtensionsParser extensionsParser)
+    public EncryptedExtensionsMessageParser(ExtensionsParser extensionsParser)
     {
         this.extensionsParser = extensionsParser;
     }
@@ -40,6 +40,6 @@ public class EncryptedExtensionsParser implements MessageParser
         List<Extension> extensions = extensionsParser.parse(buffer);
         if (extensions == null)
             return null;
-        return new EncryptedExtensions(extensions);
+        return new EncryptedExtensionsMessage(extensions);
     }
 }
