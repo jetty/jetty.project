@@ -15,41 +15,47 @@ package org.eclipse.jetty.quic.api.frames;
 
 import java.util.List;
 
+/// The ACK frame defined in
+/// [RFC 9000, 19.3](https://datatracker.ietf.org/doc/html/rfc9000#name-ack-frames).
+///
+/// No support for ECN (Explicit Congestion Notification).
+///
+/// # Example
+///
+/// Packet numbers acked:
+/// * 70-75
+/// * 90-92
+/// * 100-110
+///
+/// Then the `AckFrame` contains:
+/// * `largestAcknowledged=110`
+/// * `firstRangeLength=10`
+/// * `(AckRange(6,2), AckRange(13,5))`
+///
+/// The ack ranges are calculated backwards:
+/// * Unacknowledged packets are 93-99; it's 7 packets, but encoded as gap=6.
+/// * Acknowledged packets are 90-92; it's 3 packets, but encoded as length=2.
+/// * Unacknowledged packets are 76-89; it's 14 packets, but encoded as gap=13.
+/// * Acknowledged packets are 70-75; it's 6 packets, but encoded as length=5.
 public class AckFrame extends Frame
 {
-    private final long ackNumber;
+    private final long largestAcknowledged;
     private final long ackDelay;
-    private final List<Integer> ranges;
-    private final long ect0Count;
-    private final long ect1Count;
-    private final long ceCount;
+    private final long firstRangeLength;
+    private final List<AckRange> ranges;
 
-    public AckFrame(long ackNumber, long ackDelay, List<Integer> ranges)
+    public AckFrame(long largestAcknowledged, long ackDelay, long firstRangeLength, List<AckRange> ranges)
     {
-        this(0x02, ackNumber, ackDelay, ranges, 0, 0, 0);
-    }
-
-    public AckFrame(long ackNumber, long ackDelay, List<Integer> ranges, int ect0Count, int ect1Count, int ceCount)
-    {
-        this(0x03, ackNumber, ackDelay, ranges, ect0Count, ect1Count, ceCount);
-    }
-
-    private AckFrame(int type, long ackNumber, long ackDelay, List<Integer> ranges, int ect0Count, int ect1Count, int ceCount)
-    {
-        super(type);
-        this.ackNumber = ackNumber;
+        super(0x02);
+        this.largestAcknowledged = largestAcknowledged;
         this.ackDelay = ackDelay;
-        if (ranges.size() < 1)
-            throw new IllegalArgumentException("invalid_range_list");
+        this.firstRangeLength = firstRangeLength;
         this.ranges = ranges;
-        this.ect0Count = ect0Count;
-        this.ect1Count = ect1Count;
-        this.ceCount = ceCount;
     }
 
-    public long getAckNumber()
+    public long getLargestAcknowledged()
     {
-        return ackNumber;
+        return largestAcknowledged;
     }
 
     public long getAckDelay()
@@ -57,23 +63,20 @@ public class AckFrame extends Frame
         return ackDelay;
     }
 
-    public List<Integer> getRanges()
+    public long getFirstRangeLength()
+    {
+        return firstRangeLength;
+    }
+
+    public List<AckRange> getAckRanges()
     {
         return ranges;
     }
 
-    public long getECT0Count()
+    /// The ack range record.
+    ///
+    ///
+    public record AckRange(long gap, long length)
     {
-        return ect0Count;
-    }
-
-    public long getECT1Count()
-    {
-        return ect1Count;
-    }
-
-    public long getCECount()
-    {
-        return ceCount;
     }
 }
