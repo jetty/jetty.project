@@ -15,10 +15,12 @@ package org.eclipse.jetty.tls.common;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.tls.CertificateRequest;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.ClientHello;
 import org.eclipse.jetty.tls.EncryptedExtensions;
@@ -118,8 +120,7 @@ public class MessagesGenerateParseTest
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         MessagesGenerator generator = new MessagesGenerator(byteBufferPool);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
-        EncryptedExtensions generated = new EncryptedExtensions();
-        generated.setExtensions(List.of(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3))));
+        EncryptedExtensions generated = new EncryptedExtensions(List.of(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3))));
         generator.generate(accumulator, generated);
 
         MessagesParser parser = new MessagesParser();
@@ -141,6 +142,41 @@ public class MessagesGenerateParseTest
 
         assertInstanceOf(EncryptedExtensions.class, message);
         parsed = (EncryptedExtensions)message;
+        assertEquals(generated.getExtensions(), parsed.getExtensions());
+    }
+
+    @Test
+    public void testCertificateRequest() throws Exception
+    {
+        ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
+        MessagesGenerator generator = new MessagesGenerator(byteBufferPool);
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        byte[] context = new byte[13];
+        ThreadLocalRandom.current().nextBytes(context);
+        CertificateRequest generated = new CertificateRequest(context, List.of(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3))));
+        generator.generate(accumulator, generated);
+
+        MessagesParser parser = new MessagesParser();
+        Message message = parser.parse(accumulator);
+
+        assertInstanceOf(CertificateRequest.class, message);
+        CertificateRequest parsed = (CertificateRequest)message;
+        assertArrayEquals(generated.getContext(), parsed.getContext());
+        assertEquals(generated.getExtensions(), parsed.getExtensions());
+
+        // Parse again one byte at a time.
+        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
+        while (byteBuffer.hasRemaining())
+        {
+            int position = byteBuffer.position();
+            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
+            byteBuffer.position(position + 1);
+            message = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
+        }
+
+        assertInstanceOf(CertificateRequest.class, message);
+        parsed = (CertificateRequest)message;
+        assertArrayEquals(generated.getContext(), parsed.getContext());
         assertEquals(generated.getExtensions(), parsed.getExtensions());
     }
 }

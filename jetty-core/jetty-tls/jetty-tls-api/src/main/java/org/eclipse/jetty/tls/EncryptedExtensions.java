@@ -6,10 +6,15 @@ import org.eclipse.jetty.tls.ext.Extension;
 
 public final class EncryptedExtensions implements Message
 {
-    private List<Extension> extensions;
+    private final List<Extension> extensions;
+
+    public EncryptedExtensions(List<Extension> extensions)
+    {
+        this.extensions = extensions;
+    }
 
     @Override
-    public Type type()
+    public Type getType()
     {
         return Type.ENCRYPTED_EXTENSIONS;
     }
@@ -17,10 +22,5 @@ public final class EncryptedExtensions implements Message
     public List<Extension> getExtensions()
     {
         return extensions;
-    }
-
-    public void setExtensions(List<Extension> extensions)
-    {
-        this.extensions = extensions;
     }
 }

@@ -30,11 +30,12 @@ public class MessagesGenerator
         generators.put(Message.Type.CLIENT_HELLO, new ClientHelloGenerator(byteBufferPool,  extensionsGenerator));
         generators.put(Message.Type.SERVER_HELLO, new ServerHelloGenerator(byteBufferPool,  extensionsGenerator));
         generators.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsGenerator(byteBufferPool,  extensionsGenerator));
+        generators.put(Message.Type.CERTIFICATE_REQUEST, new CertificateRequestGenerator(byteBufferPool,  extensionsGenerator));
     }
 
     public void generate(RetainableByteBuffer.Mutable accumulator, Message message)
     {
-        MessageGenerator messageGenerator = generators.get(message.type());
+        MessageGenerator messageGenerator = generators.get(message.getType());
         if (messageGenerator == null)
             throw new UnsupportedOperationException("could not generate unsupported TLS message " + message);
         messageGenerator.generate(accumulator, message);

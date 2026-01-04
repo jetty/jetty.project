@@ -25,7 +25,7 @@ public final class ServerHello implements Message
     private List<Extension> extensions;
 
     @Override
-    public Type type()
+    public Type getType()
     {
         return Type.SERVER_HELLO;
     }

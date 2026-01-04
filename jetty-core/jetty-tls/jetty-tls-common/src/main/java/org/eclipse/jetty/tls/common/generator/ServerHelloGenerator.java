@@ -58,7 +58,7 @@ public class ServerHelloGenerator extends MessageGenerator
         if (length > 0xFFFFFF)
             throw new IllegalStateException("could not generate ServerHello, too long");
 
-        int typeAndLength = (serverHello.type().type() << 24) | length;
+        int typeAndLength = (serverHello.getType().type() << 24) | length;
         accumulator.putInt(typeAndLength);
 
         accumulator.putShort((short)0x0303);

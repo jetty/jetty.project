@@ -40,8 +40,6 @@ public class EncryptedExtensionsParser implements MessageParser
         List<Extension> extensions = extensionsParser.parse(buffer);
         if (extensions == null)
             return null;
-        EncryptedExtensions message = new EncryptedExtensions();
-        message.setExtensions(extensions);
-        return message;
+        return new EncryptedExtensions(extensions);
     }
 }
