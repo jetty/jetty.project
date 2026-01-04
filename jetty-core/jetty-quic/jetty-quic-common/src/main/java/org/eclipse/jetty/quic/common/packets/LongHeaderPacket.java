@@ -14,6 +14,7 @@
 package org.eclipse.jetty.quic.common.packets;
 
 import org.eclipse.jetty.quic.api.Version;
+import org.eclipse.jetty.util.TypeUtil;
 
 public sealed class LongHeaderPacket extends Packet permits InitialPacket
 {
@@ -48,5 +49,11 @@ public sealed class LongHeaderPacket extends Packet permits InitialPacket
     public byte[] getDestinationConnectionId()
     {
         return destinationConnectionId;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getVersion());
     }
 }

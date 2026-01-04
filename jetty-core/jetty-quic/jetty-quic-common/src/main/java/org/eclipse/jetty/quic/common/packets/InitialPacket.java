@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.common.packets;
 
 import java.util.List;
 
+import org.eclipse.jetty.quic.api.Version;
 import org.eclipse.jetty.quic.api.frames.Frame;
 
 public final class InitialPacket extends LongHeaderPacket
@@ -23,7 +24,7 @@ public final class InitialPacket extends LongHeaderPacket
     private final long packetNumber;
     private final List<Frame> frames;
 
-    public InitialPacket(org.eclipse.jetty.quic.api.Version version, byte[] sourceConnectionId, byte[] destinationConnectionId, byte[] token, long packetNumber, List<Frame> frames)
+    public InitialPacket(Version version, byte[] sourceConnectionId, byte[] destinationConnectionId, byte[] token, long packetNumber, List<Frame> frames)
     {
         super(PacketType.INITIAL, version, sourceConnectionId, destinationConnectionId);
         this.token = token;
@@ -44,5 +45,11 @@ public final class InitialPacket extends LongHeaderPacket
     public List<Frame> getFrames()
     {
         return frames;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s[#%d,%s]".formatted(super.toString(), getPacketNumber(), getFrames());
     }
 }

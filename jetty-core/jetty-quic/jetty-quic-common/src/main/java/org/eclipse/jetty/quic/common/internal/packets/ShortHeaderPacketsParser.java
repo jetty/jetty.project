@@ -14,22 +14,12 @@
 package org.eclipse.jetty.quic.common.internal.packets;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.common.packets.Packet;
 
-public record PacketNumber(long packetNumber, int encodedPacketNumber, int encodedPacketNumberLength)
+public class ShortHeaderPacketsParser
 {
-    public void putTo(RetainableByteBuffer.Mutable accumulator)
+    public Packet parse(RetainableByteBuffer buffer)
     {
-        switch (encodedPacketNumberLength)
-        {
-            case 1 -> accumulator.put((byte)encodedPacketNumber);
-            case 2 -> accumulator.putShort((short)encodedPacketNumberLength);
-            case 3 ->
-            {
-                accumulator.put((byte)(encodedPacketNumber >>> 16));
-                accumulator.put((byte)(encodedPacketNumber >>> 8));
-                accumulator.put((byte)encodedPacketNumber);
-            }
-            case 4 -> accumulator.putInt(encodedPacketNumber);
-        }
+        return null;
     }
 }

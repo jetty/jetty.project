@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.quic.common.frames;
 
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.Function;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -27,10 +32,6 @@ import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
-import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
-import org.eclipse.jetty.util.buffer.BufferAccumulator;
-import org.eclipse.jetty.util.buffer.ByteBufferPool;
-import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +42,7 @@ public class FrameGeneratorParserTest
 {
     private final ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
     private final FrameGenerator generator = new FrameGenerator(byteBufferPool);
-    private final FrameParser parser = new FrameParser();
+    private final FramesParser parser = new FramesParser();
 
     @BeforeEach
     public void prepare()
@@ -51,30 +52,33 @@ public class FrameGeneratorParserTest
 
     private <T extends Frame> List<T> generateParse(T frame)
     {
-        BufferAccumulator accumulator = new BufferAccumulator();
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generate(accumulator, frame);
-        try (RetainableByteBuffer buffer = accumulator.take())
-        {
-            return parse(buffer);
-        }
+        return parse(accumulator);
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Frame> List<T> parse(RetainableByteBuffer buffer)
+    private <T extends Frame> List<T> parse(ByteBufferPool.Accumulator accumulator)
     {
-        try (RetainableByteBuffer slice = buffer.slice())
+        List<ByteBuffer> buffers = accumulator.getByteBuffers();
+        int capacity = buffers.stream().mapToInt(Buffer::remaining).sum();
+        ByteBuffer byteBuffer = ByteBuffer.allocate(capacity);
+        buffers.stream().map(ByteBuffer::slice).forEach(byteBuffer::put);
+        byteBuffer.flip();
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(byteBuffer);
+
+        T frame1 = (T)parser.parse(buffer);
+
+        byteBuffer.flip();
+
+        while (buffer.hasRemaining())
         {
-            T frame1 = (T)parser.parse(slice);
-
-            while (buffer.hasRemaining())
-            {
-                T frame2 = (T)parser.parse(buffer);
-                if (frame2 != null)
-                    return List.of(frame1, frame2);
-            }
-
-            throw new AssertionError();
+            T frame2 = (T)parser.parse(buffer);
+            if (frame2 != null)
+                return List.of(frame1, frame2);
         }
+
+        throw new AssertionError();
     }
 
     @Test
@@ -108,15 +112,11 @@ public class FrameGeneratorParserTest
     public void testStreamFrame()
     {
         byte[] bytes = "DATA".getBytes();
-        StreamFrame frame = new StreamFrame(3290901290300L, RetainableByteBuffer.wrap(bytes), 120911129347656L, true, true);
-        BufferAccumulator accumulator = new BufferAccumulator();
+        StreamFrame frame = new StreamFrame(3290901290300L, ByteBuffer.wrap(bytes), 120911129347656L, true, true);
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.generate(accumulator, frame, bytes.length, Frame.DEFAULT_MAX_SIZE);
-        try (RetainableByteBuffer buffer = accumulator.take())
-        {
-            List<StreamFrame> list = parse(buffer);
-            list.forEach(result -> assertStreamFrameEqual(frame, result));
-            list.forEach(result -> assertArrayEquals(bytes, result.acquire().getArray()));
-        }
+        List<StreamFrame> list = parse(accumulator);
+        list.forEach(result -> assertStreamFrameEqual(frame, result));
     }
 
     public static void assertStreamFrameEqual(StreamFrame frame, StreamFrame result)
@@ -124,6 +124,7 @@ public class FrameGeneratorParserTest
         assertEqual(StreamFrame::getFrameType, frame, result);
         assertEqual(StreamFrame::getStreamId, frame, result);
         assertEqual(StreamFrame::getOffset, frame, result);
+        assertEqual(StreamFrame::getData, frame, result);
         assertEqual(StreamFrame::isEndStream, frame, result);
     }
 

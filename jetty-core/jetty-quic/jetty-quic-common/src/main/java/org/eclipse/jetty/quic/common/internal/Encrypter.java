@@ -16,11 +16,10 @@ package org.eclipse.jetty.quic.common.internal;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.quic.api.Version;
-import org.eclipse.jetty.quic.common.internal.packets.PacketNumber;
 
 public interface Encrypter
 {
     void allocateInitialKeys(Version version, byte[] input) throws Exception;
 
-    void encrypt(EncryptionLevel encryptionLevel, PacketNumber packetNumber, ByteBuffer header, ByteBuffer headerOutput, ByteBuffer payload, ByteBuffer payloadOutput) throws Exception;
+    PacketBuffers encrypt(EncryptionLevel encryptionLevel, long packetNumber, ByteBuffer header, ByteBuffer payload) throws Exception;
 }

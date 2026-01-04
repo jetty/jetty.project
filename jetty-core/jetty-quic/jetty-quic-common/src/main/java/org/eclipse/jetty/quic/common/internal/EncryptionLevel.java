@@ -15,5 +15,8 @@ package org.eclipse.jetty.quic.common.internal;
 
 public enum EncryptionLevel
 {
-    INITIAL
+    INITIAL,
+    ZERO_RTT,
+    HANDSHAKE,
+    ONE_RTT
 }

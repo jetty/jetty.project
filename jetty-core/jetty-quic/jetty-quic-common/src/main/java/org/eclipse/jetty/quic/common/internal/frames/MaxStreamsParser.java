@@ -13,14 +13,16 @@
 
 package org.eclipse.jetty.quic.common.internal.frames;
 
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
 import org.eclipse.jetty.quic.common.StreamId;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
-import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class MaxStreamsParser
+public class MaxStreamsParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
@@ -32,20 +34,22 @@ public class MaxStreamsParser
         this.varLenInt = varLenInt;
     }
 
+    @Override
     public MaxStreamsFrame parse(RetainableByteBuffer buffer)
     {
-        while (buffer.hasRemaining())
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        while (byteBuffer.hasRemaining())
         {
             switch (state)
             {
                 case FRAME_TYPE ->
                 {
-                    frameType = buffer.get() & 0xFF;
+                    frameType = byteBuffer.get() & 0xFF;
                     state = State.MAX_STREAMS;
                 }
                 case MAX_STREAMS ->
                 {
-                    if (varLenInt.tryDecode(buffer, v -> maxStreams = v))
+                    if (varLenInt.tryDecode(byteBuffer, v -> maxStreams = v))
                     {
                         if (maxStreams > StreamId.MAX_PROGRESSIVE)
                             throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_max_streams_value", frameType);

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common;
+package org.eclipse.jetty.quic.common.tls;
 
 import java.nio.ByteBuffer;
 import java.util.List;

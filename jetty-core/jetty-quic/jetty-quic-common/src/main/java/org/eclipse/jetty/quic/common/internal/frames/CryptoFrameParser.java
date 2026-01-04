@@ -17,9 +17,9 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.util.VarLenInt;
-import org.eclipse.jetty.tls.common.parser.MessagesParser;
 
 public class CryptoFrameParser implements FrameParser
 {
@@ -28,7 +28,7 @@ public class CryptoFrameParser implements FrameParser
     private long offset;
     private long length;
 
-    public CryptoFrameParser(VarLenInt varLenInt, MessagesParser messagesParser)
+    public CryptoFrameParser(VarLenInt varLenInt)
     {
         this.varLenInt = varLenInt;
     }
@@ -64,12 +64,9 @@ public class CryptoFrameParser implements FrameParser
                     else
                     {
                         RetainableByteBuffer slice = buffer.slice(length);
-
+                        buffer.skip(length);
+                        return new CryptoFrame(offset, slice);
                     }
-
-                    int len = (int)Math.min(remaining, length);
-                    RetainableByteBuffer slice = buffer.slice(len);
-
                 }
             }
         }

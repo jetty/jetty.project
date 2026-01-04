@@ -13,17 +13,19 @@
 
 package org.eclipse.jetty.quic.common.internal.frames;
 
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class ConnectionCloseParser
+public class ConnectionCloseParser implements FrameParser
 {
     private final VarLenInt varLenInt;
-    private int maxReasonLength = 128;
+    private int reasonMaxLength = 128;
     private State state = State.FRAME_TYPE;
     private boolean appError;
     private long errorCode;
@@ -36,51 +38,54 @@ public class ConnectionCloseParser
         this.varLenInt = varLenInt;
     }
 
-    public void setReasonMaxLength(int maxReasonLength)
+    public int getReasonMaxLength()
     {
-        this.maxReasonLength = maxReasonLength;
+        return reasonMaxLength;
     }
 
+    public void setReasonMaxLength(int reasonMaxLength)
+    {
+        this.reasonMaxLength = reasonMaxLength;
+    }
+
+    @Override
     public ConnectionCloseFrame parse(RetainableByteBuffer buffer)
     {
-        while (buffer.hasRemaining())
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        while (byteBuffer.hasRemaining())
         {
             switch (state)
             {
                 case FRAME_TYPE ->
                 {
-                    appError = (buffer.get() & 0xFF) == 0x1D;
+                    appError = (byteBuffer.get() & 0xFF) == 0x1D;
                     state = State.ERROR_CODE;
                 }
                 case ERROR_CODE ->
                 {
-                    if (varLenInt.tryDecode(buffer, v -> errorCode = v))
+                    if (varLenInt.tryDecode(byteBuffer, v -> errorCode = v))
                         state = appError ? State.REASON_LENGTH : State.CAUSE_FRAME_TYPE;
                 }
                 case CAUSE_FRAME_TYPE ->
                 {
-                    if (varLenInt.tryDecode(buffer, v -> causeFrameType = v))
+                    if (varLenInt.tryDecode(byteBuffer, v -> causeFrameType = v))
                         state = State.REASON_LENGTH;
                 }
                 case REASON_LENGTH ->
                 {
-                    if (varLenInt.tryDecode(buffer, v -> reasonLength = v))
+                    if (varLenInt.tryDecode(byteBuffer, v -> reasonLength = v))
                     {
-                        if (reasonLength > maxReasonLength)
+                        if (reasonLength > reasonMaxLength)
                             throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_reason_length", appError ? 0x1D : 0x1C);
                         state = State.REASON;
                     }
                 }
                 case REASON ->
                 {
-                    int length = (int)Math.min(reasonLength, buffer.remaining());
-                    RetainableByteBuffer slice = buffer.sliceAndConsume(length);
-                    slice.read(b ->
-                    {
-                        long r = b.remaining();
-                        reasonBuilder.append(b);
-                        return r;
-                    });
+                    int position = byteBuffer.position();
+                    int length = (int)Math.min(reasonLength, byteBuffer.remaining());
+                    reasonBuilder.append(byteBuffer.slice(position, length));
+                    byteBuffer.position(position + length);
                     reasonLength -= length;
                     if (reasonLength == 0)
                         return result();
