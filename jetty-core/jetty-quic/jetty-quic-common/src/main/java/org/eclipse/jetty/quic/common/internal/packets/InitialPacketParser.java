@@ -66,7 +66,12 @@ public class InitialPacketParser implements PacketParser
         //  The promise boolean indicates whether to continue processing.
         //  In this way, we can write a buffer-level proxy for plaintext QUIC.
 
-        return parse(packetBuffers);
+        Packet packet = parse(packetBuffers);
+
+        packetBuffers.header().release();
+        packetBuffers.payload().release();
+
+        return packet;
     }
 
     private Packet parse(PacketBuffers packetBuffers)

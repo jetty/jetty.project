@@ -122,22 +122,19 @@ public class FrameGenerator
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
-        long ackNumber = frame.getAckNumber();
+        long ackNumber = frame.getLargestAcknowledged();
         capacity += VarLenInt.length(ackNumber);
         long ackDelay = frame.getAckDelay();
         capacity += VarLenInt.length(ackDelay);
-        List<Integer> ranges = frame.getRanges();
+        long firstRangeLength = frame.getFirstRangeLength();
+        capacity += VarLenInt.length(firstRangeLength);
+        List<AckFrame.AckRange> ranges = frame.getAckRanges();
         int rangeSize = ranges.size();
-        capacity += VarLenInt.length(rangeSize - 1);
-        for (Integer range : ranges)
+        capacity += VarLenInt.length(rangeSize);
+        for (AckFrame.AckRange range : ranges)
         {
-            capacity += VarLenInt.length(range);
-        }
-        if (frameType == 0x03)
-        {
-            capacity += VarLenInt.length(frame.getECT0Count()) +
-                VarLenInt.length(frame.getECT1Count()) +
-                VarLenInt.length(frame.getCECount());
+            capacity += VarLenInt.length(range.gap());
+            capacity += VarLenInt.length(range.length());
         }
 
         RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
@@ -148,16 +145,12 @@ public class FrameGenerator
         VarLenInt.encode(byteBuffer, frameType);
         VarLenInt.encode(byteBuffer, ackNumber);
         VarLenInt.encode(byteBuffer, ackDelay);
-        VarLenInt.encode(byteBuffer, rangeSize - 1);
-        for (Integer range : ranges)
+        VarLenInt.encode(byteBuffer, firstRangeLength);
+        VarLenInt.encode(byteBuffer, rangeSize);
+        for (AckFrame.AckRange range : ranges)
         {
-            VarLenInt.encode(byteBuffer, range);
-        }
-        if (frameType == 0x03)
-        {
-            VarLenInt.encode(byteBuffer, frame.getECT0Count());
-            VarLenInt.encode(byteBuffer, frame.getECT1Count());
-            VarLenInt.encode(byteBuffer, frame.getCECount());
+            VarLenInt.encode(byteBuffer, range.gap());
+            VarLenInt.encode(byteBuffer, range.length());
         }
         BufferUtil.flipToFlush(byteBuffer, position);
 

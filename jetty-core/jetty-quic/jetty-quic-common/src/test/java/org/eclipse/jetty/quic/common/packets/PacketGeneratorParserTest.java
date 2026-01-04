@@ -20,6 +20,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Version;
+import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.common.frames.FrameGenerator;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
@@ -121,6 +122,55 @@ public class PacketGeneratorParserTest
             7e78bfe706ca4cf5e9c5453e9f7cfd2b 8b4c8d169a44e55c88d4a9a7f9474241
             e221af44860018ab0856972e194cd934
             """.replaceAll("[\n ]", "");
+        assertThat(expected, equalToIgnoringCase(StringUtil.toHexString(byteBuffer)));
+    }
+
+    @Test
+    public void testInitialPacketFromRFC9001AppendixA3() throws Exception
+    {
+        byte[] serverHello = StringUtil.fromHexString("""
+                              020000560303ee fce7f7b37ba1d1632e96677825ddf739
+            88cfc79825df566dc5430b9a045a1200 130100002e00330024001d00209d3c94
+            0d89690b84d08a60993c144eca684d10 81287c834d5311bcf32bb9da1a002b00
+            020304
+            """.replaceAll("[\n ]", ""));
+        AckFrame ackFrame = new AckFrame(0, 0, 0, List.of());
+        CryptoFrame cryptoFrame = new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.wrap(serverHello)));
+        byte[] source = StringUtil.fromHexString("f067a5502a4262b5");
+        byte[] destination = new byte[0];
+        byte[] token = new byte[0];
+        int packetNumber = 1;
+        InitialPacket initialPacket = new InitialPacket(Version.V1, source, destination, token, packetNumber, List.of(ackFrame, cryptoFrame));
+
+        ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
+        PacketNumbers packetNumbers = new PacketNumbers()
+        {
+            @Override
+            public EncodedPacketNumber encode(EncryptionLevel encryptionLevel, long packetNumber)
+            {
+                // RFC 9001, A.3, uses a 2-bytes packet number encoding.
+                return new EncodedPacketNumber((int)packetNumber, 2);
+            }
+        };
+        FrameGenerator frameGenerator = new FrameGenerator(byteBufferPool);
+        TLSEngine tlsEngine = new TLSEngine(byteBufferPool, packetNumbers, false);
+        tlsEngine.allocateInitialKeys(Version.V1, StringUtil.fromHexString("8394c8f03e515708"));
+        InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, frameGenerator, tlsEngine);
+        // Unclear why the RFC uses 1162 as the InitialPacket payload length, but that's what it uses.
+        generator.setPayloadMinimumLength(0);
+
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
+        generator.generate(accumulator, initialPacket);
+
+        ByteBuffer byteBuffer = accumulator.getByteBuffer();
+
+        String expected = """
+            cf000000010008f067a5502a4262b500 4075c0d95a482cd0991cd25b0aac406a
+            5816b6394100f37a1c69797554780bb3 8cc5a99f5ede4cf73c3ec2493a1839b3
+            dbcba3f6ea46c5b7684df3548e7ddeb9 c3bf9c73cc3f3bded74b562bfb19fb84
+            022f8ef4cdd93795d77d06edbb7aaf2f 58891850abbdca3d20398c276456cbc4
+            2158407dd074ee
+            """.replaceAll("[\n ]", "");;
         assertThat(expected, equalToIgnoringCase(StringUtil.toHexString(byteBuffer)));
     }
 
