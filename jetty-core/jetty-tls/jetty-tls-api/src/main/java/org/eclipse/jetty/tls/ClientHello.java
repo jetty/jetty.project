@@ -25,6 +25,7 @@ import org.eclipse.jetty.tls.ext.KeyShareExtension;
 import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
+import org.eclipse.jetty.util.BufferUtil;
 
 public final class ClientHello implements Message
 {
@@ -69,6 +70,7 @@ public final class ClientHello implements Message
 
     private final List<GroupKeyPair> groupKeyPairs = new ArrayList<>();
     private byte[] random;
+    private byte[] sessionId = BufferUtil.EMPTY_BYTES;
     private List<CipherSuite> cipherSuites;
     private List<Extension> extensions;
 
@@ -86,6 +88,16 @@ public final class ClientHello implements Message
     public void setRandom(byte[] random)
     {
         this.random = random;
+    }
+
+    public byte[] getSessionId()
+    {
+        return sessionId;
+    }
+
+    public void setSessionId(byte[] sessionId)
+    {
+        this.sessionId = sessionId;
     }
 
     /// @return the cipher suites
