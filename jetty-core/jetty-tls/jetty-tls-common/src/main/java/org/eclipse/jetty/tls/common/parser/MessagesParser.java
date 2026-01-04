@@ -26,12 +26,14 @@ public class MessagesParser
     private State state = State.TYPE;
     private int cursor;
     private Message.Type type;
-    private int length;
+    private int length; // TODO: remove this field?
 
     public MessagesParser()
     {
-        parsers.put(Message.Type.CLIENT_HELLO, new ClientHelloParser());
-        parsers.put(Message.Type.SERVER_HELLO, new ServerHelloParser());
+        ExtensionsParser extensionsParser = new ExtensionsParser();
+        parsers.put(Message.Type.CLIENT_HELLO, new ClientHelloParser(extensionsParser));
+        parsers.put(Message.Type.SERVER_HELLO, new ServerHelloParser(extensionsParser));
+        parsers.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsParser(extensionsParser));
     }
 
     public Message parse(RetainableByteBuffer buffer)

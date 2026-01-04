@@ -26,8 +26,8 @@ import org.eclipse.jetty.tls.ext.Extension;
 
 public class ClientHelloParser implements MessageParser
 {
-    private final ExtensionsParser extensionsParser = new ExtensionsParser();
     private final List<CipherSuite> cipherSuites = new ArrayList<>();
+    private final ExtensionsParser extensionsParser;
     private State state = State.VERSION;
     private int cursor;
     private int value;
@@ -35,6 +35,11 @@ public class ClientHelloParser implements MessageParser
     private byte[] random;
     private byte[] sessionId;
     private int cipher;
+
+    public ClientHelloParser(ExtensionsParser extensionsParser)
+    {
+        this.extensionsParser = extensionsParser;
+    }
 
     @Override
     public Message parse(RetainableByteBuffer buffer)
