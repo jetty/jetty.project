@@ -21,6 +21,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.ClientHello;
+import org.eclipse.jetty.tls.EncryptedExtensions;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.ServerHello;
 import org.eclipse.jetty.tls.TLSVersion;
@@ -108,6 +109,38 @@ public class MessagesGenerateParseTest
         assertArrayEquals(generated.getRandom(), parsed.getRandom());
         assertArrayEquals(generated.getSessionId(), parsed.getSessionId());
         assertEquals(generated.getCipherSuite(), parsed.getCipherSuite());
+        assertEquals(generated.getExtensions(), parsed.getExtensions());
+    }
+
+    @Test
+    public void testEncryptedExtensions() throws Exception
+    {
+        ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
+        MessagesGenerator generator = new MessagesGenerator(byteBufferPool);
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        EncryptedExtensions generated = new EncryptedExtensions();
+        generated.setExtensions(List.of(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3))));
+        generator.generate(accumulator, generated);
+
+        MessagesParser parser = new MessagesParser();
+        Message message = parser.parse(accumulator);
+
+        assertInstanceOf(EncryptedExtensions.class, message);
+        EncryptedExtensions parsed = (EncryptedExtensions)message;
+        assertEquals(generated.getExtensions(), parsed.getExtensions());
+
+        // Parse again one byte at a time.
+        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
+        while (byteBuffer.hasRemaining())
+        {
+            int position = byteBuffer.position();
+            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
+            byteBuffer.position(position + 1);
+            message = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
+        }
+
+        assertInstanceOf(EncryptedExtensions.class, message);
+        parsed = (EncryptedExtensions)message;
         assertEquals(generated.getExtensions(), parsed.getExtensions());
     }
 }

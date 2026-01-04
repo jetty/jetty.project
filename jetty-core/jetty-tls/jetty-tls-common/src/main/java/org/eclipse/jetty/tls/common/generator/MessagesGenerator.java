@@ -29,6 +29,7 @@ public class MessagesGenerator
         ExtensionsGenerator extensionsGenerator = new ExtensionsGenerator();
         generators.put(Message.Type.CLIENT_HELLO, new ClientHelloGenerator(byteBufferPool,  extensionsGenerator));
         generators.put(Message.Type.SERVER_HELLO, new ServerHelloGenerator(byteBufferPool,  extensionsGenerator));
+        generators.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsGenerator(byteBufferPool,  extensionsGenerator));
     }
 
     public void generate(RetainableByteBuffer.Mutable accumulator, Message message)
