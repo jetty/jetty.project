@@ -25,22 +25,17 @@ import org.eclipse.jetty.tls.ext.KeyShareExtension;
 import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
-import org.eclipse.jetty.util.BufferUtil;
 
-// TODO: convert to record.
 public final class ClientHelloMessage implements Message
 {
     public static ClientHelloMessage newClientHello() throws Exception
     {
-        ClientHelloMessage message = new ClientHelloMessage();
-
-        SecureRandom random = new SecureRandom();
-        byte[] randomBytes = new byte[32];
-        random.nextBytes(randomBytes);
-        message.setRandom(randomBytes);
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] random = new byte[32];
+        secureRandom.nextBytes(random);
 
         // Known TLS 1.3 supported cipher suites.
-        message.setCipherSuites(List.of(CipherSuite.TLS_AES_128_GCM_SHA256, CipherSuite.TLS_AES_256_GCM_SHA384));
+        List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256, CipherSuite.TLS_AES_256_GCM_SHA384);
 
         // Add default extensions, only dealing with
         // those that do not need external information.
@@ -49,31 +44,43 @@ public final class ClientHelloMessage implements Message
 
         // Known supported named groups.
         List<NamedGroup> groups = List.of(NamedGroup.x25519, NamedGroup.secp256r1);
-        message.addExtension(new SupportedGroupsExtension(groups));
+        SupportedGroupsExtension supportedGroupsExtension = new SupportedGroupsExtension(groups);
 
         // KeyPairs and KeyShares.
+        List<GroupKeyPair> groupKeyPairs = new ArrayList<>();
         for (NamedGroup group : groups)
         {
             GroupKeyPair from = GroupKeyPair.from(group);
-            message.groupKeyPairs.add(from);
+            groupKeyPairs.add(from);
         }
-        List<KeyShare> keyShares = message.groupKeyPairs.stream()
+        List<KeyShare> keyShares = groupKeyPairs.stream()
             .map(GroupKeyPair::toKeyShare)
             .toList();
-        message.addExtension(new KeyShareExtension(keyShares));
+        KeyShareExtension keyShareExtension = new KeyShareExtension(keyShares);
 
-        message.addExtension(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3)));
+        SupportedVersionsExtension supportedVersionsExtension = new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3));
 
-        message.addExtension(new SignatureAlgorithmsExtension(List.of(SignatureAlgorithm.RSA_PKCS1_SHA256, SignatureAlgorithm.ECDSA_SECP256R1_SHA256)));
+        SignatureAlgorithmsExtension signatureAlgorithmsExtension = new SignatureAlgorithmsExtension(List.of(SignatureAlgorithm.RSA_PKCS1_SHA256, SignatureAlgorithm.ECDSA_SECP256R1_SHA256));
+
+        List<Extension> extensions = List.of(supportedGroupsExtension, keyShareExtension, supportedVersionsExtension, signatureAlgorithmsExtension);
+
+        ClientHelloMessage message = new ClientHelloMessage(random, cipherSuites, extensions);
+        message.groupKeyPairs.addAll(groupKeyPairs);
 
         return message;
     }
 
     private final List<GroupKeyPair> groupKeyPairs = new ArrayList<>();
-    private byte[] random;
-    private byte[] sessionId = BufferUtil.EMPTY_BYTES;
-    private List<CipherSuite> cipherSuites;
-    private List<Extension> extensions;
+    private final byte[] random;
+    private final List<CipherSuite> cipherSuites;
+    private final List<Extension> extensions;
+
+    public ClientHelloMessage(byte[] random, List<CipherSuite> cipherSuites, List<Extension> extensions)
+    {
+        this.random = random;
+        this.cipherSuites = cipherSuites;
+        this.extensions = extensions;
+    }
 
     @Override
     public Type type()
@@ -81,58 +88,21 @@ public final class ClientHelloMessage implements Message
         return Type.CLIENT_HELLO;
     }
 
-    public byte[] getRandom()
+    public byte[] random()
     {
         return random;
     }
 
-    public void setRandom(byte[] random)
-    {
-        this.random = random;
-    }
-
-    public byte[] getSessionId()
-    {
-        return sessionId;
-    }
-
-    public void setSessionId(byte[] sessionId)
-    {
-        this.sessionId = sessionId;
-    }
-
     /// @return the cipher suites
-    public List<CipherSuite> getCipherSuites()
+    public List<CipherSuite> cipherSuites()
     {
         return cipherSuites;
     }
 
-    /// @param cipherSuites the cipher suites, in order of preference.
-    public void setCipherSuites(List<CipherSuite> cipherSuites)
-    {
-        if (cipherSuites.isEmpty())
-            throw new IllegalArgumentException("invalid cipher suites");
-        this.cipherSuites = cipherSuites;
-    }
-
-    /// @param extension the extension to add
-    public void addExtension(Extension extension)
-    {
-        if (extensions == null)
-            extensions = new ArrayList<>();
-        extensions.add(extension);
-    }
-
     /// @return the extensions
-    public List<Extension> getExtensions()
+    public List<Extension> extensions()
     {
         return extensions;
-    }
-
-    /// @param extensions the extensions
-    public void setExtensions(List<Extension> extensions)
-    {
-        this.extensions = extensions;
     }
 
     private record GroupKeyPair(NamedGroup group, KeyPair keyPair)

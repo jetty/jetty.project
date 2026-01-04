@@ -36,8 +36,6 @@ public class ServerHelloMessageGenerator extends MessageGenerator
 
     private void generate(RetainableByteBuffer.Mutable accumulator, ServerHelloMessage message)
     {
-        byte[] sessionId = message.sessionId();
-
         RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getBufferPool(), true, -1, 0, 0);
         int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
         if (extensionsLength > 0xFFFF)
@@ -54,9 +52,7 @@ public class ServerHelloMessageGenerator extends MessageGenerator
         // Legacy compression methods Length | (1)
         // Extensions length                 | (2)
         // Extensions                        | (M)
-        int length = 2 + 32 + 1 + sessionId.length + 2 + 1 + 2 + extensionsLength;
-        if (length > 0xFFFFFF)
-            throw new IllegalStateException("could not generate ServerHello, too long");
+        int length = 2 + 32 + 1 + 2 + 1 + 2 + extensionsLength;
 
         int typeAndLength = (message.type().type() << 24) | length;
         accumulator.putInt(typeAndLength);
@@ -67,8 +63,7 @@ public class ServerHelloMessageGenerator extends MessageGenerator
         accumulator.put(random);
 
         // Legacy session ID.
-        accumulator.put((byte)sessionId.length);
-        accumulator.put(sessionId);
+        accumulator.put((byte)0);
 
         // Cipher suite.
         accumulator.putShort((short)message.cipherSuite().code());

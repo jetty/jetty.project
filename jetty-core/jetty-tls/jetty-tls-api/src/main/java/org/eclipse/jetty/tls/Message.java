@@ -16,7 +16,15 @@ package org.eclipse.jetty.tls;
 import java.util.HashMap;
 import java.util.Map;
 
-public sealed interface Message permits ClientHelloMessage, ServerHelloMessage, EncryptedExtensionsMessage, CertificateMessage, CertificateRequestMessage
+public sealed interface Message permits
+    CertificateMessage,
+    CertificateRequestMessage,
+    CertificateVerifyMessage,
+    ClientHelloMessage,
+    EncryptedExtensionsMessage,
+    FinishedMessage,
+    NewSessionTicketMessage,
+    ServerHelloMessage
 {
     Type type();
 

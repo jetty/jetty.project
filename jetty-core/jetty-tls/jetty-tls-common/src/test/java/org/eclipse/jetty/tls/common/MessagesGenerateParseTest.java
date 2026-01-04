@@ -59,9 +59,9 @@ public class MessagesGenerateParseTest
 
         assertInstanceOf(ClientHelloMessage.class, message);
         ClientHelloMessage parsed = (ClientHelloMessage)message;
-        assertArrayEquals(generated.getRandom(), parsed.getRandom());
-        assertEquals(generated.getCipherSuites(), parsed.getCipherSuites());
-        assertEquals(generated.getExtensions(), parsed.getExtensions());
+        assertArrayEquals(generated.random(), parsed.random());
+        assertEquals(generated.cipherSuites(), parsed.cipherSuites());
+        assertEquals(generated.extensions(), parsed.extensions());
 
         // Parse again one byte at a time.
         ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
@@ -75,9 +75,9 @@ public class MessagesGenerateParseTest
 
         assertInstanceOf(ClientHelloMessage.class, message);
         parsed = (ClientHelloMessage)message;
-        assertArrayEquals(generated.getRandom(), parsed.getRandom());
-        assertEquals(generated.getCipherSuites(), parsed.getCipherSuites());
-        assertEquals(generated.getExtensions(), parsed.getExtensions());
+        assertArrayEquals(generated.random(), parsed.random());
+        assertEquals(generated.cipherSuites(), parsed.cipherSuites());
+        assertEquals(generated.extensions(), parsed.extensions());
     }
 
     @Test
@@ -99,7 +99,6 @@ public class MessagesGenerateParseTest
         assertInstanceOf(ServerHelloMessage.class, message);
         ServerHelloMessage parsed = (ServerHelloMessage)message;
         assertArrayEquals(generated.random(), parsed.random());
-        assertArrayEquals(generated.sessionId(), parsed.sessionId());
         assertEquals(generated.cipherSuite(), parsed.cipherSuite());
         assertEquals(generated.extensions(), parsed.extensions());
 
@@ -116,7 +115,6 @@ public class MessagesGenerateParseTest
         assertInstanceOf(ServerHelloMessage.class, message);
         parsed = (ServerHelloMessage)message;
         assertArrayEquals(generated.random(), parsed.random());
-        assertArrayEquals(generated.sessionId(), parsed.sessionId());
         assertEquals(generated.cipherSuite(), parsed.cipherSuite());
         assertEquals(generated.extensions(), parsed.extensions());
     }
