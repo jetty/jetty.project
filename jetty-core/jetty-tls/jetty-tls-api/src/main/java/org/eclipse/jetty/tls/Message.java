@@ -16,7 +16,7 @@ package org.eclipse.jetty.tls;
 import java.util.HashMap;
 import java.util.Map;
 
-public sealed interface Message permits ClientHello
+public sealed interface Message permits ClientHello, ServerHello
 {
     Type type();
 

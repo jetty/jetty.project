@@ -31,6 +31,7 @@ public class MessagesParser
     public MessagesParser()
     {
         parsers.put(Message.Type.CLIENT_HELLO, new ClientHelloParser());
+        parsers.put(Message.Type.SERVER_HELLO, new ServerHelloParser());
     }
 
     public Message parse(RetainableByteBuffer buffer)
