@@ -247,7 +247,7 @@ public interface HttpURI
     String getUser();
 
     /**
-     * @return {@code true} if the URI has a host component.
+     * @return {@code true} if the URI has an authority component.
      */
     boolean hasAuthority();
 
