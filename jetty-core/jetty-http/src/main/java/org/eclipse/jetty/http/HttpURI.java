@@ -218,7 +218,7 @@ public interface HttpURI
     String getPath();
 
     /**
-     * @return The path and query components combined as {@code path?query},
+     * @return The raw, undecoded, path and query components combined as {@code path?query},
      *         or just the path if no query is present, or {@code null} if no path is set.
      */
     String getPathQuery();
