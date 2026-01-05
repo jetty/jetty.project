@@ -10,6 +10,7 @@
   <artifactId>jetty-quic-quiche</artifactId>
   <packaging>pom</packaging>
   <name>Core :: QUIC :: Quiche</name>
+  <description>Jetty QUIC Quiche Parent</description>
 
   <modules>
     <module>jetty-quic-quiche-client</module>

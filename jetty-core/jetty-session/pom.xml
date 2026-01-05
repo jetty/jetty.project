@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-session</artifactId>
   <name>Core :: Sessions</name>
-  <description>The common jetty session implementation</description>
+  <description>Jetty Session Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.session</bundle-symbolic-name>

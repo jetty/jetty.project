@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-websocket-jetty-api</artifactId>
   <name>Core :: Websocket :: Jetty API</name>
+  <description>Jetty WebSocket API Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.api</bundle-symbolic-name>

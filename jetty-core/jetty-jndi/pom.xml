@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-jndi</artifactId>
   <name>Core :: JNDI</name>
-  <description>JNDI spi impl for java namespace.</description>
+  <description>Jetty JNDI Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jndi</bundle-symbolic-name>

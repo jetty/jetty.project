@@ -10,6 +10,7 @@
   </parent>
   <artifactId>jetty-alpn-bouncycastle-client</artifactId>
   <name>Core :: ALPN :: Bouncy Castle Client</name>
+  <description>Jetty ALPN Client Bouncy Castle Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.bouncycastle.client</bundle-symbolic-name>

@@ -10,6 +10,7 @@
   </parent>
   <artifactId>jetty-alpn-java-client</artifactId>
   <name>Core :: ALPN :: Java Client</name>
+  <description>Jetty ALPN Client OpenJDK Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.java.client</bundle-symbolic-name>

@@ -11,6 +11,7 @@
   <artifactId>jetty-websocket</artifactId>
   <packaging>pom</packaging>
   <name>Core :: WebSocket</name>
+  <description>Jetty WebSocket Parent</description>
 
   <modules>
     <module>jetty-websocket-core-client</module>

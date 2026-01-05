@@ -8,6 +8,7 @@
   </parent>
   <artifactId>jetty-quic-client</artifactId>
   <name>Core :: QUIC :: Client</name>
+  <description>Jetty QUIC Client Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>

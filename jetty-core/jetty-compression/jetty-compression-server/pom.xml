@@ -10,7 +10,7 @@
   <artifactId>jetty-compression-server</artifactId>
   <packaging>jar</packaging>
   <name>Core :: Compression :: Server</name>
-  <description>Jetty Core Compression Server</description>
+  <description>Jetty Compression Server Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>

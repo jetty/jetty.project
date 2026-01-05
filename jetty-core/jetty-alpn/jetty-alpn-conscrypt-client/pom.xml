@@ -10,6 +10,7 @@
   </parent>
   <artifactId>jetty-alpn-conscrypt-client</artifactId>
   <name>Core :: ALPN :: Conscrypt Client</name>
+  <description>Jetty ALPN Client Conscrypt Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.conscrypt.client</bundle-symbolic-name>

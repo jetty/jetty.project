@@ -12,7 +12,7 @@
   <artifactId>jetty-compression-common</artifactId>
   <packaging>jar</packaging>
   <name>Core :: Compression :: Common</name>
-  <description>Jetty Core Compression Common</description>
+  <description>Jetty Compression Common Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>

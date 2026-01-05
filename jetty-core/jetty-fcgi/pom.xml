@@ -11,6 +11,7 @@
   <artifactId>jetty-fcgi</artifactId>
   <packaging>pom</packaging>
   <name>Core :: FastCGI</name>
+  <description>Jetty FastCGI Parent</description>
 
   <modules>
     <module>jetty-fcgi-client</module>

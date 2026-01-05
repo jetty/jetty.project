@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-http2-server</artifactId>
   <name>Core :: HTTP2 :: Server</name>
+  <description>Jetty HTTP/2 Server Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>

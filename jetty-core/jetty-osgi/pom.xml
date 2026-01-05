@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-osgi</artifactId>
   <name>Core :: OSGi</name>
-  <description>Support for OSGi integration</description>
+  <description>Jetty OSGi Integration Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.osgi</bundle-symbolic-name>
