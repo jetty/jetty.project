@@ -211,7 +211,7 @@ public interface HttpURI
     String getParam();
 
     /**
-     * @return The raw path component of the URI including path parameters, or {@code null} if not set.
+     * @return The raw, undecoded, path component of the URI including path parameters, or {@code null} if not set.
      * @see #getCanonicalPath()
      * @see #getDecodedPath()
      */
