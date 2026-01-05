@@ -159,7 +159,7 @@ public interface HttpURI
     }
 
     /**
-     * @return An immutable copy of this URI.
+     * @return An immutable copy of this HttpURI.
      */
     Immutable asImmutable();
 
