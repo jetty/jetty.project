@@ -38,14 +38,59 @@ public class CompressionResponse extends Response.Wrapper
 
     private final Compression compression;
     private final CompressionConfig config;
+    private final String originalEtag;
     private final AtomicReference<State> state = new AtomicReference<>(State.MIGHT_COMPRESS);
     private EncoderSink encoderSink;
 
-    public CompressionResponse(Request request, Response wrapped, Compression compression, CompressionConfig config)
+    public CompressionResponse(Request request, Response wrapped, Compression compression, CompressionConfig config, String originalEtag)
     {
         super(request, wrapped);
         this.compression = compression;
         this.config = config;
+        this.originalEtag = originalEtag;
+    }
+
+    @Override
+    public HttpFields.Mutable getHeaders()
+    {
+        if (originalEtag == null)
+            return super.getHeaders();
+
+        // To handle the 304 Not Modified case, we need to ensure that the ETag
+        // Now need to re-add the compression etag suffix that was stripped
+        // from the request before the handling request.
+        return new HttpFields.Mutable.Wrapper(super.getHeaders())
+        {
+            @Override
+            public HttpField onAddField(HttpField field)
+            {
+                if (getStatus() == HttpStatus.NOT_MODIFIED_304)
+                {
+                    if (field.getHeader() == HttpHeader.ETAG)
+                    {
+                        return new HttpField(HttpHeader.ETAG, originalEtag);
+                    }
+                }
+
+                return field;
+            }
+
+            @Override
+            public HttpField onReplaceField(HttpField oldField, HttpField newField)
+            {
+                return onAddField(newField);
+            }
+        };
+    }
+
+    @Override
+    public void setStatus(int code)
+    {
+        if (code == HttpStatus.NOT_MODIFIED_304)
+        {
+            getHeaders().put(HttpHeader.ETAG, originalEtag);
+        }
+        super.setStatus(code);
     }
 
     @Override
