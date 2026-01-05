@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-http-tools</artifactId>
   <name>Core :: HTTP Tools</name>
+  <description>Jetty HTTP Tools Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.http.tools</bundle-symbolic-name>

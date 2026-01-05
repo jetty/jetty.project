@@ -8,6 +8,7 @@
   </parent>
   <artifactId>jetty-alpn-client</artifactId>
   <name>Core :: ALPN :: Client</name>
+  <description>Jetty ALPN Client API Artifact</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.client</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.alpn.*</spotbugs.onlyAnalyze>

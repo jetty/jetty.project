@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-unixdomain-server</artifactId>
   <name>Core :: Unix-Domain Sockets :: Server</name>
-  <description>Jetty Unix-Domain Sockets Server</description>
+  <description>Jetty Unix-Domain Sockets Server Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.unixdomain.server</bundle-symbolic-name>

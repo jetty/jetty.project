@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-alpn-conscrypt-server</artifactId>
   <name>Core :: ALPN :: Conscrypt Server</name>
+  <description>Jetty ALPN Server Conscrypt Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.conscrypt.server</bundle-symbolic-name>

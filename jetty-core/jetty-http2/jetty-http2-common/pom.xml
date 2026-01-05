@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-http2-common</artifactId>
   <name>Core :: HTTP2 :: Common</name>
+  <description>Jetty HTTP/2 Common Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>

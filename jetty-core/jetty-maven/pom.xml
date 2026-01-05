@@ -8,6 +8,7 @@
   </parent>
   <artifactId>jetty-maven</artifactId>
   <name>Core :: Maven</name>
+  <description>Jetty Maven Artifact</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.maven.*</spotbugs.onlyAnalyze>

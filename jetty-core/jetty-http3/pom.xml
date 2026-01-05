@@ -11,6 +11,7 @@
   <artifactId>jetty-http3</artifactId>
   <packaging>pom</packaging>
   <name>Core :: HTTP3</name>
+  <description>Jetty HTTP/3 Parent</description>
 
   <modules>
     <module>jetty-http3-client</module>

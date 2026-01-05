@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-annotations</artifactId>
   <name>Core :: Annotations</name>
+  <description>Jetty Annotations Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.annotations</bundle-symbolic-name>

@@ -10,7 +10,7 @@
   <artifactId>jetty-compression-brotli</artifactId>
   <packaging>jar</packaging>
   <name>Core :: Compression :: Brotli Support</name>
-  <description>Jetty Core Compression :: Brotli Support</description>
+  <description>Jetty Compression Brotli Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.brotli</bundle-symbolic-name>

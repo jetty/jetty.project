@@ -10,7 +10,7 @@
   <artifactId>jetty-compression-tests</artifactId>
   <packaging>jar</packaging>
   <name>Core :: Compression :: Tests</name>
-  <description>Jetty Core Compression :: Tests</description>
+  <description>Jetty Compression Tests Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests</bundle-symbolic-name>

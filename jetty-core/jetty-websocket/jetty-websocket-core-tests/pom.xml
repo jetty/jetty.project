@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-websocket-core-tests</artifactId>
   <name>Core :: Websocket :: Tests</name>
+  <description>Jetty Core WebSocket Tests Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.core.tests</bundle-symbolic-name>

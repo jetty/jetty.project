@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-alpn-bouncycastle-server</artifactId>
   <name>Core :: ALPN :: Bouncy Castle Server</name>
+  <description>Jetty ALPN Server Bouncy Castle Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.bouncycastle.server</bundle-symbolic-name>
