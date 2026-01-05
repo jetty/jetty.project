@@ -11,6 +11,7 @@
 // ========================================================================
 //
 
+[glossary]
 = Glossary
 
 This glossary defines common terms used throughout the Jetty documentation.
