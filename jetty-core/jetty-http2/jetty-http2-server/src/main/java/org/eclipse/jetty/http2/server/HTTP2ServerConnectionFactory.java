@@ -17,6 +17,9 @@ import java.io.EOFException;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.HTTP2Stream;
@@ -35,6 +38,9 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NegotiatingServerConnection.CipherDiscriminator;
+import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
@@ -54,11 +60,13 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
         super(httpConfiguration);
+        httpConfiguration.addCustomizer(new AltSvcCustomizer());
     }
 
     public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
         super(httpConfiguration, protocols);
+        httpConfiguration.addCustomizer(new AltSvcCustomizer());
     }
 
     @Override
@@ -189,6 +197,35 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         private void close(Stream stream, String reason)
         {
             stream.getSession().close(ErrorCode.PROTOCOL_ERROR.code, reason, Callback.NOOP);
+        }
+    }
+
+    /**
+     * <p>An {@link HttpConfiguration.Customizer} that adds the {@code Alt-Svc}
+     * header to HTTP/2 responses, advertising HTTP/3 support if an HTTP/3
+     * connector is available on the server.</p>
+     */
+    public static class AltSvcCustomizer implements HttpConfiguration.Customizer
+    {
+        @Override
+        public Request customize(Request request, HttpFields.Mutable responseHeaders)
+        {
+            if (HttpVersion.HTTP_2 != request.getConnectionMetaData().getHttpVersion())
+                return request;
+
+            Server server = request.getConnectionMetaData().getConnector().getServer();
+            for (Connector connector : server.getConnectors())
+            {
+                if (connector instanceof NetworkConnector nc &&
+                    connector.getProtocols().contains("h3"))
+                {
+                    int port = nc.getLocalPort();
+                    if (port > 0)
+                        responseHeaders.add(HttpHeader.ALT_SVC, String.format("h3=\":%d\"", port));
+                    break;
+                }
+            }
+            return request;
         }
     }
 }
