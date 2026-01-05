@@ -175,7 +175,7 @@ public interface HttpURI
     String getAuthority();
 
     /**
-     * @return The decoded path with percent-encoded characters expanded, or {@code null} if no path is set.
+     * @return The decoded path with percent-encoded characters decoded, or {@code null} if no path is set.
      * @see #getCanonicalPath()
      */
     String getDecodedPath();
