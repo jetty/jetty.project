@@ -16,6 +16,7 @@
 
 This glossary defines common terms used throughout the Jetty documentation.
 
+[glossary]
 [[bean]]
 Bean::
 A component instance added to a `ContainerLifeCycle` container.
