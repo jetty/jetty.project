@@ -9,7 +9,6 @@
   </parent>
   <artifactId>jetty-security</artifactId>
   <name>Core :: Security</name>
-  <description>The common Jetty security implementation</description>
   <description>Jetty Server Security Artifact</description>
 
   <properties>
