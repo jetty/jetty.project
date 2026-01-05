@@ -18,6 +18,9 @@ import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -48,6 +51,8 @@ import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ResponseTest
 {
@@ -214,7 +219,7 @@ public class ResponseTest
         testActionAfterCommit((request, response) ->
         {
             response.setContentLength(20);
-            assertThat(response.getHeader("Content-Length"), is("5"));
+            assertThat(response.getHeader("Content-Length"), nullValue());
         });
     }
 
@@ -271,6 +276,8 @@ public class ResponseTest
     private void testActionAfterCommit(BiConsumer<HttpServletRequest, HttpServletResponse> action)
         throws Exception
     {
+        AtomicReference<Throwable> failureRef = new AtomicReference<>();
+        CountDownLatch completeLatch = new CountDownLatch(1);
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/");
         HttpServlet servlet = new HttpServlet()
@@ -282,7 +289,20 @@ public class ResponseTest
                 response.getWriter().println("Hello");
                 response.getWriter().flush();
                 assertThat(response.isCommitted(), is(Boolean.TRUE));
-                action.accept(request, response);
+                try
+                {
+                    action.accept(request, response);
+                }
+                catch (Throwable x)
+                {
+                    // Too late to write to the client,
+                    // the response is already committed.
+                    failureRef.set(x);
+                }
+                finally
+                {
+                    completeLatch.countDown();
+                }
             }
         };
 
@@ -302,5 +322,10 @@ public class ResponseTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Type"), is("text/plain; charset=US-ASCII"));
         assertThat(response.getContent(), containsString("Hello"));
+
+        assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        Throwable failure = failureRef.get();
+        if (failure != null)
+            fail(failure);
     }
 }
