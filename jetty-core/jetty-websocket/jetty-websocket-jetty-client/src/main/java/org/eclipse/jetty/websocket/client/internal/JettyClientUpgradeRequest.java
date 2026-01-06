@@ -56,6 +56,11 @@ public class JettyClientUpgradeRequest extends CoreClientUpgradeRequest
             if (httpVersionString != null)
                 setVersion(HttpVersion.fromString(httpVersionString));
 
+            // Copy the tag if it exists.
+            Object tag = request.getTag();
+            if (tag != null)
+                tag(tag);
+
             timeout(request.getTimeout(), TimeUnit.MILLISECONDS);
         }
 
