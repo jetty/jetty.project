@@ -48,8 +48,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -137,11 +135,11 @@ public class AltSvcTest
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        // Verify Alt-Svc header contains the HTTP/3 port with ma attribute
+        // Verify Alt-Svc header contains the HTTP/3 port (no ma attribute by default)
         String altSvc = response.getHeaders().get(HttpHeader.ALT_SVC);
         assertNotNull(altSvc, "Alt-Svc header should be present");
-        assertThat("Alt-Svc header should contain HTTP/3 port and ma attribute",
-            altSvc, matchesPattern(String.format("h3=\":%d\"; ma=\\d+", h3Port)));
+        assertEquals(String.format("h3=\":%d\"", h3Port), altSvc,
+            "Alt-Svc header should contain HTTP/3 port without ma attribute by default");
     }
 
     @Test
@@ -170,7 +168,7 @@ public class AltSvcTest
             .filter(c -> c instanceof HTTP2ServerConnectionFactory.AltSvcCustomizer)
             .map(HTTP2ServerConnectionFactory.AltSvcCustomizer.class::cast)
             .findFirst()
-            .ifPresent(customizer -> customizer.setMaxAge((Duration)null)); // Disable ma attribute
+            .ifPresent(customizer -> customizer.setMaxAge(Duration.ofHours(24))); // Set custom ma attribute
 
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h2Factory.getProtocol());
@@ -221,10 +219,10 @@ public class AltSvcTest
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        // Verify Alt-Svc header contains port without ma attribute (since maxAge is null)
+        // Verify Alt-Svc header contains port with ma attribute (since maxAge is set to 24 hours)
         String altSvc = response.getHeaders().get(HttpHeader.ALT_SVC);
         assertNotNull(altSvc, "Alt-Svc header should be present");
-        assertEquals(String.format("h3=\":%d\"", h3Port), altSvc,
-            "Alt-Svc header should not contain ma attribute when maxAge is null");
+        assertEquals(String.format("h3=\":%d\"; ma=86400", h3Port), altSvc,
+            "Alt-Svc header should contain ma attribute when maxAge is set");
     }
 }
