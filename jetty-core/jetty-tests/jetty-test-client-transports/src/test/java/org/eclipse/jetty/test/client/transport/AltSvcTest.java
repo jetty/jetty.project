@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -168,7 +169,7 @@ public class AltSvcTest
             .filter(c -> c instanceof HTTP2ServerConnectionFactory.AltSvcCustomizer)
             .map(HTTP2ServerConnectionFactory.AltSvcCustomizer.class::cast)
             .findFirst()
-            .ifPresent(customizer -> customizer.setMaxAge(null)); // Disable ma attribute
+            .ifPresent(customizer -> customizer.setMaxAge((Duration)null)); // Disable ma attribute
 
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h2Factory.getProtocol());

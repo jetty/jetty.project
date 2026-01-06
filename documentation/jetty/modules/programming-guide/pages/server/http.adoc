@@ -529,15 +529,17 @@ For example, an HTTP/2 response may include the following header:
 
 [source]
 ----
-Alt-Svc: h3=":843"
+Alt-Svc: h3=":843"; ma=86400
 ----
 
 The presence of this header indicates that protocol `h3` is available on the same host (since no host is defined before the port), but on port `843` (although it may be the same port `443`).
+The `ma` (max-age) attribute specifies how long (in seconds) the client should cache this information (86400 seconds = 24 hours).
 The HTTP/3 client may now initiate a QUIC connection on port `843` and make HTTP/3 requests.
 
 NOTE: It is nowadays common to use the same port `443` for both HTTP/2 and HTTP/3. This does not cause problems because HTTP/2 listens on the TCP port `443`, while QUIC listens on the UDP port `443`.
 
-TIP: The `Alt-Svc` header is automatically added to HTTP/2 responses, advertising the HTTP/3 connector's port.
+TIP: The `Alt-Svc` header is automatically added to HTTP/2 responses by `HTTP2ServerConnectionFactory.AltSvcCustomizer`, advertising the HTTP/3 connector's port.
+The `ma` attribute defaults to 24 hours and can be configured via `AltSvcCustomizer.setMaxAge(Duration)`.
 
 It is therefore common for HTTP/3 clients to initiate connections using the HTTP/2 protocol over TCP, and if the server supports HTTP/3 switch to HTTP/3 as indicated by the server.
 
@@ -552,7 +554,7 @@ participant "server:443" as h2server
 participant "server:843" as h3server
 
 client -> h2server : HTTP/2 request
-h2server -> client : HTTP/2 response\nAlt-Svc: h3=":843"
+h2server -> client : HTTP/2 response\nAlt-Svc: h3=":843"; ma=86400
 client -> h3server : HTTP/3 requests
 h3server -> client : HTTP/3 responses
 ...
