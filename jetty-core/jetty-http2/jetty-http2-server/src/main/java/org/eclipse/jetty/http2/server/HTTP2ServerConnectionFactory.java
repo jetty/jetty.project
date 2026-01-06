@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http2.server;
 
 import java.io.EOFException;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
@@ -207,6 +208,26 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
      */
     public static class AltSvcCustomizer implements HttpConfiguration.Customizer
     {
+        private Duration _maxAge = Duration.ofHours(24);
+
+        /**
+         * @return The max age for the Alt-Svc response header, or null if no max-age attribute should be sent.
+         */
+        public Duration getMaxAge()
+        {
+            return _maxAge;
+        }
+
+        /**
+         * Sets the Alt-Svc max age.
+         *
+         * @param maxAge the max age for the Alt-Svc response header, or null if no max-age attribute should be sent.
+         */
+        public void setMaxAge(Duration maxAge)
+        {
+            _maxAge = maxAge;
+        }
+
         @Override
         public Request customize(Request request, HttpFields.Mutable responseHeaders)
         {
@@ -221,7 +242,12 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
                 {
                     int port = nc.getLocalPort();
                     if (port > 0)
-                        responseHeaders.add(HttpHeader.ALT_SVC, String.format("h3=\":%d\"", port));
+                    {
+                        String altSvc = _maxAge != null
+                            ? String.format("h3=\":%d\"; ma=%d", port, _maxAge.toSeconds())
+                            : String.format("h3=\":%d\"", port);
+                        responseHeaders.add(HttpHeader.ALT_SVC, altSvc);
+                    }
                     break;
                 }
             }
