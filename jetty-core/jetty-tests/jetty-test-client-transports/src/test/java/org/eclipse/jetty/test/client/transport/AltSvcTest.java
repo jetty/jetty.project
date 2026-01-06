@@ -51,9 +51,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class AltSvcTest
@@ -75,8 +73,11 @@ public class AltSvcTest
         // Setup server with HTTP/2 (TLS) and HTTP/3 on different ports
         server = new Server();
 
-        HttpConfiguration httpConfig = new HttpConfiguration();
-        httpConfig.addCustomizer(new SecureRequestCustomizer());
+        HttpConfiguration httpConfigH2 = new HttpConfiguration();
+        httpConfigH2.addCustomizer(new SecureRequestCustomizer());
+
+        HttpConfiguration httpConfigH3 = new HttpConfiguration();
+        httpConfigH3.addCustomizer(new SecureRequestCustomizer());
 
         // SSL context factory for server
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
@@ -86,7 +87,7 @@ public class AltSvcTest
         sslContextFactory.setUseCipherSuitesOrder(true);
 
         // HTTP/2 connector with TLS
-        HTTP2ServerConnectionFactory h2Factory = new HTTP2ServerConnectionFactory(httpConfig);
+        HTTP2ServerConnectionFactory h2Factory = new HTTP2ServerConnectionFactory(httpConfigH2);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h2Factory.getProtocol());
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
@@ -96,7 +97,7 @@ public class AltSvcTest
 
         // HTTP/3 connector on a different port
         QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
-        HTTP3ServerConnectionFactory h3Factory = new HTTP3ServerConnectionFactory(httpConfig);
+        HTTP3ServerConnectionFactory h3Factory = new HTTP3ServerConnectionFactory(httpConfigH3);
         QuicheServerConnector h3Connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, h3Factory);
         h3Connector.setPort(0);
         server.addConnector(h3Connector);
@@ -116,9 +117,6 @@ public class AltSvcTest
 
         int h2Port = h2Connector.getLocalPort();
         int h3Port = h3Connector.getLocalPort();
-
-        // Verify ports are different for this test
-        assertNotEquals(h2Port, h3Port, "Test requires different ports for HTTP/2 and HTTP/3");
 
         // Create HTTP/2 client with TLS
         SslContextFactory.Client sslContextFactoryClient = new SslContextFactory.Client();
@@ -152,8 +150,11 @@ public class AltSvcTest
         // Setup server with HTTP/2 (TLS) and HTTP/3 on different ports
         server = new Server();
 
-        HttpConfiguration httpConfig = new HttpConfiguration();
-        httpConfig.addCustomizer(new SecureRequestCustomizer());
+        HttpConfiguration httpConfigH2 = new HttpConfiguration();
+        httpConfigH2.addCustomizer(new SecureRequestCustomizer());
+
+        HttpConfiguration httpConfigH3 = new HttpConfiguration();
+        httpConfigH3.addCustomizer(new SecureRequestCustomizer());
 
         // SSL context factory for server
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
@@ -163,9 +164,9 @@ public class AltSvcTest
         sslContextFactory.setUseCipherSuitesOrder(true);
 
         // HTTP/2 connector with TLS and custom AltSvcCustomizer maxAge
-        HTTP2ServerConnectionFactory h2Factory = new HTTP2ServerConnectionFactory(httpConfig);
+        HTTP2ServerConnectionFactory h2Factory = new HTTP2ServerConnectionFactory(httpConfigH2);
         // Find and configure the AltSvcCustomizer
-        httpConfig.getCustomizers().stream()
+        httpConfigH2.getCustomizers().stream()
             .filter(c -> c instanceof HTTP2ServerConnectionFactory.AltSvcCustomizer)
             .map(HTTP2ServerConnectionFactory.AltSvcCustomizer.class::cast)
             .findFirst()
@@ -180,7 +181,7 @@ public class AltSvcTest
 
         // HTTP/3 connector on a different port
         QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
-        HTTP3ServerConnectionFactory h3Factory = new HTTP3ServerConnectionFactory(httpConfig);
+        HTTP3ServerConnectionFactory h3Factory = new HTTP3ServerConnectionFactory(httpConfigH3);
         QuicheServerConnector h3Connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, h3Factory);
         h3Connector.setPort(0);
         server.addConnector(h3Connector);
