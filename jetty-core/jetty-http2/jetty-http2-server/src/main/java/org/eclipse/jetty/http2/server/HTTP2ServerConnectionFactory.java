@@ -208,7 +208,8 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
      */
     public static class AltSvcCustomizer implements HttpConfiguration.Customizer
     {
-        private Duration _maxAge = Duration.ofHours(24);
+        private Duration _maxAge;
+        private boolean _persist;
 
         /**
          * @return The max age for the Alt-Svc response header, or null if no max-age attribute should be sent.
@@ -228,6 +229,27 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             _maxAge = maxAge;
         }
 
+        /**
+         * @return whether the persist parameter should be included in the Alt-Svc header.
+         */
+        public boolean isPersist()
+        {
+            return _persist;
+        }
+
+        /**
+         * Sets whether to include the persist parameter in the Alt-Svc header.
+         * When true, adds {@code persist=1} to indicate the alternative service
+         * should be persisted across network changes.
+         *
+         * @param persist true to include the persist parameter, false otherwise.
+         * @see <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Alt-Svc#persist1">Alt-Svc persist parameter</a>
+         */
+        public void setPersist(boolean persist)
+        {
+            _persist = persist;
+        }
+
         @Override
         public Request customize(Request request, HttpFields.Mutable responseHeaders)
         {
@@ -243,10 +265,13 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
                     int port = nc.getLocalPort();
                     if (port > 0)
                     {
-                        String altSvc = _maxAge != null
-                            ? String.format("h3=\":%d\"; ma=%d", port, _maxAge.toSeconds())
-                            : String.format("h3=\":%d\"", port);
-                        responseHeaders.add(HttpHeader.ALT_SVC, altSvc);
+                        StringBuilder altSvc = new StringBuilder();
+                        altSvc.append(String.format("h3=\":%d\"", port));
+                        if (_maxAge != null)
+                            altSvc.append(String.format("; ma=%d", _maxAge.toSeconds()));
+                        if (_persist)
+                            altSvc.append("; persist=1");
+                        responseHeaders.add(HttpHeader.ALT_SVC, altSvc.toString());
                     }
                     break;
                 }
