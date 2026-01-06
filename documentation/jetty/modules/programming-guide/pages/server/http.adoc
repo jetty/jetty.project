@@ -539,7 +539,26 @@ The HTTP/3 client may now initiate a QUIC connection on port `843` and make HTTP
 NOTE: It is nowadays common to use the same port `443` for both HTTP/2 and HTTP/3. This does not cause problems because HTTP/2 listens on the TCP port `443`, while QUIC listens on the UDP port `443`.
 
 TIP: The `Alt-Svc` header is automatically added to HTTP/2 responses by `HTTP2ServerConnectionFactory.AltSvcCustomizer`, advertising the HTTP/3 connector's port.
-The `ma` attribute defaults to 24 hours and can be configured via `AltSvcCustomizer.setMaxAge(Duration)`.
+By default, only the port is advertised without additional attributes.
+The `ma` (max-age) attribute can be configured via `AltSvcCustomizer.setMaxAge(Duration)` and the `persist` attribute via `AltSvcCustomizer.setPersist(boolean)`.
+
+To configure the `AltSvcCustomizer`, retrieve it from the `HttpConfiguration` after creating the `HTTP2ServerConnectionFactory`:
+
+[,java,indent=0,options=nowrap]
+----
+HttpConfiguration httpConfig = new HttpConfiguration();
+HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
+
+// Configure AltSvcCustomizer after connection factory creation
+httpConfig.getCustomizers().stream()
+    .filter(c -> c instanceof HTTP2ServerConnectionFactory.AltSvcCustomizer)
+    .map(HTTP2ServerConnectionFactory.AltSvcCustomizer.class::cast)
+    .findFirst()
+    .ifPresent(customizer -> {
+        customizer.setMaxAge(Duration.ofHours(24));
+        customizer.setPersist(true);
+    });
+----
 
 It is therefore common for HTTP/3 clients to initiate connections using the HTTP/2 protocol over TCP, and if the server supports HTTP/3 switch to HTTP/3 as indicated by the server.
 
