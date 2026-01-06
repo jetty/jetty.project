@@ -47,6 +47,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -136,10 +138,91 @@ public class AltSvcTest
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        // Verify Alt-Svc header contains the HTTP/3 port, not the HTTP/2 port
+        // Verify Alt-Svc header contains the HTTP/3 port with ma attribute
         String altSvc = response.getHeaders().get(HttpHeader.ALT_SVC);
         assertNotNull(altSvc, "Alt-Svc header should be present");
-        assertTrue(altSvc.contains(String.format("h3=\":%d\"", h3Port)),
-            "Alt-Svc header should contain HTTP/3 port " + h3Port + ", but was: " + altSvc);
+        assertThat("Alt-Svc header should contain HTTP/3 port and ma attribute",
+            altSvc, matchesPattern(String.format("h3=\":%d\"; ma=\\d+", h3Port)));
+    }
+
+    @Test
+    public void testAltSvcHeaderWithCustomMaxAge() throws Exception
+    {
+        // Setup server with HTTP/2 (TLS) and HTTP/3 on different ports
+        server = new Server();
+
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // SSL context factory for server
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
+        sslContextFactory.setUseCipherSuitesOrder(true);
+
+        // HTTP/2 connector with TLS and custom AltSvcCustomizer maxAge
+        HTTP2ServerConnectionFactory h2Factory = new HTTP2ServerConnectionFactory(httpConfig);
+        // Find and configure the AltSvcCustomizer
+        httpConfig.getCustomizers().stream()
+            .filter(c -> c instanceof HTTP2ServerConnectionFactory.AltSvcCustomizer)
+            .map(HTTP2ServerConnectionFactory.AltSvcCustomizer.class::cast)
+            .findFirst()
+            .ifPresent(customizer -> customizer.setMaxAge(null)); // Disable ma attribute
+
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(h2Factory.getProtocol());
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
+        ServerConnector h2Connector = new ServerConnector(server, ssl, alpn, h2Factory);
+        h2Connector.setPort(0);
+        server.addConnector(h2Connector);
+
+        // HTTP/3 connector on a different port
+        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
+        HTTP3ServerConnectionFactory h3Factory = new HTTP3ServerConnectionFactory(httpConfig);
+        QuicheServerConnector h3Connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, h3Factory);
+        h3Connector.setPort(0);
+        server.addConnector(h3Connector);
+
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(HttpStatus.OK_200);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        server.start();
+
+        int h2Port = h2Connector.getLocalPort();
+        int h3Port = h3Connector.getLocalPort();
+
+        // Create HTTP/2 client with TLS
+        SslContextFactory.Client sslContextFactoryClient = new SslContextFactory.Client();
+        sslContextFactoryClient.setTrustAll(true);
+
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSslContextFactory(sslContextFactoryClient);
+
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        client = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
+        client.start();
+
+        // Make HTTP/2 request
+        ContentResponse response = client.newRequest("localhost", h2Port)
+            .scheme("https")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // Verify Alt-Svc header contains port without ma attribute (since maxAge is null)
+        String altSvc = response.getHeaders().get(HttpHeader.ALT_SVC);
+        assertNotNull(altSvc, "Alt-Svc header should be present");
+        assertEquals(String.format("h3=\":%d\"", h3Port), altSvc,
+            "Alt-Svc header should not contain ma attribute when maxAge is null");
     }
 }
