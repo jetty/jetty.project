@@ -356,7 +356,7 @@ public class WebSocketOverHTTP2Test
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         var session = http2Client.getBean(SessionContainer.class).getSessions().stream().findAny().orElseThrow();
-        assertThat(session.getStreams(), is(empty()));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(session.getStreams(), is(empty())));
     }
 
     @Test
