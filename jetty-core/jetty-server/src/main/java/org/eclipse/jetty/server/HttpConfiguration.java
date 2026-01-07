@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -83,8 +82,7 @@ public class HttpConfiguration implements Dumpable
     private long _minResponseDataRate;
     private HttpCompliance _httpCompliance = HttpCompliance.RFC9110;
     private UriCompliance _uriCompliance = UriCompliance.DEFAULT;
-    // HTTP (RFC9110) outgoing redirect (`Location` header) are allowed to have FRAGMENT.
-    private UriCompliance _redirectUriCompliance = new UriCompliance("RedirectDefault", EnumSet.of(UriCompliance.Violation.FRAGMENT));
+    private UriCompliance _redirectUriCompliance = UriCompliance.DEFAULT_REDIRECT;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartCompliance _multiPartCompliance = MultiPartCompliance.RFC7578;

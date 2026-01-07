@@ -78,9 +78,8 @@ etc/jetty-http-config.xml
 # jetty.httpConfig.uriCompliance=DEFAULT
 
 ## URI Compliance mode for HTTP Response Redirects (the Location header)
-## URI Compliance: DEFAULT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE
-## append `,FRAGMENT` to allow URI fragments (`#foo`) to be sent
-# jetty.httpConfig.redirectUriCompliance=DEFAULT,FRAGMENT
+## URI Compliance: DEFAULT, DEFAULT_REDIRECT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE
+# jetty.httpConfig.redirectUriCompliance=DEFAULT_REDIRECT
 
 ## Cookie compliance mode for parsing request Cookie headers: RFC6265_STRICT, RFC6265, RFC6265_LEGACY, RFC2965, RFC2965_LEGACY
 # jetty.httpConfig.requestCookieCompliance=RFC6265
