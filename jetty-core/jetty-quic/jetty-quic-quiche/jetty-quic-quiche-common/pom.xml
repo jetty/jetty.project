@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-quic-quiche-common</artifactId>
   <name>Core :: QUIC :: Quiche :: Common</name>
+  <description>Jetty QUIC Quiche Common Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.quiche.common</bundle-symbolic-name>

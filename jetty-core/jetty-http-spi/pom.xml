@@ -8,6 +8,7 @@
   </parent>
   <artifactId>jetty-http-spi</artifactId>
   <name>Core :: HTTP SPI</name>
+  <description>Jetty OpenJDK HTTP SPI Artifact</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.http.spi</bundle-symbolic-name>
     <jacoco.skip>true</jacoco.skip>

@@ -34,14 +34,11 @@ public class GzipRequest extends Request.Wrapper
 {
     private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
 
-    // TODO: use InflaterPool from somewhere.
-    private static final InflaterPool __inflaterPool = new InflaterPool(-1, true);
-
     private final HttpFields _fields;
     private Decoder _decoder;
     private GzipTransformer _gzipTransformer;
 
-    public GzipRequest(Request request, int inflateBufferSize)
+    public GzipRequest(Request request, InflaterPool inflaterPool, int inflateBufferSize)
     {
         super(request);
         _fields = updateRequestFields(request, inflateBufferSize > 0);
@@ -49,7 +46,7 @@ public class GzipRequest extends Request.Wrapper
         if (inflateBufferSize > 0)
         {
             Components components = getComponents();
-            _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), inflateBufferSize);
+            _decoder = new Decoder(inflaterPool, components.getByteBufferPool(), inflateBufferSize);
             _gzipTransformer = new GzipTransformer(getWrapped(), _decoder);
         }
     }

@@ -10,6 +10,7 @@
   <artifactId>jetty-core</artifactId>
   <packaging>pom</packaging>
   <name>Core</name>
+  <description>Jetty Core API Parent</description>
 
   <modules>
     <module>jetty-alpn</module>

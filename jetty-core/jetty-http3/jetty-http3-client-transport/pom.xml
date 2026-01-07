@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-http3-client-transport</artifactId>
   <name>Core :: HTTP3 :: HTTP Client Transport</name>
+  <description>Jetty HTTP/3 Client Transport Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.client.http</bundle-symbolic-name>

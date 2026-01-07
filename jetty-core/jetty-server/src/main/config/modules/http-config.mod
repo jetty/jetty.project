@@ -73,11 +73,13 @@ etc/jetty-http-config.xml
 ## HTTP Compliance: STRICT, RFC9110, RFC7230, RFC7230_LEGACY, RFC2616, RFC2616_LEGACY, LEGACY
 # jetty.httpConfig.compliance=RFC9110
 
+## URI Compliance mode for HTTP Requests
 ## URI Compliance: DEFAULT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE
 # jetty.httpConfig.uriCompliance=DEFAULT
 
-## URI Compliance: DEFAULT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE
-# jetty.httpConfig.redirectUriCompliance=DEFAULT
+## URI Compliance mode for HTTP Response Redirects (the Location header)
+## URI Compliance: DEFAULT, DEFAULT_REDIRECT, LEGACY, RFC3986, RFC3986_UNAMBIGUOUS, UNSAFE
+# jetty.httpConfig.redirectUriCompliance=DEFAULT_REDIRECT
 
 ## Cookie compliance mode for parsing request Cookie headers: RFC6265_STRICT, RFC6265, RFC6265_LEGACY, RFC2965, RFC2965_LEGACY
 # jetty.httpConfig.requestCookieCompliance=RFC6265

@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-util-ajax</artifactId>
   <name>Core :: Utilities :: JSON</name>
-  <description>JSON/Ajax Utility classes for Jetty</description>
+  <description>Jetty JSON Utilities Artifact</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.util.ajax</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.util.ajax.*</spotbugs.onlyAnalyze>

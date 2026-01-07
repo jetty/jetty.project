@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-http3-common</artifactId>
   <name>Core :: HTTP3 :: Common</name>
+  <description>Jetty HTTP/3 Common Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>

@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-quic-quiche-foreign</artifactId>
   <name>Core :: QUIC :: Quiche :: Foreign Binding</name>
+  <description>Jetty QUIC Quiche OpenJDK FFM Binding Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.quiche.foreign</bundle-symbolic-name>

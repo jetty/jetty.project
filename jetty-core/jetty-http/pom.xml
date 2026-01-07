@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-http</artifactId>
   <name>Core :: HTTP</name>
+  <description>Jetty HTTP Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.http</bundle-symbolic-name>

@@ -8,6 +8,7 @@
   </parent>
   <artifactId>jetty-io</artifactId>
   <name>Core :: IO</name>
+  <description>Jetty I/O Artifact</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.io</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.io.*</spotbugs.onlyAnalyze>

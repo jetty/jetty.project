@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-quic-quiche-client</artifactId>
   <name>Core :: QUIC :: Quiche :: Client</name>
+  <description>Jetty QUIC Quiche Client Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.quiche.client</bundle-symbolic-name>

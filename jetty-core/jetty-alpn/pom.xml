@@ -9,6 +9,7 @@
   <artifactId>jetty-alpn</artifactId>
   <packaging>pom</packaging>
   <name>Core :: ALPN</name>
+  <description>Jetty ALPN Parent</description>
 
   <modules>
     <module>jetty-alpn-client</module>

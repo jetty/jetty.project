@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-quic-api</artifactId>
   <name>Core :: QUIC :: APIs</name>
+  <description>Jetty QUIC API Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.api</bundle-symbolic-name>

@@ -14,11 +14,16 @@
 = Jetty Tools
 
 [[password]]
-== Password Obfuscation
+== Password Tool
+
+The `org.eclipse.jetty.util.security.Password` class present in the `org.eclipse.jetty:jetty-util` artifact provides support for <<password-obfuscation,password obfuscation>> and <<password-checksum,password checksums>>.
+
+[[password-obfuscation]]
+=== Password Obfuscation
 
 There are many cases where you might need to provide credentials such as usernames and passwords to authenticate your access to certain services, for example KeyStore and TrustStore passwords, JDBC credentials, Basic or Digest authentication credentials, etc.
 
-Passwords are typically stored in clear-text in configuration files; a program such as Jetty reading the configuration file must be able to retrieve the original password to pass it to the service (for example a KeyStore or a JDBC driver).
+Passwords are typically stored in clear-text in configuration files; a program such as Jetty reading the configuration file must be able to retrieve the original password to pass it to the service (for example, a KeyStore or a JDBC driver).
 
 You can protect clear-text stored passwords from _casual view_ by obfuscating them using class link:{javadoc-url}/org/eclipse/jetty/util/security/Password.html[`org.eclipse.jetty.util.security.Password`]:
 
@@ -52,9 +57,32 @@ For example:
 jetty.sslContext.keyStorePassword=OBF:1yta1t331v8w1v9q1t331ytc
 ----
 
-CAUTION: Remember that password obfuscation only protects from _casual view_ -- it can be de-obfuscated to obtain the original password.
+NOTE: Remember that password obfuscation only protects from _casual view_ -- it can be de-obfuscated to obtain the original password.
 
 TIP: You can also use the obfuscated password in your Java source code.
+
+[CAUTION]
+====
+Extreme care should be taken when using the `Password` tool from the command line, especially in cases where the username or password contains characters that may be interpreted by the shell, such as the character `$`, and the `--prompt` command line option is not used.
+
+For example, running the following produces the wrong password:
+
+[,bash,subs=attributes+]
+----
+$ java -cp jetty-util-{jetty-version}.jar org.eclipse.jetty.util.security.Password bob secret$phrase
+----
+
+where `bob` is the user, and `secret$phrase` is the desired password.
+
+The shell may interpret `$phrase` as a shell variable, likely an empty string, so the `Password` class only receives `secret` as the password to obfuscate and hash.
+
+Always use the `--prompt` command line option, or disable shell interpretation for the parameters, for example by surrounding the parameters with single quotes:
+
+[,bash,subs=attributes+]
+----
+$ java -cp jetty-util-{jetty-version}.jar org.eclipse.jetty.util.security.Password 'bob' 'secret$phrase'
+----
+====
 
 You can also use obfuscated passwords in Jetty XML files where a clear-text password is usually required.
 Here is an example, setting an obfuscated password for a JDBC `DataSource`:
@@ -84,11 +112,14 @@ Here is an example, setting an obfuscated password for a JDBC `DataSource`:
 ----
 <1> Note the usage of `Password.deobfuscate(\...)` to avoid storing the clear-text password in the XML file.
 
-On the other hand, `MessageDigest` checksums of passwords are useful when Jetty receives a password and needs to verify it without storing the original password (for example, with Basic authentication).
+[[password-checksum]]
+=== Password Checksums
 
-Differently from obfuscated passwords, password checksums are not reversible, and cannot be used when Jetty needs to pass the original password to other services.
+Password checksums are computed using the JDK `MessageDigest` class and are useful when Jetty receives a password and needs to verify it without storing the original password (for example, with Basic authentication).
 
-You can store the Basic authentication credentials in checksum form on the server, and verify the password received from the client by comparing the stored checksum with the checksum of the received password computed on-the-fly.
+Differently from obfuscated passwords, password checksums are not reversible and cannot be used when Jetty needs to pass the original password to other services; they can only be used to verify that the received password matches the password checksum.
+
+You can store the Basic authentication credentials in checksum form on the server and verify the password received from the client by comparing the stored checksum with the checksum of the received password computed on-the-fly.
 If the checksum is identical, then the password was correct.
 
 [NOTE]
