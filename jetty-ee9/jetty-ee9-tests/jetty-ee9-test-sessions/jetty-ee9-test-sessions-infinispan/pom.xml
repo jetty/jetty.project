@@ -98,11 +98,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.infinispan</groupId>
-      <artifactId>infinispan-remote-query-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.infinispan.protostream</groupId>
       <artifactId>protostream</artifactId>
       <scope>test</scope>
