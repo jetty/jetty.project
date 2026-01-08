@@ -23,7 +23,6 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.QuotedCSV;
-import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -73,7 +72,7 @@ public abstract class WebSocketNegotiation
         return components;
     }
 
-    public void negotiate() throws QuietException.RuntimeException
+    public void negotiate() throws HttpException.RuntimeException
     {
         try
         {

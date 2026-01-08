@@ -21,7 +21,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.QuietException;
 
 /**
  * A Factory to create {@link Connection} instances for {@link Connector}s.
@@ -79,7 +78,7 @@ public interface ConnectionFactory
          * indicate that the upgrade should proceed.
          * @throws HttpException.RuntimeException Thrown to indicate the upgrade attempt was illegal and that a bad message response should be sent.
          */
-        Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields.Mutable responseFields) throws QuietException.RuntimeException;
+        Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields.Mutable responseFields) throws HttpException.RuntimeException;
     }
 
     /**
