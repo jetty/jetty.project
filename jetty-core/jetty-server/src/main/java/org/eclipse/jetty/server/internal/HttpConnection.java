@@ -1170,7 +1170,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             else
                 stream._chunk = Content.Chunk.EOF;
 
-            getHttpChannel().getComplianceViolationListener().onRequestBegin(getHttpChannel().getRequest());
             return false;
         }
 
@@ -1336,16 +1335,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         public Runnable headerComplete()
         {
-            /*HttpConfiguration httpConfiguration = getHttpConfiguration();
-
-            if (_uri.hasViolations())
-            {
-                UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
-                uriCompliance.assertAllowed(_uri,
-                    getHttpChannel().getComplianceViolationListener(),
-                    BadMessageException::new);
-            }*/
-
             // Check host field matches the authority in the absolute URI or is not blank
             if (_hostField != null)
             {
