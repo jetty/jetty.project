@@ -46,7 +46,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
-import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
@@ -1337,7 +1336,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         public Runnable headerComplete()
         {
-            HttpConfiguration httpConfiguration = getHttpConfiguration();
+            /*HttpConfiguration httpConfiguration = getHttpConfiguration();
 
             if (_uri.hasViolations())
             {
@@ -1345,7 +1344,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 uriCompliance.assertAllowed(_uri,
                     getHttpChannel().getComplianceViolationListener(),
                     BadMessageException::new);
-            }
+            }*/
 
             // Check host field matches the authority in the absolute URI or is not blank
             if (_hostField != null)
