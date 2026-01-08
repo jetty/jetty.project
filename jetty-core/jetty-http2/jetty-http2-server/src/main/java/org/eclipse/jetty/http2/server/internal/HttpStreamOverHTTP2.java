@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
@@ -128,7 +127,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             HttpField expectField = fields.getField(HttpHeader.EXPECT);
             if (expectField != null && !HttpHeaderValue.CONTINUE.is(expectField.getValue()))
-                throw new BadMessageException(HttpStatus.EXPECTATION_FAILED_417);
+                throw new HttpException.RuntimeException(HttpStatus.EXPECTATION_FAILED_417);
 
             InvocationType invocationType = Invocable.getInvocationType(handler);
             return new ReadyTask(invocationType, handler)

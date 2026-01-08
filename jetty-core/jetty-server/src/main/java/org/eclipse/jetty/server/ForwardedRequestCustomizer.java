@@ -20,12 +20,13 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Set;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.QuotedCSVParser;
 import org.eclipse.jetty.io.EndPoint;
@@ -663,7 +664,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
 
     protected void onError(HttpField field, Throwable t)
     {
-        throw new BadMessageException("Bad header value for " + field.getName(), t);
+        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad header value for " + field.getName(), t);
     }
 
     protected static String getLeftMost(String headerValue)
@@ -978,7 +979,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
             }
             else
             {
-                throw new BadMessageException("Invalid value for " + field.getName());
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid value for " + field.getName());
             }
         }
 

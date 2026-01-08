@@ -19,8 +19,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -71,7 +72,7 @@ public abstract class WebSocketNegotiation
         return components;
     }
 
-    public void negotiate() throws BadMessageException
+    public void negotiate() throws HttpException.RuntimeException
     {
         try
         {
@@ -79,7 +80,7 @@ public abstract class WebSocketNegotiation
         }
         catch (Throwable x)
         {
-            throw new BadMessageException("Invalid upgrade request", x);
+            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid upgrade request", x);
         }
     }
 

@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -35,7 +34,7 @@ import org.eclipse.jetty.util.Callback;
  * <p>Handler order is important; for example, if this handler is before the {@link GzipHandler},
  * then it will limit compressed sizes, if it as after the {@link GzipHandler} then it will limit
  * uncompressed sizes.</p>
- * <p>If a size limit is exceeded then {@link BadMessageException} is thrown with a
+ * <p>If a size limit is exceeded then {@link HttpException.RuntimeException} is thrown with a
  * {@link HttpStatus#PAYLOAD_TOO_LARGE_413} status.</p>
  */
 public class SizeLimitHandler extends Handler.Wrapper
@@ -98,7 +97,7 @@ public class SizeLimitHandler extends Handler.Wrapper
                 _read += content.remaining();
                 if (_requestLimit >= 0 && _read > _requestLimit)
                 {
-                    BadMessageException e = new BadMessageException(HttpStatus.PAYLOAD_TOO_LARGE_413, "Request body is too large: " + _read + ">" + _requestLimit);
+                    HttpException.RuntimeException e = new HttpException.RuntimeException(HttpStatus.PAYLOAD_TOO_LARGE_413, "Request body is too large: " + _read + ">" + _requestLimit);
                     getWrapped().fail(e);
                     return null;
                 }

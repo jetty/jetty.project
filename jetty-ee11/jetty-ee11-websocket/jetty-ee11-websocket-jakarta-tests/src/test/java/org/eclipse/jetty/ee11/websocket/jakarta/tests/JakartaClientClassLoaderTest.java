@@ -38,7 +38,7 @@ import org.eclipse.jetty.ee11.webapp.Configurations;
 import org.eclipse.jetty.ee11.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
 import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -155,7 +155,7 @@ public class JakartaClientClassLoaderTest
         app.copyLib(Compression.class, "jetty-compression-common.jar");
         app.copyLib(GzipCompression.class, "jetty-compression-gzip.jar");
         app.copyLib(EndPoint.class, "jetty-io.jar");
-        app.copyLib(BadMessageException.class, "jetty-http.jar");
+        app.copyLib(HttpException.class, "jetty-http.jar");
         app.copyLib(XmlConfiguration.class, "jetty-xml.jar");
 
         return app;

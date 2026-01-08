@@ -116,7 +116,7 @@ public class MultiPartFormDataTest
         formData.parse(source).handle((parts, failure) ->
         {
             assertNull(parts);
-            assertInstanceOf(BadMessageException.class, failure);
+            assertInstanceOf(HttpException.class, failure);
             assertThat(failure.getMessage(), containsStringIgnoringCase("bad last boundary"));
             return null;
         }).get(5, TimeUnit.SECONDS);
@@ -422,9 +422,8 @@ public class MultiPartFormDataTest
         Content.Sink.write(source, true, str, Callback.NOOP);
 
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
-        assertThat(ee.getCause(), instanceOf(BadMessageException.class));
-        BadMessageException bme = (BadMessageException)ee.getCause();
-        assertThat(bme.getMessage(), containsString("invalid LF-only EOL"));
+        assertThat(ee.getCause(), instanceOf(HttpException.class));
+        assertThat(ee.getCause().getMessage(), containsString("invalid LF-only EOL"));
     }
 
     /**
@@ -485,9 +484,8 @@ public class MultiPartFormDataTest
         Content.Sink.write(source, true, str, Callback.NOOP);
 
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
-        assertThat(ee.getCause(), instanceOf(BadMessageException.class));
-        BadMessageException bme = (BadMessageException)ee.getCause();
-        assertThat(bme.getMessage(), containsString("invalid CR-only EOL"));
+        assertThat(ee.getCause(), instanceOf(HttpException.class));
+        assertThat(ee.getCause().getMessage(), containsString("invalid CR-only EOL"));
     }
 
     @Test
@@ -514,9 +512,8 @@ public class MultiPartFormDataTest
         Content.Sink.write(source, true, str, Callback.NOOP);
 
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get());
-        assertThat(ee.getCause(), instanceOf(BadMessageException.class));
-        BadMessageException bme = (BadMessageException)ee.getCause();
-        assertThat(bme.getMessage(), containsString("invalid CR-only EOL"));
+        assertThat(ee.getCause(), instanceOf(HttpException.class));
+        assertThat(ee.getCause().getMessage(), containsString("invalid CR-only EOL"));
     }
 
     @Test

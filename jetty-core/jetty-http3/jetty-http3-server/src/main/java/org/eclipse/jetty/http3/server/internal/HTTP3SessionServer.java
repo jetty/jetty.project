@@ -13,7 +13,8 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.HTTP3Session;
@@ -90,7 +91,7 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
             {
                 // It's a bad request, request content will be dropped.
                 stream.updateClose(true, false);
-                notifyStreamFailure(stream, new BadMessageException(metaDataFailure.getMessage(), metaDataFailure));
+                notifyStreamFailure(stream, new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, metaDataFailure.getMessage(), metaDataFailure));
             }
             else
             {

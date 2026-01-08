@@ -456,6 +456,6 @@ public final class HttpCompliance implements ComplianceViolation.Mode
                 mode, violation, violation.getDescription()
             ));
         else
-            throw new BadMessageException(violation.getDescription());
+            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, violation.getDescription());
     }
 }

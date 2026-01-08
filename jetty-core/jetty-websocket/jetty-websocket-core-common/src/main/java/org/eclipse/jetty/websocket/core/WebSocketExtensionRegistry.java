@@ -19,7 +19,8 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
@@ -88,7 +89,7 @@ public class WebSocketExtensionRegistry implements Iterable<Class<? extends Exte
         }
         catch (Throwable t)
         {
-            throw new BadMessageException("Cannot instantiate extension: " + extClass, t);
+            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Cannot instantiate extension: " + extClass, t);
         }
     }
 

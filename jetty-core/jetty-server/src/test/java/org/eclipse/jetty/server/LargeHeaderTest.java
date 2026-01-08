@@ -29,7 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
@@ -235,10 +235,17 @@ public class LargeHeaderTest
                             countOther.incrementAndGet();
                         }
                     }
-                    catch (BadMessageException bme)
+                    catch (Throwable throwable)
                     {
-                        System.err.printf("%n---[Response:%d]----%n%s%n----%n", rawResponse.length(), rawResponse);
-                        LOG.warn("Failed Response Parse", bme);
+                        if (throwable instanceof HttpException)
+                        {
+                            System.err.printf("%n---[Response:%d]----%n%s%n----%n", rawResponse.length(), rawResponse);
+                            LOG.warn("Failed Response Parse", throwable);
+                        }
+                        else
+                        {
+                            throw throwable;
+                        }
                     }
                 }
                 catch (Throwable t)
