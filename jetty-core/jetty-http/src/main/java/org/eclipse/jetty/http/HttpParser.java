@@ -366,9 +366,10 @@ public class HttpParser
 
     protected void checkViolation(Violation violation) throws BadMessageException
     {
-        if (violation.isAllowedBy(_complianceMode))
-            reportComplianceViolation(violation, violation.getDescription());
-        else
+        boolean allowed = violation.isAllowedBy(_complianceMode);
+        reportComplianceViolation(violation, violation.getDescription());
+
+        if (!allowed)
             throw new BadMessageException(violation.getDescription());
     }
 
