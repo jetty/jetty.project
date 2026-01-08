@@ -11,12 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -49,10 +47,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -154,20 +150,13 @@ public class ResponseTest
     {
         List<Arguments> cases = new ArrayList<>();
 
-        for (int code : new int[] {0, 307})
+        // EE10 uses Servlet 6.0 which only has sendRedirect(String)
+        // Test with different locations and relative redirect settings
+        for (String location : new String[] {"somewhere/else", "/somewhere/else", "http://else/where"})
         {
-            for (String location : new String[] {"somewhere/else", "/somewhere/else", "http://else/where" })
+            for (boolean relative : new boolean[] {true, false})
             {
-                for (boolean relative : new boolean[] {true, false})
-                {
-                    for (boolean generate : new boolean[] {true, false})
-                    {
-                        for (String content : new String[] {null, "clear", "alternative text" })
-                        {
-                            cases.add(Arguments.of(code, location, relative, generate, content));
-                        }
-                    }
-                }
+                cases.add(Arguments.of(location, relative));
             }
         }
         return cases.stream();
@@ -175,10 +164,9 @@ public class ResponseTest
 
     @ParameterizedTest
     @MethodSource("redirects")
-    public void testRedirect(int code, String location, boolean relative, boolean generate, String content) throws Exception
+    public void testRedirect(String location, boolean relative) throws Exception
     {
         _httpConfiguration.setRelativeRedirectAllowed(relative);
-        _httpConfiguration.setGenerateRedirectBody(generate);
 
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/ctx");
@@ -187,44 +175,7 @@ public class ResponseTest
             @Override
             protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                if (code > 0)
-                {
-                    if (content == null)
-                    {
-                        response.getOutputStream().write("oops".getBytes(StandardCharsets.UTF_8));
-                        response.sendRedirect(location, code);
-                    }
-                    else if ("clear".equals(content))
-                    {
-                        response.getOutputStream().write("oops".getBytes(StandardCharsets.UTF_8));
-                        response.sendRedirect(location, code, true);
-                    }
-                    else
-                    {
-                        response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-                        response.getOutputStream().write(content.getBytes(StandardCharsets.UTF_8));
-                        response.sendRedirect(location, code, false);
-                    }
-                }
-                else
-                {
-                    if (content == null)
-                    {
-                        response.getOutputStream().write("oops".getBytes(StandardCharsets.UTF_8));
-                        response.sendRedirect(location);
-                    }
-                    else if ("clear".equals(content))
-                    {
-                        response.getOutputStream().write("oops".getBytes(StandardCharsets.UTF_8));
-                        response.sendRedirect(location, true);
-                    }
-                    else
-                    {
-                        response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-                        response.getOutputStream().write(content.getBytes(StandardCharsets.UTF_8));
-                        response.sendRedirect(location, false);
-                    }
-                }
+                response.sendRedirect(location);
             }
         };
 
@@ -241,7 +192,7 @@ public class ResponseTest
         ByteBuffer responseBuffer = _connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
-        assertThat(response.getStatus(), is(code == 0 ? HttpStatus.FOUND_302 : code));
+        assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
 
         String destination = location;
         if (relative)
@@ -260,33 +211,6 @@ public class ResponseTest
         HttpField to = response.getField(HttpHeader.LOCATION);
         assertThat(to, notNullValue());
         assertThat(to.getValue(), is(destination));
-
-        String expected = content;
-        if ("clear".equals(expected))
-            expected = null;
-
-        String actual = response.getContent();
-
-        if (expected == null)
-        {
-            if (generate)
-            {
-                assertThat(response.get(HttpHeader.CONTENT_TYPE), containsString("text/html"));
-                assertThat(actual, containsString("If you are not redirected, <a href=\"%s\">click here</a>".formatted(destination)));
-                assertThat(actual, not(containsString("oops")));
-            }
-            else
-            {
-                assertThat(response.get().get(HttpHeader.CONTENT_TYPE), nullValue());
-                assertThat(actual, emptyString());
-            }
-        }
-        else
-        {
-            assertThat(response.get().get(HttpHeader.CONTENT_TYPE), notNullValue());
-            assertThat(actual, not(containsString("oops")));
-            assertThat(actual, containsString(expected));
-        }
     }
 
     @Test

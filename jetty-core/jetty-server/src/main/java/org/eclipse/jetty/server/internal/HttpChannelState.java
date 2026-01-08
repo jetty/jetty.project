@@ -28,10 +28,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -474,7 +474,7 @@ public class HttpChannelState implements HttpChannel, Components
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("onFailure {}", this);
+                LOG.atDebug().setCause(x).log("onFailure remote={} {}", remote, this);
 
             // If the channel doesn't have a stream, then the error is ignored.
             stream = _stream;
@@ -732,7 +732,7 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     String method = request.getMethod();
                     if (!HttpMethod.PRI.is(method) && !HttpMethod.CONNECT.is(method) && !HttpMethod.OPTIONS.is(method))
-                        throw new BadMessageException("Bad URI path");
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad URI path");
                 }
 
                 HttpURI uri = request.getHttpURI();
@@ -743,7 +743,7 @@ public class HttpChannelState implements HttpChannel, Components
                     uriCompliance.assertAllowed(
                         uri,
                         getComplianceViolationListener(),
-                        BadMessageException::new
+                        (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg)
                     );
                 }
 

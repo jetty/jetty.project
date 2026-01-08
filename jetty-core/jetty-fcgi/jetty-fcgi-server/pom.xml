@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-fcgi-server</artifactId>
   <name>Core :: FastCGI :: Server</name>
+  <description>Jetty FastCGI Server Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>

@@ -10,7 +10,7 @@
   <artifactId>jetty-compression-gzip</artifactId>
   <packaging>jar</packaging>
   <name>Core :: Compression :: Gzip Support</name>
-  <description>Jetty Core Compression :: Gzip Support</description>
+  <description>Jetty Compression Gzip Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.gzip</bundle-symbolic-name>

@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-quic-quiche-jna</artifactId>
   <name>Core :: QUIC :: Quiche :: JNA Binding</name>
+  <description>Jetty QUIC Quiche JNA Binding Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.quiche.jna</bundle-symbolic-name>

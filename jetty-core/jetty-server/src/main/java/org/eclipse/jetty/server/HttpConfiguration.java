@@ -82,7 +82,7 @@ public class HttpConfiguration implements Dumpable
     private long _minResponseDataRate;
     private HttpCompliance _httpCompliance = HttpCompliance.RFC9110;
     private UriCompliance _uriCompliance = UriCompliance.DEFAULT;
-    private UriCompliance _redirectUriCompliance = UriCompliance.DEFAULT;
+    private UriCompliance _redirectUriCompliance = UriCompliance.DEFAULT_REDIRECT;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartCompliance _multiPartCompliance = MultiPartCompliance.RFC7578;
@@ -684,24 +684,44 @@ public class HttpConfiguration implements Dumpable
         _httpCompliance = httpCompliance;
     }
 
-    @ManagedAttribute("The URI compliance mode")
+    /**
+     * The URI Compliance for HTTP Requests.
+     *
+     * @return the URI Compliance in use for HTTP Requests.
+     */
+    @ManagedAttribute("The URI compliance mode for HTTP Requests")
     public UriCompliance getUriCompliance()
     {
         return _uriCompliance;
     }
 
+    /**
+     * The URI Compliance for HTTP Response Redirects (the {@code Location} header)
+     *
+     * @return the URI Compliance in use for HTTP Response Redirects.
+     */
+    @ManagedAttribute("The URI Compliance mode for HTTP Response Redirects")
     public UriCompliance getRedirectUriCompliance()
     {
         return _redirectUriCompliance;
     }
 
+    /**
+     * URI Compliance for HTTP Requests.
+     *
+     * @param uriCompliance the {@link UriCompliance} to apply for HTTP requests.
+     */
     public void setUriCompliance(UriCompliance uriCompliance)
     {
         _uriCompliance = uriCompliance;
     }
 
     /**
-     * @param uriCompliance The {@link UriCompliance} to apply in {@link Response#toRedirectURI(Request, String)} or {@code null}.
+     * URI Compliance for HTTP Redirects.
+     *
+     * @param uriCompliance The {@link UriCompliance} to apply in HTTP Redirects.
+     * @see Response#toRedirectURI(Request, String)
+     * @see <a href="https://javadoc.io/doc/jakarta.servlet/jakarta.servlet-api/latest/jakarta.servlet/jakarta/servlet/http/HttpServletResponse.html">Jakarta Servlet API: HttpServletResponse.sendRedirect()</a>
      */
     public void setRedirectUriCompliance(UriCompliance uriCompliance)
     {
@@ -795,7 +815,6 @@ public class HttpConfiguration implements Dumpable
     {
         return this._complianceViolationListeners;
     }
-
 
     /**
      * Set whether remote errors, when detected, are notified to async applications.

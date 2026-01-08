@@ -28,6 +28,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpChannel;
@@ -531,13 +532,12 @@ public class NcsaRequestLogTest
                                 if (!baseRequest.isHandled())
                                     response.sendError(404);
                             }
-                            catch (BadMessageException bad)
+                            catch (Throwable e)
                             {
-                                response.sendError(bad.getCode(), bad.getReason());
-                            }
-                            catch (Exception e)
-                            {
-                                response.sendError(500, e.toString());
+                                if (e instanceof HttpException httpEx)
+                                    response.sendError(httpEx.getCode(), httpEx.getReason());
+                                else
+                                    response.sendError(500, e.toString());
                             }
                         }
                         catch (IOException | IllegalStateException th)

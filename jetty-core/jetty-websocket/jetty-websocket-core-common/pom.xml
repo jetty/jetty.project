@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-websocket-core-common</artifactId>
   <name>Core :: Websocket :: Common</name>
+  <description>Jetty Core WebSocket Common Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.core.common</bundle-symbolic-name>

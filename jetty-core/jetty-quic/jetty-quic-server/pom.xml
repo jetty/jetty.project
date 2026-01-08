@@ -8,6 +8,7 @@
   </parent>
   <artifactId>jetty-quic-server</artifactId>
   <name>Core :: QUIC :: Server</name>
+  <description>Jetty QUIC Server Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>

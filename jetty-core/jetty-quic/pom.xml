@@ -10,6 +10,7 @@
   <artifactId>jetty-quic</artifactId>
   <packaging>pom</packaging>
   <name>Core :: QUIC</name>
+  <description>Jetty QUIC Parent</description>
 
   <modules>
     <module>jetty-quic-api</module>

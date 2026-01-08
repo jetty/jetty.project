@@ -41,3 +41,4 @@
 * xref:tools/index.adoc[]
 * xref:troubleshooting/index.adoc[]
 * xref:xml/index.adoc[]
+* xref:glossary.adoc[]

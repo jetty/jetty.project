@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-http2-hpack</artifactId>
   <name>Core :: HTTP2 :: HPACK</name>
+  <description>Jetty HTTP/2 HPACK Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.hpack</bundle-symbolic-name>

@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-slf4j-impl</artifactId>
   <name>Core :: SLF4J Implementation</name>
-  <description>Slf4j Logging Implementation based on Jetty's older StdErrLog</description>
+  <description>Jetty SLF4J Implementation Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.logging</bundle-symbolic-name>

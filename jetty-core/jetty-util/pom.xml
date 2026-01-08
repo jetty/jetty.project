@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-util</artifactId>
   <name>Core :: Utilities</name>
-  <description>Utility classes for Jetty</description>
+  <description>Jetty Utilities Artifact</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.util</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.util.*</spotbugs.onlyAnalyze>

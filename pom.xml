@@ -166,7 +166,7 @@
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asm.version>9.9</asm.version>
+    <asm.version>9.9.1</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
     <!--
     DO NOT UPGRADE this except tinybundle upgrade:
@@ -210,17 +210,17 @@
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.7.3</flatten.maven.plugin.version>
     <groovy.version>4.0.26</groovy.version>
-    <grpc.version>1.77.0</grpc.version>
+    <grpc.version>1.78.0</grpc.version>
     <gson.version>2.13.2</gson.version>
     <guava.version>33.5.0-jre</guava.version>
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>3.0</hamcrest.version>
     <hazelcast.version>5.6.0</hazelcast.version>
-    <hibernate.search.version>7.2.4.Final</hibernate.search.version>
+    <hibernate.search.version>8.1.2.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
     <infinispan.docker.image.version>15.2.1.Final</infinispan.docker.image.version>
-    <infinispan.protostream.version>5.0.15.Final</infinispan.protostream.version>
-    <infinispan.version>15.2.6.Final</infinispan.version>
+    <infinispan.protostream.version>6.0.2</infinispan.protostream.version>
+    <infinispan.version>16.0.2</infinispan.version>
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
@@ -258,16 +258,16 @@
     <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
-    <junit.platform.version>1.14.1</junit.platform.version>
-    <junit.version>5.14.1</junit.version>
+    <junit.platform.version>${junit.version}</junit.platform.version>
+    <junit.version>6.0.1</junit.version>
     <kerb-simplekdc.version>2.1.1</kerb-simplekdc.version>
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <log4j2.version>2.25.2</log4j2.version>
-    <logback.version>1.5.22</logback.version>
-    <lucene.version>9.11.1</lucene.version>
+    <log4j2.version>2.25.3</log4j2.version>
+    <logback.version>1.5.23</logback.version>
+    <lucene.version>9.12.2</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <mariadb.version>3.5.6</mariadb.version>
+    <mariadb.version>3.5.7</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.2.1</maven-build-cache.version>
     <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
@@ -280,9 +280,9 @@
     <maven.compiler.plugin.version>3.14.1</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.9.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
-    <maven.deps.version>3.9.11</maven.deps.version>
+    <maven.deps.version>3.9.12</maven.deps.version>
     <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
-    <maven.exec.plugin.version>3.6.2</maven.exec.plugin.version>
+    <maven.exec.plugin.version>3.6.3</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.9.1</maven.invoker.plugin.version>
@@ -301,8 +301,8 @@
     <modify-sources-plugin.version>1.0.13</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.6.2</mongodb.version>
-    <netty.version>4.2.8.Final</netty.version>
-    <njord.version>0.8.7</njord.version>
+    <netty.version>4.2.9.Final</netty.version>
+    <njord.version>0.9.1</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -339,7 +339,7 @@
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <swissbox.version>1.9.0</swissbox.version>
-    <testcontainers.version>1.21.3</testcontainers.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
     <testng.version>7.11.0</testng.version>
     <tinybundles.version>4.0.1</tinybundles.version>
     <versions.maven.plugin.version>2.20.1</versions.maven.plugin.version>

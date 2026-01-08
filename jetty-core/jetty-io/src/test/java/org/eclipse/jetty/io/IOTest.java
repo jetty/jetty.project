@@ -47,12 +47,14 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -644,4 +646,43 @@ public class IOTest
         assertFalse(Files.isSymbolicLink(linkPath));
     }
 
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    public void testAsFileTempDirWindowsStringLinuxSlashes(WorkDir workDir) throws IOException
+    {
+        Path testDir = workDir.getEmptyPathDir().resolve("test");
+        FS.ensureDirExists(testDir);
+
+        String testDirStr = testDir.toString().replaceAll("\\\\", "/");
+        File file = IO.asFile(testDirStr);
+
+        assertTrue(Files.isSameFile(file.toPath(), testDir));
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    public void testAsFileTempDirWindowsStringWindowsSlashes(WorkDir workDir) throws IOException
+    {
+        Path testDir = workDir.getEmptyPathDir().resolve("test");
+        FS.ensureDirExists(testDir);
+
+        String testDirStr = testDir.toString();
+        File file = IO.asFile(testDirStr);
+
+        assertTrue(Files.isSameFile(file.toPath(), testDir));
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    public void testAsFileTempDirWindowsStringFileUri(WorkDir workDir) throws IOException
+    {
+        Path testDir = workDir.getEmptyPathDir().resolve("test");
+        FS.ensureDirExists(testDir);
+
+        String testDirStr = testDir.toUri().toASCIIString();
+        assertThat(testDirStr, startsWith("file:"));
+        File file = IO.asFile(testDirStr);
+
+        assertTrue(Files.isSameFile(file.toPath(), testDir));
+    }
 }

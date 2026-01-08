@@ -22,7 +22,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -79,7 +79,7 @@ public class ErrorHandlerTest
                 if (pathInContext.startsWith("/badmessage/"))
                 {
                     int code = Integer.parseInt(pathInContext.substring(pathInContext.lastIndexOf('/') + 1));
-                    throw new BadMessageException(code);
+                    throw new HttpException.RuntimeException(code);
                 }
 
                 // produce an exception with an JSON formatted cause message
@@ -554,7 +554,7 @@ public class ErrorHandlerTest
         assertThat("Response status code", response.getStatus(), is(444));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
         assertThat(response.getContent(), containsString("<th>CAUSED BY:</th>"));
-        assertThat(response.getContent(), containsString("<td>org.eclipse.jetty.http.BadMessageException: 444: null</td>"));
+        assertThat(response.getContent(), containsString("<td>org.eclipse.jetty.http.HttpException$RuntimeException: 444: null</td>"));
     }
 
     @Test

@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-xml</artifactId>
   <name>Core :: XML</name>
-  <description>The jetty xml utilities.</description>
+  <description>Jetty XML Artifact</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.xml</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.xml.*</spotbugs.onlyAnalyze>

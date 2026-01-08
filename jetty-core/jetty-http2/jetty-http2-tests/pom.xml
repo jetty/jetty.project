@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-http2-tests</artifactId>
   <name>Core :: HTTP2 :: Tests</name>
+  <description>Jetty HTTP/2 Tests Artifact</description>
 
   <properties>
     <h2spec.skip>${skipTests}</h2spec.skip>

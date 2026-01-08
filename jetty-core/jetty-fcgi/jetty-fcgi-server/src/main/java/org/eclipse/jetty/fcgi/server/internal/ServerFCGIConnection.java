@@ -21,8 +21,9 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.fcgi.parser.ServerParser;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
@@ -401,7 +402,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
             if (LOG.isDebugEnabled())
                 LOG.atDebug().setCause(failure).log("Request {} failure on {}", request, stream);
             if (stream != null)
-                ThreadPool.executeImmediately(getExecutor(), stream.getHttpChannel().onFailure(new BadMessageException(null, failure)));
+                ThreadPool.executeImmediately(getExecutor(), stream.getHttpChannel().onFailure(new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, null, failure)));
             stream = null;
         }
     }

@@ -1103,8 +1103,8 @@ public class ServletApiRequest implements HttpServletRequest
                         catch (ServletException e)
                         {
                             Throwable cause = e.getCause();
-                            if (cause instanceof BadMessageException badMessageException)
-                                throw badMessageException;
+                            if (cause instanceof HttpException httpException)
+                                HttpException.throwAsUnchecked(httpException);
 
                             String msg = "Unable to extract content parameters";
                             if (LOG.isDebugEnabled())

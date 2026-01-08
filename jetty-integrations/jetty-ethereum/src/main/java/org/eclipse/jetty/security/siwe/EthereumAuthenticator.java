@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -447,7 +447,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
 
             totalRead += len;
             if (_maxMessageSize >= 0 && totalRead > _maxMessageSize)
-                throw new BadMessageException("SIWE Message Too Large");
+                throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, "SIWE Message Too Large");
             out.append(buffer, 0, len);
         }
 

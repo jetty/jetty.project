@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-http3-tests</artifactId>
   <name>Core :: HTTP3 :: Tests</name>
+  <description>Jetty HTTP/3 Tests Artifact</description>
 
   <properties>
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>

@@ -207,6 +207,12 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", RFC3986.getAllowed());
 
     /**
+     * The default compliance mode for HTTP Redirects ({@code Location} header)
+     * that is {@link #DEFAULT}, but allows for {@link Violation#FRAGMENT}
+     */
+    public static final UriCompliance DEFAULT_REDIRECT = new UriCompliance("DEFAULT_REDIRECT", of(Violation.FRAGMENT));
+
+    /**
      * JETTY_11 compliance mode that models Jetty 11 DEFAULT behavior by allowing:
      * <ul>
      *     <li>{@link Violation#AMBIGUOUS_PATH_SEGMENT}</li>

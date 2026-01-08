@@ -4018,7 +4018,7 @@ public class HttpParserTest
                 if (scenario.compliance.allows(WHITESPACE_IN_PARAMETER))
                     assertThat(field.getValueList(), hasItem("value;param=bad"));
                 else
-                    assertThrows(BadMessageException.class, field::getValueList);
+                    assertThrows(HttpException.RuntimeException.class, field::getValueList);
             }
         }
     }
