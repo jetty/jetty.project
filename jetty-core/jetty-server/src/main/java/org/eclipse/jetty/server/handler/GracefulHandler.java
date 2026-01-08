@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.AbstractConnector;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
@@ -39,6 +41,7 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     private final AtomicLong _requests = new AtomicLong();
     private final AtomicLong _streamWrappers = new AtomicLong();
     private final Shutdown _shutdown;
+    private Long _shutdownIdleTimeout;
 
     public GracefulHandler()
     {
@@ -72,6 +75,11 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     public long getCurrentStreamWrapperCount()
     {
         return _streamWrappers.longValue();
+    }
+
+    public void setShutdownIdleTimeout(long shutdownIdleTimeout)
+    {
+        _shutdownIdleTimeout = shutdownIdleTimeout;
     }
 
     /**
@@ -131,6 +139,18 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     {
         // Reset _shutdown in doStart instead of doStop so that the isShutdown() == true state is preserved while stopped.
         _shutdown.cancel();
+
+        if (_shutdownIdleTimeout != null)
+        {
+            for (Connector connector : getServer().getConnectors())
+            {
+                if (connector instanceof AbstractConnector abstractConnector)
+                {
+                    abstractConnector.setShutdownIdleTimeout(_shutdownIdleTimeout);
+                }
+            }
+        }
+
         super.doStart();
     }
 
