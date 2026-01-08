@@ -776,13 +776,16 @@ public class HttpParser
                             {
                                 _methodString = method.asString();
                             }
-                            else if (Violation.CASE_INSENSITIVE_METHOD.isAllowedBy(_complianceMode))
+                            else
                             {
-                                method = HttpMethod.INSENSITIVE_CACHE.get(_methodString);
-                                if (method != null)
+                                reportComplianceViolation(Violation.CASE_INSENSITIVE_METHOD, _methodString);
+                                if (_complianceMode.allows(Violation.CASE_INSENSITIVE_METHOD))
                                 {
-                                    _methodString = method.asString();
-                                    reportComplianceViolation(Violation.CASE_INSENSITIVE_METHOD, _methodString);
+                                    method = HttpMethod.INSENSITIVE_CACHE.get(_methodString);
+                                    if (method != null)
+                                    {
+                                        _methodString = method.asString();
+                                    }
                                 }
                             }
 
@@ -945,9 +948,9 @@ public class HttpParser
 
                         case EOL:
                             // HTTP/0.9
+                            reportComplianceViolation(HTTP_0_9, HTTP_0_9.getDescription());
                             if (Violation.HTTP_0_9.isAllowedBy(_complianceMode))
                             {
-                                reportComplianceViolation(HTTP_0_9, HTTP_0_9.getDescription());
                                 _requestHandler.startRequest(_methodString, _uri.toCompleteString(), HttpVersion.HTTP_0_9);
                                 setState(State.CONTENT);
                                 _endOfContent = EndOfContent.NO_CONTENT;
@@ -1554,9 +1557,9 @@ public class HttpParser
                             _valueString = "";
                             _length = -1;
 
+                            reportComplianceViolation(NO_COLON_AFTER_FIELD_NAME, "Field " + _headerString);
                             if (NO_COLON_AFTER_FIELD_NAME.isAllowedBy(_complianceMode))
                             {
-                                reportComplianceViolation(NO_COLON_AFTER_FIELD_NAME, "Field " + _headerString);
                                 setState(FieldState.FIELD);
                                 break;
                             }

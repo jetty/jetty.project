@@ -36,20 +36,19 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_INSENSITIVE_METHOD;
-import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_SENSITIVE_FIELD_NAME;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.HTTP_0_9;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.LF_CHUNK_TERMINATION;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.LF_HEADER_TERMINATION;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.MULTILINE_FIELD_VALUE;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_IN_PARAMETER;
+import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -186,9 +185,17 @@ public class HttpParserTest
         assertEquals("/999", _uriOrStatus);
         assertEquals("HTTP/0.9", _versionOrReason);
         assertEquals(-1, _headers);
-        assertTrue(_complianceViolation.contains(HTTP_0_9));
+
+        List<String> expectedEvents = new ArrayList<>();
+        if (scenario.eol.equals("\n"))
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+        expectedEvents.add("HttpCompliance.HTTP_0_9 (allowed)");
+        assertComplianceViolationEvents(expectedEvents);
     }
 
+    /**
+     * Parse an HTTP/0.9 style single line GET request
+     */
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testLineParse1(Scenario scenario)
@@ -204,7 +211,12 @@ public class HttpParserTest
             return;
         }
         assertEquals("HTTP/0.9 not supported", _bad);
-        assertThat(_complianceViolation, scenario.isViolation() ? not(empty()) : empty());
+
+        List<String> expectedEvents = new ArrayList<>();
+        if (scenario.eol.equals("\n"))
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+        expectedEvents.add("HttpCompliance.HTTP_0_9 (forbidden)");
+        assertComplianceViolationEvents(expectedEvents);
     }
 
     @Test
@@ -221,9 +233,17 @@ public class HttpParserTest
         assertEquals("/222", _uriOrStatus);
         assertEquals("HTTP/0.9", _versionOrReason);
         assertEquals(-1, _headers);
-        assertThat(_complianceViolation, contains(HttpCompliance.Violation.HTTP_0_9));
+
+        List<String> expectedEvents = List.of(
+            "HttpCompliance.HTTP_0_9 (allowed)"
+        );
+
+        assertComplianceViolationEvents(expectedEvents);
     }
 
+    /**
+     * Parse an HTTP/0.9 style single line POST request
+     */
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testLineParse2(Scenario scenario)
@@ -240,7 +260,12 @@ public class HttpParserTest
             return;
         }
         assertEquals("HTTP/0.9 not supported", _bad);
-        assertThat(_complianceViolation, scenario.isViolation() ? not(empty()) : empty());
+
+        List<String> expectedEvents = new ArrayList<>();
+        if (scenario.eol.equals("\n"))
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+        expectedEvents.add("HttpCompliance.HTTP_0_9 (forbidden)");
+        assertComplianceViolationEvents(expectedEvents);
     }
 
     @ParameterizedTest
@@ -551,7 +576,34 @@ public class HttpParserTest
         assertEquals("value extra", _val[1]);
         assertEquals("Name2", _hdr[2]);
         assertEquals("value2", _val[2]);
-        assertTrue(_complianceViolation.contains(MULTILINE_FIELD_VALUE));
+
+        List<String> expectedEvents = new ArrayList<>();
+        if (scenario.eol.equals("\n"))
+        {
+            // Request Line
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+            // 2 headers
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+        }
+        // Multiline 1
+        expectedEvents.add("HttpCompliance.MULTILINE_FIELD_VALUE (allowed)");
+        if (scenario.eol.equals("\n"))
+        {
+            // 2 headers
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+        }
+        // Multiline 2
+        expectedEvents.add("HttpCompliance.MULTILINE_FIELD_VALUE (allowed)");
+        if (scenario.eol.equals("\n"))
+        {
+            // 2 headers
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+        }
+
+        assertComplianceViolationEvents(expectedEvents);
     }
 
     @ParameterizedTest
@@ -818,7 +870,20 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
         assertThat(_bad, containsString("Illegal character"));
-        assertThat(_complianceViolation, scenario.isViolation() ? not(empty()) : empty());
+        // assertThat(_complianceViolation, scenario.isViolation() ? not(empty()) : empty());
+
+        List<String> expectedEvents = new ArrayList<>();
+        if (scenario.eol.equals("\n"))
+        {
+            // Request Line
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+            // Headers
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+        }
+        expectedEvents.add("HttpCompliance.NO_COLON_AFTER_FIELD_NAME (forbidden)");
+
+        assertComplianceViolationEvents(expectedEvents);
     }
 
     @ParameterizedTest
@@ -1188,14 +1253,23 @@ public class HttpParserTest
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, -1, scenario.compliance.with("test", CASE_INSENSITIVE_METHOD));
         parseAll(parser, buffer);
+
+        List<String> expectedEvents = new ArrayList<>();
+        expectedEvents.add("HttpCompliance.CASE_INSENSITIVE_METHOD (allowed)");
         if (scenario.expectBad())
         {
             assertThat(_bad, containsString("LF line terminator"));
             return;
         }
+        if (scenario.eol.equals("\n")) // handle LF specific scenarios
+        {
+            for (int i = 0; i < 4; i++)
+                expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+        }
         assertNull(_bad);
         assertEquals("GET", _methodOrVersion);
-        assertTrue(_complianceViolation.contains(CASE_INSENSITIVE_METHOD));
+
+        assertComplianceViolationEvents(expectedEvents);
     }
 
     @Test
@@ -1213,7 +1287,10 @@ public class HttpParserTest
 
         assertNull(_bad);
         assertEquals("gEt", _methodOrVersion);
-        assertThat(_complianceViolation, Matchers.empty());
+
+        List<String> expectedEvents = new ArrayList<>();
+        expectedEvents.add("HttpCompliance.CASE_INSENSITIVE_METHOD (forbidden)");
+        assertComplianceViolationEvents(expectedEvents);
     }
 
     @Test
@@ -1238,7 +1315,9 @@ public class HttpParserTest
         assertEquals("Connection", _hdr[1]);
         assertEquals("close", _val[1]);
         assertEquals(1, _headers);
-        assertThat(_complianceViolation, Matchers.empty());
+
+        List<String> expectedEvents = List.of();
+        assertComplianceViolationEvents(expectedEvents);
     }
 
     @Test
@@ -1263,7 +1342,13 @@ public class HttpParserTest
         assertEquals("cOnNeCtIoN", _hdr[1]);
         assertEquals("ClOsE", _val[1]);
         assertEquals(1, _headers);
-        assertThat(_complianceViolation, contains(CASE_SENSITIVE_FIELD_NAME, CASE_SENSITIVE_FIELD_NAME));
+
+        List<String> expectedEvents = List.of(
+            "HttpCompliance.CASE_SENSITIVE_FIELD_NAME (allowed)",
+            "HttpCompliance.CASE_SENSITIVE_FIELD_NAME (allowed)"
+        );
+
+        assertComplianceViolationEvents(expectedEvents);
     }
 
     @ParameterizedTest
@@ -2653,7 +2738,31 @@ public class HttpParserTest
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
 
-        assertTrue(_complianceViolation.contains(TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
+        List<String> expectedEvents = new ArrayList<>();
+        if (scenario.eol.equals("\n"))
+        {
+            // Request line
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+            // Headers
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+        }
+        expectedEvents.add("HttpCompliance.TRANSFER_ENCODING_WITH_CONTENT_LENGTH (allowed)");
+        if (scenario.eolChunk.equals("\n"))
+        {
+            // Chunks
+            expectedEvents.add("HttpCompliance.LF_CHUNK_TERMINATION (allowed)");
+            expectedEvents.add("HttpCompliance.LF_CHUNK_TERMINATION (allowed)");
+            expectedEvents.add("HttpCompliance.LF_CHUNK_TERMINATION (allowed)");
+        }
+        if (scenario.eol.equals("\n"))
+        {
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+        }
+
+        assertComplianceViolationEvents(expectedEvents);
     }
 
     @ParameterizedTest
@@ -2693,7 +2802,27 @@ public class HttpParserTest
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
 
-        assertTrue(_complianceViolation.contains(TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
+        List<String> expectedEvents = new ArrayList<>();
+        if (scenario.eol.equals("\n")) // handle LF specific scenarios
+        {
+            // add 5 for headers
+            for (int i = 0; i < 5; i++)
+                expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+        }
+        expectedEvents.add("HttpCompliance.TRANSFER_ENCODING_WITH_CONTENT_LENGTH (allowed)");
+        if (scenario.eolChunk.equals("\n"))
+        {
+            // add 3 for chunk eol
+            for (int i = 0; i < 3; i++)
+                expectedEvents.add("HttpCompliance.LF_CHUNK_TERMINATION (allowed)");
+        }
+        if (scenario.eol.equals("\n")) // handle LF specific scenarios
+        {
+            // add one for the end of headers delim (before body)
+            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+        }
+
+        assertComplianceViolationEvents(expectedEvents);
     }
 
     @ParameterizedTest
@@ -4037,7 +4166,7 @@ public class HttpParserTest
         _headerCompleted = false;
         _contentCompleted = false;
         _messageCompleted = false;
-        _complianceViolation.clear();
+        _complianceViolationEvents.clear();
     }
 
     private String _host;
@@ -4056,7 +4185,7 @@ public class HttpParserTest
     private boolean _headerCompleted;
     private boolean _contentCompleted;
     private boolean _messageCompleted;
-    private final List<ComplianceViolation> _complianceViolation = new ArrayList<>();
+    private final List<ComplianceViolation.Event> _complianceViolationEvents = new ArrayList<>();
 
     private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, ComplianceViolation.Listener
     {
@@ -4167,7 +4296,7 @@ public class HttpParserTest
         @Override
         public void onComplianceViolation(ComplianceViolation.Event event)
         {
-            _complianceViolation.add(event.violation());
+            _complianceViolationEvents.add(event);
         }
     }
 
@@ -4252,6 +4381,7 @@ public class HttpParserTest
     @Test
     public void testHeaderSize()
     {
+        // Extra lines before GET are intentional
         ByteBuffer buffer = BufferUtil.toBuffer("""
             
                
@@ -4273,6 +4403,31 @@ public class HttpParserTest
         parseAll(parser, buffer);
 
         assertThat(parser.getHeaderLength(), is(bytes));
+    }
+
+    private static String formatted(ComplianceViolation.Event event)
+    {
+        String type = "ComplianceViolation";
+        if (event.violation() instanceof UriCompliance.Violation)
+            type = "UriCompliance";
+        if (event.violation() instanceof HttpCompliance.Violation)
+            type = "HttpCompliance";
+        if (event.violation() instanceof MultiPartCompliance.Violation)
+            type = "MultiPartCompliance";
+        if (event.violation() instanceof CookieCompliance.Violation)
+            type = "CookieCompliance";
+        return "%s.%s (%s)".formatted(
+            type,
+            event.violation().getName(),
+            event.allowed() ? "allowed" : "forbidden");
+    }
+
+    private void assertComplianceViolationEvents(List<String> expectedEvents)
+    {
+        List<String> actualEvents = _complianceViolationEvents.stream()
+            .map(HttpParserTest::formatted)
+            .toList();
+        assertThat(actualEvents, ordered(expectedEvents));
     }
 
     public static Stream<Scenario> scenarios()

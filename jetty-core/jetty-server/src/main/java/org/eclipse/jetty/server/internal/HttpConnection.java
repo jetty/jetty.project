@@ -1342,7 +1342,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     {
                         getHttpChannel().complianceAssert(MISMATCHED_AUTHORITY,
                             "Authority!=Host",
-                            (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host"));
+                            (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
                     }
                 }
                 else
