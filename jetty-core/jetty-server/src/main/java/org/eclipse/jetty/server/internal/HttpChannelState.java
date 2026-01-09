@@ -154,6 +154,44 @@ public class HttpChannelState implements HttpChannel, Components
                 default -> new InitializedCompositeComplianceViolationListener(listeners);
             };
         }
+
+        if (!_connectionMetaData.getHttpConfiguration().isNotifyForbiddenComplianceViolations())
+            _complianceViolationListener = new AllowedOnlyComplianceListener(_complianceViolationListener);
+    }
+
+    public static class AllowedOnlyComplianceListener implements ComplianceViolation.Listener
+    {
+        private final ComplianceViolation.Listener delegate;
+
+        public AllowedOnlyComplianceListener(ComplianceViolation.Listener delegate)
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void onComplianceViolation(ComplianceViolation.Event event)
+        {
+            if (event.allowed())
+                delegate.onComplianceViolation(event);
+        }
+
+        @Override
+        public ComplianceViolation.Listener initialize()
+        {
+            return delegate.initialize();
+        }
+
+        @Override
+        public void onRequestBegin(Attributes request)
+        {
+            delegate.onRequestBegin(request);
+        }
+
+        @Override
+        public void onRequestEnd(Attributes request)
+        {
+            delegate.onRequestEnd(request);
+        }
     }
 
     /**

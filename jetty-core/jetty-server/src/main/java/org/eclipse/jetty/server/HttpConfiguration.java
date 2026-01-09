@@ -93,6 +93,7 @@ public class HttpConfiguration implements Dumpable
     private SocketAddress _localAddress;
     private int _maxUnconsumedRequestContentReads = 16;
     private int _minInputBufferSpace = 1500;
+    private boolean _notifyForbiddenComplianceViolations = false;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -173,6 +174,7 @@ public class HttpConfiguration implements Dumpable
         _localAddress = config._localAddress;
         _maxUnconsumedRequestContentReads = config._maxUnconsumedRequestContentReads;
         _minInputBufferSpace = config._minInputBufferSpace;
+        _notifyForbiddenComplianceViolations = config._notifyForbiddenComplianceViolations;
     }
 
     /**
@@ -779,6 +781,19 @@ public class HttpConfiguration implements Dumpable
     public void setMultiPartCompliance(MultiPartCompliance multiPartCompliance)
     {
         this._multiPartCompliance = multiPartCompliance;
+    }
+
+    public boolean isNotifyForbiddenComplianceViolations()
+    {
+        return _notifyForbiddenComplianceViolations;
+    }
+
+    /**
+     * @param notifyForbiddenComplianceViolations true notify forbidden events to {@code ComplianceViolation.Listener}s, false to notify all events.
+     */
+    public void setNotifyForbiddenComplianceViolations(boolean notifyForbiddenComplianceViolations)
+    {
+        _notifyForbiddenComplianceViolations = notifyForbiddenComplianceViolations;
     }
 
     /**

@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.ComplianceViolation;
@@ -23,7 +25,6 @@ import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.UriCompliance;
@@ -31,16 +32,19 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ComplianceViolationListenerTest
@@ -95,22 +99,24 @@ public class ComplianceViolationListenerTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        LifeCycle.stop(server);
-
-        assertEquals(200, response.getStatus(), rawResponse);
-        String responseBody = response.getContent();
-        assertThat(responseBody, containsString(rawPath));
 
         List<String> expectedEvents = List.of(
             "CVL - initialize()",
             "REQ (GET http://local" + rawPath + ") - onRequestBegin()",
             "REQ (GET http://local" + rawPath + ") - onRequestEnd()"
         );
+
+        await().atMost(5, TimeUnit.SECONDS).until(events::size, equalTo(expectedEvents.size()));
+
+        assertEquals(200, response.getStatus(), rawResponse);
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString(rawPath));
         assertThat(events, ordered(expectedEvents));
     }
 
-    @Test
-    public void testUriComplianceBad() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testUriComplianceBad(boolean notifyForbiddenEvents) throws Exception
     {
         Queue<String> events = new BlockingArrayQueue<>();
         UriCompliance uriCompliance = UriCompliance.DEFAULT;
@@ -121,6 +127,7 @@ public class ComplianceViolationListenerTest
                 .forEach(httpConfig ->
                 {
                     httpConfig.setUriCompliance(uriCompliance);
+                    httpConfig.setNotifyForbiddenComplianceViolations(notifyForbiddenEvents);
                     httpConfig.addComplianceViolationListener(new MyComplianceListener(events));
                 });
 
@@ -138,21 +145,23 @@ public class ComplianceViolationListenerTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        LifeCycle.stop(server);
+
+        List<String> expectedEvents = new ArrayList<>();
+        expectedEvents.add("CVL - initialize()");
+        expectedEvents.add("REQ (GET http://local" + rawPath + ") - onRequestBegin()");
+        if (notifyForbiddenEvents)
+        {
+            expectedEvents.add("REQ (GET http://local" + rawPath + ") - onViolation() - UriCompliance.AMBIGUOUS_PATH_SEGMENT (forbidden)");
+            expectedEvents.add("REQ (GET http://local" + rawPath + ") - onViolation() - UriCompliance.AMBIGUOUS_EMPTY_SEGMENT (forbidden)");
+            expectedEvents.add("REQ (GET http://local" + rawPath + ") - onViolation() - UriCompliance.AMBIGUOUS_PATH_SEPARATOR (forbidden)");
+        }
+        expectedEvents.add("REQ (GET http://local" + rawPath + ") - onRequestEnd()");
+
+        await().atMost(5, TimeUnit.SECONDS).until(events::size, equalTo(expectedEvents.size()));
 
         assertEquals(400, response.getStatus(), rawResponse);
         String responseBody = response.getContent();
         assertThat(responseBody, containsString(rawPath));
-
-        List<String> expectedEvents = List.of(
-            "CVL - initialize()",
-            "REQ (GET http://local" + rawPath + ") - onRequestBegin()",
-            "REQ (GET http://local" + rawPath + ") - onViolation() - UriCompliance.AMBIGUOUS_PATH_SEGMENT (forbidden)",
-            "REQ (GET http://local" + rawPath + ") - onViolation() - UriCompliance.AMBIGUOUS_EMPTY_SEGMENT (forbidden)",
-            "REQ (GET http://local" + rawPath + ") - onViolation() - UriCompliance.AMBIGUOUS_PATH_SEPARATOR (forbidden)",
-            "REQ (GET http://local" + rawPath + ") - onRequestEnd()"
-        );
-
         assertThat(events, ordered(expectedEvents));
     }
 
@@ -187,7 +196,14 @@ public class ComplianceViolationListenerTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        LifeCycle.stop(server);
+
+        List<String> expectedEvents = List.of(
+            "CVL - initialize()",
+            "REQ (GET " + expectedRequestURI + ") - onRequestBegin()",
+            "REQ (GET " + expectedRequestURI + ") - onRequestEnd()"
+        );
+
+        await().atMost(5, TimeUnit.SECONDS).until(events::size, equalTo(expectedEvents.size()));
 
         assertEquals(200, response.getStatus(), rawResponse);
         String responseBody = response.getContent();
@@ -195,12 +211,6 @@ public class ComplianceViolationListenerTest
         assertThat(responseBody, containsString("Host=local"));
         assertThat(responseBody, containsString("Connection=close"));
         assertThat(responseBody, containsString("X-Foo=value;param=bad"));
-
-        List<String> expectedEvents = List.of(
-            "CVL - initialize()",
-            "REQ (GET " + expectedRequestURI + ") - onRequestBegin()",
-            "REQ (GET " + expectedRequestURI + ") - onRequestEnd()"
-        );
         assertThat(events, ordered(expectedEvents));
     }
 
@@ -236,14 +246,6 @@ public class ComplianceViolationListenerTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        LifeCycle.stop(server);
-
-        assertEquals(200, response.getStatus(), rawResponse);
-        String responseBody = response.getContent();
-        assertThat(responseBody, containsString(expectedRequestURI));
-        assertThat(responseBody, containsString("Host=local"));
-        assertThat(responseBody, containsString("Connection=close"));
-        assertThat(responseBody, containsString("X-Foo=value;param=bad"));
 
         List<String> expectedEvents = List.of(
             "CVL - initialize()",
@@ -253,11 +255,21 @@ public class ComplianceViolationListenerTest
             "REQ (GET " + expectedRequestURI + ") - onViolation() - HttpCompliance.WHITESPACE_IN_PARAMETER (allowed)",
             "REQ (GET " + expectedRequestURI + ") - onRequestEnd()"
         );
+
+        await().atMost(5, TimeUnit.SECONDS).until(events::size, equalTo(expectedEvents.size()));
+
+        assertEquals(200, response.getStatus(), rawResponse);
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString(expectedRequestURI));
+        assertThat(responseBody, containsString("Host=local"));
+        assertThat(responseBody, containsString("Connection=close"));
+        assertThat(responseBody, containsString("X-Foo=value;param=bad"));
         assertThat(events, ordered(expectedEvents));
     }
 
-    @Test
-    public void testHttpComplianceBadForbidden() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testHttpComplianceBadForbidden(boolean notifyForbiddenEvents) throws Exception
     {
         String expectedRequestURI = "/path/to/forbidden/resource";
 
@@ -270,6 +282,7 @@ public class ComplianceViolationListenerTest
                 .forEach(httpConfig ->
                 {
                     httpConfig.setHttpCompliance(httpCompliance);
+                    httpConfig.setNotifyForbiddenComplianceViolations(notifyForbiddenEvents);
                     httpConfig.addComplianceViolationListener(new MyComplianceListener(events));
                 });
 
@@ -287,19 +300,22 @@ public class ComplianceViolationListenerTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        LifeCycle.stop(server);
+
+        List<String> expectedEvents = new ArrayList<>();
+        expectedEvents.add("CVL - initialize()");
+        if (notifyForbiddenEvents)
+        {
+            // This is a fundamental error during HttpParse, there's no request (yet)
+            expectedEvents.add("REQ (null) - onViolation() - HttpCompliance.DUPLICATE_HOST_HEADERS (forbidden)");
+        }
+        // TODO: there's no onRequestBegin, but there is a onRequestEnd?
+        expectedEvents.add("REQ (GET " + expectedRequestURI + ") - onRequestEnd()");
+
+        await().atMost(5, TimeUnit.SECONDS).until(events::size, equalTo(expectedEvents.size()));
 
         assertEquals(400, response.getStatus(), rawResponse);
         String responseBody = response.getContent();
         assertThat(responseBody, containsString(expectedRequestURI));
-
-        List<String> expectedEvents = List.of(
-            "CVL - initialize()",
-            // This is a fundamental error during HttpParse, there's no request (yet)
-            "REQ (null) - onViolation() - HttpCompliance.DUPLICATE_HOST_HEADERS (forbidden)",
-            // TODO: there's no onRequestBegin, but there is a onRequestEnd?
-            "REQ (GET " + expectedRequestURI + ") - onRequestEnd()"
-        );
         assertThat(events, ordered(expectedEvents));
     }
 
@@ -331,17 +347,19 @@ public class ComplianceViolationListenerTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        LifeCycle.stop(server);
 
-        assertEquals(200, response.getStatus(), rawResponse);
-        String responseBody = response.getContent();
-        assertThat(responseBody, containsString("/path/to/good/cookie"));
-        assertThat(responseBody, containsString("foo=bar"));
         List<String> expectedEvents = List.of(
             "CVL - initialize()",
             "REQ (GET http://local/path/to/good/cookie) - onRequestBegin()",
             "REQ (GET http://local/path/to/good/cookie) - onRequestEnd()"
         );
+
+        await().atMost(5, TimeUnit.SECONDS).until(events::size, equalTo(expectedEvents.size()));
+
+        assertEquals(200, response.getStatus(), rawResponse);
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString("/path/to/good/cookie"));
+        assertThat(responseBody, containsString("foo=bar"));
         assertThat(events, ordered(expectedEvents));
     }
 
@@ -374,23 +392,26 @@ public class ComplianceViolationListenerTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        LifeCycle.stop(server);
 
-        assertEquals(200, response.getStatus(), rawResponse);
-        String responseBody = response.getContent();
-        assertThat(responseBody, containsString("/path/to/bad/cookie/allowed"));
-        assertThat(responseBody, containsString("foo=bar"));
         List<String> expectedEvents = List.of(
             "CVL - initialize()",
             "REQ (GET http://local/path/to/bad/cookie/allowed) - onRequestBegin()",
             "REQ (GET http://local/path/to/bad/cookie/allowed) - onViolation() - CookieCompliance.OPTIONAL_WHITE_SPACE (allowed)",
             "REQ (GET http://local/path/to/bad/cookie/allowed) - onRequestEnd()"
         );
+
+        await().atMost(5, TimeUnit.SECONDS).until(events::size, equalTo(expectedEvents.size()));
+
+        assertEquals(200, response.getStatus(), rawResponse);
+        String responseBody = response.getContent();
+        assertThat(responseBody, containsString("/path/to/bad/cookie/allowed"));
+        assertThat(responseBody, containsString("foo=bar"));
         assertThat(events, ordered(expectedEvents));
     }
 
-    @Test
-    public void testCookieComplianceBadForbidden() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testCookieComplianceBadForbidden(boolean notifyForbiddenEvents) throws Exception
     {
         Queue<String> events = new BlockingArrayQueue<>();
         CookieCompliance cookieCompliance = CookieCompliance.RFC6265;
@@ -401,6 +422,7 @@ public class ComplianceViolationListenerTest
                 .forEach(httpConfig ->
                 {
                     httpConfig.setRequestCookieCompliance(cookieCompliance);
+                    httpConfig.setNotifyForbiddenComplianceViolations(notifyForbiddenEvents);
                     httpConfig.addComplianceViolationListener(new MyComplianceListener(events));
                 });
 
@@ -419,21 +441,23 @@ public class ComplianceViolationListenerTest
 
         String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        LifeCycle.stop(server);
+
+        List<String> expectedEvents = new ArrayList<>();
+        expectedEvents.add("CVL - initialize()");
+        expectedEvents.add("REQ (GET http://local/path/to/bad/cookie/forbidden) - onRequestBegin()");
+        if (notifyForbiddenEvents)
+            expectedEvents.add("REQ (GET http://local/path/to/bad/cookie/forbidden) - onViolation() - CookieCompliance.SPECIAL_CHARS_IN_QUOTES (forbidden)");
+        expectedEvents.add("REQ (GET http://local/path/to/bad/cookie/forbidden) - onViolation() - CookieCompliance.INVALID_COOKIES (allowed)");
+        expectedEvents.add("REQ (GET http://local/path/to/bad/cookie/forbidden) - onViolation() - CookieCompliance.STRIPPED_QUOTES (allowed)");
+        expectedEvents.add("REQ (GET http://local/path/to/bad/cookie/forbidden) - onRequestEnd()");
+
+        await().atMost(5, TimeUnit.SECONDS).until(events::size, equalTo(expectedEvents.size()));
 
         assertEquals(200, response.getStatus(), rawResponse);
         String responseBody = response.getContent();
         assertThat(responseBody, containsString("/path/to/bad/cookie/forbidden"));
         assertThat(responseBody, containsString("cookies.count=1"));
         assertThat(responseBody, containsString("name=value")); // "foo" cookie is INVALID and not seen
-        List<String> expectedEvents = List.of(
-            "CVL - initialize()",
-            "REQ (GET http://local/path/to/bad/cookie/forbidden) - onRequestBegin()",
-            "REQ (GET http://local/path/to/bad/cookie/forbidden) - onViolation() - CookieCompliance.SPECIAL_CHARS_IN_QUOTES (forbidden)",
-            "REQ (GET http://local/path/to/bad/cookie/forbidden) - onViolation() - CookieCompliance.INVALID_COOKIES (allowed)",
-            "REQ (GET http://local/path/to/bad/cookie/forbidden) - onViolation() - CookieCompliance.STRIPPED_QUOTES (allowed)",
-            "REQ (GET http://local/path/to/bad/cookie/forbidden) - onRequestEnd()"
-        );
         assertThat(events, ordered(expectedEvents));
     }
 
@@ -603,33 +627,6 @@ public class ComplianceViolationListenerTest
                         value = String.join(", ", values);
                     }
                     str.append("\n").append(name).append("=").append(value);
-                }
-                Content.Sink.write(response, true, str.toString(), callback);
-                return true;
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    public static class EchoRequestParametersHandler extends Handler.Abstract
-    {
-        @Override
-        public boolean handle(Request request, Response response, Callback callback)
-        {
-            try
-            {
-                StringBuilder str = new StringBuilder();
-                str.append(request.getHttpURI().toURI().toASCIIString());
-                if (HttpMethod.POST.is(request.getMethod()))
-                {
-                    Fields params = Request.getParameters(request);
-                    for (Fields.Field param: params)
-                    {
-                        str.append("\n").append(param.getName()).append("=").append(param.getValue());
-                    }
                 }
                 Content.Sink.write(response, true, str.toString(), callback);
                 return true;
