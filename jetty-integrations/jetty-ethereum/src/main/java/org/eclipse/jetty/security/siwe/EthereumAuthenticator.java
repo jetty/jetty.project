@@ -300,8 +300,9 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
     public UserIdentity login(String username, Object credentials, Request request, Response response)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("login {} {} {}", username, credentials, request);
+            LOG.debug("login {} {}", username, request);
 
+        // Credentials are always null.
         UserIdentity user = super.login(username, credentials, request, response);
         if (user != null)
         {
