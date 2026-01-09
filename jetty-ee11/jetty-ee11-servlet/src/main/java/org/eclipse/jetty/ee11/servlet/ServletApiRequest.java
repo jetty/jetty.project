@@ -258,14 +258,23 @@ public class ServletApiRequest implements HttpServletRequest
         _servletChannel = _servletContextRequest.getServletChannel();
     }
 
+    /**
+     * @deprecated use {@link #getAuthenticationState()} instead.
+     */
+    @Deprecated(since = "12.1.6", forRemoval = true)
     public AuthenticationState getAuthentication()
+    {
+        return getAuthenticationState();
+    }
+
+    public AuthenticationState getAuthenticationState()
     {
         return AuthenticationState.getAuthenticationState(getRequest());
     }
 
-    private AuthenticationState getUndeferredAuthentication()
+    private AuthenticationState getUndeferredAuthenticationState()
     {
-        AuthenticationState authenticationState = getAuthentication();
+        AuthenticationState authenticationState = getAuthenticationState();
         if (authenticationState instanceof AuthenticationState.Deferred deferred)
         {
             AuthenticationState undeferred = deferred.authenticate(getRequest());
@@ -275,9 +284,9 @@ public class ServletApiRequest implements HttpServletRequest
         return authenticationState;
     }
 
-    private AuthenticationState getUndeferredAuthentication(HttpServletResponse response) throws IOException
+    private AuthenticationState getUndeferredAuthenticationState(HttpServletResponse response) throws IOException
     {
-        AuthenticationState authenticationState = getAuthentication();
+        AuthenticationState authenticationState = getAuthenticationState();
         if (authenticationState instanceof AuthenticationState.Deferred deferred)
         {
             AuthenticationState undeferred;
@@ -387,7 +396,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getAuthType()
     {
-        AuthenticationState authenticationState = getUndeferredAuthentication();
+        AuthenticationState authenticationState = getUndeferredAuthenticationState();
         if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
             return succeededAuthentication.getAuthenticationType();
         return null;
@@ -493,7 +502,7 @@ public class ServletApiRequest implements HttpServletRequest
     {
         //obtain any substituted role name from the destination servlet
         String linkedRole = getServletRequestInfo().getMatchedResource().getResource().getServletHolder().getUserRoleLink(role);
-        AuthenticationState authenticationState = getUndeferredAuthentication();
+        AuthenticationState authenticationState = getUndeferredAuthenticationState();
 
         if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
             return succeededAuthentication.isUserInRole(linkedRole);
@@ -503,7 +512,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Principal getUserPrincipal()
     {
-        AuthenticationState authenticationState = getUndeferredAuthentication();
+        AuthenticationState authenticationState = getUndeferredAuthenticationState();
 
         if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
         {
@@ -547,7 +556,7 @@ public class ServletApiRequest implements HttpServletRequest
         Session session = getRequest().getSession(create);
         if (session == null)
             return null;
-        if (session.isNew() && getAuthentication() instanceof AuthenticationState.Succeeded)
+        if (session.isNew() && getAuthenticationState() instanceof AuthenticationState.Succeeded)
             session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
         return session.getApi();
     }
@@ -604,18 +613,20 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
     {
-        // Calling these methods will attempt to resolve any deferred authentication and cache it in a request attribute.
-        if (getUserPrincipal() != null && getRemoteUser() != null && getAuthType() != null)
+        AuthenticationState authenticationState = getUndeferredAuthenticationState(response);
+        if (authenticationState instanceof AuthenticationState.Succeeded)
             return true;
-
-        // Get the AuthenticationState to resolve the reason why Authentication failed.
-        AuthenticationState authenticationState = getUndeferredAuthentication(response);
-
-        // A response has been sent by the Authenticator.
         if (authenticationState instanceof AuthenticationState.ResponseSent)
             return false;
+        if (authenticationState instanceof AuthenticationState.ServeAs serveAs)
+        {
+            getRequestDispatcher(serveAs.getHttpURI().getPathQuery()).forward(this, response);
+            return false;
+        }
 
         // The Authenticator could not resolve deferred auth, the response may already be committed.
+        if (response.isCommitted())
+            throw new IllegalStateException("Response committed");
         throw new ServletException("Authentication failed");
     }
 

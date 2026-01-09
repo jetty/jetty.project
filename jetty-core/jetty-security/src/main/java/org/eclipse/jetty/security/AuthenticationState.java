@@ -317,6 +317,11 @@ public interface AuthenticationState extends Request.AuthenticationState
             _uri = uri;
         }
 
+        public HttpURI getHttpURI()
+        {
+            return _uri;
+        }
+
         public Request wrap(Request request)
         {
             return Request.serveAs(request, _uri);
