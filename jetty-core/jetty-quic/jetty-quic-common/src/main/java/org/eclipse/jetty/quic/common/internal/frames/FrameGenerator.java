@@ -11,12 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.internal;
+package org.eclipse.jetty.quic.common.internal.frames;
 
-public enum EncryptionLevel
+public interface FrameGenerator
 {
-    INITIAL,
-    ZERO_RTT,
-    HANDSHAKE,
-    ONE_RTT
 }

@@ -15,10 +15,11 @@ package org.eclipse.jetty.quic.common.internal.frames;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.api.frames.PaddingFrame;
 
 public class PaddingFrameParser implements FrameParser
 {
-    private static final Frame PADDING_FRAME = new Frame(0);
+    private static final Frame PADDING_FRAME = new PaddingFrame();
 
     @Override
     public Frame parse(RetainableByteBuffer buffer)

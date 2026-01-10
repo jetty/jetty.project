@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class StopSendingFrame extends Frame.WithStreamId
+public class StopSendingFrame extends Frame.WithStreamId.Abstract
 {
     private final long appErrorCode;
 
@@ -23,7 +23,7 @@ public class StopSendingFrame extends Frame.WithStreamId
         this.appErrorCode = appErrorCode;
     }
 
-    public long getApplicationErrorCode()
+    public long applicationErrorCode()
     {
         return appErrorCode;
     }
@@ -31,6 +31,6 @@ public class StopSendingFrame extends Frame.WithStreamId
     @Override
     public String toString()
     {
-        return "%s[appError=%d]".formatted(super.toString(), getApplicationErrorCode());
+        return "%s[appError=%d]".formatted(super.toString(), applicationErrorCode());
     }
 }

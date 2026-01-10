@@ -11,21 +11,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.internal;
+package org.eclipse.jetty.tls.common;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.tls.CipherSuite;
 
-// TODO: consider making this class non-internal to be able to write a proxy.
-/// A record for QUIC packet header and payload buffers.
+/// The Transcript Hash defined in
+/// [RFC 8446, 4.4.1](https://datatracker.ietf.org/doc/html/rfc8446#section-4.4.1).
 ///
-/// Both buffers must be released after they have been processed.
-///
-/// @param header the packet header buffer
-/// @param payload the packet payload buffer
-public record PacketBuffers(RetainableByteBuffer header, RetainableByteBuffer payload)
+/// The Transcript Hash keeps a running hash of TLS handshake messages
+/// that have been sent, providing a hash used to derive secrets.
+public class TranscriptHash
 {
-    public interface Listener
+    private final CipherSuite cipherSuite;
+
+    public TranscriptHash(CipherSuite cipherSuite)
     {
-        boolean onPacketBuffers(PacketBuffers buffers);
+        this.cipherSuite = cipherSuite;
     }
 }

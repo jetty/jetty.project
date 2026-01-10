@@ -13,19 +13,17 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-import java.nio.ByteBuffer;
-
-public class NewTokenFrame extends Frame
+public class NewTokenFrame extends Frame.Abstract
 {
-    private final ByteBuffer token;
+    private final byte[] token;
 
-    public NewTokenFrame(ByteBuffer token)
+    public NewTokenFrame(byte[] token)
     {
         super(0x07);
         this.token = token;
     }
 
-    public ByteBuffer getToken()
+    public byte[] token()
     {
         return token;
     }

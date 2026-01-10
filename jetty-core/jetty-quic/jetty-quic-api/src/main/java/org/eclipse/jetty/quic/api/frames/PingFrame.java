@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class PingFrame extends Frame
+public class PingFrame extends Frame.Abstract
 {
     public PingFrame()
     {

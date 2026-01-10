@@ -19,17 +19,16 @@ import java.util.List;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.Version;
+import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
-import org.eclipse.jetty.quic.common.frames.FrameGenerator;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
+import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
-import org.eclipse.jetty.quic.common.internal.EncryptionLevel;
-import org.eclipse.jetty.quic.common.internal.TLSEngine;
 import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.internal.packets.InitialPacketGenerator;
 import org.eclipse.jetty.quic.common.internal.packets.InitialPacketParser;
-import org.eclipse.jetty.quic.common.internal.packets.PacketNumbers;
+import org.eclipse.jetty.quic.common.tls.ClientQuicTLS;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
@@ -59,7 +58,7 @@ public class PacketGeneratorParserTest
         byte[] destination = StringUtil.fromHexString("8394c8f03e515708");
         byte[] token = new byte[0];
         int packetNumber = 2;
-        InitialPacket initialPacket = new InitialPacket(Version.V1, source, destination, token, packetNumber, List.of(cryptoFrame));
+        InitialPacket initialPacket = new InitialPacket(QuicVersion.V1, destination, source, token, packetNumber, List.of(cryptoFrame));
 
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers packetNumbers = new PacketNumbers()
@@ -71,10 +70,10 @@ public class PacketGeneratorParserTest
                 return new EncodedPacketNumber((int)packetNumber, 4);
             }
         };
-        FrameGenerator frameGenerator = new FrameGenerator(byteBufferPool);
-        TLSEngine tlsEngine = new TLSEngine(byteBufferPool, packetNumbers, true);
-        tlsEngine.allocateInitialKeys(Version.V1, destination);
-        InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, frameGenerator, tlsEngine);
+        FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
+        ClientQuicTLS clientQuicTLS = new ClientQuicTLS(byteBufferPool, packetNumbers);
+        clientQuicTLS.allocateInitialKeys(QuicVersion.V1, destination);
+        InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, framesGenerator, clientQuicTLS);
         // Unclear why the RFC uses 1162 as the InitialPacket payload length, but that's what it uses.
         generator.setPayloadMinimumLength(1162);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
@@ -140,7 +139,7 @@ public class PacketGeneratorParserTest
         byte[] destination = new byte[0];
         byte[] token = new byte[0];
         int packetNumber = 1;
-        InitialPacket initialPacket = new InitialPacket(Version.V1, source, destination, token, packetNumber, List.of(ackFrame, cryptoFrame));
+        InitialPacket initialPacket = new InitialPacket(QuicVersion.V1, destination, source, token, packetNumber, List.of(ackFrame, cryptoFrame));
 
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers packetNumbers = new PacketNumbers()
@@ -152,10 +151,10 @@ public class PacketGeneratorParserTest
                 return new EncodedPacketNumber((int)packetNumber, 2);
             }
         };
-        FrameGenerator frameGenerator = new FrameGenerator(byteBufferPool);
-        TLSEngine tlsEngine = new TLSEngine(byteBufferPool, packetNumbers, false);
-        tlsEngine.allocateInitialKeys(Version.V1, StringUtil.fromHexString("8394c8f03e515708"));
-        InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, frameGenerator, tlsEngine);
+        FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
+        ClientQuicTLS clientQuicTLS = new ClientQuicTLS(byteBufferPool, packetNumbers);
+        clientQuicTLS.allocateInitialKeys(QuicVersion.V1, StringUtil.fromHexString("8394c8f03e515708"));
+        InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, framesGenerator, clientQuicTLS);
         // Unclear why the RFC uses 1162 as the InitialPacket payload length, but that's what it uses.
         generator.setPayloadMinimumLength(0);
 
@@ -192,34 +191,34 @@ public class PacketGeneratorParserTest
         byte[] destination = StringUtil.fromHexString("8394c8f03e515708");
         byte[] token = new byte[0];
         int packetNumber = 2;
-        InitialPacket generated = new InitialPacket(Version.V1, source, destination, token, packetNumber, List.of(generatedCryptoFrame));
+        InitialPacket generated = new InitialPacket(QuicVersion.V1, destination, source, token, packetNumber, List.of(generatedCryptoFrame));
 
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers clientPacketNumbers = new PacketNumbers();
-        TLSEngine clientTLSEngine = new TLSEngine(byteBufferPool, clientPacketNumbers, true);
-        clientTLSEngine.allocateInitialKeys(Version.V1, destination);
-        FrameGenerator frameGenerator = new FrameGenerator(byteBufferPool);
-        InitialPacketGenerator generator = new InitialPacketGenerator(clientPacketNumbers, frameGenerator, clientTLSEngine);
+        ClientQuicTLS clientQuicTLS = new ClientQuicTLS(byteBufferPool, clientPacketNumbers);
+        clientQuicTLS.allocateInitialKeys(QuicVersion.V1, destination);
+        FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
+        InitialPacketGenerator generator = new InitialPacketGenerator(clientPacketNumbers, framesGenerator, clientQuicTLS);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
         generator.generate(accumulator, generated);
 
         PacketNumbers serverPacketNumbers = new PacketNumbers();
-        TLSEngine serverTLSEngine = new TLSEngine(byteBufferPool, serverPacketNumbers, false);
-        serverTLSEngine.allocateInitialKeys(Version.V1, destination);
+        ClientQuicTLS serverQuicTLS = new ClientQuicTLS(byteBufferPool, serverPacketNumbers);
+        serverQuicTLS.allocateInitialKeys(QuicVersion.V1, destination);
         FramesParser framesParser = new FramesParser();
-        InitialPacketParser parser = new InitialPacketParser(serverTLSEngine, serverPacketNumbers, framesParser);
+        InitialPacketParser parser = new InitialPacketParser(serverQuicTLS, serverPacketNumbers, framesParser);
         Packet packet = parser.parse(accumulator);
 
         assertInstanceOf(InitialPacket.class, packet);
         InitialPacket parsed = (InitialPacket)packet;
 
-        assertEquals(generated.getVersion(), parsed.getVersion());
-        assertEquals(generated.getPacketNumber(), parsed.getPacketNumber());
-        assertArrayEquals(generated.getDestinationConnectionId(), parsed.getDestinationConnectionId());
-        assertEquals(1, parsed.getFrames().size());
-        CryptoFrame parsedCryptoFrame = (CryptoFrame)parsed.getFrames().getFirst();
-        assertEquals(generatedCryptoFrame.getOffset(), parsedCryptoFrame.getOffset());
-        assertEquals(generatedCryptoFrame.getLength(), parsedCryptoFrame.getLength());
-        assertArrayEquals(clientHello, parsedCryptoFrame.getData().takeByteArray());
+        assertEquals(generated.quicVersion(), parsed.quicVersion());
+        assertEquals(generated.packetNumber(), parsed.packetNumber());
+        assertArrayEquals(generated.destinationConnectionId(), parsed.destinationConnectionId());
+        assertEquals(1, parsed.frames().size());
+        CryptoFrame parsedCryptoFrame = (CryptoFrame)parsed.frames().getFirst();
+        assertEquals(generatedCryptoFrame.offset(), parsedCryptoFrame.offset());
+        assertEquals(generatedCryptoFrame.length(), parsedCryptoFrame.length());
+        assertArrayEquals(clientHello, parsedCryptoFrame.data().takeByteArray());
     }
 }

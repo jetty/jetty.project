@@ -142,7 +142,7 @@ public class FramesParser
             if (frame == null)
                 throw new IllegalStateException("insufficient bytes to parse a frame");
             // Drop PADDING frames.
-            if (frame.getFrameType() != 0)
+            if (frame.type() != 0)
                 result.add(frame);
         }
         return result;

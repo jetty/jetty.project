@@ -15,6 +15,7 @@ package org.eclipse.jetty.tls.common;
 
 import java.nio.ByteBuffer;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -27,13 +28,19 @@ import org.eclipse.jetty.tls.CertificateRequestMessage;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.ClientHelloMessage;
 import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
+import org.eclipse.jetty.tls.KeyShare;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.tls.NamedGroup;
 import org.eclipse.jetty.tls.ServerHelloMessage;
+import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
 import org.eclipse.jetty.tls.common.parser.MessagesParser;
 import org.eclipse.jetty.tls.ext.ALPNExtension;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.tls.ext.KeyShareExtension;
+import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
+import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -51,7 +58,23 @@ public class MessagesGenerateParseTest
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         MessagesGenerator generator = new MessagesGenerator(byteBufferPool);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
-        ClientHelloMessage generated = ClientHelloMessage.newClientHello();
+
+        byte[] random = new byte[32];
+        ThreadLocalRandom.current().nextBytes(random);
+        List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256);
+        List<NamedGroup> groups = List.of(NamedGroup.x25519);
+        SupportedGroupsExtension supportedGroupsExtension = new SupportedGroupsExtension(groups);
+        List<KeyShare> keyShares = new ArrayList<>();
+        for (NamedGroup group : groups)
+        {
+            GroupKeyPair groupKeyPair = GroupKeyPair.from(group);
+            keyShares.add(groupKeyPair.toKeyShare());
+        }
+        KeyShareExtension keyShareExtension = new KeyShareExtension(keyShares);
+        SupportedVersionsExtension supportedVersionsExtension = new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3));
+        SignatureAlgorithmsExtension signatureAlgorithmsExtension = new SignatureAlgorithmsExtension(List.of(SignatureAlgorithm.RSA_PKCS1_SHA256, SignatureAlgorithm.ECDSA_SECP256R1_SHA256));
+        List<Extension> extensions = List.of(supportedGroupsExtension, keyShareExtension, supportedVersionsExtension, signatureAlgorithmsExtension);
+        ClientHelloMessage generated = new ClientHelloMessage(random, cipherSuites, extensions);
         generator.generate(accumulator, generated);
 
         MessagesParser parser = new MessagesParser();

@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class NewConnectionIdFrame extends Frame
+import java.util.Arrays;
+
+public class NewConnectionIdFrame extends Frame.Abstract
 {
     private final byte[] connectionId;
     private final long sequenceNumber;
@@ -33,23 +35,29 @@ public class NewConnectionIdFrame extends Frame
         this.resetToken = resetToken;
     }
 
-    public byte[] getConnectionId()
+    public byte[] connectionId()
     {
         return connectionId;
     }
 
-    public long getSequenceNumber()
+    public long sequenceNumber()
     {
         return sequenceNumber;
     }
 
-    public long getRetirePriorTo()
+    public long retirePriorTo()
     {
         return retirePriorTo;
     }
 
-    public byte[] getResetToken()
+    public byte[] resetToken()
     {
         return resetToken;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s[cid=%s]".formatted(super.toString(), Arrays.toString(connectionId));
     }
 }

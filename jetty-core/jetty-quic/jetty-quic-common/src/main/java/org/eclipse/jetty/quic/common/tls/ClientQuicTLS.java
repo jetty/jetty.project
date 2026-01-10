@@ -11,9 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.internal;
+package org.eclipse.jetty.quic.common.tls;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.crypto.Cipher;
@@ -24,40 +26,86 @@ import javax.crypto.spec.HKDFParameterSpec;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.Version;
+import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
+import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.internal.crypto.HKDF;
 import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
-import org.eclipse.jetty.quic.common.internal.packets.PacketNumbers;
+import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.tls.CipherSuite;
+import org.eclipse.jetty.tls.ClientHelloMessage;
+import org.eclipse.jetty.tls.KeyShare;
+import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.tls.NamedGroup;
+import org.eclipse.jetty.tls.SignatureAlgorithm;
+import org.eclipse.jetty.tls.TLSVersion;
+import org.eclipse.jetty.tls.common.GroupKeyPair;
+import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.tls.ext.KeyShareExtension;
+import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
+import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
+import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
+import org.eclipse.jetty.util.Callback;
 
-public class TLSEngine implements Encrypter, Decrypter
+/// The client-side implementation of QUIC encryption/decryption,
+/// and the client-side TLS state machine necessary for QUIC.
+public class ClientQuicTLS extends QuicTLS
 {
     private final Map<EncryptionLevel, KeyManager> keyManagers = new ConcurrentHashMap<>();
     private final ByteBufferPool byteBufferPool;
     private final PacketNumbers packetNumbers;
-    private final boolean clientMode;
+    private List<GroupKeyPair> groupKeyPairs;
+    private ClientHelloMessage clientHello;
 
-    public TLSEngine(ByteBufferPool byteBufferPool, PacketNumbers packetNumbers, boolean clientMode)
+    public ClientQuicTLS(ByteBufferPool byteBufferPool, PacketNumbers packetNumbers)
     {
         this.byteBufferPool = byteBufferPool;
         this.packetNumbers = packetNumbers;
-        this.clientMode = clientMode;
     }
 
-    public boolean isClientMode()
+    public void startHandshake(Configuration configuration, Callback callback) throws Exception
     {
-        return clientMode;
+        assert clientHello == null;
+
+        List<CipherSuite> cipherSuites = configuration.cipherSuites();
+
+        List<NamedGroup> namedGroups = configuration.namedGroups();
+        configuration.extension(new SupportedGroupsExtension(namedGroups));
+
+        // KeyPairs and KeyShares.
+        groupKeyPairs = new ArrayList<>();
+        List<KeyShare> keyShares = new ArrayList<>();
+        for (NamedGroup namedGroup : namedGroups)
+        {
+            GroupKeyPair groupKeyPair = GroupKeyPair.from(namedGroup);
+            groupKeyPairs.add(groupKeyPair);
+            keyShares.add(groupKeyPair.toKeyShare());
+        }
+        configuration.extension(new KeyShareExtension(keyShares));
+
+        configuration.extension(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3)));
+
+        List<SignatureAlgorithm> signatureAlgorithms = configuration.signatureAlgorithms();
+        configuration.extension(new SignatureAlgorithmsExtension(signatureAlgorithms));
+
+        clientHello = new ClientHelloMessage(newRandomBytes(32), cipherSuites, configuration.extensions());
+
+        allocateInitialKeys(configuration.quicVersion(), configuration.inputKeyMaterial());
+
+        notifyMessages(List.of(clientHello), callback);
     }
 
-    @Override
-    public void allocateInitialKeys(Version version, byte[] input) throws Exception
+    // Only public for testing purposes.
+    public void allocateInitialKeys(QuicVersion quicVersion, byte[] input) throws Exception
     {
+        assert getEncryptionLevel() == EncryptionLevel.INITIAL;
         KeyManager keyManager = keyManagers.computeIfAbsent(EncryptionLevel.INITIAL, KeyManager::new);
-        keyManager.allocateInitialKeys(version, input);
+        keyManager.allocateInitialKeys(quicVersion, input);
     }
 
     @Override
-    public PacketBuffers encrypt(EncryptionLevel encryptionLevel, long packetNumber, ByteBuffer header, ByteBuffer payload) throws Exception
+    public PacketBuffers encrypt(EncryptionLevel encryptionLevel, long packetNumber, RetainableByteBuffer header, RetainableByteBuffer payload) throws Exception
     {
         KeyManager keyManager = keyManagers.get(encryptionLevel);
         if (keyManager == null)
@@ -83,6 +131,12 @@ public class TLSEngine implements Encrypter, Decrypter
         return keyManager.decryptShortHeaderPacket(dstConnectionId, encrypted);
     }
 
+    @Override
+    public void onMessageGenerated(Message message, RetainableByteBuffer buffer)
+    {
+        // TODO: add buffer to TranscriptHash
+    }
+
     /// A manager for [read][ReadKeys] and [write][WriteKeys] keys
     /// required to protect, encrypt, unprotect, and decrypt QUIC packets.
     ///
@@ -98,35 +152,28 @@ public class TLSEngine implements Encrypter, Decrypter
             this.encryptionLevel = encryptionLevel;
         }
 
-        private void allocateInitialKeys(Version version, byte[] input) throws Exception
+        private void allocateInitialKeys(QuicVersion quicVersion, byte[] inputKeyMaterial) throws Exception
         {
-            HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract().addSalt(version.initialSalt()).addIKM(input).extractOnly();
+            HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract().addSalt(quicVersion.initialSalt()).addIKM(inputKeyMaterial).extractOnly();
+            // RFC 9001, 5.2: initial secrets use SHA256.
             KDF kdf = KDF.getInstance("HKDF-SHA256");
             SecretKey prk = kdf.deriveKey("InitialPseudoRandomKey", spec);
 
             SecretKey clientInitial = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "client in", 32));
-            SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, version.encryptionLabel(), 16));
-            SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, version.initializationVectorLabel(), 12));
-            SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, version.headerProtectionLabel(), 16));
+            SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, quicVersion.encryptionLabel(), 16));
+            SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, quicVersion.initializationVectorLabel(), 12));
+            SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, quicVersion.headerProtectionLabel(), 16));
 
             SecretKey serverInitial = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "server in", 32));
-            SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, version.encryptionLabel(), 16));
-            SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, version.initializationVectorLabel(), 12));
-            SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, version.headerProtectionLabel(), 16));
+            SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, quicVersion.encryptionLabel(), 16));
+            SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, quicVersion.initializationVectorLabel(), 12));
+            SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, quicVersion.headerProtectionLabel(), 16));
 
-            if (isClientMode())
-            {
-                readKeys.updateKeys(serverInitial, serverEncryption, serverInitialization, serverProtection);
-                writeKeys.updateKeys(clientInitial, clientEncryption, clientInitialization, clientProtection);
-            }
-            else
-            {
-                readKeys.updateKeys(clientInitial, clientEncryption, clientInitialization, clientProtection);
-                writeKeys.updateKeys(serverInitial, serverEncryption, serverInitialization, serverProtection);
-            }
+            readKeys.updateKeys(serverInitial, serverEncryption, serverInitialization, serverProtection);
+            writeKeys.updateKeys(clientInitial, clientEncryption, clientInitialization, clientProtection);
         }
 
-        private PacketBuffers encrypt(long packetNumber, ByteBuffer header, ByteBuffer payload) throws Exception
+        private PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer payload) throws Exception
         {
             return writeKeys.encrypt(packetNumber, header, payload);
         }
@@ -346,7 +393,7 @@ public class TLSEngine implements Encrypter, Decrypter
                 this.protection = protection;
             }
 
-            private PacketBuffers encrypt(long packetNumber, ByteBuffer header, ByteBuffer payload) throws Exception
+            private PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer payload) throws Exception
             {
                 byte[] nonce = nonce(initialization, packetNumber);
 
@@ -354,14 +401,16 @@ public class TLSEngine implements Encrypter, Decrypter
                 gcmCipher.init(Cipher.ENCRYPT_MODE, encryption, new GCMParameterSpec(128, nonce));
 
                 // Supply AAD as the plaintext packet header.
-                gcmCipher.updateAAD(header);
-                header.flip();
+                ByteBuffer headerByteBuffer = header.getByteBuffer();
+                gcmCipher.updateAAD(headerByteBuffer);
+                headerByteBuffer.flip();
                 // Encrypt the payload.
                 // AEAD encryption produces 16 additional bytes.
-                RetainableByteBuffer.Mutable encryptedPayloadBuffer = byteBufferPool.acquire(payload.remaining() + 16, true);
+                ByteBuffer payloadByteBuffer = payload.getByteBuffer();
+                RetainableByteBuffer.Mutable encryptedPayloadBuffer = byteBufferPool.acquire(payloadByteBuffer.remaining() + 16, true);
                 ByteBuffer encryptedPayload = encryptedPayloadBuffer.getByteBuffer();
                 encryptedPayload.clear();
-                gcmCipher.doFinal(payload, encryptedPayload);
+                gcmCipher.doFinal(payloadByteBuffer, encryptedPayload);
                 encryptedPayload.flip();
 
                 // RFC 9001, 5.4.2: header protection sample.
@@ -375,13 +424,13 @@ public class TLSEngine implements Encrypter, Decrypter
                 ecbCipher.init(Cipher.ENCRYPT_MODE, protection);
                 byte[] mask = ecbCipher.doFinal(sample);
 
-                int position = header.position();
-                RetainableByteBuffer.Mutable encryptedHeaderBuffer = byteBufferPool.acquire(header.remaining(), true);
+                int position = headerByteBuffer.position();
+                RetainableByteBuffer.Mutable encryptedHeaderBuffer = byteBufferPool.acquire(headerByteBuffer.remaining(), true);
                 ByteBuffer encryptedHeader = encryptedHeaderBuffer.getByteBuffer();
                 encryptedHeader.clear();
-                encryptedHeader.put(header).flip();
+                encryptedHeader.put(headerByteBuffer).flip();
                 // Long header packets mask 4 bits, short header packets mask 5 bits.
-                int firstByte = header.get(position) & 0xFF;
+                int firstByte = headerByteBuffer.get(position) & 0xFF;
                 int bits = (firstByte & 0x80) == 0x80 ? 0x0F : 0x1F;
                 encryptedHeader.put(0, (byte)(firstByte ^ (mask[0] & bits)));
 
@@ -389,12 +438,88 @@ public class TLSEngine implements Encrypter, Decrypter
                 int start = encryptedHeader.limit() - pktNumLen;
                 for (int i = 0; i < pktNumLen; ++i)
                 {
-                    int pktNumByte = header.get(start + i) & 0xFF;
+                    int pktNumByte = headerByteBuffer.get(start + i) & 0xFF;
                     encryptedHeader.put(start + i, (byte)(pktNumByte ^ mask[i + 1]));
                 }
 
                 return new PacketBuffers(encryptedHeaderBuffer, encryptedPayloadBuffer);
             }
+        }
+    }
+
+    public static class Configuration
+    {
+        private List<SignatureAlgorithm> signatureAlgorithms = List.of(SignatureAlgorithm.RSA_PKCS1_SHA256, SignatureAlgorithm.ECDSA_SECP256R1_SHA256);
+        private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519, NamedGroup.secp256r1);
+        private List<CipherSuite> cipherSuites = List.of(CipherSuite.values());
+        private final List<Extension> extensions = new ArrayList<>();
+        private QuicVersion quicVersion = QuicVersion.V1;
+        private byte[] inputKeyMaterial;
+
+        public Configuration signatureAlgorithms(List<SignatureAlgorithm> signatureAlgorithms)
+        {
+            this.signatureAlgorithms = signatureAlgorithms;
+            return this;
+        }
+
+        public List<SignatureAlgorithm> signatureAlgorithms()
+        {
+            return signatureAlgorithms;
+        }
+
+        public Configuration namedGroups(List<NamedGroup> namedGroups)
+        {
+            this.namedGroups = namedGroups;
+            return this;
+        }
+
+        public List<NamedGroup> namedGroups()
+        {
+            return namedGroups;
+        }
+
+        public Configuration cipherSuites(List<CipherSuite> cipherSuites)
+        {
+            this.cipherSuites = cipherSuites;
+            return this;
+        }
+
+        public List<CipherSuite> cipherSuites()
+        {
+            return cipherSuites;
+        }
+
+        public Configuration extension(Extension extension)
+        {
+            extensions.add(extension);
+            return this;
+        }
+
+        public List<Extension> extensions()
+        {
+            return extensions;
+        }
+
+        public Configuration quicVersion(QuicVersion quicVersion)
+        {
+            this.quicVersion = quicVersion;
+            return this;
+        }
+
+        public QuicVersion quicVersion()
+        {
+            return quicVersion;
+        }
+
+        public Configuration inputKeyMaterial(byte[] inputKeyMaterial)
+        {
+            this.inputKeyMaterial = inputKeyMaterial;
+            return this;
+        }
+
+        public byte[] inputKeyMaterial()
+        {
+            return inputKeyMaterial;
         }
     }
 }

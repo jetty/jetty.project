@@ -17,6 +17,7 @@ module org.eclipse.jetty.quic.client
     requires transitive org.eclipse.jetty.quic.common;
     requires org.eclipse.jetty.util;
     requires org.slf4j;
+    requires org.eclipse.jetty.tls.common;
 
     exports org.eclipse.jetty.quic.client;
 }

@@ -39,24 +39,21 @@ public enum FrameType
     CONNECTION_CLOSE(0x1C, 0x1D),
     HANDSHAKE_DONE(0x1E);
 
-    public static FrameType from(long type)
+    public static FrameType from(long code)
     {
-        FrameType frameType = Types.types.get(type);
-        if (frameType != null)
-            return frameType;
-        return null;
+        return Codes.CODES.get(code);
     }
 
-    FrameType(long... types)
+    FrameType(long... codes)
     {
-        for (long type : types)
+        for (long code : codes)
         {
-            Types.types.put(type, this);
+            Codes.CODES.put(code, this);
         }
     }
 
-    private static class Types
+    private static class Codes
     {
-        private static final Map<Long, FrameType> types = new HashMap<>();
+        private static final Map<Long, FrameType> CODES = new HashMap<>();
     }
 }

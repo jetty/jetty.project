@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class PathChallengeFrame extends Frame
+public class PathChallengeFrame extends Frame.Abstract
 {
     private final long data;
 
@@ -23,7 +23,7 @@ public class PathChallengeFrame extends Frame
         this.data = data;
     }
 
-    public long getData()
+    public long data()
     {
         return data;
     }

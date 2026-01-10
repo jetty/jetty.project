@@ -16,6 +16,7 @@ module org.eclipse.jetty.tls.common
     requires transitive org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.tls.api;
 
+    exports org.eclipse.jetty.tls.common;
     exports org.eclipse.jetty.tls.common.generator;
     exports org.eclipse.jetty.tls.common.parser;
 }

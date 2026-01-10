@@ -16,13 +16,21 @@ package org.eclipse.jetty.quic.common.internal.packets;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.common.frames.FramesParser;
+import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.packets.Packet;
+import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 
 public class PacketsParser
 {
-    private final LongHeaderPacketsParser longHeaderPacketsParser = new LongHeaderPacketsParser();
+    private final LongHeaderPacketsParser longHeaderPacketsParser;
     private final ShortHeaderPacketsParser shortHeaderPacketsParser = new ShortHeaderPacketsParser();
     private State state = State.FORM;
+
+    public PacketsParser(Decrypter decrypter, PacketNumbers packetNumbers, FramesParser framesParser)
+    {
+        longHeaderPacketsParser = new LongHeaderPacketsParser(decrypter, packetNumbers, framesParser);
+    }
 
     public Packet parse(RetainableByteBuffer buffer) throws Exception
     {
@@ -37,8 +45,7 @@ public class PacketsParser
                 case FORM ->
                 {
                     byte form = byteBuffer.get(byteBuffer.position());
-                    // Long header packets have msb == 1.
-                    state = (form & 0b10000000) == 0b10000000 ? State.LONG : State.SHORT;
+                    state = Packet.isLongHeader(form) ? State.LONG : State.SHORT;
                 }
                 case LONG ->
                 {

@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class MaxStreamsFrame extends Frame
+public class MaxStreamsFrame extends Frame.Abstract
 {
     private final long maxStreams;
 
@@ -25,10 +25,10 @@ public class MaxStreamsFrame extends Frame
 
     public boolean isBidirectional()
     {
-        return getFrameType() == 0x12;
+        return type() == 0x12;
     }
 
-    public long getMaxStreams()
+    public long maxStreams()
     {
         return maxStreams;
     }
@@ -36,6 +36,6 @@ public class MaxStreamsFrame extends Frame
     @Override
     public String toString()
     {
-        return "%s[%s,maxStreams=%d]".formatted(super.toString(), isBidirectional() ? "bi" : "uni", getMaxStreams());
+        return "%s[%s,maxStreams=%d]".formatted(super.toString(), isBidirectional() ? "bi" : "uni", maxStreams());
     }
 }

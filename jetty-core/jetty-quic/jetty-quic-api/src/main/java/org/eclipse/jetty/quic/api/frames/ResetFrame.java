@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class ResetFrame extends Frame.WithStreamId
+public class ResetFrame extends Frame.WithStreamId.Abstract
 {
     private final long appErrorCode;
     private final long finalSize;
@@ -25,12 +25,12 @@ public class ResetFrame extends Frame.WithStreamId
         this.finalSize = finalSize;
     }
 
-    public long getApplicationErrorCode()
+    public long applicationErrorCode()
     {
         return appErrorCode;
     }
 
-    public long getFinalSize()
+    public long finalSize()
     {
         return finalSize;
     }
@@ -40,8 +40,8 @@ public class ResetFrame extends Frame.WithStreamId
     {
         return "%s[appError=%d,finalSize=%d]".formatted(
             super.toString(),
-            getApplicationErrorCode(),
-            getFinalSize()
+            applicationErrorCode(),
+            finalSize()
         );
     }
 }

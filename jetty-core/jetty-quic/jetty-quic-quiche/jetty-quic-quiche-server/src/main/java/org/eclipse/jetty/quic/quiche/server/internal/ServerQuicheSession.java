@@ -139,7 +139,7 @@ public class ServerQuicheSession extends QuicheSession implements CyclicTimeouts
         if (getConnection().getSslContextFactory().getNeedClientAuth() && getPeerCertificates() == null)
         {
             ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.CONNECTION_REFUSED_ERROR.code(), "missing_peer_certificates");
-            disconnect(frame, new SSLHandshakeException(frame.getReason()), Promise.Invocable.noop());
+            disconnect(frame, new SSLHandshakeException(frame.reason()), Promise.Invocable.noop());
             return false;
         }
         return true;

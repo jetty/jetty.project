@@ -242,7 +242,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         if (LOG.isDebugEnabled())
             LOG.debug("session closed locally {} {}", frame, this);
         // Propagate the close inwards.
-        session.close(frame.getErrorCode(), frame.getReason(), Promise.Invocable.toPromise(promise, s -> this));
+        session.close(frame.errorCode(), frame.reason(), Promise.Invocable.toPromise(promise, s -> this));
     }
 
     @Override
@@ -251,7 +251,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         if (LOG.isDebugEnabled())
             LOG.debug("session closed remotely {} {}", frame, this);
         // Propagate the close inwards.
-        session.onClose(frame.getErrorCode(), frame.getReason());
+        session.onClose(frame.errorCode(), frame.reason());
     }
 
     private StreamEndPoint openInstructionEndPoint(long streamId)

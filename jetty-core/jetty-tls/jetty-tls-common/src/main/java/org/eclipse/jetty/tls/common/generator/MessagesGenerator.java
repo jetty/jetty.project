@@ -34,6 +34,11 @@ public class MessagesGenerator
         generators.put(Message.Type.CERTIFICATE, new CertificateMessageGenerator(byteBufferPool, extensionsGenerator));
     }
 
+    public void addListener(MessageGenerator.Listener listener)
+    {
+        generators.values().forEach(g -> g.addListener(listener));
+    }
+
     public void generate(RetainableByteBuffer.Mutable accumulator, Message message) throws Exception
     {
         MessageGenerator messageGenerator = generators.get(message.type());
