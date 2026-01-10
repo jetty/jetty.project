@@ -197,6 +197,8 @@ public class RFC6265SetCookieParser implements SetCookieParser
     {
         try
         {
+            if (HttpCookie.MAX_AGE_ATTRIBUTE.equalsIgnoreCase(name) && Long.parseLong(value) < 0)
+                value = "0";
             cookie.attribute(name, value);
             return true;
         }
