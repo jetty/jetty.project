@@ -16,9 +16,12 @@ package org.eclipse.jetty.quic.common.internal;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
+import org.eclipse.jetty.quic.common.PacketBuffers;
 
 public interface Decrypter
 {
+    // TODO: remove encryptionLevel parameter? It should be available in the QuicTLS state.
     PacketBuffers decryptLongHeaderPacket(EncryptionLevel encryptionLevel, RetainableByteBuffer encrypted) throws Exception;
 
     PacketBuffers decryptShortHeaderPacket(byte[] dstConnectionId, ByteBuffer encrypted) throws Exception;

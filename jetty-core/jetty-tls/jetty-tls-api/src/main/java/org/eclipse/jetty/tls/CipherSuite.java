@@ -35,6 +35,26 @@ public enum CipherSuite
         return code;
     }
 
+    public int keyLength()
+    {
+        return switch (this)
+        {
+            case TLS_AES_128_GCM_SHA256 -> 16;
+            case TLS_AES_256_GCM_SHA384 -> 32;
+            case TLS_CHACHA20_POLY1305_SHA256 -> 32;
+        };
+    }
+
+    public int hashLength()
+    {
+        return switch (this)
+        {
+            case TLS_AES_128_GCM_SHA256 -> 32;
+            case TLS_AES_256_GCM_SHA384 -> 48;
+            case TLS_CHACHA20_POLY1305_SHA256 -> 32;
+        };
+    }
+
     public static CipherSuite from(int code)
     {
         return Codes.CODES.get(code);

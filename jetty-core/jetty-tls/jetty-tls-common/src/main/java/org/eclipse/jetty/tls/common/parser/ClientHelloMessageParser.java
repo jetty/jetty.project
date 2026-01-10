@@ -190,13 +190,10 @@ public class ClientHelloMessageParser implements MessageParser
                     List<Extension> extensions = extensionsParser.parse(buffer);
                     if (extensions == null)
                         return null;
-                    ClientHelloMessage message = new ClientHelloMessage(, , , );
-                    message.setRandom(random);
+                    ClientHelloMessage message = new ClientHelloMessage(random, List.copyOf(cipherSuites), extensions);
                     random = null;
                     sessionId = null;
-                    message.setCipherSuites(List.copyOf(cipherSuites));
                     cipherSuites.clear();
-                    message.setExtensions(extensions);
                     state = State.VERSION;
                     return message;
                 }

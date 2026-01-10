@@ -246,7 +246,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         for (StreamEndPoint streamEndPoint : getStreamEndPoints())
         {
             // This is a session failure, there is no need to disconnect the StreamEndPoint's stream.
-            streamEndPoint.disconnect(frame.getErrorCode(), failure, false, Promise.Invocable.noop());
+            streamEndPoint.disconnect(frame.errorCode(), failure, false, Promise.Invocable.noop());
         }
         // Continue the propagation outwards.
         getSession().disconnect(frame, failure, Promise.Invocable.toPromise(promise, s -> this));

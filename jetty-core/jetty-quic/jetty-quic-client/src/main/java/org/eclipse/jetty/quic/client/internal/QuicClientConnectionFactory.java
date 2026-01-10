@@ -39,10 +39,6 @@ public class QuicClientConnectionFactory extends ClientConnectionFactory.Wrapper
         ClientConnector clientConnector = (ClientConnector)context.get(ClientConnector.CONTEXT_KEY);
         SslContextFactory.Client sslContextFactory = (SslContextFactory.Client)context.get(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
         ClientQuicConnection connection = new ClientQuicConnection(clientConnector, sslContextFactory, quicConfiguration, getWrapped(), endPoint, context);
-
-        // TODO: probably also setup parser, tlsEngine, etc.
-
-
         return customize(connection, context);
     }
 }

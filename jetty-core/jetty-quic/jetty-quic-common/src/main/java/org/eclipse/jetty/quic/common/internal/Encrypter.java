@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.quic.common.internal;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.quic.api.Version;
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
+import org.eclipse.jetty.quic.common.PacketBuffers;
 
 public interface Encrypter
 {
-    void allocateInitialKeys(Version version, byte[] input) throws Exception;
-
-    PacketBuffers encrypt(EncryptionLevel encryptionLevel, long packetNumber, ByteBuffer header, ByteBuffer payload) throws Exception;
+    // TODO: remove encryptionLevel parameter? It should be available in the QuicTLS state.
+    PacketBuffers encrypt(EncryptionLevel encryptionLevel, long packetNumber, RetainableByteBuffer header, RetainableByteBuffer payload) throws Exception;
 }

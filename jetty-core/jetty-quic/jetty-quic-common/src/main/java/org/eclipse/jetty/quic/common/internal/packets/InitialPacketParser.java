@@ -17,14 +17,15 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.Version;
+import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
+import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
-import org.eclipse.jetty.quic.common.internal.EncryptionLevel;
-import org.eclipse.jetty.quic.common.internal.PacketBuffers;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
+import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
@@ -37,7 +38,7 @@ public class InitialPacketParser implements PacketParser
     private final Decrypter decrypter;
     private final PacketNumbers packetNumbers;
     private final FramesParser framesParser;
-    private Version version;
+    private QuicVersion quicVersion;
     private byte[] dstConnectionId;
     private byte[] srcConnectionId;
     private byte[] token;
@@ -91,7 +92,7 @@ public class InitialPacketParser implements PacketParser
         int encodedPacketNumberLength = (form & 0x03) + 1;
 
         int versionCode = byteBuffer.getInt();
-        version = Version.from(versionCode);
+        quicVersion = QuicVersion.from(versionCode);
 
         int length = byteBuffer.get();
         dstConnectionId = new byte[length];
@@ -112,7 +113,7 @@ public class InitialPacketParser implements PacketParser
         packetNumber = packetNumbers.decode(EncryptionLevel.INITIAL, encodedPacketNumber);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("parsed InitialPacket header, version={} packetNumber={} length={}", version, packetNumber, length);
+            LOG.debug("parsed InitialPacket header, version={} packetNumber={} length={}", quicVersion, packetNumber, length);
 
         assert byteBuffer.remaining() == 0;
     }
@@ -123,7 +124,7 @@ public class InitialPacketParser implements PacketParser
             LOG.debug("parsing InitialPacket payload {}", BufferUtil.toDetailString(payload.getByteBuffer()));
 
         List<Frame> frames = framesParser.consume(payload);
-        InitialPacket packet = new InitialPacket(version, srcConnectionId, dstConnectionId, token, packetNumber, frames);
+        InitialPacket packet = new InitialPacket(quicVersion, dstConnectionId, srcConnectionId, token, packetNumber, frames);
 
         if (LOG.isDebugEnabled())
             LOG.debug("parsed {}", packet);

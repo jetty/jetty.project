@@ -109,7 +109,7 @@ public class StreamParser implements FrameParser
                     }))
                     {
                         if (dataLength == 0)
-                            return result(byteBuffer.slice(byteBuffer.position(), 0), true);
+                            return result(RetainableByteBuffer.EMPTY, true);
                         state = State.DATA;
                     }
                 }
@@ -123,8 +123,8 @@ public class StreamParser implements FrameParser
                         throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_frame_size", frameType);
 
                     int length = (int)Math.min(dataLength, byteBuffer.remaining());
-                    ByteBuffer data = byteBuffer.slice(byteBuffer.position(), length);
-                    byteBuffer.position(byteBuffer.position() + length);
+                    RetainableByteBuffer data = buffer.slice(length);
+                    buffer.skip(length);
                     dataLength -= length;
                     boolean done = dataLength == 0;
                     return result(data, done);
@@ -134,7 +134,7 @@ public class StreamParser implements FrameParser
         return null;
     }
 
-    private StreamFrame result(ByteBuffer data, boolean complete)
+    private StreamFrame result(RetainableByteBuffer data, boolean complete)
     {
         long type = frameType;
         long off = offset;

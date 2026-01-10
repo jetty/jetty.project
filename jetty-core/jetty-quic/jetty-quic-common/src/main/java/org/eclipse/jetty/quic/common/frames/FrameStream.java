@@ -11,8 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.internal.frames;
+package org.eclipse.jetty.quic.common.frames;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
@@ -32,12 +34,16 @@ public class FrameStream
     private static final Logger LOG = LoggerFactory.getLogger(FrameStream.class);
 
     private final Queue<Frame.WithOffset> queue = new PriorityQueue<>();
-    private final Frame.Listener listener;
+    private final List<Frame.Listener> listeners = new ArrayList<>();
     private long offset;
 
-    public FrameStream(Frame.Listener listener)
+    public FrameStream()
     {
-        this.listener = listener;
+    }
+
+    public void addFrameListener(Frame.Listener listener)
+    {
+        listeners.add(listener);
     }
 
     public void process(Frame.WithOffset frame)
@@ -49,25 +55,28 @@ public class FrameStream
             if (candidate == null)
                 break;
 
-            if (offset != candidate.getOffset())
+            if (offset != candidate.offset())
                 break;
 
             // This frame is in order, deliver it.
             queue.poll();
             notifyFrame(candidate);
-            offset += candidate.getLength();
+            offset += candidate.length();
         }
     }
 
     private void notifyFrame(Frame.WithOffset frame)
     {
-        try
+        for (Frame.Listener listener : listeners)
         {
-            listener.onFrame((Frame)frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
+            try
+            {
+                listener.onFrame((Frame)frame);
+            }
+            catch (Throwable x)
+            {
+                LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
+            }
         }
     }
 }

@@ -14,14 +14,14 @@
 package org.eclipse.jetty.quic.api;
 
 /// The QUIC protocol version.
-public enum Version
+public enum QuicVersion
 {
     /// QUIC V1, defined by [RFC 9000](https://datatracker.ietf.org/doc/html/rfc9000).
     V1,
     /// QUIC V2, defined by [RFC 9369](https://datatracker.ietf.org/doc/html/rfc9369).
     V2;
 
-    public static Version from(int code)
+    public static QuicVersion from(int code)
     {
         return switch (code)
         {

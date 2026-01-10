@@ -14,15 +14,18 @@
 package org.eclipse.jetty.quic.client;
 
 import java.net.SocketAddress;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.api.Session;
-import org.eclipse.jetty.quic.api.Version;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,11 +38,19 @@ public class QuicClient extends ContainerLifeCycle
 
     private final QuicClientQuicConfiguration quicConfiguration;
     private final ClientConnector clientConnector;
+    private List<String> protocols = List.of("stream");
+
+    public QuicClient(QuicClientQuicConfiguration quicConfiguration)
+    {
+        this(quicConfiguration, new ClientConnector());
+    }
 
     public QuicClient(QuicClientQuicConfiguration quicConfiguration, ClientConnector clientConnector)
     {
-        this.quicConfiguration = quicConfiguration;
-        this.clientConnector = clientConnector;
+        this.quicConfiguration = Objects.requireNonNull(quicConfiguration);
+        installBean(quicConfiguration);
+        this.clientConnector = Objects.requireNonNull(clientConnector);
+        installBean(clientConnector);
     }
 
     public ClientConnector getClientConnector()
@@ -47,29 +58,43 @@ public class QuicClient extends ContainerLifeCycle
         return clientConnector;
     }
 
-    public void connect(SocketAddress address, Session.Listener listener, Promise<Session> promise)
+    public List<String> getApplicationProtocols()
     {
-        connect(Version.V1, address, listener, promise);
+        return protocols;
     }
 
-    public void connect(Version version, SocketAddress address, Session.Listener listener, Promise<Session> promise)
+    public void setApplicationProtocols(List<String> protocols)
     {
-        QuicTransport transport = new QuicTransport(null);
+        this.protocols = List.copyOf(protocols);
+    }
 
-        Map<String, Object> context = new ConcurrentHashMap<>();
+    public void connect(SocketAddress address, Session.Listener listener, Promise<Session> promise)
+    {
+        connect(new QuicTransport(quicConfiguration), clientConnector.getSslContextFactory(), address, listener, null, promise);
+    }
+
+    public void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Map<String, Object> context, Promise<Session> promise)
+    {
+        if (context == null)
+            context = new ConcurrentHashMap<>();
         context.put(QuicClient.CONTEXT_KEY, this);
         context.put(QuicClient.SESSION_LISTENER_CONTEXT_KEY, listener);
         context.put(QuicClient.SESSION_PROMISE_CONTEXT_KEY, promise);
         context.put(ClientConnector.CONTEXT_KEY, getClientConnector());
-//        context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, getApplicationProtocols());
-//        context.computeIfAbsent(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY, key -> sslContextFactory);
-//        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
-//        context.put(ClientConnectionFactory.CONTEXT_KEY, resolveClientConnectionFactory(transport, sslContextFactory, context));
+        context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, getApplicationProtocols());
+        context.computeIfAbsent(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY, _ -> sslContextFactory);
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(_ -> {}, promise::failed));
+        context.put(ClientConnectionFactory.CONTEXT_KEY, resolveClientConnectionFactory(transport));
         context.put(Transport.CONTEXT_KEY, transport);
 
         if (LOG.isDebugEnabled())
             LOG.debug("connecting to {}", address);
 
         transport.connect(address, context);
+    }
+
+    private ClientConnectionFactory resolveClientConnectionFactory(Transport transport)
+    {
+        return transport.newClientConnectionFactory(clientConnector, ((endPoint, context) -> null));
     }
 }

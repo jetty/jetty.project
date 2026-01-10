@@ -13,17 +13,45 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class MessageGenerator
 {
+    private static final Logger LOG = LoggerFactory.getLogger(MessageGenerator.class);
+
+    private final List<Listener> listeners = new ArrayList<>();
     private final ByteBufferPool bufferPool;
 
     protected MessageGenerator(ByteBufferPool bufferPool)
     {
         this.bufferPool = bufferPool;
+    }
+
+    public void addListener(Listener listener)
+    {
+        listeners.add(listener);
+    }
+
+    protected void notifyMessageGenerated(Message message, RetainableByteBuffer buffer)
+    {
+        for (Listener listener : listeners)
+        {
+            try
+            {
+                listener.onMessageGenerated(message, buffer);
+            }
+            catch (Throwable x)
+            {
+                LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
+            }
+        }
     }
 
     public ByteBufferPool getBufferPool()
@@ -32,4 +60,9 @@ public abstract class MessageGenerator
     }
 
     public abstract void generate(RetainableByteBuffer.Mutable accumulator, Message message) throws Exception;
+
+    public interface Listener
+    {
+        void onMessageGenerated(Message message, RetainableByteBuffer buffer);
+    }
 }

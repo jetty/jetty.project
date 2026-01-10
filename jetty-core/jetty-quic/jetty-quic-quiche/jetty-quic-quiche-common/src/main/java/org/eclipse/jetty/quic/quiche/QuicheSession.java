@@ -221,10 +221,10 @@ public abstract class QuicheSession extends AbstractSession
         for (QuicheStream stream : streams.values())
         {
             // This is a session failure, there is no need to stop/reset the stream.
-            stream.disconnect(false, frame.getErrorCode(), failure, Promise.Invocable.noop());
+            stream.disconnect(false, frame.errorCode(), failure, Promise.Invocable.noop());
         }
 
-        quiche.close(frame.getErrorCode(), frame.getReason());
+        quiche.close(frame.errorCode(), frame.reason());
         flush();
 
         Promise.completeWith(promise, flusher.disconnect()

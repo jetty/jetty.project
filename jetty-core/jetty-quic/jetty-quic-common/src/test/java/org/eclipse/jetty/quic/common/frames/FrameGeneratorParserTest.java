@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.quic.common.frames;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Function;
 
@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class FrameGeneratorParserTest
 {
     private final ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-    private final FrameGenerator generator = new FrameGenerator(byteBufferPool);
+    private final FramesGenerator generator = new FramesGenerator(byteBufferPool);
     private final FramesParser parser = new FramesParser();
 
     @BeforeEach
@@ -52,28 +52,19 @@ public class FrameGeneratorParserTest
 
     private <T extends Frame> List<T> generateParse(T frame)
     {
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
         generator.generate(accumulator, frame);
         return parse(accumulator);
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Frame> List<T> parse(ByteBufferPool.Accumulator accumulator)
+    private <T extends Frame> List<T> parse(RetainableByteBuffer.Mutable accumulator)
     {
-        List<ByteBuffer> buffers = accumulator.getByteBuffers();
-        int capacity = buffers.stream().mapToInt(Buffer::remaining).sum();
-        ByteBuffer byteBuffer = ByteBuffer.allocate(capacity);
-        buffers.stream().map(ByteBuffer::slice).forEach(byteBuffer::put);
-        byteBuffer.flip();
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(byteBuffer);
+        T frame1 = (T)parser.parse(accumulator);
 
-        T frame1 = (T)parser.parse(buffer);
-
-        byteBuffer.flip();
-
-        while (buffer.hasRemaining())
+        while (accumulator.hasRemaining())
         {
-            T frame2 = (T)parser.parse(buffer);
+            T frame2 = (T)parser.parse(accumulator);
             if (frame2 != null)
                 return List.of(frame1, frame2);
         }
@@ -88,10 +79,10 @@ public class FrameGeneratorParserTest
         List<ResetFrame> list = generateParse(frame);
         list.forEach(result ->
         {
-            assertEqual(ResetFrame::getFrameType, frame, result);
-            assertEqual(ResetFrame::getStreamId, frame, result);
-            assertEqual(ResetFrame::getApplicationErrorCode, frame, result);
-            assertEqual(ResetFrame::getFinalSize, frame, result);
+            assertEqual(ResetFrame::type, frame, result);
+            assertEqual(ResetFrame::streamId, frame, result);
+            assertEqual(ResetFrame::applicationErrorCode, frame, result);
+            assertEqual(ResetFrame::finalSize, frame, result);
         });
     }
 
@@ -102,29 +93,29 @@ public class FrameGeneratorParserTest
         List<StopSendingFrame> list = generateParse(frame);
         list.forEach(result ->
         {
-            assertEqual(StopSendingFrame::getFrameType, frame, result);
-            assertEqual(StopSendingFrame::getStreamId, frame, result);
-            assertEqual(StopSendingFrame::getApplicationErrorCode, frame, result);
+            assertEqual(StopSendingFrame::type, frame, result);
+            assertEqual(StopSendingFrame::streamId, frame, result);
+            assertEqual(StopSendingFrame::applicationErrorCode, frame, result);
         });
     }
 
     @Test
     public void testStreamFrame()
     {
-        byte[] bytes = "DATA".getBytes();
-        StreamFrame frame = new StreamFrame(3290901290300L, ByteBuffer.wrap(bytes), 120911129347656L, true, true);
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
-        generator.generate(accumulator, frame, bytes.length, Frame.DEFAULT_MAX_SIZE);
+        ByteBuffer bytes = StandardCharsets.UTF_8.encode("DATA");
+        StreamFrame frame = new StreamFrame(3290901290300L, RetainableByteBuffer.wrap(bytes), 120911129347656L, true, true);
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
+        generator.generate(accumulator, frame, bytes.remaining(), Frame.DEFAULT_MAX_SIZE);
         List<StreamFrame> list = parse(accumulator);
         list.forEach(result -> assertStreamFrameEqual(frame, result));
     }
 
     public static void assertStreamFrameEqual(StreamFrame frame, StreamFrame result)
     {
-        assertEqual(StreamFrame::getFrameType, frame, result);
-        assertEqual(StreamFrame::getStreamId, frame, result);
-        assertEqual(StreamFrame::getOffset, frame, result);
-        assertEqual(StreamFrame::getData, frame, result);
+        assertEqual(StreamFrame::type, frame, result);
+        assertEqual(StreamFrame::streamId, frame, result);
+        assertEqual(StreamFrame::offset, frame, result);
+        assertEqual(StreamFrame::data, frame, result);
         assertEqual(StreamFrame::isEndStream, frame, result);
     }
 
@@ -135,8 +126,8 @@ public class FrameGeneratorParserTest
         List<MaxDataFrame> list = generateParse(frame);
         list.forEach(result ->
         {
-            assertEqual(MaxDataFrame::getFrameType, frame, result);
-            assertEqual(MaxDataFrame::getMaxData, frame, result);
+            assertEqual(MaxDataFrame::type, frame, result);
+            assertEqual(MaxDataFrame::maxData, frame, result);
         });
     }
 
@@ -147,8 +138,8 @@ public class FrameGeneratorParserTest
         List<StreamMaxDataFrame> list = generateParse(frame);
         list.forEach(result ->
         {
-            assertEqual(StreamMaxDataFrame::getFrameType, frame, result);
-            assertEqual(StreamMaxDataFrame::getMaxData, frame, result);
+            assertEqual(StreamMaxDataFrame::type, frame, result);
+            assertEqual(StreamMaxDataFrame::maxData, frame, result);
         });
     }
 
@@ -159,8 +150,8 @@ public class FrameGeneratorParserTest
         List<MaxStreamsFrame> list = generateParse(frame);
         list.forEach(result ->
         {
-            assertEqual(MaxStreamsFrame::getFrameType, frame, result);
-            assertEqual(MaxStreamsFrame::getMaxStreams, frame, result);
+            assertEqual(MaxStreamsFrame::type, frame, result);
+            assertEqual(MaxStreamsFrame::maxStreams, frame, result);
         });
     }
 
@@ -171,8 +162,8 @@ public class FrameGeneratorParserTest
         List<DataBlockedFrame> list = generateParse(frame);
         list.forEach(result ->
         {
-            assertEqual(DataBlockedFrame::getFrameType, frame, result);
-            assertEqual(DataBlockedFrame::getOffset, frame, result);
+            assertEqual(DataBlockedFrame::type, frame, result);
+            assertEqual(DataBlockedFrame::offset, frame, result);
         });
     }
 
@@ -183,9 +174,9 @@ public class FrameGeneratorParserTest
         List<StreamDataBlockedFrame> list = generateParse(frame);
         list.forEach(result ->
         {
-            assertEqual(StreamDataBlockedFrame::getFrameType, frame, result);
-            assertEqual(StreamDataBlockedFrame::getStreamId, frame, result);
-            assertEqual(StreamDataBlockedFrame::getOffset, frame, result);
+            assertEqual(StreamDataBlockedFrame::type, frame, result);
+            assertEqual(StreamDataBlockedFrame::streamId, frame, result);
+            assertEqual(StreamDataBlockedFrame::offset, frame, result);
         });
     }
 
@@ -196,8 +187,8 @@ public class FrameGeneratorParserTest
         List<StreamsBlockedFrame> list = generateParse(frame);
         list.forEach(result ->
         {
-            assertEqual(StreamsBlockedFrame::getFrameType, frame, result);
-            assertEqual(StreamsBlockedFrame::getMaxStreams, frame, result);
+            assertEqual(StreamsBlockedFrame::type, frame, result);
+            assertEqual(StreamsBlockedFrame::maxStreams, frame, result);
         });
     }
 
@@ -208,10 +199,10 @@ public class FrameGeneratorParserTest
         List<ConnectionCloseFrame> list = generateParse(frame);
         list.forEach(result ->
         {
-            assertEqual(ConnectionCloseFrame::getFrameType, frame, result);
-            assertEqual(ConnectionCloseFrame::getErrorCode, frame, result);
-            assertEqual(ConnectionCloseFrame::getReason, frame, result);
-            assertEqual(ConnectionCloseFrame::getCauseFrameType, frame, result);
+            assertEqual(ConnectionCloseFrame::type, frame, result);
+            assertEqual(ConnectionCloseFrame::errorCode, frame, result);
+            assertEqual(ConnectionCloseFrame::reason, frame, result);
+            assertEqual(ConnectionCloseFrame::causeFrameType, frame, result);
         });
     }
 

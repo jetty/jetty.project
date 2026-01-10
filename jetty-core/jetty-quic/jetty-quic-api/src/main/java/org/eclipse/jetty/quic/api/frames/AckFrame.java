@@ -18,7 +18,8 @@ import java.util.List;
 /// The ACK frame defined in
 /// [RFC 9000, 19.3](https://datatracker.ietf.org/doc/html/rfc9000#name-ack-frames).
 ///
-/// No support for ECN (Explicit Congestion Notification).
+/// No support for ECN (Explicit Congestion Notification), since Java cannot
+/// retrieve this information from the UDP datagram.
 ///
 /// # Example
 ///
@@ -37,7 +38,7 @@ import java.util.List;
 /// * Acknowledged packets are 90-92; it's 3 packets, but encoded as length=2.
 /// * Unacknowledged packets are 76-89; it's 14 packets, but encoded as gap=13.
 /// * Acknowledged packets are 70-75; it's 6 packets, but encoded as length=5.
-public class AckFrame extends Frame
+public class AckFrame extends Frame.Abstract
 {
     private final long largestAcknowledged;
     private final long ackDelay;
@@ -53,30 +54,47 @@ public class AckFrame extends Frame
         this.ranges = ranges;
     }
 
-    public long getLargestAcknowledged()
+    public long largestAcknowledged()
     {
         return largestAcknowledged;
     }
 
-    public long getAckDelay()
+    public long ackDelay()
     {
         return ackDelay;
     }
 
-    public long getFirstRangeLength()
+    public long firstRangeLength()
     {
         return firstRangeLength;
     }
 
-    public List<AckRange> getAckRanges()
+    public List<AckRange> ackRanges()
     {
         return ranges;
     }
 
+    @Override
+    public String toString()
+    {
+        return "%s[%d-%d,%s]".formatted(
+            super.toString(),
+            largestAcknowledged(),
+            largestAcknowledged() - firstRangeLength(),
+            ackRanges()
+        );
+    }
+
     /// The ack range record.
     ///
-    ///
+    /// @param gap the number of unacknowledged packets from the next range
+    /// @param length the number of acknowledged packets in this range
     public record AckRange(long gap, long length)
     {
+        @Override
+        public String toString()
+        {
+            return "[%d-%d]".formatted(gap(), length());
+        }
     }
 }

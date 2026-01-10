@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class StreamMaxDataFrame extends Frame.WithStreamId
+public class StreamMaxDataFrame extends Frame.WithStreamId.Abstract
 {
     private final long maxData;
 
@@ -23,7 +23,7 @@ public class StreamMaxDataFrame extends Frame.WithStreamId
         this.maxData = maxData;
     }
 
-    public long getMaxData()
+    public long maxData()
     {
         return maxData;
     }
@@ -31,6 +31,6 @@ public class StreamMaxDataFrame extends Frame.WithStreamId
     @Override
     public String toString()
     {
-        return "%s[maxData=%d]".formatted(super.toString(), getMaxData());
+        return "%s[maxData=%d]".formatted(super.toString(), maxData());
     }
 }

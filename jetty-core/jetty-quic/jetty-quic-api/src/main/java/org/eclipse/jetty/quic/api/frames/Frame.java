@@ -15,63 +15,72 @@ package org.eclipse.jetty.quic.api.frames;
 
 import org.eclipse.jetty.util.TypeUtil;
 
-/**
- * <p>A generic QUIC frame carrying a frame type.</p>
- *
- * @see WithStreamId
- */
-public class Frame
+/// A generic QUIC frame carrying a frame type.
+///
+/// @see WithStreamId
+public interface Frame
 {
-    public static final int DEFAULT_MAX_SIZE = 16384;
+    int DEFAULT_MAX_SIZE = 16384;
 
-    private final long frameType;
+    long type();
 
-    public Frame(long frameType)
+    abstract class Abstract implements Frame
     {
-        this.frameType = frameType;
-    }
+        private final long type;
 
-    public long getFrameType()
-    {
-        return frameType;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
-    }
-
-    /**
-     * <p>A QUIC frame that carries a stream id.</p>
-     */
-    public static class WithStreamId extends Frame
-    {
-        private final long streamId;
-
-        public WithStreamId(long frameType, long streamId)
+        protected Abstract(long type)
         {
-            super(frameType);
-            this.streamId = streamId;
+            this.type = type;
         }
 
-        public long getStreamId()
+        @Override
+        public long type()
         {
-            return streamId;
+            return type;
         }
 
         @Override
         public String toString()
         {
-            return "%s#%d".formatted(super.toString(), getStreamId());
+            return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
         }
     }
 
-    public interface WithOffset
+    /// A QUIC frame carrying a stream id.
+    interface WithStreamId extends Frame
     {
-        long getOffset();
+        long streamId();
 
-        long getLength();
+        abstract class Abstract extends Frame.Abstract implements WithStreamId
+        {
+            private final long streamId;
+
+            protected Abstract(long type, long streamId)
+            {
+                super(type);
+                this.streamId = streamId;
+            }
+
+            @Override
+            public long streamId()
+            {
+                return streamId;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "%s[#%d]".formatted(super.toString(), streamId());
+            }
+        }
+    }
+
+    /// A QUIC frame carrying an offset and a length.
+    interface WithOffset
+    {
+        long offset();
+
+        long length();
     }
 
     public interface Listener

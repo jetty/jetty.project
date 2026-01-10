@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.internal.packets;
+package org.eclipse.jetty.quic.common.packets;
 
 // TODO: this abstraction is necessary because
 //  encoding packet numbers requires to know the largest acked
@@ -24,7 +24,8 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.quic.common.internal.EncryptionLevel;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
+import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
 
 // TODO: I need:
 //  - a class that holds epn and epnl, required for generation.

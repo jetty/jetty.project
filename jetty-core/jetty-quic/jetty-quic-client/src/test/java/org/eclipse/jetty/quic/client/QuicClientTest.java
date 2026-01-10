@@ -84,11 +84,12 @@ public class QuicClientTest
             }
         });
 
-        QuicClient client = new QuicClient(null, null);
+        QuicClientQuicConfiguration quicConfig = new QuicClientQuicConfiguration();
+        QuicClient client = new QuicClient(quicConfig);
         client.start();
 
         Promise.Completable<Session> completable = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), null, completable);
+        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, completable);
         Session session = completable.get(5, TimeUnit.SECONDS);
         assertNotNull(session);
     }

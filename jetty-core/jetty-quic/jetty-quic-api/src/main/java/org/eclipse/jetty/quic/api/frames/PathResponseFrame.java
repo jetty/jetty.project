@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class PathResponseFrame extends Frame
+public class PathResponseFrame extends Frame.Abstract
 {
     private final long data;
 
@@ -23,7 +23,7 @@ public class PathResponseFrame extends Frame
         this.data = data;
     }
 
-    public long getData()
+    public long data()
     {
         return data;
     }

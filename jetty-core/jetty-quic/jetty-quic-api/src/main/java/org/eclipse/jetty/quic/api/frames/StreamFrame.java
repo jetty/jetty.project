@@ -13,17 +13,15 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.util.Promise;
 
-/**
- * <p>A QUIC frame carrying stream data bytes.</p>
- */
-public class StreamFrame extends Frame.WithStreamId implements Frame.WithOffset, Comparable<StreamFrame>
+/// A QUIC frame carrying stream data bytes.
+public class StreamFrame extends Frame.WithStreamId.Abstract implements Frame.WithOffset, Comparable<StreamFrame>
 {
     public static final long END_STREAM_MASK = 0x01;
     public static final long LENGTH_MASK = 0x02;
@@ -42,70 +40,66 @@ public class StreamFrame extends Frame.WithStreamId implements Frame.WithOffset,
     }
 
     private final long offset;
-    private final ByteBuffer data;
+    private final RetainableByteBuffer data;
     private final int length;
     private final boolean endStream;
     private final boolean endData;
 
-    /**
-     * <p>Creates the first stream frame with {@code offset=0} for a new {@link Stream}.</p>
-     * <p>Applications should use this constructor in conjunction with
-     * {@link Session#newStream(long, Stream.Listener)}.
-     * For subsequent data to be sent on the same stream, applications should use
-     * {@link Stream#data(boolean, java.util.List, org.eclipse.jetty.util.Promise.Invocable)},
-     * so that the implementation can compute the {@code offset} on behalf of the application.</p>
-     *
-     * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}
-     * @param data the data bytes to send
-     * @param endStream whether the data is the last to be sent
-     */
-    public StreamFrame(long streamId, ByteBuffer data, boolean endStream)
+    /// Creates the first stream frame with `offset=0` for a new [Stream].
+    ///
+    /// Applications should use this constructor in conjunction with
+    /// [Session#newStream(long, Stream.Listener)].
+    /// For subsequent data to be sent on the same stream, applications should use
+    /// [Stream#data(boolean, java.util.List, org.eclipse.jetty.util.Promise.Invocable)],
+    /// so that the implementation can compute the `offset` on behalf of the application.
+    ///
+    /// @param streamId the stream id generated using [Session#newStreamId(boolean)]
+    /// @param data the data bytes to send
+    /// @param endStream whether the data is the last to be sent
+    public StreamFrame(long streamId, RetainableByteBuffer data, boolean endStream)
     {
         this(streamId, data, 0, endStream);
     }
 
-    /**
-     * <p>Creates a stream frame with the given {@code offset} for a {@link Stream}.</p>
-     * <p>Applications should not use this constructor, but instead use
-     * {@link Stream#data(boolean, List, Promise.Invocable)}.</p>
-     *
-     * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}
-     * @param data the data bytes to send
-     * @param offset the data offset
-     * @param endStream whether the data is the last to be sent
-     */
-    public StreamFrame(long streamId, ByteBuffer data, long offset, boolean endStream)
+    /// Creates a stream frame with the given `offset` for a [Stream].
+    ///
+    /// Applications should not use this constructor but instead use
+    /// [Stream#data(boolean, List, Promise.Invocable)].
+    ///
+    /// @param streamId the stream id generated using [Session#newStreamId(boolean)]
+    /// @param data the data bytes to send
+    /// @param offset the data offset
+    /// @param endStream whether the data is the last to be sent
+    public StreamFrame(long streamId, RetainableByteBuffer data, long offset, boolean endStream)
     {
         this(streamId, data, offset, true, endStream);
     }
 
-    /**
-     * <p>Creates a stream frame for a {@link Stream}.</p>
-     * <p>Applications should not use this constructor, but instead
-     * use {@link Stream#data(boolean, List, Promise.Invocable)}.</p>
-     *
-     * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}
-     * @param data the data bytes to send
-     * @param offset the data offset
-     * @param hasLength whether the frame explicitly specifies the data length
-     * @param endStream whether the data is the last to be sent
-     */
-    public StreamFrame(long streamId, ByteBuffer data, long offset, boolean hasLength, boolean endStream)
+    /// Creates a stream frame for a [Stream].
+    ///
+    /// Applications should not use this constructor but instead
+    /// use [Stream#data(boolean, List, Promise.Invocable)].
+    ///
+    /// @param streamId the stream id generated using [Session#newStreamId(boolean)]
+    /// @param data the data bytes to send
+    /// @param offset the data offset
+    /// @param hasLength whether the frame explicitly specifies the data length
+    /// @param endStream whether the data is the last to be sent
+    public StreamFrame(long streamId, RetainableByteBuffer data, long offset, boolean hasLength, boolean endStream)
     {
         this(toFrameType(offset >= 0, hasLength, endStream), streamId, data, offset, true);
     }
 
-    /**
-     * <p>Creates a stream frame for a {@link Stream}.</p>
-     * <p>Applications should not use this constructor, but instead
-     * use {@link Stream#data(boolean, List, Promise.Invocable)}.</p>
-     *
-     * @param frameType the frame type
-     * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}
-     * @param data the data bytes to send
-     * @param offset the data offset
-     */
-    public StreamFrame(long frameType, long streamId, ByteBuffer data, long offset, boolean endData)
+    /// Creates a stream frame for a [Stream].
+    ///
+    /// Applications should not use this constructor but instead
+    /// use [Stream#data(boolean, List, Promise.Invocable)].
+    ///
+    /// @param frameType the frame type
+    /// @param streamId the stream id generated using [Session#newStreamId(boolean)]
+    /// @param data the data bytes to send
+    /// @param offset the data offset
+    public StreamFrame(long frameType, long streamId, RetainableByteBuffer data, long offset, boolean endData)
     {
         super(frameType, streamId);
         this.offset = offset < 0 ? 0 : offset;
@@ -115,43 +109,33 @@ public class StreamFrame extends Frame.WithStreamId implements Frame.WithOffset,
         this.endData = endData;
     }
 
-    /**
-     * @return the stream offset of the data bytes carried by this frame
-     */
+    /// @return the stream offset of the data bytes carried by this frame
     @Override
-    public long getOffset()
+    public long offset()
     {
         return offset;
     }
 
-    /**
-     * @return the data bytes
-     */
-    public ByteBuffer getData()
+    /// @return the data bytes
+    public RetainableByteBuffer data()
     {
         return data;
     }
 
-    /**
-     * @return the number of data bytes
-     */
+    /// @return the number of data bytes
     @Override
-    public long getLength()
+    public long length()
     {
         return length;
     }
 
-    /**
-     * @return whether this frame is the last in the stream
-     */
+    /// @return whether this frame is the last in the stream
     public boolean isEndStream()
     {
         return endStream;
     }
 
-    /**
-     * @return whether this frame is the last carrying data for the stream
-     */
+    /// @return whether this frame is the last carrying data for the stream
     public boolean isEndData()
     {
         return endData;
@@ -168,9 +152,9 @@ public class StreamFrame extends Frame.WithStreamId implements Frame.WithOffset,
     {
         return "%s[offset=%d,length=%d/%d,last=%b]".formatted(
             super.toString(),
-            getOffset(),
-            getData().remaining(),
-            getLength(),
+            offset(),
+            data().remaining(),
+            length(),
             isEndStream()
         );
     }

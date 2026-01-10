@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class StreamDataBlockedFrame extends Frame.WithStreamId
+public class StreamDataBlockedFrame extends Frame.WithStreamId.Abstract
 {
     private final long offset;
 
@@ -23,7 +23,7 @@ public class StreamDataBlockedFrame extends Frame.WithStreamId
         this.offset = offset;
     }
 
-    public long getOffset()
+    public long offset()
     {
         return offset;
     }
@@ -31,6 +31,6 @@ public class StreamDataBlockedFrame extends Frame.WithStreamId
     @Override
     public String toString()
     {
-        return "%s[offset=%d]".formatted(super.toString(), getOffset());
+        return "%s[offset=%d]".formatted(super.toString(), offset());
     }
 }

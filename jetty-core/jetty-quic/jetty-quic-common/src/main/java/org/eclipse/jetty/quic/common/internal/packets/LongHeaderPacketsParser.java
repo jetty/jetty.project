@@ -18,7 +18,10 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.common.frames.FramesParser;
+import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.packets.Packet;
+import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 
 public class LongHeaderPacketsParser
 {
@@ -26,10 +29,11 @@ public class LongHeaderPacketsParser
     private State state = State.TYPE;
     private Type type;
 
-    public LongHeaderPacketsParser()
+    public LongHeaderPacketsParser(Decrypter decrypter, PacketNumbers packetNumbers, FramesParser framesParser)
     {
         // TODO: other types.
-        parsers.put(Type.INITIAL, new InitialPacketParser(null, null, null));
+        parsers.put(Type.INITIAL, new InitialPacketParser(decrypter, packetNumbers, framesParser));
+        parsers.put(Type.HANDSHAKE, new HandshakePacketParser(decrypter, packetNumbers, framesParser));
     }
 
     public Packet parse(RetainableByteBuffer buffer) throws Exception

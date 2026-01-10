@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
@@ -27,271 +28,222 @@ import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 
-/**
- * <p>Represents a QUIC connection to a remote peer.</p>
- * <p>A {@link Session} represents the active part of the connection, and by calling its APIs
- * applications can generate events on the connection.</p>
- * <p>Conversely, {@link Session.Listener} is the passive part of the connection,
- * and has callback methods that are invoked when events happen on the connection.</p>
- */
+/// Represents a QUIC connection to a remote peer.
+///
+/// A [Session] represents the active part of the connection, and by calling
+/// its APIs applications generate events on the connection.
+///
+/// Conversely, [Session.Listener] is the passive part of the connection,
+/// and has callback methods that are invoked when events happen on the connection.
 public interface Session
 {
-    /**
-     * @return the QUIC connection id
-     */
+    /// @return the QUIC connection id
     String getId();
 
-    /**
-     * <p>Creates a new QUIC stream id, with the given directionality.</p>
-     *
-     * @param bidirectional whether the stream is bidirectional or unidirectional
-     * @return a new QUIC stream id
-     */
+    /// Creates a new QUIC stream id, with the given directionality.
+    ///
+    /// @param bidirectional whether the stream is bidirectional or unidirectional
+    /// @return a new QUIC stream id
     long newStreamId(boolean bidirectional);
 
-    /**
-     * <p>Creates a new local QUIC stream with the given stream id and listener.</p>
-     *
-     * @param streamId the QUIC stream id
-     * @param listener the listener of stream events
-     * @return a new local QUIC stream
-     */
+    /// Creates a new local QUIC stream with the given stream id and listener.
+    ///
+    /// @param streamId the QUIC stream id
+    /// @param listener the listener of stream events
+    /// @return a new local QUIC stream
     Stream newStream(long streamId, Stream.Listener listener);
 
-    /**
-     * @param streamId the stream id
-     * @return the QUIC stream with the given stream id
-     */
+    /// @param streamId the stream id
+    /// @return the QUIC stream with the given stream id
     Stream getStream(long streamId);
 
-    /**
-     * <p>Sends a MAX_STREAMS frame on this connection.</p>
-     *
-     * @param frame the frame to send
-     * @param promise the {@link Promise.Invocable} that gets notified when the
-     * frame has been sent
-     */
-    void maxStreams(MaxStreamsFrame frame, Promise.Invocable<Session> promise);
-
-    /**
-     * <p>Sends a PING frame on this connection.</p>
-     *
-     * @param promise the {@link Promise.Invocable} that gets notified when the
-     * frame has been sent
-     */
-    void ping(Promise.Invocable<Session> promise);
-
-    /**
-     * <p>Sends a MAX_DATA frame on this connection.</p>
-     *
-     * @param frame the frame to send
-     * @param promise the {@link Promise.Invocable} that gets notified when the
-     * frame has been sent
-     */
-    void maxData(MaxDataFrame frame, Promise.Invocable<Session> promise);
-
-    /**
-     * <p>Closes this session with the given {@code CONNECTION_CLOSE} frame.</p>
-     * <p>Applications should use this method in conjunction with
-     * {@link ConnectionCloseFrame#ConnectionCloseFrame(long, String)}.</p>
-     * <p>Differently from {@link #disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)},
-     * this method performs close actions inwards, towards the application,
-     * that may perform additional actions such as writing to the network,
-     * for example close frames for a protocol on top of QUIC.</p>
-     * <p>After finishing the inward actions,
-     * {@link #disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)} should be
-     * called to perform close actions outwards and eventually send
-     * the QUIC close frame and finally disconnect at the network level,
-     * if necessary.</p>
-     *
-     * @param frame the frame carrying the error code and reason
-     * @param promise the {@link Callback} that gets notified when the
-     * close is complete
-     */
-    void close(ConnectionCloseFrame frame, Promise.Invocable<Session> promise);
-
-    /**
-     * <p>Disconnects this session, with the given {@code CONNECTION_CLOSE}
-     * and failure cause, if any.</p>
-     * <p>Differently from {@link #close(ConnectionCloseFrame, Promise.Invocable)},
-     * this method performs disconnect actions outwards, towards the
-     * network: typically clean-up actions and eventually sends the
-     * given QUIC close frame and finally disconnect at the network level,
-     * if necessary.</p>
-     *
-     * @param frame the frame carrying the error code and reason
-     * @param failure the failure that caused the disconnect, or {@code null}
-     * @param promise the {@link Promise.Invocable} that gets notified when the
-     * disconnect is complete
-     */
-    void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<Session> promise);
-
-    /**
-     * @return the QUIC streams managed by this session
-     */
+    /// @return the QUIC streams managed by this session
     Collection<Stream> getStreams();
 
-    /**
-     * @return the local {@link SocketAddress} associated with this session
-     */
+    /// Sends a MAX_STREAMS frame on this session.
+    ///
+    /// @param frame the frame to send
+    /// @param promise the [Promise.Invocable] that gets notified when the frame has been sent
+    void maxStreams(MaxStreamsFrame frame, Promise.Invocable<Session> promise);
+
+    /// Sends a PING frame on this connection.
+    ///
+    /// @param promise the [Promise.Invocable] that gets notified when the frame has been sent
+    void ping(Promise.Invocable<Session> promise);
+
+    /// Sends a MAX_DATA frame on this connection.
+    ///
+    /// @param frame the frame to send
+    /// @param promise the [Promise.Invocable] that gets notified when the frame has been sent
+    void maxData(MaxDataFrame frame, Promise.Invocable<Session> promise);
+
+    /// Closes this session with the given `CONNECTION_CLOSE` frame.
+    ///
+    /// Applications should use this method in conjunction with
+    /// [ConnectionCloseFrame#ConnectionCloseFrame(long, String)].
+    ///
+    /// Differently from [#disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)],
+    /// this method performs close actions inwards, towards the application,
+    /// that may perform additional actions such as writing to the network
+    /// (for example, close frames for a protocol on top of QUIC).
+    ///
+    /// After finishing the inward actions,
+    /// [#disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)] should be
+    /// called to perform close actions outwards and eventually send
+    /// the QUIC close frame and finally disconnect at the network level,
+    /// if necessary.
+    ///
+    /// @param frame the frame carrying the error code and reason
+    /// @param promise the [Callback] that gets notified when the close is complete
+    void close(ConnectionCloseFrame frame, Promise.Invocable<Session> promise);
+
+    /// Disconnects this session, with the given `CONNECTION_CLOSE`
+    /// and failure cause, if any.
+    ///
+    /// Differently from [#close(ConnectionCloseFrame, Promise.Invocable)],
+    /// this method performs disconnect actions outwards, towards the
+    /// network: typically cleanup actions and eventually sends the
+    /// given QUIC close frame and finally disconnect at the network level,
+    /// if necessary.
+    ///
+    /// @param frame the frame carrying the error code and reason
+    /// @param failure the failure which caused the disconnection, or `null`
+    /// @param promise the [Promise.Invocable] that gets notified when the disconnect is complete
+    void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<Session> promise);
+
+    /// @return the local [SocketAddress] associated with this session
     SocketAddress getLocalSocketAddress();
 
-    /**
-     * @return the remote {@link SocketAddress} associated with this session
-     */
+    /// @return the remote [SocketAddress] associated with this session
     SocketAddress getRemoteSocketAddress();
 
-    /**
-     * @return the local bidirectional streams max count
-     */
+    /// @return the local bidirectional streams max count
     long getLocalBidirectionalMaxStreams();
 
-    /**
-     * @return the idle timeout in milliseconds
-     */
+    /// @return the idle timeout in milliseconds
     long getIdleTimeout();
 
-    /**
-     * <p>A {@link Listener} is the passive counterpart of a {@link Session} and
-     * receives events happening on an QUIC connection.</p>
-     *
-     * @see Session
-     */
+    /// A [Listener] is the passive counterpart of a [Session] and
+    /// receives events happening on an QUIC connection.
+    ///
+    /// @see Session
     interface Listener
     {
-        /**
-         * <p>Callback method invoked to retrieve the QUIC transport parameters.</p>
-         * <p>This event may not be emitted for all QUIC implementations.</p>
-         *
-         * @param session the QUIC session
-         * @return the QUIC transport parameters
-         */
+        /// Callback method invoked to retrieve the QUIC transport parameters.
+        ///
+        /// This event may not be emitted for all QUIC implementations.
+        ///
+        /// @param session the QUIC session
+        /// @return the QUIC transport parameters
         default TransportParameters onPrepare(Session session)
         {
             return null;
         }
 
-        /**
-         * <p>Callback method invoked when a new session is opened.</p>
-         *
-         * @param session the QUIC session
-         */
+        /// Callback method invoked when a new session is opened.
+        ///
+        /// @param session the QUIC session
         default void onOpen(Session session)
         {
         }
 
-        /**
-         * <p>Callback method invoked when the QUIC transport parameters are received.</p>
-         * <p>This event may not be emitted for all QUIC implementations.</p>
-         *
-         * @param session the QUIC session
-         * @param parameters the QUIC transport parameters
-         */
+        /// Callback method invoked when the QUIC transport parameters are received.
+        ///
+        /// This event may not be emitted for all QUIC implementations.
+        ///
+        /// @param session the QUIC session
+        /// @param parameters the QUIC transport parameters
         default void onTransportParameters(Session session, TransportParameters parameters)
         {
         }
 
-        /**
-         * <p>Callback method invoked when receiving a frame that causes the creation of a new stream.</p>
-         *
-         * @param session the QUIC session
-         * @param frame the frame that caused the creation of the stream
-         * @return a new {@link Stream.Listener} that handles events for the newly created stream
-         */
+        /// Callback method invoked when receiving a frame that causes the creation of a new stream.
+        ///
+        /// @param session the QUIC session
+        /// @param frame the frame that caused the creation of the stream
+        /// @return a new [Stream.Listener] that handles events for the newly created stream
         default Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
         {
             return null;
         }
 
-        /**
-         * <p>Callback method invoked when a MAX_STREAMS frame is received.</p>
-         *
-         * @param session the QUIC session
-         * @param frame the MAX_STREAMS frame
-         */
+        /// Callback method invoked when a CRYPTO frame is received.
+        ///
+        /// @param session the QUIC session
+        /// @param frame the CRYPTO frame
+        default void onCrypto(Session session, CryptoFrame frame)
+        {
+        }
+
+        /// Callback method invoked when a MAX_STREAMS frame is received.
+        ///
+        /// @param session the QUIC session
+        /// @param frame the MAX_STREAMS frame
         default void onMaxStreams(Session session, MaxStreamsFrame frame)
         {
         }
 
-        /**
-         * <p>Callback method invoked when a PING frame is received.</p>
-         *
-         * @param session the QUIC session
-         */
+        /// Callback method invoked when a PING frame is received.
+        ///
+        /// @param session the QUIC session
         default void onPing(Session session)
         {
         }
 
-        /**
-         * <p>Callback method invoked when a STREAMS_BLOCKED frame is received.</p>
-         *
-         * @param session the QUIC session
-         * @param frame the STREAMS_BLOCKED frame
-         */
+        /// Callback method invoked when a STREAMS_BLOCKED frame is received.
+        ///
+        /// @param session the QUIC session
+        /// @param frame the STREAMS_BLOCKED frame
         default void onStreamsBlocked(Session session, StreamsBlockedFrame frame)
         {
         }
 
-        /**
-         * <p>Callback method invoked when a MAX_DATA frame is received.</p>
-         *
-         * @param session the QUIC session
-         * @param frame the MAX_DATA frame
-         */
+        /// Callback method invoked when a MAX_DATA frame is received.
+        ///
+        /// @param session the QUIC session
+        /// @param frame the MAX_DATA frame
         default void onMaxData(Session session, MaxDataFrame frame)
         {
         }
 
-        /**
-         * <p>Callback method invoked when a DATA_BLOCKED frame is received.</p>
-         *
-         * @param session the QUIC session
-         * @param frame the DATA_BLOCKED frame
-         */
+        /// Callback method invoked when a DATA_BLOCKED frame is received.
+        ///
+        /// @param session the QUIC session
+        /// @param frame the DATA_BLOCKED frame
         default void onDataBlocked(Session session, DataBlockedFrame frame)
         {
         }
 
-        /**
-         * <p>Callback method invoked when the idle timeout expires.</p>
-         *
-         * @param session the QUIC session
-         * @param failure the idle timeout failure
-         * @return {@code true} to close the session, {@code false} to ignore the idle timeout
-         * @see #getIdleTimeout()
-         */
+        /// Callback method invoked when the idle timeout expires.
+        ///
+        /// @param session the QUIC session
+        /// @param failure the idle timeout failure
+        /// @return `true` to close the session, `false` to ignore the idle timeout
+        /// @see #getIdleTimeout()
         default boolean onIdleTimeout(Session session, TimeoutException failure)
         {
             return true;
         }
 
-        /**
-         * <p>Callback method invoked when a CONNECTION_CLOSE frame has been received.</p>
-         *
-         * @param session the QUIC session
-         * @param frame the CONNECTION_CLOSE frame
-         */
+        /// Callback method invoked when a CONNECTION_CLOSE frame has been received.
+        ///
+        /// @param session the QUIC session
+        /// @param frame the CONNECTION_CLOSE frame
         default void onClose(Session session, ConnectionCloseFrame frame)
         {
         }
 
-        /**
-         * <p>Callback method invoked when the session has been disconnected.</p>
-         *
-         * @param session the QUIC session
-         */
+        /// Callback method invoked when the session has been disconnected.
+        ///
+        /// @param session the QUIC session
         default void onDisconnect(Session session)
         {
         }
 
-        /**
-         * <p>Factory to create {@link Session.Listener} instances.</p>
-         */
+        /// Factory to create [Session.Listener] instances.
         interface Factory
         {
-            /**
-             * @return a new {@link Session.Listener} instance
-             */
+            /// @return a new [Session.Listener] instance
             Listener newListener();
         }
     }

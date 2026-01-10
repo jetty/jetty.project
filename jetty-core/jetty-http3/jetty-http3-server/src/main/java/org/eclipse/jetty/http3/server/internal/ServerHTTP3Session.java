@@ -263,7 +263,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
     public void close(ConnectionCloseFrame frame, Promise.Invocable<ProtocolSession> promise)
     {
         // Propagate the close inwards.
-        session.close(frame.getErrorCode(), frame.getReason(), Promise.Invocable.toPromise(promise, s -> this));
+        session.close(frame.errorCode(), frame.reason(), Promise.Invocable.toPromise(promise, s -> this));
     }
 
     private void onFailure(long error, String reason, Throwable failure)
@@ -284,7 +284,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
         if (LOG.isDebugEnabled())
             LOG.debug("session closed remotely {} {}", frame, this);
         // Forward the close inwards.
-        session.onClose(frame.getErrorCode(), frame.getReason());
+        session.onClose(frame.errorCode(), frame.reason());
     }
 
     void writeControlFrame(Frame frame, Callback callback)

@@ -15,33 +15,31 @@ package org.eclipse.jetty.quic.api.frames;
 
 import org.eclipse.jetty.quic.api.Session;
 
-public class ConnectionCloseFrame extends Frame
+public class ConnectionCloseFrame extends Frame.Abstract
 {
     private final long errorCode;
     private final String reason;
     private final long causeFrameType;
 
-    /**
-     * <p>Creates a connection close frame with the given application error code and reason.</p>
-     * <p>Applications should use this constructor in conjunction with
-     * {@link Session#close(ConnectionCloseFrame, org.eclipse.jetty.util.Promise.Invocable)}.
-     *
-     * @param appErrorCode the application error code
-     * @param reason the application error reason
-     */
+    /// Creates a connection close frame with the given application error code and reason.
+    ///
+    /// Applications should use this constructor in conjunction with
+    /// [Session#close(ConnectionCloseFrame, org.eclipse.jetty.util.Promise.Invocable)].
+    ///
+    /// @param appErrorCode the application error code
+    /// @param reason the application error reason
     public ConnectionCloseFrame(long appErrorCode, String reason)
     {
         this(0x1D, appErrorCode, reason, 0);
     }
 
-    /**
-     * <p>Creates a connection close frame with the given QUIC error code, reason, and frame type.</p>
-     * <p>Applications should not use this constructor.</p>
-     *
-     * @param quicErrorCode the QUIC error code
-     * @param reason the QUIC error reason
-     * @param causeFrameType the frame type that caused the error
-     */
+    /// Creates a connection close frame with the given QUIC error code, reason, and frame type.
+    ///
+    /// Applications should not use this constructor.
+    ///
+    /// @param quicErrorCode the QUIC error code
+    /// @param reason the QUIC error reason
+    /// @param causeFrameType the frame type that caused the error
     public ConnectionCloseFrame(long quicErrorCode, String reason, long causeFrameType)
     {
         this(0x1C, quicErrorCode, reason, causeFrameType);
@@ -55,17 +53,17 @@ public class ConnectionCloseFrame extends Frame
         this.causeFrameType = causeFrameType;
     }
 
-    public long getErrorCode()
+    public long errorCode()
     {
         return errorCode;
     }
 
-    public String getReason()
+    public String reason()
     {
         return reason;
     }
 
-    public long getCauseFrameType()
+    public long causeFrameType()
     {
         return causeFrameType;
     }
@@ -73,9 +71,9 @@ public class ConnectionCloseFrame extends Frame
     @Override
     public String toString()
     {
-        boolean appError = getFrameType() == 0x1D;
+        boolean appError = type() == 0x1D;
         if (appError)
-            return "%s[appError=0x%x,reason=%s]".formatted(super.toString(), getErrorCode(), getReason());
-        return "%s[quicError0x=%x,reason=%s,frame=%d]".formatted(super.toString(), getErrorCode(), getReason(), getCauseFrameType());
+            return "%s[appError=0x%x,reason=%s]".formatted(super.toString(), errorCode(), reason());
+        return "%s[quicError=0x%x,reason=%s,causeFrame=0x%x]".formatted(super.toString(), errorCode(), reason(), causeFrameType());
     }
 }

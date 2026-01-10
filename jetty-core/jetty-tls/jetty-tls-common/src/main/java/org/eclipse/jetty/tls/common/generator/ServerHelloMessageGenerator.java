@@ -73,5 +73,7 @@ public class ServerHelloMessageGenerator extends MessageGenerator
 
         accumulator.putShort((short)extensionsLength);
         accumulator.add(extensionsAccumulator);
+
+        notifyMessageGenerated(message, accumulator);
     }
 }

@@ -13,47 +13,84 @@
 
 package org.eclipse.jetty.quic.common.packets;
 
-import org.eclipse.jetty.quic.api.Version;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.quic.api.QuicVersion;
 
-public sealed class LongHeaderPacket extends Packet permits InitialPacket
+public sealed class LongHeaderPacket extends Packet permits HandshakePacket, InitialPacket
 {
     private final PacketType packetType;
-    private final Version version;
-    private final byte[] sourceConnectionId;
+    private final QuicVersion quicVersion;
     private final byte[] destinationConnectionId;
+    private final byte[] sourceConnectionId;
 
-    public LongHeaderPacket(PacketType packetType, Version version, byte[] sourceConnectionId, byte[] destinationConnectionId)
+    public LongHeaderPacket(PacketType packetType, QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId)
     {
         this.packetType = packetType;
-        this.version = version;
-        this.sourceConnectionId = sourceConnectionId;
+        this.quicVersion = quicVersion;
         this.destinationConnectionId = destinationConnectionId;
+        this.sourceConnectionId = sourceConnectionId;
     }
 
-    public PacketType getPacketType()
+    public PacketType packetType()
     {
         return packetType;
     }
 
-    public Version getVersion()
+    public QuicVersion quicVersion()
     {
-        return version;
+        return quicVersion;
     }
 
-    public byte[] getSourceConnectionId()
-    {
-        return sourceConnectionId;
-    }
-
-    public byte[] getDestinationConnectionId()
+    @Override
+    public byte[] destinationConnectionId()
     {
         return destinationConnectionId;
+    }
+
+    public byte[] sourceConnectionId()
+    {
+        return sourceConnectionId;
     }
 
     @Override
     public String toString()
     {
-        return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getVersion());
+        return "%s[%s]".formatted(super.toString(), quicVersion());
+    }
+
+    public enum PacketType
+    {
+        INITIAL,
+        ZERO_RTT,
+        HANDSHAKE,
+        RETRY;
+
+        public byte type(QuicVersion quicVersion)
+        {
+            // RFC-9000:[17.2].
+            // RFC-9369:[3.2].
+            return switch (this)
+            {
+                case INITIAL -> switch (quicVersion)
+                {
+                    case V1 -> 0x00;
+                    case V2 -> 0x01;
+                };
+                case ZERO_RTT -> switch (quicVersion)
+                {
+                    case V1 -> 0x01;
+                    case V2 -> 0x02;
+                };
+                case HANDSHAKE -> switch (quicVersion)
+                {
+                    case V1 -> 0x02;
+                    case V2 -> 0x03;
+                };
+                case RETRY -> switch (quicVersion)
+                {
+                    case V1 -> 0x03;
+                    case V2 -> 0x00;
+                };
+            };
+        }
     }
 }

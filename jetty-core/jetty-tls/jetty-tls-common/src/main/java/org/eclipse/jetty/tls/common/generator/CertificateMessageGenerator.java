@@ -79,5 +79,7 @@ public class CertificateMessageGenerator extends MessageGenerator
             accumulator.putShort((short)extensionsAccumulator.remaining());
             accumulator.add(extensionsAccumulator);
         }
+
+        notifyMessageGenerated(message, accumulator);
     }
 }
