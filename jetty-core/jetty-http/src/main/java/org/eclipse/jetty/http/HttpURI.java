@@ -1309,7 +1309,6 @@ public interface HttpURI
             int encodedCharacters = 0; // partial state of parsing a % encoded character<x>
             int encodedValue = 0; // the partial encoded value
             boolean dot = false; // set to true if the path contains . or .. segments
-            boolean ipv6Closed = false;
             int end = uri.length();
             _emptySegment = false;
             for (int i = 0; i < end; i++)
@@ -1549,7 +1548,8 @@ public interface HttpURI
                                 _host = host;
                                 if (i == end)
                                 {
-                                    ipv6Closed = true;
+                                    pathMark = mark = i;
+                                    state = State.PATH;
                                     break;
                                 }
                                 c = uri.charAt(i);
@@ -1797,10 +1797,7 @@ public interface HttpURI
                     }
                     break;
                 case IPV6:
-                    if (!ipv6Closed)
-                        throw new IllegalArgumentException("No closing ']' for ipv6 in " + uri);
-                    _path = "";
-                    break;
+                    throw new IllegalArgumentException("No closing ']' for ipv6 in " + uri);
                 case PORT_OR_PASSWORD:
                     try
                     {
