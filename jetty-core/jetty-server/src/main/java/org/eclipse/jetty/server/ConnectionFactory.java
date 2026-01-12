@@ -16,7 +16,7 @@ package org.eclipse.jetty.server;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
@@ -45,12 +45,12 @@ public interface ConnectionFactory
     /**
      * @return A string representing the primary protocol name.
      */
-    public String getProtocol();
+    String getProtocol();
 
     /**
      * @return A list of alternative protocol names/versions including the primary protocol.
      */
-    public List<String> getProtocols();
+    List<String> getProtocols();
 
     /**
      * <p>Creates a new {@link Connection} with the given parameters</p>
@@ -59,9 +59,9 @@ public interface ConnectionFactory
      * @param endPoint the {@link EndPoint} associated with the connection
      * @return a new {@link Connection}
      */
-    public Connection newConnection(Connector connector, EndPoint endPoint);
+    Connection newConnection(Connector connector, EndPoint endPoint);
 
-    public interface Upgrading extends ConnectionFactory
+    interface Upgrading extends ConnectionFactory
     {
 
         /**
@@ -76,9 +76,9 @@ public interface ConnectionFactory
          * @param responseFields The fields to be sent with the 101 response
          * @return Null to indicate that request processing should continue normally without upgrading. A new connection instance to
          * indicate that the upgrade should proceed.
-         * @throws BadMessageException Thrown to indicate the upgrade attempt was illegal and that a bad message response should be sent.
+         * @throws HttpException.RuntimeException Thrown to indicate the upgrade attempt was illegal and that a bad message response should be sent.
          */
-        public Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields.Mutable responseFields) throws BadMessageException;
+        Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields.Mutable responseFields) throws HttpException.RuntimeException;
     }
 
     /**

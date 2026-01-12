@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-http2-client-transport</artifactId>
   <name>Core :: HTTP2 :: Client Transport</name>
+  <description>Jetty HTTP/2 Client Transport Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.client.http</bundle-symbolic-name>

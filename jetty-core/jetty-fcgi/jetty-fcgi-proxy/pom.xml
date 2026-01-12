@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-fcgi-proxy</artifactId>
   <name>Core :: FastCGI :: Proxy</name>
+  <description>Jetty FastCGI Proxy Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>

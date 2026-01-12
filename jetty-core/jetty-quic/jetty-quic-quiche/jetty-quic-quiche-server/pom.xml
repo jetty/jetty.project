@@ -9,6 +9,7 @@
 
   <artifactId>jetty-quic-quiche-server</artifactId>
   <name>Core :: QUIC :: Quiche :: Server</name>
+  <description>Jetty QUIC Quiche Server Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.quiche.server</bundle-symbolic-name>

@@ -13,11 +13,12 @@
 
 .xref:programming-guide:index.adoc[]
 * xref:client/index.adoc[]
-** xref:client/io-arch.adoc[]
 ** xref:client/http.adoc[]
 ** xref:client/http2.adoc[]
 ** xref:client/http3.adoc[]
 ** xref:client/websocket.adoc[]
+** xref:client/io-arch.adoc[]
+** xref:client/threads.adoc[]
 * xref:server/index.adoc[]
 ** xref:server/http.adoc[]
 ** xref:server/http2.adoc[]
@@ -28,6 +29,7 @@
 ** xref:server/websocket.adoc[]
 ** xref:server/fastcgi.adoc[]
 ** xref:server/io-arch.adoc[]
+** xref:server/threads.adoc[]
 * Maven and Jetty
 ** xref:maven-jetty/jetty-maven-helloworld.adoc[]
 ** xref:maven-jetty/jetty-maven-plugin.adoc[]

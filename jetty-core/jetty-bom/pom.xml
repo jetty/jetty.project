@@ -11,7 +11,7 @@
   <artifactId>jetty-bom</artifactId>
   <packaging>pom</packaging>
   <name>Core :: BOM</name>
-  <description>Jetty Core BOM artifact</description>
+  <description>Jetty BOM</description>
 
   <dependencyManagement>
     <dependencies>

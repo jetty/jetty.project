@@ -12,7 +12,7 @@
   <artifactId>jetty-compression</artifactId>
   <packaging>pom</packaging>
   <name>Core :: Compression</name>
-  <description>Jetty Core Compression</description>
+  <description>Jetty Compression Parent</description>
 
   <modules>
     <module>jetty-compression-common</module>

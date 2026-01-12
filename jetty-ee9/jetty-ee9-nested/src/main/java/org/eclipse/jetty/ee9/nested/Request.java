@@ -66,6 +66,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -2079,13 +2080,10 @@ public class Request implements HttpServletRequest
             {
                 parts = _multiParts.getParts();
             }
-            catch (BadMessageException e)
-            {
-                throw e;
-            }
             // Catch RuntimeException to handle IllegalStateException, IllegalArgumentException, CharacterEncodingException, etc .. (long list)
             catch (RuntimeException | IOException e)
             {
+                HttpException.throwIfHttpException(e);
                 throw new BadMessageException("Unable to parse form content", e);
             }
             reportComplianceViolations();
@@ -2206,12 +2204,9 @@ public class Request implements HttpServletRequest
             {
                 UrlEncoded.decodeTo(newQuery, newQueryParams::add, UrlEncoded.ENCODING);
             }
-            catch (BadMessageException e)
-            {
-                throw e;
-            }
             catch (Throwable th)
             {
+                HttpException.throwIfHttpException(th);
                 throw new BadMessageException("Bad query encoding", th);
             }
         }
@@ -2224,13 +2219,10 @@ public class Request implements HttpServletRequest
             {
                 UrlEncoded.decodeTo(oldQuery, oldQueryParams::add, getQueryCharset());
             }
-            catch (BadMessageException e)
-            {
-                throw e;
-            }
             catch (Throwable th)
             {
                 _queryParameters = BAD_PARAMS;
+                HttpException.throwIfHttpException(th);
                 throw new BadMessageException("Bad query encoding", th);
             }
         }

@@ -11,6 +11,7 @@
   <artifactId>jetty-ee</artifactId>
   <packaging>pom</packaging>
   <name>Core :: EE</name>
+  <description>Jetty EE Parent</description>
 
   <modules>
     <module>jetty-ee-webapp</module>

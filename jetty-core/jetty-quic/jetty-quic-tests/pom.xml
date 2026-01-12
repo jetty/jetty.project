@@ -8,6 +8,7 @@
   </parent>
   <artifactId>jetty-quic-tests</artifactId>
   <name>Core :: QUIC :: Tests</name>
+  <description>Jetty QUIC Tests Artifact</description>
 
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>

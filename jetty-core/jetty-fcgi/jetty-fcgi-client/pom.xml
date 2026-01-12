@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-fcgi-client</artifactId>
   <name>Core :: FastCGI :: Client</name>
+  <description>Jetty FastCGI Client Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>

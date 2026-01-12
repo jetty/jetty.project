@@ -10,7 +10,7 @@
   <artifactId>jetty-compression-zstandard</artifactId>
   <packaging>jar</packaging>
   <name>Core :: Compression :: Zstandard Support</name>
-  <description>Jetty Core Compression :: Zstandard Support</description>
+  <description>Jetty Compression Zstandard Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.zstandard</bundle-symbolic-name>

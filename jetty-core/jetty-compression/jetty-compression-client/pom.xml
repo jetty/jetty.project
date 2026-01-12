@@ -10,7 +10,7 @@
   <artifactId>jetty-compression-client</artifactId>
   <packaging>jar</packaging>
   <name>Core :: Compression :: Client</name>
-  <description>Jetty Core Compression Client</description>
+  <description>Jetty Compression Client Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>

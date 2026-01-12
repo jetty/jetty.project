@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-websocket-core-client</artifactId>
   <name>Core :: Websocket :: Client</name>
+  <description>Jetty Core WebSocket Client Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.core.client</bundle-symbolic-name>

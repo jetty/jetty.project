@@ -8,8 +8,8 @@
     <version>12.1.6-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-deploy</artifactId>
-  <name>Core :: Deployers</name>
-  <description>Jetty deployers</description>
+  <name>Core :: Deployer</name>
+  <description>Jetty Deployer Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.deploy</bundle-symbolic-name>

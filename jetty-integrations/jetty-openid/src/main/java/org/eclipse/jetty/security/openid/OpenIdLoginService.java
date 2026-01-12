@@ -79,7 +79,7 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
     public UserIdentity login(String identifier, Object credentials, Request request, Function<Boolean, Session> getOrCreateSession)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("login({}, {}, {})", identifier, credentials, getOrCreateSession);
+            LOG.debug("login({}, {})", identifier, getOrCreateSession);
 
         OpenIdCredentials openIdCredentials = (OpenIdCredentials)credentials;
         OpenIdUserPrincipal userPrincipal = new OpenIdUserPrincipal(openIdCredentials);

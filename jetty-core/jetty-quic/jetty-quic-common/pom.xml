@@ -9,6 +9,7 @@
   </parent>
   <artifactId>jetty-quic-common</artifactId>
   <name>Core :: QUIC :: Common</name>
+  <description>Jetty QUIC Common Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>

@@ -36,13 +36,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
@@ -609,7 +610,8 @@ public interface Request extends Attributes, Content.Source
         }
         catch (Throwable t)
         {
-            throw new BadMessageException("Bad query", t);
+            HttpException.throwIfHttpException(t);
+            throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, "Bad query", t);
         }
     }
 

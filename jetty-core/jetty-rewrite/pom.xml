@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-rewrite</artifactId>
   <name>Core :: Rewrite</name>
-  <description>Jetty Rewrite Handler</description>
+  <description>Jetty Rewrite Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.rewrite</bundle-symbolic-name>
