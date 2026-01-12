@@ -529,7 +529,7 @@ For example, an HTTP/2 response may include the following header:
 
 [source]
 ----
-Alt-Svc: h3=":843"; ma=86400
+Alt-Svc: h3=":843"
 ----
 
 The presence of this header indicates that protocol `h3` is available on the same host (since no host is defined before the port), but on port `843` (although it may be the same port `443`).
@@ -546,18 +546,7 @@ To configure the `AltSvcCustomizer`, retrieve it from the `HttpConfiguration` af
 
 [,java,indent=0,options=nowrap]
 ----
-HttpConfiguration httpConfig = new HttpConfiguration();
-HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
-
-// Configure AltSvcCustomizer after connection factory creation
-httpConfig.getCustomizers().stream()
-    .filter(c -> c instanceof HTTP2ServerConnectionFactory.AltSvcCustomizer)
-    .map(HTTP2ServerConnectionFactory.AltSvcCustomizer.class::cast)
-    .findFirst()
-    .ifPresent(customizer -> {
-        customizer.setMaxAge(Duration.ofHours(24));
-        customizer.setPersist(true);
-    });
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=h2altsvc]
 ----
 
 It is therefore common for HTTP/3 clients to initiate connections using the HTTP/2 protocol over TCP, and if the server supports HTTP/3 switch to HTTP/3 as indicated by the server.
@@ -573,7 +562,7 @@ participant "server:443" as h2server
 participant "server:843" as h3server
 
 client -> h2server : HTTP/2 request
-h2server -> client : HTTP/2 response\nAlt-Svc: h3=":843"; ma=86400
+h2server -> client : HTTP/2 response\nAlt-Svc: h3=":843"
 client -> h3server : HTTP/3 requests
 h3server -> client : HTTP/3 responses
 ...
