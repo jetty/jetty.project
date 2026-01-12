@@ -57,7 +57,7 @@ public class ResourceHandler extends Handler.Wrapper
     private static final int DEFAULT_BUFFER_SIZE = 32768;
     private static final boolean DEFAULT_USE_DIRECT_BUFFERS = true;
 
-    private final ResourceService _resourceService = newResourceService();
+    private final ResourceService _resourceService;
     private ByteBufferPool.Sized _byteBufferPool;
     private Resource _baseResource;
     private Resource _styleSheet;
@@ -80,6 +80,8 @@ public class ResourceHandler extends Handler.Wrapper
     {
         super(handler);
         _byteBufferPool = byteBufferPool;
+        _resourceService = newResourceService();
+        addBean(_resourceService);
     }
 
     protected ResourceService newResourceService()

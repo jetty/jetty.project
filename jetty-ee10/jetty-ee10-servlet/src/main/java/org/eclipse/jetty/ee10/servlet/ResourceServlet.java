@@ -224,6 +224,7 @@ public class ResourceServlet extends HttpServlet
     {
         ServletContextHandler contextHandler = initContextHandler(getServletContext());
         _resourceService = new ServletResourceService(contextHandler);
+        contextHandler.addManaged(_resourceService);
         _resourceService.setWelcomeFactory(_resourceService);
         Resource baseResource = contextHandler.getBaseResource();
 
@@ -396,6 +397,13 @@ public class ResourceServlet extends HttpServlet
             LOG.debug("  .resourceService = {}", _resourceService);
             LOG.debug("  .welcomeServletMode = {}", _welcomeServletMode);
         }
+    }
+
+    @Override
+    public void destroy()
+    {
+        ServletContextHandler contextHandler = initContextHandler(getServletContext());
+        contextHandler.removeBean(this);
     }
 
     private ByteBufferPool.Sized getByteBufferPool(ContextHandler contextHandler)

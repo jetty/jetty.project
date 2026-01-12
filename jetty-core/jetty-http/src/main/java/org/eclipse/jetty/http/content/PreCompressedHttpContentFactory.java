@@ -22,12 +22,13 @@ import java.util.Set;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.content.HttpContent.Factory;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 /**
  * This {@link HttpContent.Factory} populates the {@link HttpContent#getPreCompressedContentFormats()} field for any
  * {@link HttpContent} fetched through this factory.
  */
-public class PreCompressedHttpContentFactory implements HttpContent.Factory
+public class PreCompressedHttpContentFactory extends ContainerLifeCycle implements HttpContent.Factory
 {
     private final HttpContent.Factory _factory;
     private final List<CompressedContentFormat> _preCompressedFormats;
@@ -40,6 +41,7 @@ public class PreCompressedHttpContentFactory implements HttpContent.Factory
     public PreCompressedHttpContentFactory(HttpContent.Factory factory, List<CompressedContentFormat> preCompressedFormats)
     {
         _factory = factory;
+        addBean(factory, true);
         _preCompressedFormats = preCompressedFormats;
     }
 

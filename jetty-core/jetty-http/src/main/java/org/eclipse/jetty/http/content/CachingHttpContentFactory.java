@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +62,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  * @see ValidatingCachingHttpContentFactory
  */
-public class CachingHttpContentFactory implements HttpContent.Factory
+public class CachingHttpContentFactory extends ContainerLifeCycle implements HttpContent.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(CachingHttpContentFactory.class);
     private static final int DEFAULT_MAX_CACHED_FILE_SIZE = 128 * 1024 * 1024;
@@ -80,6 +81,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     public CachingHttpContentFactory(HttpContent.Factory authority, ByteBufferPool.Sized bufferPool)
     {
         _authority = authority;
+        addBean(_authority, true);
         _bufferPool = bufferPool != null ? bufferPool : ByteBufferPool.SIZED_NON_POOLING;
     }
 
