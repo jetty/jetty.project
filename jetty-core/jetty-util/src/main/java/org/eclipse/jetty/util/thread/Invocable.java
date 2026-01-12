@@ -238,17 +238,16 @@ public interface Invocable
      */
     static InvocationType combine(InvocationType it1, InvocationType it2)
     {
-        if (it1 == null && it2 == null)
-            return InvocationType.NON_BLOCKING;
-        if (it1 != null && it2 != null)
-        {
-            if (it1 == it2)
-                return it1;
-            if (it1 == InvocationType.EITHER)
-                return it2;
-            if (it2 == InvocationType.EITHER)
-                return it1;
-        }
+        if (it1 == null)
+            return it2 == null ? InvocationType.NON_BLOCKING : it2;
+        if (it2 == null)
+            return it1;
+        if (it1 == it2)
+            return it1;
+        if (it1 == InvocationType.EITHER)
+            return it2;
+        if (it2 == InvocationType.EITHER)
+            return it1;
         return InvocationType.BLOCKING;
     }
 
