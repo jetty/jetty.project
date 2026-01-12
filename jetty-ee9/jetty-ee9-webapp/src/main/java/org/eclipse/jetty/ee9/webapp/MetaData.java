@@ -38,11 +38,7 @@ public class MetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(MetaData.class);
 
-    /**
-     * @deprecated use {@link WebAppContext#VALIDATE_XML} instead
-     */
-    @Deprecated(since = "12.1.6", forRemoval = true)
-    public static final String VALIDATE_XML = WebAppContext.VALIDATE_XML;
+    public static final String VALIDATE_XML = "org.eclipse.jetty.ee9.webapp.validateXml";
     public static final String ORDERED_LIBS = "jakarta.servlet.context.orderedLibs";
 
     private final AutoLock _lock = new AutoLock();
@@ -63,6 +59,7 @@ public class MetaData
     protected final List<Resource> _orderedWebInfResources = new ArrayList<>();
     protected Ordering _ordering; //can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
+    protected boolean _validateXml = false;
 
     public enum Complete
     {
@@ -753,7 +750,7 @@ public class MetaData
      */
     public boolean isValidateXml()
     {
-        return getXmlParser().isValidating();
+        return _validateXml;
     }
 
     /**
@@ -762,10 +759,12 @@ public class MetaData
      */
     public void setValidateXml(boolean validateXml)
     {
-        if (_xmlParser != null)
+        if (_xmlParser != null && _xmlParser.isValidating() != _validateXml)
             throw new IllegalStateException("XmlParser previously set");
 
-        setXmlParser(new XmlParser(validateXml));
+        _validateXml = validateXml;
+
+        setXmlParser(new XmlParser(_validateXml));
     }
 
     /**
@@ -779,7 +778,9 @@ public class MetaData
      */
     public void setXmlParser(XmlParser xmlParser)
     {
-        _xmlParser = WebDescriptor.addDescriptorCatalog(Objects.requireNonNull(xmlParser));
+        _xmlParser = Objects.requireNonNull(xmlParser);
+
+        WebDescriptor.addDescriptorCatalog(_xmlParser);
     }
 
     /**
@@ -790,7 +791,7 @@ public class MetaData
     public XmlParser getXmlParser()
     {
         if (_xmlParser == null)
-            setXmlParser(new XmlParser(false)); // defaults to false
+            setXmlParser(new XmlParser(isValidateXml()));
         return _xmlParser;
     }
 

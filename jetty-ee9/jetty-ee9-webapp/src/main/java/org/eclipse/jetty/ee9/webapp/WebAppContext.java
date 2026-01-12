@@ -91,7 +91,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee9/webapp/webdefault-ee9.xml";
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
-    public static final String VALIDATE_XML = "org.eclipse.jetty.ee9.webapp.validateXml";
     /**
      * @deprecated use {@link WebAppClassLoading#PROTECTED_CLASSES_ATTRIBUTE} instead.
      */
@@ -577,7 +576,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         try
         {
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
-            Boolean validate = (Boolean)getAttribute(WebAppContext.VALIDATE_XML);
+            Boolean validate = (Boolean)getAttribute(MetaData.VALIDATE_XML);
             // don't set validate unless it is declared.
             // user might be using a custom XmlParser will not want that XmlParser replaced.
             if (validate != null)

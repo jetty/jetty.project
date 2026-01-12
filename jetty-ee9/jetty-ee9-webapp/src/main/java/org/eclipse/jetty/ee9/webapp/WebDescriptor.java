@@ -83,10 +83,12 @@ public class WebDescriptor extends Descriptor
     @Deprecated(since = "12.1.6", forRemoval = true)
     public static XmlParser newParser(boolean validating)
     {
-        return addDescriptorCatalog(new XmlParser(validating));
+        XmlParser xmlParser = new XmlParser(validating);
+        addDescriptorCatalog(xmlParser);
+        return xmlParser;
     }
 
-    protected static XmlParser addDescriptorCatalog(XmlParser xmlParser) throws IllegalStateException
+    protected static void addDescriptorCatalog(XmlParser xmlParser) throws IllegalStateException
     {
         String catalogName = "catalog-%s.xml".formatted(ContextHandler.ENVIRONMENT.getName());
         URL url = WebDescriptor.class.getResource(catalogName);
@@ -100,7 +102,6 @@ public class WebDescriptor extends Descriptor
         {
             throw new IllegalStateException("Unable to add catalog: " + url, e);
         }
-        return xmlParser;
     }
 
     public WebDescriptor(Resource xml)
