@@ -328,9 +328,7 @@ public class CompressionHandler extends Handler.Wrapper
         if (decompressEncoding != null)
             request = newDecompressionRequest(request, decompressEncoding);
 
-        // Add Vary header if compression is possible for this request (method + path match).
-        // This must be added regardless of whether Accept-Encoding was present, so caching
-        // proxies know the response may vary based on Accept-Encoding.
+        // Add Vary header if compression is possible for this method.
         if (config.isCompressMethodSupported(request.getMethod()))
         {
             response.getHeaders().ensureField(varyAcceptEncoding);
