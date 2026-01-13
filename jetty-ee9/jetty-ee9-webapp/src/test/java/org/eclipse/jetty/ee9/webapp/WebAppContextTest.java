@@ -1102,6 +1102,10 @@ public class WebAppContextTest
 
     public static class MyXmlParser extends XmlParser
     {
+        public MyXmlParser()
+        {
+            super(false);
+        }
     }
 
     private static URI toURI(URL url)
