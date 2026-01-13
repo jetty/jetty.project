@@ -22,12 +22,17 @@ import java.util.Set;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.content.HttpContent.Factory;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * This {@link HttpContent.Factory} populates the {@link HttpContent#getPreCompressedContentFormats()} field for any
  * {@link HttpContent} fetched through this factory.
  */
+@ManagedObject
 public class PreCompressedHttpContentFactory extends ContainerLifeCycle implements HttpContent.Factory
 {
     private final HttpContent.Factory _factory;
@@ -61,6 +66,12 @@ public class PreCompressedHttpContentFactory extends ContainerLifeCycle implemen
         }
 
         return new CompressedFormatsHttpContent(content, compressedFormats);
+    }
+
+    @ManagedAttribute(value = "Configured pre-compressed format extensions that will be probed.", readonly = true)
+    public List<String> getPreCompressedFormats()
+    {
+        return _preCompressedFormats.stream().map(CompressedContentFormat::toString).collect(toList());
     }
 
     @Override

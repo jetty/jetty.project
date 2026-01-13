@@ -17,6 +17,8 @@ import java.io.IOException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -27,6 +29,7 @@ import org.slf4j.LoggerFactory;
  * an entry in every directory. If any request is made for this resources file name, and it is not
  * already present in that directory then the resource contained in this factory will be served instead.
  */
+@ManagedObject
 public class VirtualHttpContentFactory extends ContainerLifeCycle implements HttpContent.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(VirtualHttpContentFactory.class);
@@ -52,9 +55,22 @@ public class VirtualHttpContentFactory extends ContainerLifeCycle implements Htt
     /**
      * @return Returns the stylesheet as a Resource.
      */
+    @ManagedAttribute("Resource served when the requested path matches the suffix and the delegate factory has no content.")
     public Resource getResource()
     {
         return _resource;
+    }
+
+    @ManagedAttribute("Content-Type used for the virtual Resource when served.")
+    public String getContentType()
+    {
+        return _contentType;
+    }
+
+    @ManagedAttribute("Suffix used to match paths that should be served the virtual Resource.")
+    public String getMatchSuffix()
+    {
+        return _matchSuffix;
     }
 
     @Override

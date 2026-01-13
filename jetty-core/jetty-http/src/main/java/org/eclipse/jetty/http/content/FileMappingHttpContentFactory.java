@@ -25,10 +25,13 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ManagedObject
 public class FileMappingHttpContentFactory extends ContainerLifeCycle implements HttpContent.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileMappingHttpContentFactory.class);
@@ -89,6 +92,18 @@ public class FileMappingHttpContentFactory extends ContainerLifeCycle implements
             }
         }
         return content;
+    }
+
+    @ManagedAttribute("The minimum size of an HttpContent before trying to use a file mapped buffer.")
+    public int getMinFileSize()
+    {
+        return _minFileSize;
+    }
+
+    @ManagedAttribute("The maximum size of the memory mapped buffers.")
+    public int getMaxBufferSize()
+    {
+        return _maxBufferSize;
     }
 
     private static class SingleBufferFileMappedHttpContent extends HttpContent.Wrapper

@@ -19,6 +19,8 @@ import java.util.Objects;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -28,6 +30,7 @@ import org.eclipse.jetty.util.resource.Resources;
  * this factory are not intended to be cached, so memory limits for individual
  * HttpOutput streams are enforced.
  */
+@ManagedObject
 public class ResourceHttpContentFactory implements HttpContent.Factory
 {
     private final Resource _baseResource;
@@ -65,6 +68,12 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
             saferException.initCause(t);
             throw saferException;
         }
+    }
+
+    @ManagedAttribute("Base Resource used as the root for resolving requested paths.")
+    public Resource getBaseResource()
+    {
+        return _baseResource;
     }
 
     protected Resource resolve(String pathInContext)
