@@ -763,8 +763,6 @@ public class MetaData
             throw new IllegalStateException("XmlParser previously set");
 
         _validateXml = validateXml;
-
-        setXmlParser(new XmlParser(_validateXml));
     }
 
     /**
