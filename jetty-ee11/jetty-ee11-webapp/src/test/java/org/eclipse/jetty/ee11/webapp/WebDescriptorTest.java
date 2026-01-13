@@ -47,7 +47,7 @@ public class WebDescriptorTest
             """, StandardCharsets.UTF_8);
 
         WebDescriptor webDescriptor = new WebDescriptor(ResourceFactory.root().newResource(xml));
-        XmlParser xmlParser = WebDescriptor.newParser(true);
+        XmlParser xmlParser = new XmlParser(true);
         // This should not throw an exception, if it does then you have a bad state.
         // Such as missing required XML resource entities.
         webDescriptor.parse(xmlParser);
