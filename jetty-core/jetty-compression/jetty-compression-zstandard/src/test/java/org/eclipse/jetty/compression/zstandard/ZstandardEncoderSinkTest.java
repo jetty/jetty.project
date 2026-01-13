@@ -19,12 +19,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -36,52 +38,24 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ZstandardEncoderSinkTest extends AbstractZstdTest
 {
-    @Test
-    public void testFrequentFlushingAtBoundarySmallBuffer() throws Exception
+    public static Stream<Arguments> frequentFlushingCases()
     {
-        startZstd();
-
-        // Build expected content: 21847 lines of "NNNNN\n" (6 bytes each)
-        // 21845 * 6 = 131070 bytes, just under 128KB boundary
-        StringBuilder expected = new StringBuilder();
-        for (int i = 1; i <= 21847; i++)
-        {
-            expected.append(String.format("%05d\n", i));
-        }
-
-        byte[] compressed;
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
-        {
-            Content.Sink fileSink = Content.Sink.from(baos);
-            // Use default config (8KB buffer)
-            Content.Sink encoderSink = zstd.newEncoderSink(fileSink);
-
-            // Write each line separately (frequent flushing)
-            for (int i = 1; i <= 21847; i++)
-            {
-                String line = String.format("%05d\n", i);
-                boolean isLast = (i == 21847);
-                Callback.Completable callback = new Callback.Completable();
-                encoderSink.write(isLast, ByteBuffer.wrap(line.getBytes(UTF_8)), callback);
-                callback.get();
-            }
-            compressed = baos.toByteArray();
-        }
-
-        // Decompress and verify - should match exactly
-        String decompressed = new String(decompress(compressed), UTF_8);
-        assertEquals(expected.toString(), decompressed);
+        return Stream.of(
+            // lineCount, bufferSize (-1 means default)
+            Arguments.of(21847, -1),
+            Arguments.of(21847, 132 * 1024),
+            Arguments.of(50000, 132 * 1024)
+        );
     }
 
-    @Test
-    public void testFrequentFlushingAtBoundaryLargeBuffer() throws Exception
+    @ParameterizedTest
+    @MethodSource("frequentFlushingCases")
+    public void testFrequentFlushing(int lineCount, int bufferSize) throws Exception
     {
         startZstd();
 
-        // Build expected content: 21847 lines of "NNNNN\n" (6 bytes each)
-        // 21845 * 6 = 131070 bytes, just under 128KB boundary
         StringBuilder expected = new StringBuilder();
-        for (int i = 1; i <= 21847; i++)
+        for (int i = 1; i <= lineCount; i++)
         {
             expected.append(String.format("%05d\n", i));
         }
@@ -90,16 +64,22 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
         {
             Content.Sink fileSink = Content.Sink.from(baos);
-            // Use larger buffer (132KB as recommended by zstd)
-            ZstandardEncoderConfig config = new ZstandardEncoderConfig();
-            config.setBufferSize(132 * 1024);
-            Content.Sink encoderSink = zstd.newEncoderSink(fileSink, config);
+            Content.Sink encoderSink;
+            if (bufferSize > 0)
+            {
+                ZstandardEncoderConfig config = new ZstandardEncoderConfig();
+                config.setBufferSize(bufferSize);
+                encoderSink = zstd.newEncoderSink(fileSink, config);
+            }
+            else
+            {
+                encoderSink = zstd.newEncoderSink(fileSink);
+            }
 
-            // Write each line separately (frequent flushing)
-            for (int i = 1; i <= 21847; i++)
+            for (int i = 1; i <= lineCount; i++)
             {
                 String line = String.format("%05d\n", i);
-                boolean isLast = (i == 21847);
+                boolean isLast = (i == lineCount);
                 Callback.Completable callback = new Callback.Completable();
                 encoderSink.write(isLast, ByteBuffer.wrap(line.getBytes(UTF_8)), callback);
                 callback.get();
@@ -107,46 +87,6 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
             compressed = baos.toByteArray();
         }
 
-        // Decompress and verify - should match exactly
-        String decompressed = new String(decompress(compressed), UTF_8);
-        assertEquals(expected.toString(), decompressed);
-    }
-
-    @Test
-    public void testFrequentFlushingLargeBufferMultipleIterations() throws Exception
-    {
-        startZstd();
-
-        // Build expected content: 50000 lines of "NNNNN\n" (6 bytes each) = 300KB
-        // This exceeds 132KB buffer, forcing multiple iterations
-        StringBuilder expected = new StringBuilder();
-        for (int i = 1; i <= 50000; i++)
-        {
-            expected.append(String.format("%05d\n", i));
-        }
-
-        byte[] compressed;
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
-        {
-            Content.Sink fileSink = Content.Sink.from(baos);
-            // Use larger buffer (132KB as recommended by zstd)
-            ZstandardEncoderConfig config = new ZstandardEncoderConfig();
-            config.setBufferSize(132 * 1024);
-            Content.Sink encoderSink = zstd.newEncoderSink(fileSink, config);
-
-            // Write each line separately (frequent flushing)
-            for (int i = 1; i <= 50000; i++)
-            {
-                String line = String.format("%05d\n", i);
-                boolean isLast = (i == 50000);
-                Callback.Completable callback = new Callback.Completable();
-                encoderSink.write(isLast, ByteBuffer.wrap(line.getBytes(UTF_8)), callback);
-                callback.get();
-            }
-            compressed = baos.toByteArray();
-        }
-
-        // Decompress and verify - should match exactly
         String decompressed = new String(decompress(compressed), UTF_8);
         assertEquals(expected.toString(), decompressed);
     }
