@@ -577,8 +577,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
             Boolean validate = (Boolean)getAttribute(MetaData.VALIDATE_XML);
-            // don't set validate unless it is declared.
-            // user might be using a custom XmlParser will not want that XmlParser replaced.
+            // Don't set validate unless it is declared.
             if (validate != null)
                 _metadata.setValidateXml(validate);
             wrapConfigurations();
