@@ -19,6 +19,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
@@ -91,6 +92,6 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
     @Override
     public String toString()
     {
-        return "ResourceContentFactory[" + _baseResource + "]@" + hashCode();
+        return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), _baseResource);
     }
 }

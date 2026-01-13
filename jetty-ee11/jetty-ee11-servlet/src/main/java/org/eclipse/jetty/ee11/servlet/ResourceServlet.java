@@ -417,7 +417,7 @@ public class ResourceServlet extends HttpServlet
     public void destroy()
     {
         ServletContextHandler contextHandler = initContextHandler(getServletContext());
-        contextHandler.removeBean(this);
+        contextHandler.removeBean(_resourceService);
     }
 
     private ByteBufferPool.Sized getByteBufferPool(ContextHandler contextHandler)
