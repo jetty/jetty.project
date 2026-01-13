@@ -36,16 +36,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ZstandardEncoderSinkTest extends AbstractZstdTest
 {
-    /**
-     * Test that frequent flushing causes byte duplication at the 128KB boundary with small buffer.
-     */
     @Test
     public void testFrequentFlushingAtBoundarySmallBuffer() throws Exception
     {
         startZstd();
 
-        // Build expected content: 21847 lines of "XXXXX\n" (6 bytes each)
-        // 21845 * 6 = 131070 bytes, which is just under 128KB boundary
+        // Build expected content: 21847 lines of "NNNNN\n" (6 bytes each)
+        // 21845 * 6 = 131070 bytes, just under 128KB boundary
         StringBuilder expected = new StringBuilder();
         for (int i = 1; i <= 21847; i++)
         {
@@ -76,18 +73,13 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
         assertEquals(expected.toString(), decompressed);
     }
 
-    /**
-     * Test that frequent flushing works correctly with recommended 132KB buffer.
-     * Note: This test uses data that fits entirely in 132KB buffer, so it may
-     * pass simply by avoiding multiple iterations through the encoder loop.
-     */
     @Test
     public void testFrequentFlushingAtBoundaryLargeBuffer() throws Exception
     {
         startZstd();
 
-        // Build expected content: 21847 lines of "XXXXX\n" (6 bytes each)
-        // 21845 * 6 = 131070 bytes, which is just under 128KB boundary
+        // Build expected content: 21847 lines of "NNNNN\n" (6 bytes each)
+        // 21845 * 6 = 131070 bytes, just under 128KB boundary
         StringBuilder expected = new StringBuilder();
         for (int i = 1; i <= 21847; i++)
         {
@@ -120,16 +112,12 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
         assertEquals(expected.toString(), decompressed);
     }
 
-    /**
-     * Test with data exceeding 132KB to force multiple iterations even with large buffer.
-     * 50000 lines * 6 bytes = 300KB, requiring multiple buffer fills even with 132KB buffer.
-     */
     @Test
     public void testFrequentFlushingLargeBufferMultipleIterations() throws Exception
     {
         startZstd();
 
-        // Build expected content: 50000 lines of "XXXXX\n" (6 bytes each) = 300KB
+        // Build expected content: 50000 lines of "NNNNN\n" (6 bytes each) = 300KB
         // This exceeds 132KB buffer, forcing multiple iterations
         StringBuilder expected = new StringBuilder();
         for (int i = 1; i <= 50000; i++)
