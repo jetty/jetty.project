@@ -318,7 +318,8 @@ public class ResourceServlet extends HttpServlet
                 contentFactory = new FileMappingHttpContentFactory(contentFactory);
 
             contentFactory = new VirtualHttpContentFactory(contentFactory, styleSheet, "text/css", bufferPool);
-            contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
+            if (!precompressedFormats.isEmpty())
+                contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
 
             int maxCacheSize = getInitInt("maxCacheSize", -2);
             int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);

@@ -152,7 +152,9 @@ public class ResourceHandler extends Handler.Wrapper
         if (getMinMappedFileSize() != 0)
             contentFactory = new FileMappingHttpContentFactory(contentFactory, getMinMappedFileSize(), getMaxMappedFileSize());
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css", byteBufferPool);
-        contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
+        List<CompressedContentFormat> precompressedFormats = getPrecompressedFormats();
+        if (!precompressedFormats.isEmpty())
+            contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
         contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), byteBufferPool);
         return contentFactory;
     }
