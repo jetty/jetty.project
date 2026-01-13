@@ -21,11 +21,13 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.KeyShare;
 import org.eclipse.jetty.tls.NamedGroup;
 import org.eclipse.jetty.tls.ext.KeyShareExtension;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class KeyShareExtensionParser implements ExtensionParser
 {
     private final List<KeyShare> shares = new ArrayList<>();
     private final ExtensionParser.Listener listener;
+    private final boolean client;
     private State state = State.TOTAL_LENGTH;
     private int totalLength;
     private int listLength;
@@ -34,9 +36,10 @@ public class KeyShareExtensionParser implements ExtensionParser
     private byte[] keyExchange;
     private int cursor;
 
-    public KeyShareExtensionParser(Listener listener)
+    public KeyShareExtensionParser(Listener listener, boolean client)
     {
         this.listener = listener;
+        this.client = client;
     }
 
     @Override
@@ -52,7 +55,7 @@ public class KeyShareExtensionParser implements ExtensionParser
         {
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             int remaining = byteBuffer.remaining();
-            if (remaining == 0)
+            if (remaining == 0 && state != State.KEY_EXCHANGE)
                 return -1;
             switch (state)
             {
@@ -61,9 +64,13 @@ public class KeyShareExtensionParser implements ExtensionParser
                     if (remaining > 1)
                     {
                         totalLength = byteBuffer.getShort() & 0xFFFF;
-                        if (totalLength < 4)
+                        // The format of this extension is different depending on
+                        // whether is in a ClientHello, ServerHello or RetryHelloRequest.
+                        // RFC 8446, 4.2.8.
+                        boolean isRetryFormat = client && totalLength == 2;
+                        if (!isRetryFormat && totalLength < 4)
                             throw new IllegalStateException("invalid key share extension length " + totalLength);
-                        state = State.LIST_LENGTH;
+                        state = client ? State.GROUP : State.LIST_LENGTH;
                     }
                     else
                     {
@@ -78,9 +85,10 @@ public class KeyShareExtensionParser implements ExtensionParser
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
                     {
-                        if (totalLength < 4)
+                        boolean isRetryFormat = client && totalLength == 2;
+                        if (!isRetryFormat && totalLength < 4)
                             throw new IllegalStateException("invalid key share extension length " + totalLength);
-                        state = State.LIST_LENGTH;
+                        state = client ? State.GROUP : State.LIST_LENGTH;
                     }
                 }
                 case LIST_LENGTH ->
@@ -109,8 +117,9 @@ public class KeyShareExtensionParser implements ExtensionParser
                     if (remaining > 1)
                     {
                         group = byteBuffer.getShort() & 0xFFFF;
-                        listLength -= 2;
-                        state = State.KEY_EXCHANGE_LENGTH;
+                        if (!client)
+                            listLength -= 2;
+                        state = totalLength == 2 ? State.KEY_EXCHANGE : State.KEY_EXCHANGE_LENGTH;
                     }
                     else
                     {
@@ -125,8 +134,9 @@ public class KeyShareExtensionParser implements ExtensionParser
                     group += b << (8 * cursor);
                     if (cursor == 0)
                     {
-                        listLength -= 2;
-                        state = State.KEY_EXCHANGE_LENGTH;
+                        if (!client)
+                            listLength -= 2;
+                        state = totalLength == 2 ? State.KEY_EXCHANGE : State.KEY_EXCHANGE_LENGTH;
                     }
                 }
                 case KEY_EXCHANGE_LENGTH ->
@@ -134,7 +144,8 @@ public class KeyShareExtensionParser implements ExtensionParser
                     if (remaining > 1)
                     {
                         keyExchangeLength = byteBuffer.getShort() & 0xFFFF;
-                        listLength -= 2;
+                        if (!client)
+                            listLength -= 2;
                         keyExchange = new byte[keyExchangeLength];
                         state = State.KEY_EXCHANGE_BYTES;
                     }
@@ -151,7 +162,8 @@ public class KeyShareExtensionParser implements ExtensionParser
                     keyExchangeLength += b << (8 * cursor);
                     if (cursor == 0)
                     {
-                        listLength -= 2;
+                        if (!client)
+                            listLength -= 2;
                         keyExchange = new byte[keyExchangeLength];
                         state = State.KEY_EXCHANGE_BYTES;
                     }
@@ -161,14 +173,17 @@ public class KeyShareExtensionParser implements ExtensionParser
                     int offset = keyExchange.length - keyExchangeLength;
                     int length = Math.min(keyExchangeLength, remaining);
                     byteBuffer.get(keyExchange, offset, length);
-                    listLength -= length;
+                    if (!client)
+                        listLength -= length;
                     keyExchangeLength -= length;
                     if (keyExchangeLength == 0)
-                    {
-                        int result = keyExchangeComplete();
-                        if (result > 0)
-                            return result;
-                    }
+                        state = State.KEY_EXCHANGE;
+                }
+                case KEY_EXCHANGE ->
+                {
+                    int result = keyExchangeComplete();
+                    if (result > 0)
+                        return result;
                 }
             }
         }
@@ -179,7 +194,7 @@ public class KeyShareExtensionParser implements ExtensionParser
         NamedGroup namedGroup = NamedGroup.from(group);
         if (namedGroup == null)
             throw new IllegalArgumentException("unknown named group " + Integer.toHexString(group));
-        shares.add(new KeyShare(namedGroup, keyExchange));
+        shares.add(new KeyShare(namedGroup, keyExchange != null ? keyExchange : BufferUtil.EMPTY_BYTES));
         group = 0;
         keyExchange = null;
         if (listLength == 0)
@@ -209,6 +224,7 @@ public class KeyShareExtensionParser implements ExtensionParser
         GROUP_BYTES,
         KEY_EXCHANGE_LENGTH,
         KEY_EXCHANGE_LENGTH_BYTES,
-        KEY_EXCHANGE_BYTES
+        KEY_EXCHANGE_BYTES,
+        KEY_EXCHANGE
     }
 }

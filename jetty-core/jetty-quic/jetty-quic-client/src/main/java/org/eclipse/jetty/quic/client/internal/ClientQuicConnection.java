@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.client.internal;
 
+import java.net.SocketAddress;
 import java.util.Map;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -21,9 +22,10 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
-import org.eclipse.jetty.quic.common.tls.ClientQuicTLS;
+import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -50,8 +52,9 @@ public class ClientQuicConnection extends QuicConnection implements Promise.Invo
     public void onOpen()
     {
         PacketNumbers packetNumbers = new PacketNumbers();
-        ClientQuicTLS clientQuicTLS = new ClientQuicTLS(connector.getByteBufferPool(), packetNumbers);
-        session = new ClientQuicSession(connector, quicConfiguration, packetNumbers, clientQuicTLS, getEndPoint(), context);
+        PacketProtector protector = new PacketProtector(connector.getByteBufferPool(), packetNumbers);
+        ClientTLSEngine clientTLSEngine = new ClientTLSEngine(protector);
+        session = new ClientQuicSession(connector, quicConfiguration, packetNumbers, clientTLSEngine, getEndPoint(), context);
         session.connect(this);
     }
 
@@ -65,12 +68,15 @@ public class ClientQuicConnection extends QuicConnection implements Promise.Invo
     @Override
     public void failed(Throwable x)
     {
-        // TODO
+        session.fail(x);
     }
 
     @Override
-    protected void process(RetainableByteBuffer buffer) throws Exception
+    protected void process(SocketAddress address, RetainableByteBuffer buffer) throws Exception
     {
-        session.process(buffer);
+        // TODO: in the server implementation, we will need to pick a session
+        //  based on the dstConnectionId, and delegate to that session.
+
+        session.process(address, buffer);
     }
 }

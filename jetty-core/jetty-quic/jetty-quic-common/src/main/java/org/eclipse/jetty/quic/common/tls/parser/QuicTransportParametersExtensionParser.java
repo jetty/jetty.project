@@ -63,7 +63,7 @@ public class QuicTransportParametersExtensionParser implements ExtensionParser
                     if (remaining > 1)
                     {
                         totalLength = (byteBuffer.getShort() & 0xFFFF);
-                        listLength = totalLength - 2;
+                        listLength = totalLength;
                         state = State.ID;
                     }
                     else
@@ -79,7 +79,7 @@ public class QuicTransportParametersExtensionParser implements ExtensionParser
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
                     {
-                        listLength = totalLength - 2;
+                        listLength = totalLength;
                         state = State.ID;
                     }
                 }

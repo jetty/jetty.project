@@ -19,6 +19,6 @@ import org.eclipse.jetty.quic.common.PacketBuffers;
 
 public interface Encrypter
 {
-    // TODO: remove encryptionLevel parameter? It should be available in the QuicTLS state.
+    // TODO: remove encryptionLevel parameter? It should be available in the TLSEngine state.
     PacketBuffers encrypt(EncryptionLevel encryptionLevel, long packetNumber, RetainableByteBuffer header, RetainableByteBuffer payload) throws Exception;
 }

@@ -21,7 +21,9 @@ import java.util.Map;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.api.frames.PaddingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
+import org.eclipse.jetty.quic.common.internal.frames.AckFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.ConnectionCloseParser;
 import org.eclipse.jetty.quic.common.internal.frames.CryptoFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.DataBlockedParser;
@@ -50,7 +52,7 @@ public class FramesParser
         VarLenInt varLenInt = new VarLenInt();
         parsers.put(FrameType.PADDING, new PaddingFrameParser());
         parsers.put(FrameType.PING, null/*TODO*/);
-        parsers.put(FrameType.ACK, null/*TODO*/);
+        parsers.put(FrameType.ACK, new AckFrameParser());
         parsers.put(FrameType.RESET_STREAM, new ResetStreamParser(varLenInt));
         parsers.put(FrameType.STOP_SENDING, new StopSendingParser(varLenInt));
         parsers.put(FrameType.CRYPTO, new CryptoFrameParser(varLenInt));
@@ -103,7 +105,10 @@ public class FramesParser
             {
                 case FRAME_TYPE ->
                 {
-                    type = byteBuffer.get() & 0xFF;
+                    // Only peek the type byte, since FrameParsers
+                    // for frames that may have multiple types such
+                    // as ACK or STREAM need to know the exact value.
+                    type = byteBuffer.get(byteBuffer.position()) & 0xFF;
                     state = State.FRAME_BODY;
                 }
                 case FRAME_BODY ->
@@ -142,8 +147,9 @@ public class FramesParser
             if (frame == null)
                 throw new IllegalStateException("insufficient bytes to parse a frame");
             // Drop PADDING frames.
-            if (frame.type() != 0)
-                result.add(frame);
+            if (frame instanceof PaddingFrame)
+                continue;
+            result.add(frame);
         }
         return result;
     }

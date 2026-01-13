@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
+import java.util.List;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.KeyShare;
 import org.eclipse.jetty.tls.ext.Extension;
@@ -20,6 +22,13 @@ import org.eclipse.jetty.tls.ext.KeyShareExtension;
 
 public class KeyShareExtensionGenerator implements ExtensionGenerator
 {
+    private final boolean client;
+
+    public KeyShareExtensionGenerator(boolean client)
+    {
+        this.client = client;
+    }
+
     @Override
     public int type()
     {
@@ -35,19 +44,50 @@ public class KeyShareExtensionGenerator implements ExtensionGenerator
     private int generate(RetainableByteBuffer.Mutable accumulator, KeyShareExtension extension)
     {
         accumulator.putShort((short)extension.code());
-        int listLength = extension.keyShares().stream()
-            .mapToInt(keyShare -> 2 + 2 + keyShare.keyExchange().length)
-            .sum();
-        int totalLength = 2 + listLength;
-        accumulator.putShort((short)totalLength);
-        accumulator.putShort((short)listLength);
-        for (KeyShare keyShare : extension.keyShares())
+        List<KeyShare> keyShares = extension.keyShares();
+        if (client)
         {
-            accumulator.putShort((short)keyShare.group().code());
-            byte[] keyExchange = keyShare.keyExchange();
-            accumulator.putShort((short)keyExchange.length);
-            accumulator.put(keyExchange);
+            int listLength = keyShares.stream()
+                .mapToInt(keyShare -> 2 + 2 + keyShare.keyExchange().length)
+                .sum();
+            int totalLength = 2 + listLength;
+            accumulator.putShort((short)totalLength);
+            accumulator.putShort((short)listLength);
+            for (KeyShare keyShare : keyShares)
+            {
+                accumulator.putShort((short)keyShare.group().code());
+                byte[] keyExchange = keyShare.keyExchange();
+                accumulator.putShort((short)keyExchange.length);
+                accumulator.put(keyExchange);
+            }
+            return 2 + 2 + totalLength;
         }
-        return 2 + 2 + totalLength;
+        else
+        {
+            // There must be only one KeyShare.
+            if (keyShares.size() != 1)
+                throw new IllegalStateException("invalid key shares " + keyShares);
+            KeyShare keyShare = keyShares.getFirst();
+            // Detect whether it is a ServerHello or a RetryHelloRequest.
+            int length = keyShare.keyExchange().length;
+            if (length > 0)
+            {
+                // ServerHello.
+                int totalLength = 2 + 2 + length;
+                accumulator.putShort((short)totalLength);
+                accumulator.putShort((short)keyShare.group().code());
+                accumulator.putShort((short)length);
+                accumulator.put(keyShare.keyExchange());
+                return 2 + 2 + totalLength;
+            }
+            else
+            {
+                // RetryHelloRequest.
+                int totalLength = 2;
+                accumulator.putShort((short)totalLength);
+                accumulator.putShort((short)keyShare.group().code());
+                return 2 + 2 + totalLength;
+            }
+        }
     }
 }

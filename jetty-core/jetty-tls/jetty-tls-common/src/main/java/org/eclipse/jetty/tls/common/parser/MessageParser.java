@@ -31,6 +31,6 @@ public interface MessageParser
 
     interface Listener
     {
-        void onMessage(Message message);
+        void onMessageParsed(Message message);
     }
 }

@@ -66,22 +66,7 @@ public class HandshakePacketParser implements PacketParser
         //  The promise boolean indicates whether to continue processing.
         //  In this way, we can write a buffer-level proxy for plaintext QUIC.
 
-        Packet packet = parse(packetBuffers);
-
-        packetBuffers.header().release();
-        packetBuffers.payload().release();
-
-        return packet;
-    }
-
-    private Packet parse(PacketBuffers packetBuffers)
-    {
-        parseHeader(packetBuffers.header());
-        return parsePayload(packetBuffers.payload());
-    }
-
-    private void parseHeader(RetainableByteBuffer header)
-    {
+        RetainableByteBuffer header = packetBuffers.header();
         ByteBuffer byteBuffer = header.getByteBuffer();
 
         if (LOG.isDebugEnabled())
@@ -107,18 +92,19 @@ public class HandshakePacketParser implements PacketParser
         byteBuffer.get(encodedPacketNumber);
         packetNumber = packetNumbers.decode(EncryptionLevel.HANDSHAKE, encodedPacketNumber);
 
+        assert byteBuffer.remaining() == 0;
+        header.release();
+
         if (LOG.isDebugEnabled())
             LOG.debug("parsed HandshakePacket header, version={} packetNumber={} length={}", quicVersion, packetNumber, length);
 
-        assert byteBuffer.remaining() == 0;
-    }
-
-    private Packet parsePayload(RetainableByteBuffer payload)
-    {
+        RetainableByteBuffer payload = packetBuffers.payload();
         if (LOG.isDebugEnabled())
             LOG.debug("parsing HandshakePacket payload {}", BufferUtil.toDetailString(payload.getByteBuffer()));
 
         List<Frame> frames = framesParser.consume(payload);
+        payload.release();
+
         HandshakePacket packet = new HandshakePacket(quicVersion, dstConnectionId, srcConnectionId, packetNumber, frames);
 
         if (LOG.isDebugEnabled())

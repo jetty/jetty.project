@@ -38,7 +38,7 @@ public class QuicClient extends ContainerLifeCycle
 
     private final QuicClientQuicConfiguration quicConfiguration;
     private final ClientConnector clientConnector;
-    private List<String> protocols = List.of("stream");
+    private List<String> protocols = List.of("http/1.1");
 
     public QuicClient(QuicClientQuicConfiguration quicConfiguration)
     {

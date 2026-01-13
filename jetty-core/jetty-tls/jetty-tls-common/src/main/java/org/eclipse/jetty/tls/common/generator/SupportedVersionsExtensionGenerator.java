@@ -22,6 +22,13 @@ import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
 
 public class SupportedVersionsExtensionGenerator implements ExtensionGenerator
 {
+    private final boolean client;
+
+    public SupportedVersionsExtensionGenerator(boolean client)
+    {
+        this.client = client;
+    }
+
     @Override
     public int type()
     {
@@ -38,10 +45,13 @@ public class SupportedVersionsExtensionGenerator implements ExtensionGenerator
     {
         accumulator.putShort((short)extension.code());
         List<TLSVersion> versions = extension.versions();
+        if (!client && versions.size() != 1)
+            throw new IllegalStateException("server must send one TLS version " + versions);
         int listLength = 2 * versions.size();
-        int totalLength = 1 + listLength;
+        int totalLength = client ? 1 + listLength : listLength;
         accumulator.putShort((short)totalLength);
-        accumulator.put((byte)listLength);
+        if (client)
+            accumulator.put((byte)listLength);
         for (TLSVersion version : versions)
         {
             accumulator.putShort((short)version.code());

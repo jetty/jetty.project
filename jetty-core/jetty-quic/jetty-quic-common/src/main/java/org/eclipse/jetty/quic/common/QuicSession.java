@@ -15,10 +15,11 @@ package org.eclipse.jetty.quic.common;
 
 import java.net.SocketAddress;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -27,11 +28,14 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
+import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
+import org.eclipse.jetty.quic.api.frames.StreamFrame;
+import org.eclipse.jetty.quic.common.frames.FrameStream;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.QuicFlusher;
 import org.eclipse.jetty.quic.common.internal.packets.PacketsParser;
@@ -39,9 +43,13 @@ import org.eclipse.jetty.quic.common.packets.HandshakePacket;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
-import org.eclipse.jetty.quic.common.tls.QuicTLS;
+import org.eclipse.jetty.quic.common.packets.RetryPacket;
+import org.eclipse.jetty.quic.common.tls.TLSEngine;
+import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,25 +57,31 @@ public abstract class QuicSession extends AbstractSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
-    private final List<Packet.Listener> packetListeners = new ArrayList<>();
-    private final QuicFlusher flusher = new QuicFlusher(this);
+    private final Map<Long, FrameStream> streamStreams = new HashMap<>();
     private final ByteBufferPool byteBufferPool;
-    private final PacketsParser parser;
     private final PacketNumbers packetNumbers;
-    private final QuicTLS quicTLS;
+    private final TLSEngine tlsEngine;
     private final EndPoint endPoint;
+    private final PacketsParser parser;
+    private final QuicFlusher flusher;
+    private final FrameStream cryptoStream;
+    private Packet.Listener packetListener;
     private byte[] dstConnectionId;
     private byte[] srcConnectionId;
 
-    protected QuicSession(Executor executor, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, PacketNumbers packetNumbers, QuicTLS quicTLS, Session.Listener listener, EndPoint endPoint)
+    protected QuicSession(Executor executor, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint)
     {
         super(executor, quicConfiguration, listener);
         this.byteBufferPool = byteBufferPool;
         this.packetNumbers = packetNumbers;
-        this.quicTLS = quicTLS;
+        this.tlsEngine = tlsEngine;
         this.endPoint = endPoint;
-        this.parser = new PacketsParser(quicTLS, packetNumbers, new FramesParser());
-        this.srcConnectionId = quicTLS.newRandomBytes(8);
+        this.parser = new PacketsParser(tlsEngine.getPacketProtector(), packetNumbers, new FramesParser());
+        this.flusher = new QuicFlusher(this);
+        this.cryptoStream = new FrameStream(this::processCryptoFrame);
+        this.packetListener = new PacketProcessor();
+        this.dstConnectionId = BufferUtil.EMPTY_BYTES;
+        this.srcConnectionId = tlsEngine.newRandomBytes(8);
     }
 
     public ByteBufferPool getByteBufferPool()
@@ -80,9 +94,9 @@ public abstract class QuicSession extends AbstractSession
         return packetNumbers;
     }
 
-    public QuicTLS getQuicTLS()
+    public TLSEngine getTLSEngine()
     {
-        return quicTLS;
+        return tlsEngine;
     }
 
     public EndPoint getEndPoint()
@@ -108,20 +122,24 @@ public abstract class QuicSession extends AbstractSession
     public Packet newPacket(List<Frame> frames)
     {
         QuicVersion quicVersion = getQuicConfiguration().getQuicVersion();
-        EncryptionLevel encryptionLevel = quicTLS.getEncryptionLevel();
-        return switch (encryptionLevel)
+        EncryptionLevel encryptionLevel = getTLSEngine().getPacketProtector().getEncryptionLevel();
+        Packet packet = switch (encryptionLevel)
         {
             case EncryptionLevel.INITIAL ->
             {
-                byte[] token = quicTLS.newRandomBytes(32);
-                yield new InitialPacket(quicVersion, getDestinationConnectionId(), getSourceConnectionId(), token, packetNumbers.nextPacketNumber(encryptionLevel), frames);
+                yield newInitialPacket(frames);
             }
             case EncryptionLevel.HANDSHAKE ->
                 new HandshakePacket(quicVersion, getDestinationConnectionId(), getSourceConnectionId(), packetNumbers.nextPacketNumber(encryptionLevel), frames);
             // TODO
             default -> throw new IllegalStateException();
         };
+        if (LOG.isDebugEnabled())
+            LOG.debug("produced {} on {}", packet, this);
+        return packet;
     }
+
+    protected abstract InitialPacket newInitialPacket(List<Frame> frames);
 
     /// Sends a CRYPTO frame on this session.
     ///
@@ -223,59 +241,170 @@ public abstract class QuicSession extends AbstractSession
 
     }
 
-    public void process(RetainableByteBuffer buffer) throws Exception
+    public void process(SocketAddress address, RetainableByteBuffer buffer) throws Exception
     {
         Packet packet = parser.parse(buffer);
+        if (packet == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("packet discarded on {}", this);
+            return;
+        }
 
         // RFC 9000, 7.2: the packet must be discarded
         // if destination connection ID does not match.
         if (!Arrays.equals(srcConnectionId, packet.destinationConnectionId()))
             return;
 
-        notifyIncomingPacket(packet);
-
-        process(packet);
+        notifyIncomingPacket(address, packet);
     }
 
-    private void process(Packet packet)
+    protected void processPacket(SocketAddress address, Packet packet)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} on {}", packet, this);
+
+        switch (packet)
+        {
+            case InitialPacket initialPacket ->
+            {
+                processFrames(initialPacket.frames());
+            }
+            case HandshakePacket handshakePacket ->
+            {
+                processFrames(handshakePacket.frames());
+            }
+            case RetryPacket _ ->
+            {
+                // Only processed by clients.
+            }
+//            case VersionNegotiationPacket _ ->
+//            {
+//                // Only processed by clients.
+//            }
+            // TODO: other packets.
+            default -> throw new UnsupportedOperationException();
+        }
+
         // TODO: whatever packet contains a CRYPTO, we must feed a FrameStream.
         //  It's then the FrameStream that notifies of TLS bytes.
         //  There is a crypto FrameStream per EncryptionLevel.
     }
 
-    public void addPacketListener(Packet.Listener listener)
+    protected void processFrames(List<Frame> frames)
     {
-        packetListeners.add(listener);
+        for (Frame frame : frames)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("processing {} on {}", frame, this);
+
+            switch (frame)
+            {
+                case AckFrame ackFrame ->
+                {
+                    // TODO: notify reliability data structure.
+                }
+                case CryptoFrame cryptoFrame ->
+                {
+                    cryptoStream.offer(cryptoFrame);
+                }
+                case StreamFrame streamFrame ->
+                {
+                    long streamId = streamFrame.streamId();
+                    streamStreams.computeIfAbsent(streamId, _ -> new FrameStream(this::processStreamFrame)).offer(streamFrame);
+                }
+                default ->
+                {
+                    // TODO: notify Session.Listener
+                }
+            }
+        }
     }
 
-    public void notifyIncomingPacket(Packet packet)
+    private void processCryptoFrame(Frame frame)
     {
-        for (Packet.Listener listener : packetListeners)
+        try
         {
-            try
+            CryptoFrame cryptoFrame = (CryptoFrame)frame;
+            RetainableByteBuffer data = cryptoFrame.data();
+            while (data.hasRemaining())
             {
-                listener.onIncomingPacket(this, packet);
+                Message message = getTLSEngine().getMessagesParser().parse(data);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("parsed {} on {}", message, this);
+                if (message == null)
+                    return;
+                tlsEngine.onMessageParsed(message);
             }
-            catch (Throwable x)
-            {
-                LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
-            }
+        }
+        catch (Throwable x)
+        {
+            fail(x);
+        }
+    }
+
+    private void processStreamFrame(Frame frame)
+    {
+        StreamFrame streamFrame = (StreamFrame)frame;
+        if (streamFrame.isEndStream())
+            streamStreams.remove(streamFrame.streamId());
+
+        // TODO: computeIfAbsent() the Stream object.
+        //  Then offer frame data to the stream object.
+        //  Then notify the Stream.Listener.
+    }
+
+    public Packet.Listener getPacketListener()
+    {
+        return packetListener;
+    }
+
+    public void setPacketListener(Packet.Listener listener)
+    {
+        packetListener = listener;
+    }
+
+    public void notifyIncomingPacket(SocketAddress address, Packet packet)
+    {
+        try
+        {
+            packetListener.onIncomingPacket(this, address, packet);
+        }
+        catch (Throwable x)
+        {
+            LOG.atInfo().setCause(x).log("failure while notifying listener {}", packetListener);
         }
     }
 
     public void notifyOutgoingPacket(Packet packet)
     {
-        for (Packet.Listener listener : packetListeners)
+        try
         {
-            try
-            {
-                listener.onOutgoingPacket(this, packet);
-            }
-            catch (Throwable x)
-            {
-                LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
-            }
+            packetListener.onOutgoingPacket(this, packet);
+        }
+        catch (Throwable x)
+        {
+            LOG.atInfo().setCause(x).log("failure while notifying listener {}", packetListener);
+        }
+    }
+
+    public void fail(Throwable x)
+    {
+        // TODO: initiate inward close? or outward?
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s[dcid=%s]".formatted(super.toString(), StringUtil.toHexString(getDestinationConnectionId()));
+    }
+
+    private class PacketProcessor implements Packet.Listener
+    {
+        @Override
+        public void onIncomingPacket(Session session, SocketAddress address, Packet packet)
+        {
+            processPacket(address, packet);
         }
     }
 }

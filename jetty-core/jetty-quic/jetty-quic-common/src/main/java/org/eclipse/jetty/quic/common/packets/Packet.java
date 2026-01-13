@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.quic.common.packets;
 
+import java.net.SocketAddress;
+
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -35,8 +37,19 @@ public abstract sealed class Packet permits LongHeaderPacket, ShortHeaderPacket
 
     public interface Listener
     {
-        void onIncomingPacket(Session session, Packet packet);
+        default void onIncomingPacket(Session session, SocketAddress address, Packet packet)
+        {
+        }
 
-        void onOutgoingPacket(Session session, Packet packet);
+        default void onOutgoingPacket(Session session, Packet packet)
+        {
+        }
+
+        // TODO: javadoc this because it's the mechanism to
+        //  customize packet processing in QuicSession.
+        class Wrapper
+        {
+
+        }
     }
 }

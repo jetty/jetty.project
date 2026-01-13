@@ -23,34 +23,39 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
+import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.client.QuicClient;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicSession;
-import org.eclipse.jetty.quic.common.frames.FrameStream;
+import org.eclipse.jetty.quic.common.Tokens;
+import org.eclipse.jetty.quic.common.packets.InitialPacket;
+import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
-import org.eclipse.jetty.quic.common.tls.ClientQuicTLS;
+import org.eclipse.jetty.quic.common.packets.RetryPacket;
 import org.eclipse.jetty.tls.Message;
-import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
 import org.eclipse.jetty.tls.ext.ALPNExtension;
 import org.eclipse.jetty.tls.ext.ServerNameExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClientQuicSession extends QuicSession
 {
-    private final MessagesGenerator tlsGenerator;
-    private final ClientQuicTLS quicTLS;
-    private final Map<String, Object> context;
-    private final FrameStream cryptoStream = new FrameStream();
+    private static final Logger LOG = LoggerFactory.getLogger(ClientQuicSession.class);
 
-    public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, PacketNumbers packetNumbers, ClientQuicTLS clientQuicTLS, EndPoint endPoint, Map<String, Object> context)
+    private final Tokens tokens = new Tokens();
+    private final Map<String, Object> context;
+    private SocketAddress remoteSocketAddress;
+
+    public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, PacketNumbers packetNumbers, ClientTLSEngine clientTLSEngine, EndPoint endPoint, Map<String, Object> context)
     {
-        super(connector.getExecutor(), connector.getByteBufferPool(), quicConfiguration, packetNumbers, clientQuicTLS, sessionListener(context), endPoint);
-        this.quicTLS = clientQuicTLS;
+        super(connector.getExecutor(), connector.getByteBufferPool(), quicConfiguration, packetNumbers, clientTLSEngine, sessionListener(context), endPoint);
         this.context = context;
-        this.tlsGenerator = new MessagesGenerator(getByteBufferPool());
     }
 
     private static Session.Listener sessionListener(Map<String, Object> context)
@@ -64,52 +69,57 @@ public class ClientQuicSession extends QuicSession
         return (List<String>)context.get(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY);
     }
 
+    @Override
+    public ClientTLSEngine getTLSEngine()
+    {
+        return (ClientTLSEngine)super.getTLSEngine();
+    }
+
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return remoteSocketAddress;
+    }
+
     public void connect(Promise.Invocable<Session> promise)
     {
-        try
+        remoteSocketAddress = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+        if (LOG.isDebugEnabled())
+            LOG.debug("connecting to {} on {}", remoteSocketAddress, this);
+
+        ClientTLSEngine.Configuration configuration = new ClientTLSEngine.Configuration()
+            .quicVersion(getQuicConfiguration().getQuicVersion());
+
+        if (remoteSocketAddress instanceof InetSocketAddress inet)
         {
-            ClientQuicTLS.Configuration configuration = new ClientQuicTLS.Configuration()
-                .quicVersion(getQuicConfiguration().getQuicVersion());
-
-            SocketAddress remoteSocketAddress = getEndPoint().getRemoteSocketAddress();
-            if (remoteSocketAddress instanceof InetSocketAddress inet)
-            {
-                String serverName = inet.getHostString();
-                configuration.extension(new ServerNameExtension(serverName));
-            }
-
-            List<String> protocols = alpnProtocols(context);
-            if (protocols == null || protocols.isEmpty())
-                throw new IllegalStateException("missing ALPN protocols");
-            configuration.extension(new ALPNExtension(protocols));
-
-            TransportParameters transportParameters = getListener().onPrepare(this);
-            // TODO: default the parameters.
-            configuration.extension(new QuicTransportParametersExtension(transportParameters));
-
-            byte[] dstConnectionId = quicTLS.newRandomBytes(12);
-            configuration.inputKeyMaterial(dstConnectionId);
-            setDestinationConnectionId(dstConnectionId);
-
-            // Link the ClientQuicTLS back to this session to
-            // send the TLS messages generated by ClientQuicTLS.
-            // TODO: this is obviously wrong, as we cannot continue to notify the same promise.
-            quicTLS.addMessageListener(this::sendTLSMessages);
-
-            // Link the TLS message generator back to ClientQuicTLS, so that
-            // it can update the TranscriptHash as TLS messages are generated.
-            tlsGenerator.addListener(quicTLS);
-
-            // TODO: link the ClientQuicTLS to receive the TLS messages.
-
-            quicTLS.startHandshake(configuration, Promise.Invocable.toCallback(promise, this));
-
-            promise.succeeded(this);
+            String serverName = inet.getHostString();
+            configuration.extension(new ServerNameExtension(serverName));
         }
-        catch (Throwable x)
-        {
-            promise.failed(x);
-        }
+
+        List<String> protocols = alpnProtocols(context);
+        if (protocols == null || protocols.isEmpty())
+            throw new IllegalStateException("missing ALPN protocols");
+        configuration.extension(new ALPNExtension(protocols));
+
+        TransportParameters transportParameters = getListener().onPrepare(this);
+        if (transportParameters == null)
+            transportParameters = new TransportParameters();
+        configuration.extension(new QuicTransportParametersExtension(transportParameters));
+
+        byte[] dstConnectionId = getTLSEngine().newRandomBytes(12);
+        configuration.inputKeyMaterial(dstConnectionId);
+        setDestinationConnectionId(dstConnectionId);
+
+        // Link the ClientTLSEngine back to this session to
+        // send the TLS messages generated by ClientTLSEngine.
+        getTLSEngine().addMessageListener(this::sendTLSMessages);
+
+        // Link the TLS message generator back to ClientTLSEngine, so that
+        // it can update the TranscriptHash as TLS messages are generated.
+        getTLSEngine().getMessagesGenerator().addListener(getTLSEngine());
+
+        // TODO: link the ClientTLSEngine to receive the TLS messages.
+
+        getTLSEngine().startHandshake(configuration, Promise.Invocable.toCallback(promise, this));
     }
 
     private void sendTLSMessages(List<Message> messages, Callback callback)
@@ -119,7 +129,7 @@ public class ClientQuicSession extends QuicSession
         {
             for (Message message : messages)
             {
-                tlsGenerator.generate(accumulator, message);
+                getTLSEngine().getMessagesGenerator().generate(accumulator, message);
             }
             CryptoFrame cryptoFrame = new CryptoFrame(0, accumulator);
             crypto(cryptoFrame, callback);
@@ -129,5 +139,29 @@ public class ClientQuicSession extends QuicSession
             accumulator.release();
             callback.failed(x);
         }
+    }
+
+    @Override
+    protected InitialPacket newInitialPacket(List<Frame> frames)
+    {
+        byte[] token = tokens.get(getEndPoint().getLocalSocketAddress(), getRemoteSocketAddress());
+        return new InitialPacket(getQuicConfiguration().getQuicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, getPacketNumbers().nextPacketNumber(EncryptionLevel.INITIAL), frames);
+    }
+
+    @Override
+    protected void processPacket(SocketAddress address, Packet packet)
+    {
+        switch (packet)
+        {
+            case RetryPacket retryPacket -> processRetryPacket(address, retryPacket);
+            default -> super.processPacket(address, packet);
+        }
+    }
+
+    private void processRetryPacket(SocketAddress address, RetryPacket packet)
+    {
+        tokens.put(getEndPoint().getLocalSocketAddress(), getRemoteSocketAddress(), packet.token());
+        // TODO: handle failures.
+        getTLSEngine().retryHandshake(Callback.NOOP);
     }
 }

@@ -33,7 +33,8 @@ import org.eclipse.jetty.tls.ext.ServerNameExtension;
 import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -41,17 +42,19 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ExtensionsGenerateParseTest
 {
-    @Test
-    public void testGenerateParseALPNExtension()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGenerateParseALPNExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
 
         ALPNExtension expected = new ALPNExtension(List.of("h2", "http/1.1"));
-        ExtensionsGenerator generator = new ExtensionsGenerator();
+        ExtensionsGenerator generator = new ExtensionsGenerator(client);
         int length = generator.generate(accumulator, List.of(expected));
+        assertEquals(accumulator.remaining(), length);
 
-        ExtensionsParser parser = new ExtensionsParser();
+        ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
         assertNull(parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer)));
         List<Extension> extensions = parser.parse(accumulator);
@@ -78,8 +81,9 @@ public class ExtensionsGenerateParseTest
         assertEquals(expected.protocols(), result.protocols());
     }
 
-    @Test
-    public void testGenerateParseKeyShareExtension()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGenerateParseKeyShareExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
@@ -90,11 +94,13 @@ public class ExtensionsGenerateParseTest
         byte[] keyExchange2 = new byte[32];
         ThreadLocalRandom.current().nextBytes(keyExchange2);
         KeyShare keyShare2 = new KeyShare(NamedGroup.secp256r1, keyExchange2);
-        KeyShareExtension expected = new KeyShareExtension(List.of(keyShare1, keyShare2));
-        ExtensionsGenerator generator = new ExtensionsGenerator();
+        List<KeyShare> keyShares = client ? List.of(keyShare1, keyShare2) : List.of(keyShare1);
+        KeyShareExtension expected = new KeyShareExtension(keyShares);
+        ExtensionsGenerator generator = new ExtensionsGenerator(client);
         int length = generator.generate(accumulator, List.of(expected));
+        assertEquals(accumulator.remaining(), length);
 
-        ExtensionsParser parser = new ExtensionsParser();
+        ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
         parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
         List<Extension> extensions = parser.parse(accumulator);
@@ -121,17 +127,19 @@ public class ExtensionsGenerateParseTest
         assertEquals(expected.keyShares(), result.keyShares());
     }
 
-    @Test
-    public void testGenerateParseServerNameExtension()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGenerateParseServerNameExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
 
         ServerNameExtension expected = new ServerNameExtension("webtide.com");
-        ExtensionsGenerator generator = new ExtensionsGenerator();
+        ExtensionsGenerator generator = new ExtensionsGenerator(client);
         int length = generator.generate(accumulator, List.of(expected));
+        assertEquals(accumulator.remaining(), length);
 
-        ExtensionsParser parser = new ExtensionsParser();
+        ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
         parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
         List<Extension> extensions = parser.parse(accumulator);
@@ -158,17 +166,19 @@ public class ExtensionsGenerateParseTest
         assertEquals(expected.serverName(), result.serverName());
     }
 
-    @Test
-    public void testGenerateParseSignatureAlgorithmsExtension()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGenerateParseSignatureAlgorithmsExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
 
         SignatureAlgorithmsExtension expected = new SignatureAlgorithmsExtension(List.of(SignatureAlgorithm.ECDSA_SECP256R1_SHA256, SignatureAlgorithm.RSA_PKCS1_SHA256));
-        ExtensionsGenerator generator = new ExtensionsGenerator();
+        ExtensionsGenerator generator = new ExtensionsGenerator(client);
         int length = generator.generate(accumulator, List.of(expected));
+        assertEquals(accumulator.remaining(), length);
 
-        ExtensionsParser parser = new ExtensionsParser();
+        ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
         parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
         List<Extension> extensions = parser.parse(accumulator);
@@ -195,17 +205,20 @@ public class ExtensionsGenerateParseTest
         assertEquals(expected.signatureAlgorithms(), result.signatureAlgorithms());
     }
 
-    @Test
-    public void testGenerateParseSupportedVersionsExtension()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGenerateParseSupportedVersionsExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
 
-        SupportedVersionsExtension expected = new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3, TLSVersion.TLS_1_2));
-        ExtensionsGenerator generator = new ExtensionsGenerator();
+        List<TLSVersion> versions = client ? List.of(TLSVersion.TLS_1_3, TLSVersion.TLS_1_2) : List.of(TLSVersion.TLS_1_3);
+        SupportedVersionsExtension expected = new SupportedVersionsExtension(versions);
+        ExtensionsGenerator generator = new ExtensionsGenerator(client);
         int length = generator.generate(accumulator, List.of(expected));
+        assertEquals(accumulator.remaining(), length);
 
-        ExtensionsParser parser = new ExtensionsParser();
+        ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
         parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
         List<Extension> extensions = parser.parse(accumulator);
@@ -232,17 +245,19 @@ public class ExtensionsGenerateParseTest
         assertEquals(expected.versions(), result.versions());
     }
 
-    @Test
-    public void testGenerateParseSupportedGroupsExtension()
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGenerateParseSupportedGroupsExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
 
         SupportedGroupsExtension expected = new SupportedGroupsExtension(List.of(NamedGroup.secp256r1, NamedGroup.ffdhe2048));
-        ExtensionsGenerator generator = new ExtensionsGenerator();
+        ExtensionsGenerator generator = new ExtensionsGenerator(client);
         int length = generator.generate(accumulator, List.of(expected));
+        assertEquals(accumulator.remaining(), length);
 
-        ExtensionsParser parser = new ExtensionsParser();
+        ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
         parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
         List<Extension> extensions = parser.parse(accumulator);

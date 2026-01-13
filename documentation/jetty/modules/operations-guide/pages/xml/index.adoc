@@ -328,7 +328,7 @@ You can only specify the key value via the `name` attribute, so the key can only
 [[syntax-array]]
 === `<Array>` and `<Item>`
 
-Element `<Array>` creates a new array, whose component type may be specified by the `type` attribute, or by a `Type` child element.
+Element `<Array>` creates a new array, whose component type may be specified by the `type` attribute, or by a `Alert` child element.
 
 [,xml]
 ----

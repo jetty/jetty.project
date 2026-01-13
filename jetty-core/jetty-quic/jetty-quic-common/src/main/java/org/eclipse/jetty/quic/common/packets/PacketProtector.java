@@ -11,11 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.tls;
+package org.eclipse.jetty.quic.common.packets;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.crypto.Cipher;
@@ -29,79 +27,51 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketBuffers;
+import org.eclipse.jetty.quic.common.internal.Decrypter;
+import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.internal.crypto.HKDF;
 import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
-import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.util.VarLenInt;
-import org.eclipse.jetty.tls.CipherSuite;
-import org.eclipse.jetty.tls.ClientHelloMessage;
-import org.eclipse.jetty.tls.KeyShare;
-import org.eclipse.jetty.tls.Message;
-import org.eclipse.jetty.tls.NamedGroup;
-import org.eclipse.jetty.tls.SignatureAlgorithm;
-import org.eclipse.jetty.tls.TLSVersion;
-import org.eclipse.jetty.tls.common.GroupKeyPair;
-import org.eclipse.jetty.tls.ext.Extension;
-import org.eclipse.jetty.tls.ext.KeyShareExtension;
-import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
-import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
-import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/// The client-side implementation of QUIC encryption/decryption,
-/// and the client-side TLS state machine necessary for QUIC.
-public class ClientQuicTLS extends QuicTLS
+/// Performs QUIC packet protection and unprotection as per
+/// [RFC 9001](https://datatracker.ietf.org/doc/html/rfc9001).
+public class PacketProtector implements Encrypter, Decrypter
 {
+    private static final Logger LOG = LoggerFactory.getLogger(PacketProtector.class);
+
     private final Map<EncryptionLevel, KeyManager> keyManagers = new ConcurrentHashMap<>();
     private final ByteBufferPool byteBufferPool;
     private final PacketNumbers packetNumbers;
-    private List<GroupKeyPair> groupKeyPairs;
-    private ClientHelloMessage clientHello;
+    private EncryptionLevel encryptionLevel;
 
-    public ClientQuicTLS(ByteBufferPool byteBufferPool, PacketNumbers packetNumbers)
+    public PacketProtector(ByteBufferPool byteBufferPool, PacketNumbers packetNumbers)
     {
         this.byteBufferPool = byteBufferPool;
         this.packetNumbers = packetNumbers;
     }
 
-    public void startHandshake(Configuration configuration, Callback callback) throws Exception
+    public ByteBufferPool getByteBufferPool()
     {
-        assert clientHello == null;
+        return byteBufferPool;
+    }
 
-        List<CipherSuite> cipherSuites = configuration.cipherSuites();
-
-        List<NamedGroup> namedGroups = configuration.namedGroups();
-        configuration.extension(new SupportedGroupsExtension(namedGroups));
-
-        // KeyPairs and KeyShares.
-        groupKeyPairs = new ArrayList<>();
-        List<KeyShare> keyShares = new ArrayList<>();
-        for (NamedGroup namedGroup : namedGroups)
-        {
-            GroupKeyPair groupKeyPair = GroupKeyPair.from(namedGroup);
-            groupKeyPairs.add(groupKeyPair);
-            keyShares.add(groupKeyPair.toKeyShare());
-        }
-        configuration.extension(new KeyShareExtension(keyShares));
-
-        configuration.extension(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3)));
-
-        List<SignatureAlgorithm> signatureAlgorithms = configuration.signatureAlgorithms();
-        configuration.extension(new SignatureAlgorithmsExtension(signatureAlgorithms));
-
-        clientHello = new ClientHelloMessage(newRandomBytes(32), cipherSuites, configuration.extensions());
-
-        allocateInitialKeys(configuration.quicVersion(), configuration.inputKeyMaterial());
-
-        notifyMessages(List.of(clientHello), callback);
+    public EncryptionLevel getEncryptionLevel()
+    {
+        return encryptionLevel;
     }
 
     // Only public for testing purposes.
     public void allocateInitialKeys(QuicVersion quicVersion, byte[] input) throws Exception
     {
-        assert getEncryptionLevel() == EncryptionLevel.INITIAL;
+        assert encryptionLevel == null;
+        encryptionLevel = EncryptionLevel.INITIAL;
         KeyManager keyManager = keyManagers.computeIfAbsent(EncryptionLevel.INITIAL, KeyManager::new);
         keyManager.allocateInitialKeys(quicVersion, input);
+        if (LOG.isDebugEnabled())
+            LOG.debug("allocated initial QUIC keys on {}", this);
     }
 
     @Override
@@ -132,9 +102,9 @@ public class ClientQuicTLS extends QuicTLS
     }
 
     @Override
-    public void onMessageGenerated(Message message, RetainableByteBuffer buffer)
+    public String toString()
     {
-        // TODO: add buffer to TranscriptHash
+        return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getEncryptionLevel());
     }
 
     /// A manager for [read][ReadKeys] and [write][WriteKeys] keys
@@ -152,7 +122,7 @@ public class ClientQuicTLS extends QuicTLS
             this.encryptionLevel = encryptionLevel;
         }
 
-        private void allocateInitialKeys(QuicVersion quicVersion, byte[] inputKeyMaterial) throws Exception
+        public void allocateInitialKeys(QuicVersion quicVersion, byte[] inputKeyMaterial) throws Exception
         {
             HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract().addSalt(quicVersion.initialSalt()).addIKM(inputKeyMaterial).extractOnly();
             // RFC 9001, 5.2: initial secrets use SHA256.
@@ -173,12 +143,12 @@ public class ClientQuicTLS extends QuicTLS
             writeKeys.updateKeys(clientInitial, clientEncryption, clientInitialization, clientProtection);
         }
 
-        private PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer payload) throws Exception
+        public PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer payload) throws Exception
         {
             return writeKeys.encrypt(packetNumber, header, payload);
         }
 
-        private PacketBuffers decryptLongHeaderPacket(RetainableByteBuffer encrypted) throws Exception
+        public PacketBuffers decryptLongHeaderPacket(RetainableByteBuffer encrypted) throws Exception
         {
             return readKeys.decryptLongHeaderPacket(encrypted);
         }
@@ -444,82 +414,6 @@ public class ClientQuicTLS extends QuicTLS
 
                 return new PacketBuffers(encryptedHeaderBuffer, encryptedPayloadBuffer);
             }
-        }
-    }
-
-    public static class Configuration
-    {
-        private List<SignatureAlgorithm> signatureAlgorithms = List.of(SignatureAlgorithm.RSA_PKCS1_SHA256, SignatureAlgorithm.ECDSA_SECP256R1_SHA256);
-        private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519, NamedGroup.secp256r1);
-        private List<CipherSuite> cipherSuites = List.of(CipherSuite.values());
-        private final List<Extension> extensions = new ArrayList<>();
-        private QuicVersion quicVersion = QuicVersion.V1;
-        private byte[] inputKeyMaterial;
-
-        public Configuration signatureAlgorithms(List<SignatureAlgorithm> signatureAlgorithms)
-        {
-            this.signatureAlgorithms = signatureAlgorithms;
-            return this;
-        }
-
-        public List<SignatureAlgorithm> signatureAlgorithms()
-        {
-            return signatureAlgorithms;
-        }
-
-        public Configuration namedGroups(List<NamedGroup> namedGroups)
-        {
-            this.namedGroups = namedGroups;
-            return this;
-        }
-
-        public List<NamedGroup> namedGroups()
-        {
-            return namedGroups;
-        }
-
-        public Configuration cipherSuites(List<CipherSuite> cipherSuites)
-        {
-            this.cipherSuites = cipherSuites;
-            return this;
-        }
-
-        public List<CipherSuite> cipherSuites()
-        {
-            return cipherSuites;
-        }
-
-        public Configuration extension(Extension extension)
-        {
-            extensions.add(extension);
-            return this;
-        }
-
-        public List<Extension> extensions()
-        {
-            return extensions;
-        }
-
-        public Configuration quicVersion(QuicVersion quicVersion)
-        {
-            this.quicVersion = quicVersion;
-            return this;
-        }
-
-        public QuicVersion quicVersion()
-        {
-            return quicVersion;
-        }
-
-        public Configuration inputKeyMaterial(byte[] inputKeyMaterial)
-        {
-            this.inputKeyMaterial = inputKeyMaterial;
-            return this;
-        }
-
-        public byte[] inputKeyMaterial()
-        {
-            return inputKeyMaterial;
         }
     }
 }

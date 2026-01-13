@@ -20,6 +20,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.ServerHelloMessage;
+import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.ext.Extension;
 
@@ -56,7 +57,7 @@ public class ServerHelloMessageParser implements MessageParser
                     {
                         version = byteBuffer.getShort() & 0xFFFF;
                         if (version != TLSVersion.TLS_1_2.code())
-                            throw new IllegalStateException("invalid ServerHello TLS version 0x" + Integer.toHexString(version));
+                            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "invalid ServerHello TLS version 0x" + Integer.toHexString(version));
                         version = 0;
                         random = new byte[32];
                         state = State.RANDOM;
@@ -75,7 +76,7 @@ public class ServerHelloMessageParser implements MessageParser
                     if (cursor == 0)
                     {
                         if (version != TLSVersion.TLS_1_2.code())
-                            throw new IllegalStateException("invalid ServerHello TLS version 0x" + Integer.toHexString(version));
+                            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "invalid ServerHello TLS version 0x" + Integer.toHexString(version));
                         version = 0;
                         random = new byte[32];
                         state = State.RANDOM;
@@ -141,7 +142,9 @@ public class ServerHelloMessageParser implements MessageParser
                 case COMPRESSION_METHOD ->
                 {
                     // Skip the compression method.
-                    byteBuffer.get();
+                    int compressionMethod = byteBuffer.get() & 0xFF;
+                    if (compressionMethod != 0)
+                        throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "invalid compression method " + compressionMethod);
                     state = State.EXTENSIONS;
                 }
                 case EXTENSIONS ->

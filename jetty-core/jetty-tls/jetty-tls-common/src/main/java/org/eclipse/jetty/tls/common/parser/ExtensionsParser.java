@@ -34,14 +34,14 @@ public class ExtensionsParser implements ExtensionParser.Listener
     private int consumed;
     private int code;
 
-    public ExtensionsParser()
+    public ExtensionsParser(boolean client)
     {
         put(new ServerNameExtensionParser(this));
         put(new ALPNExtensionParser(this));
-        put(new KeyShareExtensionParser(this));
+        put(new KeyShareExtensionParser(this, client));
         put(new SignatureAlgorithmsExtensionParser(this));
         put(new SupportedGroupsExtensionParser(this));
-        put(new SupportedVersionsExtensionParser(this));
+        put(new SupportedVersionsExtensionParser(this, client));
     }
 
     @Override

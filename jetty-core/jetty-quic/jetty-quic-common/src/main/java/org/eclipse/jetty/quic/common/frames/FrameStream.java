@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.quic.common.frames;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
@@ -34,19 +32,15 @@ public class FrameStream
     private static final Logger LOG = LoggerFactory.getLogger(FrameStream.class);
 
     private final Queue<Frame.WithOffset> queue = new PriorityQueue<>();
-    private final List<Frame.Listener> listeners = new ArrayList<>();
+    private final Frame.Listener listener;
     private long offset;
 
-    public FrameStream()
+    public FrameStream(Frame.Listener listener)
     {
+        this.listener = listener;
     }
 
-    public void addFrameListener(Frame.Listener listener)
-    {
-        listeners.add(listener);
-    }
-
-    public void process(Frame.WithOffset frame)
+    public void offer(Frame.WithOffset frame)
     {
         queue.offer(frame);
         while (true)
@@ -67,16 +61,13 @@ public class FrameStream
 
     private void notifyFrame(Frame.WithOffset frame)
     {
-        for (Frame.Listener listener : listeners)
+        try
         {
-            try
-            {
-                listener.onFrame((Frame)frame);
-            }
-            catch (Throwable x)
-            {
-                LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
-            }
+            listener.onFrame((Frame)frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
         }
     }
 }

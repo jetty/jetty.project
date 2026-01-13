@@ -24,7 +24,7 @@ import org.eclipse.jetty.quic.util.VarLenInt;
 public class CryptoFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
-    private State state = State.OFFSET;
+    private State state = State.FRAME_TYPE;
     private long offset;
     private long length;
 
@@ -44,6 +44,11 @@ public class CryptoFrameParser implements FrameParser
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             switch (state)
             {
+                case FRAME_TYPE ->
+                {
+                    byteBuffer.get();
+                    state = State.OFFSET;
+                }
                 case OFFSET ->
                 {
                     if (varLenInt.tryDecode(byteBuffer, offset -> this.offset = offset))
@@ -65,7 +70,11 @@ public class CryptoFrameParser implements FrameParser
                     {
                         RetainableByteBuffer slice = buffer.slice(length);
                         buffer.skip(length);
-                        return new CryptoFrame(offset, slice);
+                        CryptoFrame frame = new CryptoFrame(offset, slice);
+                        state = State.FRAME_TYPE;
+                        offset = 0;
+                        length = 0;
+                        return frame;
                     }
                 }
             }
@@ -74,6 +83,7 @@ public class CryptoFrameParser implements FrameParser
 
     private enum State
     {
+        FRAME_TYPE,
         OFFSET,
         LENGTH,
         DATA

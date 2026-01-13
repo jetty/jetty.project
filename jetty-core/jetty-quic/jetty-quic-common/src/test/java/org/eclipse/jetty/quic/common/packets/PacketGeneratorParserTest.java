@@ -28,7 +28,6 @@ import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.internal.packets.InitialPacketGenerator;
 import org.eclipse.jetty.quic.common.internal.packets.InitialPacketParser;
-import org.eclipse.jetty.quic.common.tls.ClientQuicTLS;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
@@ -71,9 +70,9 @@ public class PacketGeneratorParserTest
             }
         };
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
-        ClientQuicTLS clientQuicTLS = new ClientQuicTLS(byteBufferPool, packetNumbers);
-        clientQuicTLS.allocateInitialKeys(QuicVersion.V1, destination);
-        InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, framesGenerator, clientQuicTLS);
+        PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers);
+        protector.allocateInitialKeys(QuicVersion.V1, destination);
+        InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, framesGenerator, protector);
         // Unclear why the RFC uses 1162 as the InitialPacket payload length, but that's what it uses.
         generator.setPayloadMinimumLength(1162);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
@@ -152,9 +151,9 @@ public class PacketGeneratorParserTest
             }
         };
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
-        ClientQuicTLS clientQuicTLS = new ClientQuicTLS(byteBufferPool, packetNumbers);
-        clientQuicTLS.allocateInitialKeys(QuicVersion.V1, StringUtil.fromHexString("8394c8f03e515708"));
-        InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, framesGenerator, clientQuicTLS);
+        PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers);
+        protector.allocateInitialKeys(QuicVersion.V1, StringUtil.fromHexString("8394c8f03e515708"));
+        InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, framesGenerator, protector);
         // Unclear why the RFC uses 1162 as the InitialPacket payload length, but that's what it uses.
         generator.setPayloadMinimumLength(0);
 
@@ -174,7 +173,7 @@ public class PacketGeneratorParserTest
     }
 
     @Test
-    public void testGenerateParse() throws Exception
+    public void testInitialPacketGenerateParse() throws Exception
     {
         byte[] clientHello = StringUtil.fromHexString(("""
                     010000ed0303ebf8fa56f129 39b9584a3896472ec40bb863cfd3e868
@@ -195,18 +194,18 @@ public class PacketGeneratorParserTest
 
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers clientPacketNumbers = new PacketNumbers();
-        ClientQuicTLS clientQuicTLS = new ClientQuicTLS(byteBufferPool, clientPacketNumbers);
-        clientQuicTLS.allocateInitialKeys(QuicVersion.V1, destination);
+        PacketProtector clientProtector = new PacketProtector(byteBufferPool, clientPacketNumbers);
+        clientProtector.allocateInitialKeys(QuicVersion.V1, destination);
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
-        InitialPacketGenerator generator = new InitialPacketGenerator(clientPacketNumbers, framesGenerator, clientQuicTLS);
+        InitialPacketGenerator generator = new InitialPacketGenerator(clientPacketNumbers, framesGenerator, clientProtector);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
         generator.generate(accumulator, generated);
 
         PacketNumbers serverPacketNumbers = new PacketNumbers();
-        ClientQuicTLS serverQuicTLS = new ClientQuicTLS(byteBufferPool, serverPacketNumbers);
-        serverQuicTLS.allocateInitialKeys(QuicVersion.V1, destination);
+        PacketProtector serverProtector = new PacketProtector(byteBufferPool, serverPacketNumbers);
+        serverProtector.allocateInitialKeys(QuicVersion.V1, destination);
         FramesParser framesParser = new FramesParser();
-        InitialPacketParser parser = new InitialPacketParser(serverQuicTLS, serverPacketNumbers, framesParser);
+        InitialPacketParser parser = new InitialPacketParser(serverProtector, serverPacketNumbers, framesParser);
         Packet packet = parser.parse(accumulator);
 
         assertInstanceOf(InitialPacket.class, packet);
@@ -221,4 +220,6 @@ public class PacketGeneratorParserTest
         assertEquals(generatedCryptoFrame.length(), parsedCryptoFrame.length());
         assertArrayEquals(clientHello, parsedCryptoFrame.data().takeByteArray());
     }
+
+    // TODO: RetryPacket from the RFC + RetryPacketGenerateParse
 }
