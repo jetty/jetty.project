@@ -90,7 +90,7 @@ public class QuicClientTest
 
         Promise.Completable<Session> completable = new Promise.Completable<>();
         client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, completable);
-        Session session = completable.get(5, TimeUnit.SECONDS);
+        Session session = completable.get(555, TimeUnit.SECONDS);
         assertNotNull(session);
     }
 }

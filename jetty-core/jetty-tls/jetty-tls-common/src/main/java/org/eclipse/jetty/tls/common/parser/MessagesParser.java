@@ -23,19 +23,25 @@ import org.eclipse.jetty.tls.Message;
 public class MessagesParser
 {
     private final Map<Message.Type, MessageParser> parsers = new HashMap<>();
+    private final ExtensionsParser extensionsParser;
     private State state = State.TYPE;
     private int cursor;
     private Message.Type type;
     private int length; // TODO: remove this field?
 
-    public MessagesParser()
+    public MessagesParser(boolean client)
     {
-        ExtensionsParser extensionsParser = new ExtensionsParser();
+        extensionsParser = new ExtensionsParser(client);
         parsers.put(Message.Type.CLIENT_HELLO, new ClientHelloMessageParser(extensionsParser));
         parsers.put(Message.Type.SERVER_HELLO, new ServerHelloMessageParser(extensionsParser));
         parsers.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsMessageParser(extensionsParser));
         parsers.put(Message.Type.CERTIFICATE_REQUEST, new CertificateRequestMessageParser(extensionsParser));
         parsers.put(Message.Type.CERTIFICATE, new CertificateMessageParser(extensionsParser));
+    }
+
+    public ExtensionsParser getExtensionsParser()
+    {
+        return extensionsParser;
     }
 
     public Message parse(RetainableByteBuffer buffer) throws Exception

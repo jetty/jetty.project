@@ -15,7 +15,7 @@ package org.eclipse.jetty.quic.common.packets;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
 
-public sealed class LongHeaderPacket extends Packet permits HandshakePacket, InitialPacket
+public sealed class LongHeaderPacket extends Packet permits HandshakePacket, InitialPacket, RetryPacket
 {
     private final PacketType packetType;
     private final QuicVersion quicVersion;

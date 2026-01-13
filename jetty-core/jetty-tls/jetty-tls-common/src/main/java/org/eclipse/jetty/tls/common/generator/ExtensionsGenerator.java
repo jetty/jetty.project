@@ -25,14 +25,14 @@ public class ExtensionsGenerator
 {
     private final Map<Integer, ExtensionGenerator> generators = new HashMap<>();
 
-    public ExtensionsGenerator()
+    public ExtensionsGenerator(boolean client)
     {
         put(new ALPNExtensionGenerator());
-        put(new KeyShareExtensionGenerator());
+        put(new KeyShareExtensionGenerator(client));
         put(new ServerNameExtensionGenerator());
         put(new SignatureAlgorithmsExtensionGenerator());
         put(new SupportedGroupsExtensionGenerator());
-        put(new SupportedVersionsExtensionGenerator());
+        put(new SupportedVersionsExtensionGenerator(client));
     }
 
     public ExtensionGenerator put(ExtensionGenerator generator)

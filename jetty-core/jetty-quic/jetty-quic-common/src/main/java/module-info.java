@@ -18,6 +18,7 @@ module org.eclipse.jetty.quic.common
     requires transitive org.eclipse.jetty.quic.util;
     requires org.eclipse.jetty.tls.common;
     requires org.slf4j;
+    requires java.desktop;
 
     exports org.eclipse.jetty.quic.common;
     exports org.eclipse.jetty.quic.common.frames;

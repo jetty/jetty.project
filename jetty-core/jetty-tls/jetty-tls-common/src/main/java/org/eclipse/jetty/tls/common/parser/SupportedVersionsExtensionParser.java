@@ -25,15 +25,17 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
 {
     private final List<TLSVersion> versions = new ArrayList<>();
     private final ExtensionParser.Listener listener;
+    private final boolean client;
     private State state = State.TOTAL_LENGTH;
     private int totalLength;
     private int listLength;
     private int version;
     private int cursor;
 
-    public SupportedVersionsExtensionParser(Listener listener)
+    public SupportedVersionsExtensionParser(Listener listener, boolean client)
     {
         this.listener = listener;
+        this.client = client;
     }
 
     @Override
@@ -58,9 +60,9 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
                     if (remaining > 1)
                     {
                         totalLength = byteBuffer.getShort() & 0xFFFF;
-                        if (totalLength < 3)
+                        if (totalLength < (client ? 2 : 3))
                             throw new IllegalStateException("invalid supported versions extension length " + totalLength);
-                        state = State.LIST_LENGTH;
+                        state = client ? State.VERSION : State.LIST_LENGTH;
                     }
                     else
                     {
@@ -75,9 +77,9 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
                     {
-                        if (totalLength < 3)
+                        if (totalLength < (client ? 2 : 3))
                             throw new IllegalStateException("invalid supported versions extension length " + totalLength);
-                        state = State.LIST_LENGTH;
+                        state = client ? State.VERSION : State.LIST_LENGTH;
                     }
                 }
                 case LIST_LENGTH ->
@@ -92,7 +94,8 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
                     if (remaining >= 2)
                     {
                         version = byteBuffer.getShort() & 0xFFFF;
-                        listLength -= 2;
+                        if (!client)
+                            listLength -= 2;
                         int result = versionComplete();
                         if (result > 0)
                             return result;
@@ -110,7 +113,8 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
                     version += b << (8 * cursor);
                     if (cursor == 0)
                     {
-                        listLength -= 2;
+                        if (!client)
+                            listLength -= 2;
                         int result = versionComplete();
                         if (result > 0)
                             return result;

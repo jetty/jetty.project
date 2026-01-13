@@ -38,11 +38,6 @@ public class InitialPacketParser implements PacketParser
     private final Decrypter decrypter;
     private final PacketNumbers packetNumbers;
     private final FramesParser framesParser;
-    private QuicVersion quicVersion;
-    private byte[] dstConnectionId;
-    private byte[] srcConnectionId;
-    private byte[] token;
-    private long packetNumber;
 
     public InitialPacketParser(Decrypter decrypter, PacketNumbers packetNumbers, FramesParser framesParser)
     {
@@ -67,24 +62,8 @@ public class InitialPacketParser implements PacketParser
         //  The promise boolean indicates whether to continue processing.
         //  In this way, we can write a buffer-level proxy for plaintext QUIC.
 
-        Packet packet = parse(packetBuffers);
-
-        packetBuffers.header().release();
-        packetBuffers.payload().release();
-
-        return packet;
-    }
-
-    private Packet parse(PacketBuffers packetBuffers)
-    {
-        parseHeader(packetBuffers.header());
-        return parsePayload(packetBuffers.payload());
-    }
-
-    private void parseHeader(RetainableByteBuffer header)
-    {
+        RetainableByteBuffer header = packetBuffers.header();
         ByteBuffer byteBuffer = header.getByteBuffer();
-
         if (LOG.isDebugEnabled())
             LOG.debug("parsing InitialPacket header {}", BufferUtil.toDetailString(byteBuffer));
 
@@ -92,38 +71,40 @@ public class InitialPacketParser implements PacketParser
         int encodedPacketNumberLength = (form & 0x03) + 1;
 
         int versionCode = byteBuffer.getInt();
-        quicVersion = QuicVersion.from(versionCode);
+        QuicVersion quicVersion = QuicVersion.from(versionCode);
 
-        int length = byteBuffer.get();
-        dstConnectionId = new byte[length];
+        int length = byteBuffer.get() & 0xFF;
+        byte[] dstConnectionId = new byte[length];
         byteBuffer.get(dstConnectionId);
 
-        length = byteBuffer.get();
-        srcConnectionId = new byte[length];
+        length = byteBuffer.get() & 0xFF;
+        byte[] srcConnectionId = new byte[length];
         byteBuffer.get(srcConnectionId);
 
+        // TODO: cap the length of the token.
         length = VarLenInt.decodeInt(byteBuffer);
-        token = new byte[length];
+        byte[] token = new byte[length];
         byteBuffer.get(token);
 
         length = VarLenInt.decodeInt(byteBuffer);
 
         byte[] encodedPacketNumber = new byte[encodedPacketNumberLength];
         byteBuffer.get(encodedPacketNumber);
-        packetNumber = packetNumbers.decode(EncryptionLevel.INITIAL, encodedPacketNumber);
+        long packetNumber = packetNumbers.decode(EncryptionLevel.INITIAL, encodedPacketNumber);
+
+        assert byteBuffer.remaining() == 0;
+        header.release();
 
         if (LOG.isDebugEnabled())
             LOG.debug("parsed InitialPacket header, version={} packetNumber={} length={}", quicVersion, packetNumber, length);
 
-        assert byteBuffer.remaining() == 0;
-    }
-
-    private Packet parsePayload(RetainableByteBuffer payload)
-    {
+        RetainableByteBuffer payload = packetBuffers.payload();
         if (LOG.isDebugEnabled())
             LOG.debug("parsing InitialPacket payload {}", BufferUtil.toDetailString(payload.getByteBuffer()));
 
         List<Frame> frames = framesParser.consume(payload);
+        payload.release();
+
         InitialPacket packet = new InitialPacket(quicVersion, dstConnectionId, srcConnectionId, token, packetNumber, frames);
 
         if (LOG.isDebugEnabled())

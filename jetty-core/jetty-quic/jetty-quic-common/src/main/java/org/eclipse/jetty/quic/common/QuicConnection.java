@@ -36,6 +36,7 @@ public abstract class QuicConnection extends AbstractConnection
     private static final Logger LOG = LoggerFactory.getLogger(QuicConnection.class);
 
     private final AutoLock lock = new AutoLock();
+    private final Callback fillableCallback = new FillableCallback();
     private final AtomicLong bytesIn = new AtomicLong();
     private final Queue<Runnable> tasks = new ArrayDeque<>();
     private final ByteBufferPool byteBufferPool;
@@ -71,6 +72,12 @@ public abstract class QuicConnection extends AbstractConnection
     {
         // TODO
         return 0;
+    }
+
+    @Override
+    public void fillInterested()
+    {
+        fillInterested(fillableCallback);
     }
 
     @Override
@@ -122,8 +129,6 @@ public abstract class QuicConnection extends AbstractConnection
 
     private class QuicProducer implements ExecutionStrategy.Producer
     {
-        private final Callback fillableCallback = new FillableCallback();
-
         @Override
         public Runnable produce()
         {
@@ -146,12 +151,12 @@ public abstract class QuicConnection extends AbstractConnection
                     if (filled > 0)
                     {
                         bytesIn.addAndGet(filled);
-                        process(buffer);
+                        process(address, buffer);
                     }
                     else if (filled == 0)
                     {
                         buffer.release();
-                        fillInterested(fillableCallback);
+                        fillInterested();
                         return null;
                     }
                     else
@@ -173,7 +178,7 @@ public abstract class QuicConnection extends AbstractConnection
         }
     }
 
-    protected abstract void process(RetainableByteBuffer buffer) throws Exception;
+    protected abstract void process(SocketAddress address, RetainableByteBuffer buffer) throws Exception;
 
     private class FillableCallback implements Callback
     {

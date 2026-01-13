@@ -19,7 +19,7 @@ import org.eclipse.jetty.tls.KeyShare;
 
 public record KeyShareExtension(List<KeyShare> keyShares) implements Extension
 {
-    public static final int CODE = 0x001D;
+    public static final int CODE = 0x0033;
 
     @Override
     public int code()

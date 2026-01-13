@@ -39,9 +39,6 @@ public class ClientHelloMessageGenerator extends MessageGenerator
 
     private void generate(RetainableByteBuffer.Mutable accumulator, ClientHelloMessage message)
     {
-        List<CipherSuite> cipherSuites = message.cipherSuites();
-        int cipherSuitesLength = 2 * cipherSuites.size();
-
         RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getBufferPool(), true, -1, 0, 0);
         int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
         if (extensionsLength > 0xFFFF)
@@ -59,6 +56,10 @@ public class ClientHelloMessageGenerator extends MessageGenerator
         // Legacy compression methods        | (1)
         // Extensions length                 | (2)
         // Extensions                        | (M)
+
+        List<CipherSuite> cipherSuites = message.cipherSuites();
+        int cipherSuitesLength = 2 * cipherSuites.size();
+
         int length = 2 + 32 + 1 + 2 + cipherSuitesLength + 1 + 1 + 2 + extensionsLength;
         if (length > 0xFFFFFF)
             throw new IllegalStateException("could not generate ClientHello, too long");

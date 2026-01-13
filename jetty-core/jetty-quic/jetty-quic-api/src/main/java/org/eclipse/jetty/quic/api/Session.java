@@ -167,6 +167,9 @@ public interface Session
             return null;
         }
 
+        /// TODO: remove this, since applications should not be concerned.
+        /// TODO: But this means that the implementation must have an extended listener
+        /// TODO: also for acks and cryptos.
         /// Callback method invoked when a CRYPTO frame is received.
         ///
         /// @param session the QUIC session

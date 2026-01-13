@@ -11,8 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.internal.frames;
+package org.eclipse.jetty.quic.common.packets;
 
-public interface FrameGenerator
+import org.eclipse.jetty.quic.api.QuicVersion;
+
+public final class RetryPacket extends LongHeaderPacket
 {
+    private final byte[] token;
+
+    public RetryPacket(QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId, byte[] token)
+    {
+        super(PacketType.RETRY, quicVersion, destinationConnectionId, sourceConnectionId);
+        this.token = token;
+    }
+
+    public byte[] token()
+    {
+        return token;
+    }
 }

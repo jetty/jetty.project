@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -28,9 +29,13 @@ import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class QuicFlusher extends IteratingCallback
 {
+    private static final Logger LOG = LoggerFactory.getLogger(QuicFlusher.class);
+
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> entries = new ArrayDeque<>();
     private final List<Entry> processing = new ArrayList<>();
@@ -42,18 +47,21 @@ public class QuicFlusher extends IteratingCallback
     public QuicFlusher(QuicSession session)
     {
         this.session = session;
-        this.packetGenerator = new PacketsGenerator(session.getPacketNumbers(), new FramesGenerator(session.getByteBufferPool()), session.getQuicTLS());
+        this.packetGenerator = new PacketsGenerator(session.getPacketNumbers(), new FramesGenerator(session.getByteBufferPool()), session.getTLSEngine().getPacketProtector());
         this.accumulator = new RetainableByteBuffer.DynamicCapacity(session.getByteBufferPool(), session.getQuicConfiguration().isUseOutputDirectByteBuffers(), -1, 0, 0);
     }
 
     public boolean offer(QuicSession session, List<Frame> frames, Callback callback)
     {
+        boolean result;
         try (var _ = lock.lock())
         {
             // TODO: check if closed/failed, etc.
-            entries.offer(new SessionEntry(session, frames, callback));
+            result = entries.offer(new SessionEntry(session, frames, callback));
         }
-        return true;
+        if (LOG.isDebugEnabled())
+            LOG.debug("offered={} {} on {}", result, frames, this);
+        return result;
     }
 
     @Override
@@ -66,24 +74,44 @@ public class QuicFlusher extends IteratingCallback
                 processing.add(entry);
                 frames.addAll(entry.frames());
             }
-            // TODO: entries.clear()?
+            entries.clear();
         }
+
+        if (processing.isEmpty())
+            return Action.IDLE;
 
         Packet packet = session.newPacket(frames);
         packetGenerator.generate(accumulator, packet);
 
         session.notifyOutgoingPacket(packet);
 
-        accumulator.writeTo(session.getEndPoint(), false, this);
+        EndPoint endPoint = session.getEndPoint();
+        if (LOG.isDebugEnabled())
+            LOG.debug("writing {} to {} on {}", accumulator, endPoint, this);
+        endPoint.write(this, session.getRemoteSocketAddress(), accumulator.getByteBuffer());
         return Action.SCHEDULED;
     }
 
     @Override
     protected void onSuccess()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("write succeeded to {} on {}", session.getEndPoint(), this);
         accumulator.clear();
         processing.forEach(Entry::succeeded);
         processing.clear();
+        frames.clear();
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable cause)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.atDebug().setCause(cause).log("write failed to {} on {}", session.getEndPoint(), this);
+        accumulator.release();
+        processing.forEach(entry -> entry.failed(cause));
+        processing.clear();
+        frames.clear();
     }
 
     private sealed interface Entry extends Callback permits SessionEntry
