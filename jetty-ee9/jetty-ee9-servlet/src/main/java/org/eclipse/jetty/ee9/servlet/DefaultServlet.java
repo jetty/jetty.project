@@ -319,8 +319,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
                 contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css", bufferPool);
 
                 CompressedContentFormat[] precompressedFormats = _resourceService.getPrecompressedFormats();
-                if (precompressedFormats.length > 0)
-                    contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
+                contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
 
                 int maxCacheSize = getInitInt("maxCacheSize", -2);
                 int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);

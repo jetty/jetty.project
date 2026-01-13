@@ -135,8 +135,7 @@ public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css", _byteBufferPool);
         CompressedContentFormat[] precompressedFormats = _resourceService.getPrecompressedFormats();
-        if (precompressedFormats.length > 0)
-            contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
+        contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
         contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), _byteBufferPool);
         return contentFactory;
     }
