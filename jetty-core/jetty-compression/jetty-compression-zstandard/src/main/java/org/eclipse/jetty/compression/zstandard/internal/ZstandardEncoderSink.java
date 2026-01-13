@@ -152,8 +152,8 @@ public class ZstandardEncoderSink extends EncoderSink
                     Callback writeCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, outputBuf::release);
                     if (inputBuf.hasRemaining())
                     {
-                        // rollback unprocessed inputBuf to content buffer position.
-                        content.position(originalPosition);
+                        // Adjust position to account for bytes already consumed by zstd.
+                        content.position(originalPosition + inputBuf.getByteBuffer().position());
                     }
                     // we are about to return, release inputBuffer
                     inputBuf.release();
