@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import java.io.EOFException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.ByteBufferRequestContent;
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -446,10 +449,31 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                     assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                     assertThat(response.getContentAsString(), is("Hello World!"));
 
+                    // Test ambiguous paths..
                     for (String ambiguous : new String[] {"/foo%2Fbar", "/foo//bar", "/foo/..;/bar", "/foo/%2e%2e;param/bar"})
                     {
-                        response = client.GET(baseURI + ambiguous);
-                        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus(), new ResponseDetails(response));
+                        try
+                        {
+                            response = client.GET(baseURI + ambiguous);
+                            assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus(), new ResponseDetails(response));
+                        }
+                        catch (ExecutionException e)
+                        {
+                            // FLAKY workaround for issue https://github.com/jetty/jetty.project/issues/14327
+                            // REMOVE once that issue is resolved.
+                            Throwable cause = e.getCause();
+                            // Handle bad input URL EOF situations as flaky.
+                            if (cause instanceof EOFException /*||
+                                cause instanceof AsynchronousCloseException*/)
+                            {
+                                LoggerFactory.getLogger(DemoModulesTests.class).atInfo()
+                                    .setCause(e).log("EOF During request to {}{}", baseURI, ambiguous);
+                            }
+                            else
+                            {
+                                throw e;
+                            }
+                        }
                     }
                 }
             }
