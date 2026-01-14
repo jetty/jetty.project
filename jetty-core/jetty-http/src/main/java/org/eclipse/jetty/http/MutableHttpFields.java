@@ -95,7 +95,8 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields, HttpField replaceField)
     {
-        _fields = new HttpField[ArrayUtil.growCapacity(0, fields.size(), Integer.MAX_VALUE)];
+        int fieldsSize = fields.size();
+        _fields = new HttpField[ArrayUtil.growCapacity(0, fieldsSize > 0 ? fieldsSize : INITIAL_SIZE, Integer.MAX_VALUE)];
         _size = 0;
         boolean put = false;
         for (HttpField f : fields)
@@ -123,7 +124,8 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields, EnumSet<HttpHeader> removeFields)
     {
-        _fields = new HttpField[ArrayUtil.growCapacity(0, fields.size(), Integer.MAX_VALUE)];
+        int fieldsSize = fields.size();
+        _fields = new HttpField[ArrayUtil.growCapacity(0, fieldsSize > 0 ? fieldsSize : INITIAL_SIZE, Integer.MAX_VALUE)];
         _size = 0;
         for (HttpField f : fields)
         {
@@ -155,8 +157,9 @@ class MutableHttpFields implements HttpFields.Mutable
 
         if (_immutable || _size + fields.size() >= _fields.length)
         {
-            _immutable = false;
+            // First try to grow so that an exception is thrown before modifying _immutable if that cannot happen.
             _fields = ArrayUtil.grow(_fields, fields.size(), Integer.MAX_VALUE);
+            _immutable = false;
         }
 
         if (fields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
