@@ -86,6 +86,6 @@ public class ClientHelloMessageGenerator extends MessageGenerator
         accumulator.putShort((short)extensionsLength);
         accumulator.add(extensionsAccumulator);
 
-        notifyMessageGenerated(message, accumulator);
+        notifyMessageGenerated(message);
     }
 }

@@ -11,13 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.tls;
+package org.eclipse.jetty.quic.common.tls.generator;
 
-// TODO: move all this to GroupKeyPair.
-//  In this way, the little endianness of the X* groups is all in 1 place.
-public class SharedSecretGenerator
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
+
+public class QuicMessagesGenerator extends MessagesGenerator
 {
-    private SharedSecretGenerator()
+    public QuicMessagesGenerator(ByteBufferPool byteBufferPool, boolean client)
     {
+        super(byteBufferPool, client);
+        getExtensionsGenerator().put(new QuicTransportParametersExtensionGenerator());
     }
 }

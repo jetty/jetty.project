@@ -39,13 +39,13 @@ public abstract class MessageGenerator
         listeners.add(listener);
     }
 
-    protected void notifyMessageGenerated(Message message, RetainableByteBuffer buffer)
+    protected void notifyMessageGenerated(Message message)
     {
         for (Listener listener : listeners)
         {
             try
             {
-                listener.onMessageGenerated(message, buffer);
+                listener.onMessageGenerated(message);
             }
             catch (Throwable x)
             {
@@ -63,6 +63,6 @@ public abstract class MessageGenerator
 
     public interface Listener
     {
-        void onMessageGenerated(Message message, RetainableByteBuffer buffer);
+        void onMessageGenerated(Message message);
     }
 }

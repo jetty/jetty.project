@@ -54,8 +54,8 @@ public class FrameStream
 
             // This frame is in order, deliver it.
             queue.poll();
-            notifyFrame(candidate);
             offset += candidate.length();
+            notifyFrame(candidate);
         }
     }
 

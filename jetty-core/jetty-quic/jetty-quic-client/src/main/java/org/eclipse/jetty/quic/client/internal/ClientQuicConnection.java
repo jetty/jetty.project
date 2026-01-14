@@ -16,6 +16,7 @@ package org.eclipse.jetty.quic.client.internal;
 import java.net.SocketAddress;
 import java.util.Map;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
@@ -26,6 +27,8 @@ import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
+import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
+import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -52,7 +55,9 @@ public class ClientQuicConnection extends QuicConnection implements Promise.Invo
     public void onOpen()
     {
         PacketNumbers packetNumbers = new PacketNumbers();
-        PacketProtector protector = new PacketProtector(connector.getByteBufferPool(), packetNumbers);
+        ByteBufferPool byteBufferPool = connector.getByteBufferPool();
+        TranscriptHash transcriptHash = new TranscriptHash(new QuicMessagesGenerator(byteBufferPool, true));
+        PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         ClientTLSEngine clientTLSEngine = new ClientTLSEngine(protector);
         session = new ClientQuicSession(connector, quicConfiguration, packetNumbers, clientTLSEngine, getEndPoint(), context);
         session.connect(this);

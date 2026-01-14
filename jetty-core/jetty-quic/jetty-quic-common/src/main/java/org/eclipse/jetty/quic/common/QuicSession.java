@@ -243,20 +243,30 @@ public abstract class QuicSession extends AbstractSession
 
     public void process(SocketAddress address, RetainableByteBuffer buffer) throws Exception
     {
-        Packet packet = parser.parse(buffer);
-        if (packet == null)
+        while (buffer.hasRemaining())
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("packet discarded on {}", this);
-            return;
+            Packet packet = parser.parse(buffer);
+            if (packet == null)
+            {
+                // TODO: is this case possible in practice?
+                if (LOG.isDebugEnabled())
+                    LOG.debug("packet discarded on {}", this);
+                // TODO: consume the buffer?
+                return;
+            }
+
+            // RFC 9000, 7.2: the packet must be discarded
+            // if destination connection ID does not match.
+            if (!Arrays.equals(srcConnectionId, packet.destinationConnectionId()))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("packet does not match connection id on {}", this);
+                // TODO: consume the buffer?
+                return;
+            }
+
+            notifyIncomingPacket(address, packet);
         }
-
-        // RFC 9000, 7.2: the packet must be discarded
-        // if destination connection ID does not match.
-        if (!Arrays.equals(srcConnectionId, packet.destinationConnectionId()))
-            return;
-
-        notifyIncomingPacket(address, packet);
     }
 
     protected void processPacket(SocketAddress address, Packet packet)
@@ -285,10 +295,6 @@ public abstract class QuicSession extends AbstractSession
             // TODO: other packets.
             default -> throw new UnsupportedOperationException();
         }
-
-        // TODO: whatever packet contains a CRYPTO, we must feed a FrameStream.
-        //  It's then the FrameStream that notifies of TLS bytes.
-        //  There is a crypto FrameStream per EncryptionLevel.
     }
 
     protected void processFrames(List<Frame> frames)

@@ -11,13 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.tls;
+package org.eclipse.jetty.quic.common.tls.parser;
 
-// TODO: move all this to GroupKeyPair.
-//  In this way, the little endianness of the X* groups is all in 1 place.
-public class SharedSecretGenerator
+import org.eclipse.jetty.tls.common.parser.MessagesParser;
+
+public class QuicMessagesParser extends MessagesParser
 {
-    private SharedSecretGenerator()
+    public QuicMessagesParser(boolean client)
     {
+        super(client);
+        getExtensionsParser().put(new QuicTransportParametersExtensionParser(getExtensionsParser()));
     }
 }

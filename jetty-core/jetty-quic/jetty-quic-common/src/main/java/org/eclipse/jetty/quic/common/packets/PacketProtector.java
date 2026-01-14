@@ -32,6 +32,9 @@ import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.internal.crypto.HKDF;
 import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.tls.CipherSuite;
+import org.eclipse.jetty.tls.TLSException;
+import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,17 +48,26 @@ public class PacketProtector implements Encrypter, Decrypter
     private final Map<EncryptionLevel, KeyManager> keyManagers = new ConcurrentHashMap<>();
     private final ByteBufferPool byteBufferPool;
     private final PacketNumbers packetNumbers;
+    private final TranscriptHash transcriptHash;
+    private final boolean client;
     private EncryptionLevel encryptionLevel;
 
-    public PacketProtector(ByteBufferPool byteBufferPool, PacketNumbers packetNumbers)
+    public PacketProtector(ByteBufferPool byteBufferPool, PacketNumbers packetNumbers, TranscriptHash transcriptHash, boolean client)
     {
         this.byteBufferPool = byteBufferPool;
         this.packetNumbers = packetNumbers;
+        this.transcriptHash = transcriptHash;
+        this.client = client;
     }
 
     public ByteBufferPool getByteBufferPool()
     {
         return byteBufferPool;
+    }
+
+    public TranscriptHash getTranscriptHash()
+    {
+        return transcriptHash;
     }
 
     public EncryptionLevel getEncryptionLevel()
@@ -72,6 +84,19 @@ public class PacketProtector implements Encrypter, Decrypter
         keyManager.allocateInitialKeys(quicVersion, input);
         if (LOG.isDebugEnabled())
             LOG.debug("allocated initial QUIC keys on {}", this);
+    }
+
+    public void allocateHandshakeKeys(QuicVersion quicVersion, CipherSuite cipherSuite, SecretKey sharedSecret)
+    {
+        assert encryptionLevel == EncryptionLevel.INITIAL;
+        encryptionLevel = EncryptionLevel.HANDSHAKE;
+
+        transcriptHash.initialize(cipherSuite);
+
+        KeyManager keyManager = keyManagers.computeIfAbsent(EncryptionLevel.HANDSHAKE, KeyManager::new);
+        keyManager.allocateHandshakeKeys(quicVersion, cipherSuite, sharedSecret);
+        if (LOG.isDebugEnabled())
+            LOG.debug("allocated handshake QUIC keys on {}", this);
     }
 
     @Override
@@ -122,25 +147,84 @@ public class PacketProtector implements Encrypter, Decrypter
             this.encryptionLevel = encryptionLevel;
         }
 
-        public void allocateInitialKeys(QuicVersion quicVersion, byte[] inputKeyMaterial) throws Exception
+        public void allocateInitialKeys(QuicVersion quicVersion, byte[] inputKeyMaterial)
         {
-            HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract().addSalt(quicVersion.initialSalt()).addIKM(inputKeyMaterial).extractOnly();
-            // RFC 9001, 5.2: initial secrets use SHA256.
-            KDF kdf = KDF.getInstance("HKDF-SHA256");
-            SecretKey prk = kdf.deriveKey("InitialPseudoRandomKey", spec);
+            try
+            {
+                // RFC 9001, 5.2: initial secrets use SHA256.
+                KDF kdf = KDF.getInstance("HKDF-SHA256");
+                HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract().addSalt(quicVersion.initialSalt()).addIKM(inputKeyMaterial).extractOnly();
+                SecretKey prk = kdf.deriveKey("InitialPseudoRandomKey", spec);
 
-            SecretKey clientInitial = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "client in", 32));
-            SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, quicVersion.encryptionLabel(), 16));
-            SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, quicVersion.initializationVectorLabel(), 12));
-            SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, quicVersion.headerProtectionLabel(), 16));
+                SecretKey clientInitial = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "client in", 32));
+                SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, quicVersion.encryptionLabel(), 16));
+                SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, quicVersion.initializationVectorLabel(), 12));
+                SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, quicVersion.headerProtectionLabel(), 16));
 
-            SecretKey serverInitial = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "server in", 32));
-            SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, quicVersion.encryptionLabel(), 16));
-            SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, quicVersion.initializationVectorLabel(), 12));
-            SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, quicVersion.headerProtectionLabel(), 16));
+                SecretKey serverInitial = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "server in", 32));
+                SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, quicVersion.encryptionLabel(), 16));
+                SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, quicVersion.initializationVectorLabel(), 12));
+                SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, quicVersion.headerProtectionLabel(), 16));
 
-            readKeys.updateKeys(serverInitial, serverEncryption, serverInitialization, serverProtection);
-            writeKeys.updateKeys(clientInitial, clientEncryption, clientInitialization, clientProtection);
+                if (client)
+                {
+                    readKeys.updateKeys(serverInitial, serverEncryption, serverInitialization, serverProtection);
+                    writeKeys.updateKeys(clientInitial, clientEncryption, clientInitialization, clientProtection);
+                }
+                else
+                {
+                    readKeys.updateKeys(clientInitial, clientEncryption, clientInitialization, clientProtection);
+                    writeKeys.updateKeys(serverInitial, serverEncryption, serverInitialization, serverProtection);
+                }
+            }
+            catch (Exception x)
+            {
+                throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
+            }
+        }
+
+        public void allocateHandshakeKeys(QuicVersion quicVersion, CipherSuite cipherSuite, SecretKey sharedSecret)
+        {
+            try
+            {
+                int hashLength = cipherSuite.hashLength();
+                KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
+                byte[] salt = new byte[hashLength];
+                byte[] inputKeyMaterial = new byte[hashLength];
+                HKDFParameterSpec.Extract extract = HKDFParameterSpec.ofExtract().addSalt(salt).addIKM(inputKeyMaterial).extractOnly();
+                SecretKey earlySecret = kdf.deriveKey("HandshakeEarlyKey", extract);
+
+                SecretKey derivedSecret = kdf.deriveKey("HandshakeDerivedKey", HKDF.expandLabel(earlySecret, "derived", transcriptHash.getEmptyHash(), hashLength));
+                extract = HKDFParameterSpec.ofExtract().addSalt(derivedSecret).addIKM(sharedSecret).extractOnly();
+                SecretKey handshakeSecret = kdf.deriveKey("HandshakeSecretKey", extract);
+                byte[] tlsHash = transcriptHash.getHash();
+                SecretKey clientHandshake = kdf.deriveKey("ClientHandshakeKey", HKDF.expandLabel(handshakeSecret, "c hs traffic", tlsHash, hashLength));
+                SecretKey serverHandshake = kdf.deriveKey("ServerHandshakeKey", HKDF.expandLabel(handshakeSecret, "s hs traffic", tlsHash, hashLength));
+
+                int keyLength = cipherSuite.keyLength();
+                SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientHandshake, quicVersion.encryptionLabel(), keyLength));
+                SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientHandshake, quicVersion.initializationVectorLabel(), 12));
+                SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientHandshake, quicVersion.headerProtectionLabel(), keyLength));
+
+                SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverHandshake, quicVersion.encryptionLabel(), keyLength));
+                SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverHandshake, quicVersion.initializationVectorLabel(), 12));
+                SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverHandshake, quicVersion.headerProtectionLabel(), keyLength));
+
+                if (client)
+                {
+                    readKeys.updateKeys(serverHandshake, serverEncryption, serverInitialization, serverProtection);
+                    writeKeys.updateKeys(clientHandshake, clientEncryption, clientInitialization, clientProtection);
+                }
+                else
+                {
+                    readKeys.updateKeys(clientHandshake, clientEncryption, clientInitialization, clientProtection);
+                    writeKeys.updateKeys(serverHandshake, serverEncryption, serverInitialization, serverProtection);
+                }
+            }
+            catch (Exception x)
+            {
+                throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
+            }
         }
 
         public PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer payload) throws Exception
@@ -214,9 +298,9 @@ public class PacketProtector implements Encrypter, Decrypter
                 // The payload length at this point also includes
                 // the packet number length and the 16-bytes AEAD tag.
                 int payloadLength = VarLenInt.decodeInt(byteBuffer);
-                int packetNumberOffset = byteBuffer.position();
+                int packetNumberPosition = byteBuffer.position();
                 // Packet number length is at most 4 bytes.
-                byteBuffer.position(packetNumberOffset + 4);
+                byteBuffer.position(packetNumberPosition + 4);
                 byte[] sample = new byte[16];
                 byteBuffer.get(sample);
 
@@ -231,7 +315,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 payloadLength -= encodedPacketNumberLength;
 
                 // Prepare the decrypted header buffer.
-                int headerLength = packetNumberOffset + encodedPacketNumberLength - position;
+                int headerLength = packetNumberPosition + encodedPacketNumberLength - position;
                 RetainableByteBuffer decryptedHeaderBuffer = byteBufferPool.acquire(headerLength, true);
                 ByteBuffer decryptedHeader = decryptedHeaderBuffer.getByteBuffer();
                 decryptedHeader.clear();
@@ -239,8 +323,8 @@ public class PacketProtector implements Encrypter, Decrypter
                 decryptedHeader.put(form);
 
                 // Unmask the packet number.
-                byteBuffer.position(packetNumberOffset);
-                decryptedHeader.position(packetNumberOffset);
+                byteBuffer.position(packetNumberPosition);
+                decryptedHeader.position(packetNumberPosition - position);
                 int encodedPacketNumber = 0;
                 for (int i = 0; i < encodedPacketNumberLength; ++i)
                 {
@@ -263,6 +347,7 @@ public class PacketProtector implements Encrypter, Decrypter
 
                 // Decrypt the payload.
                 ByteBuffer encryptedPayload = byteBuffer.slice(byteBuffer.position(), payloadLength);
+                byteBuffer.position(byteBuffer.position() + payloadLength);
                 RetainableByteBuffer decryptedPayloadBuffer = byteBufferPool.acquire(payloadLength, true);
                 ByteBuffer decryptedPayload = decryptedPayloadBuffer.getByteBuffer();
                 decryptedPayload.clear();
@@ -280,9 +365,9 @@ public class PacketProtector implements Encrypter, Decrypter
 
                 // Skip form byte and destination connection ID bytes.
                 byteBuffer.position(position + 1 + dstConnectionId.length);
-                int packetNumberOffset = byteBuffer.position();
+                int packetNumberPosition = byteBuffer.position();
                 // Packet number length is at most 4 bytes.
-                byteBuffer.position(packetNumberOffset + 4);
+                byteBuffer.position(packetNumberPosition + 4);
                 byte[] sample = new byte[16];
                 byteBuffer.get(sample);
 
@@ -296,7 +381,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 int encodedPacketNumberLength = (form & 0x03) + 1;
 
                 // Prepare the decrypted header buffer.
-                int headerLength = packetNumberOffset + encodedPacketNumberLength - position;
+                int headerLength = packetNumberPosition + encodedPacketNumberLength - position;
                 RetainableByteBuffer decryptedHeaderBuffer = byteBufferPool.acquire(headerLength, true);
                 ByteBuffer decryptedHeader = decryptedHeaderBuffer.getByteBuffer();
                 decryptedHeader.clear();
@@ -304,8 +389,8 @@ public class PacketProtector implements Encrypter, Decrypter
                 decryptedHeader.put(form);
 
                 // Unmask the packet number.
-                byteBuffer.position(packetNumberOffset);
-                decryptedHeader.position(packetNumberOffset);
+                byteBuffer.position(packetNumberPosition);
+                decryptedHeader.position(packetNumberPosition - position);
                 int encodedPacketNumber = 0;
                 for (int i = 0; i < encodedPacketNumberLength; ++i)
                 {
@@ -327,10 +412,11 @@ public class PacketProtector implements Encrypter, Decrypter
                 decryptedHeader.flip();
 
                 // Decrypt the payload.
-                byteBuffer.position(packetNumberOffset + encodedPacketNumberLength);
+                byteBuffer.position(packetNumberPosition + encodedPacketNumberLength);
                 // Short header packets are always the only or the last in the datagram.
                 int payloadLength = byteBuffer.remaining();
                 ByteBuffer encryptedPayload = byteBuffer.slice(byteBuffer.position(), payloadLength);
+                byteBuffer.position(byteBuffer.position() + payloadLength);
                 RetainableByteBuffer decryptedPayloadBuffer = byteBufferPool.acquire(payloadLength, true);
                 ByteBuffer decryptedPayload = decryptedPayloadBuffer.getByteBuffer();
                 decryptedPayload.clear();

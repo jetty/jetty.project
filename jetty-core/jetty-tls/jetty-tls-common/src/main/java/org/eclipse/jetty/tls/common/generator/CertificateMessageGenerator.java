@@ -80,6 +80,6 @@ public class CertificateMessageGenerator extends MessageGenerator
             accumulator.add(extensionsAccumulator);
         }
 
-        notifyMessageGenerated(message, accumulator);
+        notifyMessageGenerated(message);
     }
 }
