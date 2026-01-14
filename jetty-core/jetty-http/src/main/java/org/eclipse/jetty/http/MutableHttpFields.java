@@ -76,7 +76,7 @@ class MutableHttpFields implements HttpFields.Mutable
             _fields = immutable._fields;
             _size = immutable._size;
         }
-        else if (fields != null)
+        else if (fields != null && fields.size() > 0)
         {
             _fields = new HttpField[ArrayUtil.growCapacity(0, fields.size(), Integer.MAX_VALUE)];
             add(fields);
