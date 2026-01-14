@@ -57,6 +57,9 @@ public class LongHeaderPacketsParser
                     else
                     {
                         int typeBits = (form & 0b00110000) >>> 4;
+                        // TODO: don't have the version, but it is encoded in the packet.
+                        //  Perhaps look ahead for the version, then derive the packet type?
+//                        type = LongHeaderPacket.PacketType.from(quicVersion, typeBits);
                         type = switch (typeBits)
                         {
                             case 0 -> Type.INITIAL;

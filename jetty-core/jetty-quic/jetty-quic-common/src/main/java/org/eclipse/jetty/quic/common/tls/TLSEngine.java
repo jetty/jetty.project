@@ -18,8 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
-import org.eclipse.jetty.quic.common.tls.generator.QuicTransportParametersExtensionGenerator;
-import org.eclipse.jetty.quic.common.tls.parser.QuicTransportParametersExtensionParser;
+import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
+import org.eclipse.jetty.quic.common.tls.parser.QuicMessagesParser;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.common.generator.MessageGenerator;
 import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
@@ -46,10 +46,8 @@ public abstract class TLSEngine implements MessageGenerator.Listener, MessagePar
     protected TLSEngine(PacketProtector protector, boolean client)
     {
         this.protector = protector;
-        tlsGenerator = new MessagesGenerator(protector.getByteBufferPool(), client);
-        tlsGenerator.getExtensionsGenerator().put(new QuicTransportParametersExtensionGenerator());
-        tlsParser = new MessagesParser(client);
-        tlsParser.getExtensionsParser().put(new QuicTransportParametersExtensionParser(tlsParser.getExtensionsParser()));
+        tlsGenerator = new QuicMessagesGenerator(protector.getByteBufferPool(), client);
+        tlsParser = new QuicMessagesParser(client);
     }
 
     public PacketProtector getPacketProtector()

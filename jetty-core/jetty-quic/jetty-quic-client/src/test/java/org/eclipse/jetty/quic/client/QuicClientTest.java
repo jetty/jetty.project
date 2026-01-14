@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.client;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.quic.api.Session;
@@ -58,6 +59,7 @@ public class QuicClientTest
 
         QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(workDir);
         connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, new HttpConnectionFactory(httpConfig));
+        connector.setPort(8443);
         server.addConnector(connector);
 
         server.setHandler(handler);
@@ -69,6 +71,34 @@ public class QuicClientTest
     public void dispose()
     {
         LifeCycle.stop(server);
+    }
+
+    @Test
+    public void testServerOnly(@TempDir Path workDir) throws Exception
+    {
+        start(workDir, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+        new CountDownLatch(1).await();
+    }
+
+    @Test
+    public void testClientOnly() throws Exception
+    {
+        QuicClientQuicConfiguration quicConfig = new QuicClientQuicConfiguration();
+        QuicClient client = new QuicClient(quicConfig);
+        client.start();
+
+        Promise.Completable<Session> completable = new Promise.Completable<>();
+        client.connect(new InetSocketAddress("localhost", 8443), new Session.Listener() {}, completable);
+        Session session = completable.get(555, TimeUnit.SECONDS);
+        assertNotNull(session);
     }
 
     @Test

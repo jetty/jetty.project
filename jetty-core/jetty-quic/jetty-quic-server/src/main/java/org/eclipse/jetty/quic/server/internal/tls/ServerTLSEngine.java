@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.quic.server.internal.tls;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.tls.Message;
@@ -29,7 +28,7 @@ public class ServerTLSEngine extends TLSEngine implements MessageGenerator.Liste
     }
 
     @Override
-    public void onMessageGenerated(Message message, RetainableByteBuffer buffer)
+    public void onMessageGenerated(Message message)
     {
         // TODO: feed TranscriptHash.
     }

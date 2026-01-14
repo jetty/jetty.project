@@ -15,11 +15,10 @@ package org.eclipse.jetty.quic.client.internal.tls;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.crypto.SecretKey;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
-import org.eclipse.jetty.quic.common.tls.SharedSecretGenerator;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.ClientHelloMessage;
@@ -46,6 +45,7 @@ public class ClientTLSEngine extends TLSEngine
 {
     private static final Logger LOG = LoggerFactory.getLogger(ClientTLSEngine.class);
 
+    private Configuration configuration;
     private List<GroupKeyPair> groupKeyPairs;
     private ClientHelloMessage clientHello;
     private TLSVersion tlsVersion;
@@ -64,6 +64,8 @@ public class ClientTLSEngine extends TLSEngine
                 LOG.debug("starting handshake with {} on {}", configuration, this);
 
             assert clientHello == null;
+
+            this.configuration = configuration;
 
             List<CipherSuite> cipherSuites = configuration.cipherSuites();
 
@@ -104,28 +106,24 @@ public class ClientTLSEngine extends TLSEngine
     public void retryHandshake(Callback callback)
     {
         assert clientHello != null;
+
+        // RetryPacket is a QUIC mechanism, and as such
+        // the ClientHello sent in the first InitialPacket
+        // must be discarded from the TranscriptHash.
+        getPacketProtector().getTranscriptHash().clear();
         notifyMessages(List.of(clientHello), callback);
     }
 
     @Override
-    public void onMessageGenerated(Message message, RetainableByteBuffer buffer)
+    public void onMessageGenerated(Message message)
     {
-        // TODO: add buffer to TranscriptHash
+        getPacketProtector().getTranscriptHash().offer(message);
     }
 
     @Override
     public void onMessageParsed(Message message)
     {
-        // TODO: add buffer to TranscriptHash
-        //  Perhaps it's faster to re-serialize again the message, rather than
-        //  trying to keep around the buffers the message has been parsed from,
-        //  as they can be split in nasty ways (e.g. buffer1=half serverhello,
-        //  buffer2=half serverhello + half encryptedextensions, etc.) and we
-        //  cannot trust the order of the buffers (must verify messages are sent
-        //  in the proper order required by TLS).
-        //  Note that it must be a different MessagesGenerator to avoid concurrency
-        //  with the one we use for writing (as here we are on the read side).
-
+        getPacketProtector().getTranscriptHash().offer(message);
         switch (message)
         {
             case ServerHelloMessage serverHello -> processServerHello(serverHello);
@@ -133,7 +131,7 @@ public class ClientTLSEngine extends TLSEngine
         }
     }
 
-    private void processServerHello(ServerHelloMessage serverHello)
+    private void processServerHello(ServerHelloMessage serverHello)// throws Exception
     {
         if (serverHello.sessionId().length != 0)
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "invalid legacy session id");
@@ -181,6 +179,8 @@ public class ClientTLSEngine extends TLSEngine
         if (negotiatedVersions.isEmpty())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common TLSVersion");
         tlsVersion = negotiatedVersions.getFirst();
+        if (LOG.isDebugEnabled())
+            LOG.debug("negotiated TLSVersion {}", tlsVersion);
 
         // RFC 8446, 4.1.3: the client must have offered the CipherSuite.
         CipherSuite serverCipherSuite = serverHello.cipherSuite();
@@ -189,6 +189,8 @@ public class ClientTLSEngine extends TLSEngine
             .findFirst()
             .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common CipherSuite"));
         cipherSuite = serverCipherSuite;
+        if (LOG.isDebugEnabled())
+            LOG.debug("negotiated CipherSuite {}", cipherSuite);
 
         if (!keyShares.isEmpty())
         {
@@ -210,8 +212,10 @@ public class ClientTLSEngine extends TLSEngine
                 .filter(gkp -> gkp.group() == serverKeyShare.group())
                 .findFirst()
                 .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common NamedGroup"));
-            byte[] sharedSecret = SharedSecretGenerator.verifyAndGenerate(groupKeyPair, serverKeyShare);
-//            getPacketProtector().allocateHandshakeKeys(sharedSecret);
+            SecretKey sharedSecret = groupKeyPair.generateSharedSecret(serverKeyShare);
+            if (LOG.isDebugEnabled())
+                LOG.debug("negotiated KeyPair in NamedGroup {}", serverKeyShare.group());
+            getPacketProtector().allocateHandshakeKeys(configuration.quicVersion(), cipherSuite, sharedSecret);
         }
         else
         {
@@ -222,7 +226,7 @@ public class ClientTLSEngine extends TLSEngine
     public static class Configuration
     {
         private List<SignatureAlgorithm> signatureAlgorithms = List.of(SignatureAlgorithm.RSA_PKCS1_SHA256, SignatureAlgorithm.ECDSA_SECP256R1_SHA256, SignatureAlgorithm.RSA_PSS_RSAE_SHA256);
-        private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519, NamedGroup.secp256r1, NamedGroup.ffdhe2048);
+        private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519/*, NamedGroup.secp256r1, NamedGroup.ffdhe2048*/);
         private List<CipherSuite> cipherSuites = List.of(CipherSuite.values());
         private final List<Extension> extensions = new ArrayList<>();
         private QuicVersion quicVersion = QuicVersion.V1;
