@@ -15,11 +15,14 @@ package org.eclipse.jetty.util;
 
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Unit tests for class {@link ArrayUtil}.
@@ -93,5 +96,23 @@ public class ArrayUtilTest
         assertNotSame(resultArray, objectArray);
 
         assertFalse(resultArray.equals(objectArray));
+    }
+
+    @Test
+    public void testGrowCapacity()
+    {
+        assertThrows(IllegalArgumentException.class, () -> ArrayUtil.growCapacity(-1, 1, 1));
+        assertThrows(IllegalArgumentException.class, () -> ArrayUtil.growCapacity(0, -1, 1));
+        assertThrows(IllegalArgumentException.class, () -> ArrayUtil.growCapacity(0, 0, 1));
+        assertThrows(IllegalArgumentException.class, () -> ArrayUtil.growCapacity(0, 1, -1));
+        assertThrows(IllegalArgumentException.class, () -> ArrayUtil.growCapacity(0, 1, 0));
+        assertThrows(IllegalArgumentException.class, () -> ArrayUtil.growCapacity(1, 1, 1));
+        assertEquals(1, ArrayUtil.growCapacity(0, 1, 1));
+        assertEquals(2, ArrayUtil.growCapacity(1, 1, 2));
+        assertThat(ArrayUtil.growCapacity(0, 1, Integer.MAX_VALUE), greaterThanOrEqualTo(1));
+        assertThat(ArrayUtil.growCapacity(1, 1, Integer.MAX_VALUE), greaterThanOrEqualTo(2));
+        assertThat(ArrayUtil.growCapacity(100, 2000, Integer.MAX_VALUE), greaterThanOrEqualTo(2100));
+        assertEquals(Integer.MAX_VALUE, ArrayUtil.growCapacity(Integer.MAX_VALUE - 1, 1, Integer.MAX_VALUE));
+        assertThrows(IllegalArgumentException.class, () -> ArrayUtil.growCapacity(Integer.MAX_VALUE, 1, Integer.MAX_VALUE));
     }
 }

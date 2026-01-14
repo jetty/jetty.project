@@ -19,7 +19,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -286,7 +285,7 @@ public interface CharsetStringBuilder
         {
             if (_buffer == null)
             {
-                _buffer = ByteBuffer.allocate(needed + 32);
+                _buffer = ByteBuffer.allocate(ArrayUtil.growCapacity(32, needed, Integer.MAX_VALUE));
             }
             else
             {
@@ -294,7 +293,7 @@ public interface CharsetStringBuilder
                 if (space < needed)
                 {
                     int position = _buffer.position();
-                    _buffer = ByteBuffer.wrap(Arrays.copyOf(_buffer.array(), _buffer.capacity() + needed - space + 32)).position(position);
+                    _buffer = ByteBuffer.wrap(ArrayUtil.grow(_buffer.array(), needed, Integer.MAX_VALUE)).position(position);
                 }
             }
         }

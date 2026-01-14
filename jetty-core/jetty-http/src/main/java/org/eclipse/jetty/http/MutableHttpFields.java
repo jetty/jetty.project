@@ -26,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
+import org.eclipse.jetty.util.ArrayUtil;
 
 /**
  * HTTP Fields. A collection of HTTP header and or Trailer fields.
@@ -38,7 +39,6 @@ import java.util.stream.Stream;
 class MutableHttpFields implements HttpFields.Mutable
 {
     private static final int INITIAL_SIZE = 16;
-    private static final int SIZE_INCREMENT = 4;
 
     private HttpField[] _fields;
     private boolean _immutable;
@@ -77,7 +77,7 @@ class MutableHttpFields implements HttpFields.Mutable
         }
         else if (fields != null)
         {
-            _fields = new HttpField[fields.size() + SIZE_INCREMENT];
+            _fields = new HttpField[ArrayUtil.growCapacity(0, fields.size(), Integer.MAX_VALUE)];
             add(fields);
         }
         else
@@ -94,7 +94,7 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields, HttpField replaceField)
     {
-        _fields = new HttpField[fields.size() + SIZE_INCREMENT];
+        _fields = new HttpField[ArrayUtil.growCapacity(0, fields.size(), Integer.MAX_VALUE)];
         _size = 0;
         boolean put = false;
         for (HttpField f : fields)
@@ -122,7 +122,7 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields, EnumSet<HttpHeader> removeFields)
     {
-        _fields = new HttpField[fields.size() + SIZE_INCREMENT];
+        _fields = new HttpField[ArrayUtil.growCapacity(0, fields.size(), Integer.MAX_VALUE)];
         _size = 0;
         for (HttpField f : fields)
         {
@@ -139,7 +139,7 @@ class MutableHttpFields implements HttpFields.Mutable
             if (_immutable || _size == _fields.length)
             {
                 _immutable = false;
-                _fields = Arrays.copyOf(_fields, _size + SIZE_INCREMENT);
+                _fields = ArrayUtil.grow(_fields, 1, Integer.MAX_VALUE);
             }
             _fields[_size++] = field;
         }
@@ -155,7 +155,7 @@ class MutableHttpFields implements HttpFields.Mutable
         if (_immutable || _size + fields.size() >= _fields.length)
         {
             _immutable = false;
-            _fields = Arrays.copyOf(_fields, _size + fields.size() + SIZE_INCREMENT);
+            _fields = ArrayUtil.grow(_fields, fields.size(), Integer.MAX_VALUE);
         }
 
         if (fields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
@@ -523,7 +523,7 @@ class MutableHttpFields implements HttpFields.Mutable
 
             int last = _size++;
             if (_fields.length < _size)
-                _fields = Arrays.copyOf(_fields, _fields.length + SIZE_INCREMENT);
+                _fields = ArrayUtil.grow(_fields, 1, Integer.MAX_VALUE);
             System.arraycopy(_fields, _index, _fields, _index + 1, last - _index);
             _fields[_index++] = field;
             _last = -1;
