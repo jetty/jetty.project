@@ -210,18 +210,26 @@ public class WebSocketTester implements AutoCloseable
     {
         ByteBuffer actualPayload = ByteBuffer.allocate(expectedMessage.remaining());
 
-        Frame frame = framesQueue.poll(5, TimeUnit.SECONDS);
-        assertThat("Initial Frame.opCode", frame.getOpCode(), is(expectedDataOp));
-
-        actualPayload.put(frame.getPayload());
-        while (!frame.isFin())
+        try
         {
-            frame = framesQueue.poll(5, TimeUnit.SECONDS);
-            assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CONTINUATION));
+            Frame frame = framesQueue.poll(5, TimeUnit.SECONDS);
+            assertThat("Initial Frame.opCode", frame.getOpCode(), is(expectedDataOp));
+
             actualPayload.put(frame.getPayload());
+            while (!frame.isFin())
+            {
+                frame = framesQueue.poll(5, TimeUnit.SECONDS);
+                assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CONTINUATION));
+                actualPayload.put(frame.getPayload());
+            }
+            actualPayload.flip();
+            ByteBufferAssert.assertEquals("Actual Message Payload", actualPayload, expectedMessage);
         }
-        actualPayload.flip();
-        ByteBufferAssert.assertEquals("Actual Message Payload", actualPayload, expectedMessage);
+        catch (Throwable t)
+        {
+            LOG.info("Actual Message Payload {}", BufferUtil.toDetailString(actualPayload));
+            throw t;
+        }
     }
 
     public void assertExpected(BlockingQueue<Frame> framesQueue, List<Frame> expect) throws InterruptedException
