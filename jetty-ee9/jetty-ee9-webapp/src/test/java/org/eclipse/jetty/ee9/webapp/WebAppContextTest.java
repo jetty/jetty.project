@@ -1104,7 +1104,7 @@ public class WebAppContextTest
     {
         public MyXmlParser()
         {
-            super(false);
+            super(true);
         }
     }
 

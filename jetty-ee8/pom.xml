@@ -48,7 +48,7 @@
 
     <ee8.javax.security.auth.message>1.0.0.v201108011116</ee8.javax.security.auth.message>
     <ee8.javax.servlet.jsp.jstl.impl.version>1.2.5</ee8.javax.servlet.jsp.jstl.impl.version>
-    <ee8.jetty.servlet.api.version>4.0.6</ee8.jetty.servlet.api.version>
+    <ee8.jetty.servlet.api.version>4.0.7</ee8.jetty.servlet.api.version>
     <ee8.jsp.impl.version>9.0.111</ee8.jsp.impl.version>
     <ee8.weld.version>3.1.9.Final</ee8.weld.version>
     <ee9.module/>
