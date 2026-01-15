@@ -16,22 +16,23 @@ package org.eclipse.jetty.quic.common.internal.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
+import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class MaxDataParser implements FrameParser
+public class StreamDataBlockedFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
+    private long streamId;
     private long maxData;
 
-    public MaxDataParser(VarLenInt varLenInt)
+    public StreamDataBlockedFrameParser(VarLenInt varLenInt)
     {
         this.varLenInt = varLenInt;
     }
 
     @Override
-    public MaxDataFrame parse(RetainableByteBuffer buffer)
+    public StreamDataBlockedFrame parse(RetainableByteBuffer buffer)
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (byteBuffer.hasRemaining())
@@ -41,7 +42,12 @@ public class MaxDataParser implements FrameParser
                 case FRAME_TYPE ->
                 {
                     byteBuffer.get();
-                    state = State.MAX_DATA;
+                    state = State.STREAM_ID;
+                }
+                case STREAM_ID ->
+                {
+                    if (varLenInt.tryDecode(byteBuffer, v -> streamId = v))
+                        state = State.MAX_DATA;
                 }
                 case MAX_DATA ->
                 {
@@ -53,16 +59,17 @@ public class MaxDataParser implements FrameParser
         return null;
     }
 
-    private MaxDataFrame result()
+    private StreamDataBlockedFrame result()
     {
-        MaxDataFrame frame = new MaxDataFrame(maxData);
+        StreamDataBlockedFrame frame = new StreamDataBlockedFrame(streamId, maxData);
         state = State.FRAME_TYPE;
+        streamId = 0;
         maxData = 0;
         return frame;
     }
 
     private enum State
     {
-        FRAME_TYPE, MAX_DATA
+        FRAME_TYPE, STREAM_ID, MAX_DATA
     }
 }

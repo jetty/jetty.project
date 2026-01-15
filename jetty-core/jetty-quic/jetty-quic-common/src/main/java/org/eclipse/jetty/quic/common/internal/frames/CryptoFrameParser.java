@@ -69,7 +69,7 @@ public class CryptoFrameParser implements FrameParser
                     else
                     {
                         RetainableByteBuffer slice = buffer.slice(length);
-                        buffer.skip(length);
+                        byteBuffer.position(byteBuffer.position() + (int)length);
                         CryptoFrame frame = new CryptoFrame(offset, slice);
                         state = State.FRAME_TYPE;
                         offset = 0;

@@ -16,23 +16,24 @@ package org.eclipse.jetty.quic.common.internal.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
+import org.eclipse.jetty.quic.api.frames.ResetFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class StreamsBlockedParser implements FrameParser
+public class ResetStreamFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
-    private boolean bidirectional;
-    private long maxStreams;
+    private long streamId;
+    private long errorCode;
+    private long finalSize;
 
-    public StreamsBlockedParser(VarLenInt varLenInt)
+    public ResetStreamFrameParser(VarLenInt varLenInt)
     {
         this.varLenInt = varLenInt;
     }
 
     @Override
-    public StreamsBlockedFrame parse(RetainableByteBuffer buffer)
+    public ResetFrame parse(RetainableByteBuffer buffer)
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (byteBuffer.hasRemaining())
@@ -41,12 +42,22 @@ public class StreamsBlockedParser implements FrameParser
             {
                 case FRAME_TYPE ->
                 {
-                    bidirectional = (byteBuffer.get() & 0xFF) == 0x16;
-                    state = State.MAX_STREAMS;
+                    byteBuffer.get();
+                    state = State.STREAM_ID;
                 }
-                case MAX_STREAMS ->
+                case STREAM_ID ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, v -> maxStreams = v))
+                    if (varLenInt.tryDecode(byteBuffer, v -> streamId = v))
+                        state = State.ERROR_CODE;
+                }
+                case ERROR_CODE ->
+                {
+                    if (varLenInt.tryDecode(byteBuffer, v -> errorCode = v))
+                        state = State.FINAL_SIZE;
+                }
+                case FINAL_SIZE ->
+                {
+                    if (varLenInt.tryDecode(byteBuffer, v -> finalSize = v))
                         return result();
                 }
             }
@@ -54,17 +65,18 @@ public class StreamsBlockedParser implements FrameParser
         return null;
     }
 
-    private StreamsBlockedFrame result()
+    private ResetFrame result()
     {
-        StreamsBlockedFrame frame = new StreamsBlockedFrame(bidirectional, maxStreams);
+        ResetFrame frame = new ResetFrame(streamId, errorCode, finalSize);
         state = State.FRAME_TYPE;
-        bidirectional = false;
-        maxStreams = 0;
+        streamId = 0;
+        errorCode = 0;
+        finalSize = 0;
         return frame;
     }
 
     private enum State
     {
-        FRAME_TYPE, MAX_STREAMS
+        FRAME_TYPE, STREAM_ID, ERROR_CODE, FINAL_SIZE
     }
 }

@@ -21,7 +21,7 @@ import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class StreamParser implements FrameParser
+public class StreamFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
@@ -34,7 +34,7 @@ public class StreamParser implements FrameParser
     private long offset = -1;
     private long dataLength = -1;
 
-    public StreamParser(VarLenInt varLenInt)
+    public StreamFrameParser(VarLenInt varLenInt)
     {
         this.varLenInt = varLenInt;
     }
@@ -124,7 +124,7 @@ public class StreamParser implements FrameParser
 
                     int length = (int)Math.min(dataLength, byteBuffer.remaining());
                     RetainableByteBuffer data = buffer.slice(length);
-                    buffer.skip(length);
+                    byteBuffer.position(byteBuffer.position() + length);
                     dataLength -= length;
                     boolean done = dataLength == 0;
                     return result(data, done);

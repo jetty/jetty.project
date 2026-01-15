@@ -22,14 +22,14 @@ import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class MaxStreamsParser implements FrameParser
+public class MaxStreamsFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
     private long frameType;
     private long maxStreams;
 
-    public MaxStreamsParser(VarLenInt varLenInt)
+    public MaxStreamsFrameParser(VarLenInt varLenInt)
     {
         this.varLenInt = varLenInt;
     }

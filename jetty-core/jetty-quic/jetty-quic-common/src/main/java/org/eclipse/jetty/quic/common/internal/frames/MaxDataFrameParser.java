@@ -16,23 +16,22 @@ package org.eclipse.jetty.quic.common.internal.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
+import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class StreamMaxDataParser implements FrameParser
+public class MaxDataFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
-    private long streamId;
     private long maxData;
 
-    public StreamMaxDataParser(VarLenInt varLenInt)
+    public MaxDataFrameParser(VarLenInt varLenInt)
     {
         this.varLenInt = varLenInt;
     }
 
     @Override
-    public StreamMaxDataFrame parse(RetainableByteBuffer buffer)
+    public MaxDataFrame parse(RetainableByteBuffer buffer)
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (byteBuffer.hasRemaining())
@@ -42,12 +41,7 @@ public class StreamMaxDataParser implements FrameParser
                 case FRAME_TYPE ->
                 {
                     byteBuffer.get();
-                    state = State.STREAM_ID;
-                }
-                case STREAM_ID ->
-                {
-                    if (varLenInt.tryDecode(byteBuffer, v -> streamId = v))
-                        state = State.MAX_DATA;
+                    state = State.MAX_DATA;
                 }
                 case MAX_DATA ->
                 {
@@ -59,17 +53,16 @@ public class StreamMaxDataParser implements FrameParser
         return null;
     }
 
-    private StreamMaxDataFrame result()
+    private MaxDataFrame result()
     {
-        StreamMaxDataFrame frame = new StreamMaxDataFrame(streamId, maxData);
+        MaxDataFrame frame = new MaxDataFrame(maxData);
         state = State.FRAME_TYPE;
-        streamId = 0;
         maxData = 0;
         return frame;
     }
 
     private enum State
     {
-        FRAME_TYPE, STREAM_ID, MAX_DATA
+        FRAME_TYPE, MAX_DATA
     }
 }
