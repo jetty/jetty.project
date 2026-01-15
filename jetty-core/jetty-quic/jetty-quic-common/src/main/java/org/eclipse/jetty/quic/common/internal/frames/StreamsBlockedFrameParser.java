@@ -16,22 +16,23 @@ package org.eclipse.jetty.quic.common.internal.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
+import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class DataBlockedParser implements FrameParser
+public class StreamsBlockedFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
-    private long maxData;
+    private boolean bidirectional;
+    private long maxStreams;
 
-    public DataBlockedParser(VarLenInt varLenInt)
+    public StreamsBlockedFrameParser(VarLenInt varLenInt)
     {
         this.varLenInt = varLenInt;
     }
 
     @Override
-    public DataBlockedFrame parse(RetainableByteBuffer buffer)
+    public StreamsBlockedFrame parse(RetainableByteBuffer buffer)
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (byteBuffer.hasRemaining())
@@ -40,12 +41,12 @@ public class DataBlockedParser implements FrameParser
             {
                 case FRAME_TYPE ->
                 {
-                    byteBuffer.get();
-                    state = State.MAX_DATA;
+                    bidirectional = (byteBuffer.get() & 0xFF) == 0x16;
+                    state = State.MAX_STREAMS;
                 }
-                case MAX_DATA ->
+                case MAX_STREAMS ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, v -> maxData = v))
+                    if (varLenInt.tryDecode(byteBuffer, v -> maxStreams = v))
                         return result();
                 }
             }
@@ -53,16 +54,17 @@ public class DataBlockedParser implements FrameParser
         return null;
     }
 
-    private DataBlockedFrame result()
+    private StreamsBlockedFrame result()
     {
-        DataBlockedFrame frame = new DataBlockedFrame(maxData);
+        StreamsBlockedFrame frame = new StreamsBlockedFrame(bidirectional, maxStreams);
         state = State.FRAME_TYPE;
-        maxData = 0;
+        bidirectional = false;
+        maxStreams = 0;
         return frame;
     }
 
     private enum State
     {
-        FRAME_TYPE, MAX_DATA
+        FRAME_TYPE, MAX_STREAMS
     }
 }

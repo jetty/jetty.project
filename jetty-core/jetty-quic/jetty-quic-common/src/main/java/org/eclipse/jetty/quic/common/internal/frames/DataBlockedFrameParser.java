@@ -16,24 +16,22 @@ package org.eclipse.jetty.quic.common.internal.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class ResetStreamParser implements FrameParser
+public class DataBlockedFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
-    private long streamId;
-    private long errorCode;
-    private long finalSize;
+    private long maxData;
 
-    public ResetStreamParser(VarLenInt varLenInt)
+    public DataBlockedFrameParser(VarLenInt varLenInt)
     {
         this.varLenInt = varLenInt;
     }
 
     @Override
-    public ResetFrame parse(RetainableByteBuffer buffer)
+    public DataBlockedFrame parse(RetainableByteBuffer buffer)
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (byteBuffer.hasRemaining())
@@ -43,21 +41,11 @@ public class ResetStreamParser implements FrameParser
                 case FRAME_TYPE ->
                 {
                     byteBuffer.get();
-                    state = State.STREAM_ID;
+                    state = State.MAX_DATA;
                 }
-                case STREAM_ID ->
+                case MAX_DATA ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, v -> streamId = v))
-                        state = State.ERROR_CODE;
-                }
-                case ERROR_CODE ->
-                {
-                    if (varLenInt.tryDecode(byteBuffer, v -> errorCode = v))
-                        state = State.FINAL_SIZE;
-                }
-                case FINAL_SIZE ->
-                {
-                    if (varLenInt.tryDecode(byteBuffer, v -> finalSize = v))
+                    if (varLenInt.tryDecode(byteBuffer, v -> maxData = v))
                         return result();
                 }
             }
@@ -65,18 +53,16 @@ public class ResetStreamParser implements FrameParser
         return null;
     }
 
-    private ResetFrame result()
+    private DataBlockedFrame result()
     {
-        ResetFrame frame = new ResetFrame(streamId, errorCode, finalSize);
+        DataBlockedFrame frame = new DataBlockedFrame(maxData);
         state = State.FRAME_TYPE;
-        streamId = 0;
-        errorCode = 0;
-        finalSize = 0;
+        maxData = 0;
         return frame;
     }
 
     private enum State
     {
-        FRAME_TYPE, STREAM_ID, ERROR_CODE, FINAL_SIZE
+        FRAME_TYPE, MAX_DATA
     }
 }

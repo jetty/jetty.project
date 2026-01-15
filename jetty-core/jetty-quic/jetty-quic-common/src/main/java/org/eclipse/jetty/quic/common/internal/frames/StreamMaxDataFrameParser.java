@@ -16,23 +16,23 @@ package org.eclipse.jetty.quic.common.internal.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
+import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class StreamDataBlockedParser implements FrameParser
+public class StreamMaxDataFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
     private long streamId;
     private long maxData;
 
-    public StreamDataBlockedParser(VarLenInt varLenInt)
+    public StreamMaxDataFrameParser(VarLenInt varLenInt)
     {
         this.varLenInt = varLenInt;
     }
 
     @Override
-    public StreamDataBlockedFrame parse(RetainableByteBuffer buffer)
+    public StreamMaxDataFrame parse(RetainableByteBuffer buffer)
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (byteBuffer.hasRemaining())
@@ -59,9 +59,9 @@ public class StreamDataBlockedParser implements FrameParser
         return null;
     }
 
-    private StreamDataBlockedFrame result()
+    private StreamMaxDataFrame result()
     {
-        StreamDataBlockedFrame frame = new StreamDataBlockedFrame(streamId, maxData);
+        StreamMaxDataFrame frame = new StreamMaxDataFrame(streamId, maxData);
         state = State.FRAME_TYPE;
         streamId = 0;
         maxData = 0;

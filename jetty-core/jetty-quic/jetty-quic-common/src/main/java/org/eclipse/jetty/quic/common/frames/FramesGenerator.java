@@ -200,7 +200,7 @@ public class FramesGenerator
             data = slice;
         }
 
-        accumulator.append(data);
+        accumulator.add(data);
     }
 
     private void generateMaxDataFrame(RetainableByteBuffer.Mutable accumulator, MaxDataFrame frame)

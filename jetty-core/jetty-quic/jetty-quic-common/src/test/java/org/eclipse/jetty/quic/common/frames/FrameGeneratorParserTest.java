@@ -62,6 +62,8 @@ public class FrameGeneratorParserTest
     {
         T frame1 = (T)parser.parse(accumulator);
 
+        accumulator.getByteBuffer().flip();
+
         while (accumulator.hasRemaining())
         {
             T frame2 = (T)parser.parse(accumulator);
@@ -100,12 +102,13 @@ public class FrameGeneratorParserTest
     }
 
     @Test
-    public void testStreamFrame()
+    public void testStreamFrame() throws Exception
     {
         ByteBuffer bytes = StandardCharsets.UTF_8.encode("DATA");
         StreamFrame frame = new StreamFrame(3290901290300L, RetainableByteBuffer.wrap(bytes), 120911129347656L, true, true);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
         generator.generate(accumulator, frame, bytes.remaining(), Frame.DEFAULT_MAX_SIZE);
+        bytes.clear();
         List<StreamFrame> list = parse(accumulator);
         list.forEach(result -> assertStreamFrameEqual(frame, result));
     }
@@ -115,7 +118,7 @@ public class FrameGeneratorParserTest
         assertEqual(StreamFrame::type, frame, result);
         assertEqual(StreamFrame::streamId, frame, result);
         assertEqual(StreamFrame::offset, frame, result);
-        assertEqual(StreamFrame::data, frame, result);
+        assertEqual(f -> f.data().getByteBuffer(), frame, result);
         assertEqual(StreamFrame::isEndStream, frame, result);
     }
 

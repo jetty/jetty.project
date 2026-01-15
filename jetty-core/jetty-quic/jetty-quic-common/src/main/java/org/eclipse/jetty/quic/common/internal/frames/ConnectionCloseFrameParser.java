@@ -22,7 +22,7 @@ import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 
-public class ConnectionCloseParser implements FrameParser
+public class ConnectionCloseFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private int reasonMaxLength = 128;
@@ -33,7 +33,7 @@ public class ConnectionCloseParser implements FrameParser
     private long reasonLength;
     private final Utf8StringBuilder reasonBuilder = new Utf8StringBuilder();
 
-    public ConnectionCloseParser(VarLenInt varLenInt)
+    public ConnectionCloseFrameParser(VarLenInt varLenInt)
     {
         this.varLenInt = varLenInt;
     }

@@ -19,14 +19,14 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class StopSendingParser implements FrameParser
+public class StopSendingFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
     private long streamId;
     private long errorCode;
 
-    public StopSendingParser(VarLenInt varLenInt)
+    public StopSendingFrameParser(VarLenInt varLenInt)
     {
         this.varLenInt = varLenInt;
     }
