@@ -41,6 +41,8 @@ public class ServerHelloMessageGenerator extends MessageGenerator
         if (extensionsLength > 0xFFFF)
             throw new IllegalStateException("could not generate ServerHello, extensions too long");
 
+        byte[] sessionId = message.sessionId();
+
         // RFC 8446, 4.1.3.
         // Field                             | (bytes)
         // ----------------------------------+--------
@@ -52,7 +54,7 @@ public class ServerHelloMessageGenerator extends MessageGenerator
         // Legacy compression methods Length | (1)
         // Extensions length                 | (2)
         // Extensions                        | (M)
-        int length = 2 + 32 + 1 + 2 + 1 + 2 + extensionsLength;
+        int length = 2 + 32 + 1 + sessionId.length + 2 + 1 + 2 + extensionsLength;
 
         int typeAndLength = (message.type().type() << 24) | length;
         accumulator.putInt(typeAndLength);
@@ -63,7 +65,8 @@ public class ServerHelloMessageGenerator extends MessageGenerator
         accumulator.put(random);
 
         // Legacy session ID.
-        accumulator.put((byte)0);
+        accumulator.put((byte)sessionId.length);
+        accumulator.put(sessionId);
 
         // Cipher suite.
         accumulator.putShort((short)message.cipherSuite().code());

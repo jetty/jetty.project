@@ -13,15 +13,23 @@
 
 package org.eclipse.jetty.quic.client.internal.tls;
 
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
+import javax.crypto.KDF;
+import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
+import org.eclipse.jetty.quic.common.tls.HKDF;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
+import org.eclipse.jetty.tls.CertificateMessage;
+import org.eclipse.jetty.tls.CertificateVerifyMessage;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.ClientHelloMessage;
+import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
+import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.KeyShare;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.NamedGroup;
@@ -117,16 +125,19 @@ public class ClientTLSEngine extends TLSEngine
     @Override
     public void onMessageGenerated(Message message)
     {
-        getPacketProtector().getTranscriptHash().offer(message);
+        getPacketProtector().getTranscriptHash().offer(message, false);
     }
 
     @Override
     public void onMessageParsed(Message message)
     {
-        getPacketProtector().getTranscriptHash().offer(message);
         switch (message)
         {
             case ServerHelloMessage serverHello -> processServerHello(serverHello);
+            case EncryptedExtensionsMessage encryptedExtensions -> processEncryptedExtensions(encryptedExtensions);
+            case CertificateMessage certificate -> processCertificate(certificate);
+            case CertificateVerifyMessage certificateVerify -> processCertificateVerify(certificateVerify);
+            case FinishedMessage finished -> processFinished(finished);
             default -> throw new IllegalStateException("unexpected message " + message);
         }
     }
@@ -215,11 +226,92 @@ public class ClientTLSEngine extends TLSEngine
             SecretKey sharedSecret = groupKeyPair.generateSharedSecret(serverKeyShare);
             if (LOG.isDebugEnabled())
                 LOG.debug("negotiated KeyPair in NamedGroup {}", serverKeyShare.group());
+
+            getPacketProtector().getTranscriptHash().offer(serverHello, true);
             getPacketProtector().allocateHandshakeKeys(configuration.quicVersion(), cipherSuite, sharedSecret);
         }
         else
         {
             // TODO: PSK
+        }
+    }
+
+    private void processEncryptedExtensions(EncryptedExtensionsMessage encryptedExtensions)
+    {
+        // TODO: validate extensions are allowed (e.g. key_share_extension not allowed in EncryptedExtensionsMessage).
+
+        // TODO: ALPN must be present and match what offered by in the CLientHello.
+
+        // TODO: QuicTransports must be present and validated:
+        //  * No forbidden parameters are present
+        //  * No duplicates
+        //  * Values are within allowed ranges
+        //  Apply Quic transport params to the various components.
+        //   This would require reach back to the session, must use a listener.
+
+        getPacketProtector().getTranscriptHash().offer(encryptedExtensions, true);
+    }
+
+    private void processCertificate(CertificateMessage certificate)
+    {
+        // RFC 8446, 4.4.2.4.
+        if (certificate.entries().isEmpty())
+            throw new TLSException(TLSException.Alert.DECODE_ERROR, "no certificate");
+
+        // TODO: if verification required MD5/SHA1 signatures -> bad_certificate
+
+        // TODO: Verify the certificate chain (JDK utility should be present).
+        //  Verify Signature chains
+        //  Verify Validity periods
+        //  Verify Key usage / extended key usage
+        //  Verify Name constraints
+        //  Verify Server identity (SNI / DNS name / IP)
+        //  Verify that The server certificate’s public key type Matches the negotiated signature_algorithms
+
+        // TODO: save the certificate, as it must be verified later.
+        getPacketProtector().getTranscriptHash().offer(certificate, true);
+    }
+
+    private void processCertificateVerify(CertificateVerifyMessage certificateVerify)
+    {
+        // TODO: verify the signature using the public key from the Certificate
+        getPacketProtector().getTranscriptHash().offer(certificateVerify, true);
+    }
+
+    private void processFinished(FinishedMessage finished)
+    {
+        try
+        {
+            // RFC 8446, 4.4.4.
+            byte[] verifyData = finished.verifyData();
+            int hashLength = cipherSuite.hashLength();
+            if (verifyData.length != hashLength)
+                throw new TLSException(TLSException.Alert.DECODE_ERROR, "invalid verify data length");
+
+            int shaLength = hashLength * 8;
+            KDF kdf = KDF.getInstance("HKDF-SHA" + shaLength);
+            SecretKey trafficKey = getPacketProtector().getTrafficSecretKey();
+            SecretKey finishedKey = kdf.deriveKey("Generic", HKDF.expandLabel(trafficKey, "finished", hashLength));
+
+            Mac mac = Mac.getInstance("HmacSHA" + shaLength);
+            mac.init(finishedKey);
+            byte[] expected = mac.doFinal(getPacketProtector().getTranscriptHash().getHash());
+
+            // Differently from Arrays.equals(), MessageDigest.isEqual() implements constant-time comparison.
+            if (!MessageDigest.isEqual(verifyData, expected))
+                throw new TLSException(TLSException.Alert.DECODE_ERROR, "invalid verify data");
+
+            getPacketProtector().getTranscriptHash().offer(finished, true);
+
+//            getPacketProtector().allocateApplicationKeys();
+        }
+        catch (TLSException x)
+        {
+            throw x;
+        }
+        catch (Throwable x)
+        {
+            throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
         }
     }
 

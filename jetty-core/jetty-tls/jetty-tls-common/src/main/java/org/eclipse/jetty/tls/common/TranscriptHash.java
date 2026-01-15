@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.Message;
@@ -37,17 +38,19 @@ public class TranscriptHash
 {
     private static final Logger LOG = LoggerFactory.getLogger(TranscriptHash.class);
 
-    private final Queue<Message> messages = new ArrayDeque<>();
-    private final MessagesGenerator generator;
+    private final Queue<Entry> entries = new ArrayDeque<>();
+    private final MessagesGenerator inputGenerator;
+    private final MessagesGenerator outputGenerator;
     private final RetainableByteBuffer.Mutable accumulator;
     private MessageDigest digest;
     private byte[] emptyHash;
     private byte[] hash;
 
-    public TranscriptHash(MessagesGenerator generator)
+    public TranscriptHash(ByteBufferPool byteBufferPool, MessagesGenerator inputGenerator, MessagesGenerator outputGenerator)
     {
-        this.generator = generator;
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(generator.getByteBufferPool(), false, -1, 0, 0);
+        this.inputGenerator = inputGenerator;
+        this.outputGenerator = outputGenerator;
+        this.accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
     }
 
     public void initialize(CipherSuite cipherSuite)
@@ -75,20 +78,29 @@ public class TranscriptHash
     {
         if (hash != null)
             return hash;
-        List<Message> transcript = new ArrayList<>(messages);
+        List<Entry> transcript = new ArrayList<>(entries);
         accumulator.clear();
-        for (Message message : transcript)
+        for (Entry entry : transcript)
         {
-            generator.generate(accumulator, message);
+            int remaining = accumulator.remaining();
+            MessagesGenerator generator = entry.input() ? inputGenerator : outputGenerator;
+            generator.generate(accumulator, entry.message());
+            if (LOG.isDebugEnabled())
+                LOG.debug("generated {} bytes for {} on {}", accumulator.remaining() - remaining, entry, this);
         }
         digest.update(accumulator.getByteBuffer());
         hash = digest.digest();
         return hash;
     }
 
-    public void offer(Message message)
+    /// Offers the given message for hashing, specifying whether
+    /// the message was received in input or sent in output.
+    ///
+    /// @param message the TLS message to hash
+    /// @param input whether the TLS message was in input or in output
+    public void offer(Message message, boolean input)
     {
-        messages.offer(message);
+        entries.offer(new Entry(message, input));
         hash = null;
         if (LOG.isDebugEnabled())
             LOG.debug("offered {} on {}", message, this);
@@ -96,18 +108,27 @@ public class TranscriptHash
 
     public void clear()
     {
-        messages.clear();
+        entries.clear();
     }
 
     public void dispose()
     {
-        messages.clear();
+        entries.clear();
         accumulator.release();
     }
 
     @Override
     public String toString()
     {
-        return "%s@%x[messages=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), messages.stream().map(Message::type).toList());
+        return "%s@%x[messages=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), entries);
+    }
+
+    private record Entry(Message message, boolean input)
+    {
+        @Override
+        public String toString()
+        {
+            return "[%s(%s)]".formatted(message.type(), input ? "input" : "output");
+        }
     }
 }

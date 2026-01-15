@@ -56,7 +56,7 @@ public class ClientQuicConnection extends QuicConnection implements Promise.Invo
     {
         PacketNumbers packetNumbers = new PacketNumbers();
         ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-        TranscriptHash transcriptHash = new TranscriptHash(new QuicMessagesGenerator(byteBufferPool, true));
+        TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, false), new QuicMessagesGenerator(byteBufferPool, true));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         ClientTLSEngine clientTLSEngine = new ClientTLSEngine(protector);
         session = new ClientQuicSession(connector, quicConfiguration, packetNumbers, clientTLSEngine, getEndPoint(), context);

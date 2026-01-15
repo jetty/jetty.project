@@ -42,6 +42,9 @@ public class FrameStream
 
     public void offer(Frame.WithOffset frame)
     {
+        // TODO: must handle retransmissions, where a duplicate frame is received
+        //  but it is already in the queue (it will have an existing offset).
+
         queue.offer(frame);
         while (true)
         {

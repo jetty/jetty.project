@@ -42,7 +42,7 @@ public class CertificateMessageParser implements MessageParser
     }
 
     @Override
-    public Message parse(RetainableByteBuffer buffer) throws Exception
+    public Message parse(int messageLength, RetainableByteBuffer buffer) throws Exception
     {
         while (true)
         {

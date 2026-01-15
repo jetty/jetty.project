@@ -23,23 +23,18 @@ import org.eclipse.jetty.tls.Message;
 public class MessagesGenerator
 {
     private final Map<Message.Type, MessageGenerator> generators = new EnumMap<>(Message.Type.class);
-    private final ByteBufferPool byteBufferPool;
     private final ExtensionsGenerator extensionsGenerator;
 
     public MessagesGenerator(ByteBufferPool byteBufferPool, boolean client)
     {
-        this.byteBufferPool = byteBufferPool;
         extensionsGenerator = new ExtensionsGenerator(client);
         generators.put(Message.Type.CLIENT_HELLO, new ClientHelloMessageGenerator(byteBufferPool, extensionsGenerator));
         generators.put(Message.Type.SERVER_HELLO, new ServerHelloMessageGenerator(byteBufferPool, extensionsGenerator));
         generators.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsMessageGenerator(byteBufferPool, extensionsGenerator));
         generators.put(Message.Type.CERTIFICATE_REQUEST, new CertificateRequestMessageGenerator(byteBufferPool, extensionsGenerator));
         generators.put(Message.Type.CERTIFICATE, new CertificateMessageGenerator(byteBufferPool, extensionsGenerator));
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return byteBufferPool;
+        generators.put(Message.Type.CERTIFICATE_VERIFY, new CertificateVerifyMessageGenerator(byteBufferPool));
+        generators.put(Message.Type.FINISHED, new FinishedMessageGenerator(byteBufferPool));
     }
 
     public ExtensionsGenerator getExtensionsGenerator()

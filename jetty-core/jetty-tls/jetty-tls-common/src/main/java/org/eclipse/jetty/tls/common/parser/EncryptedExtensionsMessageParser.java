@@ -31,7 +31,7 @@ public class EncryptedExtensionsMessageParser implements MessageParser
     }
 
     @Override
-    public Message parse(RetainableByteBuffer buffer)
+    public Message parse(int messageLength, RetainableByteBuffer buffer)
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         int remaining = byteBuffer.remaining();

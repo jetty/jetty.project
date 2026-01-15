@@ -29,8 +29,8 @@ import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
-import org.eclipse.jetty.quic.common.internal.crypto.HKDF;
 import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
+import org.eclipse.jetty.quic.common.tls.HKDF;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.TLSException;
@@ -73,6 +73,13 @@ public class PacketProtector implements Encrypter, Decrypter
     public EncryptionLevel getEncryptionLevel()
     {
         return encryptionLevel;
+    }
+
+    public SecretKey getTrafficSecretKey()
+    {
+        assert encryptionLevel != null;
+        KeyManager keyManager = keyManagers.get(encryptionLevel);
+        return keyManager != null ? keyManager.getTrafficSecretKey() : null;
     }
 
     // Only public for testing purposes.
@@ -145,6 +152,11 @@ public class PacketProtector implements Encrypter, Decrypter
         private KeyManager(EncryptionLevel encryptionLevel)
         {
             this.encryptionLevel = encryptionLevel;
+        }
+
+        public SecretKey getTrafficSecretKey()
+        {
+            return writeKeys.initial;
         }
 
         public void allocateInitialKeys(QuicVersion quicVersion, byte[] inputKeyMaterial)

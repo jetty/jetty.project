@@ -243,17 +243,12 @@ public record GroupKeyPair(NamedGroup group, KeyPair keyPair)
 
     private static byte[] reverse(byte[] bytes)
     {
-        int left = 0;
-        int right = bytes.length - 1;
-        while (left < right)
+        byte[] result = new byte[bytes.length];
+        for (int i = 0; i < bytes.length; ++i)
         {
-            byte tmp = bytes[left];
-            bytes[left] = bytes[right];
-            bytes[right] = tmp;
-            ++left;
-            --right;
+            result[i] = bytes[bytes.length - i - 1];
         }
-        return bytes;
+        return result;
     }
 
     /// BigInteger.toByteArray() may return different array lengths, for

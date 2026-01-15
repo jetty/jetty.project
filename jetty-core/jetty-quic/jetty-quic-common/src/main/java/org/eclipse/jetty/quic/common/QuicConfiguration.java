@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 public abstract class QuicConfiguration extends ContainerLifeCycle
@@ -169,5 +170,19 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     public Map<Object, Object> getImplementationConfiguration()
     {
         return implementationConfiguration;
+    }
+
+    public void configure(TransportParameters transportParameters)
+    {
+        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_DATA, getSessionMaxData());
+        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL, getLocalBidirectionalStreamMaxData());
+        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE, getRemoteBidirectionalStreamMaxData());
+        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL, getUnidirectionalStreamMaxData());
+        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL, getBidirectionalMaxStreams());
+        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_UNIDIRECTIONAL, getUnidirectionalMaxStreams());
+        // TODO
+        transportParameters.put(TransportParameters.Ids.ACK_DELAY_EXPONENT, 3L);
+        transportParameters.put(TransportParameters.Ids.MAX_ACK_DELAY, 25L);
+        transportParameters.put(TransportParameters.Ids.MAX_UDP_PAYLOAD_SIZE, 65527L);
     }
 }
