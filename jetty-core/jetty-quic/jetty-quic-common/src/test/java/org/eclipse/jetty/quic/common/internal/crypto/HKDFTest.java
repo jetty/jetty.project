@@ -18,6 +18,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.HKDFParameterSpec;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.quic.common.tls.HKDF;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 

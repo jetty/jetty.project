@@ -14,32 +14,32 @@
 package org.eclipse.jetty.tls.common.parser;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
+import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.Message;
-import org.eclipse.jetty.tls.ext.Extension;
 
-public class EncryptedExtensionsMessageParser implements MessageParser
+public class FinishedMessageParser implements MessageParser
 {
-    private final ExtensionsParser extensionsParser;
-
-    public EncryptedExtensionsMessageParser(ExtensionsParser extensionsParser)
-    {
-        this.extensionsParser = extensionsParser;
-    }
+    private int cursor;
+    private byte[] verifyData;
 
     @Override
-    public Message parse(int messageLength, RetainableByteBuffer buffer)
+    public Message parse(int messageLength, RetainableByteBuffer buffer) throws Exception
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
-        int remaining = byteBuffer.remaining();
-        if (remaining == 0)
-            return null;
-        List<Extension> extensions = extensionsParser.parse(buffer);
-        if (extensions == null)
-            return null;
-        return new EncryptedExtensionsMessage(extensions);
+        if (verifyData == null)
+            verifyData = new byte[messageLength];
+        int length = Math.min(messageLength - cursor, byteBuffer.remaining());
+        byteBuffer.get(verifyData, cursor, length);
+        cursor += length;
+        if (cursor == messageLength)
+        {
+            FinishedMessage message = new FinishedMessage(verifyData);
+            cursor = 0;
+            verifyData = null;
+            return message;
+        }
+        return null;
     }
 }

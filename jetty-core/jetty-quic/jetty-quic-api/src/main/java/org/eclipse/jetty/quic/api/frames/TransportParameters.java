@@ -106,10 +106,15 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         private static final long MAX_N = 148764065110560899L;
         private static final Map<Long, Id<?>> ids = new HashMap<>();
 
+        public static final Id<byte[]> ORIGINAL_DESTINATION_CONNECTION_ID = Ids.create(0x00, BytesId::new);
+
         /**
          * <p>The session max idle timeout in milliseconds.</p>
          */
         public static final Id<Long> MAX_IDLE_TIMEOUT = Ids.create(0x01, LongId::new);
+
+        public static final Id<Long> MAX_UDP_PAYLOAD_SIZE = Ids.create(0x03, LongId::new);
+
         /**
          * <p>The initial session max data.</p>
          * <p>A local peer sends this parameter to inform the remote peer about
@@ -146,6 +151,11 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
          * the max number of streams the local peer is willing to receive.</p>
          */
         public static final Id<Long> INITIAL_MAX_STREAMS_UNIDIRECTIONAL = Ids.create(0x09, LongId::new);
+
+        public static final Id<Long> ACK_DELAY_EXPONENT = Ids.create(0x0A, LongId::new);
+        public static final Id<Long> MAX_ACK_DELAY = Ids.create(0x0B, LongId::new);
+        public static final Id<Long> ACTIVE_CONNECTION_ID_LIMIT = Ids.create(0x0E, LongId::new);
+        public static final Id<byte[]> INITIAL_SOURCE_CONNECTION_ID = Ids.create(0x0F, BytesId::new);
 
         /**
          * <p>Creates a new {@link TransportParameters.Id} with the given id and type.</p>

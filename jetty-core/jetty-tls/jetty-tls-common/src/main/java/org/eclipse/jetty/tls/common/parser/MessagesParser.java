@@ -27,7 +27,7 @@ public class MessagesParser
     private State state = State.TYPE;
     private int cursor;
     private Message.Type type;
-    private int length; // TODO: remove this field?
+    private int length;
 
     public MessagesParser(boolean client)
     {
@@ -37,6 +37,8 @@ public class MessagesParser
         parsers.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsMessageParser(extensionsParser));
         parsers.put(Message.Type.CERTIFICATE_REQUEST, new CertificateRequestMessageParser(extensionsParser));
         parsers.put(Message.Type.CERTIFICATE, new CertificateMessageParser(extensionsParser));
+        parsers.put(Message.Type.CERTIFICATE_VERIFY, new CertificateVerifyMessageParser());
+        parsers.put(Message.Type.FINISHED, new FinishedMessageParser());
     }
 
     public ExtensionsParser getExtensionsParser()
@@ -88,7 +90,7 @@ public class MessagesParser
                     MessageParser messageParser = parsers.get(type);
                     if (messageParser == null)
                         throw new UnsupportedOperationException("could not parse unsupported TLS message " + type);
-                    Message message = messageParser.parse(buffer);
+                    Message message = messageParser.parse(length, buffer);
                     if (message == null)
                         return null;
                     type = null;

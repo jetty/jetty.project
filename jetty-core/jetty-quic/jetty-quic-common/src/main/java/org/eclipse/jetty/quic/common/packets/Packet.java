@@ -35,6 +35,8 @@ public abstract sealed class Packet permits LongHeaderPacket, ShortHeaderPacket
         return "%s@%x[dcid=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), StringUtil.toHexString(destinationConnectionId()));
     }
 
+    //  TODO: javadoc this interface, can be used to drop packets in tests
+    //  to simulate network failures.
     public interface Listener
     {
         default void onIncomingPacket(Session session, SocketAddress address, Packet packet)
@@ -47,7 +49,7 @@ public abstract sealed class Packet permits LongHeaderPacket, ShortHeaderPacket
 
         // TODO: javadoc this because it's the mechanism to
         //  customize packet processing in QuicSession.
-        class Wrapper
+        class Wrapper implements Listener
         {
 
         }

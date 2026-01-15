@@ -103,6 +103,12 @@ public class ClientQuicSession extends QuicSession
         TransportParameters transportParameters = getListener().onPrepare(this);
         if (transportParameters == null)
             transportParameters = new TransportParameters();
+        getQuicConfiguration().configure(transportParameters);
+        transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, getSourceConnectionId());
+        transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, getIdleTimeout());
+        transportParameters.put(TransportParameters.Ids.ACTIVE_CONNECTION_ID_LIMIT, 2L);
+
+
         configuration.extension(new QuicTransportParametersExtension(transportParameters));
 
         byte[] dstConnectionId = getTLSEngine().newRandomBytes(12);

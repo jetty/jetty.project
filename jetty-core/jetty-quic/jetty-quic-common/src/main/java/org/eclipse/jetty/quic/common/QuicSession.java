@@ -57,6 +57,7 @@ public abstract class QuicSession extends AbstractSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
+    private final Map<EncryptionLevel, FrameStream> cryptoStreams = new HashMap<>();
     private final Map<Long, FrameStream> streamStreams = new HashMap<>();
     private final ByteBufferPool byteBufferPool;
     private final PacketNumbers packetNumbers;
@@ -64,7 +65,6 @@ public abstract class QuicSession extends AbstractSession
     private final EndPoint endPoint;
     private final PacketsParser parser;
     private final QuicFlusher flusher;
-    private final FrameStream cryptoStream;
     private Packet.Listener packetListener;
     private byte[] dstConnectionId;
     private byte[] srcConnectionId;
@@ -78,7 +78,6 @@ public abstract class QuicSession extends AbstractSession
         this.endPoint = endPoint;
         this.parser = new PacketsParser(tlsEngine.getPacketProtector(), packetNumbers, new FramesParser());
         this.flusher = new QuicFlusher(this);
-        this.cryptoStream = new FrameStream(this::processCryptoFrame);
         this.packetListener = new PacketProcessor();
         this.dstConnectionId = BufferUtil.EMPTY_BYTES;
         this.srcConnectionId = tlsEngine.newRandomBytes(8);
@@ -312,7 +311,8 @@ public abstract class QuicSession extends AbstractSession
                 }
                 case CryptoFrame cryptoFrame ->
                 {
-                    cryptoStream.offer(cryptoFrame);
+                    EncryptionLevel encryptionLevel = getTLSEngine().getPacketProtector().getEncryptionLevel();
+                    cryptoStreams.computeIfAbsent(encryptionLevel, _ -> new FrameStream(this::processCryptoFrame)).offer(cryptoFrame);
                 }
                 case StreamFrame streamFrame ->
                 {
@@ -396,6 +396,9 @@ public abstract class QuicSession extends AbstractSession
 
     public void fail(Throwable x)
     {
+        if (LOG.isDebugEnabled())
+            LOG.atDebug().setCause(x).log("failure on {}", this);
+
         // TODO: initiate inward close? or outward?
     }
 

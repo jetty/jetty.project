@@ -16,9 +16,15 @@ package org.eclipse.jetty.tls;
 import java.util.List;
 
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.BufferUtil;
 
 public record ServerHelloMessage(byte[] random, byte[] sessionId, CipherSuite cipherSuite, List<Extension> extensions) implements Message
 {
+    public ServerHelloMessage(byte[] random, CipherSuite cipherSuite, List<Extension> extensions)
+    {
+        this(random, BufferUtil.EMPTY_BYTES, cipherSuite, extensions);
+    }
+
     @Override
     public Type type()
     {

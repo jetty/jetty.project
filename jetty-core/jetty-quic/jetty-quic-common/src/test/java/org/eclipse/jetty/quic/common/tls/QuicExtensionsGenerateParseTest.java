@@ -55,11 +55,11 @@ public class QuicExtensionsGenerateParseTest
         // Unknown id.
         transportParameters.put(TransportParameters.Ids.create(0x5000, TransportParameters.BytesId::new), new byte[]{16, 14, 38});
         QuicTransportParametersExtension expected = new QuicTransportParametersExtension(transportParameters);
-        ExtensionsGenerator generator = new ExtensionsGenerator();
+        ExtensionsGenerator generator = new ExtensionsGenerator(true);
         generator.put(new QuicTransportParametersExtensionGenerator());
         int length = generator.generate(accumulator, List.of(expected));
 
-        ExtensionsParser parser = new ExtensionsParser();
+        ExtensionsParser parser = new ExtensionsParser(true);
         parser.put(new QuicTransportParametersExtensionParser(parser));
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
         parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
@@ -107,5 +107,4 @@ public class QuicExtensionsGenerateParseTest
             }
         }
     }
-
 }

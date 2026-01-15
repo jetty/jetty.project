@@ -206,7 +206,7 @@ public class QuicTransportParametersExtensionParser implements ExtensionParser
         {
             QuicTransportParametersExtension extension = new QuicTransportParametersExtension(transportParameters);
             transportParameters = null;
-            int result = totalLength;
+            int result = 2 + totalLength;
             totalLength = 0;
             state = State.TOTAL_LENGTH;
             listener.onExtension(extension);

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.internal.crypto;
+package org.eclipse.jetty.quic.common.tls;
 
 import java.nio.charset.StandardCharsets;
 import javax.crypto.SecretKey;

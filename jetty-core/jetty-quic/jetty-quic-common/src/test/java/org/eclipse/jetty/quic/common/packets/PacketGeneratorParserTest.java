@@ -28,6 +28,8 @@ import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.internal.packets.InitialPacketGenerator;
 import org.eclipse.jetty.quic.common.internal.packets.InitialPacketParser;
+import org.eclipse.jetty.tls.common.TranscriptHash;
+import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
@@ -69,9 +71,10 @@ public class PacketGeneratorParserTest
                 return new EncodedPacketNumber((int)packetNumber, 4);
             }
         };
-        FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
-        PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers);
+        TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
+        PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         protector.allocateInitialKeys(QuicVersion.V1, destination);
+        FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
         InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, framesGenerator, protector);
         // Unclear why the RFC uses 1162 as the InitialPacket payload length, but that's what it uses.
         generator.setPayloadMinimumLength(1162);
@@ -150,9 +153,10 @@ public class PacketGeneratorParserTest
                 return new EncodedPacketNumber((int)packetNumber, 2);
             }
         };
-        FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
-        PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers);
+        TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
+        PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         protector.allocateInitialKeys(QuicVersion.V1, StringUtil.fromHexString("8394c8f03e515708"));
+        FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
         InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, framesGenerator, protector);
         // Unclear why the RFC uses 1162 as the InitialPacket payload length, but that's what it uses.
         generator.setPayloadMinimumLength(0);
@@ -194,7 +198,8 @@ public class PacketGeneratorParserTest
 
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers clientPacketNumbers = new PacketNumbers();
-        PacketProtector clientProtector = new PacketProtector(byteBufferPool, clientPacketNumbers);
+        TranscriptHash clientTranscriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
+        PacketProtector clientProtector = new PacketProtector(byteBufferPool, clientPacketNumbers, clientTranscriptHash, true);
         clientProtector.allocateInitialKeys(QuicVersion.V1, destination);
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
         InitialPacketGenerator generator = new InitialPacketGenerator(clientPacketNumbers, framesGenerator, clientProtector);
@@ -202,7 +207,8 @@ public class PacketGeneratorParserTest
         generator.generate(accumulator, generated);
 
         PacketNumbers serverPacketNumbers = new PacketNumbers();
-        PacketProtector serverProtector = new PacketProtector(byteBufferPool, serverPacketNumbers);
+        TranscriptHash serverTranscriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, true), new MessagesGenerator(byteBufferPool, false));
+        PacketProtector serverProtector = new PacketProtector(byteBufferPool, serverPacketNumbers, serverTranscriptHash, false);
         serverProtector.allocateInitialKeys(QuicVersion.V1, destination);
         FramesParser framesParser = new FramesParser();
         InitialPacketParser parser = new InitialPacketParser(serverProtector, serverPacketNumbers, framesParser);

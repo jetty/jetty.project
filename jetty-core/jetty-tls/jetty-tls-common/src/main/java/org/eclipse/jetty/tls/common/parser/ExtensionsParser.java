@@ -75,6 +75,11 @@ public class ExtensionsParser implements ExtensionParser.Listener
                     if (remaining > 1)
                     {
                         length = (byteBuffer.getShort() & 0xFFFF);
+                        if (length == 0)
+                        {
+                            lengthConsumer.accept(2);
+                            return List.of();
+                        }
                         state = State.TYPE;
                     }
                     else
@@ -89,7 +94,14 @@ public class ExtensionsParser implements ExtensionParser.Listener
                     --cursor;
                     length += b << (8 * cursor);
                     if (cursor == 0)
+                    {
+                        if (length == 0)
+                        {
+                            lengthConsumer.accept(2);
+                            return List.of();
+                        }
                         state = State.TYPE;
+                    }
                 }
                 case TYPE ->
                 {

@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class QuicClient extends ContainerLifeCycle
+public class QuicClient extends ContainerLifeCycle implements AutoCloseable
 {
     public static final String CONTEXT_KEY = QuicClient.class.getName();
     public static final String SESSION_PROMISE_CONTEXT_KEY = Session.class.getName() + ".promise";
@@ -68,6 +68,12 @@ public class QuicClient extends ContainerLifeCycle
         this.protocols = List.copyOf(protocols);
     }
 
+    @Override
+    public void close() throws Exception
+    {
+        stop();
+    }
+
     public void connect(SocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
         connect(new QuicTransport(quicConfiguration), clientConnector.getSslContextFactory(), address, listener, null, promise);
@@ -83,7 +89,9 @@ public class QuicClient extends ContainerLifeCycle
         context.put(ClientConnector.CONTEXT_KEY, getClientConnector());
         context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, getApplicationProtocols());
         context.computeIfAbsent(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY, _ -> sslContextFactory);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(_ -> {}, promise::failed));
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(_ ->
+        {
+        }, promise::failed));
         context.put(ClientConnectionFactory.CONTEXT_KEY, resolveClientConnectionFactory(transport));
         context.put(Transport.CONTEXT_KEY, transport);
 

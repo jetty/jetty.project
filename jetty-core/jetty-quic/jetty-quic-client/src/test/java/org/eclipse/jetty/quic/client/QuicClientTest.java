@@ -15,9 +15,12 @@ package org.eclipse.jetty.quic.client;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
@@ -34,20 +37,25 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class QuicClientTest
 {
     private Server server;
     private QuicheServerConnector connector;
+    private QuicClient client;
 
-    private void start(Path workDir, Handler handler) throws Exception
+    private void startServer(Path workDir, Handler handler) throws Exception
     {
-        server = new Server();
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
@@ -67,16 +75,29 @@ public class QuicClientTest
         server.start();
     }
 
+    private void startClient() throws Exception
+    {
+        QuicClientQuicConfiguration quicConfig = new QuicClientQuicConfiguration();
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setByteBufferPool(new ArrayByteBufferPool.Tracking());
+        client = new QuicClient(quicConfig);
+        client.start();
+    }
+
     @AfterEach
     public void dispose()
     {
         LifeCycle.stop(server);
+        LifeCycle.stop(client);
+        ArrayByteBufferPool.Tracking byteBufferPool = (ArrayByteBufferPool.Tracking)client.getClientConnector().getByteBufferPool();
+        Set<ArrayByteBufferPool.Tracking.TrackedBuffer> clientLeaks = byteBufferPool.getLeaks();
+        assertEquals(0, clientLeaks.size(), byteBufferPool.dumpLeaks());
     }
 
     @Test
     public void testServerOnly(@TempDir Path workDir) throws Exception
     {
-        start(workDir, new Handler.Abstract()
+        startServer(workDir, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -104,7 +125,7 @@ public class QuicClientTest
     @Test
     public void testConnect(@TempDir Path workDir) throws Exception
     {
-        start(workDir, new Handler.Abstract()
+        startServer(workDir, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -113,10 +134,7 @@ public class QuicClientTest
                 return true;
             }
         });
-
-        QuicClientQuicConfiguration quicConfig = new QuicClientQuicConfiguration();
-        QuicClient client = new QuicClient(quicConfig);
-        client.start();
+        startClient();
 
         Promise.Completable<Session> completable = new Promise.Completable<>();
         client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, completable);

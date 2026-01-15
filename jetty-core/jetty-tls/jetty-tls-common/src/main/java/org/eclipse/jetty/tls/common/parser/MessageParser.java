@@ -27,7 +27,7 @@ import org.eclipse.jetty.tls.Message;
 /// TLS message.
 public interface MessageParser
 {
-    Message parse(RetainableByteBuffer buffer) throws Exception;
+    Message parse(int messageLength, RetainableByteBuffer buffer) throws Exception;
 
     interface Listener
     {
