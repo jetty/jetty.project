@@ -123,7 +123,7 @@ public class PacketGeneratorParserTest
             7e78bfe706ca4cf5e9c5453e9f7cfd2b 8b4c8d169a44e55c88d4a9a7f9474241
             e221af44860018ab0856972e194cd934
             """.replaceAll("[\n ]", "");
-        assertThat(expected, equalToIgnoringCase(StringUtil.toHexString(byteBuffer)));
+        assertThat(StringUtil.toHexString(byteBuffer), equalToIgnoringCase(expected));
     }
 
     @Test
@@ -154,11 +154,10 @@ public class PacketGeneratorParserTest
             }
         };
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
-        PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
+        PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
         protector.allocateInitialKeys(QuicVersion.V1, StringUtil.fromHexString("8394c8f03e515708"));
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
         InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, framesGenerator, protector);
-        // Unclear why the RFC uses 1162 as the InitialPacket payload length, but that's what it uses.
         generator.setPayloadMinimumLength(0);
 
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
@@ -173,7 +172,7 @@ public class PacketGeneratorParserTest
             022f8ef4cdd93795d77d06edbb7aaf2f 58891850abbdca3d20398c276456cbc4
             2158407dd074ee
             """.replaceAll("[\n ]", "");;
-        assertThat(expected, equalToIgnoringCase(StringUtil.toHexString(byteBuffer)));
+        assertThat(StringUtil.toHexString(byteBuffer), equalToIgnoringCase(expected));
     }
 
     @Test
@@ -229,3 +228,5 @@ public class PacketGeneratorParserTest
 
     // TODO: RetryPacket from the RFC + RetryPacketGenerateParse
 }
+// cf000000010008f067a5502a4262b5004075c0d95a482cd0991cd25b0aac406a5816b6394100f37a1c69797554780bb38cc5a99f5ede4cf73c3ec2493a1839b3dbcba3f6ea46c5b7684df3548e7ddeb9c3bf9c73cc3f3bded74b562bfb19fb84022f8ef4cdd93795d77d06edbb7aaf2f58891850abbdca3d20398c276456cbc42158407dd074ee
+// Cf000000010008F067A5502a4262B500449cC0D95a482cD0991cD25b0aAc406a5816B6394100F37a1c69797554780bB38cC5A99f5eDe4cF73c3eC2493a1839B3DbCbA3F6Ea46C5B7684dF3548e7dDeB9C3Bf9c73Cc3f3bDeD74b562bFb19Fb84022f8eF4CdD93795D77d06EdBb7aAf2f58891850AbBdCa2414F33f252
