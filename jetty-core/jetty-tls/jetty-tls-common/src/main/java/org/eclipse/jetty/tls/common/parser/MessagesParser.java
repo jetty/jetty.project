@@ -93,8 +93,9 @@ public class MessagesParser
                     Message message = messageParser.parse(length, buffer);
                     if (message == null)
                         return null;
-                    type = null;
                     state = State.TYPE;
+                    type = null;
+                    length = 0;
                     return message;
                 }
             }
