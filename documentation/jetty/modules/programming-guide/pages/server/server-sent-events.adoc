@@ -1,0 +1,267 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+= Server-Sent Events
+
+Server-Sent Events (SSE) is a web technology that enables servers to push data to clients over a standard HTTP connection.
+SSE uses the `text/event-stream` content type and provides a unidirectional communication channel from server to client.
+
+== When to Use SSE
+
+SSE is ideal for:
+
+* Real-time notifications and alerts
+* Live feeds (news, social media, stock prices)
+* Server-side progress updates
+* Any scenario where the server needs to push updates to the client
+
+=== SSE vs WebSocket
+
+[cols="1,1,1"]
+|===
+| Feature | SSE | WebSocket
+
+| Direction
+| Unidirectional (server to client)
+| Bidirectional
+
+| Protocol
+| HTTP
+| WebSocket (upgrade from HTTP)
+
+| Reconnection
+| Automatic browser reconnection
+| Manual reconnection required
+
+| Data format
+| Text-based
+| Text or binary
+
+| Browser support
+| Native `EventSource` API
+| Native `WebSocket` API
+|===
+
+Choose SSE when you only need server-to-client communication.
+Choose WebSocket when you need bidirectional communication.
+
+== Using EventSourceHandler in Jetty Core
+
+The `EventSourceHandler` class provides SSE support in Jetty Core applications without requiring the Servlet API.
+
+=== Basic Usage
+
+[,java]
+----
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.EventSourceHandler;
+
+Server server = new Server();
+ServerConnector connector = new ServerConnector(server);
+connector.setPort(8080);
+server.addConnector(connector);
+
+EventSourceHandler eventSourceHandler = new EventSourceHandler()
+{
+    @Override
+    protected EventSource newEventSource(Request request)
+    {
+        return new EventSource()
+        {
+            private Emitter emitter;
+
+            @Override
+            public void onOpen(Emitter emitter)
+            {
+                this.emitter = emitter;
+                // Store emitter for later use to send events
+            }
+
+            @Override
+            public void onClose()
+            {
+                // Clean up resources when connection closes
+            }
+        };
+    }
+};
+
+server.setHandler(eventSourceHandler);
+server.start();
+----
+
+=== Sending Events
+
+The `Emitter` interface provides methods to send data to the client:
+
+[,java]
+----
+// Send a data-only event
+emitter.data("Hello, World!");
+// Client receives: data: Hello, World!
+
+// Send a named event with data
+emitter.event("notification", "You have a new message");
+// Client receives:
+// event: notification
+// data: You have a new message
+
+// Send a comment (not dispatched as an event, useful for keep-alive)
+emitter.comment("keep-alive");
+// Client receives: : keep-alive
+
+// Close the connection
+emitter.close();
+----
+
+=== Multiline Data
+
+When sending multiline data, each line is prefixed with `data:`:
+
+[,java]
+----
+emitter.data("line1\nline2\nline3");
+// Client receives:
+// data: line1
+// data: line2
+// data: line3
+----
+
+=== Configuration
+
+The `EventSourceHandler` supports configuration of the heartbeat period:
+
+[,java]
+----
+EventSourceHandler handler = new EventSourceHandler()
+{
+    @Override
+    protected EventSource newEventSource(Request request)
+    {
+        // ...
+    }
+};
+
+// Set heartbeat period (default is 10 seconds)
+handler.setHeartBeatPeriod(Duration.ofSeconds(30));
+----
+
+The heartbeat is a periodic newline sent to detect disconnected clients.
+When a client disconnects, the heartbeat write will fail, triggering the `onClose()` callback.
+
+=== Returning null from newEventSource
+
+If `newEventSource()` returns `null`, the handler responds with HTTP 503 Service Unavailable:
+
+[,java]
+----
+@Override
+protected EventSource newEventSource(Request request)
+{
+    // Check if SSE is currently available
+    if (!isServiceAvailable())
+    {
+        return null; // Returns 503 to client
+    }
+    return new EventSource() { /* ... */ };
+}
+----
+
+=== Request Filtering
+
+The `EventSourceHandler` only handles:
+
+* `GET` requests
+* Requests with `Accept: text/event-stream` header
+
+Other requests pass through to the next handler in the chain.
+
+== Client-Side Example
+
+Here's how a browser client connects to an SSE endpoint:
+
+[,javascript]
+----
+const eventSource = new EventSource('/events');
+
+// Handle default (unnamed) events
+eventSource.onmessage = function(event) {
+    console.log('Data:', event.data);
+};
+
+// Handle named events
+eventSource.addEventListener('notification', function(event) {
+    console.log('Notification:', event.data);
+});
+
+// Handle connection errors
+eventSource.onerror = function(event) {
+    console.error('Connection error');
+};
+
+// Close connection when done
+eventSource.close();
+----
+
+== EventSourceServlet for Servlet Applications
+
+For servlet-based applications, Jetty provides `EventSourceServlet` in the EE modules (`jetty-ee9-servlets`, `jetty-ee10-servlets`, `jetty-ee11-servlets`).
+
+[,java]
+----
+import org.eclipse.jetty.ee10.servlets.EventSourceServlet;
+import org.eclipse.jetty.ee10.servlets.EventSource;
+import jakarta.servlet.http.HttpServletRequest;
+
+public class MyEventSourceServlet extends EventSourceServlet
+{
+    @Override
+    protected EventSource newEventSource(HttpServletRequest request)
+    {
+        return new EventSource()
+        {
+            @Override
+            public void onOpen(Emitter emitter) throws IOException
+            {
+                emitter.data("connected");
+            }
+
+            @Override
+            public void onClose()
+            {
+            }
+        };
+    }
+}
+----
+
+The servlet can be configured with an init parameter:
+
+[,xml]
+----
+<servlet>
+    <servlet-name>events</servlet-name>
+    <servlet-class>com.example.MyEventSourceServlet</servlet-class>
+    <init-param>
+        <param-name>heartBeatPeriod</param-name>
+        <param-value>30</param-value> <!-- seconds -->
+    </init-param>
+</servlet>
+----
+
+== Thread Safety
+
+The `Emitter` interface is thread-safe.
+Multiple threads can safely call `data()`, `event()`, `comment()`, and `close()` concurrently.

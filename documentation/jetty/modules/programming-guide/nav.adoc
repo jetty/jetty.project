@@ -27,6 +27,7 @@
 ** xref:server/session.adoc[]
 ** xref:server/deploy.adoc[]
 ** xref:server/websocket.adoc[]
+** xref:server/server-sent-events.adoc[]
 ** xref:server/fastcgi.adoc[]
 ** xref:server/io-arch.adoc[]
 ** xref:server/threads.adoc[]
