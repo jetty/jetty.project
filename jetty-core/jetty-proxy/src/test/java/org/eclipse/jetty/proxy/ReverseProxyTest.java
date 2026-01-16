@@ -59,12 +59,32 @@ public class ReverseProxyTest extends AbstractProxyTest
         );
     }
 
+    public static Stream<Arguments> httpVersionsThreadPoolsAndHeaders()
+    {
+        return Stream.of(
+            // Without server headers on proxy
+            Arguments.of(HttpVersion.HTTP_1_1, false, false),
+            Arguments.of(HttpVersion.HTTP_1_1, true, false),
+            Arguments.of(HttpVersion.HTTP_2, false, false),
+            Arguments.of(HttpVersion.HTTP_2, true, false),
+            // With server headers enabled on both backend and proxy
+            Arguments.of(HttpVersion.HTTP_1_1, false, true),
+            Arguments.of(HttpVersion.HTTP_1_1, true, true),
+            Arguments.of(HttpVersion.HTTP_2, false, true),
+            Arguments.of(HttpVersion.HTTP_2, true, true)
+        );
+    }
+
     @ParameterizedTest
-    @MethodSource("httpVersionsAndThreadPools")
-    public void testSimple(HttpVersion httpVersion, boolean useServerThreadPool) throws Exception
+    @MethodSource("httpVersionsThreadPoolsAndHeaders")
+    public void testSimple(HttpVersion httpVersion, boolean useServerThreadPool, boolean sendServerHeaders) throws Exception
     {
         String clientContent = "hello";
         String serverContent = "world";
+
+        serverHttpConfig.setSendServerVersion(true);
+        serverHttpConfig.setSendDateHeader(true);
+
         startServer(new Handler.Abstract()
         {
             @Override
@@ -76,6 +96,9 @@ public class ReverseProxyTest extends AbstractProxyTest
                 return true;
             }
         });
+
+        proxyHttpConfig.setSendServerVersion(sendServerHeaders);
+        proxyHttpConfig.setSendDateHeader(sendServerHeaders);
 
         ProxyHandler.Reverse proxyHandler = new ProxyHandler.Reverse(clientToProxyRequest ->
             HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
@@ -105,6 +128,11 @@ public class ReverseProxyTest extends AbstractProxyTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(serverContent, response.getContentAsString());
+
+        assertTrue(response.getHeaders().getValuesList("Server").size() <= 1,
+            "Should have at most one Server header");
+        assertTrue(response.getHeaders().getValuesList("Date").size() <= 1,
+            "Should have at most one Date header");
     }
 
     @ParameterizedTest
