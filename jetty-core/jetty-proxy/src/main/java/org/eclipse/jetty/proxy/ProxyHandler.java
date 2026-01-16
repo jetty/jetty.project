@@ -89,7 +89,6 @@ public abstract class ProxyHandler extends Handler.Abstract
         HttpHeader.TRAILER,
         HttpHeader.UPGRADE
     );
-
     private HttpClient httpClient;
     private String proxyToServerHost;
     private String viaHost;
@@ -347,7 +346,7 @@ public abstract class ProxyHandler extends Handler.Abstract
             if (headersToRemove != null && headersToRemove.contains(clientToProxyRequestField.getLowerCaseName()))
                 continue;
 
-            proxyToServerRequest.headers(headers -> headers.add(clientToProxyRequestField));
+            proxyToServerRequest.headers(headers -> headers.put(clientToProxyRequestField));
         }
     }
 
@@ -689,7 +688,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                 HttpField newField = filterServerToProxyResponseField(serverToProxyResponseField);
                 if (newField == null)
                     continue;
-                proxyToClientResponse.getHeaders().add(newField);
+                proxyToClientResponse.getHeaders().put(newField);
             }
             if (LOG.isDebugEnabled())
             {
