@@ -82,7 +82,6 @@ public class ReverseProxyTest extends AbstractProxyTest
         String clientContent = "hello";
         String serverContent = "world";
 
-        // Enable headers on backend server (default, but explicit for clarity).
         serverHttpConfig.setSendServerVersion(true);
         serverHttpConfig.setSendDateHeader(true);
 
@@ -98,7 +97,6 @@ public class ReverseProxyTest extends AbstractProxyTest
             }
         });
 
-        // Configure proxy headers based on parameter.
         proxyHttpConfig.setSendServerVersion(sendServerHeaders);
         proxyHttpConfig.setSendDateHeader(sendServerHeaders);
 
@@ -131,7 +129,6 @@ public class ReverseProxyTest extends AbstractProxyTest
             .send();
         assertEquals(serverContent, response.getContentAsString());
 
-        // Verify no duplicate headers.
         assertTrue(response.getHeaders().getValuesList("Server").size() <= 1,
             "Should have at most one Server header");
         assertTrue(response.getHeaders().getValuesList("Date").size() <= 1,
