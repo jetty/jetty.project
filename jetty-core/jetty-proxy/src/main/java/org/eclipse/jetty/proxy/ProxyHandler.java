@@ -689,7 +689,13 @@ public abstract class ProxyHandler extends Handler.Abstract
                 HttpField newField = filterServerToProxyResponseField(serverToProxyResponseField);
                 if (newField == null)
                     continue;
-                proxyToClientResponse.getHeaders().add(newField);
+                // Use put() for single-value headers to avoid duplicates when both
+                // the proxy and backend server add these headers.
+                HttpHeader header = newField.getHeader();
+                if (header == HttpHeader.SERVER || header == HttpHeader.DATE)
+                    proxyToClientResponse.getHeaders().put(newField);
+                else
+                    proxyToClientResponse.getHeaders().add(newField);
             }
             if (LOG.isDebugEnabled())
             {

@@ -70,8 +70,8 @@ public class AbstractProxyTest
         QueuedThreadPool proxyPool = new QueuedThreadPool();
         proxyPool.setName("proxy");
         proxy = new Server(proxyPool);
-        proxyHttpConfig.setSendDateHeader(false);
-        proxyHttpConfig.setSendServerVersion(false);
+        // Note: Individual tests can configure proxyHttpConfig.setSendDateHeader()
+        // and proxyHttpConfig.setSendServerVersion() before calling startProxy().
         proxyConnector = new ServerConnector(proxy, 1, 1, new HttpConnectionFactory(proxyHttpConfig), new HTTP2CServerConnectionFactory(proxyHttpConfig));
         proxy.addConnector(proxyConnector);
         proxy.setHandler(handler);

@@ -59,12 +59,33 @@ public class ReverseProxyTest extends AbstractProxyTest
         );
     }
 
+    public static Stream<Arguments> httpVersionsThreadPoolsAndHeaders()
+    {
+        return Stream.of(
+            // Without server headers on proxy (original behavior)
+            Arguments.of(HttpVersion.HTTP_1_1, false, false),
+            Arguments.of(HttpVersion.HTTP_1_1, true, false),
+            Arguments.of(HttpVersion.HTTP_2, false, false),
+            Arguments.of(HttpVersion.HTTP_2, true, false),
+            // With server headers enabled on both backend and proxy (tests issue #13961 fix)
+            Arguments.of(HttpVersion.HTTP_1_1, false, true),
+            Arguments.of(HttpVersion.HTTP_1_1, true, true),
+            Arguments.of(HttpVersion.HTTP_2, false, true),
+            Arguments.of(HttpVersion.HTTP_2, true, true)
+        );
+    }
+
     @ParameterizedTest
-    @MethodSource("httpVersionsAndThreadPools")
-    public void testSimple(HttpVersion httpVersion, boolean useServerThreadPool) throws Exception
+    @MethodSource("httpVersionsThreadPoolsAndHeaders")
+    public void testSimple(HttpVersion httpVersion, boolean useServerThreadPool, boolean sendServerHeaders) throws Exception
     {
         String clientContent = "hello";
         String serverContent = "world";
+
+        // Enable headers on backend server (default, but explicit for clarity).
+        serverHttpConfig.setSendServerVersion(true);
+        serverHttpConfig.setSendDateHeader(true);
+
         startServer(new Handler.Abstract()
         {
             @Override
@@ -76,6 +97,10 @@ public class ReverseProxyTest extends AbstractProxyTest
                 return true;
             }
         });
+
+        // Configure proxy headers based on parameter.
+        proxyHttpConfig.setSendServerVersion(sendServerHeaders);
+        proxyHttpConfig.setSendDateHeader(sendServerHeaders);
 
         ProxyHandler.Reverse proxyHandler = new ProxyHandler.Reverse(clientToProxyRequest ->
             HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
@@ -105,6 +130,12 @@ public class ReverseProxyTest extends AbstractProxyTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(serverContent, response.getContentAsString());
+
+        // Verify no duplicate headers (issue #13961).
+        assertTrue(response.getHeaders().getValuesList("Server").size() <= 1,
+            "Should have at most one Server header");
+        assertTrue(response.getHeaders().getValuesList("Date").size() <= 1,
+            "Should have at most one Date header");
     }
 
     @ParameterizedTest
