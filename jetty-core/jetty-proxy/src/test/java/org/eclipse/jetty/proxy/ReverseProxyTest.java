@@ -62,12 +62,12 @@ public class ReverseProxyTest extends AbstractProxyTest
     public static Stream<Arguments> httpVersionsThreadPoolsAndHeaders()
     {
         return Stream.of(
-            // Without server headers on proxy (original behavior)
+            // Without server headers on proxy
             Arguments.of(HttpVersion.HTTP_1_1, false, false),
             Arguments.of(HttpVersion.HTTP_1_1, true, false),
             Arguments.of(HttpVersion.HTTP_2, false, false),
             Arguments.of(HttpVersion.HTTP_2, true, false),
-            // With server headers enabled on both backend and proxy (tests issue #13961 fix)
+            // With server headers enabled on both backend and proxy
             Arguments.of(HttpVersion.HTTP_1_1, false, true),
             Arguments.of(HttpVersion.HTTP_1_1, true, true),
             Arguments.of(HttpVersion.HTTP_2, false, true),
@@ -131,7 +131,7 @@ public class ReverseProxyTest extends AbstractProxyTest
             .send();
         assertEquals(serverContent, response.getContentAsString());
 
-        // Verify no duplicate headers (issue #13961).
+        // Verify no duplicate headers.
         assertTrue(response.getHeaders().getValuesList("Server").size() <= 1,
             "Should have at most one Server header");
         assertTrue(response.getHeaders().getValuesList("Date").size() <= 1,
