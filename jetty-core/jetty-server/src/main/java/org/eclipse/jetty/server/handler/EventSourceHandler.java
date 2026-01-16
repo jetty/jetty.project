@@ -21,10 +21,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -123,7 +123,7 @@ public abstract class EventSourceHandler extends Handler.Abstract
         boolean acceptsEventStream = false;
         for (String accept : accepts)
         {
-            if (accept.contains("text/event-stream"))
+            if (accept.contains(MimeTypes.Type.TEXT_EVENT_STREAM.asString()))
             {
                 acceptsEventStream = true;
                 break;
@@ -166,7 +166,7 @@ public abstract class EventSourceHandler extends Handler.Abstract
     protected void respond(Response response)
     {
         response.setStatus(HttpStatus.OK_200);
-        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/event-stream;charset=utf-8");
+        response.getHeaders().put(MimeTypes.Type.TEXT_EVENT_STREAM_UTF_8.getContentTypeField());
         response.getHeaders().put(HttpHeader.CACHE_CONTROL, "no-cache");
         response.getHeaders().put(HttpHeader.CONNECTION, "close");
     }
