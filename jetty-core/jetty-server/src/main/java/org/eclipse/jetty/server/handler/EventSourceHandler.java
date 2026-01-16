@@ -120,16 +120,7 @@ public abstract class EventSourceHandler extends Handler.Abstract
             return false;
 
         List<String> accepts = request.getHeaders().getValuesList(HttpHeader.ACCEPT);
-        boolean acceptsEventStream = false;
-        for (String accept : accepts)
-        {
-            if (accept.contains(MimeTypes.Type.TEXT_EVENT_STREAM.asString()))
-            {
-                acceptsEventStream = true;
-                break;
-            }
-        }
-        if (!acceptsEventStream)
+        if (accepts.stream().noneMatch(accept -> accept.contains(MimeTypes.Type.TEXT_EVENT_STREAM.asString())))
             return false;
 
         EventSource eventSource = newEventSource(request);
