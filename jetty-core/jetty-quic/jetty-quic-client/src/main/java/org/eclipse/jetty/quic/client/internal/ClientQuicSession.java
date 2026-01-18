@@ -53,11 +53,10 @@ public class ClientQuicSession extends QuicSession
     private final Tokens tokens = new Tokens();
     private final Map<String, Object> context;
     private byte[] firstDstConnectionId;
-    private SocketAddress remoteSocketAddress;
 
-    public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, PacketNumbers packetNumbers, ClientTLSEngine clientTLSEngine, EndPoint endPoint, Map<String, Object> context)
+    public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, ClientQuicConnection connection, PacketNumbers packetNumbers, ClientTLSEngine clientTLSEngine, EndPoint endPoint, Map<String, Object> context)
     {
-        super(connector.getExecutor(), connector.getByteBufferPool(), quicConfiguration, packetNumbers, clientTLSEngine, sessionListener(context), endPoint);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), quicConfiguration, connection, packetNumbers, clientTLSEngine, sessionListener(context), endPoint);
         this.context = context;
         this.firstDstConnectionId = BufferUtil.EMPTY_BYTES;
     }
@@ -86,11 +85,6 @@ public class ClientQuicSession extends QuicSession
         return dstConnectionId.length == 0 ? firstDstConnectionId : dstConnectionId;
     }
 
-    public SocketAddress getRemoteSocketAddress()
-    {
-        return remoteSocketAddress;
-    }
-
     /// Establishes a connection to the server, starting the QUIC TLS handshake.
     ///
     /// The QUIC TLS handshake completion is notified to the [Session.Listener].
@@ -102,7 +96,8 @@ public class ClientQuicSession extends QuicSession
     /// @param callback the [Callback] notified when the TLS `ClientHello` has been sent.
     void connect(Callback callback)
     {
-        remoteSocketAddress = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+        SocketAddress remoteSocketAddress = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+        setRemoteSocketAddress(remoteSocketAddress);
         if (LOG.isDebugEnabled())
             LOG.debug("connecting to {} on {}", remoteSocketAddress, this);
 
@@ -184,16 +179,16 @@ public class ClientQuicSession extends QuicSession
     }
 
     @Override
-    protected void processPacket(SocketAddress address, Packet packet)
+    protected void processPacket(Packet packet)
     {
         switch (packet)
         {
-            case RetryPacket retryPacket -> processRetryPacket(address, retryPacket);
-            default -> super.processPacket(address, packet);
+            case RetryPacket retryPacket -> processRetryPacket(retryPacket);
+            default -> super.processPacket(packet);
         }
     }
 
-    private void processRetryPacket(SocketAddress address, RetryPacket packet)
+    private void processRetryPacket(RetryPacket packet)
     {
         tokens.put(getEndPoint().getLocalSocketAddress(), getRemoteSocketAddress(), packet.token());
 

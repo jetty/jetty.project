@@ -27,11 +27,6 @@ public final class OneRTTPacket extends ShortHeaderPacket implements Packet.With
     private final boolean keyPhase;
     private final List<Frame> frames;
 
-    public OneRTTPacket(long packetNumber, byte[] dstConnectionId, boolean keyPhase, List<Frame> frames)
-    {
-        this(packetNumber, dstConnectionId, false, keyPhase, frames);
-    }
-
     public OneRTTPacket(long packetNumber, byte[] dstConnectionId, boolean spin, boolean keyPhase, List<Frame> frames)
     {
         this.packetNumber = packetNumber;

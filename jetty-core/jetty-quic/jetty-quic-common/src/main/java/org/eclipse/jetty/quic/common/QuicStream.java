@@ -11,8 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.packets;
+package org.eclipse.jetty.quic.common;
 
-public sealed abstract class ShortHeaderPacket implements Packet permits OneRTTPacket
+import org.eclipse.jetty.quic.api.Stream;
+
+public abstract class QuicStream implements Stream
 {
 }

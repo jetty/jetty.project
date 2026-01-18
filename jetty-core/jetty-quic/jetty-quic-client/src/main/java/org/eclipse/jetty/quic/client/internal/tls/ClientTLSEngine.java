@@ -271,7 +271,8 @@ public class ClientTLSEngine extends TLSEngine
     {
         // TODO: validate extensions are allowed (e.g. key_share_extension not allowed in EncryptedExtensionsMessage).
 
-        // TODO: ALPN must be present and match what offered by in the CLientHello.
+        // TODO: ALPN must be present and match what offered by in the ClientHello.
+//        setNegotiatedApplicationProtocol();
 
         // TODO: QuicTransports must be present and validated:
         //  * No forbidden parameters are present

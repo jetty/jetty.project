@@ -1,0 +1,193 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+package org.eclipse.jetty.quic.server.internal;
+
+import java.util.List;
+import java.util.concurrent.TimeoutException;
+
+import org.eclipse.jetty.io.CyclicTimeouts;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.api.Session;
+import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
+import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.packets.InitialPacket;
+import org.eclipse.jetty.quic.common.packets.PacketNumbers;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
+import org.eclipse.jetty.quic.server.internal.tls.ServerTLSEngine;
+import org.eclipse.jetty.server.Connector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/// The server-specific implementation of [QuicSession].
+public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Expirable
+{
+    private static final Logger LOG = LoggerFactory.getLogger(ServerQuicSession.class);
+
+    private long expireNanoTime = Long.MAX_VALUE;
+
+    public ServerQuicSession(Connector connector, QuicServerQuicConfiguration configuration, ServerQuicConnection connection, PacketNumbers packetNumbers, ServerTLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint)
+    {
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), configuration, connection, packetNumbers, tlsEngine, listener, endPoint);
+    }
+
+    @Override
+    public QuicServerQuicConfiguration getQuicConfiguration()
+    {
+        return (QuicServerQuicConfiguration)super.getQuicConfiguration();
+    }
+
+    @Override
+    public ServerQuicConnection getQuicConnection()
+    {
+        return (ServerQuicConnection)super.getQuicConnection();
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeout)
+    {
+        super.setIdleTimeout(idleTimeout);
+        notIdle();
+        getQuicConnection().schedule(this);
+    }
+
+    @Override
+    public boolean onIdleTimeout(TimeoutException timeout)
+    {
+        boolean result = super.onIdleTimeout(timeout);
+        if (!result)
+            notIdle();
+        return result;
+    }
+
+    @Override
+    public long getExpireNanoTime()
+    {
+        return expireNanoTime;
+    }
+
+    private void notIdle()
+    {
+        expireNanoTime = CyclicTimeouts.Expirable.calcExpireNanoTime(getIdleTimeout());
+    }
+
+    @Override
+    protected InitialPacket newInitialPacket(List<Frame> frames)
+    {
+        // TODO: token creation and validation.
+        byte[] token = new byte[0];
+        return new InitialPacket(getQuicConfiguration().getQuicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, getPacketNumbers().nextPacketNumber(EncryptionLevel.INITIAL), frames);
+    }
+
+/*
+    @Override
+    public long newStreamId(boolean bidirectional)
+    {
+        return StreamId.newStreamId(streamIds.getAndIncrement(), bidirectional, false);
+    }
+
+    Runnable process(SocketAddress remoteAddress, ByteBuffer cipherBuffer)
+    {
+        try
+        {
+            feed(remoteAddress, cipherBuffer);
+
+            if (isConnectionEstablished())
+            {
+                if (!isOpen())
+                {
+                    if (!validateConnection())
+                        return null;
+                    open();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("opened {}", this);
+                }
+                // Return a task because we want 1 thread per active session.
+                return getProducerTask();
+            }
+            else
+            {
+                flush();
+                return null;
+            }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.atDebug().setCause(x).log("process failure for {}", this);
+            ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.CONNECTION_REFUSED_ERROR.code(), "session_failure");
+            disconnect(frame, x, Promise.Invocable.noop());
+            return null;
+        }
+    }
+
+    private boolean validateConnection()
+    {
+        if (getConnection().getSslContextFactory().getNeedClientAuth() && getPeerCertificates() == null)
+        {
+            ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.CONNECTION_REFUSED_ERROR.code(), "missing_peer_certificates");
+            disconnect(frame, new SSLHandshakeException(frame.reason()), Promise.Invocable.noop());
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public void feed(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
+    {
+        // While the connection ID remains the same,
+        // the remote address may change so store it again.
+        this.remoteAddress = remoteAddress;
+        notIdle();
+        super.feed(remoteAddress, cipherBuffer);
+    }
+
+    Runnable getProducerTask()
+    {
+        return producer;
+    }
+
+    @Override
+    public void flush()
+    {
+        notIdle();
+        super.flush();
+    }
+
+    private class StreamsProducerTask extends Invocable.Task.Abstract
+    {
+        private StreamsProducerTask()
+        {
+            // Must be EITHER so that its invocation is not deferred,
+            // since this task may process a stream that would unblock
+            // stalled threads.
+            // NON_BLOCKING could have worked too, but EITHER provides
+            // parallelization of session processing which is a plus.
+            super(InvocationType.EITHER);
+        }
+
+        @Override
+        public void run()
+        {
+            produce();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
+        }
+    }
+*/
+}
