@@ -14,8 +14,10 @@
 package org.eclipse.jetty.quic.common.packets;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
-public sealed class LongHeaderPacket extends Packet permits HandshakePacket, InitialPacket, RetryPacket
+public sealed class LongHeaderPacket implements Packet permits HandshakePacket, InitialPacket, RetryPacket
 {
     private final PacketType packetType;
     private final QuicVersion quicVersion;
@@ -54,7 +56,7 @@ public sealed class LongHeaderPacket extends Packet permits HandshakePacket, Ini
     @Override
     public String toString()
     {
-        return "%s[%s]".formatted(super.toString(), quicVersion());
+        return "%s@%x[%s][dcid=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), quicVersion(), StringUtil.toHexString(destinationConnectionId()));
     }
 
     public enum PacketType
@@ -64,7 +66,7 @@ public sealed class LongHeaderPacket extends Packet permits HandshakePacket, Ini
         HANDSHAKE,
         RETRY;
 
-        public byte type(QuicVersion quicVersion)
+        public int type(QuicVersion quicVersion)
         {
             // RFC-9000:[17.2].
             // RFC-9369:[3.2].
@@ -90,6 +92,34 @@ public sealed class LongHeaderPacket extends Packet permits HandshakePacket, Ini
                     case V1 -> 0x03;
                     case V2 -> 0x00;
                 };
+            };
+        }
+
+        public static PacketType from(int type, QuicVersion quicVersion)
+        {
+            return switch (type)
+            {
+                case 0x00 -> switch (quicVersion)
+                {
+                    case V1 -> INITIAL;
+                    case V2 -> RETRY;
+                };
+                case 0x01 -> switch (quicVersion)
+                {
+                    case V1 -> ZERO_RTT;
+                    case V2 -> INITIAL;
+                };
+                case 0x02 -> switch (quicVersion)
+                {
+                    case V1 -> HANDSHAKE;
+                    case V2 -> ZERO_RTT;
+                };
+                case 0x03 -> switch (quicVersion)
+                {
+                    case V1 -> RETRY;
+                    case V2 -> HANDSHAKE;
+                };
+                default -> throw new IllegalArgumentException("invalid packet type: " + type);
             };
         }
     }

@@ -839,7 +839,7 @@ public interface Callback extends Invocable
      * @param failure The failure
      * @throws RuntimeException If thrown, will have the {@code failure} added as a suppressed.
      */
-    private static void failed(Consumer<Throwable> first, Consumer<Throwable> second,  Throwable failure)
+    public static void failed(Consumer<Throwable> first, Consumer<Throwable> second,  Throwable failure)
     {
         // This is an improved version of:
         // try

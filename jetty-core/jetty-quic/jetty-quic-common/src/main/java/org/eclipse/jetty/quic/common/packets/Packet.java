@@ -16,28 +16,25 @@ package org.eclipse.jetty.quic.common.packets;
 import java.net.SocketAddress;
 
 import org.eclipse.jetty.quic.api.Session;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 
-public abstract sealed class Packet permits LongHeaderPacket, ShortHeaderPacket
+public sealed interface Packet permits LongHeaderPacket, Packet.WithPacketNumber
 {
-    public static boolean isLongHeader(byte form)
+    static boolean isLongHeader(byte form)
     {
         // RFC 9000, 17.2: long header packets have msb == 1.
         return (form & 0b10000000) == 0b10000000;
     }
 
-    public abstract byte[] destinationConnectionId();
+    byte[] destinationConnectionId();
 
-    @Override
-    public String toString()
+    sealed interface WithPacketNumber extends Packet permits HandshakePacket, InitialPacket, ShortHeaderPacket
     {
-        return "%s@%x[dcid=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), StringUtil.toHexString(destinationConnectionId()));
+        long packetNumber();
     }
 
     //  TODO: javadoc this interface, can be used to drop packets in tests
-    //  to simulate network failures.
-    public interface Listener
+    //   to simulate network failures.
+    interface Listener
     {
         default void onIncomingPacket(Session session, SocketAddress address, Packet packet)
         {
@@ -51,7 +48,6 @@ public abstract sealed class Packet permits LongHeaderPacket, ShortHeaderPacket
         //  customize packet processing in QuicSession.
         class Wrapper implements Listener
         {
-
         }
     }
 }

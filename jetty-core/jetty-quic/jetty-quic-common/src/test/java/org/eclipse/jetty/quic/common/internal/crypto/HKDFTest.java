@@ -18,6 +18,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.HKDFParameterSpec;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.quic.common.internal.packets.QuicCrypto;
 import org.eclipse.jetty.quic.common.tls.HKDF;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ public class HKDFTest
             (byte)0x83, (byte)0x94, (byte)0xc8, (byte)0xf0, (byte)0x3e, (byte)0x51, (byte)0x57, (byte)0x08
         };
         HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract()
-            .addSalt(QuicVersion.V1.initialSalt())
+            .addSalt(QuicCrypto.initialSalt(QuicVersion.V1))
             .addIKM(connectionId)
             .extractOnly();
         KDF kdf = KDF.getInstance("HKDF-SHA256");
@@ -53,7 +54,7 @@ public class HKDFTest
             (byte)0x83, (byte)0x94, (byte)0xc8, (byte)0xf0, (byte)0x3e, (byte)0x51, (byte)0x57, (byte)0x08
         };
         HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract()
-            .addSalt(QuicVersion.V1.initialSalt())
+            .addSalt(QuicCrypto.initialSalt(QuicVersion.V1))
             .addIKM(connectionId)
             .extractOnly();
         KDF kdf = KDF.getInstance("HKDF-SHA256");

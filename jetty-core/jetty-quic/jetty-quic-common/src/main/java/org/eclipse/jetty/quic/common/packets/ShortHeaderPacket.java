@@ -18,7 +18,7 @@ import java.util.List;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.util.TypeUtil;
 
-public final class ShortHeaderPacket extends Packet
+public final class ShortHeaderPacket implements Packet.WithPacketNumber
 {
     private final long packetNumber;
     private final byte[] dstConnectionId;
@@ -40,6 +40,7 @@ public final class ShortHeaderPacket extends Packet
         this.frames = frames;
     }
 
+    @Override
     public long packetNumber()
     {
         return packetNumber;
@@ -69,11 +70,11 @@ public final class ShortHeaderPacket extends Packet
     @Override
     public String toString()
     {
-        return "%s@%x[#%d,dcid=%s,kp=%b,s=%b,%s]".formatted(
+        return "%s@%x[dcid=%s][#%d][kp=%b,s=%b,%s]".formatted(
             TypeUtil.toShortName(getClass()),
             hashCode(),
-            packetNumber(),
             destinationConnectionId(),
+            packetNumber(),
             keyPhase(),
             spin(),
             frames()
