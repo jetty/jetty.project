@@ -20,6 +20,7 @@ import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.tls.common.parser.ExtensionParser;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class QuicTransportParametersExtensionParser implements ExtensionParser
 {
@@ -91,6 +92,9 @@ public class QuicTransportParametersExtensionParser implements ExtensionParser
                         id = v;
                     }))
                     {
+                        paramId = TransportParameters.Ids.get(id);
+                        if (paramId == null)
+                            paramId = TransportParameters.Ids.create(id, TransportParameters.BytesId::new);
                         state = State.LENGTH;
                     }
                 }
@@ -102,44 +106,47 @@ public class QuicTransportParametersExtensionParser implements ExtensionParser
                         length = (int)v;
                     }))
                     {
-                        state = State.VALUE;
-                    }
-                }
-                case VALUE ->
-                {
-                    paramId = TransportParameters.Ids.get(id);
-                    if (paramId == null)
-                    {
-                        state = State.SKIP;
-                    }
-                    else
-                    {
-                        if (remaining >= length)
+                        if (length == 0)
                         {
-                            listLength -= length;
-                            int result = switch (paramId)
-                            {
-                                case TransportParameters.LongId longId ->
-                                {
-                                    long paramValue = VarLenInt.decodeLong(byteBuffer);
-                                    yield transportParameterComplete(longId, paramValue);
-                                }
-                                case TransportParameters.BytesId bytesId ->
-                                {
-                                    byte[] paramValue = new byte[length];
-                                    byteBuffer.get(paramValue);
-                                    yield transportParameterComplete(bytesId, paramValue);
-                                }
-                            };
+                            // Zero-length parameter is encoded as BytesId.
+                            TransportParameters.BytesId bytesId = (TransportParameters.BytesId)paramId;
+                            int result = transportParameterComplete(bytesId, BufferUtil.EMPTY_BYTES);
                             if (result > 0)
                                 return result;
                         }
                         else
                         {
-                            value = new byte[length];
-                            cursor = length;
-                            state = State.VALUE_BYTES;
+                            state = State.VALUE;
                         }
+                    }
+                }
+                case VALUE ->
+                {
+                    if (remaining >= length)
+                    {
+                        listLength -= length;
+                        int result = switch (paramId)
+                        {
+                            case TransportParameters.LongId longId ->
+                            {
+                                long paramValue = VarLenInt.decodeLong(byteBuffer);
+                                yield transportParameterComplete(longId, paramValue);
+                            }
+                            case TransportParameters.BytesId bytesId ->
+                            {
+                                byte[] paramValue = new byte[length];
+                                byteBuffer.get(paramValue);
+                                yield transportParameterComplete(bytesId, paramValue);
+                            }
+                        };
+                        if (result > 0)
+                            return result;
+                    }
+                    else
+                    {
+                        value = new byte[length];
+                        cursor = length;
+                        state = State.VALUE_BYTES;
                     }
                 }
                 case VALUE_BYTES ->
@@ -158,34 +165,6 @@ public class QuicTransportParametersExtensionParser implements ExtensionParser
                             }
                             case TransportParameters.BytesId bytesId -> transportParameterComplete(bytesId, value);
                         };
-                        if (result > 0)
-                            return result;
-                    }
-                }
-                case SKIP ->
-                {
-                    if (remaining >= length)
-                    {
-                        byteBuffer.position(byteBuffer.position() + length);
-                        listLength -= length;
-                        int result = transportParameterComplete(null, null);
-                        if (result > 0)
-                            return result;
-                    }
-                    else
-                    {
-                        cursor = length;
-                        state = State.SKIP_BYTES;
-                    }
-                }
-                case SKIP_BYTES ->
-                {
-                    byteBuffer.position(byteBuffer.position() + 1);
-                    --cursor;
-                    if (cursor == 0)
-                    {
-                        listLength -= length;
-                        int result = transportParameterComplete(null, null);
                         if (result > 0)
                             return result;
                     }
@@ -226,8 +205,6 @@ public class QuicTransportParametersExtensionParser implements ExtensionParser
         ID,
         LENGTH,
         VALUE,
-        VALUE_BYTES,
-        SKIP,
-        SKIP_BYTES
+        VALUE_BYTES
     }
 }

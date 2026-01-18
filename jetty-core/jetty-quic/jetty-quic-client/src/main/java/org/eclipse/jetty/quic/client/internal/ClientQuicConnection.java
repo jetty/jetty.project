@@ -21,7 +21,6 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.QuicConnection;
@@ -29,10 +28,10 @@ import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.tls.common.TranscriptHash;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class ClientQuicConnection extends QuicConnection implements Promise.Invocable<Session>
+public class ClientQuicConnection extends QuicConnection implements Callback
 {
     private ClientConnector connector;
     private SslContextFactory.Client sslContextFactory;
@@ -64,7 +63,7 @@ public class ClientQuicConnection extends QuicConnection implements Promise.Invo
     }
 
     @Override
-    public void succeeded(Session result)
+    public void succeeded()
     {
         super.onOpen();
         fillInterested();

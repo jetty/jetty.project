@@ -28,9 +28,11 @@ import org.eclipse.jetty.quic.common.internal.frames.ConnectionCloseFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.CryptoFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.DataBlockedFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.FrameParser;
+import org.eclipse.jetty.quic.common.internal.frames.HandshakeDoneFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.MaxDataFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.MaxStreamsFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.PaddingFrameParser;
+import org.eclipse.jetty.quic.common.internal.frames.PingFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.ResetStreamFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.StopSendingFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.StreamDataBlockedFrameParser;
@@ -51,7 +53,7 @@ public class FramesParser
     {
         VarLenInt varLenInt = new VarLenInt();
         parsers.put(FrameType.PADDING, new PaddingFrameParser());
-        parsers.put(FrameType.PING, null/*TODO*/);
+        parsers.put(FrameType.PING, new PingFrameParser());
         parsers.put(FrameType.ACK, new AckFrameParser());
         parsers.put(FrameType.RESET_STREAM, new ResetStreamFrameParser(varLenInt));
         parsers.put(FrameType.STOP_SENDING, new StopSendingFrameParser(varLenInt));
@@ -69,7 +71,7 @@ public class FramesParser
         parsers.put(FrameType.PATH_CHALLENGE, null/*TODO*/);
         parsers.put(FrameType.PATH_RESPONSE, null/*TODO*/);
         parsers.put(FrameType.CONNECTION_CLOSE, new ConnectionCloseFrameParser(varLenInt));
-        parsers.put(FrameType.HANDSHAKE_DONE, null/*TODO*/);
+        parsers.put(FrameType.HANDSHAKE_DONE, new HandshakeDoneFrameParser());
     }
 
     public int getFrameMaxSize()

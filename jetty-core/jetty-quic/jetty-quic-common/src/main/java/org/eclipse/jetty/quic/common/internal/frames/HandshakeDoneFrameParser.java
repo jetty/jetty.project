@@ -15,17 +15,18 @@ package org.eclipse.jetty.quic.common.internal.frames;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
-import org.eclipse.jetty.quic.api.frames.PaddingFrame;
+import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class PaddingFrameParser implements FrameParser
+/// A parser for QUIC HANDSHAKE_DONE frames.
+public class HandshakeDoneFrameParser implements FrameParser
 {
-    private static final Frame PADDING_FRAME = new PaddingFrame();
+    private static final HandshakeDoneFrame HANDSHAKE_DONE_FRAME = new HandshakeDoneFrame();
 
     @Override
     public Frame parse(RetainableByteBuffer buffer)
     {
         VarLenInt.decodeLong(buffer.getByteBuffer());
-        return PADDING_FRAME;
+        return HANDSHAKE_DONE_FRAME;
     }
 }

@@ -26,9 +26,9 @@ public class HKDF
     ///
     /// This is a convenience overload for the cases that have no context bytes.
     /// @see #expandLabel(SecretKey, String, byte[], int)
-    public static HKDFParameterSpec expandLabel(SecretKey key, String quicLabel, int length)
+    public static HKDFParameterSpec expandLabel(SecretKey key, String label, int length)
     {
-        return expandLabel(key, quicLabel, BufferUtil.EMPTY_BYTES, length);
+        return expandLabel(key, label, BufferUtil.EMPTY_BYTES, length);
     }
 
     /// Returns the [HKDFParameterSpec] correspondent to the HDKF-Expand-Label function
@@ -48,9 +48,9 @@ public class HKDF
     /// // Derive a key using the HDKF-Expand-Label function.
     /// SecretKey secretKey = kdf.deriveKey("SecretKey", HKDF.expandLabel(prk, "label", new byte[0], 32));
     /// ```
-    public static HKDFParameterSpec expandLabel(SecretKey key, String quicLabel, byte[] context, int length)
+    public static HKDFParameterSpec expandLabel(SecretKey key, String label, byte[] context, int length)
     {
-        return HKDFParameterSpec.expandOnly(key, HKDF.hkdfLabel(quicLabel, context, length), length);
+        return HKDFParameterSpec.expandOnly(key, HKDF.hkdfLabel(label, context, length), length);
     }
 
     private static byte[] hkdfLabel(String quicLabel, byte[] context, int length)

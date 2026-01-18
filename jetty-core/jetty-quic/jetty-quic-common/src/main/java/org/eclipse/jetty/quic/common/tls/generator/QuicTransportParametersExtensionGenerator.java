@@ -33,10 +33,10 @@ public class QuicTransportParametersExtensionGenerator implements ExtensionGener
     @Override
     public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
     {
-        return generate(accumulator, (org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension)extension);
+        return generate(accumulator, (QuicTransportParametersExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension extension)
+    private int generate(RetainableByteBuffer.Mutable accumulator, QuicTransportParametersExtension extension)
     {
         accumulator.putShort((short)extension.code());
         TransportParameters parameters = extension.parameters();
@@ -47,7 +47,7 @@ public class QuicTransportParametersExtensionGenerator implements ExtensionGener
             // The number of bytes necessary to encode the ID.
             // For example, MAX_IDLE_TIMEOUT = 1, it is encoded as 1, and its length is 1 byte.
             // For a GREASE ID such as 0xFF02DE1A, is it encoded as 0xC0000000FF02DE1A, and its length is 8 bytes.
-            totalLength += VarLenInt.length(id.getId());
+            totalLength += VarLenInt.length(id.id());
             // The value can be a long or byte[], we need to know the length of the encoding of the value.
             // For example, the long value 0xFF02DE1A is encoded as 0xC0000000FF02DE1A, in 8 bytes.
             // For example, the connection ids are byte[] that are encoded in the byte[] itself, in array.length bytes.
@@ -65,7 +65,7 @@ public class QuicTransportParametersExtensionGenerator implements ExtensionGener
         for (Map.Entry<TransportParameters.Id<?>, Object> entry : parameters)
         {
             TransportParameters.Id<?> id = entry.getKey();
-            VarLenInt.encode(accumulator, id.getId());
+            VarLenInt.encode(accumulator, id.id());
             int valueEncodingLength = switch (id)
             {
                 case TransportParameters.LongId longId -> VarLenInt.length(parameters.get(longId));

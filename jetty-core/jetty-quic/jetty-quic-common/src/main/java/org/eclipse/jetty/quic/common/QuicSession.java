@@ -245,11 +245,13 @@ public abstract class QuicSession extends AbstractSession
         while (buffer.hasRemaining())
         {
             Packet packet = parser.parse(buffer);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("parsed {} on {}", packet, this);
+
             if (packet == null)
             {
                 // TODO: is this case possible in practice?
-                if (LOG.isDebugEnabled())
-                    LOG.debug("packet discarded on {}", this);
                 // TODO: consume the buffer?
                 return;
             }
@@ -277,11 +279,30 @@ public abstract class QuicSession extends AbstractSession
         {
             case InitialPacket initialPacket ->
             {
+                EncryptionLevel encryptionLevel = getTLSEngine().getPacketProtector().getEncryptionLevel();
+                if (encryptionLevel != EncryptionLevel.INITIAL)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("discarded {} at encryption level {} on {} ", packet, encryptionLevel, this);
+                    return;
+                }
                 processFrames(initialPacket.frames());
+                ack(initialPacket);
             }
             case HandshakePacket handshakePacket ->
             {
+                EncryptionLevel encryptionLevel = getTLSEngine().getPacketProtector().getEncryptionLevel();
+                if (encryptionLevel == EncryptionLevel.INITIAL)
+                    getTLSEngine().getPacketProtector().updateEncryptionLevel(EncryptionLevel.HANDSHAKE);
+                encryptionLevel = getTLSEngine().getPacketProtector().getEncryptionLevel();
+                if (encryptionLevel != EncryptionLevel.HANDSHAKE)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("discarded {} at encryption level {} on {} ", packet, encryptionLevel, this);
+                    return;
+                }
                 processFrames(handshakePacket.frames());
+                ack(handshakePacket);
             }
             case RetryPacket _ ->
             {
@@ -360,6 +381,15 @@ public abstract class QuicSession extends AbstractSession
         //  Then notify the Stream.Listener.
     }
 
+    private void ack(Packet.WithPacketNumber packet)
+    {
+        // TODO: notify reliability data structure?
+        //  Or leave that only for sent packets and received acks?
+        AckFrame ackFrame = new AckFrame(packet.packetNumber(), 0, 0, List.of());
+        if (flusher.offer(this, List.of(ackFrame), Callback.NOOP))
+            flusher.iterate();
+    }
+
     public Packet.Listener getPacketListener()
     {
         return packetListener;
@@ -398,7 +428,6 @@ public abstract class QuicSession extends AbstractSession
     {
         if (LOG.isDebugEnabled())
             LOG.atDebug().setCause(x).log("failure on {}", this);
-
         // TODO: initiate inward close? or outward?
     }
 

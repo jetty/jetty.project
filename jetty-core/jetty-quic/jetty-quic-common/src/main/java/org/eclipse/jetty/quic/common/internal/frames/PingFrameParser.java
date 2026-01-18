@@ -15,17 +15,18 @@ package org.eclipse.jetty.quic.common.internal.frames;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
-import org.eclipse.jetty.quic.api.frames.PaddingFrame;
+import org.eclipse.jetty.quic.api.frames.PingFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
-public class PaddingFrameParser implements FrameParser
+/// A parser for QUIC PING frames.
+public class PingFrameParser implements FrameParser
 {
-    private static final Frame PADDING_FRAME = new PaddingFrame();
+    private static final PingFrame PING_FRAME = new PingFrame();
 
     @Override
     public Frame parse(RetainableByteBuffer buffer)
     {
         VarLenInt.decodeLong(buffer.getByteBuffer());
-        return PADDING_FRAME;
+        return PING_FRAME;
     }
 }

@@ -24,12 +24,14 @@ import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.tls.generator.QuicTransportParametersExtensionGenerator;
 import org.eclipse.jetty.quic.common.tls.parser.QuicTransportParametersExtensionParser;
+import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.tls.common.generator.ExtensionsGenerator;
 import org.eclipse.jetty.tls.common.parser.ExtensionsParser;
 import org.eclipse.jetty.tls.ext.Extension;
-import org.junit.jupiter.api.Assertions;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -41,23 +43,35 @@ public class QuicExtensionsGenerateParseTest
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
 
-        TransportParameters transportParameters = new TransportParameters();
+        TransportParameters generatedParams = new TransportParameters();
         // Smaller long value.
-        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_UNIDIRECTIONAL, 16L);
+        generatedParams.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_UNIDIRECTIONAL, 16L);
         // Small long value.
-        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL, 100L);
+        generatedParams.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL, 100L);
         // Large long value.
-        transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, 30000L);
+        generatedParams.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, 30000L);
         // Larger long value.
-        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_DATA, 2147483648L);
+        generatedParams.put(TransportParameters.Ids.INITIAL_MAX_DATA, 2147483648L);
         // Larger grease id.
-        transportParameters.put(TransportParameters.Ids.create(0xFF02DE1AL, TransportParameters.BytesId::new), new byte[]{13, 7, 19});
-        // Unknown id.
-        transportParameters.put(TransportParameters.Ids.create(0x5000, TransportParameters.BytesId::new), new byte[]{16, 14, 38});
-        QuicTransportParametersExtension expected = new QuicTransportParametersExtension(transportParameters);
+        generatedParams.put(TransportParameters.Ids.create(0xFF02DE1AL, TransportParameters.BytesId::new), new byte[]{13, 7, 19});
+        // Remove it from the static Ids map, so parsing does not find this id.
+        TransportParameters.Ids.remove(0xFF02DE1AL);
+        // Unknown id. Generated as long, will be parsed as bytes.
+        long unknownId = 0x5000;
+        long unknownValue = 1052198;
+        byte[] unknownValueBytes = new byte[VarLenInt.length(unknownValue)];
+        VarLenInt.encode(ByteBuffer.wrap(unknownValueBytes), unknownValue);
+        generatedParams.put(TransportParameters.Ids.create(unknownId, TransportParameters.LongId::new), unknownValue);
+        // Remove it from the static Ids map, so parsing does not find this id.
+        TransportParameters.Ids.remove(unknownId);
+        // Zero-length value.
+        // When being the last, it is an edge case for parsing,
+        // since there are no more bytes to read in the buffer.
+        generatedParams.put(TransportParameters.Ids.DISABLE_ACTIVE_MIGRATION, BufferUtil.EMPTY_BYTES);
+        QuicTransportParametersExtension generated = new QuicTransportParametersExtension(generatedParams);
         ExtensionsGenerator generator = new ExtensionsGenerator(true);
         generator.put(new QuicTransportParametersExtensionGenerator());
-        int length = generator.generate(accumulator, List.of(expected));
+        int length = generator.generate(accumulator, List.of(generated));
 
         ExtensionsParser parser = new ExtensionsParser(true);
         parser.put(new QuicTransportParametersExtensionParser(parser));
@@ -67,17 +81,22 @@ public class QuicExtensionsGenerateParseTest
         assertNotNull(extensions);
 
         assertEquals(1, extensions.size());
-        QuicTransportParametersExtension result = (QuicTransportParametersExtension)extensions.getFirst();
-        TransportParameters expectedTransportParameters = expected.parameters();
-        TransportParameters resultTransportParameters = result.parameters();
-        for (Map.Entry<TransportParameters.Id<?>, Object> entry : expectedTransportParameters)
+        QuicTransportParametersExtension parsed = (QuicTransportParametersExtension)extensions.getFirst();
+        TransportParameters parseParams = parsed.parameters();
+        for (Map.Entry<TransportParameters.Id<?>, Object> entry : generatedParams)
         {
             switch (entry.getKey())
             {
-                case TransportParameters.LongId longId ->
-                    Assertions.assertEquals(expectedTransportParameters.get(longId), resultTransportParameters.get(longId));
+                case TransportParameters.LongId longId when longId.id() != unknownId ->
+                    assertEquals(generatedParams.get(longId), parseParams.get(longId));
+                case TransportParameters.LongId _ ->
+                {
+                    // Generated as unknown long, parsed as bytes.
+                    byte[] parsedValue = (byte[])parseParams.get(entry.getKey());
+                    assertArrayEquals(unknownValueBytes, parsedValue);
+                }
                 case TransportParameters.BytesId bytesId ->
-                    Assertions.assertArrayEquals(expectedTransportParameters.get(bytesId), resultTransportParameters.get(bytesId));
+                    assertArrayEquals(generatedParams.get(bytesId), parseParams.get(bytesId));
             }
         }
 
@@ -94,16 +113,22 @@ public class QuicExtensionsGenerateParseTest
 
         assertNotNull(extensions);
         assertEquals(1, extensions.size());
-        result = (QuicTransportParametersExtension)extensions.getFirst();
-        resultTransportParameters = result.parameters();
-        for (Map.Entry<TransportParameters.Id<?>, Object> entry : expectedTransportParameters)
+        parsed = (QuicTransportParametersExtension)extensions.getFirst();
+        parseParams = parsed.parameters();
+        for (Map.Entry<TransportParameters.Id<?>, Object> entry : generatedParams)
         {
             switch (entry.getKey())
             {
-                case TransportParameters.LongId longId ->
-                    Assertions.assertEquals(expectedTransportParameters.get(longId), resultTransportParameters.get(longId));
+                case TransportParameters.LongId longId when longId.id() != unknownId ->
+                    assertEquals(generatedParams.get(longId), parseParams.get(longId));
+                case TransportParameters.LongId _ ->
+                {
+                    // Generated as unknown long, parsed as bytes.
+                    byte[] parsedValue = (byte[])parseParams.get(entry.getKey());
+                    assertArrayEquals(unknownValueBytes, parsedValue);
+                }
                 case TransportParameters.BytesId bytesId ->
-                    Assertions.assertArrayEquals(expectedTransportParameters.get(bytesId), resultTransportParameters.get(bytesId));
+                    assertArrayEquals(generatedParams.get(bytesId), parseParams.get(bytesId));
             }
         }
     }

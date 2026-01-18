@@ -13,16 +13,14 @@
 
 package org.eclipse.jetty.quic.client.internal.tls;
 
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
-import javax.crypto.KDF;
-import javax.crypto.Mac;
+import java.util.concurrent.CompletableFuture;
 import javax.crypto.SecretKey;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
-import org.eclipse.jetty.quic.common.tls.HKDF;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
@@ -53,6 +51,8 @@ public class ClientTLSEngine extends TLSEngine
 {
     private static final Logger LOG = LoggerFactory.getLogger(ClientTLSEngine.class);
 
+    private final CompletableFuture<Void> complete = new CompletableFuture<>();
+    private State state = State.INITIAL;
     private Configuration configuration;
     private List<GroupKeyPair> groupKeyPairs;
     private ClientHelloMessage clientHello;
@@ -64,14 +64,16 @@ public class ClientTLSEngine extends TLSEngine
         super(protector, true);
     }
 
-    public void startHandshake(Configuration configuration, Callback callback)
+    public CompletableFuture<Void> startHandshake(Configuration configuration, Callback callback)
     {
         try
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("starting handshake with {} on {}", configuration, this);
 
-            assert clientHello == null;
+            if (state != State.INITIAL)
+                throw new IllegalStateException("invalid state " + state);
+            state = State.SEND_CLIENT_HELLO;
 
             this.configuration = configuration;
 
@@ -100,26 +102,47 @@ public class ClientTLSEngine extends TLSEngine
             if (LOG.isDebugEnabled())
                 LOG.debug("produced {} on {}", clientHello, this);
 
-            getPacketProtector().allocateInitialKeys(configuration.quicVersion(), configuration.inputKeyMaterial());
+            PacketProtector packetProtector = getPacketProtector();
+            packetProtector.updateEncryptionLevel(EncryptionLevel.INITIAL);
+            packetProtector.allocateInitialKeys(configuration.quicVersion(), configuration.inputKeyMaterial());
 
             // Notifies back the QuicSession to send this message in a CRYPTO frame.
-            notifyMessages(List.of(clientHello), callback);
+            notifyMessages(List.of(clientHello), Callback.from(callback, x ->
+            {
+                if (x != null)
+                    complete.completeExceptionally(x);
+            }));
+
+            return complete;
         }
         catch (Throwable x)
         {
-            callback.failed(x);
+            Callback.failed(callback::failed, complete::completeExceptionally, x);
+            return complete;
         }
     }
 
-    public void retryHandshake(Callback callback)
+    public void retryHandshake()
     {
-        assert clientHello != null;
+        try
+        {
+            if (state != State.SEND_CLIENT_HELLO)
+                throw new IllegalStateException("invalid state " + state);
 
-        // RetryPacket is a QUIC mechanism, and as such
-        // the ClientHello sent in the first InitialPacket
-        // must be discarded from the TranscriptHash.
-        getPacketProtector().getTranscriptHash().clear();
-        notifyMessages(List.of(clientHello), callback);
+            // RetryPacket is a QUIC mechanism, and as such
+            // the ClientHello sent in the first InitialPacket
+            // must be discarded from the TranscriptHash.
+            getPacketProtector().getTranscriptHash().clear();
+            notifyMessages(List.of(clientHello), Callback.from(Callback.NOOP, x ->
+            {
+                if (x != null)
+                    complete.completeExceptionally(x);
+            }));
+        }
+        catch (Throwable x)
+        {
+            complete.completeExceptionally(x);
+        }
     }
 
     @Override
@@ -131,14 +154,22 @@ public class ClientTLSEngine extends TLSEngine
     @Override
     public void onMessageParsed(Message message)
     {
-        switch (message)
+        try
         {
-            case ServerHelloMessage serverHello -> processServerHello(serverHello);
-            case EncryptedExtensionsMessage encryptedExtensions -> processEncryptedExtensions(encryptedExtensions);
-            case CertificateMessage certificate -> processCertificate(certificate);
-            case CertificateVerifyMessage certificateVerify -> processCertificateVerify(certificateVerify);
-            case FinishedMessage finished -> processFinished(finished);
-            default -> throw new IllegalStateException("unexpected message " + message);
+            switch (message)
+            {
+                case ServerHelloMessage serverHello -> processServerHello(serverHello);
+                case EncryptedExtensionsMessage encryptedExtensions -> processEncryptedExtensions(encryptedExtensions);
+                case CertificateMessage certificate -> processCertificate(certificate);
+                case CertificateVerifyMessage certificateVerify -> processCertificateVerify(certificateVerify);
+                case FinishedMessage finished -> processFinished(finished);
+                default -> throw new IllegalStateException("unexpected message " + message);
+            }
+        }
+        catch (Throwable x)
+        {
+            complete.completeExceptionally(x);
+            throw x;
         }
     }
 
@@ -282,28 +313,33 @@ public class ClientTLSEngine extends TLSEngine
     {
         try
         {
-            // RFC 8446, 4.4.4.
-            byte[] verifyData = finished.verifyData();
-            int hashLength = cipherSuite.hashLength();
-            if (verifyData.length != hashLength)
-                throw new TLSException(TLSException.Alert.DECODE_ERROR, "invalid verify data length");
+            if (!verifyFinishedMessage(cipherSuite, finished, true))
+                throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid verify data");
 
-            int shaLength = hashLength * 8;
-            KDF kdf = KDF.getInstance("HKDF-SHA" + shaLength);
-            SecretKey trafficKey = getPacketProtector().getTrafficSecretKey();
-            SecretKey finishedKey = kdf.deriveKey("Generic", HKDF.expandLabel(trafficKey, "finished", hashLength));
-
-            Mac mac = Mac.getInstance("HmacSHA" + shaLength);
-            mac.init(finishedKey);
-            byte[] expected = mac.doFinal(getPacketProtector().getTranscriptHash().getHash());
-
-            // Differently from Arrays.equals(), MessageDigest.isEqual() implements constant-time comparison.
-            if (!MessageDigest.isEqual(verifyData, expected))
-                throw new TLSException(TLSException.Alert.DECODE_ERROR, "invalid verify data");
+            if (LOG.isDebugEnabled())
+                LOG.debug("verified {}", finished);
 
             getPacketProtector().getTranscriptHash().offer(finished, true);
+            getPacketProtector().allocateApplicationKeys(configuration.quicVersion(), cipherSuite);
 
-//            getPacketProtector().allocateApplicationKeys();
+            FinishedMessage message = createFinishedMessage(cipherSuite, false);
+            Callback.Completable callback = new Callback.Completable();
+            notifyMessages(List.of(message), callback);
+            callback.whenComplete((_, x) ->
+            {
+                if (x == null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("handshake completed on {}", this);
+                    complete.complete(null);
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.atDebug().setCause(x).log("handshake failed on {}", this);
+                    complete.completeExceptionally(x);
+                }
+            });
         }
         catch (TLSException x)
         {
@@ -313,6 +349,12 @@ public class ClientTLSEngine extends TLSEngine
         {
             throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s[%s]".formatted(super.toString(), state);
     }
 
     public static class Configuration
@@ -389,5 +431,16 @@ public class ClientTLSEngine extends TLSEngine
         {
             return inputKeyMaterial;
         }
+    }
+
+    private enum State
+    {
+        INITIAL,
+        SEND_CLIENT_HELLO,
+        RECV_SERVER_HELLO,
+        RECV_ENCRYPTED_EXTENSIONS,
+        RECV_CERTIFICATE,
+        RECV_CERTIFICATE_VERIFY,
+        RECV_FINISHED
     }
 }

@@ -30,6 +30,7 @@ import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
+import org.eclipse.jetty.quic.common.internal.packets.QuicCrypto;
 import org.eclipse.jetty.quic.common.tls.HKDF;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.tls.CipherSuite;
@@ -51,6 +52,7 @@ public class PacketProtector implements Encrypter, Decrypter
     private final TranscriptHash transcriptHash;
     private final boolean client;
     private EncryptionLevel encryptionLevel;
+    private SecretKey handshakeSecret;
 
     public PacketProtector(ByteBufferPool byteBufferPool, PacketNumbers packetNumbers, TranscriptHash transcriptHash, boolean client)
     {
@@ -75,35 +77,183 @@ public class PacketProtector implements Encrypter, Decrypter
         return encryptionLevel;
     }
 
-    public SecretKey getTrafficSecretKey()
+    public SecretKey getTrafficSecretKey(boolean input)
     {
         assert encryptionLevel != null;
-        KeyManager keyManager = keyManagers.get(encryptionLevel);
-        return keyManager != null ? keyManager.getTrafficSecretKey() : null;
+        return keyManagers.get(encryptionLevel).getTrafficSecretKey(input);
     }
 
-    // Only public for testing purposes.
-    public void allocateInitialKeys(QuicVersion quicVersion, byte[] input) throws Exception
+    public void allocateInitialKeys(QuicVersion quicVersion, byte[] input)
     {
-        assert encryptionLevel == null;
-        encryptionLevel = EncryptionLevel.INITIAL;
-        KeyManager keyManager = keyManagers.computeIfAbsent(EncryptionLevel.INITIAL, KeyManager::new);
-        keyManager.allocateInitialKeys(quicVersion, input);
-        if (LOG.isDebugEnabled())
-            LOG.debug("allocated initial QUIC keys on {}", this);
+        try
+        {
+            if (encryptionLevel != EncryptionLevel.INITIAL)
+                throw new IllegalStateException("cannot allocate initial keys at encryption level " + encryptionLevel);
+            KeyManager keyManager = new KeyManager(EncryptionLevel.INITIAL);
+            if (keyManagers.put(EncryptionLevel.INITIAL, keyManager) != null)
+                throw new IllegalStateException("KeyManager already exists at encryption level " + encryptionLevel);
+
+            // RFC 9001, 5.2: initial secrets use SHA256.
+            KDF kdf = KDF.getInstance("HKDF-SHA256");
+            HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract().addSalt(QuicCrypto.initialSalt(quicVersion)).addIKM(input).extractOnly();
+            SecretKey prk = kdf.deriveKey("InitialPseudoRandomKey", spec);
+
+            SecretKey clientTraffic = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "client in", 32));
+            SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), 16));
+            SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
+            SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), 16));
+
+            SecretKey serverTraffic = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "server in", 32));
+            SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), 16));
+            SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
+            SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), 16));
+
+            if (client)
+            {
+                keyManager.readKeys.updateKeys(serverTraffic, serverEncryption, serverInitialization, serverProtection);
+                keyManager.writeKeys.updateKeys(clientTraffic, clientEncryption, clientInitialization, clientProtection);
+            }
+            else
+            {
+                keyManager.readKeys.updateKeys(clientTraffic, clientEncryption, clientInitialization, clientProtection);
+                keyManager.writeKeys.updateKeys(serverTraffic, serverEncryption, serverInitialization, serverProtection);
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("allocated QUIC initial keys on {}", this);
+        }
+        catch (Throwable x)
+        {
+            throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
+        }
     }
 
     public void allocateHandshakeKeys(QuicVersion quicVersion, CipherSuite cipherSuite, SecretKey sharedSecret)
     {
-        assert encryptionLevel == EncryptionLevel.INITIAL;
-        encryptionLevel = EncryptionLevel.HANDSHAKE;
+        try
+        {
+            if (encryptionLevel != EncryptionLevel.INITIAL)
+                throw new IllegalStateException("cannot allocate initial keys at encryption level " + encryptionLevel);
 
-        transcriptHash.initialize(cipherSuite);
+            transcriptHash.initialize(cipherSuite);
 
-        KeyManager keyManager = keyManagers.computeIfAbsent(EncryptionLevel.HANDSHAKE, KeyManager::new);
-        keyManager.allocateHandshakeKeys(quicVersion, cipherSuite, sharedSecret);
-        if (LOG.isDebugEnabled())
-            LOG.debug("allocated handshake QUIC keys on {}", this);
+            KeyManager keyManager = new KeyManager(EncryptionLevel.INITIAL);
+            if (keyManagers.put(EncryptionLevel.HANDSHAKE, keyManager) != null)
+                throw new IllegalStateException("KeyManager already exists at encryption level " + encryptionLevel);
+
+            // RFC 8446, 7.1.
+            int hashLength = cipherSuite.hashLength();
+            KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
+            byte[] salt = new byte[hashLength];
+            byte[] inputKeyMaterial = new byte[hashLength];
+            HKDFParameterSpec.Extract extract = HKDFParameterSpec.ofExtract().addSalt(salt).addIKM(inputKeyMaterial).extractOnly();
+            SecretKey earlySecret = kdf.deriveKey("HandshakeEarlyKey", extract);
+
+            SecretKey derivedSecret = kdf.deriveKey("HandshakeDerivedKey", HKDF.expandLabel(earlySecret, "derived", transcriptHash.getEmptyHash(), hashLength));
+            extract = HKDFParameterSpec.ofExtract().addSalt(derivedSecret).addIKM(sharedSecret).extractOnly();
+            handshakeSecret = kdf.deriveKey("HandshakeSecretKey", extract);
+
+            byte[] tlsHash = transcriptHash.getHash();
+            int keyLength = cipherSuite.keyLength();
+
+            SecretKey clientTraffic = kdf.deriveKey("ClientHandshakeKey", HKDF.expandLabel(handshakeSecret, "c hs traffic", tlsHash, hashLength));
+            SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
+            SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
+            SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
+
+            SecretKey serverTraffic = kdf.deriveKey("ServerHandshakeKey", HKDF.expandLabel(handshakeSecret, "s hs traffic", tlsHash, hashLength));
+            SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
+            SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
+            SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
+
+            if (client)
+            {
+                keyManager.readKeys.updateKeys(serverTraffic, serverEncryption, serverInitialization, serverProtection);
+                keyManager.writeKeys.updateKeys(clientTraffic, clientEncryption, clientInitialization, clientProtection);
+            }
+            else
+            {
+                keyManager.readKeys.updateKeys(clientTraffic, clientEncryption, clientInitialization, clientProtection);
+                keyManager.writeKeys.updateKeys(serverTraffic, serverEncryption, serverInitialization, serverProtection);
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("allocated QUIC handshake keys on {}", this);
+        }
+        catch (Throwable x)
+        {
+            throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
+        }
+    }
+
+    public void allocateApplicationKeys(QuicVersion quicVersion, CipherSuite cipherSuite)
+    {
+        try
+        {
+            if (encryptionLevel != EncryptionLevel.HANDSHAKE)
+                throw new IllegalStateException("cannot allocate initial keys at encryption level " + encryptionLevel);
+
+            KeyManager keyManager = new KeyManager(EncryptionLevel.ONE_RTT);
+            if (keyManagers.put(EncryptionLevel.ONE_RTT, keyManager) != null)
+                throw new IllegalStateException("KeyManager already exists at encryption level " + encryptionLevel);
+
+            // RFC 8446, 7.1.
+            int hashLength = cipherSuite.hashLength();
+            KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
+
+            SecretKey derivedSecret = kdf.deriveKey("ApplicationDerivedKey", HKDF.expandLabel(handshakeSecret, "derived", transcriptHash.getEmptyHash(), hashLength));
+            HKDFParameterSpec.Extract extract = HKDFParameterSpec.ofExtract().addSalt(new byte[hashLength]).addIKM(derivedSecret).extractOnly();
+            SecretKey masterSecret = kdf.deriveKey("MasterSecret", extract);
+
+            byte[] tlsHash = transcriptHash.getHash();
+            int keyLength = cipherSuite.keyLength();
+
+            SecretKey clientTraffic = kdf.deriveKey("ClientApplicationKey", HKDF.expandLabel(masterSecret, "c ap traffic", tlsHash, hashLength));
+            SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
+            SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
+            SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
+
+            SecretKey serverTraffic = kdf.deriveKey("ServerApplicationKey", HKDF.expandLabel(masterSecret, "s ap traffic", tlsHash, hashLength));
+            SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
+            SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
+            SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
+
+            if (client)
+            {
+                keyManager.readKeys.updateKeys(serverTraffic, serverEncryption, serverInitialization, serverProtection);
+                keyManager.writeKeys.updateKeys(clientTraffic, clientEncryption, clientInitialization, clientProtection);
+            }
+            else
+            {
+                keyManager.readKeys.updateKeys(clientTraffic, clientEncryption, clientInitialization, clientProtection);
+                keyManager.writeKeys.updateKeys(serverTraffic, serverEncryption, serverInitialization, serverProtection);
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("allocated QUIC application keys on {}", this);
+        }
+        catch (Throwable x)
+        {
+            throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
+        }
+    }
+
+    public void updateEncryptionLevel(EncryptionLevel next)
+    {
+        EncryptionLevel current = encryptionLevel;
+        boolean valid = (current == null && next == EncryptionLevel.INITIAL) ||
+            (current == EncryptionLevel.INITIAL && next == EncryptionLevel.HANDSHAKE) ||
+            (current == EncryptionLevel.HANDSHAKE && next == EncryptionLevel.ONE_RTT);
+        if (!valid)
+            throw new IllegalStateException("invalid encryption level transition from " + current + " to " + next);
+
+        encryptionLevel = next;
+
+        // RFC 9001, 4.9.
+        if (current != null)
+            keyManagers.remove(current).destroy();
+        if (current == EncryptionLevel.HANDSHAKE)
+            KeyManager.destroy(handshakeSecret);
     }
 
     @Override
@@ -154,89 +304,9 @@ public class PacketProtector implements Encrypter, Decrypter
             this.encryptionLevel = encryptionLevel;
         }
 
-        public SecretKey getTrafficSecretKey()
+        public SecretKey getTrafficSecretKey(boolean input)
         {
-            return writeKeys.initial;
-        }
-
-        public void allocateInitialKeys(QuicVersion quicVersion, byte[] inputKeyMaterial)
-        {
-            try
-            {
-                // RFC 9001, 5.2: initial secrets use SHA256.
-                KDF kdf = KDF.getInstance("HKDF-SHA256");
-                HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract().addSalt(quicVersion.initialSalt()).addIKM(inputKeyMaterial).extractOnly();
-                SecretKey prk = kdf.deriveKey("InitialPseudoRandomKey", spec);
-
-                SecretKey clientInitial = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "client in", 32));
-                SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, quicVersion.encryptionLabel(), 16));
-                SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, quicVersion.initializationVectorLabel(), 12));
-                SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientInitial, quicVersion.headerProtectionLabel(), 16));
-
-                SecretKey serverInitial = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "server in", 32));
-                SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, quicVersion.encryptionLabel(), 16));
-                SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, quicVersion.initializationVectorLabel(), 12));
-                SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverInitial, quicVersion.headerProtectionLabel(), 16));
-
-                if (client)
-                {
-                    readKeys.updateKeys(serverInitial, serverEncryption, serverInitialization, serverProtection);
-                    writeKeys.updateKeys(clientInitial, clientEncryption, clientInitialization, clientProtection);
-                }
-                else
-                {
-                    readKeys.updateKeys(clientInitial, clientEncryption, clientInitialization, clientProtection);
-                    writeKeys.updateKeys(serverInitial, serverEncryption, serverInitialization, serverProtection);
-                }
-            }
-            catch (Exception x)
-            {
-                throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
-            }
-        }
-
-        public void allocateHandshakeKeys(QuicVersion quicVersion, CipherSuite cipherSuite, SecretKey sharedSecret)
-        {
-            try
-            {
-                int hashLength = cipherSuite.hashLength();
-                KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
-                byte[] salt = new byte[hashLength];
-                byte[] inputKeyMaterial = new byte[hashLength];
-                HKDFParameterSpec.Extract extract = HKDFParameterSpec.ofExtract().addSalt(salt).addIKM(inputKeyMaterial).extractOnly();
-                SecretKey earlySecret = kdf.deriveKey("HandshakeEarlyKey", extract);
-
-                SecretKey derivedSecret = kdf.deriveKey("HandshakeDerivedKey", HKDF.expandLabel(earlySecret, "derived", transcriptHash.getEmptyHash(), hashLength));
-                extract = HKDFParameterSpec.ofExtract().addSalt(derivedSecret).addIKM(sharedSecret).extractOnly();
-                SecretKey handshakeSecret = kdf.deriveKey("HandshakeSecretKey", extract);
-                byte[] tlsHash = transcriptHash.getHash();
-                SecretKey clientHandshake = kdf.deriveKey("ClientHandshakeKey", HKDF.expandLabel(handshakeSecret, "c hs traffic", tlsHash, hashLength));
-                SecretKey serverHandshake = kdf.deriveKey("ServerHandshakeKey", HKDF.expandLabel(handshakeSecret, "s hs traffic", tlsHash, hashLength));
-
-                int keyLength = cipherSuite.keyLength();
-                SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientHandshake, quicVersion.encryptionLabel(), keyLength));
-                SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientHandshake, quicVersion.initializationVectorLabel(), 12));
-                SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientHandshake, quicVersion.headerProtectionLabel(), keyLength));
-
-                SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverHandshake, quicVersion.encryptionLabel(), keyLength));
-                SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverHandshake, quicVersion.initializationVectorLabel(), 12));
-                SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverHandshake, quicVersion.headerProtectionLabel(), keyLength));
-
-                if (client)
-                {
-                    readKeys.updateKeys(serverHandshake, serverEncryption, serverInitialization, serverProtection);
-                    writeKeys.updateKeys(clientHandshake, clientEncryption, clientInitialization, clientProtection);
-                }
-                else
-                {
-                    readKeys.updateKeys(clientHandshake, clientEncryption, clientInitialization, clientProtection);
-                    writeKeys.updateKeys(serverHandshake, serverEncryption, serverInitialization, serverProtection);
-                }
-            }
-            catch (Exception x)
-            {
-                throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
-            }
+            return input ? readKeys.traffic : writeKeys.traffic;
         }
 
         public PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer payload) throws Exception
@@ -254,7 +324,7 @@ public class PacketProtector implements Encrypter, Decrypter
             return readKeys.decryptShortHeaderPacket(dstConnectionId, encrypted);
         }
 
-        private byte[] nonce(SecretKey initialization, long packetNumber)
+        private static byte[] nonce(SecretKey initialization, long packetNumber)
         {
             // RFC 9001, 5.3.
             // Nonce is IV ^ packetNumber.
@@ -267,6 +337,24 @@ public class PacketProtector implements Encrypter, Decrypter
             return nonce;
         }
 
+        private void destroy()
+        {
+            readKeys.destroy();
+            writeKeys.destroy();
+        }
+
+        private static void destroy(SecretKey secretKey)
+        {
+            try
+            {
+                secretKey.destroy();
+            }
+            catch (Throwable x)
+            {
+                LOG.atTrace().setCause(x).log("failed to destroy {}", secretKey);
+            }
+        }
+
         /// QUIC requires at least two generations of read keys,
         /// since a key update may arrive before a packet that
         /// was sent before the key update, encrypted with previous
@@ -275,14 +363,14 @@ public class PacketProtector implements Encrypter, Decrypter
         /// @see WriteKeys
         private class ReadKeys
         {
-            private SecretKey initial;
+            private SecretKey traffic;
             private SecretKey encryption;
             private SecretKey initialization;
             private SecretKey protection;
 
             public void updateKeys(SecretKey initial, SecretKey encryption, SecretKey initialization, SecretKey protection)
             {
-                this.initial = initial;
+                this.traffic = initial;
                 this.encryption = encryption;
                 this.initialization = initialization;
                 this.protection = protection;
@@ -296,13 +384,14 @@ public class PacketProtector implements Encrypter, Decrypter
                 // RFC 9001, 5.4.2: compute the offset of the sample.
                 int position = byteBuffer.position();
 
-                // Skip form byte + 4 bytes for the version.
-                byteBuffer.position(position + 1 + 4);
+                int type = (byteBuffer.get() & 0b00110000) >>> 4;
+                QuicVersion version = QuicVersion.from(byteBuffer.getInt());
+                LongHeaderPacket.PacketType packetType = LongHeaderPacket.PacketType.from(type, version);
                 int dstConnectionIdLength = byteBuffer.get();
                 byteBuffer.position(byteBuffer.position() + dstConnectionIdLength);
                 int srcConnectionIdLength = byteBuffer.get();
                 byteBuffer.position(byteBuffer.position() + srcConnectionIdLength);
-                if (encryptionLevel == EncryptionLevel.INITIAL)
+                if (packetType == LongHeaderPacket.PacketType.INITIAL)
                 {
                     int tokenLength = VarLenInt.decodeInt(byteBuffer);
                     byteBuffer.position(byteBuffer.position() + tokenLength);
@@ -437,6 +526,14 @@ public class PacketProtector implements Encrypter, Decrypter
 
                 return new PacketBuffers(decryptedHeaderBuffer, decryptedPayloadBuffer);
             }
+
+            private void destroy()
+            {
+                KeyManager.destroy(traffic);
+                KeyManager.destroy(encryption);
+                KeyManager.destroy(initialization);
+                KeyManager.destroy(protection);
+            }
         }
 
         /// QUIC requires only one generation of write keys.
@@ -448,14 +545,14 @@ public class PacketProtector implements Encrypter, Decrypter
         /// @see ReadKeys
         private class WriteKeys
         {
-            private SecretKey initial;
+            private SecretKey traffic;
             private SecretKey encryption;
             private SecretKey initialization;
             private SecretKey protection;
 
             private void updateKeys(SecretKey initial, SecretKey encryption, SecretKey initialization, SecretKey protection)
             {
-                this.initial = initial;
+                this.traffic = initial;
                 this.encryption = encryption;
                 this.initialization = initialization;
                 this.protection = protection;
@@ -511,6 +608,14 @@ public class PacketProtector implements Encrypter, Decrypter
                 }
 
                 return new PacketBuffers(encryptedHeaderBuffer, encryptedPayloadBuffer);
+            }
+
+            private void destroy()
+            {
+                KeyManager.destroy(traffic);
+                KeyManager.destroy(encryption);
+                KeyManager.destroy(initialization);
+                KeyManager.destroy(protection);
             }
         }
     }

@@ -97,88 +97,114 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), parameters);
     }
 
-    /**
-     * <p>The collection of known QUIC transport parameter IDs.</p>
-     */
+    /// The collection of known QUIC transport parameter IDs.
     public static class Ids
     {
         // The max N that can produce a grease parameter id that fits a VarLenInt.
         private static final long MAX_N = 148764065110560899L;
         private static final Map<Long, Id<?>> ids = new HashMap<>();
 
+        /// The client original destination connection id of the first Initial packet.
+        /// Only sent by servers.
         public static final Id<byte[]> ORIGINAL_DESTINATION_CONNECTION_ID = Ids.create(0x00, BytesId::new);
 
-        /**
-         * <p>The session max idle timeout in milliseconds.</p>
-         */
+        /// The session max idle timeout in milliseconds.
         public static final Id<Long> MAX_IDLE_TIMEOUT = Ids.create(0x01, LongId::new);
 
+        /// The 16-byte stateless reset token.
+        /// Only sent by servers.
+        public static final Id<Long> STATELESS_RESET_TOKEN = Ids.create(0x02, LongId::new);
+
+        /// The maximum UDP payload size.
         public static final Id<Long> MAX_UDP_PAYLOAD_SIZE = Ids.create(0x03, LongId::new);
 
-        /**
-         * <p>The initial session max data.</p>
-         * <p>A local peer sends this parameter to inform the remote peer about
-         * the max data the local peer is willing to receive on the session.</p>
-         */
+        /// The initial session max data.
+        ///
+        /// A local peer sends this parameter to inform the remote peer about
+        /// the max data the local peer is willing to receive on the session.
         public static final Id<Long> INITIAL_MAX_DATA = Ids.create(0x04, LongId::new);
-        /**
-         * <p>The initial local bidirectional stream max data.</p>
-         * <p>A local peer sends this parameter to inform the remote peer about
-         * the max data the local peer is willing to receive on local bidirectional streams.</p>
-         */
+
+        /// The initial local bidirectional stream max data.
+        ///
+        /// A local peer sends this parameter to inform the remote peer about
+        /// the max data the local peer is willing to receive on local bidirectional streams.
         public static final Id<Long> INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL = Ids.create(0x05, LongId::new);
-        /**
-         * <p>The initial remote bidirectional stream max data.</p>
-         * <p>A local peer sends this parameter to inform the remote peer about
-         * the max data the local peer is willing to receive on remote bidirectional streams.</p>
-         */
+
+        /// The initial remote bidirectional stream max data.
+        ///
+        /// A local peer sends this parameter to inform the remote peer about
+        /// the max data the local peer is willing to receive on remote bidirectional streams.
         public static final Id<Long> INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE = Ids.create(0x06, LongId::new);
-        /**
-         * <p>The initial unidirectional stream max data.</p>
-         * <p>A local peer sends this parameter to inform the remote peer about
-         * the max data the local peer is willing to receive on unidirectional streams.</p>
-         */
+
+        /// The initial unidirectional stream max data.
+        ///
+        /// A local peer sends this parameter to inform the remote peer about
+        /// the max data the local peer is willing to receive on unidirectional streams.
         public static final Id<Long> INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL = Ids.create(0x07, LongId::new);
-        /**
-         * <p>The initial bidirectional max streams.</p>
-         * <p>A local peer sends this parameter to inform the remote peer about
-         * the max number of streams the local peer is willing to receive.</p>
-         */
+
+        /// The initial bidirectional max streams.
+        ///
+        /// A local peer sends this parameter to inform the remote peer about
+        /// the max number of streams the local peer is willing to receive.
         public static final Id<Long> INITIAL_MAX_STREAMS_BIDIRECTIONAL = Ids.create(0x08, LongId::new);
-        /**
-         * <p>The initial unidirectional max streams.</p>
-         * <p>A local peer sends this parameter to inform the remote peer about
-         * the max number of streams the local peer is willing to receive.</p>
-         */
+
+        /// The initial unidirectional max streams.
+        ///
+        /// A local peer sends this parameter to inform the remote peer about
+        /// the max number of streams the local peer is willing to receive.
         public static final Id<Long> INITIAL_MAX_STREAMS_UNIDIRECTIONAL = Ids.create(0x09, LongId::new);
 
+        /// The acknowledgment delay exponent used to decode the `ackDelay`
+        /// field in ACK frames.
         public static final Id<Long> ACK_DELAY_EXPONENT = Ids.create(0x0A, LongId::new);
+
+        /// The maximum acknowledgment delay.
         public static final Id<Long> MAX_ACK_DELAY = Ids.create(0x0B, LongId::new);
+
+        /// Whether a peer does not support active connection migration.
+        public static final Id<byte[]> DISABLE_ACTIVE_MIGRATION = Ids.create(0x0C, BytesId::new);
+
+        /// The server preferred address.
+        /// Only sent by servers.
+        public static final Id<Long> PREFERRED_ADDRESS = Ids.create(0x0D, LongId::new);
+
+        /// The maximum number of active connections ids the peer is willing to support.
         public static final Id<Long> ACTIVE_CONNECTION_ID_LIMIT = Ids.create(0x0E, LongId::new);
+
+        /// The client source connection id of the first Initial packet.
         public static final Id<byte[]> INITIAL_SOURCE_CONNECTION_ID = Ids.create(0x0F, BytesId::new);
 
-        /**
-         * <p>Creates a new {@link TransportParameters.Id} with the given id and type.</p>
-         *
-         * @param id the transport parameter ID
-         * @param creator the function that creates the specific {@link TransportParameters.Id}
-         * @return a new {@link TransportParameters.Id}
-         * @param <R> the type of the {@link TransportParameters.Id}
-         * @see #get(long)
-         */
+        /// The source connection id of a `RetryPacket`.
+        /// Only sent by servers.
+        public static final Id<byte[]> RETRY_SOURCE_CONNECTION_ID = Ids.create(0x10, BytesId::new);
+
+        /// Creates a new [TransportParameters.Id] with the given id and type.
+        ///
+        /// @param id the transport parameter ID
+        /// @param creator the function that creates the specific [TransportParameters.Id]
+        /// @return a new [TransportParameters.Id]
+        /// @param <R> the type of the [TransportParameters.Id]
+        /// @see #get(long)
         @SuppressWarnings("unchecked")
         public static <R> Id<R> create(long id, LongFunction<Id<R>> creator)
         {
             return (Id<R>)ids.computeIfAbsent(id, creator::apply);
         }
 
-        /**
-         * <p>Returns a {@link TransportParameters.Id} with the given id.</p>
-         *
-         * @param id the transport parameter ID
-         * @return the {@link TransportParameters.Id} with the given id, or {@code null}
-         * @param <R> the type of the {@link TransportParameters.Id}
-         */
+        /// Removes the [TransportParameters.Id] corresponding to the given id.
+        ///
+        /// @param id the transport parameter ID
+        @SuppressWarnings("unchecked")
+        public static <R> Id<R> remove(long id)
+        {
+            return (Id<R>)ids.remove(id);
+        }
+
+        /// Returns a [TransportParameters.Id] with the given id.
+        ///
+        /// @param id the transport parameter ID
+        /// @return the [TransportParameters.Id] with the given id, or `null`
+        /// @param <R> the type of the [TransportParameters.Id]
         @SuppressWarnings("unchecked")
         public static <R> Id<R> get(long id)
         {
@@ -227,7 +253,7 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
             this.id = id;
         }
 
-        public long getId()
+        public long id()
         {
             return id;
         }

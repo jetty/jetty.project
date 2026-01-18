@@ -13,14 +13,21 @@
 
 package org.eclipse.jetty.quic.common.tls;
 
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import javax.crypto.KDF;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
 
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.quic.common.tls.parser.QuicMessagesParser;
+import org.eclipse.jetty.tls.CipherSuite;
+import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.common.generator.MessageGenerator;
 import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
 import org.eclipse.jetty.tls.common.parser.MessageParser;
@@ -90,6 +97,43 @@ public abstract class TLSEngine implements MessageGenerator.Listener, MessagePar
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return bytes;
+    }
+
+    protected FinishedMessage createFinishedMessage(CipherSuite cipherSuite, boolean input) throws Exception
+    {
+        // RFC-8446[4.4.4].
+        int hashLength = cipherSuite.hashLength();
+        int shaLength = hashLength * 8;
+        KDF kdf = KDF.getInstance("HKDF-SHA" + shaLength);
+        SecretKey trafficKey = getPacketProtector().getTrafficSecretKey(input);
+        SecretKey finishedKey = kdf.deriveKey("Generic", HKDF.expandLabel(trafficKey, "finished", hashLength));
+
+        Mac mac = Mac.getInstance("HmacSHA" + shaLength);
+        mac.init(finishedKey);
+        byte[] verifyData = mac.doFinal(getPacketProtector().getTranscriptHash().getHash());
+        return new FinishedMessage(verifyData);
+    }
+
+    protected boolean verifyFinishedMessage(CipherSuite cipherSuite, FinishedMessage finished, boolean input) throws Exception
+    {
+        // RFC-8446[4.4.4].
+        byte[] verifyData = finished.verifyData();
+        int hashLength = cipherSuite.hashLength();
+        if (verifyData.length != hashLength)
+            throw new TLSException(TLSException.Alert.DECODE_ERROR, "invalid verify data length");
+
+        int shaLength = hashLength * 8;
+        KDF kdf = KDF.getInstance("HKDF-SHA" + shaLength);
+        SecretKey trafficKey = getPacketProtector().getTrafficSecretKey(input);
+        SecretKey finishedKey = kdf.deriveKey("Generic", HKDF.expandLabel(trafficKey, "finished", hashLength));
+
+        Mac mac = Mac.getInstance("HmacSHA" + shaLength);
+        mac.init(finishedKey);
+        byte[] expected = mac.doFinal(getPacketProtector().getTranscriptHash().getHash());
+
+        // Differently from Arrays.equals(), MessageDigest.isEqual()
+        // implements constant-time comparison to avoid timing attacks.
+        return MessageDigest.isEqual(verifyData, expected);
     }
 
     @Override

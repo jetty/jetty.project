@@ -17,6 +17,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
@@ -40,7 +41,6 @@ import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.ext.ALPNExtension;
 import org.eclipse.jetty.tls.ext.ServerNameExtension;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +80,7 @@ public class ClientQuicSession extends QuicSession
         return remoteSocketAddress;
     }
 
-    public void connect(Promise.Invocable<Session> promise)
+    public void connect(Callback callback)
     {
         remoteSocketAddress = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
         if (LOG.isDebugEnabled())
@@ -125,7 +125,16 @@ public class ClientQuicSession extends QuicSession
 
         // TODO: link the ClientTLSEngine to receive the TLS messages.
 
-        getTLSEngine().startHandshake(configuration, Promise.Invocable.toCallback(promise, this));
+        CompletableFuture<?> handshake = getTLSEngine().startHandshake(configuration, callback);
+        handshake.whenComplete((_, x) -> handshakeComplete(x));
+    }
+
+    private void handshakeComplete(Throwable failure)
+    {
+        if (failure == null)
+            notifyOpen();
+        else
+            fail(failure);
     }
 
     private void sendTLSMessages(List<Message> messages, Callback callback)
@@ -137,6 +146,7 @@ public class ClientQuicSession extends QuicSession
             {
                 getTLSEngine().getMessagesGenerator().generate(accumulator, message);
             }
+            // TODO: cannot assume offset is 0 here.
             CryptoFrame cryptoFrame = new CryptoFrame(0, accumulator);
             crypto(cryptoFrame, callback);
         }
@@ -167,7 +177,6 @@ public class ClientQuicSession extends QuicSession
     private void processRetryPacket(SocketAddress address, RetryPacket packet)
     {
         tokens.put(getEndPoint().getLocalSocketAddress(), getRemoteSocketAddress(), packet.token());
-        // TODO: handle failures.
-        getTLSEngine().retryHandshake(Callback.NOOP);
+        getTLSEngine().retryHandshake();
     }
 }
