@@ -15,34 +15,42 @@ package org.eclipse.jetty.quic.client.internal;
 
 import java.net.SocketAddress;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.QuicConnection;
+import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClientQuicConnection extends QuicConnection implements Callback
 {
-    private ClientConnector connector;
-    private SslContextFactory.Client sslContextFactory;
-    private QuicClientQuicConfiguration quicConfiguration;
-    private ClientConnectionFactory clientConnectionFactory;
-    private Map<String, Object> context;
+    private static final Logger LOG = LoggerFactory.getLogger(ClientQuicConnection.class);
+
+    private final AtomicLong bytesIn = new AtomicLong();
+    private final ClientConnector connector;
+    private final SslContextFactory.Client sslContextFactory;
+    private final QuicClientQuicConfiguration quicConfiguration;
+    private final ClientConnectionFactory clientConnectionFactory;
+    private final Map<String, Object> context;
     private ClientQuicSession session;
 
     public ClientQuicConnection(ClientConnector connector, SslContextFactory.Client sslContextFactory, QuicClientQuicConfiguration quicConfiguration, ClientConnectionFactory clientConnectionFactory, EndPoint endPoint, Map<String, Object> context)
     {
-        super(connector.getByteBufferPool(), connector.getExecutor(), endPoint);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.connector = connector;
         this.sslContextFactory = sslContextFactory;
         this.quicConfiguration = quicConfiguration;
@@ -50,15 +58,34 @@ public class ClientQuicConnection extends QuicConnection implements Callback
         this.context = context;
     }
 
+    public QuicClientQuicConfiguration getClientQuicConfiguration()
+    {
+        return quicConfiguration;
+    }
+
+    @Override
+    public long getBytesIn()
+    {
+        return bytesIn.get();
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        // TODO
+        return 0;
+    }
+
     @Override
     public void onOpen()
     {
         PacketNumbers packetNumbers = new PacketNumbers();
-        ByteBufferPool byteBufferPool = connector.getByteBufferPool();
+        ByteBufferPool byteBufferPool = getByteBufferPool();
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, false), new QuicMessagesGenerator(byteBufferPool, true));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
-        ClientTLSEngine clientTLSEngine = new ClientTLSEngine(protector);
-        session = new ClientQuicSession(connector, quicConfiguration, packetNumbers, clientTLSEngine, getEndPoint(), context);
+        ClientTLSEngine tlsEngine = new ClientTLSEngine(protector);
+        quicConfiguration.configure(sslContextFactory);
+        session = new ClientQuicSession(connector, getClientQuicConfiguration(), this, packetNumbers, tlsEngine, getEndPoint(), context);
         session.connect(this);
     }
 
@@ -76,11 +103,48 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     }
 
     @Override
-    protected void process(SocketAddress address, RetainableByteBuffer buffer) throws Exception
+    public void onFillable()
     {
-        // TODO: in the server implementation, we will need to pick a session
-        //  based on the dstConnectionId, and delegate to that session.
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+        try
+        {
+            while (true)
+            {
+                SocketAddress address = getEndPoint().receive(buffer.getByteBuffer());
+                int filled = address == EndPoint.EOF ? -1 : buffer.remaining();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("filled {} bytes from {} on {}", filled, address, getEndPoint());
 
-        session.process(address, buffer);
+                if (filled < 0)
+                {
+                    buffer.release();
+                    getEndPoint().shutdownOutput();
+                    return;
+                }
+                if (filled == 0)
+                {
+                    buffer.release();
+                    fillInterested();
+                    return;
+                }
+
+                bytesIn.addAndGet(filled);
+                session.process(address, buffer);
+            }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.atDebug().setCause(x).log("failed to produce on {}", getEndPoint());
+            buffer.release();
+            // TODO
+            // fail(x);
+        }
+    }
+
+    @Override
+    public void disconnect(QuicSession session, ConnectionCloseFrame frame, Throwable failure)
+    {
+        // TODO
     }
 }

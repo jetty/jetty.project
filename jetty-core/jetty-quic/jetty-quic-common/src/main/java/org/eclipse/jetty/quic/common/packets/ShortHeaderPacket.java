@@ -13,6 +13,6 @@
 
 package org.eclipse.jetty.quic.common.packets;
 
-public sealed abstract class ShortHeaderPacket implements Packet.WithPacketNumber permits OneRTTPacket
+public sealed abstract class ShortHeaderPacket implements Packet permits OneRTTPacket
 {
 }

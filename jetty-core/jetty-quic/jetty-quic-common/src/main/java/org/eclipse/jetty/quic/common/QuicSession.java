@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +62,9 @@ public abstract class QuicSession extends AbstractSession
 
     private final Map<EncryptionLevel, FrameStream> cryptoStreams = new HashMap<>();
     private final Map<Long, FrameStream> streamStreams = new HashMap<>();
+    private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
+    private final QuicConnection connection;
     private final PacketNumbers packetNumbers;
     private final TLSEngine tlsEngine;
     private final EndPoint endPoint;
@@ -69,11 +73,15 @@ public abstract class QuicSession extends AbstractSession
     private Packet.Listener packetListener;
     private byte[] dstConnectionId;
     private byte[] srcConnectionId;
+    private long idleTimeout;
+    private SocketAddress remoteSocketAddress;
 
-    protected QuicSession(Executor executor, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint)
+    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint)
     {
         super(executor, quicConfiguration, listener);
+        this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
+        this.connection = connection;
         this.packetNumbers = packetNumbers;
         this.tlsEngine = tlsEngine;
         this.endPoint = endPoint;
@@ -84,9 +92,19 @@ public abstract class QuicSession extends AbstractSession
         this.srcConnectionId = tlsEngine.newRandomBytes(8);
     }
 
+    public Scheduler getScheduler()
+    {
+        return scheduler;
+    }
+
     public ByteBufferPool getByteBufferPool()
     {
         return byteBufferPool;
+    }
+
+    public QuicConnection getQuicConnection()
+    {
+        return connection;
     }
 
     public PacketNumbers getPacketNumbers()
@@ -118,6 +136,28 @@ public abstract class QuicSession extends AbstractSession
     public byte[] getSourceConnectionId()
     {
         return srcConnectionId;
+    }
+
+    public String getNegotiatedApplicationProtocol()
+    {
+        return getTLSEngine().getNegotiatedApplicationProtocol();
+    }
+
+    @Override
+    public long getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
+    public void setIdleTimeout(long idleTimeout)
+    {
+        this.idleTimeout = idleTimeout;
+    }
+
+    public boolean onIdleTimeout(TimeoutException timeout)
+    {
+        // TODO
+        return false;
     }
 
     public Packet newPacket(List<Frame> frames)
@@ -206,23 +246,22 @@ public abstract class QuicSession extends AbstractSession
     @Override
     public SocketAddress getLocalSocketAddress()
     {
-        return null;
+        return getEndPoint().getLocalSocketAddress();
     }
 
     @Override
     public SocketAddress getRemoteSocketAddress()
     {
-        return null;
+        return remoteSocketAddress;
+    }
+
+    public void setRemoteSocketAddress(SocketAddress socketAddress)
+    {
+        this.remoteSocketAddress = socketAddress;
     }
 
     @Override
     public long getLocalBidirectionalMaxStreams()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getIdleTimeout()
     {
         return 0;
     }
@@ -239,8 +278,9 @@ public abstract class QuicSession extends AbstractSession
 
     }
 
-    public void process(SocketAddress address, RetainableByteBuffer buffer) throws Exception
+    public void process(SocketAddress remoteSocketAddress, RetainableByteBuffer buffer) throws Exception
     {
+        setRemoteSocketAddress(remoteSocketAddress);
         while (buffer.hasRemaining())
         {
             Packet packet = parser.parse(buffer);
@@ -265,11 +305,11 @@ public abstract class QuicSession extends AbstractSession
                 return;
             }
 
-            notifyIncomingPacket(address, packet);
+            notifyIncomingPacket(packet);
         }
     }
 
-    protected void processPacket(SocketAddress address, Packet packet)
+    protected void processPacket(Packet packet)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", packet, this);
@@ -403,11 +443,11 @@ public abstract class QuicSession extends AbstractSession
         packetListener = listener;
     }
 
-    public void notifyIncomingPacket(SocketAddress address, Packet packet)
+    public void notifyIncomingPacket(Packet packet)
     {
         try
         {
-            packetListener.onIncomingPacket(this, address, packet);
+            packetListener.onIncomingPacket(this, packet);
         }
         catch (Throwable x)
         {
@@ -443,9 +483,9 @@ public abstract class QuicSession extends AbstractSession
     private class PacketProcessor implements Packet.Listener
     {
         @Override
-        public void onIncomingPacket(Session session, SocketAddress address, Packet packet)
+        public void onIncomingPacket(Session session, Packet packet)
         {
-            processPacket(address, packet);
+            processPacket(packet);
         }
     }
 }

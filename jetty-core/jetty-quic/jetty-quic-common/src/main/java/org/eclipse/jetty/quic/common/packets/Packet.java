@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.quic.common.packets;
 
-import java.net.SocketAddress;
-
 import org.eclipse.jetty.quic.api.Session;
 
-public sealed interface Packet permits LongHeaderPacket, Packet.WithPacketNumber
+public sealed interface Packet permits LongHeaderPacket, Packet.WithPacketNumber, ShortHeaderPacket
 {
     static boolean isLongHeader(byte form)
     {
@@ -27,7 +25,7 @@ public sealed interface Packet permits LongHeaderPacket, Packet.WithPacketNumber
 
     byte[] destinationConnectionId();
 
-    sealed interface WithPacketNumber extends Packet permits HandshakePacket, InitialPacket, OneRTTPacket, ShortHeaderPacket, ZeroRTTPacket
+    sealed interface WithPacketNumber extends Packet permits HandshakePacket, InitialPacket, OneRTTPacket, ZeroRTTPacket
     {
         long packetNumber();
     }
@@ -36,7 +34,7 @@ public sealed interface Packet permits LongHeaderPacket, Packet.WithPacketNumber
     //   to simulate network failures.
     interface Listener
     {
-        default void onIncomingPacket(Session session, SocketAddress address, Packet packet)
+        default void onIncomingPacket(Session session, Packet packet)
         {
         }
 

@@ -49,12 +49,23 @@ public abstract class TLSEngine implements MessageGenerator.Listener, MessagePar
     private final PacketProtector protector;
     private final MessagesGenerator tlsGenerator;
     private final MessagesParser tlsParser;
+    private String applicationProtocol;
 
     protected TLSEngine(PacketProtector protector, boolean client)
     {
         this.protector = protector;
         tlsGenerator = new QuicMessagesGenerator(protector.getByteBufferPool(), client);
         tlsParser = new QuicMessagesParser(client);
+    }
+
+    public String getNegotiatedApplicationProtocol()
+    {
+        return applicationProtocol;
+    }
+
+    protected void setNegotiatedApplicationProtocol(String applicationProtocol)
+    {
+        this.applicationProtocol = applicationProtocol;
     }
 
     public PacketProtector getPacketProtector()

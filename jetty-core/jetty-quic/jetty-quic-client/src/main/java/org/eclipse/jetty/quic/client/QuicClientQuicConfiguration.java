@@ -13,6 +13,17 @@
 
 package org.eclipse.jetty.quic.client;
 
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+
 public class QuicClientQuicConfiguration extends ClientQuicConfiguration
 {
+    public void configure(SslContextFactory.Client sslContextFactory)
+    {
+        getImplementationConfiguration().put(SslContextFactory.Client.class.getName(), sslContextFactory);
+    }
+
+    public void deconfigure(SslContextFactory.Client sslContextFactory)
+    {
+        getImplementationConfiguration().remove(SslContextFactory.Client.class.getName());
+    }
 }

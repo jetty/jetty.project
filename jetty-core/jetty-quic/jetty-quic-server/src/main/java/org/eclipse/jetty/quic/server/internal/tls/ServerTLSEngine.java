@@ -36,6 +36,6 @@ public class ServerTLSEngine extends TLSEngine implements MessageGenerator.Liste
     @Override
     public void onMessageParsed(Message message)
     {
-        // TODO: feed TranscriptHash (see client).
+
     }
 }
