@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-import java.util.Arrays;
+import org.eclipse.jetty.util.StringUtil;
 
 public class NewConnectionIdFrame extends Frame.Abstract
 {
@@ -22,22 +22,17 @@ public class NewConnectionIdFrame extends Frame.Abstract
     private final long retirePriorTo;
     private final byte[] resetToken;
 
-    public NewConnectionIdFrame(byte[] connectionId, long sequenceNumber, long retirePriorTo, byte[] resetToken)
+    public NewConnectionIdFrame(long sequenceNumber, long retirePriorTo, byte[] connectionId, byte[] resetToken)
     {
         super(0x18);
+        this.sequenceNumber = sequenceNumber;
+        this.retirePriorTo = retirePriorTo;
         if (connectionId.length < 1 || connectionId.length > 20)
             throw new IllegalArgumentException("invalid_connection_id");
         this.connectionId = connectionId;
-        this.sequenceNumber = sequenceNumber;
-        this.retirePriorTo = retirePriorTo;
         if (resetToken.length != 16)
             throw new IllegalArgumentException("invalid_reset_token");
         this.resetToken = resetToken;
-    }
-
-    public byte[] connectionId()
-    {
-        return connectionId;
     }
 
     public long sequenceNumber()
@@ -50,6 +45,11 @@ public class NewConnectionIdFrame extends Frame.Abstract
         return retirePriorTo;
     }
 
+    public byte[] connectionId()
+    {
+        return connectionId;
+    }
+
     public byte[] resetToken()
     {
         return resetToken;
@@ -58,6 +58,6 @@ public class NewConnectionIdFrame extends Frame.Abstract
     @Override
     public String toString()
     {
-        return "%s[cid=%s]".formatted(super.toString(), Arrays.toString(connectionId));
+        return "%s[cid=%s]".formatted(super.toString(), StringUtil.toHexString(connectionId));
     }
 }

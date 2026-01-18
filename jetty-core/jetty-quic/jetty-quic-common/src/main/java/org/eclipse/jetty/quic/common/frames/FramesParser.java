@@ -31,6 +31,7 @@ import org.eclipse.jetty.quic.common.internal.frames.FrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.HandshakeDoneFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.MaxDataFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.MaxStreamsFrameParser;
+import org.eclipse.jetty.quic.common.internal.frames.NewConnectionIdFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.PaddingFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.PingFrameParser;
 import org.eclipse.jetty.quic.common.internal.frames.ResetStreamFrameParser;
@@ -66,7 +67,7 @@ public class FramesParser
         parsers.put(FrameType.DATA_BLOCKED, new DataBlockedFrameParser(varLenInt));
         parsers.put(FrameType.STREAM_DATA_BLOCKED, new StreamDataBlockedFrameParser(varLenInt));
         parsers.put(FrameType.STREAMS_BLOCKED, new StreamsBlockedFrameParser(varLenInt));
-        parsers.put(FrameType.NEW_CONNECTION_ID, null/*TODO*/);
+        parsers.put(FrameType.NEW_CONNECTION_ID, new NewConnectionIdFrameParser());
         parsers.put(FrameType.RETIRE_CONNECTION_ID, null/*TODO*/);
         parsers.put(FrameType.PATH_CHALLENGE, null/*TODO*/);
         parsers.put(FrameType.PATH_RESPONSE, null/*TODO*/);

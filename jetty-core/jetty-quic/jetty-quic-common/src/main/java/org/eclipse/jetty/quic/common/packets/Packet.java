@@ -27,7 +27,7 @@ public sealed interface Packet permits LongHeaderPacket, Packet.WithPacketNumber
 
     byte[] destinationConnectionId();
 
-    sealed interface WithPacketNumber extends Packet permits HandshakePacket, InitialPacket, ShortHeaderPacket
+    sealed interface WithPacketNumber extends Packet permits HandshakePacket, InitialPacket, OneRTTPacket, ShortHeaderPacket, ZeroRTTPacket
     {
         long packetNumber();
     }

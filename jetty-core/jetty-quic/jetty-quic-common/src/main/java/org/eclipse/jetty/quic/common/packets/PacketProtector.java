@@ -96,14 +96,14 @@ public class PacketProtector implements Encrypter, Decrypter
             // RFC 9001, 5.2: initial secrets use SHA256.
             KDF kdf = KDF.getInstance("HKDF-SHA256");
             HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract().addSalt(QuicCrypto.initialSalt(quicVersion)).addIKM(input).extractOnly();
-            SecretKey prk = kdf.deriveKey("InitialPseudoRandomKey", spec);
+            SecretKey prk = kdf.deriveKey("InitialPseudoRandom", spec);
 
-            SecretKey clientTraffic = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "client in", 32));
+            SecretKey clientTraffic = kdf.deriveKey("InitialClientTraffic", HKDF.expandLabel(prk, "client in", 32));
             SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), 16));
             SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
             SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), 16));
 
-            SecretKey serverTraffic = kdf.deriveKey("InitialSecretKey", HKDF.expandLabel(prk, "server in", 32));
+            SecretKey serverTraffic = kdf.deriveKey("InitialServerTraffic", HKDF.expandLabel(prk, "server in", 32));
             SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), 16));
             SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
             SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), 16));
@@ -147,21 +147,21 @@ public class PacketProtector implements Encrypter, Decrypter
             byte[] salt = new byte[hashLength];
             byte[] inputKeyMaterial = new byte[hashLength];
             HKDFParameterSpec.Extract extract = HKDFParameterSpec.ofExtract().addSalt(salt).addIKM(inputKeyMaterial).extractOnly();
-            SecretKey earlySecret = kdf.deriveKey("HandshakeEarlyKey", extract);
+            SecretKey earlySecret = kdf.deriveKey("HandshakeEarly", extract);
 
-            SecretKey derivedSecret = kdf.deriveKey("HandshakeDerivedKey", HKDF.expandLabel(earlySecret, "derived", transcriptHash.getEmptyHash(), hashLength));
+            SecretKey derivedSecret = kdf.deriveKey("HandshakeDerived", HKDF.expandLabel(earlySecret, "derived", transcriptHash.getEmptyHash(), hashLength));
             extract = HKDFParameterSpec.ofExtract().addSalt(derivedSecret).addIKM(sharedSecret).extractOnly();
-            handshakeSecret = kdf.deriveKey("HandshakeSecretKey", extract);
+            handshakeSecret = kdf.deriveKey("HandshakeSecret", extract);
 
             byte[] tlsHash = transcriptHash.getHash();
             int keyLength = cipherSuite.keyLength();
 
-            SecretKey clientTraffic = kdf.deriveKey("ClientHandshakeKey", HKDF.expandLabel(handshakeSecret, "c hs traffic", tlsHash, hashLength));
+            SecretKey clientTraffic = kdf.deriveKey("HandshakeClientTraffic", HKDF.expandLabel(handshakeSecret, "c hs traffic", tlsHash, hashLength));
             SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
             SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
             SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
 
-            SecretKey serverTraffic = kdf.deriveKey("ServerHandshakeKey", HKDF.expandLabel(handshakeSecret, "s hs traffic", tlsHash, hashLength));
+            SecretKey serverTraffic = kdf.deriveKey("HandshakeServerTraffic", HKDF.expandLabel(handshakeSecret, "s hs traffic", tlsHash, hashLength));
             SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
             SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
             SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
@@ -201,19 +201,19 @@ public class PacketProtector implements Encrypter, Decrypter
             int hashLength = cipherSuite.hashLength();
             KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
 
-            SecretKey derivedSecret = kdf.deriveKey("ApplicationDerivedKey", HKDF.expandLabel(handshakeSecret, "derived", transcriptHash.getEmptyHash(), hashLength));
-            HKDFParameterSpec.Extract extract = HKDFParameterSpec.ofExtract().addSalt(new byte[hashLength]).addIKM(derivedSecret).extractOnly();
-            SecretKey masterSecret = kdf.deriveKey("MasterSecret", extract);
+            SecretKey derivedSecret = kdf.deriveKey("ApplicationDerived", HKDF.expandLabel(handshakeSecret, "derived", transcriptHash.getEmptyHash(), hashLength));
+            HKDFParameterSpec.Extract extract = HKDFParameterSpec.ofExtract().addSalt(derivedSecret).addIKM(new byte[hashLength]).extractOnly();
+            SecretKey masterSecret = kdf.deriveKey("ApplicationMaster", extract);
 
             byte[] tlsHash = transcriptHash.getHash();
             int keyLength = cipherSuite.keyLength();
 
-            SecretKey clientTraffic = kdf.deriveKey("ClientApplicationKey", HKDF.expandLabel(masterSecret, "c ap traffic", tlsHash, hashLength));
+            SecretKey clientTraffic = kdf.deriveKey("ApplicationClientTraffic", HKDF.expandLabel(masterSecret, "c ap traffic", tlsHash, hashLength));
             SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
             SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
             SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
 
-            SecretKey serverTraffic = kdf.deriveKey("ServerApplicationKey", HKDF.expandLabel(masterSecret, "s ap traffic", tlsHash, hashLength));
+            SecretKey serverTraffic = kdf.deriveKey("ApplicationServerTraffic", HKDF.expandLabel(masterSecret, "s ap traffic", tlsHash, hashLength));
             SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
             SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
             SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
@@ -275,7 +275,7 @@ public class PacketProtector implements Encrypter, Decrypter
     }
 
     @Override
-    public PacketBuffers decryptShortHeaderPacket(byte[] dstConnectionId, ByteBuffer encrypted) throws Exception
+    public PacketBuffers decryptShortHeaderPacket(byte[] dstConnectionId, RetainableByteBuffer encrypted) throws Exception
     {
         KeyManager keyManager = keyManagers.get(EncryptionLevel.ONE_RTT);
         if (keyManager == null)
@@ -319,7 +319,7 @@ public class PacketProtector implements Encrypter, Decrypter
             return readKeys.decryptLongHeaderPacket(encrypted);
         }
 
-        public PacketBuffers decryptShortHeaderPacket(byte[] dstConnectionId, ByteBuffer encrypted) throws Exception
+        public PacketBuffers decryptShortHeaderPacket(byte[] dstConnectionId, RetainableByteBuffer encrypted) throws Exception
         {
             return readKeys.decryptShortHeaderPacket(dstConnectionId, encrypted);
         }
@@ -458,8 +458,10 @@ public class PacketProtector implements Encrypter, Decrypter
                 return new PacketBuffers(decryptedHeaderBuffer, decryptedPayloadBuffer);
             }
 
-            private PacketBuffers decryptShortHeaderPacket(byte[] dstConnectionId, ByteBuffer byteBuffer) throws Exception
+            private PacketBuffers decryptShortHeaderPacket(byte[] dstConnectionId, RetainableByteBuffer encrypted) throws Exception
             {
+                ByteBuffer byteBuffer = encrypted.getByteBuffer();
+
                 // To remove header protection, we need a sample of the payload.
                 // RFC 9001, 5.4.2: compute the offset of the sample.
                 int position = byteBuffer.position();

@@ -14,12 +14,27 @@
 package org.eclipse.jetty.quic.common.internal.packets;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.common.packets.Packet;
+import org.eclipse.jetty.quic.common.frames.FramesParser;
+import org.eclipse.jetty.quic.common.internal.Decrypter;
+import org.eclipse.jetty.quic.common.packets.PacketNumbers;
+import org.eclipse.jetty.quic.common.packets.ShortHeaderPacket;
 
 public class ShortHeaderPacketsParser
 {
-    public Packet parse(RetainableByteBuffer buffer)
+    private final OneRTTPacketParser parser;
+
+    public ShortHeaderPacketsParser(Decrypter decrypter, PacketNumbers packetNumbers, FramesParser framesParser)
     {
-        return null;
+        parser = new OneRTTPacketParser(decrypter, packetNumbers, framesParser);
+    }
+
+    public void setDestinationConnectionId(byte[] dstConnectionId)
+    {
+        parser.setDestinationConnectionId(dstConnectionId);
+    }
+
+    public ShortHeaderPacket parse(RetainableByteBuffer buffer) throws Exception
+    {
+        return parser.parse(buffer);
     }
 }
