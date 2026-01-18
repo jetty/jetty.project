@@ -41,9 +41,10 @@ import org.eclipse.jetty.quic.common.internal.QuicFlusher;
 import org.eclipse.jetty.quic.common.internal.packets.PacketsParser;
 import org.eclipse.jetty.quic.common.packets.HandshakePacket;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
+import org.eclipse.jetty.quic.common.packets.OneRTTPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
-import org.eclipse.jetty.quic.common.packets.RetryPacket;
+import org.eclipse.jetty.quic.common.packets.ZeroRTTPacket;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.util.BufferUtil;
@@ -111,6 +112,7 @@ public abstract class QuicSession extends AbstractSession
     protected void setDestinationConnectionId(byte[] dstConnectionId)
     {
         this.dstConnectionId = dstConnectionId;
+        parser.setDestinationConnectionId(dstConnectionId);
     }
 
     public byte[] getSourceConnectionId()
@@ -124,10 +126,7 @@ public abstract class QuicSession extends AbstractSession
         EncryptionLevel encryptionLevel = getTLSEngine().getPacketProtector().getEncryptionLevel();
         Packet packet = switch (encryptionLevel)
         {
-            case EncryptionLevel.INITIAL ->
-            {
-                yield newInitialPacket(frames);
-            }
+            case EncryptionLevel.INITIAL -> newInitialPacket(frames);
             case EncryptionLevel.HANDSHAKE ->
                 new HandshakePacket(quicVersion, getDestinationConnectionId(), getSourceConnectionId(), packetNumbers.nextPacketNumber(encryptionLevel), frames);
             // TODO
@@ -286,6 +285,7 @@ public abstract class QuicSession extends AbstractSession
                         LOG.debug("discarded {} at encryption level {} on {} ", packet, encryptionLevel, this);
                     return;
                 }
+                setDestinationConnectionId(initialPacket.sourceConnectionId());
                 processFrames(initialPacket.frames());
                 ack(initialPacket);
             }
@@ -304,15 +304,18 @@ public abstract class QuicSession extends AbstractSession
                 processFrames(handshakePacket.frames());
                 ack(handshakePacket);
             }
-            case RetryPacket _ ->
+            case ZeroRTTPacket zeroRTTPacket ->
             {
-                // Only processed by clients.
+                // TODO:
+                processFrames(zeroRTTPacket.frames());
             }
-//            case VersionNegotiationPacket _ ->
-//            {
-//                // Only processed by clients.
-//            }
-            // TODO: other packets.
+            case OneRTTPacket oneRTTPacket ->
+            {
+                // TODO: handle here keyPhase shift?
+                processFrames(oneRTTPacket.frames());
+                ack(oneRTTPacket);
+            }
+            // RetryPacket and VersionNegotiationPacket only handled by clients.
             default -> throw new UnsupportedOperationException();
         }
     }

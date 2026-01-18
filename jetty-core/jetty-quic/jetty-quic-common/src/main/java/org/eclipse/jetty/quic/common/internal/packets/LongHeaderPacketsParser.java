@@ -62,7 +62,7 @@ public class LongHeaderPacketsParser
         }
     }
 
-    private Packet parseVersionNegotiationPacket(RetainableByteBuffer buffer)
+    private LongHeaderPacket parseVersionNegotiationPacket(RetainableByteBuffer buffer)
     {
         // TODO
         return null;

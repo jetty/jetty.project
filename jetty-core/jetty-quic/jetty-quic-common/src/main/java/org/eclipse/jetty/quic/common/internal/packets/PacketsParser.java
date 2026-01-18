@@ -24,12 +24,18 @@ import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 public class PacketsParser
 {
     private final LongHeaderPacketsParser longHeaderPacketsParser;
-    private final ShortHeaderPacketsParser shortHeaderPacketsParser = new ShortHeaderPacketsParser();
+    private final ShortHeaderPacketsParser shortHeaderPacketsParser;
     private State state = State.FORM;
 
     public PacketsParser(Decrypter decrypter, PacketNumbers packetNumbers, FramesParser framesParser)
     {
         longHeaderPacketsParser = new LongHeaderPacketsParser(decrypter, packetNumbers, framesParser);
+        shortHeaderPacketsParser = new ShortHeaderPacketsParser(decrypter, packetNumbers, framesParser);
+    }
+
+    public void setDestinationConnectionId(byte[] dstConnectionId)
+    {
+        shortHeaderPacketsParser.setDestinationConnectionId(dstConnectionId);
     }
 
     public Packet parse(RetainableByteBuffer buffer) throws Exception

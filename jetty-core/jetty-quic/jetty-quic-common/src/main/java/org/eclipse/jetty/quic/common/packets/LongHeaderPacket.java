@@ -17,7 +17,7 @@ import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
-public sealed class LongHeaderPacket implements Packet permits HandshakePacket, InitialPacket, RetryPacket
+public sealed class LongHeaderPacket implements Packet permits HandshakePacket, InitialPacket, RetryPacket, ZeroRTTPacket
 {
     private final PacketType packetType;
     private final QuicVersion quicVersion;
@@ -56,7 +56,13 @@ public sealed class LongHeaderPacket implements Packet permits HandshakePacket, 
     @Override
     public String toString()
     {
-        return "%s@%x[%s][dcid=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), quicVersion(), StringUtil.toHexString(destinationConnectionId()));
+        return "%s@%x[%s][dcid=%s,scid=%s]".formatted(
+            TypeUtil.toShortName(getClass()),
+            hashCode(),
+            quicVersion(),
+            StringUtil.toHexString(destinationConnectionId()),
+            StringUtil.toHexString(sourceConnectionId())
+        );
     }
 
     public enum PacketType

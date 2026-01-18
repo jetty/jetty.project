@@ -14,63 +14,23 @@
 package org.eclipse.jetty.quic.common.internal.packets;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.common.EncryptionLevel;
-import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
+import org.eclipse.jetty.quic.common.packets.OneRTTPacket;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.ShortHeaderPacket;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ShortHeaderPacketsGenerator
 {
-    private static final Logger LOG = LoggerFactory.getLogger(InitialPacketGenerator.class);
-
-    private final PacketNumbers packetNumbers;
-    private final FramesGenerator framesGenerator;
-    private final Encrypter encrypter;
+    private final OneRTTPacketGenerator generator;
 
     public ShortHeaderPacketsGenerator(PacketNumbers packetNumbers, FramesGenerator framesGenerator, Encrypter encrypter)
     {
-        this.packetNumbers = packetNumbers;
-        this.framesGenerator = framesGenerator;
-        this.encrypter = encrypter;
+        this.generator = new OneRTTPacketGenerator(packetNumbers, framesGenerator, encrypter);
     }
 
     public void generate(RetainableByteBuffer.Mutable accumulator, ShortHeaderPacket packet) throws Exception
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("generating {}", packet);
-
-        RetainableByteBuffer.Mutable payloadAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        packet.frames().forEach(frame -> framesGenerator.generate(payloadAccumulator, frame));
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("generated {} frame bytes for {}", payloadAccumulator.size(), packet);
-
-        RetainableByteBuffer.Mutable headerAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        int form = 0b01000000;
-        int spin = packet.spin() ? 0b00100000 : 0b00000000;
-        int keyPhase = packet.keyPhase() ? 0b00010000 : 0b00000000;
-        long packetNumber = packet.packetNumber();
-        EncodedPacketNumber encodedPacketNumber = packetNumbers.encode(EncryptionLevel.INITIAL, packetNumber);
-        int msb = form | spin | keyPhase | (encodedPacketNumber.length() - 1);
-        headerAccumulator.put((byte)msb);
-
-        headerAccumulator.put(packet.destinationConnectionId());
-
-        encodedPacketNumber.putTo(headerAccumulator);
-
-        PacketBuffers packetBuffers = encrypter.encrypt(EncryptionLevel.ONE_RTT, packetNumber, headerAccumulator, payloadAccumulator);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("encrypted {} {}", packet, packetBuffers);
-
-        headerAccumulator.release();
-        payloadAccumulator.release();
-
-        accumulator.add(packetBuffers.header());
-        accumulator.add(packetBuffers.payload());
+        generator.generate(accumulator, (OneRTTPacket)packet);
     }
 }
