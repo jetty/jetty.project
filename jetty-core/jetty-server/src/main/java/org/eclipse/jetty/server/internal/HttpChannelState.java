@@ -1326,7 +1326,7 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (writeFailure == NOTHING_TO_SEND)
                 {
-                    httpChannelState._writeInvoker.run(Invocable.from(callback.getInvocationType(), callback::succeeded));
+                    httpChannelState._writeInvoker.run(new ReadyTask(callback.getInvocationType(), callback::succeeded));
                     return;
                 }
                 // Have we failed in some way?
@@ -1373,7 +1373,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (callback != null)
-                httpChannel._writeInvoker.run(Invocable.from(callback.getInvocationType(), callback::succeeded));
+                httpChannel._writeInvoker.run(new ReadyTask(callback.getInvocationType(), callback::succeeded));
         }
 
         /**

@@ -50,7 +50,7 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     public Runnable onDataAvailable()
     {
         // The InvocationType may change depending on the read callback.
-        return Invocable.from(getInvocationType(), this::processDataAvailable);
+        return new Invocable.ReadyTask(getInvocationType(), this::processDataAvailable);
     }
 
     @Override
