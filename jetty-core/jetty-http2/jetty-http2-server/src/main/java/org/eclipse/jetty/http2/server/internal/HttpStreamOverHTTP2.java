@@ -130,24 +130,20 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 throw new HttpException.RuntimeException(HttpStatus.EXPECTATION_FAILED_417);
 
             InvocationType invocationType = Invocable.getInvocationType(handler);
-            return new ReadyTask(invocationType, handler)
+            return Invocable.from(invocationType, () ->
             {
-                @Override
-                public void run()
+                if (_stream.isClosed())
                 {
-                    if (_stream.isClosed())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("HTTP2 request #{}/{} skipped handling, stream already closed {}",
-                                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                                _stream);
-                    }
-                    else
-                    {
-                        super.run();
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP2 request #{}/{} skipped handling, stream already closed {}",
+                            _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
+                            _stream);
                 }
-            };
+                else
+                {
+                    handler.run();
+                }
+            });
         }
         catch (Throwable x)
         {

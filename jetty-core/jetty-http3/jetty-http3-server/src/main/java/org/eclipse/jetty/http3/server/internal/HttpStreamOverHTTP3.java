@@ -116,24 +116,20 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 throw new HttpException.RuntimeException(HttpStatus.EXPECTATION_FAILED_417);
 
             InvocationType invocationType = Invocable.getInvocationType(handler);
-            return new ReadyTask(invocationType, handler)
+            return Invocable.from(invocationType, () ->
             {
-                @Override
-                public void run()
+                if (stream.isClosed())
                 {
-                    if (stream.isClosed())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("HTTP3 request #{}/{} skipped handling, stream already closed {}",
-                                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                                stream);
-                    }
-                    else
-                    {
-                        super.run();
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP3 request #{}/{} skipped handling, stream already closed {}",
+                            stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                            stream);
                 }
-            };
+                else
+                {
+                    handler.run();
+                }
+            });
         }
         catch (Throwable x)
         {
