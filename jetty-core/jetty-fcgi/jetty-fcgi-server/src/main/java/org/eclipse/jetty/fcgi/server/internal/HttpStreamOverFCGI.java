@@ -254,8 +254,9 @@ public class HttpStreamOverFCGI implements HttpStream
     @Override
     public Runnable cancelSend(Throwable cause, Callback appCallback)
     {
-        Callback combined = Callback.combine(_connection.getFlusher().cancel(cause), appCallback);
-        return Invocable.from(combined.getInvocationType(), () -> combined.failed(cause));
+        // TODO ideally, we would have the InvocationType of the _connection.getFlusher().cancel() Callback
+        //  available before creating the Runnable instance.
+        return () -> Callback.combine(_connection.getFlusher().cancel(cause), appCallback).failed(cause);
     }
 
     private void commit(MetaData.Response info, boolean head, boolean last, ByteBuffer content, Callback callback)
