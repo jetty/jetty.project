@@ -533,7 +533,7 @@ Alt-Svc: h3=":843"
 ----
 
 The presence of this header indicates that protocol `h3` is available on the same host (since no host is defined before the port), but on port `843` (although it may be the same port `443`).
-The `ma` (max-age) attribute specifies how long (in seconds) the client should cache this information (86400 seconds = 24 hours).
+The `ma` (max-age) attribute specifies how long (in seconds) the client should cache this information.
 The HTTP/3 client may now initiate a QUIC connection on port `843` and make HTTP/3 requests.
 
 NOTE: It is nowadays common to use the same port `443` for both HTTP/2 and HTTP/3. This does not cause problems because HTTP/2 listens on the TCP port `443`, while QUIC listens on the UDP port `443`.
