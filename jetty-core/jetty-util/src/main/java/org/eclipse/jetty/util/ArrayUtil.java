@@ -157,22 +157,22 @@ public class ArrayUtil
     /**
      * Calculates a new array capacity based on existing length, required capacity and maximum capacity.
      * @param currentCapacity the array's current capacity
-     * @param neededCapacity the needed extra capacity
+     * @param addCapacity the extra capacity to add
      * @param maxCapacity the array's maximum capacity
      * @return the calculated new array size
      * @throws IllegalArgumentException when <code>currentCapacity</code> or <code>maxCapacity</code> is &lt; 0,
-     * or when <code>neededCapacity</code> is &lt;= 0,
+     * or when <code>addCapacity</code> is &lt;= 0,
      * or when it is not possible to get a new capacity using the given arguments without going over <code>maxCapacity</code>.
      */
-    public static int growCapacity(int currentCapacity, int neededCapacity, int maxCapacity) throws IllegalArgumentException
+    public static int growCapacity(int currentCapacity, int addCapacity, int maxCapacity) throws IllegalArgumentException
     {
         if (currentCapacity < 0)
             throw new IllegalArgumentException("currentCapacity must be >= 0");
-        if (neededCapacity <= 0)
-            throw new IllegalArgumentException("neededCapacity must be > 0");
+        if (addCapacity <= 0)
+            throw new IllegalArgumentException("addCapacity must be > 0");
         if (maxCapacity < 0)
             throw new IllegalArgumentException("maxCapacity must be >= 0");
-        int minimalNewCapacity = currentCapacity + neededCapacity;
+        int minimalNewCapacity = currentCapacity + addCapacity;
         if (minimalNewCapacity > maxCapacity || minimalNewCapacity < 0)
             throw new IllegalArgumentException("full");
         int newCapacity = currentCapacity + Math.max(8, currentCapacity / 2);
@@ -184,16 +184,16 @@ public class ArrayUtil
     /**
      * Copies an existing byte array into a newly allocated, bigger one.
      * @param array the existing array
-     * @param neededCapacity the needed extra capacity
+     * @param addCapacity the extra capacity to add
      * @param maxCapacity the array's maximum capacity
      * @return the grown array copy.
      * @throws IllegalArgumentException when <code>currentCapacity</code> or <code>maxCapacity</code> is &lt; 0,
-     * or when <code>neededCapacity</code> is &lt;= 0,
+     * or when <code>addCapacity</code> is &lt;= 0,
      * or when it is not possible to get a bigger array without going over <code>maxCapacity</code>.
      */
-    public static byte[] grow(byte[] array, int neededCapacity, int maxCapacity) throws IllegalArgumentException
+    public static byte[] grow(byte[] array, int addCapacity, int maxCapacity) throws IllegalArgumentException
     {
-        int newCapacity = growCapacity(array.length, neededCapacity, maxCapacity);
+        int newCapacity = growCapacity(array.length, addCapacity, maxCapacity);
         if (newCapacity == array.length)
             throw new IllegalStateException("full");
         return Arrays.copyOf(array, newCapacity);
@@ -202,16 +202,16 @@ public class ArrayUtil
     /**
      * Copies an existing object array into a newly allocated, bigger one.
      * @param array the existing array
-     * @param neededCapacity the needed extra capacity
+     * @param addCapacity the extra capacity to add
      * @param maxCapacity the array's maximum capacity
      * @return the grown array copy.
      * @throws IllegalArgumentException when <code>currentCapacity</code> or <code>maxCapacity</code> is &lt; 0,
-     * or when <code>neededCapacity</code> is &lt;= 0,
+     * or when <code>addCapacity</code> is &lt;= 0,
      * or when it is not possible to get a bigger array without going over <code>maxCapacity</code>.
      */
-    public static <T> T[] grow(T[] array, int neededCapacity, int maxCapacity) throws IllegalArgumentException
+    public static <T> T[] grow(T[] array, int addCapacity, int maxCapacity) throws IllegalArgumentException
     {
-        int newCapacity = growCapacity(array.length, neededCapacity, maxCapacity);
+        int newCapacity = growCapacity(array.length, addCapacity, maxCapacity);
         if (newCapacity == array.length)
             throw new IllegalStateException("full");
         return Arrays.copyOf(array, newCapacity);

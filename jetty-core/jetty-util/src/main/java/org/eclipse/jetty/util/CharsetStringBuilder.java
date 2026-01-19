@@ -285,7 +285,7 @@ public interface CharsetStringBuilder
         {
             if (_buffer == null)
             {
-                _buffer = ByteBuffer.allocate(ArrayUtil.growCapacity(32, needed, Integer.MAX_VALUE));
+                _buffer = ByteBuffer.allocate(needed + 32);
             }
             else
             {

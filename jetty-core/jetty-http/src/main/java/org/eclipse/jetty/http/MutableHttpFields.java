@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.ArrayUtil;
 class MutableHttpFields implements HttpFields.Mutable
 {
     private static final int INITIAL_SIZE = 16;
+    private static final int SIZE_INCREMENT = 4;
 
     private HttpField[] _fields;
     private boolean _immutable;
@@ -76,9 +77,9 @@ class MutableHttpFields implements HttpFields.Mutable
             _fields = immutable._fields;
             _size = immutable._size;
         }
-        else if (fields != null && fields.size() > 0)
+        else if (fields != null)
         {
-            _fields = new HttpField[ArrayUtil.growCapacity(0, fields.size(), Integer.MAX_VALUE)];
+            _fields = new HttpField[fields.size() + SIZE_INCREMENT];
             add(fields);
         }
         else
@@ -95,8 +96,7 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields, HttpField replaceField)
     {
-        int fieldsSize = fields.size();
-        _fields = new HttpField[ArrayUtil.growCapacity(0, fieldsSize > 0 ? fieldsSize : INITIAL_SIZE, Integer.MAX_VALUE)];
+        _fields = new HttpField[fields.size() + SIZE_INCREMENT];
         _size = 0;
         boolean put = false;
         for (HttpField f : fields)
@@ -124,8 +124,7 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields, EnumSet<HttpHeader> removeFields)
     {
-        int fieldsSize = fields.size();
-        _fields = new HttpField[ArrayUtil.growCapacity(0, fieldsSize > 0 ? fieldsSize : INITIAL_SIZE, Integer.MAX_VALUE)];
+        _fields = new HttpField[fields.size() + SIZE_INCREMENT];
         _size = 0;
         for (HttpField f : fields)
         {
