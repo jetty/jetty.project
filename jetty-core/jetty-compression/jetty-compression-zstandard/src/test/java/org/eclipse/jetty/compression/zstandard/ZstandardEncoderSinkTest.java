@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
@@ -137,5 +138,110 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
             ExecutionException thrown = assertThrows(ExecutionException.class, callback2::get);
             assertInstanceOf(IllegalStateException.class, thrown.getCause());
         }
+    }
+
+    public static Stream<Arguments> directBufferCases()
+    {
+        return Stream.of(
+            // dataSize, bufferSize, startOffset
+            Arguments.of(1024, 64 * 1024, 0),         // Small data, position 0
+            Arguments.of(1024, 64 * 1024, 512),       // Small data, non-zero position
+            Arguments.of(200 * 1024, 64 * 1024, 0),   // Large data exceeding bufferSize, position 0
+            Arguments.of(200 * 1024, 64 * 1024, 100), // Large data exceeding bufferSize, non-zero position
+            Arguments.of(21847 * 6, 132 * 1024, 0)    // Match frequentFlushing test size with direct buffer
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("directBufferCases")
+    public void testDirectBuffer(int dataSize, int bufferSize, int startOffset) throws Exception
+    {
+        startZstd();
+
+        // Generate test data
+        byte[] originalData = new byte[dataSize];
+        new Random(42).nextBytes(originalData);
+
+        // Create a direct buffer with extra space at the beginning to test non-zero positions
+        ByteBuffer directBuffer = ByteBuffer.allocateDirect(dataSize + startOffset);
+
+        // Fill the prefix area with garbage (to verify we don't accidentally read it)
+        for (int i = 0; i < startOffset; i++)
+        {
+            directBuffer.put((byte)0xFF);
+        }
+
+        // Put the actual data
+        directBuffer.put(originalData);
+
+        // Position the buffer to start at the offset where real data begins
+        directBuffer.position(startOffset);
+        directBuffer.limit(startOffset + dataSize);
+
+        byte[] compressed;
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink fileSink = Content.Sink.from(baos);
+            ZstandardEncoderConfig config = new ZstandardEncoderConfig();
+            config.setBufferSize(bufferSize);
+            Content.Sink encoderSink = zstd.newEncoderSink(fileSink, config);
+
+            Callback.Completable callback = new Callback.Completable();
+            encoderSink.write(true, directBuffer, callback);
+            callback.get();
+            compressed = baos.toByteArray();
+        }
+
+        // Verify the buffer position was properly advanced to the end
+        assertThat(directBuffer.remaining(), is(0));
+
+        // Verify decompressed content matches original
+        byte[] decompressed = decompress(compressed);
+        assertThat(decompressed.length, is(originalData.length));
+        for (int i = 0; i < originalData.length; i++)
+        {
+            assertThat("Mismatch at byte " + i, decompressed[i], is(originalData[i]));
+        }
+    }
+
+    @Test
+    public void testDirectBufferFrequentFlushing() throws Exception
+    {
+        startZstd();
+
+        int lineCount = 21847;
+        StringBuilder expected = new StringBuilder();
+        for (int i = 1; i <= lineCount; i++)
+        {
+            expected.append(String.format("%05d\n", i));
+        }
+
+        byte[] compressed;
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink fileSink = Content.Sink.from(baos);
+            ZstandardEncoderConfig config = new ZstandardEncoderConfig();
+            config.setBufferSize(132 * 1024);
+            Content.Sink encoderSink = zstd.newEncoderSink(fileSink, config);
+
+            // Write each line using a direct buffer
+            for (int i = 1; i <= lineCount; i++)
+            {
+                String line = String.format("%05d\n", i);
+                byte[] lineBytes = line.getBytes(UTF_8);
+                ByteBuffer directLine = ByteBuffer.allocateDirect(lineBytes.length);
+                directLine.put(lineBytes);
+                directLine.flip();
+
+                boolean isLast = (i == lineCount);
+                Callback.Completable callback = new Callback.Completable();
+                encoderSink.write(isLast, directLine, callback);
+                callback.get();
+            }
+            compressed = baos.toByteArray();
+        }
+
+        String decompressed = new String(decompress(compressed), UTF_8);
+        assertEquals(expected.toString(), decompressed);
     }
 }
