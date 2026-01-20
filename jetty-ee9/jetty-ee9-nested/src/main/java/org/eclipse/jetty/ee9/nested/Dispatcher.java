@@ -27,6 +27,8 @@ import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceUtils;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
@@ -263,9 +265,8 @@ public class Dispatcher implements RequestDispatcher
             return;
         HttpConfiguration httpConfiguration = channel.getConnectionMetaData().getHttpConfiguration();
         UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
-        uriCompliance.assertAllowed(uri,
-            channel.getComplianceViolationListener(),
-            IllegalStateException::new);
+        ComplianceViolation.Listener listener = channel.getComplianceViolationListener();
+        ComplianceUtils.notifyAndAssert(uriCompliance, uri, listener, IllegalStateException::new);
     }
 
     @Override

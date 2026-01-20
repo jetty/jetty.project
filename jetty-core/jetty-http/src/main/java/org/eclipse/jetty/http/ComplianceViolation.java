@@ -85,7 +85,7 @@ public interface ComplianceViolation
     /**
      * @deprecated no replacement
      */
-    @Deprecated(forRemoval = true, since = "12.1.5")
+    @Deprecated(forRemoval = true, since = "12.1.6")
     static void notify(List<ComplianceViolation.Listener> listeners, ComplianceViolation.Mode mode, ComplianceViolation violation, String details, boolean allowed)
     {
         Event event = new Event(mode, violation, details, allowed);
@@ -106,6 +106,11 @@ public interface ComplianceViolation
 
     record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details, boolean allowed)
     {
+        public Event(String details, Mode mode, ComplianceViolation violation)
+        {
+            this(mode, violation, details, false);
+        }
+
         @Override
         public String toString()
         {
@@ -197,15 +202,14 @@ public interface ComplianceViolation
 
         private CapturingListener(List<Event> events)
         {
-            this.events = events;
+            this.events = events != null ? events : new ArrayList<>();
         }
 
         @Override
         public Listener initialize()
         {
-            List<Event> requestEvents = new ArrayList<>();
-            if (events != null)
-                requestEvents.addAll(events);
+            // Create new events list (prepopulated) for request layer.
+            List<Event> requestEvents = new ArrayList<>(events);
             return new CapturingListener(requestEvents);
         }
 

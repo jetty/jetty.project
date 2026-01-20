@@ -18,7 +18,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import static java.util.EnumSet.allOf;
 import static java.util.EnumSet.noneOf;
@@ -208,29 +207,6 @@ public class MultiPartCompliance implements ComplianceViolation.Mode
     public Set<Violation> getAllowed()
     {
         return violations;
-    }
-
-    /**
-     * Assert that the specified Violation is allowed.
-     *
-     * @param violation the violation to check if allowed
-     * @param listener the listener to report to
-     * @param error the function to produce a Throwable if not allowed
-     * @param <T> the type of Throwable
-     * @throws T Throwable if not allowed
-     */
-    public <T extends Throwable> void assertAllowed(MultiPartCompliance.Violation violation, ComplianceViolation.Listener listener, String detail, Function<String, T> error) throws T
-    {
-        boolean allowed = this.allows(violation);
-
-        // Always report violation to listeners
-        if (listener != null)
-            listener.onComplianceViolation(new ComplianceViolation.Event(this, violation, detail, allowed));
-
-        if (!allowed)
-        {
-            throw error.apply(detail);
-        }
     }
 
     @Override

@@ -28,9 +28,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.CookieCompliance;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -41,7 +40,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
@@ -159,7 +157,7 @@ public class HttpChannelState implements HttpChannel, Components
             _complianceViolationListener = new AllowedOnlyComplianceListener(_complianceViolationListener);
     }
 
-    public static class AllowedOnlyComplianceListener implements ComplianceViolation.Listener
+    private static class AllowedOnlyComplianceListener implements ComplianceViolation.Listener
     {
         private final ComplianceViolation.Listener delegate;
 
@@ -192,41 +190,6 @@ public class HttpChannelState implements HttpChannel, Components
         {
             delegate.onRequestEnd(request);
         }
-    }
-
-    /**
-     * Assert that the specified Violation is allowed.
-     *
-     * @param violation the violation to check if allowed
-     * @param detail the detail on the listener event
-     * @param error the function to produce a Throwable if not allowed
-     * @param <T> the type of Throwable
-     * @throws T Throwable if not allowed
-     */
-    @Override
-    public <T extends Throwable> void complianceAssert(ComplianceViolation violation, String detail, Function<String, T> error) throws T
-    {
-        ComplianceViolation.Mode mode;
-
-        if (violation instanceof UriCompliance.Violation)
-            mode = getHttpConfiguration().getUriCompliance();
-        else if (violation instanceof HttpCompliance.Violation)
-            mode = getHttpConfiguration().getHttpCompliance();
-        else if (violation instanceof MultiPartCompliance.Violation)
-            mode = getHttpConfiguration().getMultiPartCompliance();
-        else if (violation instanceof CookieCompliance.Violation)
-            mode = getHttpConfiguration().getRequestCookieCompliance();
-        else
-            throw new UnsupportedOperationException("Unsupported ComplianceViolation type: " + violation.getClass().getName());
-
-        boolean allowed = mode.allows(violation);
-
-        // Always report violation to listener
-        _complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(mode, violation, detail, allowed));
-
-        if (!allowed)
-
-            throw error.apply(violation.getDescription());
     }
 
     @Override
@@ -269,6 +232,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
+    @Override
     public HttpConfiguration getHttpConfiguration()
     {
         return _connectionMetaData.getHttpConfiguration();
@@ -778,11 +742,8 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     HttpConfiguration httpConfiguration = getConnectionMetaData().getHttpConfiguration();
                     UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
-                    uriCompliance.assertAllowed(
-                        uri,
-                        getComplianceViolationListener(),
-                        (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg)
-                    );
+                    ComplianceViolation.Listener listener = getComplianceViolationListener();
+                    ComplianceUtils.notifyAndAssert(uriCompliance, uri, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
                 }
 
                 // Customize before processing.

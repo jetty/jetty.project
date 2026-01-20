@@ -63,6 +63,7 @@ import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
@@ -435,10 +436,8 @@ public class Request implements HttpServletRequest
                     boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
                     if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), _queryParameters::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8))
                     {
-                        uriCompliance.assertAllowed(UriCompliance.Violation.BAD_UTF8_ENCODING,
-                            getHttpChannel().getRequest().getComplianceViolationListener(),
-                            "query=" + query,
-                            BadMessageException::new);
+                        ComplianceViolation.Listener listener = getHttpChannel().getRequest().getComplianceViolationListener();
+                        ComplianceUtils.notifyAndAssert(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, listener, "query=" + query, BadMessageException::new);
                     }
                 }
                 else
@@ -2164,10 +2163,7 @@ public class Request implements HttpServletRequest
             if (nc.mode() instanceof MultiPartCompliance multiPartCompliance)
             {
                 MultiPartCompliance.Violation violation = (MultiPartCompliance.Violation)nc.violation();
-                multiPartCompliance.assertAllowed(violation,
-                    complianceViolationListener,
-                    nc.details(),
-                    BadMessageException::new);
+                ComplianceUtils.notifyAndAssert(multiPartCompliance, violation, complianceViolationListener, nc.details(), BadMessageException::new);
             }
         }
     }

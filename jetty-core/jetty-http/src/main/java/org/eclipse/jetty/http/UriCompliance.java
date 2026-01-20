@@ -459,64 +459,6 @@ public final class UriCompliance implements ComplianceViolation.Mode
         return PATH_VIOLATIONS.contains(violation);
     }
 
-    /**
-     * Assert that the specified Violation is allowed.
-     *
-     * @param violation the violation to check if allowed
-     * @param listener the listener to report to
-     * @param error the function to produce a Throwable if not allowed
-     * @param <T> the type of Throwable
-     * @throws T Throwable if not allowed
-     */
-    public <T extends Throwable> void assertAllowed(UriCompliance.Violation violation, ComplianceViolation.Listener listener, String detail, Function<String, T> error) throws T
-    {
-        boolean allowed = allows(violation);
-
-        listener.onComplianceViolation(new ComplianceViolation.Event(this, violation, detail, allowed));
-
-        if (!allowed)
-        {
-            throw error.apply(detail);
-        }
-    }
-
-    /**
-     * Assert that the specified Violation is allowed.
-     *
-     * @param uri the HttpURI to check for violations
-     * @param listener the listener to report to
-     * @param error the function to produce a Throwable if not allowed
-     * @param <T> the type of Throwable
-     * @throws T Throwable if not allowed
-     */
-    public <T extends Throwable> void assertAllowed(HttpURI uri, ComplianceViolation.Listener listener, Function<String, T> error) throws T
-    {
-        if (!uri.hasViolations())
-            return;
-
-        StringBuilder violations = null;
-        for (UriCompliance.Violation violation : uri.getViolations())
-        {
-            boolean allowed = allows(violation);
-
-            listener.onComplianceViolation(new ComplianceViolation.Event(this, violation, violation.getDescription(), allowed));
-
-            // Only trigger a failure of the HttpURI for compliance reasons if the compliance doesn't allow for violation detected
-            if (!allowed)
-            {
-                if (violations == null)
-                    violations = new StringBuilder();
-                else
-                    violations.append(", ");
-                violations.append(violation.getDescription());
-            }
-        }
-        if (violations != null)
-        {
-            throw error.apply(violations.toString());
-        }
-    }
-
     @Override
     public String toString()
     {
@@ -546,10 +488,9 @@ public final class UriCompliance implements ComplianceViolation.Mode
      * @param listener listener to report violations to.
      * @return A string representing the violations that were not allowed by the configured {@link UriCompliance}, null if
      *         the provided HttpURI either has no violations, or only had violations that are allowed by the {@link UriCompliance}
-     * @deprecated replaced with {@link #assertAllowed(HttpURI, ComplianceViolation.Listener, Function)}
-     * @see #assertAllowed(HttpURI, ComplianceViolation.Listener, Function)
+     * @deprecated replaced with {@link ComplianceUtils#notifyAndAssert(UriCompliance, HttpURI, ComplianceViolation.Listener, Function)}
      */
-    @Deprecated(since = "12.1.5", forRemoval = true)
+    @Deprecated(since = "12.1.6", forRemoval = true)
     public static String checkUriCompliance(UriCompliance compliance, HttpURI uri, ComplianceViolation.Listener listener)
     {
         if (uri.hasViolations())

@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
@@ -1340,7 +1341,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 {
                     if (!_hostField.getValue().equals(_uri.getAuthority()))
                     {
-                        getHttpChannel().complianceAssert(MISMATCHED_AUTHORITY,
+                        HttpCompliance httpCompliance = getHttpChannel().getHttpConfiguration().getHttpCompliance();
+                        ComplianceViolation.Listener complianceListener = getHttpChannel().getComplianceViolationListener();
+                        ComplianceUtils.notifyAndAssert(httpCompliance,
+                            MISMATCHED_AUTHORITY,
+                            complianceListener,
                             "Authority!=Host",
                             (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
                     }

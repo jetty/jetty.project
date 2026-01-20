@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -147,6 +148,26 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     static Mutable build(HttpFields fields, EnumSet<HttpHeader> removeFields)
     {
         return new org.eclipse.jetty.http.MutableHttpFields(fields, removeFields);
+    }
+
+    /**
+     * Builds HttpFields with behavior based on {@link HttpCompliance}.
+     *
+     * @param httpCompliance the compliance to use
+     * @param notifyConsumer the consumer of the violation.
+     * @deprecated use {@link #build(HttpCompliance, Supplier)} instead.
+     */
+    @Deprecated(since = "12.1.6", forRemoval = true)
+    static Mutable build(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyConsumer)
+    {
+        return build(httpCompliance, () -> new ComplianceViolation.Listener()
+        {
+            @Override
+            public void onComplianceViolation(ComplianceViolation.Event event)
+            {
+                notifyConsumer.accept(event.violation(), event.details());
+            }
+        });
     }
 
     static Mutable build(HttpCompliance httpCompliance, Supplier<ComplianceViolation.Listener> listenerSupplier)

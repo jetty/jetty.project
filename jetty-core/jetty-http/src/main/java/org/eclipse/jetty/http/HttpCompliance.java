@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -410,8 +409,15 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     {
         boolean allowed = this.allows(violation);
 
-        // Always report violation to listeners
-        listener.onComplianceViolation(new ComplianceViolation.Event(this, violation, detail, allowed));
+        try
+        {
+            // Always report violation to listeners
+            listener.onComplianceViolation(new ComplianceViolation.Event(this, violation, detail, allowed));
+        }
+        catch (Throwable e)
+        {
+            LOG.atWarn().setCause(e).log("Unhandled exception during {}.onComplianceViolation() call", listener.getClass().getName());
+        }
 
         if (!allowed)
             throw error.apply(violation.getDescription());
@@ -438,66 +444,12 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     }
 
     /**
-     * Check the provided Request against configured {@link HttpCompliance}.
-     *
-     * @param request the request to check
-     * @param listener the notification method for violations.  (Tip: use the Request specific Listener from the {@code HttpChannelState})
-     * @throws HttpException.RuntimeException if there is a violation that wasn't allowed
+     * @deprecated use {@link ComplianceUtils#notifyAndAssert(HttpCompliance, MetaData.Request, ComplianceViolation.Listener)} instead.
      */
-    public void check(MetaData.Request request, ComplianceViolation.Listener listener)
-    {
-        boolean seenContentLength = false;
-        boolean seenTransferEncoding = false;
-        boolean seenHostHeader = false;
-
-        HttpFields fields = request.getHttpFields();
-        for (HttpField httpField: fields)
-        {
-            if (httpField.getHeader() == null)
-                continue;
-
-            switch (httpField.getHeader())
-            {
-                case CONTENT_LENGTH ->
-                {
-                    if (seenContentLength)
-                        assertAllowed(Violation.MULTIPLE_CONTENT_LENGTHS, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
-                    String[] lengths = httpField.getValues();
-                    if (lengths.length > 1)
-                        assertAllowed(Violation.MULTIPLE_CONTENT_LENGTHS, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
-                    if (seenTransferEncoding)
-                        assertAllowed(Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
-                    seenContentLength = true;
-                }
-                case TRANSFER_ENCODING ->
-                {
-                    if (seenContentLength)
-                        assertAllowed(Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
-                    seenTransferEncoding = true;
-                }
-                case HOST ->
-                {
-                    if (seenHostHeader)
-                        assertAllowed(Violation.DUPLICATE_HOST_HEADERS, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
-                    String[] hostValues = httpField.getValues();
-                    if (hostValues.length > 1)
-                        assertAllowed(Violation.DUPLICATE_HOST_HEADERS, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
-                    for (String hostValue: hostValues)
-                        if (StringUtil.isBlank(hostValue))
-                            assertAllowed(Violation.UNSAFE_HOST_HEADER, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
-                    seenHostHeader = true;
-                }
-            }
-        }
-    }
-
-    /**
-     * @deprecated use {@link #check(MetaData.Request, ComplianceViolation.Listener)} instead.
-     */
-    @Deprecated(forRemoval = true, since = "12.1.5")
+    @Deprecated(forRemoval = true, since = "12.1.6")
     public static void checkHttpCompliance(MetaData.Request request, HttpCompliance httpCompliance,
                                            ComplianceViolation.Listener listener)
     {
-        httpCompliance.check(request, listener);
+        ComplianceUtils.notifyAndAssert(httpCompliance, request, listener);
     }
 }

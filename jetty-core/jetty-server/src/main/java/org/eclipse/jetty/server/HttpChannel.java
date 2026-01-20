@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.http.ComplianceViolation;
@@ -131,16 +130,7 @@ public interface HttpChannel extends Invocable
      */
     void initialize();
 
-    /**
-     * Assert that the specified Violation is allowed in this specific channel.
-     *
-     * @param violation the violation to check if allowed
-     * @param detail the detail on the listener event
-     * @param error the function to produce a Throwable if not allowed
-     * @param <T> the type of Throwable
-     * @throws T Throwable if not allowed
-     */
-    <T extends Throwable> void complianceAssert(ComplianceViolation violation, String detail, Function<String, T> error) throws T;
+    HttpConfiguration getHttpConfiguration();
 
     /**
      * Get the request specific {@link ComplianceViolation.Listener}.

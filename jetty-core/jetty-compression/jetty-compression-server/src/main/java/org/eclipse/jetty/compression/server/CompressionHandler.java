@@ -22,6 +22,7 @@ import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.server.internal.CompressionResponse;
 import org.eclipse.jetty.compression.server.internal.DecompressionRequest;
 import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -271,14 +272,9 @@ public class CompressionHandler extends Handler.Wrapper
                     if (qualityCSV == null)
                     {
                         HttpChannel httpChannel = HttpChannel.from(request);
-                        qualityCSV = new QuotedQualityCSV()
-                        {
-                            @Override
-                            protected void onComplianceViolation(ComplianceViolation violation, String value)
-                            {
-                                httpChannel.complianceAssert(violation, value, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
-                            }
-                        };
+                        HttpCompliance httpCompliance = httpChannel.getHttpConfiguration().getHttpCompliance();
+                        ComplianceViolation.Listener complianceListener = httpChannel.getComplianceViolationListener();
+                        qualityCSV = new QuotedQualityCSV.Compliant(httpCompliance, complianceListener);
                     }
                     qualityCSV.addValue(field.getValue());
                 }

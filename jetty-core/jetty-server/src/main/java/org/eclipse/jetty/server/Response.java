@@ -21,6 +21,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.ComplianceUtils;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.ComplianceViolationException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
@@ -440,9 +442,9 @@ public interface Response extends Content.Sink
         if (redirectCompliance != null)
         {
             HttpChannel httpChannel = HttpChannel.from(request);
-            redirectCompliance.assertAllowed(HttpURI.from(location),
-                httpChannel.getComplianceViolationListener(),
-                IllegalArgumentException::new);
+            HttpURI uri = HttpURI.from(location);
+            ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
+            ComplianceUtils.notifyAndAssert(redirectCompliance, uri, listener, IllegalArgumentException::new);
         }
 
         return location;

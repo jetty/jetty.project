@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -104,7 +105,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             listener.onRequestBegin(request);
 
             // Note UriCompliance is done by HandlerInvoker
-            httpConfiguration.getHttpCompliance().check(_requestMetaData, listener);
+            ComplianceUtils.notifyAndAssert(httpConfiguration.getHttpCompliance(), _requestMetaData, listener);
 
             if (frame.isEndStream())
             {

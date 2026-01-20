@@ -19,6 +19,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -93,7 +94,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             listener.onRequestBegin(request);
 
             // Note UriCompliance is done by HandlerInvoker
-            httpConfiguration.getHttpCompliance().check(requestMetaData, listener);
+            ComplianceUtils.notifyAndAssert(httpConfiguration.getHttpCompliance(), requestMetaData, listener);
 
             if (frame.isLast())
             {

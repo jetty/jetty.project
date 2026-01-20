@@ -703,14 +703,6 @@ public class MultiPartFormData
             return listener.getPartsSize();
         }
 
-        private boolean complianceAllows(ComplianceViolation violation, String reason)
-        {
-            boolean allowed = compliance.allows(violation);
-            if (complianceListener != null)
-                complianceListener.onComplianceViolation(new ComplianceViolation.Event(compliance, violation, reason, allowed));
-            return allowed;
-        }
-
         private class PartsListener extends MultiPart.AbstractPartsListener
         {
             private final AutoLock lock = new AutoLock();
@@ -837,14 +829,16 @@ public class MultiPartFormData
                     {
                         switch (StringUtil.asciiToLowerCase(value))
                         {
-                            case "base64" -> complianceAllows(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING, value);
+                            case "base64" ->
+                                ComplianceUtils.allowed(compliance, MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING, value, complianceListener);
                             case "quoted-printable" ->
-                                complianceAllows(MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING, value);
+                                ComplianceUtils.allowed(compliance, MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING, value, complianceListener);
                             case "8bit", "binary" ->
                             {
                                 // ignore
                             }
-                            default -> complianceAllows(MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value);
+                            default ->
+                                ComplianceUtils.allowed(compliance, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value, complianceListener);
                         }
                     }
 
@@ -905,6 +899,7 @@ public class MultiPartFormData
             @Override
             public void onViolation(MultiPartCompliance.Violation violation)
             {
+                ComplianceUtils.allowed(compliance, violation, "multipart spec violation", complianceListener);
                 try
                 {
                     boolean allowed = compliance.allows(violation);
