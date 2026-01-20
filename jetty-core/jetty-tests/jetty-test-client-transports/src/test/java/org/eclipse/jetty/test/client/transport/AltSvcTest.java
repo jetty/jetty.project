@@ -164,11 +164,11 @@ public class AltSvcTest
         // HTTP/2 connector with TLS and custom AltSvcCustomizer maxAge
         HTTP2ServerConnectionFactory h2Factory = new HTTP2ServerConnectionFactory(httpConfigH2);
         // Find and configure the AltSvcCustomizer
-        httpConfigH2.getCustomizers().stream()
-            .filter(c -> c instanceof HTTP2ServerConnectionFactory.AltSvcCustomizer)
-            .map(HTTP2ServerConnectionFactory.AltSvcCustomizer.class::cast)
-            .findFirst()
-            .ifPresent(customizer -> customizer.setMaxAge(Duration.ofHours(24))); // Set custom ma attribute
+        HTTP2ServerConnectionFactory.AltSvcCustomizer h2AltSvc = httpConfigH2.getCustomizer(HTTP2ServerConnectionFactory.AltSvcCustomizer.class);
+        if (h2AltSvc != null)
+        {
+            h2AltSvc.setMaxAge(Duration.ofHours(24));
+        }
 
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h2Factory.getProtocol());

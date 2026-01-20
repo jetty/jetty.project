@@ -621,15 +621,12 @@ public class HTTPServerDocs
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
 
         // Configure AltSvcCustomizer after connection factory creation.
-        httpConfig.getCustomizers().stream()
-            .filter(c -> c instanceof HTTP2ServerConnectionFactory.AltSvcCustomizer)
-            .map(HTTP2ServerConnectionFactory.AltSvcCustomizer.class::cast)
-            .findFirst()
-            .ifPresent(customizer ->
-            {
-                customizer.setMaxAge(Duration.ofHours(24));
-                customizer.setPersist(true);
-            });
+        HTTP2ServerConnectionFactory.AltSvcCustomizer h2AltSvc = httpConfig.getCustomizer(HTTP2ServerConnectionFactory.AltSvcCustomizer.class);
+        if (h2AltSvc != null)
+        {
+            h2AltSvc.setMaxAge(Duration.ofHours(24));
+            h2AltSvc.setPersist(true);
+        }
         // end::h2altsvc[]
     }
 
