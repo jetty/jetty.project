@@ -146,7 +146,7 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
         }
     }
 
-    public static Stream<Arguments> directBufferCases()
+    public static Stream<Arguments> largeDirectBufferCases()
     {
         return Stream.of(
             // dataSize, bufferSize, startOffset
@@ -159,8 +159,8 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
     }
 
     @ParameterizedTest
-    @MethodSource("directBufferCases")
-    public void testDirectBuffer(int dataSize, int bufferSize, int startOffset) throws Exception
+    @MethodSource("largeDirectBufferCases")
+    public void testLargeDirectBuffer(int dataSize, int bufferSize, int startOffset) throws Exception
     {
         startZstd();
 
