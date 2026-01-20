@@ -42,16 +42,17 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
     public static Stream<Arguments> frequentFlushingCases()
     {
         return Stream.of(
-            // lineCount, bufferSize (-1 means default)
-            Arguments.of(21847, -1),
-            Arguments.of(21847, 132 * 1024),
-            Arguments.of(50000, 132 * 1024)
+            // lineCount, bufferSize (-1 means default), useDirect
+            Arguments.of(21847, -1, false),
+            Arguments.of(21847, 132 * 1024, false),
+            Arguments.of(50000, 132 * 1024, false),
+            Arguments.of(21847, 132 * 1024, true)
         );
     }
 
     @ParameterizedTest
     @MethodSource("frequentFlushingCases")
-    public void testFrequentFlushing(int lineCount, int bufferSize) throws Exception
+    public void testFrequentFlushing(int lineCount, int bufferSize, boolean useDirect) throws Exception
     {
         startZstd();
 
@@ -80,9 +81,14 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
             for (int i = 1; i <= lineCount; i++)
             {
                 String line = String.format("%05d\n", i);
+                byte[] lineBytes = line.getBytes(UTF_8);
+                ByteBuffer buffer = useDirect ? ByteBuffer.allocateDirect(lineBytes.length) : ByteBuffer.allocate(lineBytes.length);
+                buffer.put(lineBytes);
+                buffer.flip();
+
                 boolean isLast = (i == lineCount);
                 Callback.Completable callback = new Callback.Completable();
-                encoderSink.write(isLast, ByteBuffer.wrap(line.getBytes(UTF_8)), callback);
+                encoderSink.write(isLast, buffer, callback);
                 callback.get();
             }
             compressed = baos.toByteArray();
@@ -190,45 +196,5 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
         {
             assertThat("Mismatch at byte " + i, decompressed[i], is(originalData[i]));
         }
-    }
-
-    @Test
-    public void testDirectBufferFrequentFlushing() throws Exception
-    {
-        startZstd();
-
-        int lineCount = 21847;
-        StringBuilder expected = new StringBuilder();
-        for (int i = 1; i <= lineCount; i++)
-        {
-            expected.append(String.format("%05d\n", i));
-        }
-
-        byte[] compressed;
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
-        {
-            Content.Sink fileSink = Content.Sink.from(baos);
-            ZstandardEncoderConfig config = new ZstandardEncoderConfig();
-            config.setBufferSize(132 * 1024);
-            Content.Sink encoderSink = zstd.newEncoderSink(fileSink, config);
-
-            for (int i = 1; i <= lineCount; i++)
-            {
-                String line = String.format("%05d\n", i);
-                byte[] lineBytes = line.getBytes(UTF_8);
-                ByteBuffer directLine = ByteBuffer.allocateDirect(lineBytes.length);
-                directLine.put(lineBytes);
-                directLine.flip();
-
-                boolean isLast = (i == lineCount);
-                Callback.Completable callback = new Callback.Completable();
-                encoderSink.write(isLast, directLine, callback);
-                callback.get();
-            }
-            compressed = baos.toByteArray();
-        }
-
-        String decompressed = new String(decompress(compressed), UTF_8);
-        assertEquals(expected.toString(), decompressed);
     }
 }
