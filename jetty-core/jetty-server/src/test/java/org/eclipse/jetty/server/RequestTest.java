@@ -553,6 +553,8 @@ public class RequestTest
             Arguments.of(";", List.of(Locale.getDefault().toLanguageTag()).toString()),
             Arguments.of(",", List.of(Locale.getDefault().toLanguageTag()).toString()),
             Arguments.of("\"", List.of(Locale.getDefault().toLanguageTag()).toString()),
+            Arguments.of("\"';--", List.of(Locale.getDefault().toLanguageTag()).toString()),
+            Arguments.of("foo\"", List.of(Locale.getDefault().toLanguageTag()).toString()),
             Arguments.of("bogus", List.of("bogus").toString()),
             Arguments.of("bogus, en-US", List.of(Locale.getDefault().toLanguageTag(), "bogus").toString()),
             Arguments.of("en-en", List.of("en-EN").toString()),
@@ -578,6 +580,7 @@ public class RequestTest
                 Host: tester
                 Connection: close
                 %s
+                
                 """.formatted(acceptLanguage);
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
