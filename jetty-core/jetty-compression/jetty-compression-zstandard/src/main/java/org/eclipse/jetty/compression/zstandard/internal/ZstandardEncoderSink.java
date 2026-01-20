@@ -107,16 +107,10 @@ public class ZstandardEncoderSink extends EncoderSink
         if (buffer.isDirect())
         {
             int length = Math.min(buffer.remaining(), size);
-
-            // Create a slice limited to 'length' bytes.
-            // The slice has independent position/limit but shares the underlying data.
             ByteBuffer slice = buffer.slice();
             slice.limit(length);
             slice.order(ByteOrder.LITTLE_ENDIAN); // zstandard requirement
-
-            // Advance original buffer's position (consistent with heap buffer path).
             buffer.position(buffer.position() + length);
-
             return RetainableByteBuffer.wrap(slice);
         }
 

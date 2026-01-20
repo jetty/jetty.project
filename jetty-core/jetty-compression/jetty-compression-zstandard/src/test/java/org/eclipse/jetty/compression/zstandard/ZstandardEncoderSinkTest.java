@@ -158,23 +158,13 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
     {
         startZstd();
 
-        // Generate test data
         byte[] originalData = new byte[dataSize];
         new Random(42).nextBytes(originalData);
 
-        // Create a direct buffer with extra space at the beginning to test non-zero positions
         ByteBuffer directBuffer = ByteBuffer.allocateDirect(dataSize + startOffset);
-
-        // Fill the prefix area with garbage (to verify we don't accidentally read it)
         for (int i = 0; i < startOffset; i++)
-        {
             directBuffer.put((byte)0xFF);
-        }
-
-        // Put the actual data
         directBuffer.put(originalData);
-
-        // Position the buffer to start at the offset where real data begins
         directBuffer.position(startOffset);
         directBuffer.limit(startOffset + dataSize);
 
@@ -192,10 +182,8 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
             compressed = baos.toByteArray();
         }
 
-        // Verify the buffer position was properly advanced to the end
         assertThat(directBuffer.remaining(), is(0));
 
-        // Verify decompressed content matches original
         byte[] decompressed = decompress(compressed);
         assertThat(decompressed.length, is(originalData.length));
         for (int i = 0; i < originalData.length; i++)
@@ -224,7 +212,6 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
             config.setBufferSize(132 * 1024);
             Content.Sink encoderSink = zstd.newEncoderSink(fileSink, config);
 
-            // Write each line using a direct buffer
             for (int i = 1; i <= lineCount; i++)
             {
                 String line = String.format("%05d\n", i);
