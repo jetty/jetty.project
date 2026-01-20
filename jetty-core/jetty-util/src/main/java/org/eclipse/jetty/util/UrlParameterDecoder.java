@@ -36,7 +36,9 @@ class UrlParameterDecoder
     private final boolean allowBadPercent;
     private final boolean allowTruncatedEncoding;
     private final CharsetStringBuilder builder;
-    private final UrlParameterViolationListener violationListener;
+    private final BiConsumer<String, Boolean> onBadEncoding;
+    private final BiConsumer<String, Boolean> onBadPercentage;
+    private final BiConsumer<String, Boolean> onTruncatedEncoding;
     private String name;
     private int keyCount;
     private int charCount;
@@ -49,7 +51,7 @@ class UrlParameterDecoder
 
     public UrlParameterDecoder(CharsetStringBuilder charsetStringBuilder, BiConsumer<String, String> newFieldAdder, int maxLength, int maxKeys)
     {
-        this(charsetStringBuilder, newFieldAdder, maxLength, maxKeys, false, false, false, UrlParameterViolationListener.NOOP);
+        this(charsetStringBuilder, newFieldAdder, maxLength, maxKeys, false, false, false, null, null, null);
     }
 
     /**
@@ -64,10 +66,15 @@ class UrlParameterDecoder
      * @param allowBadEncoding allow use of bad encoding with the {@link CharsetStringBuilder} (optional behavior)
      * @param allowBadPercent allow use of bad pct-encoding with the {@link CharsetStringBuilder} (optional behavior)
      * @param allowTruncatedEncoding allow use of truncated pct-encoding with the {@link CharsetStringBuilder} (optional behavior)
-     * @param violationListener place to report violations to (optional behavior)
+     * @param onBadEncoding consumer for bad encoding events
+     * @param onBadPercentage consumer for bad percentage events
+     * @param onTruncatedEncoding consumer for truncated encoding events
      */
     public UrlParameterDecoder(CharsetStringBuilder charsetStringBuilder, BiConsumer<String, String> newFieldAdder, int maxLength, int maxKeys,
-                               boolean allowBadEncoding, boolean allowBadPercent, boolean allowTruncatedEncoding, UrlParameterViolationListener violationListener)
+                               boolean allowBadEncoding, boolean allowBadPercent, boolean allowTruncatedEncoding,
+                               BiConsumer<String, Boolean> onBadEncoding,
+                               BiConsumer<String, Boolean> onBadPercentage,
+                               BiConsumer<String, Boolean> onTruncatedEncoding)
     {
         this.builder = charsetStringBuilder;
         this.newFieldAdder = newFieldAdder;
@@ -76,7 +83,9 @@ class UrlParameterDecoder
         this.allowBadEncoding = allowBadEncoding;
         this.allowBadPercent = allowBadPercent;
         this.allowTruncatedEncoding = allowTruncatedEncoding;
-        this.violationListener = violationListener == null ? UrlParameterViolationListener.NOOP : violationListener;
+        this.onBadEncoding = onBadEncoding != null ? onBadEncoding : (x, y) -> {};
+        this.onBadPercentage = onBadPercentage != null ? onBadPercentage : (x, y) -> {};
+        this.onTruncatedEncoding = onTruncatedEncoding != null ? onTruncatedEncoding : (x, y) -> {};
     }
 
     /**
@@ -230,7 +239,7 @@ class UrlParameterDecoder
                 {
                     codingError = true;
                     String violation = notValidPctEncoding((char)hi, (char)lo);
-                    violationListener.onBadPrecent(violation, allowBadPercent);
+                    onBadPercentage.accept(violation, allowBadPercent);
                     boolean replaced = builder.replaceIncomplete();
                     if (replaced && !allowBadEncoding || !allowBadPercent)
                         throw new IllegalArgumentException(notValidPctEncoding((char)hi, (char)lo));
@@ -280,7 +289,7 @@ class UrlParameterDecoder
     private boolean handleIncompletePctEncoding(int hi)
     {
         String violation = notValidPctEncoding((char)hi, (char)0);
-        violationListener.onTruncatedEncoding(violation, allowTruncatedEncoding);
+        onTruncatedEncoding.accept(violation, allowTruncatedEncoding);
         if (builder.replaceIncomplete())
         {
             codingError = true;
@@ -291,7 +300,7 @@ class UrlParameterDecoder
         else if (allowBadPercent)
         {
             codingError = true;
-            violationListener.onBadPrecent(violation, allowBadPercent);
+            onBadPercentage.accept(violation, allowBadPercent);
             builder.append('%');
             if (hi != -1)
                 builder.append((char)hi);
@@ -342,9 +351,9 @@ class UrlParameterDecoder
             builder.reset();
             if (codingErrorDetected)
             {
-                violationListener.onBadEncoding(result, allowBadEncoding);
-                violationListener.onBadPrecent(result, allowBadPercent);
-                violationListener.onTruncatedEncoding(result, allowTruncatedEncoding);
+                onBadEncoding.accept(result, allowBadEncoding);
+                onBadPercentage.accept(result, allowBadPercent);
+                onTruncatedEncoding.accept(result, allowTruncatedEncoding);
             }
             return result;
         }
@@ -354,7 +363,7 @@ class UrlParameterDecoder
         if (codingErrorDetected && !allowBadEncoding)
         {
             String result = builder.build(false);
-            violationListener.onBadEncoding(result, allowBadEncoding);
+            onBadEncoding.accept(result, allowBadEncoding);
             return result;
         }
 
@@ -363,7 +372,7 @@ class UrlParameterDecoder
         if (replaced && !allowTruncatedEncoding)
         {
             String result = builder.build(false);
-            violationListener.onTruncatedEncoding(result, allowTruncatedEncoding);
+            onTruncatedEncoding.accept(result, allowTruncatedEncoding);
             return result;
         }
 
@@ -374,7 +383,7 @@ class UrlParameterDecoder
         {
             // If we reached this point, we have an incomplete character sequence, resulting in a replacement character.
             // Eg: an incomplete UTF-8 sequence.
-            violationListener.onTruncatedEncoding(result, allowTruncatedEncoding);
+            onTruncatedEncoding.accept(result, allowTruncatedEncoding);
         }
         builder.reset();
         return result;

@@ -32,10 +32,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpException;
@@ -67,7 +69,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.UrlParameterViolationListener;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -596,36 +597,29 @@ public interface Request extends Attributes, Content.Source
                 boolean allowBadPercent = uriCompliance.allows(UriCompliance.Violation.BAD_PERCENT_ENCODING);
                 boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
                 boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
-                UrlParameterViolationListener parameterViolationListener = new UrlParameterViolationListener()
+
+                BiConsumer<String, Boolean> onBadEncodingConsumer = (cause, allowed) ->
                 {
-                    private void onViolation(UriCompliance.Violation violation, String cause, boolean allowed)
-                    {
-                        complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(
-                            uriCompliance,  violation, cause, allowed
-                        ));
-                        if (!allowed)
-                            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
-                    }
-
-                    @Override
-                    public void onBadEncoding(String cause, boolean allowed)
-                    {
-                        onViolation(UriCompliance.Violation.BAD_UTF8_ENCODING, cause, allowed);
-                    }
-
-                    @Override
-                    public void onBadPrecent(String cause, boolean allowed)
-                    {
-                        onViolation(UriCompliance.Violation.BAD_PERCENT_ENCODING, cause, allowed);
-                    }
-
-                    @Override
-                    public void onTruncatedEncoding(String cause, boolean allowed)
-                    {
-                        onViolation(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING, cause, allowed);
-                    }
+                    ComplianceUtils.notify(complianceViolationListener, new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, cause, allowed));
+                    if (!allowed)
+                        throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
                 };
-                UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8, parameterViolationListener);
+                BiConsumer<String, Boolean> onBadPercentConsumer = (cause, allowed) ->
+                {
+                    ComplianceUtils.notify(complianceViolationListener, new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_PERCENT_ENCODING, cause, allowed));
+                    if (!allowed)
+                        throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
+                };
+                BiConsumer<String, Boolean> onTruncatedEncodingConsumer = (cause, allowed) ->
+                {
+                    ComplianceUtils.notify(complianceViolationListener, new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.TRUNCATED_UTF8_ENCODING, cause, allowed));
+                    if (!allowed)
+                        throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
+                };
+
+                UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add,
+                    allowBadPercent, allowBadUtf8, allowTruncatedUtf8,
+                    onBadEncodingConsumer, onBadPercentConsumer, onTruncatedEncodingConsumer);
             }
             else
             {
