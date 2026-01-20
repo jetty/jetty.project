@@ -697,6 +697,7 @@ public class HttpChannelState implements HttpChannel, Components
             listener.onRequestEnd(_request);
 
             // This is THE ONLY PLACE the stream is succeeded or failed.
+            LOG.atDebug().setCause(failure).log("completing the stream of {}", this);
             if (failure == null)
                 stream.succeeded();
             else

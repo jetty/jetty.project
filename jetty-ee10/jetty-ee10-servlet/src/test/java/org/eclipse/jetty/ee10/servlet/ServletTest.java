@@ -148,7 +148,7 @@ public class ServletTest
                 Content-Length: 10
                 
                 """;
-            endPoint.addInput(request);
+            endPoint.addInputAndExecute(request);
             endPoint.addInput("1234567890");
             HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse(false, 5, TimeUnit.SECONDS));
             assertThat(response.getStatus(), is(HttpStatus.OK_200));

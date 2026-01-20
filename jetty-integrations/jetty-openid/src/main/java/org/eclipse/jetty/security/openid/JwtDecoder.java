@@ -38,9 +38,6 @@ public class JwtDecoder
     @SuppressWarnings("unchecked")
     public static Map<String, Object> decode(String jwt)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("decode {}", jwt);
-
         String[] sections = jwt.split("\\.");
         if (sections.length != 3)
             throw new IllegalArgumentException("JWT does not contain 3 sections");
@@ -55,9 +52,6 @@ public class JwtDecoder
         Object parsedJwtHeader = json.fromJSON(jwtHeaderString);
         if (!(parsedJwtHeader instanceof Map))
             throw new IllegalStateException("Invalid JWT header");
-        Map<String, Object> jwtHeader = (Map<String, Object>)parsedJwtHeader;
-        if (LOG.isDebugEnabled())
-            LOG.debug("JWT Header: {}", jwtHeader);
 
         /* If the ID Token is received via direct communication between the Client
          and the Token Endpoint (which it is in this flow), the TLS server validation
