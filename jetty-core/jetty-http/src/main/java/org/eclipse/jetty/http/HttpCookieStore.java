@@ -250,8 +250,8 @@ public interface HttpCookieStore
 
             boolean secure = HttpScheme.isSecure(uri.getScheme());
 
-            // __Host- prefix validation (case-insensitive).
-            if (name.regionMatches(true, 0, "__Host-", 0, 7))
+            // __Host- prefix validation (case-sensitive per RFC 6265bis).
+            if (name.startsWith("__Host-"))
             {
                 // Must be secure connection.
                 if (!secure)
@@ -266,8 +266,8 @@ public interface HttpCookieStore
                 if (!"/".equals(cookie.getPath()))
                     return false;
             }
-            // __Secure- prefix validation (case-insensitive).
-            else if (name.regionMatches(true, 0, "__Secure-", 0, 9))
+            // __Secure- prefix validation (case-sensitive per RFC 6265bis).
+            else if (name.startsWith("__Secure-"))
             {
                 // Must be secure connection.
                 if (!secure)

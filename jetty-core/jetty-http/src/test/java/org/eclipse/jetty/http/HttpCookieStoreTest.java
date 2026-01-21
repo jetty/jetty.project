@@ -543,30 +543,4 @@ public class HttpCookieStoreTest
         assertFalse(store.add(uri, HttpCookie.build("__Host-SID", "12345").path("/").build()));
         assertEquals(0, store.all().size());
     }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"__Secure-", "__SECURE-", "__secure-", "__SeCuRe-"})
-    public void testSecurePrefixCaseInsensitive(String prefix)
-    {
-        HttpCookieStore store = new HttpCookieStore.Default();
-        URI uri = URI.create("https://example.com");
-        // Valid __Secure- cookie should be accepted regardless of case.
-        assertTrue(store.add(uri, HttpCookie.build(prefix + "SID", "12345").secure(true).build()));
-        store.clear();
-        // Invalid __Secure- cookie (no Secure attribute) should be rejected regardless of case.
-        assertFalse(store.add(uri, HttpCookie.from(prefix + "SID", "12345")));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"__Host-", "__HOST-", "__host-", "__HoSt-"})
-    public void testHostPrefixCaseInsensitive(String prefix)
-    {
-        HttpCookieStore store = new HttpCookieStore.Default();
-        URI uri = URI.create("https://example.com");
-        // Valid __Host- cookie should be accepted regardless of case.
-        assertTrue(store.add(uri, HttpCookie.build(prefix + "SID", "12345").secure(true).path("/").build()));
-        store.clear();
-        // Invalid __Host- cookie (has Domain attribute) should be rejected regardless of case.
-        assertFalse(store.add(uri, HttpCookie.build(prefix + "SID", "12345").secure(true).path("/").domain("example.com").build()));
-    }
 }
