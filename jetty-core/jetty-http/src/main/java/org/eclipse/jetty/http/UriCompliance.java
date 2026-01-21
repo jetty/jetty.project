@@ -488,7 +488,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
      * @param listener listener to report violations to.
      * @return A string representing the violations that were not allowed by the configured {@link UriCompliance}, null if
      *         the provided HttpURI either has no violations, or only had violations that are allowed by the {@link UriCompliance}
-     * @deprecated replaced with {@link ComplianceUtils#notifyAndAssert(UriCompliance, HttpURI, ComplianceViolation.Listener, Function)}
+     * @deprecated replaced with {@link ComplianceUtils#verify(UriCompliance, HttpURI, ComplianceViolation.Listener, Function)}
      */
     @Deprecated(since = "12.1.6", forRemoval = true)
     public static String checkUriCompliance(UriCompliance compliance, HttpURI uri, ComplianceViolation.Listener listener)

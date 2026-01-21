@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.AsyncContext;
@@ -430,15 +431,32 @@ public class Request implements HttpServletRequest
                 if (StandardCharsets.UTF_8.equals(_queryEncoding) || _queryEncoding == null && UrlEncoded.ENCODING.equals(StandardCharsets.UTF_8))
                 {
                     HttpConfiguration httpConfiguration = getHttpChannel().getHttpConfiguration();
+                    ComplianceViolation.Listener complianceViolationListener = getHttpChannel().getRequest().getComplianceViolationListener();
                     UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
                     boolean allowBadPercent = uriCompliance.allows(UriCompliance.Violation.BAD_PERCENT_ENCODING);
                     boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
                     boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
-                    if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), _queryParameters::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8))
+                    BiConsumer<String, Boolean> onBadEncodingConsumer = (cause, allowed) ->
                     {
-                        ComplianceViolation.Listener listener = getHttpChannel().getRequest().getComplianceViolationListener();
-                        ComplianceUtils.notifyAndAssert(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, listener, "query=" + query, BadMessageException::new);
-                    }
+                        ComplianceUtils.notify(complianceViolationListener, new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, cause, allowed));
+                        if (!allowed)
+                            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
+                    };
+                    BiConsumer<String, Boolean> onBadPercentConsumer = (cause, allowed) ->
+                    {
+                        ComplianceUtils.notify(complianceViolationListener, new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_PERCENT_ENCODING, cause, allowed));
+                        if (!allowed)
+                            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
+                    };
+                    BiConsumer<String, Boolean> onTruncatedEncodingConsumer = (cause, allowed) ->
+                    {
+                        ComplianceUtils.notify(complianceViolationListener, new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.TRUNCATED_UTF8_ENCODING, cause, allowed));
+                        if (!allowed)
+                            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
+                    };
+                    UrlEncoded.decodeUtf8To(query, 0, query.length(), _queryParameters::add,
+                        allowBadPercent, allowBadUtf8, allowTruncatedUtf8,
+                        onBadEncodingConsumer, onBadPercentConsumer, onTruncatedEncodingConsumer);
                 }
                 else
                 {
@@ -2163,7 +2181,10 @@ public class Request implements HttpServletRequest
             if (nc.mode() instanceof MultiPartCompliance multiPartCompliance)
             {
                 MultiPartCompliance.Violation violation = (MultiPartCompliance.Violation)nc.violation();
-                ComplianceUtils.notifyAndAssert(multiPartCompliance, violation, complianceViolationListener, nc.details(), BadMessageException::new);
+                if (!ComplianceUtils.allows(multiPartCompliance, violation, complianceViolationListener))
+                {
+                    throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, nc.details());
+                }
             }
         }
     }

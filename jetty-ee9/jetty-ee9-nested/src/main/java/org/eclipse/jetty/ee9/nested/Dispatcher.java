@@ -266,7 +266,7 @@ public class Dispatcher implements RequestDispatcher
         HttpConfiguration httpConfiguration = channel.getConnectionMetaData().getHttpConfiguration();
         UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
         ComplianceViolation.Listener listener = channel.getComplianceViolationListener();
-        ComplianceUtils.notifyAndAssert(uriCompliance, uri, listener, IllegalStateException::new);
+        ComplianceUtils.verify(uriCompliance, uri, listener, IllegalStateException::new);
     }
 
     @Override

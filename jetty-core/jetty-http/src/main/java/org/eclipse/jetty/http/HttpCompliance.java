@@ -401,12 +401,12 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     }
 
     /**
-     * @deprecated use {@link ComplianceUtils#notifyAndAssert(HttpCompliance, MetaData.Request, ComplianceViolation.Listener)} instead.
+     * @deprecated use {@link ComplianceUtils#verify(HttpCompliance, MetaData.Request, ComplianceViolation.Listener)} instead.
      */
     @Deprecated(forRemoval = true, since = "12.1.6")
     public static void checkHttpCompliance(MetaData.Request request, HttpCompliance httpCompliance,
                                            ComplianceViolation.Listener listener)
     {
-        ComplianceUtils.notifyAndAssert(httpCompliance, request, listener);
+        ComplianceUtils.verify(httpCompliance, request, listener);
     }
 }

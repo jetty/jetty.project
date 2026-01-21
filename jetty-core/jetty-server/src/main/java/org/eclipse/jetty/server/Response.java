@@ -444,7 +444,7 @@ public interface Response extends Content.Sink
             HttpChannel httpChannel = HttpChannel.from(request);
             HttpURI uri = HttpURI.from(location);
             ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
-            ComplianceUtils.notifyAndAssert(redirectCompliance, uri, listener, IllegalArgumentException::new);
+            ComplianceUtils.verify(redirectCompliance, uri, listener, IllegalArgumentException::new);
         }
 
         return location;

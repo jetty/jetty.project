@@ -104,8 +104,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             ComplianceViolation.Listener listener = _httpChannel.getComplianceViolationListener();
             listener.onRequestBegin(request);
 
-            // Note UriCompliance is done by HandlerInvoker
-            ComplianceUtils.notifyAndAssert(httpConfiguration.getHttpCompliance(), _requestMetaData, listener);
+            // Note: UriCompliance is done by HandlerInvoker
+            // Perform HttpCompliance
+            ComplianceUtils.verify(httpConfiguration.getHttpCompliance(), _requestMetaData, listener);
 
             if (frame.isEndStream())
             {

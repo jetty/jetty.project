@@ -760,7 +760,7 @@ public class HttpChannelState implements HttpChannel, Components
                     HttpConfiguration httpConfiguration = getConnectionMetaData().getHttpConfiguration();
                     UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
                     ComplianceViolation.Listener listener = getComplianceViolationListener();
-                    ComplianceUtils.notifyAndAssert(uriCompliance, uri, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
+                    ComplianceUtils.verify(uriCompliance, uri, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
                 }
 
                 // Customize before processing.

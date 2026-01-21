@@ -38,14 +38,39 @@ public final class ComplianceUtils
      *
      * @param compliance the compliance mode
      * @param violation the violation
+     * @param complianceListener the listener to notify (can be null)
+     * @return true if violation is allowed per the configured compliance.
+     */
+    public static boolean allows(ComplianceViolation.Mode compliance,
+                                 ComplianceViolation violation,
+                                 ComplianceViolation.Listener complianceListener)
+    {
+        return allows(compliance, violation, violation.getDescription(), complianceListener);
+    }
+
+    /**
+     * Check that the {@link ComplianceViolation} is allowed per the provided {@link ComplianceViolation.Mode}.
+     *
+     * <p>
+     * If a {@link ComplianceViolation.Listener} is provided, notify it of the check.
+     * </p>
+     *
+     * <p>
+     * It is assumed that if you are calling this method, a violation has been detected.
+     * The purpose of this method is to check if it is allowed, and also notify that the
+     * violation was detected (along with the details and allowed state).
+     * </p>
+     *
+     * @param compliance the compliance mode
+     * @param violation the violation
      * @param detail the detail of the violation
      * @param complianceListener the listener to notify (can be null)
      * @return true if violation is allowed per the configured compliance.
      */
-    public static boolean allowed(ComplianceViolation.Mode compliance,
-                                  ComplianceViolation violation,
-                                  String detail,
-                                  ComplianceViolation.Listener complianceListener)
+    public static boolean allows(ComplianceViolation.Mode compliance,
+                                 ComplianceViolation violation,
+                                 String detail,
+                                 ComplianceViolation.Listener complianceListener)
     {
         boolean allowed = compliance.allows(violation);
         notify(complianceListener, new ComplianceViolation.Event(compliance, violation, detail, allowed));
@@ -72,28 +97,8 @@ public final class ComplianceUtils
         }
     }
 
-    public static <T extends Throwable> void notifyAndAssert(ComplianceViolation.Mode compliance,
-                                                             ComplianceViolation violation,
-                                                             ComplianceViolation.Listener complianceListener,
-                                                             Function<String, T> error) throws T
-    {
-        notifyAndAssert(compliance, violation, complianceListener, violation.getDescription(), error);
-    }
-
-    public static <T extends Throwable> void notifyAndAssert(ComplianceViolation.Mode compliance,
-                                                             ComplianceViolation violation,
-                                                             ComplianceViolation.Listener complianceListener,
-                                                             String detail,
-                                                             Function<String, T> error) throws T
-    {
-        if (!allowed(compliance, violation, detail, complianceListener))
-        {
-            throw error.apply(detail);
-        }
-    }
-
     /**
-     * Assert that the specified Violation is allowed.
+     * Verify that the {@link HttpURI} has no {@link UriCompliance} violations..
      *
      * @param uriCompliance the configured UriCompliance to apply
      * @param uri the HttpURI to check for violations
@@ -102,7 +107,7 @@ public final class ComplianceUtils
      * @param <T> the type of Throwable
      * @throws T Throwable if not allowed
      */
-    public static <T extends Throwable> void notifyAndAssert(UriCompliance uriCompliance, HttpURI uri, ComplianceViolation.Listener listener, Function<String, T> error) throws T
+    public static <T extends Throwable> void verify(UriCompliance uriCompliance, HttpURI uri, ComplianceViolation.Listener listener, Function<String, T> error) throws T
     {
         if (!uri.hasViolations())
             return;
@@ -110,7 +115,7 @@ public final class ComplianceUtils
         StringBuilder violations = null;
         for (UriCompliance.Violation violation : uri.getViolations())
         {
-            boolean allowed = allowed(uriCompliance, violation, violation.getDescription(), listener);
+            boolean allowed = allows(uriCompliance, violation, violation.getDescription(), listener);
 
             // Only trigger a failure of the HttpURI for compliance reasons if the compliance doesn't allow for violation detected
             if (!allowed)
@@ -136,7 +141,7 @@ public final class ComplianceUtils
      * @param listener the notification method for violations.  (Tip: use the Request specific Listener from the {@code HttpChannelState})
      * @throws HttpException.RuntimeException if there is a violation that wasn't allowed
      */
-    public static void notifyAndAssert(HttpCompliance httpCompliance, MetaData.Request request, ComplianceViolation.Listener listener)
+    public static void verify(HttpCompliance httpCompliance, MetaData.Request request, ComplianceViolation.Listener listener)
     {
         boolean seenContentLength = false;
         boolean seenTransferEncoding = false;
@@ -152,32 +157,46 @@ public final class ComplianceUtils
             {
                 case CONTENT_LENGTH ->
                 {
-                    if (seenContentLength)
-                        notifyAndAssert(httpCompliance, HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
+                    if (seenContentLength && !allows(httpCompliance, HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS, listener))
+                    {
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS.getDescription());
+                    }
                     String[] lengths = httpField.getValues();
-                    if (lengths.length > 1)
-                        notifyAndAssert(httpCompliance, HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
-                    if (seenTransferEncoding)
-                        notifyAndAssert(httpCompliance, HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
+                    if (lengths.length > 1 && !allows(httpCompliance, HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS, listener))
+                    {
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS.getDescription());
+                    }
+                    if (seenTransferEncoding && !allows(httpCompliance, HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, listener))
+                    {
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH.getDescription());
+                    }
                     seenContentLength = true;
                 }
                 case TRANSFER_ENCODING ->
                 {
-                    if (seenContentLength)
-                        notifyAndAssert(httpCompliance, HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
+                    if (seenContentLength && !allows(httpCompliance, HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, listener))
+                    {
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH.getDescription());
+                    }
                     seenTransferEncoding = true;
                 }
                 case HOST ->
                 {
-                    if (seenHostHeader)
-                        notifyAndAssert(httpCompliance, HttpCompliance.Violation.DUPLICATE_HOST_HEADERS, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
+                    if (seenHostHeader && !allows(httpCompliance, HttpCompliance.Violation.DUPLICATE_HOST_HEADERS, listener))
+                    {
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, HttpCompliance.Violation.DUPLICATE_HOST_HEADERS.getDescription());
+                    }
                     String[] hostValues = httpField.getValues();
-                    if (hostValues.length > 1)
-                        notifyAndAssert(httpCompliance, HttpCompliance.Violation.DUPLICATE_HOST_HEADERS, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
+                    if (hostValues.length > 1 && !allows(httpCompliance, HttpCompliance.Violation.DUPLICATE_HOST_HEADERS, listener))
+                    {
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, HttpCompliance.Violation.DUPLICATE_HOST_HEADERS.getDescription());
+                    }
                     for (String hostValue : hostValues)
                     {
-                        if (StringUtil.isBlank(hostValue))
-                            notifyAndAssert(httpCompliance, HttpCompliance.Violation.UNSAFE_HOST_HEADER, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
+                        if (StringUtil.isBlank(hostValue) && !allows(httpCompliance, HttpCompliance.Violation.UNSAFE_HOST_HEADER, listener))
+                        {
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, HttpCompliance.Violation.UNSAFE_HOST_HEADER.getDescription());
+                        }
                     }
                     seenHostHeader = true;
                 }

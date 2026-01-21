@@ -830,15 +830,15 @@ public class MultiPartFormData
                         switch (StringUtil.asciiToLowerCase(value))
                         {
                             case "base64" ->
-                                ComplianceUtils.allowed(compliance, MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING, value, complianceListener);
+                                onViolation(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING);
                             case "quoted-printable" ->
-                                ComplianceUtils.allowed(compliance, MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING, value, complianceListener);
+                                onViolation(MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING);
                             case "8bit", "binary" ->
                             {
                                 // ignore
                             }
                             default ->
-                                ComplianceUtils.allowed(compliance, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value, complianceListener);
+                                onViolation(MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING);
                         }
                     }
 

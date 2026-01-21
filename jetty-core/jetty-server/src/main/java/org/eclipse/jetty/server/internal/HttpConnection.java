@@ -1343,11 +1343,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     {
                         HttpCompliance httpCompliance = getHttpChannel().getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
                         ComplianceViolation.Listener complianceListener = getHttpChannel().getComplianceViolationListener();
-                        ComplianceUtils.notifyAndAssert(httpCompliance,
-                            MISMATCHED_AUTHORITY,
-                            complianceListener,
-                            "Authority!=Host",
-                            (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
+                        if (!ComplianceUtils.allows(httpCompliance, MISMATCHED_AUTHORITY, "Authority!=Host", complianceListener))
+                        {
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
+                        }
                     }
                 }
                 else

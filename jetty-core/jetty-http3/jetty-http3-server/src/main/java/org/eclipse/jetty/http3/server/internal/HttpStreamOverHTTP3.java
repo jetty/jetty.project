@@ -93,8 +93,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
             ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
             listener.onRequestBegin(request);
 
-            // Note UriCompliance is done by HandlerInvoker
-            ComplianceUtils.notifyAndAssert(httpConfiguration.getHttpCompliance(), requestMetaData, listener);
+            // Note: UriCompliance is done by HandlerInvoker
+            // Perform HttpCompliance
+            ComplianceUtils.verify(httpConfiguration.getHttpCompliance(), requestMetaData, listener);
 
             if (frame.isLast())
             {
