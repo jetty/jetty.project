@@ -321,7 +321,6 @@ public class MultiPartFormDataTest
             assertThat(Content.Source.asString(partContent), is("Hello World"));
 
             String[] expectedViolations = {
-                "LF_LINE_TERMINATION: multipart spec violation",
                 "LF_LINE_TERMINATION: multipart spec violation"
             };
             assertHasViolations(violations, expectedViolations);
@@ -360,7 +359,6 @@ public class MultiPartFormDataTest
             assertThat(Content.Source.asString(partContent), is("Hello World"));
 
             String[] expectedViolations = {
-                "LF_LINE_TERMINATION: multipart spec violation",
                 "LF_LINE_TERMINATION: multipart spec violation"
             };
             assertHasViolations(violations, expectedViolations);
@@ -399,7 +397,6 @@ public class MultiPartFormDataTest
             assertThat(Content.Source.asString(partContent), is("Hello World"));
 
             String[] expectedViolations = {
-                "LF_LINE_TERMINATION: multipart spec violation",
                 "LF_LINE_TERMINATION: multipart spec violation"
             };
             assertHasViolations(violations, expectedViolations);
