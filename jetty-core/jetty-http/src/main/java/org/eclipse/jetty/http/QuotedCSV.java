@@ -227,7 +227,7 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
                 boolean allowed = _complianceMode.allows(violation);
                 _listener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, value, allowed));
                 if (!allowed)
-                    throw new BadMessageException("Invalid quoted: " + value);
+                    throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid quoted: " + value);
             }
         }
     }
