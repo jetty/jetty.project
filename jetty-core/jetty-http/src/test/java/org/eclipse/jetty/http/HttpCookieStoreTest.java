@@ -453,4 +453,94 @@ public class HttpCookieStoreTest
         List<HttpCookie> matches = store.match(cookieURI);
         assertEquals(0, matches.size());
     }
+
+    @Test
+    public void testSecurePrefixAccepted()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        // __Secure- cookie with Secure attribute over HTTPS should be accepted.
+        URI uri = URI.create("https://example.com");
+        assertTrue(store.add(uri, HttpCookie.build("__Secure-SID", "12345").secure(true).build()));
+        assertEquals(1, store.all().size());
+    }
+
+    @Test
+    public void testSecurePrefixRejectedNoSecureAttribute()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        // __Secure- cookie without Secure attribute should be rejected.
+        URI uri = URI.create("https://example.com");
+        assertFalse(store.add(uri, HttpCookie.from("__Secure-SID", "12345")));
+        assertEquals(0, store.all().size());
+    }
+
+    @Test
+    public void testSecurePrefixRejectedNotSecureConnection()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        // __Secure- cookie over HTTP should be rejected.
+        URI uri = URI.create("http://example.com");
+        assertFalse(store.add(uri, HttpCookie.build("__Secure-SID", "12345").secure(true).build()));
+        assertEquals(0, store.all().size());
+    }
+
+    @Test
+    public void testHostPrefixAccepted()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        // __Host- cookie with Secure, no Domain, Path=/ over HTTPS should be accepted.
+        URI uri = URI.create("https://example.com");
+        assertTrue(store.add(uri, HttpCookie.build("__Host-SID", "12345").secure(true).path("/").build()));
+        assertEquals(1, store.all().size());
+    }
+
+    @Test
+    public void testHostPrefixRejectedWithDomain()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        // __Host- cookie with Domain attribute should be rejected.
+        URI uri = URI.create("https://example.com");
+        assertFalse(store.add(uri, HttpCookie.build("__Host-SID", "12345").secure(true).path("/").domain("example.com").build()));
+        assertEquals(0, store.all().size());
+    }
+
+    @Test
+    public void testHostPrefixRejectedWrongPath()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        // __Host- cookie with Path=/foo should be rejected.
+        URI uri = URI.create("https://example.com");
+        assertFalse(store.add(uri, HttpCookie.build("__Host-SID", "12345").secure(true).path("/foo").build()));
+        assertEquals(0, store.all().size());
+    }
+
+    @Test
+    public void testHostPrefixRejectedNoPath()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        // __Host- cookie without explicit Path=/ should be rejected.
+        URI uri = URI.create("https://example.com");
+        assertFalse(store.add(uri, HttpCookie.build("__Host-SID", "12345").secure(true).build()));
+        assertEquals(0, store.all().size());
+    }
+
+    @Test
+    public void testHostPrefixRejectedNotSecureConnection()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        // __Host- cookie over HTTP should be rejected.
+        URI uri = URI.create("http://example.com");
+        assertFalse(store.add(uri, HttpCookie.build("__Host-SID", "12345").secure(true).path("/").build()));
+        assertEquals(0, store.all().size());
+    }
+
+    @Test
+    public void testHostPrefixRejectedNoSecureAttribute()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        // __Host- cookie without Secure attribute should be rejected.
+        URI uri = URI.create("https://example.com");
+        assertFalse(store.add(uri, HttpCookie.build("__Host-SID", "12345").path("/").build()));
+        assertEquals(0, store.all().size());
+    }
 }
