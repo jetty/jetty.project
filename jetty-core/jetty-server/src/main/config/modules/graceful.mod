@@ -17,7 +17,8 @@ etc/jetty-graceful.xml
 ## The timeout, in milliseconds, to apply when stopping the server gracefully.
 # jetty.server.stopTimeout=5000
 
-## The idleTimeout, in milliseconds, to apply to active connections during a graceful shutdown, or to -1 to disable this mechanism.
+## The idleTimeout, in milliseconds, to apply to active connections during a graceful shutdown.
+## Don't specify this property for the default behavior; use -1 to disable this mechanism.
+## Any other value overrides the same configuration in the connectors.
 # jetty.graceful.shutdownIdleTimeout=1000
 # end::documentation[]
-
