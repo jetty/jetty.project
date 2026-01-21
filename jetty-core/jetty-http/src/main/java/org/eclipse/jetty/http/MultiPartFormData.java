@@ -899,18 +899,9 @@ public class MultiPartFormData
             @Override
             public void onViolation(MultiPartCompliance.Violation violation)
             {
-                ComplianceUtils.allowed(compliance, violation, "multipart spec violation", complianceListener);
-                try
-                {
-                    boolean allowed = compliance.allows(violation);
-                    ComplianceViolation.Event event = new ComplianceViolation.Event(compliance, violation, "multipart spec violation", allowed);
-                    complianceListener.onComplianceViolation(event);
-                }
-                catch (Throwable x)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("failure while notifying listener {}", complianceListener, x);
-                }
+                boolean allowed = compliance.allows(violation);
+                ComplianceViolation.Event event = new ComplianceViolation.Event(compliance, violation, "multipart spec violation", allowed);
+                ComplianceUtils.notify(complianceListener, event);
             }
 
             private void fail(Throwable cause)

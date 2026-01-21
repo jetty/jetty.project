@@ -37,7 +37,7 @@ class UrlParameterDecoder
     private final boolean allowTruncatedEncoding;
     private final CharsetStringBuilder builder;
     private final BiConsumer<String, Boolean> onBadEncoding;
-    private final BiConsumer<String, Boolean> onBadPercentage;
+    private final BiConsumer<String, Boolean> onBadPercent;
     private final BiConsumer<String, Boolean> onTruncatedEncoding;
     private String name;
     private int keyCount;
@@ -67,13 +67,13 @@ class UrlParameterDecoder
      * @param allowBadPercent allow use of bad pct-encoding with the {@link CharsetStringBuilder} (optional behavior)
      * @param allowTruncatedEncoding allow use of truncated pct-encoding with the {@link CharsetStringBuilder} (optional behavior)
      * @param onBadEncoding consumer for bad encoding events
-     * @param onBadPercentage consumer for bad percentage events
+     * @param onBadPercent consumer for bad pct-encoding events
      * @param onTruncatedEncoding consumer for truncated encoding events
      */
     public UrlParameterDecoder(CharsetStringBuilder charsetStringBuilder, BiConsumer<String, String> newFieldAdder, int maxLength, int maxKeys,
                                boolean allowBadEncoding, boolean allowBadPercent, boolean allowTruncatedEncoding,
                                BiConsumer<String, Boolean> onBadEncoding,
-                               BiConsumer<String, Boolean> onBadPercentage,
+                               BiConsumer<String, Boolean> onBadPercent,
                                BiConsumer<String, Boolean> onTruncatedEncoding)
     {
         this.builder = charsetStringBuilder;
@@ -84,7 +84,7 @@ class UrlParameterDecoder
         this.allowBadPercent = allowBadPercent;
         this.allowTruncatedEncoding = allowTruncatedEncoding;
         this.onBadEncoding = onBadEncoding != null ? onBadEncoding : (x, y) -> {};
-        this.onBadPercentage = onBadPercentage != null ? onBadPercentage : (x, y) -> {};
+        this.onBadPercent = onBadPercent != null ? onBadPercent : (x, y) -> {};
         this.onTruncatedEncoding = onTruncatedEncoding != null ? onTruncatedEncoding : (x, y) -> {};
     }
 
@@ -239,7 +239,7 @@ class UrlParameterDecoder
                 {
                     codingError = true;
                     String violation = notValidPctEncoding((char)hi, (char)lo);
-                    onBadPercentage.accept(violation, allowBadPercent);
+                    onBadPercent.accept(violation, allowBadPercent);
                     boolean replaced = builder.replaceIncomplete();
                     if (replaced && !allowBadEncoding || !allowBadPercent)
                         throw new IllegalArgumentException(notValidPctEncoding((char)hi, (char)lo));
@@ -300,7 +300,7 @@ class UrlParameterDecoder
         else if (allowBadPercent)
         {
             codingError = true;
-            onBadPercentage.accept(violation, allowBadPercent);
+            onBadPercent.accept(violation, allowBadPercent);
             builder.append('%');
             if (hi != -1)
                 builder.append((char)hi);
@@ -352,7 +352,7 @@ class UrlParameterDecoder
             if (codingErrorDetected)
             {
                 onBadEncoding.accept(result, allowBadEncoding);
-                onBadPercentage.accept(result, allowBadPercent);
+                onBadPercent.accept(result, allowBadPercent);
                 onTruncatedEncoding.accept(result, allowTruncatedEncoding);
             }
             return result;

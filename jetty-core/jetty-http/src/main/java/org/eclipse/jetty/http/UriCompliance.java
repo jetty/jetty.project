@@ -501,8 +501,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
                 boolean allowed = compliance.allows(violation);
 
                 // Always report violation to listeners
-                if (listener != null)
-                    listener.onComplianceViolation(new ComplianceViolation.Event(compliance, violation, uri.toString(), allowed));
+                ComplianceUtils.notify(listener, new ComplianceViolation.Event(compliance, violation, uri.toString(), allowed));
 
                 // Only trigger a failure of the HttpURI for compliance reasons if the compliance doesn't allow for violation detected
                 if (!allowed)

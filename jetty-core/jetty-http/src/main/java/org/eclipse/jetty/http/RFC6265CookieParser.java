@@ -299,21 +299,18 @@ public class RFC6265CookieParser implements CookieParser
                     {
                         string.append(c);
                     }
+                    else if (ComplianceUtils.allowed(_complianceMode, CookieCompliance.Violation.INVALID_COOKIES, "Illegal character '%s' in quoted section in %s".formatted(c, field), _complianceListener))
+                    {
+                        string.append(c);
+                        if (!cookieInvalid)
+                        {
+                            cookieInvalid = true;
+                        }
+                        // Try to find the closing double quote by staying in the current state.
+                    }
                     else
                     {
-                        if (ComplianceUtils.allowed(_complianceMode, CookieCompliance.Violation.INVALID_COOKIES, "Illegal character '%s' in quoted section in %s".formatted(c, field), _complianceListener))
-                        {
-                            string.append(c);
-                            if (!cookieInvalid)
-                            {
-                                cookieInvalid = true;
-                            }
-                            // Try to find the closing double quote by staying in the current state.
-                        }
-                        else
-                        {
-                            throw new InvalidCookieException("Bad Cookie quoted value");
-                        }
+                        throw new InvalidCookieException("Bad Cookie quoted value");
                     }
                     break;
 
@@ -359,13 +356,11 @@ public class RFC6265CookieParser implements CookieParser
                             throw new InvalidCookieException("Comma cookie separator");
                         }
                     }
-                    else
+                    else if ((c == ' ' || c == '\t') && ComplianceUtils.allowed(_complianceMode, CookieCompliance.Violation.OPTIONAL_WHITE_SPACE, field, _complianceListener))
                     {
-                        if ((c == ' ' || c == '\t') && ComplianceUtils.allowed(_complianceMode, CookieCompliance.Violation.OPTIONAL_WHITE_SPACE, field, _complianceListener))
-                        {
-                            continue;
-                        }
+                        continue;
                     }
+
 
                     if (StringUtil.isBlank(attributeName))
                     {

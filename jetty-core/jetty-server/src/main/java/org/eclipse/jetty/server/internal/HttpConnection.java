@@ -1147,7 +1147,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public void onViolation(ComplianceViolation.Event event)
         {
-            getComplianceViolationListener().onComplianceViolation(event);
+            ComplianceUtils.notify(getComplianceViolationListener(), event);
         }
 
         @Override

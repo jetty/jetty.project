@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -379,48 +378,6 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         Set<Violation> remainder = _violations.isEmpty() ? EnumSet.noneOf(Violation.class) : copyOf(_violations);
         remainder.removeAll(copyOf(violations));
         return new HttpCompliance(name, remainder);
-    }
-
-    /**
-     * Assert that the specified Violation is allowed.
-     *
-     * @param violation the violation to check if allowed
-     * @param listener the listener to report to
-     * @param error the function to produce a Throwable if not allowed
-     * @param <T> the type of Throwable
-     * @throws T Throwable if not allowed
-     */
-    public <T extends Throwable> void assertAllowed(HttpCompliance.Violation violation, ComplianceViolation.Listener listener, Function<String, T> error) throws T
-    {
-        assertAllowed(violation, listener, violation.getDescription(), error);
-    }
-
-    /**
-     * Assert that the specified Violation is allowed.
-     *
-     * @param violation the violation to check if allowed
-     * @param listener the listener to report to
-     * @param detail the detail of violation
-     * @param error the function to produce a Throwable if not allowed
-     * @param <T> the type of Throwable
-     * @throws T Throwable if not allowed
-     */
-    public <T extends Throwable> void assertAllowed(HttpCompliance.Violation violation, ComplianceViolation.Listener listener, String detail, Function<String, T> error) throws T
-    {
-        boolean allowed = this.allows(violation);
-
-        try
-        {
-            // Always report violation to listeners
-            listener.onComplianceViolation(new ComplianceViolation.Event(this, violation, detail, allowed));
-        }
-        catch (Throwable e)
-        {
-            LOG.atWarn().setCause(e).log("Unhandled exception during {}.onComplianceViolation() call", listener.getClass().getName());
-        }
-
-        if (!allowed)
-            throw error.apply(violation.getDescription());
     }
 
     @Override
