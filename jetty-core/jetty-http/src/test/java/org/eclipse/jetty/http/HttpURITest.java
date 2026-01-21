@@ -889,20 +889,48 @@ public class HttpURITest
             // Simple IPv4 host with port (default path)
             Arguments.of("http://192.0.0.1:8080/", "http", "192.0.0.1", "8080", "/", null, null, null),
 
+            // Simple IPv4 host with port (no path)
+            Arguments.of("http://192.0.0.1:8080", "http", "192.0.0.1", "8080", "", null, null, null),
+
+            // Simple IPv4 host (default path)
+            Arguments.of("http://192.0.0.1/", "http", "192.0.0.1", null, "/", null, null, null),
+
+            // Simple IPv4 host (no path)
+            Arguments.of("http://192.0.0.1", "http", "192.0.0.1", null, "", null, null, null),
+
             // Simple IPv6 host with port (default path)
-
             Arguments.of("http://[2001:db8::1]:8080/", "http", "[2001:db8::1]", "8080", "/", null, null, null),
-            // IPv6 authenticated host with port (default path)
 
+            // Simple IPv6 host with port (no path)
+            Arguments.of("http://[2001:db8::1]:8080", "http", "[2001:db8::1]", "8080", "", null, null, null),
+
+            // IPv6 authenticated host with port (default path)
             Arguments.of("http://user@[2001:db8::1]:8080/", "http", "[2001:db8::1]", "8080", "/", null, null, null),
+
+            // IPv6 authenticated host with port (no path)
+            Arguments.of("http://user@[2001:db8::1]:8080", "http", "[2001:db8::1]", "8080", "", null, null, null),
 
             // Simple IPv6 host no port (default path)
             Arguments.of("http://[2001:db8::1]/", "http", "[2001:db8::1]", null, "/", null, null, null),
             Arguments.of("http://[0:0:0:0:0:ffff:127.0.0.1]/", "http", "[0:0:0:0:0:ffff:127.0.0.1]", null, "/", null, null, null),
             Arguments.of("http://[::ffff:127.0.0.1]/", "http", "[::ffff:127.0.0.1]", null, "/", null, null, null),
 
-            // Scheme-less IPv6, host with port (default path)
+            // Simple IPv6 host no port (no path)
+            Arguments.of("http://[2001:db8::1]", "http", "[2001:db8::1]", null, "", null, null, null),
+            Arguments.of("http://[0:0:0:0:0:ffff:127.0.0.1]", "http", "[0:0:0:0:0:ffff:127.0.0.1]", null, "", null, null, null),
+            Arguments.of("http://[::ffff:127.0.0.1]", "http", "[::ffff:127.0.0.1]", null, "", null, null, null),
+
+            // Scheme-less IPv6 host with port (default path)
             Arguments.of("//[2001:db8::1]:8080/", null, "[2001:db8::1]", "8080", "/", null, null, null),
+
+            // Scheme-less IPv6 host with port (no path)
+            Arguments.of("//[2001:db8::1]:8080", null, "[2001:db8::1]", "8080", "", null, null, null),
+
+            // Scheme-less IPv6 host (default path)
+            Arguments.of("//[2001:db8::1]/", null, "[2001:db8::1]", null, "/", null, null, null),
+
+            // Scheme-less IPv6 host (no path)
+            Arguments.of("//[2001:db8::1]", null, "[2001:db8::1]", null, "", null, null, null),
 
             // Interpreted as relative path of "*" (no host/port/scheme/query/fragment)
             Arguments.of("*", null, null, null, "*", null, null, null),
@@ -1297,9 +1325,13 @@ public class HttpURITest
             "https://user:password@host:notport/path",
             "https://user @host.com/",
             // "https://user#@host.com/", TODO this might cause WhatWG compatibility issues
+            "https://[notIpv6]",
+            "https://bad[0::1::2::3::4]",
             "https://[notIpv6]/",
             "https://bad[0::1::2::3::4]/",
 
+            "http://[fe80::1%25eth0]",
+            "http://[fe80::1%251]",
             "http://[fe80::1%25eth0]/",
             "http://[fe80::1%251]/",
 
