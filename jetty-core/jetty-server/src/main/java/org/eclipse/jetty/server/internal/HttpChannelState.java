@@ -673,6 +673,19 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
+    /**
+     * <p>
+     * Only these two things control whether the stream should be succeeded or failed:
+     * the exception returned by {@link HttpStream#consumeAvailable()} and the completion
+     * result of the {@link LastWriteCallback}.
+     * </p>
+     * <p>
+     * If both succeeded without exception, {@code null} should be passed to this method,
+     * otherwise if any of the two resulted in an exception, an exception should be passed
+     * to this method.
+     * </p>
+     * Reminder: when a stream is failed, it aborts the connection.
+     */
     private void completeStream(HttpStream stream, Throwable failure)
     {
         try
@@ -775,6 +788,7 @@ public class HttpChannelState implements HttpChannel, Components
 
             HttpStream stream;
             Throwable failure;
+            Throwable completeStreamFailure;
             boolean completeStream;
             boolean callbackCompleted;
             boolean lastStreamSendComplete;
@@ -788,6 +802,7 @@ public class HttpChannelState implements HttpChannel, Components
                 callbackCompleted = _callbackCompleted;
                 lastStreamSendComplete = lockedIsLastStreamSendCompleted();
                 completeStream = callbackCompleted && lastStreamSendComplete;
+                completeStreamFailure = _lastWriteCallback._failure;
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("handler invoked: completeStream={} failure={} callbackCompleted={} {}", completeStream, failure, callbackCompleted, HttpChannelState.this);
@@ -798,9 +813,9 @@ public class HttpChannelState implements HttpChannel, Components
 
             if (completeStream)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("completeStream({}, {})", stream, Objects.toString(failure));
-                completeStream(stream, failure);
+                if (completeStreamFailure == null)
+                    completeStreamFailure = request._callback.unconsumed();
+                completeStream(stream, completeStreamFailure);
             }
         }
 
@@ -813,6 +828,16 @@ public class HttpChannelState implements HttpChannel, Components
 
     private class LastWriteCallback implements Callback
     {
+        private Throwable _failure;
+
+        private Throwable failure()
+        {
+            try (AutoLock ignored = _lock.lock())
+            {
+                return _failure;
+            }
+        }
+
         /**
          * Called only as {@link Callback} by last write from {@link ChannelCallback#succeeded}
          */
@@ -835,16 +860,26 @@ public class HttpChannelState implements HttpChannel, Components
         {
             HttpStream stream;
             boolean completeStream;
+            ChannelCallback channelCallback;
+            Throwable completeStreamFailure = null;
             try (AutoLock ignored = _lock.lock())
             {
                 assert _callbackCompleted;
                 _streamSendState = StreamSendState.LAST_COMPLETE;
                 completeStream = _handling == null; // if we have not handled yet or have completed handling
                 stream = _stream;
-                failure = _callbackFailure = ExceptionUtil.combine(_callbackFailure, failure);
+                _failure = failure;
+                channelCallback = _request._callback;
+                if (failure != null)
+                    completeStreamFailure = _callbackFailure = ExceptionUtil.combine(_callbackFailure, failure);
             }
+
             if (completeStream)
-                completeStream(stream, failure);
+            {
+                if (completeStreamFailure == null)
+                    completeStreamFailure = channelCallback.unconsumed();
+                completeStream(stream, completeStreamFailure);
+            }
         }
 
         @Override
@@ -1568,10 +1603,19 @@ public class HttpChannelState implements HttpChannel, Components
     {
         private final ChannelRequest _request;
         private Throwable _completedBy;
+        private Throwable _unconsumed;
 
         private ChannelCallback(ChannelRequest request)
         {
             _request = request;
+        }
+
+        private Throwable unconsumed()
+        {
+            try (AutoLock ignored = _request._lock.lock())
+            {
+                return _unconsumed;
+            }
         }
 
         /**
@@ -1606,6 +1650,7 @@ public class HttpChannelState implements HttpChannel, Components
             boolean completeStream = false;
             ErrorResponse errorResponse = null;
             Callback failedCallback = null;
+            Throwable completeStreamFailure = null;
 
             try (AutoLock ignored = _request._lock.lock())
             {
@@ -1631,13 +1676,13 @@ public class HttpChannelState implements HttpChannel, Components
                     // Also, consumeAvailable must be called even when the connection is not
                     // persistent otherwise RequestLog.log() would be able to read
                     // x-www-form-urlencoded parameters in one case and not the other.
-                    Throwable unconsumed = stream.consumeAvailable();
+                    completeStreamFailure = _unconsumed = stream.consumeAvailable();
                     if (httpChannelState.getConnectionMetaData().isPersistent() && !httpChannelState._expects100Continue)
-                        failure = ExceptionUtil.combine(failure, unconsumed);
-                    else if (failure != null && unconsumed != null)
-                        ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
+                        failure = ExceptionUtil.combine(failure, _unconsumed);
+                    else if (failure != null && _unconsumed != null)
+                        ExceptionUtil.addSuppressedIfNotAssociated(failure, _unconsumed);
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(failure).log("consumeAvailable: {} {}", unconsumed == null, httpChannelState);
+                        LOG.atDebug().setCause(failure).log("consumeAvailable: {} {}", _unconsumed == null, httpChannelState);
                 }
 
                 // Pending writes are also failures
@@ -1723,15 +1768,28 @@ public class HttpChannelState implements HttpChannel, Components
                 LOG.debug("succeeded: failure={} doLastStreamSend={} {}", failure, doLastStreamSend, this);
 
             if (failedCallback != null)
+            {
                 failedCallback.failed(Objects.requireNonNullElseGet(failure, IOException::new));
+            }
             else if (errorResponse != null)
+            {
                 Response.writeError(request, errorResponse, new ErrorCallback(request, errorResponse, stream, failure), failure);
+            }
             else if (doLastStreamSend)
+            {
                 stream.send(_request._metaData, responseMetaData, true, null, response);
+            }
             else if (completeStream)
-                httpChannelState.completeStream(stream, failure);
+            {
+                Throwable x = httpChannelState._lastWriteCallback.failure();
+                if (completeStreamFailure == null || x != null)
+                    completeStreamFailure = x;
+                httpChannelState.completeStream(stream, completeStreamFailure);
+            }
             else if (LOG.isDebugEnabled())
+            {
                 LOG.debug("No action on succeeded {}", this);
+            }
         }
 
         private boolean lockedCompleteCallback()
@@ -1855,19 +1913,9 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (needLastWrite)
-            {
-                _stream.send(_request._metaData, responseMetaData, true, null,
-                    Callback.from(() -> httpChannelState._lastWriteCallback.failed(failure),
-                        x ->
-                        {
-                            ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
-                            httpChannelState._lastWriteCallback.failed(failure);
-                        }));
-            }
+                _stream.send(_request._metaData, responseMetaData, true, null, httpChannelState._lastWriteCallback);
             else
-            {
-                HttpChannelState.failed(httpChannelState._lastWriteCallback, failure);
-            }
+                httpChannelState._lastWriteCallback.succeeded();
         }
 
         /**
