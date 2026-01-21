@@ -78,6 +78,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.xml.XmlParser;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -110,6 +111,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Isolated()
@@ -1287,6 +1289,29 @@ public class WebAppContextTest
             assertThat("Should have default patterns", protectedClasses, hasItem(defaultSystemClass));
 
         assertThat("context API", protectedClasses, hasItem("org.context.specific."));
+    }
+
+    @Test
+    public void testCustomXmlParser(WorkDir workDir) throws Exception
+    {
+        Server server = newServer();
+
+        MyXmlParser xmlParser = new MyXmlParser();
+        WebAppContext context = new WebAppContext();
+        context.getMetaData().setXmlParser(xmlParser);
+        context.setBaseResourceAsPath(workDir.getEmptyPathDir());
+
+        server.setHandler(context);
+        server.start();
+
+        assertTrue(context.isStarted());
+        assertTrue(context.isAvailable());
+        XmlParser startedXmlParser = context.getMetaData().getXmlParser();
+        assertSame(startedXmlParser, xmlParser);
+    }
+
+    public static class MyXmlParser extends XmlParser
+    {
     }
 
     public static class OkServlet extends HttpServlet
