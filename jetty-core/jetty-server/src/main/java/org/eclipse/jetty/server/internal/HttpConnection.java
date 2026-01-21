@@ -1341,7 +1341,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 {
                     if (!_hostField.getValue().equals(_uri.getAuthority()))
                     {
-                        HttpCompliance httpCompliance = getHttpChannel().getHttpConfiguration().getHttpCompliance();
+                        HttpCompliance httpCompliance = getHttpChannel().getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
                         ComplianceViolation.Listener complianceListener = getHttpChannel().getComplianceViolationListener();
                         ComplianceUtils.notifyAndAssert(httpCompliance,
                             MISMATCHED_AUTHORITY,

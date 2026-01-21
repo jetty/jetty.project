@@ -232,7 +232,6 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
-    @Override
     public HttpConfiguration getHttpConfiguration()
     {
         return _connectionMetaData.getHttpConfiguration();

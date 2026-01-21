@@ -130,8 +130,6 @@ public interface HttpChannel extends Invocable
      */
     void initialize();
 
-    HttpConfiguration getHttpConfiguration();
-
     /**
      * Get the request specific {@link ComplianceViolation.Listener}.
      *
