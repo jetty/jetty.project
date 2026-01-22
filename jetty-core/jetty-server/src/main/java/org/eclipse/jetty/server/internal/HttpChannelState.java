@@ -124,8 +124,9 @@ public class HttpChannelState implements HttpChannel, Components
     private Runnable _onContentAvailable;
     private Predicate<TimeoutException> _onIdleTimeout;
     private Content.Chunk _readFailure;
-    private Throwable _consumeAvailableFailure;
     private Consumer<Throwable> _onFailure;
+    private Throwable _consumeAvailableFailure;
+    private Throwable _writeFailure;
     private Throwable _callbackFailure;
     private Attributes _cache;
     private boolean _expects100Continue;
@@ -615,7 +616,7 @@ public class HttpChannelState implements HttpChannel, Components
     private Throwable lockedCompleteStreamFailure()
     {
         assert _lock.isHeldByCurrentThread();
-        Throwable completeStreamFailure = _lastWriteCallback._failure; // TODO move as HttpChannelState._writeFailure
+        Throwable completeStreamFailure = _writeFailure;
         if (completeStreamFailure == null)
             completeStreamFailure = _response._writeFailure;  // TODO move as HttpChannelState._writeFailure
         if (completeStreamFailure == null)
@@ -783,8 +784,6 @@ public class HttpChannelState implements HttpChannel, Components
 
     private class LastWriteCallback implements Callback
     {
-        private Throwable _failure; // TODO move as HttpChannelState._writeFailure
-
         /**
          * Called only as {@link Callback} by last write from {@link ChannelCallback#succeeded}
          */
@@ -814,7 +813,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _streamSendState = StreamSendState.LAST_COMPLETE;
                 completeStream = _handling == null; // if we have not handled yet or have completed handling
                 stream = _stream;
-                _failure = failure;
+                _writeFailure = failure;
                 _callbackFailure = ExceptionUtil.combine(failure, _callbackFailure);
                 completeStreamFailure = lockedCompleteStreamFailure();
             }
@@ -1359,7 +1358,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // Have we failed in some way?
                 if (writeFailure != null)
                 {
-                    httpChannelState._lastWriteCallback._failure = writeFailure;
+                    httpChannelState._writeFailure = writeFailure;
                     Throwable failure = writeFailure;
                     httpChannelState._writeInvoker.run(() -> HttpChannelState.failed(callback, failure));
                     return;
