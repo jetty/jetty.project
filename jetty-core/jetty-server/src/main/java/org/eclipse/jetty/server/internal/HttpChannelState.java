@@ -124,6 +124,7 @@ public class HttpChannelState implements HttpChannel, Components
     private Runnable _onContentAvailable;
     private Predicate<TimeoutException> _onIdleTimeout;
     private Content.Chunk _readFailure;
+    private Throwable _consumeAvailableFailure;
     private Consumer<Throwable> _onFailure;
     private Throwable _callbackFailure;
     private Attributes _cache;
@@ -618,7 +619,7 @@ public class HttpChannelState implements HttpChannel, Components
         if (completeStreamFailure == null)
             completeStreamFailure = _response._writeFailure;  // TODO move as HttpChannelState._writeFailure
         if (completeStreamFailure == null)
-            completeStreamFailure = _request._consumeAvailableFailure;  // TODO move as HttpChannelState._consumeAvailableFailure
+            completeStreamFailure = _consumeAvailableFailure;
         return completeStreamFailure;
     }
 
@@ -841,7 +842,6 @@ public class HttpChannelState implements HttpChannel, Components
         private HttpChannelState _httpChannelState;
         private Request _loggedRequest;
         private HttpFields _trailers;
-        private Throwable _consumeAvailableFailure;
 
         ChannelRequest(HttpChannelState httpChannelState, MetaData.Request metaData)
         {
@@ -1013,10 +1013,11 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public boolean consumeAvailable()
         {
+            HttpChannelState httpChannel;
             HttpStream stream;
             try (AutoLock ignored = _lock.lock())
             {
-                HttpChannelState httpChannel = lockedGetHttpChannelState();
+                httpChannel = lockedGetHttpChannelState();
                 stream = httpChannel._stream;
             }
 
@@ -1025,7 +1026,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 try (AutoLock ignored = _lock.lock())
                 {
-                    _consumeAvailableFailure = failure;
+                    httpChannel._consumeAvailableFailure = failure;
                 }
             }
             return failure == null;
