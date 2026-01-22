@@ -619,7 +619,7 @@ public class HttpChannelState implements HttpChannel, Components
         assert _lock.isHeldByCurrentThread();
         if (_streamSendState != StreamSendState.FAILED)
             return null;
-        Throwable completeStreamFailure = _lastWriteFailure; // TODO move as HttpChannelState._writeFailure
+        Throwable completeStreamFailure = _lastWriteFailure;
         if (completeStreamFailure == null)
             completeStreamFailure = _writeFailure;
         if (completeStreamFailure == null)
