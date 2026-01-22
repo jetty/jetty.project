@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.transport.HttpReceiver;
 import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
@@ -545,9 +546,38 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         HttpExchange exchange = getHttpExchange();
         HttpConnectionOverHTTP connection = getHttpConnection();
         if (exchange == null || unsolicited)
+        {
             connection.close();
-        else
-            failAndClose(new EOFException(String.valueOf(connection)));
+            return;
+        }
+
+        // If headers were received and no body is expected, treat EOF as success.
+        if (state.ordinal() >= State.HEADERS.ordinal() && status > 0)
+        {
+            boolean noBody = HttpStatus.hasNoBody(status);
+            if (!noBody)
+            {
+                long contentLength = exchange.getResponse().getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
+                noBody = contentLength == 0;
+            }
+            if (noBody)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Early EOF with complete response (status={}) in {}", status, this);
+                if (chunk == null)
+                    chunk = Content.Chunk.EOF;
+                state = State.COMPLETE;
+                responseSuccess(this::closeConnection);
+                return;
+            }
+        }
+
+        failAndClose(new EOFException(String.valueOf(connection)));
+    }
+
+    private void closeConnection()
+    {
+        getHttpConnection().close();
     }
 
     @Override
