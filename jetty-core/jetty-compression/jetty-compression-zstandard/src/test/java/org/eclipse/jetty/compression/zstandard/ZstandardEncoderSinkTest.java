@@ -33,6 +33,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -191,10 +192,6 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
         assertThat(directBuffer.remaining(), is(0));
 
         byte[] decompressed = decompress(compressed);
-        assertThat(decompressed.length, is(originalData.length));
-        for (int i = 0; i < originalData.length; i++)
-        {
-            assertThat("Mismatch at byte " + i, decompressed[i], is(originalData[i]));
-        }
+        assertArrayEquals(originalData, decompressed);
     }
 }
