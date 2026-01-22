@@ -1597,10 +1597,7 @@ public class HttpChannelTest
         boolean failed = events.contains(CompletionTestEvent.FAIL);
 
         assertThat(stream.isComplete(), is(true));
-        if (errorHandler != null && !expectErrorResponse && failed)
-            assertThat(stream.getFailure(), notNullValue());
-        else
-            assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getFailure(), nullValue());
         if (!failed || expectErrorResponse)
         {
             assertThat(stream.getResponse(), notNullValue());
