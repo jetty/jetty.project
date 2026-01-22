@@ -1427,12 +1427,20 @@ public class HttpChannelState implements HttpChannel, Components
                 callback = _writeCallback;
                 _writeCallback = null;
                 httpChannel = _request.lockedGetHttpChannelState();
-                httpChannel._writeFailure = x; // TODO
                 httpChannel.lockedStreamSendCompleted(false);
             }
 
             if (callback != null)
-                httpChannel._writeInvoker.run(() -> HttpChannelState.failed(callback, x));
+                httpChannel._writeInvoker.run(() ->
+                {
+                    HttpChannelState.failed(callback, x);
+                    // The above failure invokes the error handler, so the failure must not be stored beforehand
+                    // otherwise the error handler's Response.write() call would see it and fail.
+                    try (AutoLock ignored = _request._lock.lock())
+                    {
+                        httpChannel._writeFailure = x;
+                    }
+                });
         }
 
         @Override
