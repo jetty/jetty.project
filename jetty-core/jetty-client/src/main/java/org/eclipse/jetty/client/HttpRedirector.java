@@ -270,6 +270,46 @@ public class HttpRedirector
     }
 
     /**
+     * Computes the HTTP method to use for a redirect request.
+     *
+     * @param request the original request
+     * @param response the redirect response
+     * @return the HTTP method to use for the redirect, or null if the redirect is not valid
+     */
+    public String computeRedirectMethod(Request request, Response response)
+    {
+        int status = response.getStatus();
+        String method = request.getMethod();
+        return switch (status)
+        {
+            case HttpStatus.MOVED_PERMANENTLY_301 ->
+            {
+                if (HttpMethod.GET.is(method) || HttpMethod.HEAD.is(method) || HttpMethod.PUT.is(method))
+                    yield method;
+                else if (HttpMethod.POST.is(method))
+                    yield HttpMethod.GET.asString();
+                yield null;
+            }
+            case HttpStatus.MOVED_TEMPORARILY_302 ->
+            {
+                if (HttpMethod.HEAD.is(method) || HttpMethod.PUT.is(method))
+                    yield method;
+                else
+                    yield HttpMethod.GET.asString();
+            }
+            case HttpStatus.SEE_OTHER_303 ->
+            {
+                if (HttpMethod.HEAD.is(method))
+                    yield method;
+                else
+                    yield HttpMethod.GET.asString();
+            }
+            case HttpStatus.TEMPORARY_REDIRECT_307, HttpStatus.PERMANENT_REDIRECT_308 -> method;
+            default -> null;
+        };
+    }
+
+    /**
      * Extracts and sanitizes (by making it absolute and escaping paths and query parameters)
      * the redirect URI of the given {@code response}.
      *
