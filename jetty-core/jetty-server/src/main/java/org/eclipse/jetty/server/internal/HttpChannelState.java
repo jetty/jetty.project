@@ -1427,7 +1427,7 @@ public class HttpChannelState implements HttpChannel, Components
                 callback = _writeCallback;
                 _writeCallback = null;
                 httpChannel = _request.lockedGetHttpChannelState();
-                httpChannel._writeFailure = x;
+                httpChannel._writeFailure = x; // TODO
                 httpChannel.lockedStreamSendCompleted(false);
             }
 
