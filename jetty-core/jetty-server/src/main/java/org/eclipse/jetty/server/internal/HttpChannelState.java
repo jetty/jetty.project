@@ -127,6 +127,7 @@ public class HttpChannelState implements HttpChannel, Components
     private Consumer<Throwable> _onFailure;
     private Throwable _consumeAvailableFailure;
     private Throwable _writeFailure;
+    private Throwable _lastWriteFailure;
     private Throwable _callbackFailure;
     private Attributes _cache;
     private boolean _expects100Continue;
@@ -616,9 +617,9 @@ public class HttpChannelState implements HttpChannel, Components
     private Throwable lockedCompleteStreamFailure()
     {
         assert _lock.isHeldByCurrentThread();
-        Throwable completeStreamFailure = _writeFailure;
+        Throwable completeStreamFailure = _lastWriteFailure;
         if (completeStreamFailure == null)
-            completeStreamFailure = _response._writeFailure;  // TODO move as HttpChannelState._writeFailure
+            completeStreamFailure = _writeFailure;  // TODO move as HttpChannelState._writeFailure
         if (completeStreamFailure == null)
             completeStreamFailure = _consumeAvailableFailure;
         return completeStreamFailure;
@@ -813,7 +814,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _streamSendState = StreamSendState.LAST_COMPLETE;
                 completeStream = _handling == null; // if we have not handled yet or have completed handling
                 stream = _stream;
-                _writeFailure = failure;
+                _lastWriteFailure = failure;
                 _callbackFailure = ExceptionUtil.combine(failure, _callbackFailure);
                 completeStreamFailure = lockedCompleteStreamFailure();
             }
@@ -1206,7 +1207,6 @@ public class HttpChannelState implements HttpChannel, Components
         private long _contentBytesWritten;
         private Supplier<HttpFields> _trailers;
         private Callback _writeCallback;
-        private Throwable _writeFailure;
 
         private ChannelResponse(ChannelRequest request)
         {
@@ -1239,8 +1239,8 @@ public class HttpChannelState implements HttpChannel, Components
             _writeCallback = null;
 
             Runnable cancellation = _request.getHttpStream().cancelSend(x, writeCallback);
-
-            _writeFailure = ExceptionUtil.combine(_writeFailure, x);
+            HttpChannelState httpChannelState = _request._httpChannelState;
+            httpChannelState._writeFailure = ExceptionUtil.combine(httpChannelState._writeFailure, x);
             return cancellation;
         }
 
@@ -1307,7 +1307,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 httpChannelState = _request.lockedGetHttpChannelState();
                 long totalWritten = _contentBytesWritten + length;
-                writeFailure = _writeFailure;
+                writeFailure = httpChannelState._writeFailure;
 
                 if (writeFailure == null)
                 {
@@ -1358,7 +1358,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // Have we failed in some way?
                 if (writeFailure != null)
                 {
-                    httpChannelState._writeFailure = writeFailure;
+                    httpChannelState._lastWriteFailure = writeFailure;
                     Throwable failure = writeFailure;
                     httpChannelState._writeInvoker.run(() -> HttpChannelState.failed(callback, failure));
                     return;
@@ -1422,10 +1422,10 @@ public class HttpChannelState implements HttpChannel, Components
             HttpChannelState httpChannel;
             try (AutoLock ignored = _request._lock.lock())
             {
-                _writeFailure = x;
                 callback = _writeCallback;
                 _writeCallback = null;
                 httpChannel = _request.lockedGetHttpChannelState();
+                httpChannel._writeFailure = x;
                 httpChannel.lockedStreamSendCompleted(false);
             }
 
