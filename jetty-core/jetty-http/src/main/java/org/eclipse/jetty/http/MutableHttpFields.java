@@ -27,6 +27,8 @@ import java.util.function.BiPredicate;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.ArrayUtil;
+
 /**
  * HTTP Fields. A collection of HTTP header and or Trailer fields.
  *
@@ -139,7 +141,7 @@ class MutableHttpFields implements HttpFields.Mutable
             if (_immutable || _size == _fields.length)
             {
                 _immutable = false;
-                _fields = Arrays.copyOf(_fields, _size + SIZE_INCREMENT);
+                _fields = ArrayUtil.grow(_fields, 1, Integer.MAX_VALUE);
             }
             _fields[_size++] = field;
         }
@@ -154,8 +156,9 @@ class MutableHttpFields implements HttpFields.Mutable
 
         if (_immutable || _size + fields.size() >= _fields.length)
         {
+            // First try to grow so that an exception is thrown before modifying _immutable if that cannot happen.
+            _fields = ArrayUtil.grow(_fields, fields.size(), Integer.MAX_VALUE);
             _immutable = false;
-            _fields = Arrays.copyOf(_fields, _size + fields.size() + SIZE_INCREMENT);
         }
 
         if (fields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
@@ -523,7 +526,7 @@ class MutableHttpFields implements HttpFields.Mutable
 
             int last = _size++;
             if (_fields.length < _size)
-                _fields = Arrays.copyOf(_fields, _fields.length + SIZE_INCREMENT);
+                _fields = ArrayUtil.grow(_fields, 1, Integer.MAX_VALUE);
             System.arraycopy(_fields, _index, _fields, _index + 1, last - _index);
             _fields[_index++] = field;
             _last = -1;
