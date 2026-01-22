@@ -686,16 +686,6 @@ public class HttpChannelState implements HttpChannel, Components
     }
 
     /**
-     * <p>
-     * Only these two things control whether the stream should be succeeded or failed:
-     * the exception returned by {@link HttpStream#consumeAvailable()} and the completion
-     * result of the {@link LastWriteCallback}.
-     * </p>
-     * <p>
-     * If both succeeded without exception, {@code null} should be passed to this method,
-     * otherwise if any of the two resulted in an exception, an exception should be passed
-     * to this method.
-     * </p>
      * Reminder: when a stream is failed, it aborts the connection.
      */
     private void completeStream(HttpStream stream, Throwable failure)
