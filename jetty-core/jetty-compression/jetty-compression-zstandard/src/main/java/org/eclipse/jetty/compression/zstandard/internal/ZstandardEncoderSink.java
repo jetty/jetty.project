@@ -129,7 +129,6 @@ public class ZstandardEncoderSink extends EncoderSink
         while (BufferUtil.hasContent(content))
         {
             int originalPosition = content.position();
-            boolean isDirect = content.isDirect();
             // content must be a direct bytebuffer, and we have to assume that the size
             // of the content buffer can be huge (multi megabyte or bigger), so lets
             // process the content one limited direct buffer at a time.
@@ -144,14 +143,14 @@ public class ZstandardEncoderSink extends EncoderSink
                     Callback writeCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, outputBuf::release);
                     // For heap buffers, manually track position (ZSTD operated on a copy).
                     // For direct buffers, ZSTD already advanced content.position().
-                    if (!isDirect)
+                    if (!content.isDirect())
                         content.position(originalPosition + inputBuf.getByteBuffer().position());
                     inputBuf.release();
                     return new WriteRecord(false, outputBuf.getByteBuffer(), writeCallback);
                 }
             }
             // Chunk fully consumed - update position for heap buffers.
-            if (!isDirect)
+            if (!content.isDirect())
                 content.position(originalPosition + inputBuf.getByteBuffer().position());
             inputBuf.release();
         }
