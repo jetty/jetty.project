@@ -18,7 +18,7 @@ import java.util.List;
 
 import org.eclipse.jetty.tls.ext.Extension;
 
-public record CertificateMessage(byte[] context, List<Entry> entries) implements Message
+public record CertificateMessage(byte[] requestContext, List<Entry> entries) implements Message
 {
     @Override
     public Type type()

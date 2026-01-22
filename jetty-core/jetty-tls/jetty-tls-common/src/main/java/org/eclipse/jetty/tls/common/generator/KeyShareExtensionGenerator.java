@@ -55,7 +55,7 @@ public class KeyShareExtensionGenerator implements ExtensionGenerator
             accumulator.putShort((short)listLength);
             for (KeyShare keyShare : keyShares)
             {
-                accumulator.putShort((short)keyShare.group().code());
+                accumulator.putShort((short)keyShare.namedGroup().code());
                 byte[] keyExchange = keyShare.keyExchange();
                 accumulator.putShort((short)keyExchange.length);
                 accumulator.put(keyExchange);
@@ -75,7 +75,7 @@ public class KeyShareExtensionGenerator implements ExtensionGenerator
                 // ServerHello.
                 int totalLength = 2 + 2 + length;
                 accumulator.putShort((short)totalLength);
-                accumulator.putShort((short)keyShare.group().code());
+                accumulator.putShort((short)keyShare.namedGroup().code());
                 accumulator.putShort((short)length);
                 accumulator.put(keyShare.keyExchange());
                 return 2 + 2 + totalLength;
@@ -85,7 +85,7 @@ public class KeyShareExtensionGenerator implements ExtensionGenerator
                 // RetryHelloRequest.
                 int totalLength = 2;
                 accumulator.putShort((short)totalLength);
-                accumulator.putShort((short)keyShare.group().code());
+                accumulator.putShort((short)keyShare.namedGroup().code());
                 return 2 + 2 + totalLength;
             }
         }

@@ -40,6 +40,11 @@ public class TLSException extends RuntimeException
         this.alert = alert;
     }
 
+    public Alert getAlert()
+    {
+        return alert;
+    }
+
     public enum Alert
     {
         CLOSE_NOTIFY(0),
@@ -81,5 +86,12 @@ public class TLSException extends RuntimeException
         {
             return code;
         }
+    }
+
+    public static Throwable wrap(Throwable failure)
+    {
+        if (failure instanceof TLSException)
+            return failure;
+        return new TLSException(Alert.INTERNAL_ERROR, failure);
     }
 }

@@ -55,6 +55,26 @@ public enum CipherSuite
         };
     }
 
+    public String algorithm()
+    {
+        return switch (this)
+        {
+            case TLS_AES_128_GCM_SHA256 -> "AES";
+            case TLS_AES_256_GCM_SHA384 -> "AES";
+            case TLS_CHACHA20_POLY1305_SHA256 -> "ChaCha20";
+        };
+    }
+
+    public String cipherName()
+    {
+        return switch (this)
+        {
+            case TLS_AES_128_GCM_SHA256 -> "AES/GCM/NoPadding";
+            case TLS_AES_256_GCM_SHA384 -> "AES_256_GCM";
+            case TLS_CHACHA20_POLY1305_SHA256 -> "CHACHA20_POLY1305";
+        };
+    }
+
     public static CipherSuite from(int code)
     {
         return Codes.CODES.get(code);

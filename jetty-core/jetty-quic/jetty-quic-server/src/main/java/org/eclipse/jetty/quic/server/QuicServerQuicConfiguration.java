@@ -13,20 +13,48 @@
 
 package org.eclipse.jetty.quic.server;
 
+import java.util.List;
+
+import org.eclipse.jetty.tls.CipherSuite;
+import org.eclipse.jetty.tls.NamedGroup;
+import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class QuicServerQuicConfiguration extends ServerQuicConfiguration
 {
+    private List<SignatureAlgorithm> signatureAlgorithms = List.of(SignatureAlgorithm.ECDSA_SECP256R1_SHA256, SignatureAlgorithm.RSA_PSS_RSAE_SHA256);
+    private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519/*, NamedGroup.secp256r1, NamedGroup.ffdhe2048*/);
+    private List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256);
     private int destinationConnectionIdLength = 8;
 
-    public void configure(SslContextFactory.Server sslContextFactory) throws Exception
+    public List<SignatureAlgorithm> getSignatureAlgorithms()
     {
-        getImplementationConfiguration().put(SslContextFactory.Server.class.getName(), sslContextFactory);
+        return signatureAlgorithms;
     }
 
-    public void deconfigure(SslContextFactory.Server sslContextFactory)
+    public void setSignatureAlgorithms(List<SignatureAlgorithm> signatureAlgorithms)
     {
-        getImplementationConfiguration().remove(SslContextFactory.Server.class.getName());
+        this.signatureAlgorithms = signatureAlgorithms;
+    }
+
+    public List<NamedGroup> getNamedGroups()
+    {
+        return namedGroups;
+    }
+
+    public void setNamedGroups(List<NamedGroup> namedGroups)
+    {
+        this.namedGroups = namedGroups;
+    }
+
+    public List<CipherSuite> getCipherSuites()
+    {
+        return cipherSuites;
+    }
+
+    public void setCipherSuites(List<CipherSuite> cipherSuites)
+    {
+        this.cipherSuites = cipherSuites;
     }
 
     public int getDestinationConnectionIdLength()
@@ -39,5 +67,16 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
         if (destinationConnectionIdLength < 0 || destinationConnectionIdLength > 20)
             throw new IllegalArgumentException("invalid destinationConnectionId length: " + destinationConnectionIdLength);
         this.destinationConnectionIdLength = destinationConnectionIdLength;
+    }
+
+    // TODO: remove, as this may be per-connection.
+    public void configure(SslContextFactory.Server sslContextFactory) throws Exception
+    {
+        getImplementationConfiguration().put(SslContextFactory.Server.class.getName(), sslContextFactory);
+    }
+
+    public void deconfigure(SslContextFactory.Server sslContextFactory)
+    {
+        getImplementationConfiguration().remove(SslContextFactory.Server.class.getName());
     }
 }

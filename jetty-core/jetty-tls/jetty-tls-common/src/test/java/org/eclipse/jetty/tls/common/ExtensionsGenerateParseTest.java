@@ -173,7 +173,7 @@ public class ExtensionsGenerateParseTest
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
 
-        SignatureAlgorithmsExtension expected = new SignatureAlgorithmsExtension(List.of(SignatureAlgorithm.ECDSA_SECP256R1_SHA256, SignatureAlgorithm.RSA_PKCS1_SHA256));
+        SignatureAlgorithmsExtension expected = new SignatureAlgorithmsExtension(List.of(SignatureAlgorithm.ECDSA_SECP256R1_SHA256, SignatureAlgorithm.RSA_PSS_RSAE_SHA256));
         ExtensionsGenerator generator = new ExtensionsGenerator(client);
         int length = generator.generate(accumulator, List.of(expected));
         assertEquals(accumulator.remaining(), length);

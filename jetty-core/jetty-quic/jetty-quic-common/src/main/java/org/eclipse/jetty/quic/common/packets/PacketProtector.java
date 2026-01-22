@@ -31,10 +31,10 @@ import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.internal.packets.QuicCrypto;
-import org.eclipse.jetty.quic.common.tls.HKDF;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.TLSException;
+import org.eclipse.jetty.tls.common.HKDF;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -405,6 +405,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 byte[] sample = new byte[16];
                 byteBuffer.get(sample);
 
+                // TODO: algorithm name only valid for AES ciphers, not CHACHA20.
                 Cipher ecbCipher = Cipher.getInstance("AES/ECB/NoPadding");
                 ecbCipher.init(Cipher.ENCRYPT_MODE, protection);
                 byte[] mask = ecbCipher.doFinal(sample);
@@ -439,6 +440,8 @@ public class PacketProtector implements Encrypter, Decrypter
                 long packetNumber = packetNumbers.decode(encryptionLevel, encoded);
 
                 byte[] nonce = nonce(initialization, packetNumber);
+                // TODO: algorithm name only valid for AES ciphers, not CHACHA20.
+                //  Same for GCMParameterSpec, and the length depends on the cipher.
                 Cipher gcmCipher = Cipher.getInstance("AES/GCM/NoPadding");
                 gcmCipher.init(Cipher.DECRYPT_MODE, encryption, new GCMParameterSpec(128, nonce));
 

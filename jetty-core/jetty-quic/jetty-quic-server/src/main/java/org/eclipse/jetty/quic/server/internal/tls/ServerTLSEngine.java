@@ -13,29 +13,437 @@
 
 package org.eclipse.jetty.quic.server.internal.tls;
 
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.List;
+import javax.crypto.SecretKey;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
+
+import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
+import org.eclipse.jetty.quic.common.tls.X509KeyStorePair;
+import org.eclipse.jetty.tls.CertificateMessage;
+import org.eclipse.jetty.tls.CertificateVerifyMessage;
+import org.eclipse.jetty.tls.CipherSuite;
+import org.eclipse.jetty.tls.ClientHelloMessage;
+import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
+import org.eclipse.jetty.tls.FinishedMessage;
+import org.eclipse.jetty.tls.KeyShare;
 import org.eclipse.jetty.tls.Message;
-import org.eclipse.jetty.tls.common.generator.MessageGenerator;
+import org.eclipse.jetty.tls.ServerHelloMessage;
+import org.eclipse.jetty.tls.SignatureAlgorithm;
+import org.eclipse.jetty.tls.TLSException;
+import org.eclipse.jetty.tls.TLSVersion;
+import org.eclipse.jetty.tls.common.GroupKeyPair;
+import org.eclipse.jetty.tls.ext.ALPNExtension;
+import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.tls.ext.KeyShareExtension;
+import org.eclipse.jetty.tls.ext.ServerNameExtension;
+import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
+import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/// The server-side implementation of QUIC encryption/decryption,
-/// and the server-side TLS state machine necessary for QUIC.
-public class ServerTLSEngine extends TLSEngine implements MessageGenerator.Listener
+/// The server-side implementation of QUIC TLS state machine for QUIC.
+public class ServerTLSEngine extends TLSEngine
 {
-    public ServerTLSEngine(PacketProtector packetProtector)
+    private static final Logger LOG = LoggerFactory.getLogger(ServerTLSEngine.class);
+
+    private final ServerTLSConfiguration tlsConfiguration;
+    private State state = State.NEED_CLIENT_HELLO;
+    private ClientHelloMessage clientHello;
+    private CipherSuite cipherSuite;
+    private SecretKey sharedSecret;
+    private ServerHelloMessage serverHello;
+
+    public ServerTLSEngine(PacketProtector packetProtector, ServerTLSConfiguration tlsConfiguration)
     {
         super(packetProtector, false);
-    }
-
-    @Override
-    public void onMessageGenerated(Message message)
-    {
-        // TODO: feed TranscriptHash.
+        this.tlsConfiguration = tlsConfiguration;
     }
 
     @Override
     public void onMessageParsed(Message message)
     {
+        try
+        {
+            switch (message)
+            {
+                case ClientHelloMessage chm -> processClientHello(chm);
+                case CertificateMessage cm -> processCertificate(cm);
+                case CertificateVerifyMessage cvm -> processCertificateVerify(cvm);
+                case FinishedMessage fm -> processFinished(fm);
+                default -> throw new IllegalStateException("unexpected message " + message);
+            }
+        }
+        catch (Throwable x)
+        {
+            // A catch-all for the processing of incoming
+            // messages, notifying that the handshake failed.
+            dispose(x);
+        }
+    }
 
+    private void processClientHello(ClientHelloMessage clientHello) throws Exception
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} on {}", clientHello, this);
+
+        if (state != State.NEED_CLIENT_HELLO)
+            throw new IllegalStateException("invalid TLS state " + state);
+
+        this.clientHello = clientHello;
+        getPacketProtector().getTranscriptHash().offer(clientHello, true);
+
+        List<Extension> clientExtensions = clientHello.extensions();
+        List<TLSVersion> clientVersions = List.of();
+        List<KeyShare> clientKeyShares = List.of();
+        for (Extension extension : clientExtensions)
+        {
+            switch (extension)
+            {
+                case SupportedVersionsExtension sve -> clientVersions = sve.versions();
+                case KeyShareExtension kse -> clientKeyShares = kse.keyShares();
+                default ->
+                {
+                }
+            }
+        }
+
+        // RFC-8446[4.1.2,4.2.1]: SupportedVersionsExtension must be present.
+        if (clientVersions.isEmpty())
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing SupportedVersionsExtension");
+        if (!clientVersions.contains(TLSVersion.TLS_1_3))
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "unsupported TLS version");
+        // Only TLS 1.3 is supported for now.
+        TLSVersion tlsVersion = TLSVersion.TLS_1_3;
+        if (LOG.isDebugEnabled())
+            LOG.debug("negotiated TLS version {} on {}", tlsVersion, this);
+
+        List<CipherSuite> clientCipherSuites = clientHello.cipherSuites();
+        List<CipherSuite> negotiatedCipherSuites = new ArrayList<>(clientCipherSuites);
+        negotiatedCipherSuites.retainAll(tlsConfiguration.getCipherSuites());
+        if (negotiatedCipherSuites.isEmpty())
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common cipher suite");
+        cipherSuite = negotiatedCipherSuites.getFirst();
+        if (LOG.isDebugEnabled())
+            LOG.debug("negotiated CipherSuite {} on {}", cipherSuite, this);
+
+        if (clientKeyShares.isEmpty())
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no key shares");
+        KeyShare clientKeyShare = null;
+        for (KeyShare keyShare : clientKeyShares)
+        {
+            if (tlsConfiguration.getNamedGroups().contains(keyShare.namedGroup()))
+            {
+                clientKeyShare = keyShare;
+                break;
+            }
+        }
+        if (clientKeyShare == null)
+        {
+            // TODO: send a HelloRetryRequest
+            return;
+        }
+        GroupKeyPair groupKeyPair = GroupKeyPair.from(clientKeyShare.namedGroup());
+        KeyShare serverKeyShare = groupKeyPair.toKeyShare();
+        // Creating the shared secret also verifies the client KeyShare.
+        sharedSecret = groupKeyPair.generateSharedSecret(clientKeyShare);
+        if (LOG.isDebugEnabled())
+            LOG.debug("negotiated KeyShare in NamedGroup {} on {}", clientKeyShare.namedGroup(), this);
+
+        List<Extension> serverExtensions = new ArrayList<>();
+        serverExtensions.add(new SupportedVersionsExtension(List.of(tlsVersion)));
+        serverExtensions.add(new KeyShareExtension(List.of(serverKeyShare)));
+        serverHello = new ServerHelloMessage(newRandomBytes(32), cipherSuite, serverExtensions);
+        if (LOG.isDebugEnabled())
+            LOG.debug("produced {} on {}", serverHello, this);
+
+        notifyMessages(List.of(serverHello), Callback.from(Invocable.InvocationType.NON_BLOCKING, this::postProcessClientHello, this::dispose));
+    }
+
+    private void postProcessClientHello()
+    {
+        try
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("post processing {} on {}", clientHello, this);
+
+            getPacketProtector().getTranscriptHash().offer(serverHello, false);
+            getPacketProtector().allocateHandshakeKeys(tlsConfiguration.getQuicVersion(), cipherSuite, sharedSecret);
+
+            List<Extension> clientExtensions = clientHello.extensions();
+            List<String> clientProtocols = List.of();
+            List<SignatureAlgorithm> clientSignatureAlgorithms = List.of();
+            String serverName = null;
+            for (Extension extension : clientExtensions)
+            {
+                switch (extension)
+                {
+                    case ALPNExtension ae -> clientProtocols = ae.protocols();
+                    case SignatureAlgorithmsExtension sae -> clientSignatureAlgorithms = sae.signatureAlgorithms();
+                    case ServerNameExtension sne -> serverName = sne.serverName();
+                    default ->
+                    {
+                    }
+                }
+            }
+
+            List<String> negotiatedProtocols = new ArrayList<>(tlsConfiguration.getApplicationProtocols());
+            negotiatedProtocols.retainAll(clientProtocols);
+            if (negotiatedProtocols.isEmpty())
+                throw new TLSException(TLSException.Alert.NO_APPLICATION_PROTOCOL, "no common application protocol");
+            String protocol = negotiatedProtocols.getFirst();
+            if (LOG.isDebugEnabled())
+                LOG.debug("negotiated alpn protocol {} on {}", protocol, this);
+
+            ALPNExtension alpnExtension = new ALPNExtension(List.of(protocol));
+            QuicTransportParametersExtension quicTransportParametersExtension = new QuicTransportParametersExtension(tlsConfiguration.getTransportParameters());
+
+            EncryptedExtensionsMessage encryptedExtensions = new EncryptedExtensionsMessage(List.of(alpnExtension, quicTransportParametersExtension));
+            getPacketProtector().getTranscriptHash().offer(encryptedExtensions, false);
+            if (LOG.isDebugEnabled())
+                LOG.debug("produced {} on {}", encryptedExtensions, this);
+
+            if (clientSignatureAlgorithms.isEmpty())
+                throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing SignatureAlgorithmsExtension");
+            List<SignatureAlgorithm> negotiatedSignatureAlgorithms = new ArrayList<>(clientSignatureAlgorithms);
+            negotiatedSignatureAlgorithms.retainAll(tlsConfiguration.getSignatureAlgorithms());
+            if (LOG.isDebugEnabled())
+                LOG.debug("negotiated signature algorithms {} on {}", negotiatedSignatureAlgorithms, this);
+
+            List<SignatureWithKeyStorePair> pairs = new ArrayList<>();
+            KeyStore keyStore = tlsConfiguration.getSslContextFactory().getKeyStore();
+            char[] chars = tlsConfiguration.getSslContextFactory().getKeyStorePassword().toCharArray();
+            KeyStore.PasswordProtection password = new KeyStore.PasswordProtection(chars);
+            Arrays.fill(chars, ' ');
+            Enumeration<String> aliases = keyStore.aliases();
+            while (aliases.hasMoreElements())
+            {
+                String alias = aliases.nextElement();
+                KeyStore.Entry entry = keyStore.getEntry(alias, password);
+                if (entry instanceof KeyStore.PrivateKeyEntry pke)
+                {
+                    PrivateKey privateKey = pke.getPrivateKey();
+                    X509KeyStorePair keyStorePair = new X509KeyStorePair(alias, privateKey, Arrays.stream(pke.getCertificateChain())
+                        .map(X509Certificate.class::cast)
+                        .toList());
+                    PublicKey publicKey = keyStorePair.certificates().getFirst().getPublicKey();
+                    for (SignatureAlgorithm signatureAlgorithm : negotiatedSignatureAlgorithms)
+                    {
+                        if (signatureAlgorithm.supports(publicKey))
+                        {
+                            pairs.add(new SignatureWithKeyStorePair(signatureAlgorithm, keyStorePair));
+                            break;
+                        }
+                    }
+                }
+            }
+            password.destroy();
+            if (pairs.isEmpty())
+                throw new TLSException(TLSException.Alert.UNSUPPORTED_CERTIFICATE, "no matching certificate");
+            if (LOG.isDebugEnabled())
+                LOG.debug("supported certificates at aliases {} on {}", pairs.stream().map(p -> p.keyStorePair().alias()).toList(), this);
+
+            boolean sniRequired = tlsConfiguration.getSslContextFactory().isSniRequired();
+            if (serverName == null && sniRequired)
+                throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing ServerNameExtension");
+            SignatureWithKeyStorePair candidate = null;
+            SignatureWithKeyStorePair match = null;
+            if (serverName != null)
+                match = selectCertificate(pairs, serverName);
+            candidate = serverName == null ? pairs.getFirst() : match;
+            if (candidate == null)
+            {
+                if (sniRequired)
+                    throw new TLSException(TLSException.Alert.UNRECOGNIZED_NAME, "no matching certificate");
+                else
+                    candidate = pairs.getFirst();
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("certificate {} at alias {} on {}", match != null ? "match" : "default", candidate.keyStorePair().alias(), this);
+
+            List<CertificateMessage.Entry> entries = candidate.keyStorePair().certificates().stream()
+                .map(c -> new CertificateMessage.Entry(c, List.of()))
+                .toList();
+            CertificateMessage certificate = new CertificateMessage(BufferUtil.EMPTY_BYTES, entries);
+            if (LOG.isDebugEnabled())
+                LOG.debug("produced {} on {}", certificate, this);
+
+            // Add CertificateMessage to the TranscriptHash to
+            // calculate the signature for CertificateVerifyMessage.
+            getPacketProtector().getTranscriptHash().offer(certificate, false);
+            CertificateVerifyMessage certificateVerify = createCertificateVerifyMessage(candidate.signatureAlgorithm(), candidate.keyStorePair().privateKey(), false);
+            if (LOG.isDebugEnabled())
+                LOG.debug("produced {} on {}", certificateVerify, this);
+
+            // Add CertificateVerifyMessage to calculate
+            // the verifyData for FinishedMessage.
+            getPacketProtector().getTranscriptHash().offer(certificateVerify, false);
+            FinishedMessage finished = createFinishedMessage(cipherSuite);
+            if (LOG.isDebugEnabled())
+                LOG.debug("produced {} on {}", finished, this);
+
+            getPacketProtector().getTranscriptHash().offer(finished, false);
+            getPacketProtector().allocateApplicationKeys(tlsConfiguration.getQuicVersion(), cipherSuite);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("handshake completed on {}", this);
+
+            state = State.NEED_FINISHED;
+            notifyMessages(List.of(encryptedExtensions, certificate, certificateVerify, finished), Callback.from(Callback.NOOP, this::dispose));
+        }
+        catch (Throwable x)
+        {
+            dispose(TLSException.wrap(x));
+        }
+    }
+
+    private SignatureWithKeyStorePair selectCertificate(List<SignatureWithKeyStorePair> pairs, String serverName) throws Exception
+    {
+        SignatureWithKeyStorePair candidate = null;
+        for (SignatureWithKeyStorePair pair : pairs)
+        {
+            X509Certificate leaf = pair.keyStorePair().certificates().getFirst();
+
+            // First, try to match the SubjectAlternativeNames (SAN).
+            for (List<?> entry : leaf.getSubjectAlternativeNames())
+            {
+                // See getSubjectAlternativeNames() javadocs for the structure of the entry.
+                int entryType = (int)entry.getFirst();
+                // EntryType is DNSName.
+                if (entryType == 2 && matches((String)entry.get(1), serverName))
+                {
+                    candidate = pair;
+                    break;
+                }
+            }
+
+            if (candidate == null)
+            {
+                // Second, try the CommonName (CN).
+                LdapName ldapName = new LdapName(leaf.getSubjectX500Principal().getName());
+                for (Rdn rdn : ldapName.getRdns())
+                {
+                    if ("CN".equalsIgnoreCase(rdn.getType()) && matches((String)rdn.getValue(), serverName))
+                    {
+                        candidate = pair;
+                        break;
+                    }
+                }
+            }
+
+            if (candidate == null)
+                continue;
+
+            // Verify date validity.
+            for (X509Certificate certificate : candidate.keyStorePair().certificates())
+            {
+                try
+                {
+                    certificate.checkValidity();
+                }
+                catch (Throwable x)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.atDebug().setCause(x).log("invalid certificate {} on {}", certificate, this);
+                    candidate = null;
+                    break;
+                }
+            }
+
+            if (candidate == null)
+                continue;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("matched certificate {} at alias {} on {}", candidate.keyStorePair().certificates().getFirst(), candidate.keyStorePair().alias(), this);
+            return candidate;
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("no certificate matched on {}", this);
+        return null;
+    }
+
+    private boolean matches(String namePattern, String name)
+    {
+        // Direct match.
+        if (namePattern.equalsIgnoreCase(name))
+            return true;
+        // Not a pattern, so no match.
+        if (!namePattern.startsWith("*."))
+            return false;
+        // Pattern match: "*.example.com" matches "www.example.com",
+        // but not "example.com" and neither "one.two.example.com".
+        // Check whether the name ends with the pattern, case-insensitive:
+        // the name must end with ".example.com".
+        String noGlobPattern = namePattern.substring(1);
+        if (!name.regionMatches(true, name.length() - noGlobPattern.length(), noGlobPattern, 0, noGlobPattern.length()))
+            return false;
+        // Get the prefix, such as "www" or "one.two".
+        String prefix = name.substring(0, name.length() - noGlobPattern.length());
+        // Match only one subdomain.
+        return prefix.indexOf('.') < 0;
+    }
+
+    private void processCertificate(CertificateMessage certificate)
+    {
+
+    }
+
+    private void processCertificateVerify(CertificateVerifyMessage certificateVerify)
+    {
+
+    }
+
+    private void processFinished(FinishedMessage finished) throws Exception
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} on {}", finished, this);
+
+        if (state != State.NEED_FINISHED)
+            throw new IllegalStateException("invalid TLS state " + state);
+
+        if (!verifyFinishedMessage(cipherSuite, finished))
+            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid verify data");
+
+        getPacketProtector().getTranscriptHash().offer(finished, true);
+
+        state = State.HANDSHAKE_SUCCESSFUL;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("handshake successful on {}", this);
+
+        notifyHandshakeCompleted(null);
+    }
+
+    @Override
+    protected void dispose(Throwable failure)
+    {
+        destroy(sharedSecret);
+        state = State.HANDSHAKE_FAILED;
+        super.dispose(failure);
+    }
+
+    private enum State
+    {
+        NEED_CLIENT_HELLO,
+        NEED_FINISHED,
+        HANDSHAKE_SUCCESSFUL,
+        HANDSHAKE_FAILED
+    }
+
+    private record SignatureWithKeyStorePair(SignatureAlgorithm signatureAlgorithm, X509KeyStorePair keyStorePair)
+    {
     }
 }

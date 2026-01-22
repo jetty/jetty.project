@@ -76,14 +76,14 @@ public interface Frame
     }
 
     /// A QUIC frame carrying an offset and a length.
-    interface WithOffset
+    interface WithOffset extends Frame
     {
         long offset();
 
         long length();
     }
 
-    public interface Listener
+    interface Listener
     {
         void onFrame(Frame frame);
     }

@@ -33,7 +33,9 @@ public class ErrorCode
     public static final ErrorCode APPLICATION_ERROR = new ErrorCode(0x0C);
     public static final ErrorCode CRYPTO_BUFFER_EXCEEDED_ERROR = new ErrorCode(0x0D);
     public static final ErrorCode KEY_UPDATE_ERROR = new ErrorCode(0x0E);
-    public static final ErrorCode AEAD_LIMIT_REACHED = new ErrorCode(0x0F);
+    public static final ErrorCode AEAD_LIMIT_REACHED_ERROR = new ErrorCode(0x0F);
+    public static final ErrorCode NO_VIABLE_PATH_ERROR = new ErrorCode(0x10);
+    public static final ErrorCode CRYPTO_ERROR = new ErrorCode(0x100);
 
     private final long code;
 

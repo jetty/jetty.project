@@ -66,7 +66,7 @@ public class FrameStream
     {
         try
         {
-            listener.onFrame((Frame)frame);
+            listener.onFrame(frame);
         }
         catch (Throwable x)
         {

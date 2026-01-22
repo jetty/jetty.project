@@ -40,6 +40,7 @@ import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
+import org.eclipse.jetty.quic.server.internal.tls.ServerTLSConfiguration;
 import org.eclipse.jetty.quic.server.internal.tls.ServerTLSEngine;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.server.Connector;
@@ -227,7 +228,8 @@ public class ServerQuicConnection extends QuicConnection
         ServerQuicSession session = sessions.get(dstConnectionId);
         if (session == null)
         {
-            session = newSession(remoteAddress);
+            session = newSession();
+            session.setRemoteSocketAddress(remoteAddress);
             session.setIdleTimeout(getEndPoint().getIdleTimeout());
             LifeCycle.start(session);
             sessions.put(dstConnectionId, session);
@@ -249,16 +251,17 @@ public class ServerQuicConnection extends QuicConnection
         return null;
     }
 
-    private ServerQuicSession newSession(SocketAddress remoteAddress)
+    private ServerQuicSession newSession()
     {
         PacketNumbers packetNumbers = new PacketNumbers();
         ByteBufferPool byteBufferPool = getByteBufferPool();
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, true), new QuicMessagesGenerator(byteBufferPool, false));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
-        ServerTLSEngine tlsEngine = new ServerTLSEngine(protector);
-        ServerQuicSession session = new ServerQuicSession(connector, getServerQuicConfiguration(), this, packetNumbers, tlsEngine, sessionListenerFactory.newListener(), getEndPoint());
-        session.setRemoteSocketAddress(remoteAddress);
-        return session;
+        ServerTLSConfiguration tlsConfiguration = new ServerTLSConfiguration(getServerQuicConfiguration(), getSslContextFactory());
+        tlsConfiguration.setApplicationProtocols(connector.getProtocols());
+        ServerTLSEngine tlsEngine = new ServerTLSEngine(protector, tlsConfiguration);
+        Session.Listener listener = getSessionListenerFactory().newListener();
+        return new ServerQuicSession(connector, getServerQuicConfiguration(), this, packetNumbers, tlsEngine, listener, getEndPoint());
     }
 
     public void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers)
