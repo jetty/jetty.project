@@ -76,7 +76,7 @@ public class MessagesGenerateParseTest
         }
         KeyShareExtension keyShareExtension = new KeyShareExtension(keyShares);
         SupportedVersionsExtension supportedVersionsExtension = new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3));
-        SignatureAlgorithmsExtension signatureAlgorithmsExtension = new SignatureAlgorithmsExtension(List.of(SignatureAlgorithm.RSA_PKCS1_SHA256, SignatureAlgorithm.ECDSA_SECP256R1_SHA256));
+        SignatureAlgorithmsExtension signatureAlgorithmsExtension = new SignatureAlgorithmsExtension(List.of(SignatureAlgorithm.RSA_PSS_RSAE_SHA256, SignatureAlgorithm.ECDSA_SECP256R1_SHA256));
         List<Extension> extensions = List.of(supportedGroupsExtension, keyShareExtension, supportedVersionsExtension, signatureAlgorithmsExtension);
         ClientHelloMessage generated = new ClientHelloMessage(random, cipherSuites, extensions);
         generator.generate(accumulator, generated);
@@ -246,7 +246,7 @@ public class MessagesGenerateParseTest
 
         assertInstanceOf(CertificateMessage.class, message);
         CertificateMessage parsed = (CertificateMessage)message;
-        assertArrayEquals(generated.context(), parsed.context());
+        assertArrayEquals(generated.requestContext(), parsed.requestContext());
         assertEquals(generated.entries(), parsed.entries());
 
         // Parse again one byte at a time.
@@ -261,7 +261,7 @@ public class MessagesGenerateParseTest
 
         assertInstanceOf(CertificateMessage.class, message);
         parsed = (CertificateMessage)message;
-        assertArrayEquals(generated.context(), parsed.context());
+        assertArrayEquals(generated.requestContext(), parsed.requestContext());
         assertEquals(generated.entries(), parsed.entries());
     }
 
@@ -274,7 +274,7 @@ public class MessagesGenerateParseTest
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
         byte[] signature = new byte[13];
         ThreadLocalRandom.current().nextBytes(signature);
-        CertificateVerifyMessage generated = new CertificateVerifyMessage(SignatureAlgorithm.RSA_PKCS1_SHA256, signature);
+        CertificateVerifyMessage generated = new CertificateVerifyMessage(SignatureAlgorithm.RSA_PSS_RSAE_SHA256, signature);
         generator.generate(accumulator, generated);
 
         MessagesParser parser = new MessagesParser(!client);

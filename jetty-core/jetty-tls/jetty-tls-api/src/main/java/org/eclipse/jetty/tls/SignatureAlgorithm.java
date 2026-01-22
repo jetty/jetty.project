@@ -13,16 +13,19 @@
 
 package org.eclipse.jetty.tls;
 
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.EdECPublicKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.MGF1ParameterSpec;
+import java.security.spec.PSSParameterSpec;
 import java.util.HashMap;
 import java.util.Map;
 
 public enum SignatureAlgorithm
 {
-    // RSASSA-PKCS1-v1_5 algorithms.
-    RSA_PKCS1_SHA256(0X0401),
-    RSA_PKCS1_SHA384(0X0501),
-    RSA_PKCS1_SHA512(0X0601),
-
     // ECDSA algorithms.
     ECDSA_SECP256R1_SHA256(0X0403),
     ECDSA_SECP384R1_SHA384(0X0503),
@@ -31,7 +34,11 @@ public enum SignatureAlgorithm
     // RSASSA-PSS algorithms with public key OID RSAEncryption.
     RSA_PSS_RSAE_SHA256(0X0804),
     RSA_PSS_RSAE_SHA384(0X0805),
-    RSA_PSS_RSAE_SHA512(0X0806);
+    RSA_PSS_RSAE_SHA512(0X0806),
+
+    // EdDSA algorithms.
+    ED25519(0x0807),
+    ED448(0x0808);
 
     private final int code;
 
@@ -44,6 +51,65 @@ public enum SignatureAlgorithm
     public int code()
     {
         return code;
+    }
+
+    public boolean supports(PublicKey publicKey)
+    {
+        return switch (this)
+        {
+            case RSA_PSS_RSAE_SHA256,
+                 RSA_PSS_RSAE_SHA384,
+                 RSA_PSS_RSAE_SHA512 -> publicKey instanceof RSAPublicKey;
+            case ECDSA_SECP256R1_SHA256 ->
+                publicKey instanceof ECPublicKey ecPublicKey && ecPublicKey.getParams().getCurve().getField().getFieldSize() == 256;
+            case ECDSA_SECP384R1_SHA384 ->
+                publicKey instanceof ECPublicKey ecPublicKey && ecPublicKey.getParams().getCurve().getField().getFieldSize() == 384;
+            case ECDSA_SECP521R1_SHA512 ->
+                publicKey instanceof ECPublicKey ecPublicKey && ecPublicKey.getParams().getCurve().getField().getFieldSize() == 512;
+            case ED25519, ED448 ->
+                publicKey instanceof EdECPublicKey edECPublicKey && edECPublicKey.getParams().getName().equalsIgnoreCase(name());
+        };
+    }
+
+    public byte[] sign(PrivateKey privateKey, byte[] content) throws Exception
+    {
+        return switch (this)
+        {
+            case RSA_PSS_RSAE_SHA256 -> rsaSign(privateKey, content, 256);
+            case RSA_PSS_RSAE_SHA384 -> rsaSign(privateKey, content, 384);
+            case RSA_PSS_RSAE_SHA512 -> rsaSign(privateKey, content, 512);
+            case ECDSA_SECP256R1_SHA256 -> ecSign(privateKey, content, 256);
+            case ECDSA_SECP384R1_SHA384 -> ecSign(privateKey, content, 384);
+            case ECDSA_SECP521R1_SHA512 -> ecSign(privateKey, content, 512);
+            case ED25519, ED448 -> edSign(privateKey, content, name());
+        };
+    }
+
+    private byte[] rsaSign(PrivateKey privateKey, byte[] content, int hashLength) throws Exception
+    {
+        Signature signature = Signature.getInstance("RSASSA-PSS");
+        String hashAlgorithm = "SHA-" + hashLength;
+        PSSParameterSpec parameterSpec = new PSSParameterSpec(hashAlgorithm, "MGF1", new MGF1ParameterSpec(hashAlgorithm), hashLength / 8, 1);
+        signature.setParameter(parameterSpec);
+        signature.initSign(privateKey);
+        signature.update(content);
+        return signature.sign();
+    }
+
+    private byte[] ecSign(PrivateKey privateKey, byte[] content, int hashLength) throws Exception
+    {
+        Signature signature = Signature.getInstance("SHA" + hashLength + "withECDSA");
+        signature.initSign(privateKey);
+        signature.update(content);
+        return signature.sign();
+    }
+
+    private byte[] edSign(PrivateKey privateKey, byte[] content, String algorithm) throws Exception
+    {
+        Signature signature = Signature.getInstance(algorithm);
+        signature.initSign(privateKey);
+        signature.update(content);
+        return signature.sign();
     }
 
     public static SignatureAlgorithm from(int code)

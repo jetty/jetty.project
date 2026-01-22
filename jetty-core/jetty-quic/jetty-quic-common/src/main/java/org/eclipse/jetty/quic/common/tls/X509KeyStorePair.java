@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.quic.common.tls;
 
-// TODO: move all this to GroupKeyPair.
-//  In this way, the little endianness of the X* groups is all in 1 place.
-public class SharedSecretGenerator
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
+import java.util.List;
+
+public record X509KeyStorePair(String alias, PrivateKey privateKey, List<X509Certificate> certificates)
 {
-    private SharedSecretGenerator()
-    {
-    }
 }

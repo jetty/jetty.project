@@ -15,10 +15,8 @@ package org.eclipse.jetty.quic.client.internal.tls;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import javax.crypto.SecretKey;
 
-import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
@@ -42,18 +40,17 @@ import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// The client-side implementation of QUIC encryption/decryption,
-/// and the client-side TLS state machine necessary for QUIC.
+/// The client-side implementation of QUIC TLS state machine for QUIC.
 public class ClientTLSEngine extends TLSEngine
 {
     private static final Logger LOG = LoggerFactory.getLogger(ClientTLSEngine.class);
 
-    private final CompletableFuture<Void> complete = new CompletableFuture<>();
     private State state = State.INITIAL;
-    private Configuration configuration;
+    private ClientTLSConfiguration configuration;
     private List<GroupKeyPair> groupKeyPairs;
     private ClientHelloMessage clientHello;
     private TLSVersion tlsVersion;
@@ -64,7 +61,7 @@ public class ClientTLSEngine extends TLSEngine
         super(protector, true);
     }
 
-    public CompletableFuture<Void> startHandshake(Configuration configuration, Callback callback)
+    public void startHandshake(ClientTLSConfiguration configuration, Callback callback)
     {
         try
         {
@@ -77,10 +74,10 @@ public class ClientTLSEngine extends TLSEngine
 
             this.configuration = configuration;
 
-            List<CipherSuite> cipherSuites = configuration.cipherSuites();
+            List<CipherSuite> cipherSuites = configuration.getCipherSuites();
 
-            List<NamedGroup> namedGroups = configuration.namedGroups();
-            configuration.extension(new SupportedGroupsExtension(namedGroups));
+            List<NamedGroup> namedGroups = configuration.getNamedGroups();
+            configuration.addExtension(new SupportedGroupsExtension(namedGroups));
 
             // KeyPairs and KeyShares.
             groupKeyPairs = new ArrayList<>();
@@ -91,37 +88,33 @@ public class ClientTLSEngine extends TLSEngine
                 groupKeyPairs.add(groupKeyPair);
                 keyShares.add(groupKeyPair.toKeyShare());
             }
-            configuration.extension(new KeyShareExtension(keyShares));
+            configuration.addExtension(new KeyShareExtension(keyShares));
 
-            configuration.extension(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3)));
+            configuration.addExtension(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3)));
 
-            List<SignatureAlgorithm> signatureAlgorithms = configuration.signatureAlgorithms();
-            configuration.extension(new SignatureAlgorithmsExtension(signatureAlgorithms));
+            List<SignatureAlgorithm> signatureAlgorithms = configuration.getSignatureAlgorithms();
+            configuration.addExtension(new SignatureAlgorithmsExtension(signatureAlgorithms));
 
-            clientHello = new ClientHelloMessage(newRandomBytes(32), cipherSuites, configuration.extensions());
+            clientHello = new ClientHelloMessage(newRandomBytes(32), cipherSuites, configuration.getExtensions());
             if (LOG.isDebugEnabled())
                 LOG.debug("produced {} on {}", clientHello, this);
 
             PacketProtector packetProtector = getPacketProtector();
             packetProtector.updateEncryptionLevel(EncryptionLevel.INITIAL);
-            packetProtector.allocateInitialKeys(configuration.quicVersion(), configuration.inputKeyMaterial());
+            byte[] inputKeyMaterial = configuration.getInputKeyMaterial();
+            packetProtector.allocateInitialKeys(configuration.getQuicVersion(), inputKeyMaterial);
 
             // Notifies back the QuicSession to send this message in a CRYPTO frame.
-            notifyMessages(List.of(clientHello), Callback.from(callback, x ->
-            {
-                if (x != null)
-                    complete.completeExceptionally(x);
-            }));
-
-            return complete;
+            notifyMessages(List.of(clientHello), Callback.from(callback, this::dispose));
         }
         catch (Throwable x)
         {
-            Callback.failed(callback::failed, complete::completeExceptionally, x);
-            return complete;
+            callback.failed(x);
+            dispose(x);
         }
     }
 
+    // TODO: does it need a Callback?
     public void retryHandshake()
     {
         try
@@ -133,22 +126,12 @@ public class ClientTLSEngine extends TLSEngine
             // the ClientHello sent in the first InitialPacket
             // must be discarded from the TranscriptHash.
             getPacketProtector().getTranscriptHash().clear();
-            notifyMessages(List.of(clientHello), Callback.from(Callback.NOOP, x ->
-            {
-                if (x != null)
-                    complete.completeExceptionally(x);
-            }));
+            notifyMessages(List.of(clientHello), Callback.from(Callback.NOOP, this::dispose));
         }
         catch (Throwable x)
         {
-            complete.completeExceptionally(x);
+            dispose(x);
         }
-    }
-
-    @Override
-    public void onMessageGenerated(Message message)
-    {
-        getPacketProtector().getTranscriptHash().offer(message, false);
     }
 
     @Override
@@ -168,13 +151,17 @@ public class ClientTLSEngine extends TLSEngine
         }
         catch (Throwable x)
         {
-            complete.completeExceptionally(x);
-            throw x;
+            // A catch-all for the processing of incoming
+            // messages, notifying that the handshake failed.
+            dispose(x);
         }
     }
 
-    private void processServerHello(ServerHelloMessage serverHello)// throws Exception
+    private void processServerHello(ServerHelloMessage serverHello)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} on {}", serverHello, this);
+
         if (serverHello.sessionId().length != 0)
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "invalid legacy session id");
 
@@ -205,10 +192,6 @@ public class ClientTLSEngine extends TLSEngine
         if (serverVersions.isEmpty())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing SupportedVersionsExtension");
 
-        // RFC 8446, 4.1.3: Either KeyShareExtension or PreSharedKeyExtension or both must be present.
-        if (keyShares.isEmpty() && preSharedKeys.isEmpty())
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing KeyShareExtension or PreSharedKeyExtension");
-
         // RFC 8446, 4.2.1: negotiate versions with ClientHello.
         List<TLSVersion> clientVersions = clientHello.extensions().stream()
             .filter(e -> e instanceof SupportedVersionsExtension)
@@ -219,10 +202,10 @@ public class ClientTLSEngine extends TLSEngine
         List<TLSVersion> negotiatedVersions = new ArrayList<>(serverVersions);
         negotiatedVersions.retainAll(clientVersions);
         if (negotiatedVersions.isEmpty())
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common TLSVersion");
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common TLS version");
         tlsVersion = negotiatedVersions.getFirst();
         if (LOG.isDebugEnabled())
-            LOG.debug("negotiated TLSVersion {}", tlsVersion);
+            LOG.debug("negotiated TLS version {} on {}", tlsVersion, this);
 
         // RFC 8446, 4.1.3: the client must have offered the CipherSuite.
         CipherSuite serverCipherSuite = serverHello.cipherSuite();
@@ -232,12 +215,16 @@ public class ClientTLSEngine extends TLSEngine
             .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common CipherSuite"));
         cipherSuite = serverCipherSuite;
         if (LOG.isDebugEnabled())
-            LOG.debug("negotiated CipherSuite {}", cipherSuite);
+            LOG.debug("negotiated CipherSuite {} on {}", cipherSuite, this);
+
+        // RFC 8446, 4.1.3: Either KeyShareExtension or PreSharedKeyExtension or both must be present.
+        if (keyShares.isEmpty() && preSharedKeys.isEmpty())
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing KeyShareExtension or PreSharedKeyExtension");
 
         if (!keyShares.isEmpty())
         {
             KeyShare serverKeyShare = keyShares.getFirst();
-            // RFC 8446, 4.2.8: the client must have offered the group.
+            // RFC 8446, 4.2.8: the client must have offered the named group.
             List<KeyShare> clientKeyShares = clientHello.extensions().stream()
                 .filter(e -> e instanceof KeyShareExtension)
                 .map(KeyShareExtension.class::cast)
@@ -245,21 +232,21 @@ public class ClientTLSEngine extends TLSEngine
                 .findFirst()
                 .orElse(List.of());
             clientKeyShares.stream()
-                .map(KeyShare::group)
-                .filter(serverKeyShare.group()::equals)
+                .map(KeyShare::namedGroup)
+                .filter(serverKeyShare.namedGroup()::equals)
                 .findFirst()
                 .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common NamedGroup"));
             // Find the corresponding GroupKeyPair whose KeyShare is in the ClientHello.
             GroupKeyPair groupKeyPair = groupKeyPairs.stream()
-                .filter(gkp -> gkp.group() == serverKeyShare.group())
+                .filter(gkp -> gkp.group() == serverKeyShare.namedGroup())
                 .findFirst()
                 .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common NamedGroup"));
             SecretKey sharedSecret = groupKeyPair.generateSharedSecret(serverKeyShare);
             if (LOG.isDebugEnabled())
-                LOG.debug("negotiated KeyPair in NamedGroup {}", serverKeyShare.group());
+                LOG.debug("negotiated KeyPair in NamedGroup {} on {}", serverKeyShare.namedGroup(), this);
 
             getPacketProtector().getTranscriptHash().offer(serverHello, true);
-            getPacketProtector().allocateHandshakeKeys(configuration.quicVersion(), cipherSuite, sharedSecret);
+            getPacketProtector().allocateHandshakeKeys(configuration.getQuicVersion(), cipherSuite, sharedSecret);
         }
         else
         {
@@ -310,45 +297,34 @@ public class ClientTLSEngine extends TLSEngine
         getPacketProtector().getTranscriptHash().offer(certificateVerify, true);
     }
 
-    private void processFinished(FinishedMessage finished)
+    private void processFinished(FinishedMessage finished) throws Exception
     {
-        try
-        {
-            if (!verifyFinishedMessage(cipherSuite, finished, true))
-                throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid verify data");
+        if (!verifyFinishedMessage(cipherSuite, finished))
+            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid verify data");
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("verified {} on {}", finished, this);
+
+        getPacketProtector().getTranscriptHash().offer(finished, true);
+        getPacketProtector().allocateApplicationKeys(configuration.getQuicVersion(), cipherSuite);
+
+        FinishedMessage message = createFinishedMessage(cipherSuite);
+        notifyMessages(List.of(message), Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> handshakeCompleted(null), this::handshakeCompleted));
+    }
+
+    private void handshakeCompleted(Throwable failure)
+    {
+        if (failure == null)
+        {
             if (LOG.isDebugEnabled())
-                LOG.debug("verified {}", finished);
-
-            getPacketProtector().getTranscriptHash().offer(finished, true);
-            getPacketProtector().allocateApplicationKeys(configuration.quicVersion(), cipherSuite);
-
-            FinishedMessage message = createFinishedMessage(cipherSuite, false);
-            Callback.Completable callback = new Callback.Completable();
-            notifyMessages(List.of(message), callback);
-            callback.whenComplete((_, x) ->
-            {
-                if (x == null)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("handshake completed on {}", this);
-                    complete.complete(null);
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("handshake failed on {}", this);
-                    complete.completeExceptionally(x);
-                }
-            });
+                LOG.debug("handshake completed on {}", this);
+            notifyHandshakeCompleted(null);
         }
-        catch (TLSException x)
+        else
         {
-            throw x;
-        }
-        catch (Throwable x)
-        {
-            throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
+            if (LOG.isDebugEnabled())
+                LOG.atDebug().setCause(failure).log("handshake failed on {}", this);
+            dispose(failure);
         }
     }
 
@@ -356,82 +332,6 @@ public class ClientTLSEngine extends TLSEngine
     public String toString()
     {
         return "%s[%s]".formatted(super.toString(), state);
-    }
-
-    public static class Configuration
-    {
-        private List<SignatureAlgorithm> signatureAlgorithms = List.of(SignatureAlgorithm.RSA_PKCS1_SHA256, SignatureAlgorithm.ECDSA_SECP256R1_SHA256, SignatureAlgorithm.RSA_PSS_RSAE_SHA256);
-        private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519/*, NamedGroup.secp256r1, NamedGroup.ffdhe2048*/);
-        private List<CipherSuite> cipherSuites = List.of(CipherSuite.values());
-        private final List<Extension> extensions = new ArrayList<>();
-        private QuicVersion quicVersion = QuicVersion.V1;
-        private byte[] inputKeyMaterial;
-
-        public Configuration signatureAlgorithms(List<SignatureAlgorithm> signatureAlgorithms)
-        {
-            this.signatureAlgorithms = signatureAlgorithms;
-            return this;
-        }
-
-        public List<SignatureAlgorithm> signatureAlgorithms()
-        {
-            return signatureAlgorithms;
-        }
-
-        public Configuration namedGroups(List<NamedGroup> namedGroups)
-        {
-            this.namedGroups = namedGroups;
-            return this;
-        }
-
-        public List<NamedGroup> namedGroups()
-        {
-            return namedGroups;
-        }
-
-        public Configuration cipherSuites(List<CipherSuite> cipherSuites)
-        {
-            this.cipherSuites = cipherSuites;
-            return this;
-        }
-
-        public List<CipherSuite> cipherSuites()
-        {
-            return cipherSuites;
-        }
-
-        public Configuration extension(Extension extension)
-        {
-            extensions.add(extension);
-            return this;
-        }
-
-        public List<Extension> extensions()
-        {
-            return extensions;
-        }
-
-        public Configuration quicVersion(QuicVersion quicVersion)
-        {
-            this.quicVersion = quicVersion;
-            return this;
-        }
-
-        public QuicVersion quicVersion()
-        {
-            return quicVersion;
-        }
-
-        public Configuration inputKeyMaterial(byte[] inputKeyMaterial)
-        {
-            this.inputKeyMaterial = inputKeyMaterial;
-            return this;
-        }
-
-        public byte[] inputKeyMaterial()
-        {
-            return inputKeyMaterial;
-        }
     }
 
     private enum State

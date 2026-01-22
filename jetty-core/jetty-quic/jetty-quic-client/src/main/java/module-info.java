@@ -20,4 +20,5 @@ module org.eclipse.jetty.quic.client
     requires org.eclipse.jetty.tls.common;
 
     exports org.eclipse.jetty.quic.client;
+    exports org.eclipse.jetty.quic.client.internal.tls;
 }

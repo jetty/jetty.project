@@ -39,7 +39,7 @@ public class CertificateMessageGenerator extends MessageGenerator
 
     private void generate(RetainableByteBuffer.Mutable accumulator, CertificateMessage message) throws Exception
     {
-        byte[] context = message.context();
+        byte[] context = message.requestContext();
         List<CertificateMessage.Entry> entries = message.entries();
 
         // RFC 8446, 4.4.2.

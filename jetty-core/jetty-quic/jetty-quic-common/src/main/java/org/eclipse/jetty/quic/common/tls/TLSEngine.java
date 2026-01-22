@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.quic.common.tls;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.crypto.KDF;
 import javax.crypto.Mac;
@@ -24,11 +27,12 @@ import javax.crypto.SecretKey;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.quic.common.tls.parser.QuicMessagesParser;
+import org.eclipse.jetty.tls.CertificateVerifyMessage;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.tls.TLSException;
-import org.eclipse.jetty.tls.common.generator.MessageGenerator;
 import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
 import org.eclipse.jetty.tls.common.parser.MessageParser;
 import org.eclipse.jetty.tls.common.parser.MessagesParser;
@@ -40,11 +44,12 @@ import org.slf4j.LoggerFactory;
 /// Implements the TLS machinery for QUIC, as per
 /// [RFC 8446](https://datatracker.ietf.org/doc/html/rfc8446) and
 /// [RFC 9001](https://datatracker.ietf.org/doc/html/rfc9001).
-public abstract class TLSEngine implements MessageGenerator.Listener, MessageParser.Listener
+public abstract class TLSEngine implements MessageParser.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(TLSEngine.class);
 
-    private final List<Message.Listener> listeners = new ArrayList<>();
+    private final List<Message.Listener> messageListeners = new ArrayList<>();
+    private final List<Listener> handshakeListeners = new ArrayList<>();
     private final SecureRandom random = new SecureRandom();
     private final PacketProtector protector;
     private final MessagesGenerator tlsGenerator;
@@ -85,16 +90,36 @@ public abstract class TLSEngine implements MessageGenerator.Listener, MessagePar
 
     public void addMessageListener(Message.Listener listener)
     {
-        listeners.add(listener);
+        messageListeners.add(listener);
     }
 
     protected void notifyMessages(List<Message> messages, Callback callback)
     {
-        for (Message.Listener listener : listeners)
+        for (Message.Listener listener : messageListeners)
         {
             try
             {
                 listener.onMessages(messages, callback);
+            }
+            catch (Throwable x)
+            {
+                LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
+            }
+        }
+    }
+
+    public void addHandshakeListener(Listener listener)
+    {
+        handshakeListeners.add(listener);
+    }
+
+    protected void notifyHandshakeCompleted(Throwable failure)
+    {
+        for (Listener listener : handshakeListeners)
+        {
+            try
+            {
+                listener.handshakeCompleted(failure);
             }
             catch (Throwable x)
             {
@@ -110,14 +135,33 @@ public abstract class TLSEngine implements MessageGenerator.Listener, MessagePar
         return bytes;
     }
 
-    protected FinishedMessage createFinishedMessage(CipherSuite cipherSuite, boolean input) throws Exception
+    protected CertificateVerifyMessage createCertificateVerifyMessage(SignatureAlgorithm signatureAlgorithm, PrivateKey privateKey, boolean client) throws Exception
+    {
+        // RFC-8446[4.4.3].
+        String context = client ? "TLS 1.3, client CertificateVerify" : "TLS 1.3, server CertificateVerify";
+        byte[] contextBytes = context.getBytes(StandardCharsets.US_ASCII);
+        byte[] transcriptHash = getPacketProtector().getTranscriptHash().getHash();
+        byte[] content = new byte[64 + contextBytes.length + 1 + transcriptHash.length];
+        Arrays.fill(content, 0, 64, (byte)0x20);
+        int offset = 64;
+        System.arraycopy(contextBytes, 0, content, offset, contextBytes.length);
+        offset += contextBytes.length;
+        content[offset] = (byte)0x00;
+        offset += 1;
+        System.arraycopy(transcriptHash, 0, content, offset, transcriptHash.length);
+
+        byte[] signature = signatureAlgorithm.sign(privateKey, content);
+        return new CertificateVerifyMessage(signatureAlgorithm, signature);
+    }
+
+    protected FinishedMessage createFinishedMessage(CipherSuite cipherSuite) throws Exception
     {
         // RFC-8446[4.4.4].
         int hashLength = cipherSuite.hashLength();
         int shaLength = hashLength * 8;
         KDF kdf = KDF.getInstance("HKDF-SHA" + shaLength);
-        SecretKey trafficKey = getPacketProtector().getTrafficSecretKey(input);
-        SecretKey finishedKey = kdf.deriveKey("Generic", HKDF.expandLabel(trafficKey, "finished", hashLength));
+        SecretKey trafficKey = getPacketProtector().getTrafficSecretKey(false);
+        SecretKey finishedKey = kdf.deriveKey("Generic", org.eclipse.jetty.tls.common.HKDF.expandLabel(trafficKey, "finished", hashLength));
 
         Mac mac = Mac.getInstance("HmacSHA" + shaLength);
         mac.init(finishedKey);
@@ -125,7 +169,7 @@ public abstract class TLSEngine implements MessageGenerator.Listener, MessagePar
         return new FinishedMessage(verifyData);
     }
 
-    protected boolean verifyFinishedMessage(CipherSuite cipherSuite, FinishedMessage finished, boolean input) throws Exception
+    protected boolean verifyFinishedMessage(CipherSuite cipherSuite, FinishedMessage finished) throws Exception
     {
         // RFC-8446[4.4.4].
         byte[] verifyData = finished.verifyData();
@@ -135,8 +179,8 @@ public abstract class TLSEngine implements MessageGenerator.Listener, MessagePar
 
         int shaLength = hashLength * 8;
         KDF kdf = KDF.getInstance("HKDF-SHA" + shaLength);
-        SecretKey trafficKey = getPacketProtector().getTrafficSecretKey(input);
-        SecretKey finishedKey = kdf.deriveKey("Generic", HKDF.expandLabel(trafficKey, "finished", hashLength));
+        SecretKey trafficKey = getPacketProtector().getTrafficSecretKey(true);
+        SecretKey finishedKey = kdf.deriveKey("Generic", org.eclipse.jetty.tls.common.HKDF.expandLabel(trafficKey, "finished", hashLength));
 
         Mac mac = Mac.getInstance("HmacSHA" + shaLength);
         mac.init(finishedKey);
@@ -147,9 +191,33 @@ public abstract class TLSEngine implements MessageGenerator.Listener, MessagePar
         return MessageDigest.isEqual(verifyData, expected);
     }
 
+    protected void dispose(Throwable failure)
+    {
+        notifyHandshakeCompleted(TLSException.wrap(failure));
+    }
+
+    protected static void destroy(SecretKey secretKey)
+    {
+        try
+        {
+            if (secretKey != null)
+                secretKey.destroy();
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.atTrace().setCause(x).log("failure while destroying {}", secretKey);
+        }
+    }
+
     @Override
     public String toString()
     {
         return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
+    }
+
+    public interface Listener
+    {
+        void handshakeCompleted(Throwable failure);
     }
 }

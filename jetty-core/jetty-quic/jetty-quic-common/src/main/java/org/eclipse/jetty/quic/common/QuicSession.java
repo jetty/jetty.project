@@ -33,6 +33,7 @@ import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
@@ -48,6 +49,8 @@ import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.ZeroRTTPacket;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.tls.ServerHelloMessage;
+import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -183,7 +186,13 @@ public abstract class QuicSession extends AbstractSession
     ///
     /// @param frame the frame to send
     /// @param callback the [Callback] that gets notified when the frame has been sent
-    public void crypto(CryptoFrame frame, Callback callback)
+    protected void crypto(CryptoFrame frame, Callback callback)
+    {
+        if (flusher.offer(this, List.of(frame), callback))
+            flusher.iterate();
+    }
+
+    protected void handshakeDone(HandshakeDoneFrame frame, Callback callback)
     {
         if (flusher.offer(this, List.of(frame), callback))
             flusher.iterate();
@@ -404,13 +413,31 @@ public abstract class QuicSession extends AbstractSession
                     LOG.debug("parsed {} on {}", message, this);
                 if (message == null)
                     return;
-                tlsEngine.onMessageParsed(message);
+                processMessage(message);
             }
         }
         catch (Throwable x)
         {
             fail(x);
         }
+    }
+
+    private void processMessage(Message message)
+    {
+        switch (message)
+        {
+            case ServerHelloMessage serverHello -> processServerHello(serverHello);
+            default -> throw new TLSException(TLSException.Alert.UNEXPECTED_MESSAGE, "unexpected TLS message");
+        }
+    }
+
+    private void processServerHello(ServerHelloMessage serverHello)
+    {
+
+
+
+        // TODO: verify QuicTransportParametersExtension, etc.
+        tlsEngine.onMessageParsed(serverHello);
     }
 
     private void processStreamFrame(Frame frame)
@@ -441,6 +468,29 @@ public abstract class QuicSession extends AbstractSession
     public void setPacketListener(Packet.Listener listener)
     {
         packetListener = listener;
+    }
+
+    protected void sendTLSMessages(List<Message> messages, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sending TLS messages {} on {}", messages, this);
+
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), getQuicConfiguration().isUseOutputDirectByteBuffers(), -1, 0, 0);
+        try
+        {
+            for (Message message : messages)
+            {
+                getTLSEngine().getMessagesGenerator().generate(accumulator, message);
+            }
+            // TODO: cannot assume offset is 0 here.
+            CryptoFrame cryptoFrame = new CryptoFrame(0, accumulator);
+            crypto(cryptoFrame, callback);
+        }
+        catch (Throwable x)
+        {
+            accumulator.release();
+            callback.failed(x);
+        }
     }
 
     public void notifyIncomingPacket(Packet packet)

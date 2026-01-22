@@ -111,7 +111,7 @@ public record GroupKeyPair(NamedGroup group, KeyPair keyPair)
     {
         try
         {
-            int length = length(keyShare.group());
+            int length = length(keyShare.namedGroup());
             return switch (group())
             {
                 case x25519 -> xGenerateSharedSecret(keyShare, NamedParameterSpec.X25519, length);

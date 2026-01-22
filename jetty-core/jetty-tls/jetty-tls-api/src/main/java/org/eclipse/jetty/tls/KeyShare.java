@@ -16,12 +16,12 @@ package org.eclipse.jetty.tls;
 import java.util.Arrays;
 import java.util.Objects;
 
-public record KeyShare(NamedGroup group, byte[] keyExchange)
+public record KeyShare(NamedGroup namedGroup, byte[] keyExchange)
 {
     @Override
     public int hashCode()
     {
-        return Objects.hash(group, Arrays.hashCode(keyExchange));
+        return Objects.hash(namedGroup, Arrays.hashCode(keyExchange));
     }
 
     @Override
@@ -30,7 +30,7 @@ public record KeyShare(NamedGroup group, byte[] keyExchange)
         if (obj == this)
             return true;
         if (obj instanceof KeyShare(NamedGroup thatGroup, byte[] thatKeyExchange))
-            return Objects.equals(group, thatGroup) && Arrays.equals(keyExchange, thatKeyExchange);
+            return Objects.equals(namedGroup, thatGroup) && Arrays.equals(keyExchange, thatKeyExchange);
         return false;
     }
 }
