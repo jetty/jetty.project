@@ -49,6 +49,7 @@ import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.PathResponseListener;
+import org.eclipse.jetty.client.PermanentRedirectCache;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -737,6 +738,24 @@ public class HTTPClientDocs
 
         httpClient.setHttpCookieStore(new GoogleOnlyCookieStore());
         // end::filteringCookieStore[]
+    }
+
+    public void permanentRedirectCache() throws Exception
+    {
+        // tag::permanentRedirectCache[]
+        HttpClient httpClient = new HttpClient();
+
+        // Enable caching of permanent redirects with max 1000 entries.
+        httpClient.setPermanentRedirectCache(new PermanentRedirectCache.Default(1000));
+
+        httpClient.start();
+
+        // First request to http://example.com/old -> 301 -> http://example.com/new
+        // makes 2 round-trips and caches the redirect.
+
+        // Second request to http://example.com/old goes directly to /new
+        // making only 1 round-trip.
+        // end::permanentRedirectCache[]
     }
 
     public void addAuthentication() throws Exception

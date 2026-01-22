@@ -851,6 +851,26 @@ jakarta.servlet.http.Cookie cookie = new Cookie("foo", URLEncoder.encode("bar;ba
 Jetty validates all cookie names and values being added to the `HttpServletResponse` via the `addCookie(Cookie)` method.
 If an illegal value is discovered Jetty will throw an `IllegalArgumentException` with the details.
 
+[[redirect-cache]]
+== Permanent Redirect Caching
+
+By default, `HttpClient` follows redirects but does not cache them.
+This means that repeated requests to a URL that returns a permanent redirect (301 or 308) will each incur the redirect round-trip.
+
+You can enable permanent redirect caching to optimize this:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=permanentRedirectCache]
+----
+
+The cache stores permanent redirects (status codes 301 and 308) and applies them to subsequent requests, including any method transformations (for example, POST to GET for 301).
+
+The `PermanentRedirectCache.Default` implementation accepts a maximum size parameter to limit memory usage.
+When the limit is reached, least-recently-used entries are evicted.
+
+To disable caching (the default), do not set a cache or set it to `null`.
+
 [[authentication]]
 == HttpClient Authentication Support
 
