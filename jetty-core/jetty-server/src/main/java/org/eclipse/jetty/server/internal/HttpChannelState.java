@@ -622,6 +622,8 @@ public class HttpChannelState implements HttpChannel, Components
             completeStreamFailure = _writeFailure;  // TODO move as HttpChannelState._writeFailure
         if (completeStreamFailure == null)
             completeStreamFailure = _consumeAvailableFailure;
+        if (completeStreamFailure == null && _streamSendState == StreamSendState.FAILED)
+            completeStreamFailure = _callbackFailure;
         return completeStreamFailure;
     }
 
@@ -748,7 +750,6 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             HttpStream stream;
-            Throwable failure;
             Throwable completeStreamFailure;
             boolean completeStream;
             boolean callbackCompleted;
@@ -759,18 +760,17 @@ public class HttpChannelState implements HttpChannel, Components
                 stream = _stream;
                 _handling = null;
                 _handled = true;
-                failure = _callbackFailure;
                 callbackCompleted = _callbackCompleted;
                 lastStreamSendComplete = lockedIsLastStreamSendCompleted();
                 completeStream = callbackCompleted && lastStreamSendComplete;
                 completeStreamFailure = lockedCompleteStreamFailure();
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("handler invoked: completeStream={} failure={} callbackCompleted={} {}", completeStream, failure, callbackCompleted, HttpChannelState.this);
+                    LOG.debug("handler invoked: completeStream={} failure={} callbackCompleted={} {}", completeStream, completeStreamFailure, callbackCompleted, HttpChannelState.this);
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("stream={}, failure={}, callbackCompleted={}, completeStream={}", stream, failure, callbackCompleted, completeStream);
+                LOG.debug("stream={}, failure={}, callbackCompleted={}, completeStream={}", stream, completeStreamFailure, callbackCompleted, completeStream);
 
             if (completeStream)
                 completeStream(stream, completeStreamFailure);
