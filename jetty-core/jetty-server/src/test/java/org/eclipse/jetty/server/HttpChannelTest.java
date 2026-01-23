@@ -1597,9 +1597,9 @@ public class HttpChannelTest
         boolean failed = events.contains(CompletionTestEvent.FAIL);
 
         assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
         if (!failed || expectErrorResponse)
         {
+            assertThat(stream.getFailure(), nullValue());
             assertThat(stream.getResponse(), notNullValue());
             assertThat(stream.getResponse().getStatus(), equalTo(failed ? 500 : 200));
             assertThat(stream.getResponseHeaders().get("Test"), failed ? nullValue() : equalTo("Value"));
@@ -1607,6 +1607,7 @@ public class HttpChannelTest
         }
         else
         {
+            assertThat(stream.getFailure(), notNullValue());
             assertThat(stream.getResponse(), nullValue());
         }
     }
