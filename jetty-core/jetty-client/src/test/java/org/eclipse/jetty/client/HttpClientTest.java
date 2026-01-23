@@ -2175,11 +2175,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         httpConfig.setMaxResponseHeaderSize(2 * capacity);
         client.setMaxResponseHeadersSize(4 * capacity);
 
-        assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .headers(h -> h.put("X-Capacity", capacity))
             .timeout(5, TimeUnit.SECONDS)
-            .send());
+            .send();
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
+        assertFalse(response.getHeaders().contains(HttpFields.CONNECTION_CLOSE));
+        assertThat(response.getContentAsString(), containsString("Response Header Fields Too Large"));
     }
 
     @ParameterizedTest

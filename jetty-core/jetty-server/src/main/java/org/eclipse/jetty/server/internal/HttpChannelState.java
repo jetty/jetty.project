@@ -1659,10 +1659,29 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     doLastStreamSend = httpChannelState.lockedLastStreamSend();
                     if (doLastStreamSend)
-                        response._writeCallback = httpChannelState._lastWriteCallback;
+                    {
+                        LastWriteCallback lastWriteCallback = httpChannelState._lastWriteCallback;
+                        if (stream.isCommitted())
+                        {
+                            response._writeCallback = lastWriteCallback;
+                        }
+                        else
+                        {
+                            ErrorResponse errResponse = new ErrorResponse(request);
+                            response._writeCallback = Callback.from(lastWriteCallback.getInvocationType(), lastWriteCallback::succeeded, x ->
+                            {
+                                if (stream.isCommitted())
+                                    lastWriteCallback.failed(x);
+                                else
+                                    Response.writeError(request, errResponse, new ErrorCallback(request, errResponse, stream, x), x);
+                            });
+                        }
+                    }
                     // or complete the stream if everything is done.
                     else if (httpChannelState.lockedIsLastStreamSendCompleted())
+                    {
                         completeStream = httpChannelState._handled;
+                    }
                 }
                 else
                 {
@@ -1841,10 +1860,11 @@ public class HttpChannelState implements HttpChannel, Components
             boolean needLastWrite;
             MetaData.Response responseMetaData = null;
             HttpChannelState httpChannelState;
+            Callback lastWriteCallback;
             try (AutoLock ignored = _request._lock.lock())
             {
                 httpChannelState = _request.getHttpChannelState();
-
+                lastWriteCallback = httpChannelState._lastWriteCallback;
                 // Did the ErrorHandler do the last write?
                 needLastWrite = httpChannelState.lockedLastStreamSend();
                 if (needLastWrite && _errorResponse.getResponseHttpFields().commit())
@@ -1852,9 +1872,9 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (needLastWrite)
-                _stream.send(_request._metaData, responseMetaData, true, null, httpChannelState._lastWriteCallback);
+                _stream.send(_request._metaData, responseMetaData, true, null, lastWriteCallback);
             else
-                httpChannelState._lastWriteCallback.succeeded();
+                lastWriteCallback.succeeded();
         }
 
         /**
