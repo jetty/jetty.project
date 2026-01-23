@@ -13,12 +13,19 @@
 
 package org.eclipse.jetty.quic.api.tls.ext;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.tls.ext.Extension;
 
 public record QuicTransportParametersExtension(TransportParameters parameters) implements Extension
 {
     public static final int CODE = 0x0039;
+
+    public QuicTransportParametersExtension
+    {
+        Objects.requireNonNull(parameters);
+    }
 
     @Override
     public int code()

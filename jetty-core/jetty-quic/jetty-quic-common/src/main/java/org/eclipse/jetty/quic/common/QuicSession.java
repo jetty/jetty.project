@@ -49,8 +49,6 @@ import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.ZeroRTTPacket;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.tls.Message;
-import org.eclipse.jetty.tls.ServerHelloMessage;
-import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -304,17 +302,18 @@ public abstract class QuicSession extends AbstractSession
                 return;
             }
 
-            // RFC 9000, 7.2: the packet must be discarded
-            // if destination connection ID does not match.
-            if (!Arrays.equals(srcConnectionId, packet.destinationConnectionId()))
+            if (packet instanceof InitialPacket || Arrays.equals(srcConnectionId, packet.destinationConnectionId()))
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("packet does not match connection id on {}", this);
-                // TODO: consume the buffer?
+                notifyIncomingPacket(packet);
                 return;
             }
 
-            notifyIncomingPacket(packet);
+            // RFC-9000[7.2]: the packet must be discarded
+            // if destination connection ID does not match.
+            if (LOG.isDebugEnabled())
+                LOG.debug("packet does not match connection id on {}", this);
+            // TODO: consume the buffer?
+            return;
         }
     }
 
@@ -422,23 +421,7 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    private void processMessage(Message message)
-    {
-        switch (message)
-        {
-            case ServerHelloMessage serverHello -> processServerHello(serverHello);
-            default -> throw new TLSException(TLSException.Alert.UNEXPECTED_MESSAGE, "unexpected TLS message");
-        }
-    }
-
-    private void processServerHello(ServerHelloMessage serverHello)
-    {
-
-
-
-        // TODO: verify QuicTransportParametersExtension, etc.
-        tlsEngine.onMessageParsed(serverHello);
-    }
+    protected abstract void processMessage(Message message);
 
     private void processStreamFrame(Frame frame)
     {

@@ -20,12 +20,14 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStream;
 import org.eclipse.jetty.quic.common.SessionContainer;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.DatagramServerConnector;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -42,7 +44,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class QuicServerConnector extends DatagramServerConnector
 {
     private final SessionContainer container = new SessionContainer();
-    private final QuicServerConnectionFactory connectionFactory;
+    private final QuicServerConnectionFactory quicConnectionFactory;
 
     public QuicServerConnector(Server server, SslContextFactory.Server sslContextFactory, QuicServerQuicConfiguration quicConfiguration, ConnectionFactory... factories)
     {
@@ -52,36 +54,42 @@ public class QuicServerConnector extends DatagramServerConnector
     public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, QuicServerQuicConfiguration quicConfiguration, ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, factories);
-        this.connectionFactory = new QuicServerConnectionFactory(sslContextFactory, quicConfiguration);
+        this.quicConnectionFactory = new QuicServerConnectionFactory(sslContextFactory, quicConfiguration);
+    }
+
+    public QuicServerConnector(Server server, SslContextFactory.Server sslContextFactory, QuicServerQuicConfiguration quicConfiguration, Session.Listener.Factory sessionListenerFactory)
+    {
+        super(server, new HttpConnectionFactory());
+        this.quicConnectionFactory = new QuicServerConnectionFactory(sslContextFactory, quicConfiguration, sessionListenerFactory);
     }
 
     public SslContextFactory.Server getSslContextFactory()
     {
-        return connectionFactory.getSslContextFactory();
+        return quicConnectionFactory.getSslContextFactory();
     }
 
     public QuicServerQuicConfiguration getServerQuicConfiguration()
     {
-        return connectionFactory.getServerQuicConfiguration();
+        return quicConnectionFactory.getServerQuicConfiguration();
     }
 
     public int getInputBufferSize()
     {
-        return connectionFactory.getInputBufferSize();
+        return quicConnectionFactory.getInputBufferSize();
     }
 
     public void setInputBufferSize(int inputBufferSize)
     {
-        connectionFactory.setInputBufferSize(inputBufferSize);
+        quicConnectionFactory.setInputBufferSize(inputBufferSize);
     }
 
     protected void doStart() throws Exception
     {
         addBean(container);
-        addBean(connectionFactory);
+        addBean(quicConnectionFactory);
 
-        connectionFactory.configure(this);
-        QuicServerQuicConfiguration quicConfiguration = connectionFactory.getServerQuicConfiguration();
+        quicConnectionFactory.configure(this);
+        QuicServerQuicConfiguration quicConfiguration = quicConnectionFactory.getServerQuicConfiguration();
         quicConfiguration.addEventListener(container);
 
         super.doStart();
@@ -90,7 +98,7 @@ public class QuicServerConnector extends DatagramServerConnector
     @Override
     public ConnectionFactory getDefaultConnectionFactory()
     {
-        return connectionFactory;
+        return quicConnectionFactory;
     }
 
     @Override

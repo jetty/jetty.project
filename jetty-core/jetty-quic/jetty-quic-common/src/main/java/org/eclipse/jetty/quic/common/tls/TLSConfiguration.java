@@ -16,14 +16,13 @@ package org.eclipse.jetty.quic.common.tls;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class TLSConfiguration
 {
     private final List<Extension> extensions = new ArrayList<>();
     private List<String> applicationProtocols;
-    private TransportParameters transportParameters;
 
     public void addExtension(Extension extension)
     {
@@ -40,18 +39,14 @@ public class TLSConfiguration
         this.applicationProtocols = applicationProtocols;
     }
 
-    public TransportParameters getTransportParameters()
-    {
-        return transportParameters;
-    }
-
-    public void setTransportParameters(TransportParameters transportParameters)
-    {
-        this.transportParameters = transportParameters;
-    }
-
     public List<Extension> getExtensions()
     {
         return extensions;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
     }
 }

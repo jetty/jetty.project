@@ -75,7 +75,6 @@ public abstract class AbstractQuicServerConnectionFactory extends AbstractConnec
         addBean(sslContextFactory);
         addBean(quicConfiguration);
         super.doStart();
-        quicConfiguration.configure(sslContextFactory);
     }
 
     @Override

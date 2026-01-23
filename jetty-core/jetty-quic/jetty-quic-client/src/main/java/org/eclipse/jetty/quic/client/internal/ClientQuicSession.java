@@ -36,6 +36,11 @@ import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.RetryPacket;
+import org.eclipse.jetty.tls.CertificateMessage;
+import org.eclipse.jetty.tls.CertificateVerifyMessage;
+import org.eclipse.jetty.tls.FinishedMessage;
+import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.tls.ServerHelloMessage;
 import org.eclipse.jetty.tls.ext.ALPNExtension;
 import org.eclipse.jetty.tls.ext.ServerNameExtension;
 import org.eclipse.jetty.util.BufferUtil;
@@ -170,6 +175,19 @@ public class ClientQuicSession extends QuicSession
         {
             case RetryPacket retryPacket -> processRetryPacket(retryPacket);
             default -> super.processPacket(packet);
+        }
+    }
+
+    @Override
+    protected void processMessage(Message message)
+    {
+        switch (message)
+        {
+            case ServerHelloMessage serverHello -> getTLSEngine().onMessageParsed(serverHello);
+            case CertificateMessage certificate -> getTLSEngine().onMessageParsed(certificate);
+            case CertificateVerifyMessage certificateVerify -> getTLSEngine().onMessageParsed(certificateVerify);
+            case FinishedMessage finished -> getTLSEngine().onMessageParsed(finished);
+            default -> throw new IllegalStateException("unexpected message " + message);
         }
     }
 

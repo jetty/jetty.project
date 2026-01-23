@@ -124,7 +124,7 @@ public class PacketProtector implements Encrypter, Decrypter
         }
         catch (Throwable x)
         {
-            throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
+            throw TLSException.wrap(x);
         }
     }
 
@@ -133,7 +133,7 @@ public class PacketProtector implements Encrypter, Decrypter
         try
         {
             if (encryptionLevel != EncryptionLevel.INITIAL)
-                throw new IllegalStateException("cannot allocate initial keys at encryption level " + encryptionLevel);
+                throw new IllegalStateException("cannot allocate handshake keys at encryption level " + encryptionLevel);
 
             transcriptHash.initialize(cipherSuite);
 
@@ -191,7 +191,7 @@ public class PacketProtector implements Encrypter, Decrypter
         try
         {
             if (encryptionLevel != EncryptionLevel.HANDSHAKE)
-                throw new IllegalStateException("cannot allocate initial keys at encryption level " + encryptionLevel);
+                throw new IllegalStateException("cannot allocate application keys at encryption level " + encryptionLevel);
 
             KeyManager keyManager = new KeyManager(EncryptionLevel.ONE_RTT);
             if (keyManagers.put(EncryptionLevel.ONE_RTT, keyManager) != null)
