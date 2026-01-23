@@ -1394,7 +1394,8 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel = _request.lockedGetHttpChannelState();
                 httpChannel.lockedStreamSendCompleted(true);
             }
-            httpChannel._writeInvoker.run(Invocable.from(callback.getInvocationType(), callback::succeeded));
+            if (callback != null)
+                httpChannel._writeInvoker.run(Invocable.from(callback.getInvocationType(), callback::succeeded));
         }
 
         /**
@@ -1421,7 +1422,8 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel = _request.lockedGetHttpChannelState();
                 httpChannel.lockedStreamSendCompleted(false);
             }
-            httpChannel._writeInvoker.run(() -> HttpChannelState.failed(callback, x));
+            if (callback != null)
+                httpChannel._writeInvoker.run(() -> HttpChannelState.failed(callback, x));
         }
 
         @Override
