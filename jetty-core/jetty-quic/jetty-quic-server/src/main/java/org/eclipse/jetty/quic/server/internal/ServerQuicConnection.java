@@ -33,8 +33,10 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.packets.ConnectionId;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
@@ -49,7 +51,6 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -73,7 +74,7 @@ public class ServerQuicConnection extends QuicConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerQuicConnection.class);
 
-    private final ConcurrentMap<String, ServerQuicSession> sessions = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ConnectionId, ServerQuicSession> sessions = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Flusher flusher = new Flusher();
     private final Connector connector;
@@ -200,7 +201,7 @@ public class ServerQuicConnection extends QuicConnection
                     bytes = new byte[getDestinationConnectionIdLength()];
                     byteBuffer.get(offset, bytes);
                 }
-                String dstConnectionId = StringUtil.toHexString(bytes);
+                ConnectionId dstConnectionId = new ConnectionId(bytes);
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("packet dcid {} on {}", dstConnectionId, this);
@@ -223,16 +224,31 @@ public class ServerQuicConnection extends QuicConnection
         }
     }
 
-    private Runnable process(String dstConnectionId, SocketAddress remoteAddress, RetainableByteBuffer buffer) throws Exception
+    private Runnable process(ConnectionId dstConnectionId, SocketAddress remoteAddress, RetainableByteBuffer buffer) throws Exception
     {
         ServerQuicSession session = sessions.get(dstConnectionId);
         if (session == null)
         {
             session = newSession();
+            session.initialize(dstConnectionId.bytes());
             session.setRemoteSocketAddress(remoteAddress);
-            session.setIdleTimeout(getEndPoint().getIdleTimeout());
+            long idleTimeout = getEndPoint().getIdleTimeout();
+            session.setIdleTimeout(idleTimeout);
+
+            ServerTLSConfiguration tlsConfiguration = session.getTLSEngine().getTLSConfiguration();
+            tlsConfiguration.setApplicationProtocols(connector.getProtocols());
+
+            // RFC-9000[18.2].
+            TransportParameters transportParameters = tlsConfiguration.getTransportParameters();
+            transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, Math.max(idleTimeout, 0L));
+            transportParameters.put(TransportParameters.Ids.ORIGINAL_DESTINATION_CONNECTION_ID, dstConnectionId.bytes());
+            // TODO
+//            transportParameters.put(TransportParameters.Ids.PREFERRED_ADDRESS, null);
+            transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, session.getSourceConnectionId());
+
             LifeCycle.start(session);
-            sessions.put(dstConnectionId, session);
+
+            sessions.put(new ConnectionId(session.getDestinationConnectionId()), session);
             if (LOG.isDebugEnabled())
                 LOG.debug("created new {} on {}", session, this);
         }
@@ -258,7 +274,6 @@ public class ServerQuicConnection extends QuicConnection
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, true), new QuicMessagesGenerator(byteBufferPool, false));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
         ServerTLSConfiguration tlsConfiguration = new ServerTLSConfiguration(getServerQuicConfiguration(), getSslContextFactory());
-        tlsConfiguration.setApplicationProtocols(connector.getProtocols());
         ServerTLSEngine tlsEngine = new ServerTLSEngine(protector, tlsConfiguration);
         Session.Listener listener = getSessionListenerFactory().newListener();
         return new ServerQuicSession(connector, getServerQuicConfiguration(), this, packetNumbers, tlsEngine, listener, getEndPoint());
@@ -321,7 +336,7 @@ public class ServerQuicConnection extends QuicConnection
         if (LOG.isDebugEnabled())
             LOG.debug("disconnect {} {} on {}", frame, session, this);
         byte[] dstConnectionId = session.getDestinationConnectionId();
-        sessions.remove(StringUtil.toHexString(dstConnectionId));
+        sessions.remove(new ConnectionId(dstConnectionId));
         // Do nothing else, as the current architecture only has one
         // listening DatagramChannelEndPoint, so it must not be closed.
     }

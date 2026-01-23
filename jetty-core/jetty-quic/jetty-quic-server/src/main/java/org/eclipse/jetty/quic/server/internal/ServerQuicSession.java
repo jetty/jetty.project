@@ -27,10 +27,16 @@ import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
+import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.quic.server.internal.tls.ServerTLSEngine;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.tls.CertificateMessage;
+import org.eclipse.jetty.tls.CertificateVerifyMessage;
+import org.eclipse.jetty.tls.ClientHelloMessage;
+import org.eclipse.jetty.tls.FinishedMessage;
+import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -53,6 +59,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         // Link the ServerTLSEngine back to this session to
         // be notified when the TLS handshake is complete.
         tlsEngine.addHandshakeListener(this::handshakeComplete);
+        setDestinationConnectionId(tlsEngine.newRandomBytes(8));
     }
 
     @Override
@@ -62,9 +69,22 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     }
 
     @Override
+    public ServerTLSEngine getTLSEngine()
+    {
+        return (ServerTLSEngine)super.getTLSEngine();
+    }
+
+    @Override
     public ServerQuicConnection getQuicConnection()
     {
         return (ServerQuicConnection)super.getQuicConnection();
+    }
+
+    void initialize(byte[] dstConnectionId)
+    {
+        PacketProtector packetProtector = getTLSEngine().getPacketProtector();
+        packetProtector.updateEncryptionLevel(EncryptionLevel.INITIAL);
+        packetProtector.allocateInitialKeys(getQuicConfiguration().getQuicVersion(), dstConnectionId);
     }
 
     @Override
@@ -118,6 +138,20 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         // TODO: validate token or throw QuicException(INVALID_TOKEN_ERROR).
 
         super.processPacket(packet);
+    }
+
+    @Override
+    protected void processMessage(Message message)
+    {
+        switch (message)
+        {
+            // TODO: verify QuicTransportParametersExtension in ClientHello, etc.
+            case ClientHelloMessage clientHello -> getTLSEngine().onMessageParsed(clientHello);
+            case CertificateMessage certificate -> getTLSEngine().onMessageParsed(certificate);
+            case CertificateVerifyMessage certificateVerify -> getTLSEngine().onMessageParsed(certificateVerify);
+            case FinishedMessage finished -> getTLSEngine().onMessageParsed(finished);
+            default -> throw new IllegalStateException("unexpected message " + message);
+        }
     }
 
     private void handshakeComplete(Throwable failure)

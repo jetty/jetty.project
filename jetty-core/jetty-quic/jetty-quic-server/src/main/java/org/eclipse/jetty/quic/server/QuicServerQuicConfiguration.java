@@ -26,6 +26,11 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
     private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519/*, NamedGroup.secp256r1, NamedGroup.ffdhe2048*/);
     private List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256);
     private int destinationConnectionIdLength = 8;
+    private long udpPayloadMaxSize = 65527;
+    private long ackDelayExponent = 3;
+    private long ackMaxDelay = 25;
+    private boolean enableConnectionMigration;
+    private long connectionIdMaxCount = 2;
 
     public List<SignatureAlgorithm> getSignatureAlgorithms()
     {
@@ -67,6 +72,64 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
         if (destinationConnectionIdLength < 0 || destinationConnectionIdLength > 20)
             throw new IllegalArgumentException("invalid destinationConnectionId length: " + destinationConnectionIdLength);
         this.destinationConnectionIdLength = destinationConnectionIdLength;
+    }
+
+    public Long getUDPPayloadMaxSize()
+    {
+        return udpPayloadMaxSize;
+    }
+
+    public void setUdpPayloadMaxSize(long udpPayloadMaxSize)
+    {
+        if (udpPayloadMaxSize < 1200)
+            throw new IllegalArgumentException("invalid UDPPayloadMaxSize: " + udpPayloadMaxSize);
+        this.udpPayloadMaxSize = udpPayloadMaxSize;
+    }
+
+    public long getAcknowledgmentDelayExponent()
+    {
+        return ackDelayExponent;
+    }
+
+    public void setAcknowledgmentDelayExponent(long ackDelayExponent)
+    {
+        if (ackMaxDelay < 0 || ackDelayExponent > 20)
+            throw new IllegalArgumentException("invalid AcknowledgmentDelayExponent: " + ackDelayExponent);
+        this.ackDelayExponent = ackDelayExponent;
+    }
+
+    public long getAcknowledgmentMaxDelay()
+    {
+        return ackMaxDelay;
+    }
+
+    public void setAcknowledgmentMaxDelay(long ackMaxDelay)
+    {
+        if (ackMaxDelay < 0 || ackMaxDelay >= (1 << 14))
+            throw new IllegalArgumentException("invalid AcknowledgmentMaxDelay: " + ackMaxDelay);
+        this.ackMaxDelay = ackMaxDelay;
+    }
+
+    public boolean isEnableConnectionMigration()
+    {
+        return enableConnectionMigration;
+    }
+
+    public void setEnableConnectionMigration(boolean enableConnectionMigration)
+    {
+        this.enableConnectionMigration = enableConnectionMigration;
+    }
+
+    public long getConnectionIdMaxCount()
+    {
+        return connectionIdMaxCount;
+    }
+
+    public void setConnectionIdMaxCount(long connectionIdMaxCount)
+    {
+        if (connectionIdMaxCount < 2)
+            throw new IllegalArgumentException("invalid ConnectionIdMaxCount: " + connectionIdMaxCount);
+        this.connectionIdMaxCount = connectionIdMaxCount;
     }
 
     // TODO: remove, as this may be per-connection.

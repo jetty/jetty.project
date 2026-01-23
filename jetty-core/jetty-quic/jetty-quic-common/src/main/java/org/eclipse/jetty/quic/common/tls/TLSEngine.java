@@ -193,6 +193,10 @@ public abstract class TLSEngine implements MessageParser.Listener
 
     protected void dispose(Throwable failure)
     {
+        if (failure == null)
+            return;
+        if (LOG.isDebugEnabled())
+            LOG.atDebug().setCause(failure).log("failure on {}", this);
         notifyHandshakeCompleted(TLSException.wrap(failure));
     }
 

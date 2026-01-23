@@ -19,6 +19,7 @@ import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import javax.crypto.SecretKey;
@@ -70,6 +71,11 @@ public class ServerTLSEngine extends TLSEngine
     {
         super(packetProtector, false);
         this.tlsConfiguration = tlsConfiguration;
+    }
+
+    public ServerTLSConfiguration getTLSConfiguration()
+    {
+        return tlsConfiguration;
     }
 
     @Override
@@ -169,6 +175,11 @@ public class ServerTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("produced {} on {}", serverHello, this);
 
+        // TODO: doing this will cause the ServerHello to arrive to the client, which may reply before
+        //  the post-processing takes place.
+        //  Perhaps an explicit EncryptionLevel in the API?
+        //  In this way it would be explicit, and we would only need to discard the keys are the right time.
+        //  This would only affect crypto(), like it should.
         notifyMessages(List.of(serverHello), Callback.from(Invocable.InvocationType.NON_BLOCKING, this::postProcessClientHello, this::dispose));
     }
 
@@ -258,11 +269,10 @@ public class ServerTLSEngine extends TLSEngine
             boolean sniRequired = tlsConfiguration.getSslContextFactory().isSniRequired();
             if (serverName == null && sniRequired)
                 throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing ServerNameExtension");
-            SignatureWithKeyStorePair candidate = null;
             SignatureWithKeyStorePair match = null;
             if (serverName != null)
                 match = selectCertificate(pairs, serverName);
-            candidate = serverName == null ? pairs.getFirst() : match;
+            SignatureWithKeyStorePair candidate = serverName == null ? pairs.getFirst() : match;
             if (candidate == null)
             {
                 if (sniRequired)
@@ -305,7 +315,7 @@ public class ServerTLSEngine extends TLSEngine
         }
         catch (Throwable x)
         {
-            dispose(TLSException.wrap(x));
+            dispose(x);
         }
     }
 
@@ -317,15 +327,19 @@ public class ServerTLSEngine extends TLSEngine
             X509Certificate leaf = pair.keyStorePair().certificates().getFirst();
 
             // First, try to match the SubjectAlternativeNames (SAN).
-            for (List<?> entry : leaf.getSubjectAlternativeNames())
+            Collection<List<?>> subjectAlternativeNames = leaf.getSubjectAlternativeNames();
+            if (subjectAlternativeNames != null)
             {
-                // See getSubjectAlternativeNames() javadocs for the structure of the entry.
-                int entryType = (int)entry.getFirst();
-                // EntryType is DNSName.
-                if (entryType == 2 && matches((String)entry.get(1), serverName))
+                for (List<?> entry : subjectAlternativeNames)
                 {
-                    candidate = pair;
-                    break;
+                    // See getSubjectAlternativeNames() javadocs for the structure of the entry.
+                    int entryType = (int)entry.getFirst();
+                    // EntryType is DNSName.
+                    if (entryType == 2 && matches((String)entry.get(1), serverName))
+                    {
+                        candidate = pair;
+                        break;
+                    }
                 }
             }
 

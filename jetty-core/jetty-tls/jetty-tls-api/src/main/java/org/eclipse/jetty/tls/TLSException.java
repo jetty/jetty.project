@@ -88,10 +88,10 @@ public class TLSException extends RuntimeException
         }
     }
 
-    public static Throwable wrap(Throwable failure)
+    public static TLSException wrap(Throwable failure)
     {
-        if (failure instanceof TLSException)
-            return failure;
+        if (failure instanceof TLSException tlsException)
+            return tlsException;
         return new TLSException(Alert.INTERNAL_ERROR, failure);
     }
 }

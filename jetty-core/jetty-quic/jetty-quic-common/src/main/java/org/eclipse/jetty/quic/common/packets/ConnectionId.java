@@ -11,25 +11,32 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.api.tls.ext;
+package org.eclipse.jetty.quic.common.packets;
 
-import java.util.Objects;
+import java.util.Arrays;
 
-import org.eclipse.jetty.quic.api.frames.TransportParameters;
-import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.StringUtil;
 
-public record QuicTransportParametersExtension(TransportParameters parameters) implements Extension
+// TODO: make this class private/internal?
+public record ConnectionId(byte[] bytes)
 {
-    public static final int CODE = 0x0039;
-
-    public QuicTransportParametersExtension
+    @Override
+    public int hashCode()
     {
-        Objects.requireNonNull(parameters);
+        return Arrays.hashCode(bytes);
     }
 
     @Override
-    public int code()
+    public boolean equals(Object obj)
     {
-        return CODE;
+        if (obj instanceof ConnectionId that)
+            return Arrays.equals(bytes, that.bytes);
+        return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s[%s]".formatted(getClass().getSimpleName(), StringUtil.toHexString(bytes));
     }
 }

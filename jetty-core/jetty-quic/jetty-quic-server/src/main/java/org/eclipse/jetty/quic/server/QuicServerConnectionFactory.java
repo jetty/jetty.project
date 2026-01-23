@@ -41,7 +41,12 @@ public class QuicServerConnectionFactory extends AbstractQuicServerConnectionFac
 
     public QuicServerConnectionFactory(SslContextFactory.Server sslContextFactory, QuicServerQuicConfiguration quicConfiguration)
     {
-        super(sslContextFactory, quicConfiguration, new ProtocolSessionListenerFactory());
+        this(sslContextFactory, quicConfiguration, new ProtocolSessionListenerFactory());
+    }
+
+    public QuicServerConnectionFactory(SslContextFactory.Server sslContextFactory, QuicServerQuicConfiguration quicConfiguration, Session.Listener.Factory sessionListenerFactory)
+    {
+        super(sslContextFactory, quicConfiguration, sessionListenerFactory);
     }
 
     @Override

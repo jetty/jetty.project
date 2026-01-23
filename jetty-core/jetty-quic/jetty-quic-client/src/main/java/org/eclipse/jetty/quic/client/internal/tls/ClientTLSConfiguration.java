@@ -23,7 +23,7 @@ import org.eclipse.jetty.tls.NamedGroup;
 import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class ClientTLSConfiguration extends TLSConfiguration
+public final class ClientTLSConfiguration extends TLSConfiguration
 {
     private final QuicClientQuicConfiguration quicConfiguration;
     private final SslContextFactory.Client sslContextFactory;
