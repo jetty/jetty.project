@@ -814,7 +814,7 @@ public class HttpChannelState implements HttpChannel, Components
             try (AutoLock ignored = _lock.lock())
             {
                 assert _callbackCompleted;
-                _streamSendState = StreamSendState.LAST_COMPLETE;
+                _streamSendState = failure == null ? StreamSendState.LAST_COMPLETE : StreamSendState.FAILED;
                 completeStream = _handling == null; // if we have not handled yet or have completed handling
                 stream = _stream;
                 _lastWriteFailure = failure;
