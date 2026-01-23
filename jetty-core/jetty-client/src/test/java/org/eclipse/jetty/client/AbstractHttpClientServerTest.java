@@ -22,6 +22,8 @@ import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -49,13 +51,18 @@ public abstract class AbstractHttpClientServerTest
 
     protected void startServer(Scenario scenario, Handler handler) throws Exception
     {
+        startServer(scenario, handler, new HttpConfiguration());
+    }
+
+    protected void startServer(Scenario scenario, Handler handler, HttpConfiguration config) throws Exception
+    {
         if (server == null)
         {
             QueuedThreadPool serverThreads = new QueuedThreadPool();
             serverThreads.setName("server");
             server = new Server(serverThreads);
         }
-        connector = new ServerConnector(server, scenario.newServerSslContextFactory());
+        connector = new ServerConnector(server, scenario.newServerSslContextFactory(), new HttpConnectionFactory(config));
         connector.setPort(0);
         server.addConnector(connector);
         server.setHandler(handler);

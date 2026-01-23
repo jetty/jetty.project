@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -46,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -103,6 +105,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testQualityCSV(Scenario scenario) throws Exception
+    {
+        HttpConfiguration config = new HttpConfiguration();
+        config.setHttpCompliance(HttpCompliance.RFC2616);
+        startServer(scenario, new Handler.Abstract() {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                List<String> values = request.getHeaders().getCSV("Accept-Language", true);
+                response.write(true, ByteBuffer.wrap(("accept-lang: |" + values + "|").getBytes(StandardCharsets.UTF_8)), callback);
+                return true;
+            }
+        }, config);
+        startClient(scenario);
+
+        ContentResponse response = client.newRequest(scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/")
+            .headers(h -> h.put("Accept-Language", "a,\"b"))
+            .send();
+        assertEquals(200, response.getStatus());
+        assertEquals("accept-lang: |[a, \"b]|", response.getContentAsString());
+    }
+
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testStoppingClosesConnections(Scenario scenario) throws Exception
