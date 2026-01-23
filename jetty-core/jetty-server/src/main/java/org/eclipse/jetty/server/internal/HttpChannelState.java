@@ -624,6 +624,7 @@ public class HttpChannelState implements HttpChannel, Components
             completeStreamFailure = _writeFailure;
         if (completeStreamFailure == null)
             completeStreamFailure = _consumeAvailableFailure;
+        // Check for committed response with a non-last write then throwing an exception.
         if (completeStreamFailure == null)
             completeStreamFailure = _callbackFailure;
         return completeStreamFailure;
