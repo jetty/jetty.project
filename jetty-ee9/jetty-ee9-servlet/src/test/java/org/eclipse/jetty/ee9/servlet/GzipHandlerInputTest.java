@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 
@@ -34,8 +35,11 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -62,7 +66,9 @@ public class GzipHandlerInputTest
     public void init() throws Exception
     {
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
+        HttpConfiguration config = new HttpConfiguration();
+        config.setHttpCompliance(HttpCompliance.RFC2616);
+        ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(config));
         server.addConnector(connector);
 
         GzipHandler gzipHandler = new GzipHandler();
@@ -138,7 +144,11 @@ public class GzipHandlerInputTest
         };
         Request request = client.newRequest(destURI)
             .method(HttpMethod.POST)
-            .headers((headers) -> headers.put(HttpHeader.CONTENT_ENCODING, "gzip"))
+            .headers((headers) ->
+            {
+                headers.put(HttpHeader.CONTENT_ENCODING, "gzip");
+                headers.put("Accept-Language", "1'\"6000");
+            })
             .body(bytesRequestContent);
         ContentResponse response = request.send();
 
@@ -158,6 +168,9 @@ public class GzipHandlerInputTest
         @Override
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
+            Locale locale = req.getLocale();
+            System.out.println(locale);
+
             InputStream input = req.getInputStream();
             byte[] buf = input.readAllBytes();
             resp.setCharacterEncoding("utf-8");
