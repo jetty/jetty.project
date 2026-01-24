@@ -46,25 +46,20 @@ public class ContainerLifeCycleMapTest
         TestLifeCycle bean1 = new TestLifeCycle("bean1");
         TestLifeCycle bean2 = new TestLifeCycle("bean2");
 
-        // Test put
         assertNull(map.put("key1", bean1));
         assertNull(map.put("key2", bean2));
 
-        // Test get
         assertEquals(bean1, map.get("key1"));
         assertEquals(bean2, map.get("key2"));
         assertNull(map.get("nonexistent"));
 
-        // Test size
         assertEquals(2, map.size());
         assertFalse(map.isEmpty());
 
-        // Test containsKey/containsValue
         assertTrue(map.containsKey("key1"));
         assertTrue(map.containsValue(bean1));
         assertFalse(map.containsKey("nonexistent"));
 
-        // Test remove
         assertEquals(bean1, map.remove("key1"));
         assertNull(map.get("key1"));
         assertNull(map.remove("nonexistent"));
@@ -129,8 +124,6 @@ public class ContainerLifeCycleMapTest
         TestLifeCycle bean = new TestLifeCycle("bean");
 
         map.put("key", bean);
-
-        // Bean should be added to the container
         assertTrue(map.contains(bean));
     }
 
@@ -190,23 +183,18 @@ public class ContainerLifeCycleMapTest
         map.put("key1", bean1);
         map.put("key2", bean2);
 
-        // Beans should not be started yet
         assertEquals(0, bean1.started.get());
         assertEquals(0, bean2.started.get());
 
-        // Start the container
         map.start();
 
-        // Beans should now be started
         assertEquals(1, bean1.started.get());
         assertEquals(1, bean2.started.get());
         assertTrue(bean1.isStarted());
         assertTrue(bean2.isStarted());
 
-        // Stop the container
         map.stop();
 
-        // Beans should now be stopped
         assertEquals(1, bean1.stopped.get());
         assertEquals(1, bean2.stopped.get());
         assertTrue(bean1.isStopped());
@@ -239,7 +227,6 @@ public class ContainerLifeCycleMapTest
         map.put("key1", bean1);
         map.put("key2", bean2);
 
-        // Remove via keySet
         map.keySet().remove("key1");
 
         assertNull(map.get("key1"));
@@ -257,7 +244,6 @@ public class ContainerLifeCycleMapTest
         map.put("key1", bean1);
         map.put("key2", bean2);
 
-        // Remove via keySet iterator
         Iterator<String> iter = map.keySet().iterator();
         while (iter.hasNext())
         {
@@ -283,7 +269,6 @@ public class ContainerLifeCycleMapTest
         map.put("key1", bean1);
         map.put("key2", bean2);
 
-        // Remove via values iterator
         Iterator<TestLifeCycle> iter = map.values().iterator();
         while (iter.hasNext())
         {
@@ -323,7 +308,6 @@ public class ContainerLifeCycleMapTest
         map.put("key1", bean1);
         map.put("key2", bean2);
 
-        // Remove via entrySet iterator
         Iterator<Map.Entry<String, TestLifeCycle>> iter = map.entrySet().iterator();
         while (iter.hasNext())
         {
@@ -348,7 +332,6 @@ public class ContainerLifeCycleMapTest
 
         map.put("key1", bean1);
 
-        // Set value via entry
         for (Map.Entry<String, TestLifeCycle> entry : map.entrySet())
         {
             if (entry.getKey().equals("key1"))
@@ -410,24 +393,20 @@ public class ContainerLifeCycleMapTest
         TestLifeCycle bean1 = new TestLifeCycle("bean1");
         TestLifeCycle bean2 = new TestLifeCycle("bean2");
 
-        // Put with lowercase key
         map.put("gzip", bean1);
 
-        // Get with different case should work
         assertEquals(bean1, map.get("GZIP"));
         assertEquals(bean1, map.get("Gzip"));
         assertEquals(bean1, map.get("gzip"));
         assertTrue(map.containsKey("GZIP"));
         assertTrue(map.containsKey("gzip"));
 
-        // Put with different case should replace
         map.put("GZIP", bean2);
         assertEquals(1, map.size());
         assertEquals(bean2, map.get("gzip"));
         assertFalse(map.contains(bean1));
         assertTrue(map.contains(bean2));
 
-        // Remove with different case should work
         assertEquals(bean2, map.remove("Gzip"));
         assertTrue(map.isEmpty());
         assertFalse(map.contains(bean2));
@@ -436,7 +415,6 @@ public class ContainerLifeCycleMapTest
     @Test
     public void testCustomMapLifeCycleManagement() throws Exception
     {
-        // Use a TreeMap with case-insensitive key ordering
         ContainerLifeCycleMap<String, TestLifeCycle> map =
             new ContainerLifeCycleMap<>(new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
 
@@ -446,23 +424,18 @@ public class ContainerLifeCycleMapTest
         map.put("encoding1", bean1);
         map.put("encoding2", bean2);
 
-        // Beans should be added as managed beans
         assertTrue(map.contains(bean1));
         assertTrue(map.contains(bean2));
 
-        // Start the container
         map.start();
 
-        // Beans should now be started
         assertEquals(1, bean1.started.get());
         assertEquals(1, bean2.started.get());
         assertTrue(bean1.isStarted());
         assertTrue(bean2.isStarted());
 
-        // Stop the container
         map.stop();
 
-        // Beans should now be stopped
         assertEquals(1, bean1.stopped.get());
         assertEquals(1, bean2.stopped.get());
         assertTrue(bean1.isStopped());
@@ -492,7 +465,6 @@ public class ContainerLifeCycleMapTest
         TestLifeCycle bean = new TestLifeCycle("bean");
         map.put("key", bean);
 
-        // Bean should be added to the map
         assertTrue(map.containsKey("key"));
         assertTrue(map.contains(bean));
     }
@@ -501,11 +473,9 @@ public class ContainerLifeCycleMapTest
     public void testNullValue()
     {
         ContainerLifeCycleMap<String, TestLifeCycle> map = new ContainerLifeCycleMap<>();
-        // Null values are allowed (HashMap behavior)
         map.put("key", null);
         assertTrue(map.containsKey("key"));
         assertNull(map.get("key"));
-        // Remove returns null as the value
         assertNull(map.remove("key"));
         assertFalse(map.containsKey("key"));
     }
