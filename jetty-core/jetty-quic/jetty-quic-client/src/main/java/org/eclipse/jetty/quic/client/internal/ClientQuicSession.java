@@ -23,6 +23,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.client.QuicClient;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.tls.ext.ALPNExtension;
 import org.eclipse.jetty.tls.ext.ServerNameExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +71,12 @@ public class ClientQuicSession extends QuicSession
     private static Session.Listener sessionListener(Map<String, Object> context)
     {
         return (Session.Listener)context.get(QuicClient.SESSION_LISTENER_CONTEXT_KEY);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Promise<Session> sessionPromise(Map<String, Object> context)
+    {
+        return (Promise<Session>)context.get(QuicClient.SESSION_PROMISE_CONTEXT_KEY);
     }
 
     @SuppressWarnings("unchecked")
@@ -127,14 +135,11 @@ public class ClientQuicSession extends QuicSession
             throw new IllegalStateException("missing ALPN protocols");
         tlsConfiguration.addExtension(new ALPNExtension(protocols));
 
-        TransportParameters transportParameters = notifyPrepare();
-        if (transportParameters == null)
-            transportParameters = new TransportParameters();
+        TransportParameters transportParameters = new TransportParameters();
         getQuicConfiguration().configure(transportParameters);
-        transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, getSourceConnectionId());
         transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, getIdleTimeout());
-        transportParameters.put(TransportParameters.Ids.ACTIVE_CONNECTION_ID_LIMIT, 2L);
-
+        transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, getSourceConnectionId());
+        notifyPrepare(transportParameters);
         tlsConfiguration.addExtension(new QuicTransportParametersExtension(transportParameters));
 
         byte[] dstConnectionId = getTLSEngine().newRandomBytes(12);
@@ -154,11 +159,7 @@ public class ClientQuicSession extends QuicSession
 
     private void handshakeComplete(Throwable failure)
     {
-        // TODO: maybe this is too early and we have to wait for HANDSHAKE_DONE.
-
-        if (failure == null)
-            notifyOpen();
-        else
+        if (failure != null)
             fail(failure);
     }
 
@@ -180,17 +181,49 @@ public class ClientQuicSession extends QuicSession
     }
 
     @Override
+    protected void processFrame(Packet.WithFrames packet, Frame frame)
+    {
+        switch (frame)
+        {
+            case HandshakeDoneFrame handshakeDone -> processHandshakeDone(packet, handshakeDone);
+            default -> super.processFrame(packet, frame);
+        }
+    }
+
+    private void processHandshakeDone(Packet.WithFrames packet, HandshakeDoneFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} in {} on {}", frame, packet, this);
+        notifyOpen();
+        sessionPromise(context).succeeded(this);
+    }
+
+    @Override
     protected void processMessage(Message message)
     {
         switch (message)
         {
-            case ServerHelloMessage serverHello -> getTLSEngine().onMessageParsed(serverHello);
+            case ServerHelloMessage serverHello -> processServerHello(serverHello);
             case EncryptedExtensionsMessage encryptedExtensions -> getTLSEngine().onMessageParsed(encryptedExtensions);
             case CertificateMessage certificate -> getTLSEngine().onMessageParsed(certificate);
             case CertificateVerifyMessage certificateVerify -> getTLSEngine().onMessageParsed(certificateVerify);
             case FinishedMessage finished -> getTLSEngine().onMessageParsed(finished);
             default -> throw new IllegalStateException("unexpected message " + message);
         }
+    }
+
+    private void processServerHello(ServerHelloMessage serverHello)
+    {
+        TransportParameters transportParameters = serverHello.extensions().stream()
+            .filter(ext -> ext instanceof QuicTransportParametersExtension)
+            .map(QuicTransportParametersExtension.class::cast)
+            .findFirst()
+            .map(QuicTransportParametersExtension::parameters)
+            .orElse(null);
+        // TODO: apply verifications to TransportParameters as per RFC.
+        notifyTransportParameters(transportParameters);
+
+        getTLSEngine().onMessageParsed(serverHello);
     }
 
     private void processRetryPacket(RetryPacket packet)
