@@ -13,17 +13,24 @@
 
 package org.eclipse.jetty.util.component;
 
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -355,25 +362,18 @@ public class ContainerLifeCycleMapTest
         assertTrue(map.contains(bean2));
     }
 
-    @Test
-    public void testKeySetClear() throws Exception
+    public static Stream<Arguments> clearViewSource()
     {
-        ContainerLifeCycleMap<String, TestLifeCycle> map = new ContainerLifeCycleMap<>();
-        TestLifeCycle bean1 = new TestLifeCycle("bean1");
-        TestLifeCycle bean2 = new TestLifeCycle("bean2");
-
-        map.put("key1", bean1);
-        map.put("key2", bean2);
-
-        map.keySet().clear();
-
-        assertTrue(map.isEmpty());
-        assertFalse(map.contains(bean1));
-        assertFalse(map.contains(bean2));
+        return Stream.of(
+            Arguments.of("keySet", (Consumer<ContainerLifeCycleMap<String, TestLifeCycle>>)map -> map.keySet().clear()),
+            Arguments.of("values", (Consumer<ContainerLifeCycleMap<String, TestLifeCycle>>)map -> map.values().clear()),
+            Arguments.of("entrySet", (Consumer<ContainerLifeCycleMap<String, TestLifeCycle>>)map -> map.entrySet().clear())
+        );
     }
 
-    @Test
-    public void testValuesClear() throws Exception
+    @ParameterizedTest
+    @MethodSource("clearViewSource")
+    public void testClearViaView(String viewName, Consumer<ContainerLifeCycleMap<String, TestLifeCycle>> clearOp) throws Exception
     {
         ContainerLifeCycleMap<String, TestLifeCycle> map = new ContainerLifeCycleMap<>();
         TestLifeCycle bean1 = new TestLifeCycle("bean1");
@@ -382,24 +382,7 @@ public class ContainerLifeCycleMapTest
         map.put("key1", bean1);
         map.put("key2", bean2);
 
-        map.values().clear();
-
-        assertTrue(map.isEmpty());
-        assertFalse(map.contains(bean1));
-        assertFalse(map.contains(bean2));
-    }
-
-    @Test
-    public void testEntrySetClear() throws Exception
-    {
-        ContainerLifeCycleMap<String, TestLifeCycle> map = new ContainerLifeCycleMap<>();
-        TestLifeCycle bean1 = new TestLifeCycle("bean1");
-        TestLifeCycle bean2 = new TestLifeCycle("bean2");
-
-        map.put("key1", bean1);
-        map.put("key2", bean2);
-
-        map.entrySet().clear();
+        clearOp.accept(map);
 
         assertTrue(map.isEmpty());
         assertFalse(map.contains(bean1));
@@ -484,6 +467,58 @@ public class ContainerLifeCycleMapTest
         assertEquals(1, bean2.stopped.get());
         assertTrue(bean1.isStopped());
         assertTrue(bean2.isStopped());
+    }
+
+    @Test
+    public void testDump() throws Exception
+    {
+        ContainerLifeCycleMap<String, TestLifeCycle> map = new ContainerLifeCycleMap<>();
+        map.put("key1", new TestLifeCycle("bean1"));
+
+        StringWriter sw = new StringWriter();
+        map.dump(sw, "");
+        String dump = sw.toString();
+
+        assertThat(dump, containsString("key1"));
+        assertThat(dump, containsString("bean1"));
+    }
+
+    @Test
+    public void testPutWhileRunning() throws Exception
+    {
+        ContainerLifeCycleMap<String, TestLifeCycle> map = new ContainerLifeCycleMap<>();
+        map.start();
+
+        TestLifeCycle bean = new TestLifeCycle("bean");
+        map.put("key", bean);
+
+        // Bean should be added to the map
+        assertTrue(map.containsKey("key"));
+        assertTrue(map.contains(bean));
+    }
+
+    @Test
+    public void testNullValue()
+    {
+        ContainerLifeCycleMap<String, TestLifeCycle> map = new ContainerLifeCycleMap<>();
+        // Null values are allowed (HashMap behavior)
+        map.put("key", null);
+        assertTrue(map.containsKey("key"));
+        assertNull(map.get("key"));
+        // Remove returns null as the value
+        assertNull(map.remove("key"));
+        assertFalse(map.containsKey("key"));
+    }
+
+    @Test
+    public void testEntrySetContains() throws Exception
+    {
+        ContainerLifeCycleMap<String, TestLifeCycle> map = new ContainerLifeCycleMap<>();
+        TestLifeCycle bean = new TestLifeCycle("bean");
+        map.put("key", bean);
+
+        Map.Entry<String, TestLifeCycle> entry = Map.entry("key", bean);
+        assertTrue(map.entrySet().contains(entry));
     }
 
     private static class TestLifeCycle extends AbstractLifeCycle
