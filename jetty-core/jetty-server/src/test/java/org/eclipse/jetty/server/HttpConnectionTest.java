@@ -170,6 +170,37 @@ public class HttpConnectionTest
         assertThat(response, containsString("<th>MESSAGE:</th><td>Unsupported Version</td>"));
     }
 
+    public static Stream<Arguments> http10ComplianceMethods()
+    {
+        List<Arguments> cases = new ArrayList<>();
+        for (String method : List.of("GET", "POST", "HEAD", "PUT", "DELETE"))
+        {
+            for (String compliance : List.of("LEGACY", "RFC2616_LEGACY", "RFC7230_LEGACY", "RFC2616", "RFC7230"))
+            {
+                cases.add(Arguments.of(method, compliance));
+            }
+        }
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("http10ComplianceMethods")
+    public void testHttp10WithCompliance(String method, String complianceName) throws Exception
+    {
+        _server.start();
+        HttpCompliance compliance = HttpCompliance.valueOf(complianceName);
+        _connector.getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setHttpCompliance(compliance);
+
+        String request = method + " /hello HTTP/1.0\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n";
+
+        String response = _connector.getResponse(request);
+        assertThat(response, startsWith("HTTP/1.1 "));
+    }
+
     /**
      * HTTP/0.9 does not support headers
      */
