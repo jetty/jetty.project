@@ -20,16 +20,19 @@ import org.eclipse.jetty.quic.common.packets.HandshakePacket;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.LongHeaderPacket;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
+import org.eclipse.jetty.quic.common.packets.RetryPacket;
 
 public class LongHeaderPacketsGenerator
 {
     private final InitialPacketGenerator initialGenerator;
     private final HandshakePacketGenerator handshakeGenerator;
+    private final RetryPacketGenerator retryGenerator;
 
     public LongHeaderPacketsGenerator(PacketNumbers packetNumbers, FramesGenerator framesGenerator, Encrypter encrypter)
     {
         initialGenerator = new InitialPacketGenerator(packetNumbers, framesGenerator, encrypter);
         handshakeGenerator = new HandshakePacketGenerator(packetNumbers, framesGenerator, encrypter);
+        retryGenerator = new RetryPacketGenerator(encrypter);
     }
 
     public void generate(RetainableByteBuffer.Mutable accumulator, LongHeaderPacket longPacket) throws Exception
@@ -38,8 +41,8 @@ public class LongHeaderPacketsGenerator
         {
             case InitialPacket initialPacket -> initialGenerator.generate(accumulator, initialPacket);
             case HandshakePacket handshakePacket -> handshakeGenerator.generate(accumulator, handshakePacket);
+            case RetryPacket retryPacket -> retryGenerator.generate(accumulator, retryPacket);
 //            case ZeroRTTPacket zeroRTTPacket -> zeroGenerator.generate(accumulator, zeroRTTPacket);
-//            case RetryPacket retryPacket -> retryGenerator.generate(accumulator, retryPacket);
             default -> throw new UnsupportedOperationException();
         }
     }

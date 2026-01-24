@@ -30,9 +30,11 @@ import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
+import org.eclipse.jetty.quic.common.packets.RetryPacket;
 import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.quic.server.internal.tls.ServerTLSEngine;
 import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
@@ -51,6 +53,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     private static final Logger LOG = LoggerFactory.getLogger(ServerQuicSession.class);
 
     private long expireNanoTime = Long.MAX_VALUE;
+    private byte[] originalDestinationConnectionId;
 
     public ServerQuicSession(Connector connector, QuicServerQuicConfiguration configuration, ServerQuicConnection connection, PacketNumbers packetNumbers, ServerTLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint)
     {
@@ -126,18 +129,50 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     @Override
     protected void processPacket(Packet packet)
     {
-        switch (packet)
+        try
         {
-            case InitialPacket initialPacket -> processInitialPacket(initialPacket);
-            default -> super.processPacket(packet);
+            switch (packet)
+            {
+                case InitialPacket initialPacket -> processInitialPacket(initialPacket);
+                default -> super.processPacket(packet);
+            }
+        }
+        catch (Throwable x)
+        {
+            fail(x);
         }
     }
 
-    private void processInitialPacket(InitialPacket packet)
+    private void processInitialPacket(InitialPacket packet) throws Exception
     {
-        // TODO: validate token or throw QuicException(INVALID_TOKEN_ERROR).
+        byte[] token = packet.token();
+        if (token.length == 0)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("no token in {} on {}", packet, this);
 
-        super.processPacket(packet);
+            // Store the odcid to be used for the next InitialPacket.
+            originalDestinationConnectionId = packet.destinationConnectionId();
+
+            token = getQuicConfiguration().getTokenFactory().newRetryToken(getRemoteSocketAddress(), originalDestinationConnectionId);
+            RetryPacket retryPacket = new RetryPacket(packet.quicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token);
+            packet(retryPacket);
+            // And drop the received InitialPacket.
+        }
+        else
+        {
+            boolean valid = getQuicConfiguration().getTokenFactory().isTokenValid(getRemoteSocketAddress(), originalDestinationConnectionId, token);
+            if (LOG.isDebugEnabled())
+                LOG.debug("token {} in {} on {}", valid ? "valid" : "invalid", packet, this);
+            if (!valid)
+                throw new QuicException(ErrorCode.INVALID_TOKEN_ERROR, "invalid_token");
+
+            // The token was valid, clear the odcid.
+            originalDestinationConnectionId = null;
+
+            // Process the InitialPacket.
+            super.processPacket(packet);
+        }
     }
 
     @Override

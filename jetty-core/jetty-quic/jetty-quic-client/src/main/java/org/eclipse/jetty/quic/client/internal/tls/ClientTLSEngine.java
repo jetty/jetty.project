@@ -130,6 +130,7 @@ public class ClientTLSEngine extends TLSEngine
             // the ClientHello sent in the first InitialPacket
             // must be discarded from the TranscriptHash.
             getPacketProtector().getTranscriptHash().clear();
+            getPacketProtector().getTranscriptHash().offer(clientHello, false);
             notifyMessages(EncryptionLevel.INITIAL, List.of(clientHello), Callback.from(Callback.NOOP, this::fail));
         }
         catch (Throwable x)

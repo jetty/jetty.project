@@ -60,6 +60,7 @@ public class ClientQuicSession extends QuicSession
     private final Map<String, Object> context;
     private byte[] firstDstConnectionId;
     private boolean retryPacketProcessed;
+    private byte[] retryToken;
 
     public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, ClientQuicConnection connection, PacketNumbers packetNumbers, ClientTLSEngine clientTLSEngine, EndPoint endPoint, Map<String, Object> context)
     {
@@ -166,7 +167,16 @@ public class ClientQuicSession extends QuicSession
     @Override
     protected InitialPacket newInitialPacket(List<Frame> frames)
     {
-        byte[] token = tokens.get(getEndPoint().getLocalSocketAddress(), getRemoteSocketAddress());
+        byte[] token;
+        if (retryToken != null)
+        {
+            token = retryToken;
+            retryToken = null;
+        }
+        else
+        {
+            token = tokens.get(getEndPoint().getLocalSocketAddress(), getRemoteSocketAddress());
+        }
         return new InitialPacket(getQuicConfiguration().getQuicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, getPacketNumbers().nextPacketNumber(EncryptionLevel.INITIAL), frames);
     }
 
@@ -228,6 +238,15 @@ public class ClientQuicSession extends QuicSession
 
     private void processRetryPacket(RetryPacket packet)
     {
+        // RFC-9000[17.2.5.1]: discard retry packets that
+        // have the same dcid as the first initial packet.
+        if (!Arrays.equals(getDestinationConnectionId(), packet.sourceConnectionId()))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("invalid destination connection id, discarding {} on {}", packet, this);
+            return;
+        }
+
         // RFC-9000[17.2.5.2]: only one retry packet can be processed.
         if (retryPacketProcessed)
         {
@@ -236,21 +255,9 @@ public class ClientQuicSession extends QuicSession
             return;
         }
         retryPacketProcessed = true;
+        retryToken = packet.token();
 
-        // RFC-9000[17.2.5.1]: discard retry packets that
-        // have the same dcid as the first initial packet.
-        if (Arrays.equals(getDestinationConnectionId(), packet.sourceConnectionId()))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("invalid destination connection id, discarding {} on {}", packet, this);
-            return;
-        }
-
-        tokens.put(getEndPoint().getLocalSocketAddress(), getRemoteSocketAddress(), packet.token());
-
-        // TODO: this must be done, but apparently Quiche does not like it.
-//        setDestinationConnectionId(packet.sourceConnectionId());
-
+        setDestinationConnectionId(packet.sourceConnectionId());
         getTLSEngine().retryHandshake();
     }
 }

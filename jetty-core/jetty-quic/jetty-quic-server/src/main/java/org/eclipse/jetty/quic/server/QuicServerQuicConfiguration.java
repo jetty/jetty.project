@@ -16,6 +16,7 @@ package org.eclipse.jetty.quic.server;
 import java.util.List;
 
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
+import org.eclipse.jetty.quic.server.internal.DefaultTokenFactory;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.NamedGroup;
 import org.eclipse.jetty.tls.SignatureAlgorithm;
@@ -26,6 +27,7 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
     private List<SignatureAlgorithm> signatureAlgorithms = List.of(SignatureAlgorithm.ECDSA_SECP256R1_SHA256, SignatureAlgorithm.RSA_PSS_RSAE_SHA256);
     private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519/*, NamedGroup.secp256r1, NamedGroup.ffdhe2048*/);
     private List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256);
+    private TokenFactory tokenFactory = new DefaultTokenFactory();
     private int destinationConnectionIdLength = 8;
     private long udpPayloadMaxSize = 65527;
     private long ackDelayExponent = 3;
@@ -61,6 +63,16 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
     public void setCipherSuites(List<CipherSuite> cipherSuites)
     {
         this.cipherSuites = cipherSuites;
+    }
+
+    public TokenFactory getTokenFactory()
+    {
+        return tokenFactory;
+    }
+
+    public void setTokenFactory(TokenFactory tokenFactory)
+    {
+        this.tokenFactory = tokenFactory;
     }
 
     public int getDestinationConnectionIdLength()
