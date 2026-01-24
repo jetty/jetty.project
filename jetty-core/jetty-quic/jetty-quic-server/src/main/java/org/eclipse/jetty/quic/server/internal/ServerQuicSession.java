@@ -61,7 +61,6 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         // Link the ServerTLSEngine back to this session to
         // be notified when the TLS handshake is complete.
         tlsEngine.addHandshakeListener(this::handshakeComplete);
-        setDestinationConnectionId(tlsEngine.newRandomBytes(8));
     }
 
     @Override

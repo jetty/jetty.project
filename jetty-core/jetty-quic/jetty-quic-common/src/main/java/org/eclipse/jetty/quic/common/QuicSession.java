@@ -309,6 +309,9 @@ public abstract class QuicSession extends AbstractSession
                 return;
             }
 
+            if (packet instanceof InitialPacket initialPacket)
+                setDestinationConnectionId(initialPacket.sourceConnectionId());
+
             // The packet was fully decrypted and parsed, ack it.
             // Processing of frames by a different layer (such as the TLS layer or
             // the application layer) is independent of acks at the transport layer.
@@ -336,7 +339,6 @@ public abstract class QuicSession extends AbstractSession
         {
             case InitialPacket initialPacket ->
             {
-                setDestinationConnectionId(initialPacket.sourceConnectionId());
                 processFrames(initialPacket);
             }
             case HandshakePacket handshakePacket ->
