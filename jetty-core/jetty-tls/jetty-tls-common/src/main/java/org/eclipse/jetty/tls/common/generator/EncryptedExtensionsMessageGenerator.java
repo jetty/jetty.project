@@ -44,7 +44,7 @@ public class EncryptedExtensionsMessageGenerator extends MessageGenerator
         // RFC 8446, 4.3.1.
         int length = 2 + extensionsLength;
 
-        int typeAndLength = (message.type().type() << 24) | length;
+        int typeAndLength = (message.type().code() << 24) | length;
         accumulator.putInt(typeAndLength);
 
         accumulator.putShort((short)extensionsLength);

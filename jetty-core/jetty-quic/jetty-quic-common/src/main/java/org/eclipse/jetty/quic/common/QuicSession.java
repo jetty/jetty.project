@@ -48,6 +48,8 @@ import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.ZeroRTTPacket;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
+import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -297,23 +299,31 @@ public abstract class QuicSession extends AbstractSession
 
             if (packet == null)
             {
-                // TODO: is this case possible in practice?
-                // TODO: consume the buffer?
+                // UDP datagrams should contain one or more full packets.
+                // If they don't, then it's the other peer sending badly
+                // encoded packets, so we just disconnect.
+                buffer.skip(buffer.remaining());
+                QuicException quicException = new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_packet");
+                ConnectionCloseFrame frame = new ConnectionCloseFrame(quicException.getErrorCode().code(), quicException.getMessage(), 0);
+                disconnect(frame, quicException, Promise.Invocable.noop());
                 return;
             }
 
-            if (packet instanceof InitialPacket || Arrays.equals(srcConnectionId, packet.destinationConnectionId()))
+            // The packet was fully decrypted and parsed, ack it.
+            // Processing of frames by a different layer (such as the TLS layer or
+            // the application layer) is independent of acks at the transport layer.
+            ack(packet);
+
+            if (packet instanceof InitialPacket || Arrays.equals(getSourceConnectionId(), packet.destinationConnectionId()))
             {
                 notifyIncomingPacket(packet);
-                return;
+                continue;
             }
 
             // RFC-9000[7.2]: the packet must be discarded
             // if destination connection ID does not match.
             if (LOG.isDebugEnabled())
-                LOG.debug("packet does not match connection id on {}", this);
-            // TODO: consume the buffer?
-            return;
+                LOG.debug("packet {} does not match connection id on {}", packet, this);
         }
     }
 
@@ -328,13 +338,11 @@ public abstract class QuicSession extends AbstractSession
             {
                 setDestinationConnectionId(initialPacket.sourceConnectionId());
                 processFrames(initialPacket);
-                ack(initialPacket);
             }
             case HandshakePacket handshakePacket ->
             {
                 getTLSEngine().getPacketProtector().discardKeys(EncryptionLevel.INITIAL);
                 processFrames(handshakePacket);
-                ack(handshakePacket);
             }
             case ZeroRTTPacket zeroRTTPacket ->
             {
@@ -345,7 +353,6 @@ public abstract class QuicSession extends AbstractSession
             {
                 // TODO: handle here keyPhase shift?
                 processFrames(oneRTTPacket);
-                ack(oneRTTPacket);
             }
             // RetryPacket and VersionNegotiationPacket only handled by clients.
             default -> throw new UnsupportedOperationException();
@@ -418,13 +425,13 @@ public abstract class QuicSession extends AbstractSession
         //  Then notify the Stream.Listener.
     }
 
-    private void ack(Packet.WithFrames packet)
+    private void ack(Packet packet)
     {
-        if (packet.requiresAcknowledgement())
+        if (packet instanceof Packet.WithFrames p && p.requiresAcknowledgement())
         {
             // TODO: notify reliability data structure?
             //  Or leave that only for sent packets and received acks?
-            AckFrame ackFrame = new AckFrame(packet.packetNumber(), 0, 0, List.of());
+            AckFrame ackFrame = new AckFrame(p.packetNumber(), 0, 0, List.of());
             EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
             if (flusher.offer(encryptionLevel, List.of(ackFrame), Callback.NOOP/*TODO*/))
                 flusher.iterate();

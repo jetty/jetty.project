@@ -360,7 +360,7 @@ public class ClientTLSEngine extends TLSEngine
     protected void dispose(Throwable failure)
     {
         state = State.HANDSHAKE_FAILED;
-        super.fail(failure);
+        super.dispose(failure);
     }
 
     private void handshakeSuccessful()
