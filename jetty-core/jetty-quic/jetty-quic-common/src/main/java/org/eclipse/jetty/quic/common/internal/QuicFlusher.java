@@ -52,6 +52,19 @@ public class QuicFlusher extends IteratingCallback
         this.accumulator = new RetainableByteBuffer.DynamicCapacity(session.getByteBufferPool(), session.getQuicConfiguration().isUseOutputDirectByteBuffers(), -1, 0, 0);
     }
 
+    public boolean offer(EncryptionLevel encryptionLevel, Packet packet, Callback callback)
+    {
+        boolean result;
+        try (var _ = lock.lock())
+        {
+            // TODO: check if closed/failed, etc.
+            result = entries.offer(new PacketEntry(encryptionLevel, packet, callback));
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("offered={} {} on {}", result, packet, this);
+        return result;
+    }
+
     public boolean offer(List<Frame> frames, Callback callback)
     {
         return offer(EncryptionLevel.ONE_RTT, frames, callback);
@@ -63,7 +76,7 @@ public class QuicFlusher extends IteratingCallback
         try (var _ = lock.lock())
         {
             // TODO: check if closed/failed, etc.
-            result = entries.offer(new Entry(encryptionLevel, frames, callback));
+            result = entries.offer(new FramesEntry(encryptionLevel, frames, callback));
         }
         if (LOG.isDebugEnabled())
             LOG.debug("offered={} {} on {}", result, frames, this);
@@ -78,7 +91,7 @@ public class QuicFlusher extends IteratingCallback
         {
             for (Entry entry : entries)
             {
-                processing.computeIfAbsent(entry.encryptionLevel(), k -> new ArrayList<>()).add(entry);
+                processing.computeIfAbsent(entry.encryptionLevel(), _ -> new ArrayList<>()).add(entry);
                 ++entryCount;
             }
             entries.clear();
@@ -87,20 +100,30 @@ public class QuicFlusher extends IteratingCallback
         if (entryCount == 0)
             return Action.IDLE;
 
+        List<Packet> packets = new ArrayList<>();
         List<Frame> frames = new ArrayList<>();
         for (Map.Entry<EncryptionLevel, List<Entry>> mapEntry : processing.entrySet())
         {
+            packets.clear();
             frames.clear();
             for (Entry entry : mapEntry.getValue())
             {
-                frames.addAll(entry.frames());
+                switch (entry)
+                {
+                    case FramesEntry framesEntry -> frames.addAll(framesEntry.frames());
+                    case PacketEntry packetEntry -> packets.add(packetEntry.packet());
+                }
             }
-            if (frames.isEmpty())
+            if (frames.isEmpty() && packets.isEmpty())
                 continue;
 
-            Packet packet = session.newPacket(mapEntry.getKey(), List.copyOf(frames));
-            packetGenerator.generate(accumulator, packet);
-            session.notifyOutgoingPacket(packet);
+            if (!frames.isEmpty())
+                packets.add(session.newPacket(mapEntry.getKey(), List.copyOf(frames)));
+            for (Packet packet : packets)
+            {
+                packetGenerator.generate(accumulator, packet);
+                session.notifyOutgoingPacket(packet);
+            }
         }
 
         EndPoint endPoint = session.getEndPoint();
@@ -142,24 +165,36 @@ public class QuicFlusher extends IteratingCallback
         }
     }
 
-    private record Entry(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback) implements Callback
+    private sealed interface Entry extends Callback permits FramesEntry, PacketEntry
     {
+        EncryptionLevel encryptionLevel();
+
+        Callback callback();
+
         @Override
-        public void succeeded()
+        default void succeeded()
         {
             callback().succeeded();
         }
 
         @Override
-        public void failed(Throwable x)
+        default void failed(Throwable x)
         {
             callback().failed(x);
         }
 
         @Override
-        public InvocationType getInvocationType()
+        default InvocationType getInvocationType()
         {
             return callback().getInvocationType();
         }
+    }
+
+    private record FramesEntry(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback) implements Entry
+    {
+    }
+
+    private record PacketEntry(EncryptionLevel encryptionLevel, Packet packet, Callback callback) implements Entry
+    {
     }
 }

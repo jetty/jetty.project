@@ -444,6 +444,12 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
+    protected void packet(Packet packet)
+    {
+        if (flusher.offer(EncryptionLevel.from(packet), packet, Callback.NOOP))
+            flusher.iterate();
+    }
+
     public Packet.Listener getPacketListener()
     {
         return packetListener;

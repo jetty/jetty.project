@@ -108,6 +108,8 @@ public class TranscriptHash
 
     public void clear()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("clear on {}", this);
         entries.clear();
     }
 

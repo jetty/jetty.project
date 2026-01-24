@@ -17,6 +17,7 @@ import org.eclipse.jetty.quic.common.packets.HandshakePacket;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.OneRTTPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
+import org.eclipse.jetty.quic.common.packets.RetryPacket;
 import org.eclipse.jetty.quic.common.packets.ZeroRTTPacket;
 
 public enum EncryptionLevel
@@ -30,7 +31,7 @@ public enum EncryptionLevel
     {
         return switch (packet)
         {
-            case InitialPacket _ -> INITIAL;
+            case InitialPacket _, RetryPacket _ -> INITIAL;
             case HandshakePacket _ -> HANDSHAKE;
             case OneRTTPacket _ -> ONE_RTT;
             case ZeroRTTPacket _ -> ZERO_RTT;

@@ -64,5 +64,6 @@ public class RetryPacketGenerator implements PacketGenerator
         // TODO
 //        byte[] integrity = encrypter.generateRetryIntegrity(retryAccumulator);
 //        accumulator.put(integrity);
+        accumulator.put(new byte[16]);
     }
 }
