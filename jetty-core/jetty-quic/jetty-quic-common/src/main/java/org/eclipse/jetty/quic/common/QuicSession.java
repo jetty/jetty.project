@@ -359,33 +359,37 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    protected void processFrames(Packet.WithFrames packet)
+    private void processFrames(Packet.WithFrames packet)
     {
         for (Frame frame : packet.frames())
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("processing {} on {}", frame, this);
+            processFrame(packet, frame);
+        }
+    }
 
-            switch (frame)
+    protected void processFrame(Packet.WithFrames packet, Frame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} in {} on {}", frame, packet, this);
+        switch (frame)
+        {
+            case AckFrame ackFrame ->
             {
-                case AckFrame ackFrame ->
-                {
-                    // TODO: notify reliability data structure.
-                }
-                case CryptoFrame cryptoFrame ->
-                {
-                    EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
-                    cryptoStreams.computeIfAbsent(encryptionLevel, _ -> new FrameStream(this::processCryptoFrame)).offer(cryptoFrame);
-                }
-                case StreamFrame streamFrame ->
-                {
-                    long streamId = streamFrame.streamId();
-                    streamStreams.computeIfAbsent(streamId, _ -> new FrameStream(this::processStreamFrame)).offer(streamFrame);
-                }
-                default ->
-                {
-                    // TODO: notify Session.Listener
-                }
+                // TODO: notify reliability data structure.
+            }
+            case CryptoFrame cryptoFrame ->
+            {
+                EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
+                cryptoStreams.computeIfAbsent(encryptionLevel, _ -> new FrameStream(this::processCryptoFrame)).offer(cryptoFrame);
+            }
+            case StreamFrame streamFrame ->
+            {
+                long streamId = streamFrame.streamId();
+                streamStreams.computeIfAbsent(streamId, _ -> new FrameStream(this::processStreamFrame)).offer(streamFrame);
+            }
+            default ->
+            {
+                // TODO: notify Session.Listener
             }
         }
     }

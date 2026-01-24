@@ -18,7 +18,6 @@ import java.util.Collection;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
-import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
@@ -129,21 +128,12 @@ public interface Session
     /// @see Session
     interface Listener
     {
-        /// Callback method invoked to retrieve the QUIC transport parameters.
+        /// Callback method invoked to customize the QUIC transport parameters.
         ///
         /// This event may not be emitted for all QUIC implementations.
         ///
         /// @param session the QUIC session
-        /// @return the QUIC transport parameters
-        default TransportParameters onPrepare(Session session)
-        {
-            return null;
-        }
-
-        /// Callback method invoked when a new session is opened.
-        ///
-        /// @param session the QUIC session
-        default void onOpen(Session session)
+        default void onPrepare(Session session, TransportParameters transportParameters)
         {
         }
 
@@ -157,6 +147,13 @@ public interface Session
         {
         }
 
+        /// Callback method invoked when a new session is opened.
+        ///
+        /// @param session the QUIC session
+        default void onOpen(Session session)
+        {
+        }
+
         /// Callback method invoked when receiving a frame that causes the creation of a new stream.
         ///
         /// @param session the QUIC session
@@ -165,17 +162,6 @@ public interface Session
         default Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
         {
             return null;
-        }
-
-        /// TODO: remove this, since applications should not be concerned.
-        /// TODO: But this means that the implementation must have an extended listener
-        /// TODO: also for acks and cryptos.
-        /// Callback method invoked when a CRYPTO frame is received.
-        ///
-        /// @param session the QUIC session
-        /// @param frame the CRYPTO frame
-        default void onCrypto(Session session, CryptoFrame frame)
-        {
         }
 
         /// Callback method invoked when a MAX_STREAMS frame is received.

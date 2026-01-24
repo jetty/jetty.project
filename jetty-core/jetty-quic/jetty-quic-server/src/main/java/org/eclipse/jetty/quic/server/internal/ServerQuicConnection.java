@@ -229,11 +229,16 @@ public class ServerQuicConnection extends QuicConnection
         ServerQuicSession session = sessions.get(dstConnectionId);
         if (session == null)
         {
+            // Create the session.
             session = newSession();
+            // Configure the session.
             session.initialize(dstConnectionId.bytes());
             session.setRemoteSocketAddress(remoteAddress);
             long idleTimeout = getEndPoint().getIdleTimeout();
             session.setIdleTimeout(idleTimeout);
+            // Start and store the session.
+            LifeCycle.start(session);
+            sessions.put(new ConnectionId(session.getSourceConnectionId()), session);
 
             ServerTLSConfiguration tlsConfiguration = session.getTLSEngine().getTLSConfiguration();
             tlsConfiguration.setApplicationProtocols(connector.getProtocols());
@@ -246,9 +251,8 @@ public class ServerQuicConnection extends QuicConnection
 //            transportParameters.put(TransportParameters.Ids.PREFERRED_ADDRESS, null);
             transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, session.getSourceConnectionId());
 
-            LifeCycle.start(session);
+            session.notifyPrepare(transportParameters);
 
-            sessions.put(new ConnectionId(session.getSourceConnectionId()), session);
             if (LOG.isDebugEnabled())
                 LOG.debug("created new {} on {}", session, this);
         }

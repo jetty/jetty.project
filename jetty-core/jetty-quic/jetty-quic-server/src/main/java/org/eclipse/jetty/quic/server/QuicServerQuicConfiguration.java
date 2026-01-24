@@ -15,10 +15,11 @@ package org.eclipse.jetty.quic.server;
 
 import java.util.List;
 
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.NamedGroup;
 import org.eclipse.jetty.tls.SignatureAlgorithm;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class QuicServerQuicConfiguration extends ServerQuicConfiguration
 {
@@ -132,14 +133,15 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
         this.connectionIdMaxCount = connectionIdMaxCount;
     }
 
-    // TODO: remove, as this may be per-connection.
-    public void configure(SslContextFactory.Server sslContextFactory) throws Exception
+    @Override
+    public void configure(TransportParameters transportParameters)
     {
-        getImplementationConfiguration().put(SslContextFactory.Server.class.getName(), sslContextFactory);
-    }
-
-    public void deconfigure(SslContextFactory.Server sslContextFactory)
-    {
-        getImplementationConfiguration().remove(SslContextFactory.Server.class.getName());
+        super.configure(transportParameters);
+        transportParameters.put(TransportParameters.Ids.MAX_UDP_PAYLOAD_SIZE, getUDPPayloadMaxSize());
+        transportParameters.put(TransportParameters.Ids.ACK_DELAY_EXPONENT, getAcknowledgmentDelayExponent());
+        transportParameters.put(TransportParameters.Ids.MAX_ACK_DELAY, getAcknowledgmentMaxDelay());
+        if (!isEnableConnectionMigration())
+            transportParameters.put(TransportParameters.Ids.DISABLE_ACTIVE_MIGRATION, BufferUtil.EMPTY_BYTES);
+        transportParameters.put(TransportParameters.Ids.ACTIVE_CONNECTION_ID_LIMIT, getConnectionIdMaxCount());
     }
 }

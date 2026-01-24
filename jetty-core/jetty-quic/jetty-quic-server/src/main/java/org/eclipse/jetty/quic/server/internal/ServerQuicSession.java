@@ -22,6 +22,8 @@ import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
+import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
@@ -145,7 +147,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         switch (message)
         {
             // TODO: verify QuicTransportParametersExtension in ClientHello, etc.
-            case ClientHelloMessage clientHello -> getTLSEngine().onMessageParsed(clientHello);
+            case ClientHelloMessage clientHello -> processClientHello(clientHello);
             case CertificateMessage certificate -> getTLSEngine().onMessageParsed(certificate);
             case CertificateVerifyMessage certificateVerify -> getTLSEngine().onMessageParsed(certificateVerify);
             case FinishedMessage finished -> getTLSEngine().onMessageParsed(finished);
@@ -153,14 +155,30 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         }
     }
 
+    private void processClientHello(ClientHelloMessage clientHello)
+    {
+        TransportParameters transportParameters = clientHello.extensions().stream()
+            .filter(ext -> ext instanceof QuicTransportParametersExtension)
+            .map(QuicTransportParametersExtension.class::cast)
+            .findFirst()
+            .map(QuicTransportParametersExtension::parameters)
+            .orElse(null);
+        // TODO: apply verifications to TransportParameters as per RFC.
+        notifyTransportParameters(transportParameters);
+
+        getTLSEngine().onMessageParsed(clientHello);
+    }
+
     private void handshakeComplete(Throwable failure)
     {
         if (failure == null)
         {
+            notifyOpen();
             handshakeDone(new HandshakeDoneFrame(), Callback.NOOP/*TODO*/);
         }
         else
         {
+            // TODO: notifyFailure()?
             // RFC-9000[20.1]: convert TLS alerts into CRYPTO_ERRORs.
             long code = ErrorCode.INTERNAL_ERROR.code();
             if (failure instanceof TLSException tls)

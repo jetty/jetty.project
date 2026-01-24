@@ -78,13 +78,6 @@ public abstract class AbstractQuicServerConnectionFactory extends AbstractConnec
     }
 
     @Override
-    protected void doStop() throws Exception
-    {
-        quicConfiguration.deconfigure(sslContextFactory);
-        super.doStop();
-    }
-
-    @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
         ServerQuicConnection connection = new ServerQuicConnection(connector, getSslContextFactory(), getServerQuicConfiguration(), endPoint, getSessionListenerFactory());
