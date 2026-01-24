@@ -42,27 +42,27 @@ public sealed interface Message permits
         KEY_UPDATE(24),
         MESSAGE_HASH(254);
 
-        private final int type;
+        private final int code;
 
-        Type(int type)
+        Type(int code)
         {
-            this.type = type;
-            Types.TYPES.put(type, this);
+            this.code = code;
+            Codes.CODES.put(code, this);
         }
 
-        public int type()
+        public int code()
         {
-            return type;
+            return code;
         }
 
-        public static Type from(int type)
+        public static Type from(int code)
         {
-            return Types.TYPES.get(type);
+            return Codes.CODES.get(code);
         }
 
-        private static class Types
+        private static class Codes
         {
-            private static final Map<Integer, Type> TYPES = new HashMap<>();
+            private static final Map<Integer, Type> CODES = new HashMap<>();
         }
     }
 }

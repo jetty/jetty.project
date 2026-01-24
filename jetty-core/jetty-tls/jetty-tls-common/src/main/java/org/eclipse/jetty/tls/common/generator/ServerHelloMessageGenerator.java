@@ -56,7 +56,7 @@ public class ServerHelloMessageGenerator extends MessageGenerator
         // Extensions                        | (M)
         int length = 2 + 32 + 1 + sessionId.length + 2 + 1 + 2 + extensionsLength;
 
-        int typeAndLength = (message.type().type() << 24) | length;
+        int typeAndLength = (message.type().code() << 24) | length;
         accumulator.putInt(typeAndLength);
 
         accumulator.putShort((short)0x0303);

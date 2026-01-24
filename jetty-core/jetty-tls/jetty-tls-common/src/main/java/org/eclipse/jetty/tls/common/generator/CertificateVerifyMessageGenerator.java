@@ -39,7 +39,7 @@ public class CertificateVerifyMessageGenerator extends MessageGenerator
         if (length > 0xFFFFFF)
             throw new IllegalStateException("could not generate CertificateVerifyMessage, too long");
 
-        int typeAndLength = (message.type().type() << 24) | length;
+        int typeAndLength = (message.type().code() << 24) | length;
         accumulator.putInt(typeAndLength);
 
         accumulator.putShort((short)message.algorithm().code());

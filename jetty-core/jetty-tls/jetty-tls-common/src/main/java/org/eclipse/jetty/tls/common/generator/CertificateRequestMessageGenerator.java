@@ -46,7 +46,7 @@ public class CertificateRequestMessageGenerator extends MessageGenerator
         // RFC 8446, 4.3.2.
         int length = 1 + context.length + 2 + extensionsLength;
 
-        int typeAndLength = (message.type().type() << 24) | length;
+        int typeAndLength = (message.type().code() << 24) | length;
         accumulator.putInt(typeAndLength);
 
         accumulator.put((byte)context.length);

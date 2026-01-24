@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
 import javax.crypto.SecretKey;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
@@ -90,7 +91,7 @@ public class ServerTLSEngine extends TLSEngine
                 case CertificateMessage cm -> processCertificate(cm);
                 case CertificateVerifyMessage cvm -> processCertificateVerify(cvm);
                 case FinishedMessage fm -> processFinished(fm);
-                default -> throw new IllegalStateException("unexpected message " + message);
+                default -> throw new IllegalStateException("unexpected_tls_message_" + message.type().code());
             }
         }
         catch (Throwable x)
@@ -134,9 +135,9 @@ public class ServerTLSEngine extends TLSEngine
 
         // RFC-8446[4.1.2,4.2.1]: SupportedVersionsExtension must be present.
         if (clientVersions.isEmpty())
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing SupportedVersionsExtension");
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing_supported_versions_extension");
         if (!clientVersions.contains(TLSVersion.TLS_1_3))
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "unsupported TLS version");
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "unsupported_tls_version");
         // Only TLS 1.3 is supported for now.
         TLSVersion tlsVersion = TLSVersion.TLS_1_3;
         if (LOG.isDebugEnabled())
@@ -146,13 +147,13 @@ public class ServerTLSEngine extends TLSEngine
         List<CipherSuite> negotiatedCipherSuites = new ArrayList<>(clientCipherSuites);
         negotiatedCipherSuites.retainAll(tlsConfiguration.getCipherSuites());
         if (negotiatedCipherSuites.isEmpty())
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common cipher suite");
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_cipher_suite");
         cipherSuite = negotiatedCipherSuites.getFirst();
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated CipherSuite {} on {}", cipherSuite, this);
 
         if (clientKeyShares.isEmpty())
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no key shares");
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_key_shares");
         KeyShare clientKeyShare = null;
         for (KeyShare keyShare : clientKeyShares)
         {
@@ -189,7 +190,7 @@ public class ServerTLSEngine extends TLSEngine
         List<String> negotiatedProtocols = new ArrayList<>(tlsConfiguration.getApplicationProtocols());
         negotiatedProtocols.retainAll(clientProtocols);
         if (negotiatedProtocols.isEmpty())
-            throw new TLSException(TLSException.Alert.NO_APPLICATION_PROTOCOL, "no common application protocol");
+            throw new TLSException(TLSException.Alert.NO_APPLICATION_PROTOCOL, "no_common_application_protocol");
         String protocol = negotiatedProtocols.getFirst();
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated alpn protocol {} on {}", protocol, this);
@@ -213,7 +214,7 @@ public class ServerTLSEngine extends TLSEngine
         }
 
         if (clientSignatureAlgorithms.isEmpty())
-            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing SignatureAlgorithmsExtension");
+            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_signature_algorithms_extension");
         List<SignatureAlgorithm> negotiatedSignatureAlgorithms = new ArrayList<>(clientSignatureAlgorithms);
         negotiatedSignatureAlgorithms.retainAll(tlsConfiguration.getSignatureAlgorithms());
         if (LOG.isDebugEnabled())
@@ -248,13 +249,13 @@ public class ServerTLSEngine extends TLSEngine
         }
         password.destroy();
         if (pairs.isEmpty())
-            throw new TLSException(TLSException.Alert.UNSUPPORTED_CERTIFICATE, "no matching certificate");
+            throw new TLSException(TLSException.Alert.UNSUPPORTED_CERTIFICATE, "unsupported_certificate");
         if (LOG.isDebugEnabled())
             LOG.debug("supported certificates at aliases {} on {}", pairs.stream().map(p -> p.keyStorePair().alias()).toList(), this);
 
         boolean sniRequired = sslContextFactory.isSniRequired();
         if (serverName == null && sniRequired)
-            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing ServerNameExtension");
+            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_server_name_extension");
         SignatureWithKeyStorePair match = null;
         if (serverName != null)
             match = selectCertificate(pairs, serverName);
@@ -262,7 +263,7 @@ public class ServerTLSEngine extends TLSEngine
         if (candidate == null)
         {
             if (sniRequired)
-                throw new TLSException(TLSException.Alert.UNRECOGNIZED_NAME, "no matching certificate");
+                throw new TLSException(TLSException.Alert.UNRECOGNIZED_NAME, "no_matching_certificate");
             else
                 candidate = pairs.getFirst();
         }
@@ -296,10 +297,10 @@ public class ServerTLSEngine extends TLSEngine
         getPacketProtector().getTranscriptHash().offer(finished, false);
         getPacketProtector().allocateApplicationKeys(tlsConfiguration.getQuicVersion(), cipherSuite);
 
+        state = clientAuthentication ? State.NEED_CERTIFICATE : State.NEED_FINISHED;
+
         if (LOG.isDebugEnabled())
             LOG.debug("handshake completed on {}", this);
-
-        state = clientAuthentication ? State.NEED_CERTIFICATE : State.NEED_FINISHED;
 
         notifyMessages(EncryptionLevel.INITIAL, List.of(serverHello), Callback.from(Invocable.InvocationType.NON_BLOCKING,
             () -> notifyMessages(EncryptionLevel.HANDSHAKE, handshakeMessages, Callback.from(Callback.NOOP, this::fail)),
@@ -414,10 +415,10 @@ public class ServerTLSEngine extends TLSEngine
             LOG.debug("processing {} on {}", finished, this);
 
         if (state != State.NEED_FINISHED)
-            throw new IllegalStateException("invalid TLS state " + state);
+            throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
         if (!verifyFinishedMessage(cipherSuite, finished))
-            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid verify data");
+            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid_verify_data");
 
         getPacketProtector().getTranscriptHash().offer(finished, true);
 
@@ -434,7 +435,7 @@ public class ServerTLSEngine extends TLSEngine
     {
         destroy(sharedSecret);
         state = State.HANDSHAKE_FAILED;
-        super.fail(failure);
+        super.dispose(failure);
     }
 
     @Override
