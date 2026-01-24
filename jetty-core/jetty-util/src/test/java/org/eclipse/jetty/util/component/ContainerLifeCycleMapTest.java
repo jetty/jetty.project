@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
@@ -414,6 +415,75 @@ public class ContainerLifeCycleMapTest
 
         String str = map.toString();
         assertTrue(str.contains("size=2"));
+    }
+
+    @Test
+    public void testCustomMapCaseInsensitive() throws Exception
+    {
+        // Use a TreeMap with case-insensitive key ordering
+        ContainerLifeCycleMap<String, TestLifeCycle> map =
+            new ContainerLifeCycleMap<>(new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
+
+        TestLifeCycle bean1 = new TestLifeCycle("bean1");
+        TestLifeCycle bean2 = new TestLifeCycle("bean2");
+
+        // Put with lowercase key
+        map.put("gzip", bean1);
+
+        // Get with different case should work
+        assertEquals(bean1, map.get("GZIP"));
+        assertEquals(bean1, map.get("Gzip"));
+        assertEquals(bean1, map.get("gzip"));
+        assertTrue(map.containsKey("GZIP"));
+        assertTrue(map.containsKey("gzip"));
+
+        // Put with different case should replace
+        map.put("GZIP", bean2);
+        assertEquals(1, map.size());
+        assertEquals(bean2, map.get("gzip"));
+        assertFalse(map.contains(bean1));
+        assertTrue(map.contains(bean2));
+
+        // Remove with different case should work
+        assertEquals(bean2, map.remove("Gzip"));
+        assertTrue(map.isEmpty());
+        assertFalse(map.contains(bean2));
+    }
+
+    @Test
+    public void testCustomMapLifeCycleManagement() throws Exception
+    {
+        // Use a TreeMap with case-insensitive key ordering
+        ContainerLifeCycleMap<String, TestLifeCycle> map =
+            new ContainerLifeCycleMap<>(new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
+
+        TestLifeCycle bean1 = new TestLifeCycle("bean1");
+        TestLifeCycle bean2 = new TestLifeCycle("bean2");
+
+        map.put("encoding1", bean1);
+        map.put("encoding2", bean2);
+
+        // Beans should be added as managed beans
+        assertTrue(map.contains(bean1));
+        assertTrue(map.contains(bean2));
+
+        // Start the container
+        map.start();
+
+        // Beans should now be started
+        assertEquals(1, bean1.started.get());
+        assertEquals(1, bean2.started.get());
+        assertTrue(bean1.isStarted());
+        assertTrue(bean2.isStarted());
+
+        // Stop the container
+        map.stop();
+
+        // Beans should now be stopped
+        assertEquals(1, bean1.stopped.get());
+        assertEquals(1, bean2.stopped.get());
+        assertTrue(bean1.isStopped());
+        assertTrue(bean2.isStopped());
     }
 
     private static class TestLifeCycle extends AbstractLifeCycle

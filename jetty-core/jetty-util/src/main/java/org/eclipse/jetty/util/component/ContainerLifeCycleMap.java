@@ -43,7 +43,29 @@ import org.eclipse.jetty.util.thread.AutoLock;
 public class ContainerLifeCycleMap<K, V extends LifeCycle> extends ContainerLifeCycle implements Map<K, V>
 {
     private final AutoLock _lock = new AutoLock();
-    private final Map<K, V> _map = new HashMap<>();
+    private final Map<K, V> _map;
+
+    /**
+     * Creates a new ContainerLifeCycleMap backed by a HashMap.
+     */
+    public ContainerLifeCycleMap()
+    {
+        _map = new HashMap<>();
+    }
+
+    /**
+     * Creates a new ContainerLifeCycleMap backed by the provided Map.
+     * <p>
+     * This allows using custom Map implementations, such as a TreeMap
+     * with case-insensitive key ordering.
+     * </p>
+     *
+     * @param map the backing Map implementation to use
+     */
+    public ContainerLifeCycleMap(Map<K, V> map)
+    {
+        _map = map;
+    }
 
     @Override
     public int size()

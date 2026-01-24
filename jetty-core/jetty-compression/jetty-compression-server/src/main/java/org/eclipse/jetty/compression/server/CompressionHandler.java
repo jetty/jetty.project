@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.ContainerLifeCycleMap;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,18 +57,21 @@ public class CompressionHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(CompressionHandler.class);
     private final HttpField varyAcceptEncoding = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
-    private final Map<String, Compression> supportedEncodings = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final ContainerLifeCycleMap<String, Compression> supportedEncodings =
+        new ContainerLifeCycleMap<>(new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
     private final PathMappings<CompressionConfig> pathConfigs = new PathMappings<>();
 
     public CompressionHandler()
     {
         installBean(pathConfigs);
+        installBean(supportedEncodings);
     }
 
     public CompressionHandler(Handler handler)
     {
         super(handler);
         installBean(pathConfigs);
+        installBean(supportedEncodings);
     }
 
     /**
@@ -78,10 +82,8 @@ public class CompressionHandler extends Handler.Wrapper
      */
     public Compression putCompression(Compression compression)
     {
-        Compression previous = supportedEncodings.put(compression.getEncodingName(), compression);
         compression.setContainer(this);
-        updateBean(previous, compression, true);
-        return previous;
+        return supportedEncodings.put(compression.getEncodingName(), compression);
     }
 
     /**
@@ -92,9 +94,7 @@ public class CompressionHandler extends Handler.Wrapper
      */
     public Compression removeCompression(String encodingName)
     {
-        Compression compression = supportedEncodings.remove(encodingName);
-        removeBean(compression);
-        return compression;
+        return supportedEncodings.remove(encodingName);
     }
 
     /**
