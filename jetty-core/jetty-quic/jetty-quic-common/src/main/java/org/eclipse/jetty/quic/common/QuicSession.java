@@ -46,6 +46,7 @@ import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.OneRTTPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
+import org.eclipse.jetty.quic.common.packets.RetryPacket;
 import org.eclipse.jetty.quic.common.packets.ZeroRTTPacket;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.quic.util.ErrorCode;
@@ -309,8 +310,14 @@ public abstract class QuicSession extends AbstractSession
                 return;
             }
 
-            if (packet instanceof InitialPacket initialPacket)
-                setDestinationConnectionId(initialPacket.sourceConnectionId());
+            switch (packet)
+            {
+                case InitialPacket initialPacket -> setDestinationConnectionId(initialPacket.sourceConnectionId());
+                case RetryPacket retryPacket -> setDestinationConnectionId(retryPacket.sourceConnectionId());
+                default ->
+                {
+                }
+            }
 
             // The packet was fully decrypted and parsed, ack it.
             // Processing of frames by a different layer (such as the TLS layer or
@@ -324,7 +331,7 @@ public abstract class QuicSession extends AbstractSession
             }
 
             // RFC-9000[7.2]: the packet must be discarded
-            // if destination connection ID does not match.
+            // if the packet dcid does not match.
             if (LOG.isDebugEnabled())
                 LOG.debug("packet {} does not match connection id on {}", packet, this);
         }

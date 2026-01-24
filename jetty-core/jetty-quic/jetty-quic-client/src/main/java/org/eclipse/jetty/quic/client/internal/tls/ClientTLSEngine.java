@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.client.internal.tls;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import javax.crypto.SecretKey;
 
 import org.eclipse.jetty.quic.common.EncryptionLevel;
@@ -69,7 +70,7 @@ public class ClientTLSEngine extends TLSEngine
                 LOG.debug("starting handshake with {} on {}", configuration, this);
 
             if (state != State.INITIAL)
-                throw new IllegalStateException("invalid state " + state);
+                throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
             state = State.NEED_SERVER_HELLO;
 
             this.configuration = configuration;
@@ -115,7 +116,6 @@ public class ClientTLSEngine extends TLSEngine
         }
     }
 
-    // TODO: does it need a Callback?
     public void retryHandshake()
     {
         try
@@ -124,7 +124,7 @@ public class ClientTLSEngine extends TLSEngine
                 LOG.debug("retrying handshake on {}", this);
 
             if (state != State.NEED_SERVER_HELLO)
-                throw new IllegalStateException("invalid state " + state);
+                throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
             // RetryPacket is a QUIC mechanism, and as such
             // the ClientHello sent in the first InitialPacket
@@ -151,7 +151,7 @@ public class ClientTLSEngine extends TLSEngine
                 case CertificateMessage certificate -> processCertificate(certificate);
                 case CertificateVerifyMessage certificateVerify -> processCertificateVerify(certificateVerify);
                 case FinishedMessage finished -> processFinished(finished);
-                default -> throw new IllegalStateException("unexpected message " + message);
+                default -> throw new IllegalStateException("unexpected_tls_message_" + message.type().name().toLowerCase(Locale.ROOT));
             }
         }
         catch (Throwable x)
@@ -168,9 +168,9 @@ public class ClientTLSEngine extends TLSEngine
             LOG.debug("processing {} on {}", serverHello, this);
 
         if (state != State.NEED_SERVER_HELLO)
-            throw new IllegalStateException("invalid state " + state);
+            throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
         if (serverHello.sessionId().length != 0)
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "invalid legacy session id");
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "invalid_legacy_session_id");
 
         // TODO
 //        if (Arrays.equals(serverHello.random(), HelloRetryRequest.RANDOM))
@@ -191,13 +191,15 @@ public class ClientTLSEngine extends TLSEngine
                 case KeyShareExtension kse -> keyShares = kse.keyShares();
                 // TODO
 //                case PSK pske -> preSharedKeys = pske.preSharedKeys();
-                default -> throw new TLSException(TLSException.Alert.UNSUPPORTED_EXTENSION, "unexpected extension " + extension);
+                default ->
+                {
+                }
             }
         }
 
         // RFC 8446, 4.1.3: SupportedVersionsExtension must be present.
         if (serverVersions.isEmpty())
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing SupportedVersionsExtension");
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing_supported_versions_extension");
 
         // RFC 8446, 4.2.1: negotiate versions with ClientHello.
         List<TLSVersion> clientVersions = clientHello.extensions().stream()
@@ -209,7 +211,7 @@ public class ClientTLSEngine extends TLSEngine
         List<TLSVersion> negotiatedVersions = new ArrayList<>(serverVersions);
         negotiatedVersions.retainAll(clientVersions);
         if (negotiatedVersions.isEmpty())
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common TLS version");
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_tls_version");
         tlsVersion = negotiatedVersions.getFirst();
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated TLS version {} on {}", tlsVersion, this);
@@ -219,14 +221,14 @@ public class ClientTLSEngine extends TLSEngine
         clientHello.cipherSuites().stream()
             .filter(serverCipherSuite::equals)
             .findFirst()
-            .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common CipherSuite"));
+            .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_cipher_suite"));
         cipherSuite = serverCipherSuite;
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated CipherSuite {} on {}", cipherSuite, this);
 
         // RFC 8446, 4.1.3: Either KeyShareExtension or PreSharedKeyExtension or both must be present.
         if (keyShares.isEmpty() && preSharedKeys.isEmpty())
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing KeyShareExtension or PreSharedKeyExtension");
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing_key_shares");
 
         if (!keyShares.isEmpty())
         {
@@ -242,12 +244,12 @@ public class ClientTLSEngine extends TLSEngine
                 .map(KeyShare::namedGroup)
                 .filter(serverKeyShare.namedGroup()::equals)
                 .findFirst()
-                .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common NamedGroup"));
+                .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_named_group"));
             // Find the corresponding GroupKeyPair whose KeyShare is in the ClientHello.
             GroupKeyPair groupKeyPair = groupKeyPairs.stream()
                 .filter(gkp -> gkp.group() == serverKeyShare.namedGroup())
                 .findFirst()
-                .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no common NamedGroup"));
+                .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_named_group"));
             SecretKey sharedSecret = groupKeyPair.generateSharedSecret(serverKeyShare);
             if (LOG.isDebugEnabled())
                 LOG.debug("negotiated KeyPair in NamedGroup {} on {}", serverKeyShare.namedGroup(), this);
@@ -269,7 +271,7 @@ public class ClientTLSEngine extends TLSEngine
             LOG.debug("processing {} on {}", encryptedExtensions, this);
 
         if (state != State.NEED_ENCRYPTED_EXTENSIONS)
-            throw new IllegalStateException("invalid state " + state);
+            throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
 
         // TODO: validate extensions are allowed (e.g. key_share_extension not allowed in EncryptedExtensionsMessage).
@@ -295,10 +297,10 @@ public class ClientTLSEngine extends TLSEngine
             LOG.debug("processing {} on {}", certificate, this);
 
         if (state != State.NEED_CERTIFICATE)
-            throw new IllegalStateException("invalid state " + state);
+            throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
         // RFC 8446, 4.4.2.4.
         if (certificate.entries().isEmpty())
-            throw new TLSException(TLSException.Alert.DECODE_ERROR, "no certificate");
+            throw new TLSException(TLSException.Alert.DECODE_ERROR, "missing_certificate");
 
         // TODO: if verification required MD5/SHA1 signatures -> bad_certificate
 
@@ -322,7 +324,7 @@ public class ClientTLSEngine extends TLSEngine
             LOG.debug("processing {} on {}", certificateVerify, this);
 
         if (state != State.NEED_CERTIFICATE_VERIFY)
-            throw new IllegalStateException("invalid state " + state);
+            throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
         // TODO: verify the signature using the public key from the Certificate
         getPacketProtector().getTranscriptHash().offer(certificateVerify, true);
@@ -336,9 +338,9 @@ public class ClientTLSEngine extends TLSEngine
             LOG.debug("processing {} on {}", finished, this);
 
         if (state != State.NEED_FINISHED)
-            throw new IllegalStateException("invalid state " + state);
+            throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
         if (!verifyFinishedMessage(cipherSuite, finished))
-            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid verify data");
+            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid_verify_data");
 
         if (LOG.isDebugEnabled())
             LOG.debug("verified {} on {}", finished, this);

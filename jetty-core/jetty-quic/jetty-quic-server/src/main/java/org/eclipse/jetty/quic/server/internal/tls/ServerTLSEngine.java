@@ -91,7 +91,7 @@ public class ServerTLSEngine extends TLSEngine
                 case CertificateMessage cm -> processCertificate(cm);
                 case CertificateVerifyMessage cvm -> processCertificateVerify(cvm);
                 case FinishedMessage fm -> processFinished(fm);
-                default -> throw new IllegalStateException("unexpected_tls_message_" + message.type().code());
+                default -> throw new IllegalStateException("unexpected_tls_message_" + message.type().name().toLowerCase(Locale.ROOT));
             }
         }
         catch (Throwable x)
@@ -108,7 +108,7 @@ public class ServerTLSEngine extends TLSEngine
             LOG.debug("processing {} on {}", clientHello, this);
 
         if (state != State.NEED_CLIENT_HELLO)
-            throw new IllegalStateException("invalid TLS state " + state);
+            throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
         getPacketProtector().getTranscriptHash().offer(clientHello, true);
 
@@ -153,7 +153,7 @@ public class ServerTLSEngine extends TLSEngine
             LOG.debug("negotiated CipherSuite {} on {}", cipherSuite, this);
 
         if (clientKeyShares.isEmpty())
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_key_shares");
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing_key_shares");
         KeyShare clientKeyShare = null;
         for (KeyShare keyShare : clientKeyShares)
         {

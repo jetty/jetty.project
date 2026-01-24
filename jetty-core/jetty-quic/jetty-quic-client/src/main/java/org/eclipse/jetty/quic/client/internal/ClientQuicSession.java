@@ -257,7 +257,6 @@ public class ClientQuicSession extends QuicSession
         retryPacketProcessed = true;
         retryToken = packet.token();
 
-        setDestinationConnectionId(packet.sourceConnectionId());
         getTLSEngine().retryHandshake();
     }
 }
