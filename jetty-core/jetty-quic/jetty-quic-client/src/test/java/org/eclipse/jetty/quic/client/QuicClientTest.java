@@ -80,7 +80,7 @@ public class QuicClientTest
         QuicClientQuicConfiguration quicConfig = new QuicClientQuicConfiguration();
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setByteBufferPool(new ArrayByteBufferPool.Tracking());
-        client = new QuicClient(quicConfig);
+        client = new QuicClient(quicConfig, clientConnector);
         client.start();
     }
 
@@ -112,9 +112,7 @@ public class QuicClientTest
     @Test
     public void testClientOnly() throws Exception
     {
-        QuicClientQuicConfiguration quicConfig = new QuicClientQuicConfiguration();
-        QuicClient client = new QuicClient(quicConfig);
-        client.start();
+        startClient();
 
         Promise.Completable<Session> completable = new Promise.Completable<>();
         client.connect(new InetSocketAddress("localhost", 8443), new Session.Listener() {}, completable);
