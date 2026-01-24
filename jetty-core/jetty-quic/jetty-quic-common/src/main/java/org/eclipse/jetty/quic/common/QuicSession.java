@@ -161,17 +161,17 @@ public abstract class QuicSession extends AbstractSession
         return false;
     }
 
-    public Packet newPacket(List<Frame> frames)
+    public Packet newPacket(EncryptionLevel encryptionLevel, List<Frame> frames)
     {
         QuicVersion quicVersion = getQuicConfiguration().getQuicVersion();
-        EncryptionLevel encryptionLevel = getTLSEngine().getPacketProtector().getEncryptionLevel();
         Packet packet = switch (encryptionLevel)
         {
             case EncryptionLevel.INITIAL -> newInitialPacket(frames);
             case EncryptionLevel.HANDSHAKE ->
                 new HandshakePacket(quicVersion, getDestinationConnectionId(), getSourceConnectionId(), packetNumbers.nextPacketNumber(encryptionLevel), frames);
-            // TODO
-            default -> throw new IllegalStateException();
+            case ONE_RTT ->
+                new OneRTTPacket(packetNumbers.nextPacketNumber(encryptionLevel), getDestinationConnectionId(), false, false, frames);
+            case ZERO_RTT -> throw new IllegalStateException();
         };
         if (LOG.isDebugEnabled())
             LOG.debug("produced {} on {}", packet, this);
@@ -184,15 +184,15 @@ public abstract class QuicSession extends AbstractSession
     ///
     /// @param frame the frame to send
     /// @param callback the [Callback] that gets notified when the frame has been sent
-    protected void crypto(CryptoFrame frame, Callback callback)
+    protected void crypto(EncryptionLevel encryptionLevel, CryptoFrame frame, Callback callback)
     {
-        if (flusher.offer(this, List.of(frame), callback))
+        if (flusher.offer(encryptionLevel, List.of(frame), callback))
             flusher.iterate();
     }
 
     protected void handshakeDone(HandshakeDoneFrame frame, Callback callback)
     {
-        if (flusher.offer(this, List.of(frame), callback))
+        if (flusher.offer(List.of(frame), callback))
             flusher.iterate();
     }
 
@@ -326,41 +326,25 @@ public abstract class QuicSession extends AbstractSession
         {
             case InitialPacket initialPacket ->
             {
-                EncryptionLevel encryptionLevel = getTLSEngine().getPacketProtector().getEncryptionLevel();
-                if (encryptionLevel != EncryptionLevel.INITIAL)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("discarded {} at encryption level {} on {} ", packet, encryptionLevel, this);
-                    return;
-                }
                 setDestinationConnectionId(initialPacket.sourceConnectionId());
-                processFrames(initialPacket.frames());
+                processFrames(initialPacket);
                 ack(initialPacket);
             }
             case HandshakePacket handshakePacket ->
             {
-                EncryptionLevel encryptionLevel = getTLSEngine().getPacketProtector().getEncryptionLevel();
-                if (encryptionLevel == EncryptionLevel.INITIAL)
-                    getTLSEngine().getPacketProtector().updateEncryptionLevel(EncryptionLevel.HANDSHAKE);
-                encryptionLevel = getTLSEngine().getPacketProtector().getEncryptionLevel();
-                if (encryptionLevel != EncryptionLevel.HANDSHAKE)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("discarded {} at encryption level {} on {} ", packet, encryptionLevel, this);
-                    return;
-                }
-                processFrames(handshakePacket.frames());
+                getTLSEngine().getPacketProtector().discardKeys(EncryptionLevel.INITIAL);
+                processFrames(handshakePacket);
                 ack(handshakePacket);
             }
             case ZeroRTTPacket zeroRTTPacket ->
             {
                 // TODO:
-                processFrames(zeroRTTPacket.frames());
+                processFrames(zeroRTTPacket);
             }
             case OneRTTPacket oneRTTPacket ->
             {
                 // TODO: handle here keyPhase shift?
-                processFrames(oneRTTPacket.frames());
+                processFrames(oneRTTPacket);
                 ack(oneRTTPacket);
             }
             // RetryPacket and VersionNegotiationPacket only handled by clients.
@@ -368,9 +352,9 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    protected void processFrames(List<Frame> frames)
+    protected void processFrames(Packet.WithFrames packet)
     {
-        for (Frame frame : frames)
+        for (Frame frame : packet.frames())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("processing {} on {}", frame, this);
@@ -383,7 +367,7 @@ public abstract class QuicSession extends AbstractSession
                 }
                 case CryptoFrame cryptoFrame ->
                 {
-                    EncryptionLevel encryptionLevel = getTLSEngine().getPacketProtector().getEncryptionLevel();
+                    EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
                     cryptoStreams.computeIfAbsent(encryptionLevel, _ -> new FrameStream(this::processCryptoFrame)).offer(cryptoFrame);
                 }
                 case StreamFrame streamFrame ->
@@ -434,13 +418,17 @@ public abstract class QuicSession extends AbstractSession
         //  Then notify the Stream.Listener.
     }
 
-    private void ack(Packet.WithPacketNumber packet)
+    private void ack(Packet.WithFrames packet)
     {
-        // TODO: notify reliability data structure?
-        //  Or leave that only for sent packets and received acks?
-        AckFrame ackFrame = new AckFrame(packet.packetNumber(), 0, 0, List.of());
-        if (flusher.offer(this, List.of(ackFrame), Callback.NOOP))
-            flusher.iterate();
+        if (packet.requiresAcknowledgement())
+        {
+            // TODO: notify reliability data structure?
+            //  Or leave that only for sent packets and received acks?
+            AckFrame ackFrame = new AckFrame(packet.packetNumber(), 0, 0, List.of());
+            EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
+            if (flusher.offer(encryptionLevel, List.of(ackFrame), Callback.NOOP/*TODO*/))
+                flusher.iterate();
+        }
     }
 
     public Packet.Listener getPacketListener()
@@ -453,7 +441,7 @@ public abstract class QuicSession extends AbstractSession
         packetListener = listener;
     }
 
-    protected void sendTLSMessages(List<Message> messages, Callback callback)
+    protected void sendTLSMessages(EncryptionLevel encryptionLevel, List<Message> messages, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("sending TLS messages {} on {}", messages, this);
@@ -467,7 +455,7 @@ public abstract class QuicSession extends AbstractSession
             }
             // TODO: cannot assume offset is 0 here.
             CryptoFrame cryptoFrame = new CryptoFrame(0, accumulator);
-            crypto(cryptoFrame, callback);
+            crypto(encryptionLevel, cryptoFrame, callback);
         }
         catch (Throwable x)
         {

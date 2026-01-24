@@ -83,7 +83,6 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     void initialize(byte[] dstConnectionId)
     {
         PacketProtector packetProtector = getTLSEngine().getPacketProtector();
-        packetProtector.updateEncryptionLevel(EncryptionLevel.INITIAL);
         packetProtector.allocateInitialKeys(getQuicConfiguration().getQuicVersion(), dstConnectionId);
     }
 

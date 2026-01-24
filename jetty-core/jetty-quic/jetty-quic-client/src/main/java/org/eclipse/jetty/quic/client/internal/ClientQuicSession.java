@@ -38,6 +38,7 @@ import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.RetryPacket;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
+import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
 import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.ServerHelloMessage;
@@ -184,6 +185,7 @@ public class ClientQuicSession extends QuicSession
         switch (message)
         {
             case ServerHelloMessage serverHello -> getTLSEngine().onMessageParsed(serverHello);
+            case EncryptedExtensionsMessage encryptedExtensions -> getTLSEngine().onMessageParsed(encryptedExtensions);
             case CertificateMessage certificate -> getTLSEngine().onMessageParsed(certificate);
             case CertificateVerifyMessage certificateVerify -> getTLSEngine().onMessageParsed(certificateVerify);
             case FinishedMessage finished -> getTLSEngine().onMessageParsed(finished);

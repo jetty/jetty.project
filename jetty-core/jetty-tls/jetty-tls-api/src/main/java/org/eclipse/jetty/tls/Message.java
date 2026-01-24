@@ -14,10 +14,7 @@
 package org.eclipse.jetty.tls;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import org.eclipse.jetty.util.Callback;
 
 public sealed interface Message permits
     CertificateMessage,
@@ -67,10 +64,5 @@ public sealed interface Message permits
         {
             private static final Map<Integer, Type> TYPES = new HashMap<>();
         }
-    }
-
-    interface Listener
-    {
-        void onMessages(List<Message> messages, Callback callback);
     }
 }

@@ -248,7 +248,7 @@ public class ServerQuicConnection extends QuicConnection
 
             LifeCycle.start(session);
 
-            sessions.put(new ConnectionId(session.getDestinationConnectionId()), session);
+            sessions.put(new ConnectionId(session.getSourceConnectionId()), session);
             if (LOG.isDebugEnabled())
                 LOG.debug("created new {} on {}", session, this);
         }

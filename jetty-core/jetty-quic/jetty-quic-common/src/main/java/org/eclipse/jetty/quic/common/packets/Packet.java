@@ -13,9 +13,15 @@
 
 package org.eclipse.jetty.quic.common.packets;
 
-import org.eclipse.jetty.quic.api.Session;
+import java.util.List;
 
-public sealed interface Packet permits LongHeaderPacket, Packet.WithPacketNumber, ShortHeaderPacket
+import org.eclipse.jetty.quic.api.Session;
+import org.eclipse.jetty.quic.api.frames.AckFrame;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.api.frames.PaddingFrame;
+
+public sealed interface Packet permits LongHeaderPacket, Packet.WithFrames, ShortHeaderPacket
 {
     static boolean isLongHeader(byte form)
     {
@@ -25,9 +31,28 @@ public sealed interface Packet permits LongHeaderPacket, Packet.WithPacketNumber
 
     byte[] destinationConnectionId();
 
-    sealed interface WithPacketNumber extends Packet permits HandshakePacket, InitialPacket, OneRTTPacket, ZeroRTTPacket
+    sealed interface WithFrames extends Packet permits HandshakePacket, InitialPacket, OneRTTPacket, ZeroRTTPacket
     {
         long packetNumber();
+
+        List<Frame> frames();
+
+        default boolean requiresAcknowledgement()
+        {
+            // RFC-9000[1.2,13.2.1]
+            for (Frame frame : frames())
+            {
+                switch (frame)
+                {
+                    case AckFrame _, ConnectionCloseFrame _, PaddingFrame _ -> {}
+                    default ->
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
     }
 
     //  TODO: javadoc this interface, can be used to drop packets in tests

@@ -15,13 +15,15 @@ package org.eclipse.jetty.quic.common.internal;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.internal.packets.PacketsGenerator;
@@ -38,8 +40,7 @@ public class QuicFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> entries = new ArrayDeque<>();
-    private final List<Entry> processing = new ArrayList<>();
-    private final List<Frame> frames = new ArrayList<>();
+    private final EnumMap<EncryptionLevel, List<Entry>> processing = new EnumMap<>(EncryptionLevel.class);
     private final PacketsGenerator packetGenerator;
     private final RetainableByteBuffer.Mutable accumulator;
     private final QuicSession session;
@@ -51,13 +52,18 @@ public class QuicFlusher extends IteratingCallback
         this.accumulator = new RetainableByteBuffer.DynamicCapacity(session.getByteBufferPool(), session.getQuicConfiguration().isUseOutputDirectByteBuffers(), -1, 0, 0);
     }
 
-    public boolean offer(QuicSession session, List<Frame> frames, Callback callback)
+    public boolean offer(List<Frame> frames, Callback callback)
+    {
+        return offer(EncryptionLevel.ONE_RTT, frames, callback);
+    }
+
+    public boolean offer(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback)
     {
         boolean result;
         try (var _ = lock.lock())
         {
             // TODO: check if closed/failed, etc.
-            result = entries.offer(new SessionEntry(session, frames, callback));
+            result = entries.offer(new Entry(encryptionLevel, frames, callback));
         }
         if (LOG.isDebugEnabled())
             LOG.debug("offered={} {} on {}", result, frames, this);
@@ -67,23 +73,35 @@ public class QuicFlusher extends IteratingCallback
     @Override
     protected Action process() throws Throwable
     {
+        int entryCount = 0;
         try (var _ = lock.lock())
         {
             for (Entry entry : entries)
             {
-                processing.add(entry);
-                frames.addAll(entry.frames());
+                processing.computeIfAbsent(entry.encryptionLevel(), k -> new ArrayList<>()).add(entry);
+                ++entryCount;
             }
             entries.clear();
         }
 
-        if (processing.isEmpty())
+        if (entryCount == 0)
             return Action.IDLE;
 
-        Packet packet = session.newPacket(frames);
-        packetGenerator.generate(accumulator, packet);
+        List<Frame> frames = new ArrayList<>();
+        for (Map.Entry<EncryptionLevel, List<Entry>> mapEntry : processing.entrySet())
+        {
+            frames.clear();
+            for (Entry entry : mapEntry.getValue())
+            {
+                frames.addAll(entry.frames());
+            }
+            if (frames.isEmpty())
+                continue;
 
-        session.notifyOutgoingPacket(packet);
+            Packet packet = session.newPacket(mapEntry.getKey(), List.copyOf(frames));
+            packetGenerator.generate(accumulator, packet);
+            session.notifyOutgoingPacket(packet);
+        }
 
         EndPoint endPoint = session.getEndPoint();
         if (LOG.isDebugEnabled())
@@ -97,10 +115,15 @@ public class QuicFlusher extends IteratingCallback
     {
         if (LOG.isDebugEnabled())
             LOG.debug("write succeeded to {} on {}", session.getEndPoint(), this);
+
         accumulator.clear();
-        processing.forEach(Entry::succeeded);
-        processing.clear();
-        frames.clear();
+
+        for (Map.Entry<EncryptionLevel, List<Entry>> mapEntry : processing.entrySet())
+        {
+            List<Entry> entries = mapEntry.getValue();
+            entries.forEach(Entry::succeeded);
+            entries.clear();
+        }
     }
 
     @Override
@@ -108,18 +131,18 @@ public class QuicFlusher extends IteratingCallback
     {
         if (LOG.isDebugEnabled())
             LOG.atDebug().setCause(cause).log("write failed to {} on {}", session.getEndPoint(), this);
+
         accumulator.release();
-        processing.forEach(entry -> entry.failed(cause));
-        processing.clear();
-        frames.clear();
+
+        for (Map.Entry<EncryptionLevel, List<Entry>> mapEntry : processing.entrySet())
+        {
+            List<Entry> entries = mapEntry.getValue();
+            entries.forEach(entry -> entry.failed(cause));
+            entries.clear();
+        }
     }
 
-    private sealed interface Entry extends Callback permits SessionEntry
-    {
-        List<Frame> frames();
-    }
-
-    private record SessionEntry(Session session, List<Frame> frames, Callback callback) implements Entry
+    private record Entry(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback) implements Callback
     {
         @Override
         public void succeeded()
@@ -131,6 +154,12 @@ public class QuicFlusher extends IteratingCallback
         public void failed(Throwable x)
         {
             callback().failed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return callback().getInvocationType();
         }
     }
 }

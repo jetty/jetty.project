@@ -70,7 +70,7 @@ public class ClientTLSEngine extends TLSEngine
 
             if (state != State.INITIAL)
                 throw new IllegalStateException("invalid state " + state);
-            state = State.SEND_CLIENT_HELLO;
+            state = State.NEED_SERVER_HELLO;
 
             this.configuration = configuration;
 
@@ -100,17 +100,18 @@ public class ClientTLSEngine extends TLSEngine
                 LOG.debug("produced {} on {}", clientHello, this);
 
             PacketProtector packetProtector = getPacketProtector();
-            packetProtector.updateEncryptionLevel(EncryptionLevel.INITIAL);
             byte[] inputKeyMaterial = configuration.getInputKeyMaterial();
             packetProtector.allocateInitialKeys(configuration.getQuicVersion(), inputKeyMaterial);
 
+            getPacketProtector().getTranscriptHash().offer(clientHello, false);
+
             // Notifies back the QuicSession to send this message in a CRYPTO frame.
-            notifyMessages(List.of(clientHello), Callback.from(callback, this::dispose));
+            notifyMessages(EncryptionLevel.INITIAL, List.of(clientHello), Callback.from(callback, this::fail));
         }
         catch (Throwable x)
         {
             callback.failed(x);
-            dispose(x);
+            fail(x);
         }
     }
 
@@ -119,18 +120,21 @@ public class ClientTLSEngine extends TLSEngine
     {
         try
         {
-            if (state != State.SEND_CLIENT_HELLO)
+            if (LOG.isDebugEnabled())
+                LOG.debug("retrying handshake on {}", this);
+
+            if (state != State.NEED_SERVER_HELLO)
                 throw new IllegalStateException("invalid state " + state);
 
             // RetryPacket is a QUIC mechanism, and as such
             // the ClientHello sent in the first InitialPacket
             // must be discarded from the TranscriptHash.
             getPacketProtector().getTranscriptHash().clear();
-            notifyMessages(List.of(clientHello), Callback.from(Callback.NOOP, this::dispose));
+            notifyMessages(EncryptionLevel.INITIAL, List.of(clientHello), Callback.from(Callback.NOOP, this::fail));
         }
         catch (Throwable x)
         {
-            dispose(x);
+            fail(x);
         }
     }
 
@@ -153,7 +157,7 @@ public class ClientTLSEngine extends TLSEngine
         {
             // A catch-all for the processing of incoming
             // messages, notifying that the handshake failed.
-            dispose(x);
+            fail(x);
         }
     }
 
@@ -162,6 +166,8 @@ public class ClientTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", serverHello, this);
 
+        if (state != State.NEED_SERVER_HELLO)
+            throw new IllegalStateException("invalid state " + state);
         if (serverHello.sessionId().length != 0)
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "invalid legacy session id");
 
@@ -247,6 +253,8 @@ public class ClientTLSEngine extends TLSEngine
 
             getPacketProtector().getTranscriptHash().offer(serverHello, true);
             getPacketProtector().allocateHandshakeKeys(configuration.getQuicVersion(), cipherSuite, sharedSecret);
+
+            state = State.NEED_ENCRYPTED_EXTENSIONS;
         }
         else
         {
@@ -256,6 +264,13 @@ public class ClientTLSEngine extends TLSEngine
 
     private void processEncryptedExtensions(EncryptedExtensionsMessage encryptedExtensions)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} on {}", encryptedExtensions, this);
+
+        if (state != State.NEED_ENCRYPTED_EXTENSIONS)
+            throw new IllegalStateException("invalid state " + state);
+
+
         // TODO: validate extensions are allowed (e.g. key_share_extension not allowed in EncryptedExtensionsMessage).
 
         // TODO: ALPN must be present and match what offered by in the ClientHello.
@@ -269,10 +284,17 @@ public class ClientTLSEngine extends TLSEngine
         //   This would require reach back to the session, must use a listener.
 
         getPacketProtector().getTranscriptHash().offer(encryptedExtensions, true);
+
+        state = State.NEED_CERTIFICATE;
     }
 
     private void processCertificate(CertificateMessage certificate)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} on {}", certificate, this);
+
+        if (state != State.NEED_CERTIFICATE)
+            throw new IllegalStateException("invalid state " + state);
         // RFC 8446, 4.4.2.4.
         if (certificate.entries().isEmpty())
             throw new TLSException(TLSException.Alert.DECODE_ERROR, "no certificate");
@@ -289,16 +311,31 @@ public class ClientTLSEngine extends TLSEngine
 
         // TODO: save the certificate, as it must be verified later.
         getPacketProtector().getTranscriptHash().offer(certificate, true);
+
+        state = State.NEED_CERTIFICATE_VERIFY;
     }
 
     private void processCertificateVerify(CertificateVerifyMessage certificateVerify)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} on {}", certificateVerify, this);
+
+        if (state != State.NEED_CERTIFICATE_VERIFY)
+            throw new IllegalStateException("invalid state " + state);
+
         // TODO: verify the signature using the public key from the Certificate
         getPacketProtector().getTranscriptHash().offer(certificateVerify, true);
+
+        state = State.NEED_FINISHED;
     }
 
     private void processFinished(FinishedMessage finished) throws Exception
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} on {}", finished, this);
+
+        if (state != State.NEED_FINISHED)
+            throw new IllegalStateException("invalid state " + state);
         if (!verifyFinishedMessage(cipherSuite, finished))
             throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid verify data");
 
@@ -309,23 +346,26 @@ public class ClientTLSEngine extends TLSEngine
         getPacketProtector().allocateApplicationKeys(configuration.getQuicVersion(), cipherSuite);
 
         FinishedMessage message = createFinishedMessage(cipherSuite);
-        notifyMessages(List.of(message), Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> handshakeCompleted(null), this::handshakeCompleted));
+        getPacketProtector().getTranscriptHash().offer(message, false);
+
+        state = State.HANDSHAKE_SUCCESSFUL;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("handshake completed on {}", this);
+
+        notifyMessages(EncryptionLevel.HANDSHAKE, List.of(message), Callback.from(Invocable.InvocationType.NON_BLOCKING, this::handshakeSuccessful, this::fail));
     }
 
-    private void handshakeCompleted(Throwable failure)
+    @Override
+    protected void dispose(Throwable failure)
     {
-        if (failure == null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("handshake completed on {}", this);
-            notifyHandshakeCompleted(null);
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("handshake failed on {}", this);
-            dispose(failure);
-        }
+        state = State.HANDSHAKE_FAILED;
+        super.fail(failure);
+    }
+
+    private void handshakeSuccessful()
+    {
+        notifyHandshakeCompleted(null);
     }
 
     @Override
@@ -337,11 +377,12 @@ public class ClientTLSEngine extends TLSEngine
     private enum State
     {
         INITIAL,
-        SEND_CLIENT_HELLO,
-        RECV_SERVER_HELLO,
-        RECV_ENCRYPTED_EXTENSIONS,
-        RECV_CERTIFICATE,
-        RECV_CERTIFICATE_VERIFY,
-        RECV_FINISHED
+        NEED_SERVER_HELLO,
+        NEED_ENCRYPTED_EXTENSIONS,
+        NEED_CERTIFICATE,
+        NEED_CERTIFICATE_VERIFY,
+        NEED_FINISHED,
+        HANDSHAKE_SUCCESSFUL,
+        HANDSHAKE_FAILED
     }
 }
