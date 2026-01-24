@@ -27,10 +27,12 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.quic.common.tls.X509KeyStorePair;
 import org.eclipse.jetty.tls.CertificateMessage;
+import org.eclipse.jetty.tls.CertificateRequestMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.ClientHelloMessage;
@@ -51,6 +53,7 @@ import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,10 +65,8 @@ public class ServerTLSEngine extends TLSEngine
 
     private final ServerTLSConfiguration tlsConfiguration;
     private State state = State.NEED_CLIENT_HELLO;
-    private ClientHelloMessage clientHello;
     private CipherSuite cipherSuite;
     private SecretKey sharedSecret;
-    private ServerHelloMessage serverHello;
 
     public ServerTLSEngine(PacketProtector packetProtector, ServerTLSConfiguration tlsConfiguration)
     {
@@ -96,7 +97,7 @@ public class ServerTLSEngine extends TLSEngine
         {
             // A catch-all for the processing of incoming
             // messages, notifying that the handshake failed.
-            dispose(x);
+            fail(x);
         }
     }
 
@@ -108,18 +109,23 @@ public class ServerTLSEngine extends TLSEngine
         if (state != State.NEED_CLIENT_HELLO)
             throw new IllegalStateException("invalid TLS state " + state);
 
-        this.clientHello = clientHello;
         getPacketProtector().getTranscriptHash().offer(clientHello, true);
 
         List<Extension> clientExtensions = clientHello.extensions();
         List<TLSVersion> clientVersions = List.of();
         List<KeyShare> clientKeyShares = List.of();
+        List<String> clientProtocols = List.of();
+        List<SignatureAlgorithm> clientSignatureAlgorithms = List.of();
+        String serverName = null;
         for (Extension extension : clientExtensions)
         {
             switch (extension)
             {
                 case SupportedVersionsExtension sve -> clientVersions = sve.versions();
                 case KeyShareExtension kse -> clientKeyShares = kse.keyShares();
+                case ALPNExtension ae -> clientProtocols = ae.protocols();
+                case SignatureAlgorithmsExtension sae -> clientSignatureAlgorithms = sae.signatureAlgorithms();
+                case ServerNameExtension sne -> serverName = sne.serverName();
                 default ->
                 {
                 }
@@ -171,152 +177,134 @@ public class ServerTLSEngine extends TLSEngine
         List<Extension> serverExtensions = new ArrayList<>();
         serverExtensions.add(new SupportedVersionsExtension(List.of(tlsVersion)));
         serverExtensions.add(new KeyShareExtension(List.of(serverKeyShare)));
-        serverHello = new ServerHelloMessage(newRandomBytes(32), cipherSuite, serverExtensions);
+        ServerHelloMessage serverHello = new ServerHelloMessage(newRandomBytes(32), cipherSuite, serverExtensions);
         if (LOG.isDebugEnabled())
             LOG.debug("produced {} on {}", serverHello, this);
 
-        // TODO: doing this will cause the ServerHello to arrive to the client, which may reply before
-        //  the post-processing takes place.
-        //  Perhaps an explicit EncryptionLevel in the API?
-        //  In this way it would be explicit, and we would only need to discard the keys are the right time.
-        //  This would only affect crypto(), like it should.
-        notifyMessages(List.of(serverHello), Callback.from(Invocable.InvocationType.NON_BLOCKING, this::postProcessClientHello, this::dispose));
-    }
+        getPacketProtector().getTranscriptHash().offer(serverHello, false);
+        getPacketProtector().allocateHandshakeKeys(tlsConfiguration.getQuicVersion(), cipherSuite, sharedSecret);
 
-    private void postProcessClientHello()
-    {
-        try
+        List<Message> handshakeMessages = new ArrayList<>();
+
+        List<String> negotiatedProtocols = new ArrayList<>(tlsConfiguration.getApplicationProtocols());
+        negotiatedProtocols.retainAll(clientProtocols);
+        if (negotiatedProtocols.isEmpty())
+            throw new TLSException(TLSException.Alert.NO_APPLICATION_PROTOCOL, "no common application protocol");
+        String protocol = negotiatedProtocols.getFirst();
+        if (LOG.isDebugEnabled())
+            LOG.debug("negotiated alpn protocol {} on {}", protocol, this);
+
+        ALPNExtension alpnExtension = new ALPNExtension(List.of(protocol));
+        QuicTransportParametersExtension quicTransportParametersExtension = new QuicTransportParametersExtension(tlsConfiguration.getTransportParameters());
+
+        EncryptedExtensionsMessage encryptedExtensions = new EncryptedExtensionsMessage(List.of(alpnExtension, quicTransportParametersExtension));
+        handshakeMessages.add(encryptedExtensions);
+        getPacketProtector().getTranscriptHash().offer(encryptedExtensions, false);
+        if (LOG.isDebugEnabled())
+            LOG.debug("produced {} on {}", encryptedExtensions, this);
+
+        SslContextFactory.Server sslContextFactory = tlsConfiguration.getSslContextFactory();
+        boolean clientAuthentication = sslContextFactory.getWantClientAuth() || sslContextFactory.getNeedClientAuth();
+        if (clientAuthentication)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("post processing {} on {}", clientHello, this);
+            List<Extension> extensions = List.of(new SignatureAlgorithmsExtension(tlsConfiguration.getSignatureAlgorithms()));
+            CertificateRequestMessage certificateRequest = new CertificateRequestMessage(BufferUtil.EMPTY_BYTES, extensions);
+            handshakeMessages.add(certificateRequest);
+        }
 
-            getPacketProtector().getTranscriptHash().offer(serverHello, false);
-            getPacketProtector().allocateHandshakeKeys(tlsConfiguration.getQuicVersion(), cipherSuite, sharedSecret);
+        if (clientSignatureAlgorithms.isEmpty())
+            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing SignatureAlgorithmsExtension");
+        List<SignatureAlgorithm> negotiatedSignatureAlgorithms = new ArrayList<>(clientSignatureAlgorithms);
+        negotiatedSignatureAlgorithms.retainAll(tlsConfiguration.getSignatureAlgorithms());
+        if (LOG.isDebugEnabled())
+            LOG.debug("negotiated signature algorithms {} on {}", negotiatedSignatureAlgorithms, this);
 
-            List<Extension> clientExtensions = clientHello.extensions();
-            List<String> clientProtocols = List.of();
-            List<SignatureAlgorithm> clientSignatureAlgorithms = List.of();
-            String serverName = null;
-            for (Extension extension : clientExtensions)
+        List<SignatureWithKeyStorePair> pairs = new ArrayList<>();
+        KeyStore keyStore = sslContextFactory.getKeyStore();
+        char[] chars = sslContextFactory.getKeyStorePassword().toCharArray();
+        KeyStore.PasswordProtection password = new KeyStore.PasswordProtection(chars);
+        Arrays.fill(chars, ' ');
+        Enumeration<String> aliases = keyStore.aliases();
+        while (aliases.hasMoreElements())
+        {
+            String alias = aliases.nextElement();
+            KeyStore.Entry entry = keyStore.getEntry(alias, password);
+            if (entry instanceof KeyStore.PrivateKeyEntry pke)
             {
-                switch (extension)
+                PrivateKey privateKey = pke.getPrivateKey();
+                X509KeyStorePair keyStorePair = new X509KeyStorePair(alias, privateKey, Arrays.stream(pke.getCertificateChain())
+                    .map(X509Certificate.class::cast)
+                    .toList());
+                PublicKey publicKey = keyStorePair.certificates().getFirst().getPublicKey();
+                for (SignatureAlgorithm signatureAlgorithm : negotiatedSignatureAlgorithms)
                 {
-                    case ALPNExtension ae -> clientProtocols = ae.protocols();
-                    case SignatureAlgorithmsExtension sae -> clientSignatureAlgorithms = sae.signatureAlgorithms();
-                    case ServerNameExtension sne -> serverName = sne.serverName();
-                    default ->
+                    if (signatureAlgorithm.supports(publicKey))
                     {
+                        pairs.add(new SignatureWithKeyStorePair(signatureAlgorithm, keyStorePair));
+                        break;
                     }
                 }
             }
-
-            List<String> negotiatedProtocols = new ArrayList<>(tlsConfiguration.getApplicationProtocols());
-            negotiatedProtocols.retainAll(clientProtocols);
-            if (negotiatedProtocols.isEmpty())
-                throw new TLSException(TLSException.Alert.NO_APPLICATION_PROTOCOL, "no common application protocol");
-            String protocol = negotiatedProtocols.getFirst();
-            if (LOG.isDebugEnabled())
-                LOG.debug("negotiated alpn protocol {} on {}", protocol, this);
-
-            ALPNExtension alpnExtension = new ALPNExtension(List.of(protocol));
-            QuicTransportParametersExtension quicTransportParametersExtension = new QuicTransportParametersExtension(tlsConfiguration.getTransportParameters());
-
-            EncryptedExtensionsMessage encryptedExtensions = new EncryptedExtensionsMessage(List.of(alpnExtension, quicTransportParametersExtension));
-            getPacketProtector().getTranscriptHash().offer(encryptedExtensions, false);
-            if (LOG.isDebugEnabled())
-                LOG.debug("produced {} on {}", encryptedExtensions, this);
-
-            if (clientSignatureAlgorithms.isEmpty())
-                throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing SignatureAlgorithmsExtension");
-            List<SignatureAlgorithm> negotiatedSignatureAlgorithms = new ArrayList<>(clientSignatureAlgorithms);
-            negotiatedSignatureAlgorithms.retainAll(tlsConfiguration.getSignatureAlgorithms());
-            if (LOG.isDebugEnabled())
-                LOG.debug("negotiated signature algorithms {} on {}", negotiatedSignatureAlgorithms, this);
-
-            List<SignatureWithKeyStorePair> pairs = new ArrayList<>();
-            KeyStore keyStore = tlsConfiguration.getSslContextFactory().getKeyStore();
-            char[] chars = tlsConfiguration.getSslContextFactory().getKeyStorePassword().toCharArray();
-            KeyStore.PasswordProtection password = new KeyStore.PasswordProtection(chars);
-            Arrays.fill(chars, ' ');
-            Enumeration<String> aliases = keyStore.aliases();
-            while (aliases.hasMoreElements())
-            {
-                String alias = aliases.nextElement();
-                KeyStore.Entry entry = keyStore.getEntry(alias, password);
-                if (entry instanceof KeyStore.PrivateKeyEntry pke)
-                {
-                    PrivateKey privateKey = pke.getPrivateKey();
-                    X509KeyStorePair keyStorePair = new X509KeyStorePair(alias, privateKey, Arrays.stream(pke.getCertificateChain())
-                        .map(X509Certificate.class::cast)
-                        .toList());
-                    PublicKey publicKey = keyStorePair.certificates().getFirst().getPublicKey();
-                    for (SignatureAlgorithm signatureAlgorithm : negotiatedSignatureAlgorithms)
-                    {
-                        if (signatureAlgorithm.supports(publicKey))
-                        {
-                            pairs.add(new SignatureWithKeyStorePair(signatureAlgorithm, keyStorePair));
-                            break;
-                        }
-                    }
-                }
-            }
-            password.destroy();
-            if (pairs.isEmpty())
-                throw new TLSException(TLSException.Alert.UNSUPPORTED_CERTIFICATE, "no matching certificate");
-            if (LOG.isDebugEnabled())
-                LOG.debug("supported certificates at aliases {} on {}", pairs.stream().map(p -> p.keyStorePair().alias()).toList(), this);
-
-            boolean sniRequired = tlsConfiguration.getSslContextFactory().isSniRequired();
-            if (serverName == null && sniRequired)
-                throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing ServerNameExtension");
-            SignatureWithKeyStorePair match = null;
-            if (serverName != null)
-                match = selectCertificate(pairs, serverName);
-            SignatureWithKeyStorePair candidate = serverName == null ? pairs.getFirst() : match;
-            if (candidate == null)
-            {
-                if (sniRequired)
-                    throw new TLSException(TLSException.Alert.UNRECOGNIZED_NAME, "no matching certificate");
-                else
-                    candidate = pairs.getFirst();
-            }
-            if (LOG.isDebugEnabled())
-                LOG.debug("certificate {} at alias {} on {}", match != null ? "match" : "default", candidate.keyStorePair().alias(), this);
-
-            List<CertificateMessage.Entry> entries = candidate.keyStorePair().certificates().stream()
-                .map(c -> new CertificateMessage.Entry(c, List.of()))
-                .toList();
-            CertificateMessage certificate = new CertificateMessage(BufferUtil.EMPTY_BYTES, entries);
-            if (LOG.isDebugEnabled())
-                LOG.debug("produced {} on {}", certificate, this);
-
-            // Add CertificateMessage to the TranscriptHash to
-            // calculate the signature for CertificateVerifyMessage.
-            getPacketProtector().getTranscriptHash().offer(certificate, false);
-            CertificateVerifyMessage certificateVerify = createCertificateVerifyMessage(candidate.signatureAlgorithm(), candidate.keyStorePair().privateKey(), false);
-            if (LOG.isDebugEnabled())
-                LOG.debug("produced {} on {}", certificateVerify, this);
-
-            // Add CertificateVerifyMessage to calculate
-            // the verifyData for FinishedMessage.
-            getPacketProtector().getTranscriptHash().offer(certificateVerify, false);
-            FinishedMessage finished = createFinishedMessage(cipherSuite);
-            if (LOG.isDebugEnabled())
-                LOG.debug("produced {} on {}", finished, this);
-
-            getPacketProtector().getTranscriptHash().offer(finished, false);
-            getPacketProtector().allocateApplicationKeys(tlsConfiguration.getQuicVersion(), cipherSuite);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("handshake completed on {}", this);
-
-            state = State.NEED_FINISHED;
-            notifyMessages(List.of(encryptedExtensions, certificate, certificateVerify, finished), Callback.from(Callback.NOOP, this::dispose));
         }
-        catch (Throwable x)
+        password.destroy();
+        if (pairs.isEmpty())
+            throw new TLSException(TLSException.Alert.UNSUPPORTED_CERTIFICATE, "no matching certificate");
+        if (LOG.isDebugEnabled())
+            LOG.debug("supported certificates at aliases {} on {}", pairs.stream().map(p -> p.keyStorePair().alias()).toList(), this);
+
+        boolean sniRequired = sslContextFactory.isSniRequired();
+        if (serverName == null && sniRequired)
+            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing ServerNameExtension");
+        SignatureWithKeyStorePair match = null;
+        if (serverName != null)
+            match = selectCertificate(pairs, serverName);
+        SignatureWithKeyStorePair candidate = serverName == null ? pairs.getFirst() : match;
+        if (candidate == null)
         {
-            dispose(x);
+            if (sniRequired)
+                throw new TLSException(TLSException.Alert.UNRECOGNIZED_NAME, "no matching certificate");
+            else
+                candidate = pairs.getFirst();
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("certificate {} at alias {} on {}", match != null ? "match" : "default", candidate.keyStorePair().alias(), this);
+
+        List<CertificateMessage.Entry> entries = candidate.keyStorePair().certificates().stream()
+            .map(c -> new CertificateMessage.Entry(c, List.of()))
+            .toList();
+        CertificateMessage certificate = new CertificateMessage(BufferUtil.EMPTY_BYTES, entries);
+        handshakeMessages.add(certificate);
+        if (LOG.isDebugEnabled())
+            LOG.debug("produced {} on {}", certificate, this);
+
+        // Add CertificateMessage to the TranscriptHash to
+        // calculate the signature for CertificateVerifyMessage.
+        getPacketProtector().getTranscriptHash().offer(certificate, false);
+        CertificateVerifyMessage certificateVerify = createCertificateVerifyMessage(candidate.signatureAlgorithm(), candidate.keyStorePair().privateKey(), false);
+        handshakeMessages.add(certificateVerify);
+        if (LOG.isDebugEnabled())
+            LOG.debug("produced {} on {}", certificateVerify, this);
+
+        // Add CertificateVerifyMessage to calculate
+        // the verifyData for FinishedMessage.
+        getPacketProtector().getTranscriptHash().offer(certificateVerify, false);
+        FinishedMessage finished = createFinishedMessage(cipherSuite);
+        handshakeMessages.add(finished);
+        if (LOG.isDebugEnabled())
+            LOG.debug("produced {} on {}", finished, this);
+
+        getPacketProtector().getTranscriptHash().offer(finished, false);
+        getPacketProtector().allocateApplicationKeys(tlsConfiguration.getQuicVersion(), cipherSuite);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("handshake completed on {}", this);
+
+        state = clientAuthentication ? State.NEED_CERTIFICATE : State.NEED_FINISHED;
+
+        notifyMessages(EncryptionLevel.INITIAL, List.of(serverHello), Callback.from(Invocable.InvocationType.NON_BLOCKING,
+            () -> notifyMessages(EncryptionLevel.HANDSHAKE, handshakeMessages, Callback.from(Callback.NOOP, this::fail)),
+            this::fail
+        ));
     }
 
     private SignatureWithKeyStorePair selectCertificate(List<SignatureWithKeyStorePair> pairs, String serverName) throws Exception
@@ -436,7 +424,7 @@ public class ServerTLSEngine extends TLSEngine
         state = State.HANDSHAKE_SUCCESSFUL;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("handshake successful on {}", this);
+            LOG.debug("handshake completed on {}", this);
 
         notifyHandshakeCompleted(null);
     }
@@ -446,12 +434,20 @@ public class ServerTLSEngine extends TLSEngine
     {
         destroy(sharedSecret);
         state = State.HANDSHAKE_FAILED;
-        super.dispose(failure);
+        super.fail(failure);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s[%s]".formatted(super.toString(), state);
     }
 
     private enum State
     {
         NEED_CLIENT_HELLO,
+        NEED_CERTIFICATE,
+        NEED_CERTIFICATE_VERIFY,
         NEED_FINISHED,
         HANDSHAKE_SUCCESSFUL,
         HANDSHAKE_FAILED

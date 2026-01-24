@@ -171,7 +171,7 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         /// The maximum number of active connections ids the peer is willing to support.
         public static final Id<Long> ACTIVE_CONNECTION_ID_LIMIT = Ids.create(0x0E, LongId::new);
 
-        /// The client source connection id of the first Initial packet.
+        /// The source connection id of the first Initial packet.
         public static final Id<byte[]> INITIAL_SOURCE_CONNECTION_ID = Ids.create(0x0F, BytesId::new);
 
         /// The source connection id of a `RetryPacket`.

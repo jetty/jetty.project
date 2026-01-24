@@ -18,7 +18,7 @@ import java.util.List;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.frames.Frame;
 
-public final class HandshakePacket extends LongHeaderPacket implements Packet.WithPacketNumber
+public final class HandshakePacket extends LongHeaderPacket implements Packet.WithFrames
 {
     private final long packetNumber;
     private final List<Frame> frames;
@@ -36,6 +36,7 @@ public final class HandshakePacket extends LongHeaderPacket implements Packet.Wi
         return packetNumber;
     }
 
+    @Override
     public List<Frame> frames()
     {
         return frames;

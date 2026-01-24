@@ -24,6 +24,7 @@ import javax.crypto.KDF;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 
+import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.quic.common.tls.parser.QuicMessagesParser;
@@ -48,8 +49,8 @@ public abstract class TLSEngine implements MessageParser.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(TLSEngine.class);
 
-    private final List<Message.Listener> messageListeners = new ArrayList<>();
-    private final List<Listener> handshakeListeners = new ArrayList<>();
+    private final List<MessageListener> messageListeners = new ArrayList<>();
+    private final List<HandshakeListener> handshakeListeners = new ArrayList<>();
     private final SecureRandom random = new SecureRandom();
     private final PacketProtector protector;
     private final MessagesGenerator tlsGenerator;
@@ -88,18 +89,18 @@ public abstract class TLSEngine implements MessageParser.Listener
         return tlsParser;
     }
 
-    public void addMessageListener(Message.Listener listener)
+    public void addMessageListener(MessageListener listener)
     {
         messageListeners.add(listener);
     }
 
-    protected void notifyMessages(List<Message> messages, Callback callback)
+    protected void notifyMessages(EncryptionLevel encryptionLevel, List<Message> messages, Callback callback)
     {
-        for (Message.Listener listener : messageListeners)
+        for (MessageListener listener : messageListeners)
         {
             try
             {
-                listener.onMessages(messages, callback);
+                listener.onMessages(encryptionLevel, messages, callback);
             }
             catch (Throwable x)
             {
@@ -108,14 +109,14 @@ public abstract class TLSEngine implements MessageParser.Listener
         }
     }
 
-    public void addHandshakeListener(Listener listener)
+    public void addHandshakeListener(HandshakeListener listener)
     {
         handshakeListeners.add(listener);
     }
 
     protected void notifyHandshakeCompleted(Throwable failure)
     {
-        for (Listener listener : handshakeListeners)
+        for (HandshakeListener listener : handshakeListeners)
         {
             try
             {
@@ -191,12 +192,17 @@ public abstract class TLSEngine implements MessageParser.Listener
         return MessageDigest.isEqual(verifyData, expected);
     }
 
-    protected void dispose(Throwable failure)
+    protected final void fail(Throwable failure)
     {
         if (failure == null)
             return;
         if (LOG.isDebugEnabled())
             LOG.atDebug().setCause(failure).log("failure on {}", this);
+        dispose(failure);
+    }
+
+    protected void dispose(Throwable failure)
+    {
         notifyHandshakeCompleted(TLSException.wrap(failure));
     }
 
@@ -220,7 +226,12 @@ public abstract class TLSEngine implements MessageParser.Listener
         return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
     }
 
-    public interface Listener
+    public interface MessageListener
+    {
+        void onMessages(EncryptionLevel encryptionLevel, List<Message> messages, Callback callback);
+    }
+
+    public interface HandshakeListener
     {
         void handshakeCompleted(Throwable failure);
     }

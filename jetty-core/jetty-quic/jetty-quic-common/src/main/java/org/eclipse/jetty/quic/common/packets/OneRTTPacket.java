@@ -19,7 +19,7 @@ import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
-public final class OneRTTPacket extends ShortHeaderPacket implements Packet.WithPacketNumber
+public final class OneRTTPacket extends ShortHeaderPacket implements Packet.WithFrames
 {
     private final long packetNumber;
     private final byte[] dstConnectionId;
@@ -58,6 +58,7 @@ public final class OneRTTPacket extends ShortHeaderPacket implements Packet.With
         return keyPhase;
     }
 
+    @Override
     public List<Frame> frames()
     {
         return frames;

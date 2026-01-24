@@ -51,7 +51,6 @@ public class PacketProtector implements Encrypter, Decrypter
     private final PacketNumbers packetNumbers;
     private final TranscriptHash transcriptHash;
     private final boolean client;
-    private EncryptionLevel encryptionLevel;
     private SecretKey handshakeSecret;
 
     public PacketProtector(ByteBufferPool byteBufferPool, PacketNumbers packetNumbers, TranscriptHash transcriptHash, boolean client)
@@ -72,26 +71,18 @@ public class PacketProtector implements Encrypter, Decrypter
         return transcriptHash;
     }
 
-    public EncryptionLevel getEncryptionLevel()
-    {
-        return encryptionLevel;
-    }
-
     public SecretKey getTrafficSecretKey(boolean input)
     {
-        assert encryptionLevel != null;
-        return keyManagers.get(encryptionLevel).getTrafficSecretKey(input);
+        return keyManagers.get(EncryptionLevel.HANDSHAKE).getTrafficSecretKey(input);
     }
 
     public void allocateInitialKeys(QuicVersion quicVersion, byte[] input)
     {
         try
         {
-            if (encryptionLevel != EncryptionLevel.INITIAL)
-                throw new IllegalStateException("cannot allocate initial keys at encryption level " + encryptionLevel);
             KeyManager keyManager = new KeyManager(EncryptionLevel.INITIAL);
             if (keyManagers.put(EncryptionLevel.INITIAL, keyManager) != null)
-                throw new IllegalStateException("KeyManager already exists at encryption level " + encryptionLevel);
+                throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.INITIAL);
 
             // RFC 9001, 5.2: initial secrets use SHA256.
             KDF kdf = KDF.getInstance("HKDF-SHA256");
@@ -132,16 +123,13 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         try
         {
-            if (encryptionLevel != EncryptionLevel.INITIAL)
-                throw new IllegalStateException("cannot allocate handshake keys at encryption level " + encryptionLevel);
-
             transcriptHash.initialize(cipherSuite);
 
             KeyManager keyManager = new KeyManager(EncryptionLevel.INITIAL);
             if (keyManagers.put(EncryptionLevel.HANDSHAKE, keyManager) != null)
-                throw new IllegalStateException("KeyManager already exists at encryption level " + encryptionLevel);
+                throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.HANDSHAKE);
 
-            // RFC 8446, 7.1.
+            // RFC-8446[7.1].
             int hashLength = cipherSuite.hashLength();
             KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
             byte[] salt = new byte[hashLength];
@@ -190,12 +178,9 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         try
         {
-            if (encryptionLevel != EncryptionLevel.HANDSHAKE)
-                throw new IllegalStateException("cannot allocate application keys at encryption level " + encryptionLevel);
-
             KeyManager keyManager = new KeyManager(EncryptionLevel.ONE_RTT);
             if (keyManagers.put(EncryptionLevel.ONE_RTT, keyManager) != null)
-                throw new IllegalStateException("KeyManager already exists at encryption level " + encryptionLevel);
+                throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.ONE_RTT);
 
             // RFC 8446, 7.1.
             int hashLength = cipherSuite.hashLength();
@@ -238,26 +223,22 @@ public class PacketProtector implements Encrypter, Decrypter
         }
     }
 
-    public void updateEncryptionLevel(EncryptionLevel next)
+    public void discardKeys(EncryptionLevel encryptionLevel)
     {
-        EncryptionLevel current = encryptionLevel;
-        boolean valid = (current == null && next == EncryptionLevel.INITIAL) ||
-            (current == EncryptionLevel.INITIAL && next == EncryptionLevel.HANDSHAKE) ||
-            (current == EncryptionLevel.HANDSHAKE && next == EncryptionLevel.ONE_RTT);
-        if (!valid)
-            throw new IllegalStateException("invalid encryption level transition from " + current + " to " + next);
-
-        encryptionLevel = next;
-
-        // RFC 9001, 4.9.
-        if (current != null)
-            keyManagers.remove(current).destroy();
-        if (current == EncryptionLevel.HANDSHAKE)
+        // RFC-9001[4.9].
+        KeyManager removed = keyManagers.remove(encryptionLevel);
+        if (removed != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("discarded {} keys on {}", encryptionLevel, this);
+            removed.destroy();
+        }
+        if (encryptionLevel == EncryptionLevel.HANDSHAKE)
             KeyManager.destroy(handshakeSecret);
     }
 
     @Override
-    public PacketBuffers encrypt(EncryptionLevel encryptionLevel, long packetNumber, RetainableByteBuffer header, RetainableByteBuffer payload) throws Exception
+    public PacketBuffers encrypt(EncryptionLevel encryptionLevel, long packetNumber, RetainableByteBuffer header, RetainableByteBuffer.Mutable payload) throws Exception
     {
         KeyManager keyManager = keyManagers.get(encryptionLevel);
         if (keyManager == null)
@@ -286,7 +267,7 @@ public class PacketProtector implements Encrypter, Decrypter
     @Override
     public String toString()
     {
-        return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getEncryptionLevel());
+        return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
     }
 
     /// A manager for [read][ReadKeys] and [write][WriteKeys] keys
@@ -309,7 +290,7 @@ public class PacketProtector implements Encrypter, Decrypter
             return input ? readKeys.traffic : writeKeys.traffic;
         }
 
-        public PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer payload) throws Exception
+        public PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer.Mutable payload) throws Exception
         {
             return writeKeys.encrypt(packetNumber, header, payload);
         }
@@ -563,7 +544,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 this.protection = protection;
             }
 
-            private PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer payload) throws Exception
+            private PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer.Mutable payload) throws Exception
             {
                 byte[] nonce = nonce(initialization, packetNumber);
 
@@ -574,6 +555,14 @@ public class PacketProtector implements Encrypter, Decrypter
                 ByteBuffer headerByteBuffer = header.getByteBuffer();
                 gcmCipher.updateAAD(headerByteBuffer);
                 headerByteBuffer.flip();
+
+                // RFC-9001[5.4.2]: pad payload if necessary.
+                // Packet protection requires 16 bytes of sample,
+                // offset by 4 bytes from the packet number,
+                // so we must pad up to 4 bytes.
+                if (payload.size() < 4)
+                    payload.putInt(0);
+
                 // Encrypt the payload.
                 // AEAD encryption produces 16 additional bytes.
                 ByteBuffer payloadByteBuffer = payload.getByteBuffer();
