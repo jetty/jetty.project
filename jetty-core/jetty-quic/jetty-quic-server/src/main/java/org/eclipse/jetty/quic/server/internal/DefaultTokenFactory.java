@@ -114,7 +114,7 @@ public class DefaultTokenFactory implements TokenFactory
     }
 
     @Override
-    public boolean isTokenValid(SocketAddress remoteSocketAddress, byte[] originalDestinationConnectionId, byte[] token)
+    public boolean isTokenValid(SocketAddress remoteAddress, byte[] originalDestinationConnectionId, byte[] token)
     {
         try
         {
@@ -129,7 +129,7 @@ public class DefaultTokenFactory implements TokenFactory
                 return false;
 
             // Verify IP address.
-            byte[] expectedAddressBytes = socketAddressToBytes(remoteSocketAddress);
+            byte[] expectedAddressBytes = socketAddressToBytes(remoteAddress);
             byte[] addressBytes = new byte[expectedAddressBytes.length];
             byteBuffer.get(addressBytes);
             if (!Arrays.equals(addressBytes, expectedAddressBytes))

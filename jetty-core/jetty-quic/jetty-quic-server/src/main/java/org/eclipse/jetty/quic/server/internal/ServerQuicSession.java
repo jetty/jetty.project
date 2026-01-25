@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.server.internal;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -22,6 +23,7 @@ import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
+import org.eclipse.jetty.quic.api.frames.NewTokenFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
@@ -54,6 +56,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 
     private long expireNanoTime = Long.MAX_VALUE;
     private byte[] originalDestinationConnectionId;
+    private TransportParameters transportParameters;
 
     public ServerQuicSession(Connector connector, QuicServerQuicConfiguration configuration, ServerQuicConnection connection, PacketNumbers packetNumbers, ServerTLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint)
     {
@@ -191,7 +194,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 
     private void processClientHello(ClientHelloMessage clientHello)
     {
-        TransportParameters transportParameters = clientHello.extensions().stream()
+        transportParameters = clientHello.extensions().stream()
             .filter(ext -> ext instanceof QuicTransportParametersExtension)
             .map(QuicTransportParametersExtension.class::cast)
             .findFirst()
@@ -206,19 +209,37 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     private void handshakeComplete(Throwable failure)
     {
         if (failure == null)
+            handshakeSuccessful();
+        else
+            handshakeFailure(failure);
+    }
+
+    private void handshakeSuccessful()
+    {
+        try
         {
             notifyOpen();
-            handshakeDone(new HandshakeDoneFrame(), Callback.NOOP/*TODO*/);
+            List<Frame> frames = new ArrayList<>();
+            frames.add(new HandshakeDoneFrame());
+            byte[] token = getQuicConfiguration().getTokenFactory().newToken(getRemoteSocketAddress());
+            frames.add(new NewTokenFrame(token));
+            // TODO: send also NewConnectionIdFrames.
+            frames(frames, Callback.from(Callback.NOOP, this::fail));
         }
-        else
+        catch (Throwable x)
         {
-            // TODO: notifyFailure()?
-            // RFC-9000[20.1]: convert TLS alerts into CRYPTO_ERRORs.
-            long code = ErrorCode.INTERNAL_ERROR.code();
-            if (failure instanceof TLSException tls)
-                code = ErrorCode.CRYPTO_ERROR.code() + tls.getAlert().code();
-            disconnect(new ConnectionCloseFrame(code, failure.getMessage(), 0x06), failure, Promise.Invocable.noop()/*TODO*/);
+            fail(x);
         }
+    }
+
+    private void handshakeFailure(Throwable failure)
+    {
+        // TODO: notifyFailure()?
+        // RFC-9000[20.1]: convert TLS alerts into CRYPTO_ERRORs.
+        long code = ErrorCode.INTERNAL_ERROR.code();
+        if (failure instanceof TLSException tls)
+            code = ErrorCode.CRYPTO_ERROR.code() + tls.getAlert().code();
+        disconnect(new ConnectionCloseFrame(code, failure.getMessage(), 0x06), failure, Promise.Invocable.noop()/*TODO*/);
     }
 
     /*

@@ -66,6 +66,8 @@ public class ClientQuicSession extends QuicSession
     {
         super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), quicConfiguration, connection, packetNumbers, clientTLSEngine, sessionListener(context), endPoint);
         this.context = context;
+        // TODO: is this necessary?
+        //  Maybe yes, but the override of getDestinationConnectionId() maybe not.
         this.firstDstConnectionId = BufferUtil.EMPTY_BYTES;
     }
 

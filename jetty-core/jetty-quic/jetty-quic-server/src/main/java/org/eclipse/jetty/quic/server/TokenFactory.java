@@ -35,11 +35,22 @@ import org.eclipse.jetty.quic.common.packets.RetryPacket;
 public interface TokenFactory
 {
     /// Creates a new token to be used in [RetryPacket]s.
+    ///
+    /// @param remoteAddress the client socket address
+    /// @param originalDestinationConnectionId the original destination connection id
+    /// sent by the client in the first [InitialPacket]
     byte[] newRetryToken(SocketAddress remoteAddress, byte[] originalDestinationConnectionId) throws Exception;
 
     /// Creates a new token to be used in [NewTokenFrame]s.
+    ///
+    /// @param remoteAddress the client socket address
     byte[] newToken(SocketAddress remoteAddress) throws Exception;
 
-    /// Validates a retry token.
-    boolean isTokenValid(SocketAddress remoteSocketAddress, byte[] originalDestinationConnectionId, byte[] retryToken);
+    /// Validates a retry token received in a [RetryPacket].
+    ///
+    /// @param remoteAddress the client socket address
+    /// @param originalDestinationConnectionId the original destination connection id
+    /// sent by the client in the first [InitialPacket]
+    /// @param retryToken the retry token received in a [RetryPacket]
+    boolean isTokenValid(SocketAddress remoteAddress, byte[] originalDestinationConnectionId, byte[] retryToken);
 }
