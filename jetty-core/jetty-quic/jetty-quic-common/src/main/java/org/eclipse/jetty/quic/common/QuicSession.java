@@ -33,7 +33,6 @@ import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
-import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
@@ -193,9 +192,9 @@ public abstract class QuicSession extends AbstractSession
             flusher.iterate();
     }
 
-    protected void handshakeDone(HandshakeDoneFrame frame, Callback callback)
+    protected void frames(List<Frame> frames, Callback callback)
     {
-        if (flusher.offer(List.of(frame), callback))
+        if (flusher.offer(frames, callback))
             flusher.iterate();
     }
 

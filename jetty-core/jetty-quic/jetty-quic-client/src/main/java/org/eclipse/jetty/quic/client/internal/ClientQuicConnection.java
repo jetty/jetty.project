@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -32,7 +31,6 @@ import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,19 +40,15 @@ public class ClientQuicConnection extends QuicConnection implements Callback
 
     private final AtomicLong bytesIn = new AtomicLong();
     private final ClientConnector connector;
-    private final SslContextFactory.Client sslContextFactory;
     private final QuicClientQuicConfiguration quicConfiguration;
-    private final ClientConnectionFactory clientConnectionFactory;
     private final Map<String, Object> context;
     private ClientQuicSession session;
 
-    public ClientQuicConnection(ClientConnector connector, SslContextFactory.Client sslContextFactory, QuicClientQuicConfiguration quicConfiguration, ClientConnectionFactory clientConnectionFactory, EndPoint endPoint, Map<String, Object> context)
+    public ClientQuicConnection(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, EndPoint endPoint, Map<String, Object> context)
     {
         super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.connector = connector;
-        this.sslContextFactory = sslContextFactory;
         this.quicConfiguration = quicConfiguration;
-        this.clientConnectionFactory = clientConnectionFactory;
         this.context = context;
     }
 

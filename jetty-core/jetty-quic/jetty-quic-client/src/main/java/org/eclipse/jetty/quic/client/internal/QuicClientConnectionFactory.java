@@ -21,7 +21,6 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class QuicClientConnectionFactory extends ClientConnectionFactory.Wrapper
 {
@@ -37,8 +36,7 @@ public class QuicClientConnectionFactory extends ClientConnectionFactory.Wrapper
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         ClientConnector clientConnector = (ClientConnector)context.get(ClientConnector.CONTEXT_KEY);
-        SslContextFactory.Client sslContextFactory = (SslContextFactory.Client)context.get(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
-        ClientQuicConnection connection = new ClientQuicConnection(clientConnector, sslContextFactory, quicConfiguration, getWrapped(), endPoint, context);
+        ClientQuicConnection connection = new ClientQuicConnection(clientConnector, quicConfiguration, endPoint, context);
         return customize(connection, context);
     }
 }
