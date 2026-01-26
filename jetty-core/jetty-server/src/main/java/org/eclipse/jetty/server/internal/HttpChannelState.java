@@ -126,6 +126,9 @@ public class HttpChannelState implements HttpChannel, Components
     private Predicate<TimeoutException> _onIdleTimeout;
     private Content.Chunk _readFailure;
     private Consumer<Throwable> _onFailure;
+    private Throwable _consumeAvailableFailure;
+    private Throwable _writeFailure;
+    private Throwable _lastWriteFailure;
     private Throwable _callbackFailure;
     private Attributes _cache;
     private boolean _expects100Continue;
@@ -656,13 +659,14 @@ public class HttpChannelState implements HttpChannel, Components
     private Throwable lockedCompleteStreamFailure()
     {
         assert _lock.isHeldByCurrentThread();
-        Throwable completeStreamFailure = _lastWriteCallback._failure;
-        if (completeStreamFailure == null)
-            completeStreamFailure = _response._writeFailure;
-        if (completeStreamFailure == null && !(_callbackFailure instanceof HttpException))
-            completeStreamFailure = _callbackFailure;
-        if (completeStreamFailure == null)
-            completeStreamFailure = _request._consumeAvailableFailure;
+
+        Throwable completeStreamFailure = ExceptionUtil.combine(_lastWriteFailure,
+            ExceptionUtil.combine(_writeFailure, _consumeAvailableFailure));
+        // Check the case for a committed response with a
+        // non-last successful write, then throwing an exception.
+        if (_streamSendState == StreamSendState.FAILED)
+            completeStreamFailure = ExceptionUtil.combine(completeStreamFailure, _callbackFailure);
+
         return completeStreamFailure;
     }
 
@@ -789,7 +793,6 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             HttpStream stream;
-            Throwable failure;
             Throwable completeStreamFailure;
             boolean completeStream;
             boolean callbackCompleted;
@@ -800,18 +803,17 @@ public class HttpChannelState implements HttpChannel, Components
                 stream = _stream;
                 _handling = null;
                 _handled = true;
-                failure = _callbackFailure;
                 callbackCompleted = _callbackCompleted;
                 lastStreamSendComplete = lockedIsLastStreamSendCompleted();
                 completeStream = callbackCompleted && lastStreamSendComplete;
                 completeStreamFailure = lockedCompleteStreamFailure();
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("handler invoked: completeStream={} failure={} callbackCompleted={} {}", completeStream, failure, callbackCompleted, HttpChannelState.this);
+                    LOG.debug("handler invoked: completeStream={} failure={} callbackCompleted={} {}", completeStream, completeStreamFailure, callbackCompleted, HttpChannelState.this);
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("stream={}, failure={}, callbackCompleted={}, completeStream={}", stream, failure, callbackCompleted, completeStream);
+                LOG.debug("stream={}, failure={}, callbackCompleted={}, completeStream={}", stream, completeStreamFailure, callbackCompleted, completeStream);
 
             if (completeStream)
                 completeStream(stream, completeStreamFailure);
@@ -854,11 +856,10 @@ public class HttpChannelState implements HttpChannel, Components
             try (AutoLock ignored = _lock.lock())
             {
                 assert _callbackCompleted;
-                _streamSendState = StreamSendState.LAST_COMPLETE;
+                _streamSendState = failure == null ? StreamSendState.LAST_COMPLETE : StreamSendState.FAILED;
                 completeStream = _handling == null; // if we have not handled yet or have completed handling
                 stream = _stream;
-                _failure = failure;
-                _callbackFailure = ExceptionUtil.combine(failure, _callbackFailure);
+                _lastWriteFailure = failure;
                 completeStreamFailure = lockedCompleteStreamFailure();
             }
 
@@ -1057,22 +1058,14 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public boolean consumeAvailable()
         {
-            HttpStream stream;
             try (AutoLock ignored = _lock.lock())
             {
                 HttpChannelState httpChannel = lockedGetHttpChannelState();
-                stream = httpChannel._stream;
+                HttpStream stream = httpChannel._stream;
+                Throwable failure = stream.consumeAvailable();
+                httpChannel._consumeAvailableFailure = failure;
+                return failure == null;
             }
-
-            Throwable failure = stream.consumeAvailable();
-            if (failure != null)
-            {
-                try (AutoLock ignored = _lock.lock())
-                {
-                    _consumeAvailableFailure = failure;
-                }
-            }
-            return failure == null;
         }
 
         @Override
@@ -1250,7 +1243,6 @@ public class HttpChannelState implements HttpChannel, Components
         private long _contentBytesWritten;
         private Supplier<HttpFields> _trailers;
         private Callback _writeCallback;
-        private Throwable _writeFailure;
 
         private ChannelResponse(ChannelRequest request)
         {
@@ -1283,8 +1275,8 @@ public class HttpChannelState implements HttpChannel, Components
             _writeCallback = null;
 
             Runnable cancellation = _request.getHttpStream().cancelSend(x, writeCallback);
-
-            _writeFailure = ExceptionUtil.combine(_writeFailure, x);
+            HttpChannelState httpChannelState = _request._httpChannelState;
+            httpChannelState._writeFailure = ExceptionUtil.combine(httpChannelState._writeFailure, x);
             return cancellation;
         }
 
@@ -1341,6 +1333,8 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void write(boolean last, ByteBuffer content, Callback callback)
         {
+            Callback writeCallback = Objects.requireNonNullElse(callback, NOOP);
+
             long length = BufferUtil.length(content);
 
             HttpChannelState httpChannelState;
@@ -1351,7 +1345,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 httpChannelState = _request.lockedGetHttpChannelState();
                 long totalWritten = _contentBytesWritten + length;
-                writeFailure = _writeFailure;
+                writeFailure = httpChannelState._writeFailure;
 
                 if (writeFailure == null)
                 {
@@ -1360,7 +1354,7 @@ public class HttpChannelState implements HttpChannel, Components
                         if (_writeCallback instanceof InterimCallback interimCallback)
                         {
                             // Do this write after the interim callback.
-                            interimCallback.whenComplete((v, t) -> write(last, content, callback));
+                            interimCallback.whenComplete((v, t) -> write(last, content, writeCallback));
                             return;
                         }
                         writeFailure = new WritePendingException();
@@ -1383,7 +1377,7 @@ public class HttpChannelState implements HttpChannel, Components
                             {
                                 String message = lengthError.formatted(totalWritten, contentLength);
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("fail {} {}", callback, message);
+                                    LOG.debug("fail {} {}", writeCallback, message);
                                 writeFailure = new IOException(message);
                             }
                         }
@@ -1396,19 +1390,20 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (writeFailure == NOTHING_TO_SEND)
                 {
-                    httpChannelState._writeInvoker.run(Invocable.from(callback.getInvocationType(), callback::succeeded));
+                    httpChannelState._writeInvoker.run(Invocable.from(writeCallback.getInvocationType(), writeCallback::succeeded));
                     return;
                 }
                 // Have we failed in some way?
                 if (writeFailure != null)
                 {
+                    httpChannelState._lastWriteFailure = writeFailure;
                     Throwable failure = writeFailure;
-                    httpChannelState._writeInvoker.run(() -> HttpChannelState.failed(callback, failure));
+                    httpChannelState._writeInvoker.run(() -> HttpChannelState.failed(writeCallback, failure));
                     return;
                 }
 
                 // No failure, do the actual stream send using the ChannelResponse as the callback.
-                _writeCallback = callback;
+                _writeCallback = writeCallback;
                 _contentBytesWritten = totalWritten;
                 stream = httpChannelState._stream;
                 if (_httpFields.commit())
@@ -1441,7 +1436,6 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel = _request.lockedGetHttpChannelState();
                 httpChannel.lockedStreamSendCompleted(true);
             }
-
             if (callback != null)
                 httpChannel._writeInvoker.run(Invocable.from(callback.getInvocationType(), callback::succeeded));
         }
@@ -1465,13 +1459,11 @@ public class HttpChannelState implements HttpChannel, Components
             HttpChannelState httpChannel;
             try (AutoLock ignored = _request._lock.lock())
             {
-                _writeFailure = x;
                 callback = _writeCallback;
                 _writeCallback = null;
                 httpChannel = _request.lockedGetHttpChannelState();
                 httpChannel.lockedStreamSendCompleted(false);
             }
-
             if (callback != null)
                 httpChannel._writeInvoker.run(() -> HttpChannelState.failed(callback, x));
         }
@@ -1633,7 +1625,7 @@ public class HttpChannelState implements HttpChannel, Components
             MetaData.Response responseMetaData = null;
             boolean completeStream = false;
             ErrorResponse errorResponse = null;
-            Callback failedCallback = null;
+            Callback writeCallback = null;
             Throwable completeStreamFailure;
 
             try (AutoLock ignored = _request._lock.lock())
@@ -1661,6 +1653,7 @@ public class HttpChannelState implements HttpChannel, Components
                     // persistent otherwise RequestLog.log() would be able to read
                     // x-www-form-urlencoded parameters in one case and not the other.
                     Throwable unconsumed = stream.consumeAvailable();
+                    httpChannelState._consumeAvailableFailure = unconsumed;
                     if (httpChannelState.getConnectionMetaData().isPersistent() && !httpChannelState._expects100Continue)
                         failure = ExceptionUtil.combine(failure, unconsumed);
                     else if (failure != null && unconsumed != null)
@@ -1691,10 +1684,29 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     doLastStreamSend = httpChannelState.lockedLastStreamSend();
                     if (doLastStreamSend)
-                        response._writeCallback = httpChannelState._lastWriteCallback;
+                    {
+                        LastWriteCallback lastWriteCallback = httpChannelState._lastWriteCallback;
+                        if (stream.isCommitted())
+                        {
+                            response._writeCallback = lastWriteCallback;
+                        }
+                        else
+                        {
+                            ErrorResponse errResponse = new ErrorResponse(request);
+                            response._writeCallback = Callback.from(lastWriteCallback.getInvocationType(), lastWriteCallback::succeeded, x ->
+                            {
+                                if (stream.isCommitted())
+                                    lastWriteCallback.failed(x);
+                                else
+                                    Response.writeError(request, errResponse, new ErrorCallback(request, errResponse, stream, x), x);
+                            });
+                        }
+                    }
                     // or complete the stream if everything is done.
                     else if (httpChannelState.lockedIsLastStreamSendCompleted())
+                    {
                         completeStream = httpChannelState._handled;
+                    }
                 }
                 else
                 {
@@ -1719,7 +1731,7 @@ public class HttpChannelState implements HttpChannel, Components
                         {
                             // We are currently writing so fail the app callback now and let the write completion handle the failure
                             Runnable task = response.lockedFailWrite(failure);
-                            failedCallback = Callback.from(task, httpChannelState._lastWriteCallback);
+                            writeCallback = Callback.from(task, httpChannelState._lastWriteCallback);
                         }
                         else
                         {
@@ -1737,7 +1749,7 @@ public class HttpChannelState implements HttpChannel, Components
                         {
                             // We are currently writing so fail the app callback now and let the write completion handle the failure
                             Runnable task = response.lockedFailWrite(failure);
-                            failedCallback = Callback.from(task, httpChannelState._lastWriteCallback);
+                            writeCallback = Callback.from(task, httpChannelState._lastWriteCallback);
                         }
                         else if (!httpChannelState.lockedIsLastStreamSendCompleted())
                         {
@@ -1747,14 +1759,14 @@ public class HttpChannelState implements HttpChannel, Components
                     }
                 }
 
-                completeStreamFailure = httpChannelState.lockedCompleteStreamFailure();
+                completeStreamFailure = completeStream ? httpChannelState.lockedCompleteStreamFailure() : null;
             }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("succeeded: failure={} doLastStreamSend={} {}", failure, doLastStreamSend, this);
 
-            if (failedCallback != null)
-                failedCallback.failed(Objects.requireNonNullElseGet(failure, IOException::new));
+            if (writeCallback != null)
+                writeCallback.failed(Objects.requireNonNullElseGet(failure, IOException::new));
             else if (errorResponse != null)
                 Response.writeError(request, errorResponse, new ErrorCallback(request, errorResponse, stream, failure), failure);
             else if (doLastStreamSend)
@@ -1873,10 +1885,11 @@ public class HttpChannelState implements HttpChannel, Components
             boolean needLastWrite;
             MetaData.Response responseMetaData = null;
             HttpChannelState httpChannelState;
+            Callback lastWriteCallback;
             try (AutoLock ignored = _request._lock.lock())
             {
                 httpChannelState = _request.getHttpChannelState();
-
+                lastWriteCallback = httpChannelState._lastWriteCallback;
                 // Did the ErrorHandler do the last write?
                 needLastWrite = httpChannelState.lockedLastStreamSend();
                 if (needLastWrite && _errorResponse.getResponseHttpFields().commit())
@@ -1884,9 +1897,9 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (needLastWrite)
-                _stream.send(_request._metaData, responseMetaData, true, null, httpChannelState._lastWriteCallback);
+                _stream.send(_request._metaData, responseMetaData, true, null, lastWriteCallback);
             else
-                httpChannelState._lastWriteCallback.succeeded();
+                lastWriteCallback.succeeded();
         }
 
         /**
