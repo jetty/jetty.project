@@ -30,23 +30,32 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.HttpChannel;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 public class ComplianceViolations2616Test
 {
-    private static Server server;
-    private static LocalConnector connector;
+    private Server server;
+    private LocalConnector connector;
+    private HttpConfiguration config;
 
     public static class ReportViolationsFilter implements Filter
     {
@@ -94,15 +103,17 @@ public class ComplianceViolations2616Test
             {
                 out.printf("[%s] = [%s]%n", name, req.getHeader(name));
             }
+            if (headerNames.contains("Accept-Language"))
+                out.printf("Locale = [%s]%n", req.getLocale());
         }
     }
 
-    @BeforeAll
-    public static void startServer() throws Exception
+    @BeforeEach
+    public void startServer() throws Exception
     {
         server = new Server();
 
-        HttpConfiguration config = new HttpConfiguration();
+        config = new HttpConfiguration();
         config.setSendServerVersion(false);
         config.setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
         config.addComplianceViolationListener(new ComplianceViolation.CapturingListener());
@@ -116,18 +127,70 @@ public class ComplianceViolations2616Test
 
         context.addServlet(DumpRequestHeadersServlet.class, "/dump/*");
         context.addFilter(ReportViolationsFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-
-        server.setHandler(context);
+        server.setHandler(new Handler.Wrapper(context.get())
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                request = new Request.Wrapper(request)
+                {
+                    @Override
+                    public HttpFields getHeaders()
+                    {
+                        return HttpFields.build(super.getHeaders());
+                    }
+                };
+                return getHandler().handle(request, response, callback);
+            }
+        });
         server.addConnector(connector);
 
         server.start();
     }
 
-    @AfterAll
-    public static void stopServer() throws Exception
+    @AfterEach
+    public void stopServer() throws Exception
     {
         server.stop();
         server.join();
+    }
+
+    @Test
+    public void testQualityCsvWithBadQuotesAllowedByCompliance() throws Exception
+    {
+        StringBuffer req1 = new StringBuffer();
+        req1.append("GET /dump/ HTTP/1.1\r\n");
+        req1.append("Host: local\r\n");
+        req1.append("Accept: */*\r\n");
+        req1.append("Accept-Language: 1'\"6000\r\n");
+        req1.append("Connection: close\r\n");
+        req1.append("\r\n");
+
+        String response = connector.getResponse(req1.toString());
+        assertThat("Response status", response, containsString("HTTP/1.1 200 OK"));
+        assertThat("Response headers", response, not(containsString("X-Http-Violation-0n")));
+        assertThat("Response body", response, containsString("Locale = ["));
+    }
+
+    @Test
+    public void testQualityCsvWithBadQuotesRejectedByCompliance() throws Exception
+    {
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
+        {
+            config.setHttpCompliance(HttpCompliance.RFC9110);
+
+            StringBuffer req1 = new StringBuffer();
+            req1.append("GET /dump/ HTTP/1.1\r\n");
+            req1.append("Host: local\r\n");
+            req1.append("Accept: */*\r\n");
+            req1.append("Accept-Language: 1'\"6000\r\n");
+            req1.append("Connection: close\r\n");
+            req1.append("\r\n");
+
+            String response = connector.getResponse(req1.toString());
+            assertThat("Response status", response, containsString("HTTP/1.1 500 Server Error"));
+            assertThat("Response body", response, containsString("Bad Quotes in Token"));
+        }
     }
 
     @Test

@@ -185,22 +185,16 @@ public interface ComplianceViolation
     {
         public static final String VIOLATIONS_ATTR_KEY = "org.eclipse.jetty.http.compliance.violations";
 
-        private final List<Event> events;
+        private final List<Event> events = new ArrayList<>();
 
         public CapturingListener()
         {
-            this(null);
-        }
-
-        private CapturingListener(List<Event> events)
-        {
-            this.events = events;
         }
 
         @Override
         public Listener initialize()
         {
-            return new CapturingListener(new ArrayList<>());
+            return new CapturingListener();
         }
 
         @Override
