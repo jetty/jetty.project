@@ -243,8 +243,8 @@
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.25.3</log4j2.version>
-    <logback.version>1.5.25</logback.version>
-    <lucene.version>9.11.1</lucene.version>
+    <logback.version>1.5.26</logback.version>
+    <lucene.version>9.12.0</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.7</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
@@ -306,7 +306,7 @@
     <plexus-classworlds.version>2.9.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
-    <plexus-xml.version>4.1.0</plexus-xml.version>
+    <plexus-xml.version>4.1.1</plexus-xml.version>
     <project.build.outputTimestamp>2023-06-05T23:12:49Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
