@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -2241,7 +2242,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testUnconsumedRequestContentWithNonLastWriteThenTrow(Scenario scenario) throws Exception
+    public void testUnconsumedRequestContentWithNonLastWriteThenThrow(Scenario scenario) throws Exception
     {
         start(scenario, new Handler.Abstract()
         {
@@ -2258,6 +2259,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
+        AtomicReference<Throwable> failureRef = new AtomicReference<>();
         AtomicReference<Response> responseRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1024));
@@ -2265,15 +2267,17 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
             .body(content)
-            .onResponseSuccess(response ->
+            .onComplete(listener ->
             {
-                responseRef.set(response);
+                failureRef.set(listener.getFailure());
+                responseRef.set(listener.getResponse());
                 latch.countDown();
             })
             .send(null);
         // Do not complete the request content.
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertInstanceOf(EOFException.class, failureRef.get());
         Response response = responseRef.get();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
