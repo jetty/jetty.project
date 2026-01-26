@@ -20,6 +20,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,9 +31,9 @@ public class ResponseHttpFields extends HttpFields.Mutable.Wrapper
     private static final Logger LOG = LoggerFactory.getLogger(ResponseHttpFields.class);
     private final AtomicBoolean _committed = new AtomicBoolean();
 
-    public ResponseHttpFields()
+    public ResponseHttpFields(HttpConfiguration configuration)
     {
-        super(HttpFields.build());
+        super(HttpFields.build(configuration.getHttpCompliance(), configuration::notifyViolation));
     }
 
     public HttpFields.Mutable getMutableHttpFields()

@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.WriteThroughWriter;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.session.ManagedSession;
@@ -522,7 +523,9 @@ public class ServletApiResponse implements HttpServletResponse
             Map<String, String> map = trailers.get();
             if (map == null)
                 return null;
-            HttpFields.Mutable fields = HttpFields.build(map.size());
+            Request request = getResponse().getRequest();
+            HttpConfiguration configuration = request.getConnectionMetaData().getHttpConfiguration();
+            HttpFields.Mutable fields = HttpFields.build(configuration.getHttpCompliance(), configuration::notifyViolation); // TODO pass map.size()
             for (Map.Entry<String, String> e : map.entrySet())
             {
                 fields.add(e.getKey(), e.getValue());

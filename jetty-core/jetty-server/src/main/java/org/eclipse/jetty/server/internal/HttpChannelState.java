@@ -111,7 +111,7 @@ public class HttpChannelState implements HttpChannel, Components
     private final ConnectionMetaData _connectionMetaData;
     private final SerializedInvoker _readInvoker;
     private final SerializedInvoker _writeInvoker;
-    private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
+    private final ResponseHttpFields _responseHeaders;
     private Thread _handling;
     private boolean _handled;
     private StreamSendState _streamSendState = StreamSendState.SENDING;
@@ -133,6 +133,7 @@ public class HttpChannelState implements HttpChannel, Components
     public HttpChannelState(ConnectionMetaData connectionMetaData)
     {
         _connectionMetaData = connectionMetaData;
+        _responseHeaders = new ResponseHttpFields(connectionMetaData.getHttpConfiguration());
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
         _readInvoker = new HttpChannelSerializedInvoker(HttpChannelState.class.getSimpleName() + "_readInvoker", connectionMetaData.getConnector().getExecutor());
         _writeInvoker = new HttpChannelSerializedInvoker(HttpChannelState.class.getSimpleName() + "_writeInvoker", connectionMetaData.getConnector().getExecutor());
@@ -1745,7 +1746,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             httpChannelState._committedContentLength = -1;
             HttpFields original = super.getResponseHttpFields(httpChannelState);
-            ResponseHttpFields httpFields = new ResponseHttpFields();
+            ResponseHttpFields httpFields = new ResponseHttpFields(httpChannelState._connectionMetaData.getHttpConfiguration());
 
             for (HttpField field : original)
             {

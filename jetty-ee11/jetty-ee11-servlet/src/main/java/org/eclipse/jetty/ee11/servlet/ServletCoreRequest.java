@@ -36,6 +36,7 @@ import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
@@ -81,7 +82,8 @@ public class ServletCoreRequest implements Request
         _servletContextRequest = ServletContextRequest.getServletContextRequest(_servletRequest);
         _attributes = attributes == null ? _servletContextRequest : attributes;
 
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpConfiguration configuration = _servletContextRequest.getConnectionMetaData().getHttpConfiguration();
+        HttpFields.Mutable fields = HttpFields.build(configuration.getHttpCompliance(), configuration::notifyViolation);
 
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements())

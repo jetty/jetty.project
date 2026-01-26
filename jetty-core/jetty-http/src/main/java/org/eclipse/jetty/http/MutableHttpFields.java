@@ -596,7 +596,13 @@ class MutableHttpFields implements HttpFields.Mutable
         }
     }
 
-    public static class Compliant extends org.eclipse.jetty.http.MutableHttpFields
+    interface Complying
+    {
+        HttpCompliance getHttpCompliance();
+        BiConsumer<ComplianceViolation, String> getNotifyViolation();
+    }
+
+    public static class Compliant extends org.eclipse.jetty.http.MutableHttpFields implements Complying
     {
         private final HttpCompliance _httpCompliance;
         private final BiConsumer<ComplianceViolation, String> _notifyViolation;
@@ -605,6 +611,39 @@ class MutableHttpFields implements HttpFields.Mutable
         {
             _httpCompliance = httpCompliance;
             _notifyViolation = notifyViolation;
+        }
+
+        public Compliant(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyViolation, HttpFields fields)
+        {
+            super(fields);
+            _httpCompliance = httpCompliance;
+            _notifyViolation = notifyViolation;
+        }
+
+        public Compliant(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyViolation, HttpFields fields, HttpField replaceField)
+        {
+            super(fields, replaceField);
+            _httpCompliance = httpCompliance;
+            _notifyViolation = notifyViolation;
+        }
+
+        public Compliant(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyViolation, HttpFields fields, EnumSet<HttpHeader> removeFields)
+        {
+            super(fields, removeFields);
+            _httpCompliance = httpCompliance;
+            _notifyViolation = notifyViolation;
+        }
+
+        @Override
+        public HttpCompliance getHttpCompliance()
+        {
+            return _httpCompliance;
+        }
+
+        @Override
+        public BiConsumer<ComplianceViolation, String> getNotifyViolation()
+        {
+            return _notifyViolation;
         }
 
         @Override
@@ -622,20 +661,44 @@ class MutableHttpFields implements HttpFields.Mutable
         @Override
         protected HttpFields newImmutableHttpFields(HttpField[] fields, int size)
         {
-            return new org.eclipse.jetty.http.ImmutableHttpFields(fields, size)
-            {
-                @Override
-                public QuotedCSV newQuotedCSV(boolean keepQuotes)
-                {
-                    return new QuotedCSV.Compliant(_httpCompliance, _notifyViolation, keepQuotes);
-                }
+            return new ImmutableHttpFields(_httpCompliance, _notifyViolation, fields, size);
+        }
 
-                @Override
-                public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
-                {
-                    return new QuotedQualityCSV.Compliant(_httpCompliance, _notifyViolation, secondaryOrdering);
-                }
-            };
+        private static class ImmutableHttpFields extends org.eclipse.jetty.http.ImmutableHttpFields implements Complying
+        {
+            private final HttpCompliance _httpCompliance;
+            private final BiConsumer<ComplianceViolation, String> _notifyViolation;
+
+            private ImmutableHttpFields(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyViolation, HttpField[] fields, int size)
+            {
+                super(fields, size);
+                _httpCompliance = httpCompliance;
+                _notifyViolation = notifyViolation;
+            }
+
+            @Override
+            public HttpCompliance getHttpCompliance()
+            {
+                return _httpCompliance;
+            }
+
+            @Override
+            public BiConsumer<ComplianceViolation, String> getNotifyViolation()
+            {
+                return _notifyViolation;
+            }
+
+            @Override
+            public QuotedCSV newQuotedCSV(boolean keepQuotes)
+            {
+                return new QuotedCSV.Compliant(_httpCompliance, _notifyViolation, keepQuotes);
+            }
+
+            @Override
+            public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
+            {
+                return new QuotedQualityCSV.Compliant(_httpCompliance, _notifyViolation, secondaryOrdering);
+            }
         }
     }
 }

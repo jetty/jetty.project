@@ -963,7 +963,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (action == HttpChannelState.Action.DISPATCH)
             {
                 ByteBuffer content = null;
-                HttpFields.Mutable fields = HttpFields.build();
+                org.eclipse.jetty.server.Request request = _request.getCoreRequest();
+                HttpConfiguration configuration = request.getConnectionMetaData().getHttpConfiguration();
+                HttpFields.Mutable fields = HttpFields.build(configuration.getHttpCompliance(), configuration::notifyViolation);
 
                 ErrorHandler handler = getServer().getBean(ErrorHandler.class);
                 if (handler != null)

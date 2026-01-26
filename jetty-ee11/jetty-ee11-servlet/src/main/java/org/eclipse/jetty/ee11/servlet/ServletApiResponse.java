@@ -558,7 +558,9 @@ public class ServletApiResponse implements HttpServletResponse
             Map<String, String> map = trailers.get();
             if (map == null)
                 return null;
-            HttpFields.Mutable fields = HttpFields.build(map.size());
+            Request request = getResponse().getRequest();
+            HttpConfiguration configuration = request.getConnectionMetaData().getHttpConfiguration();
+            HttpFields.Mutable fields = HttpFields.build(configuration.getHttpCompliance(), configuration::notifyViolation); // TODO pass map.size()
             for (Map.Entry<String, String> e : map.entrySet())
             {
                 fields.add(e.getKey(), e.getValue());

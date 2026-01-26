@@ -112,6 +112,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      */
     static Mutable build(HttpFields fields)
     {
+        if (fields instanceof org.eclipse.jetty.http.MutableHttpFields.Complying complying)
+            return new org.eclipse.jetty.http.MutableHttpFields.Compliant(complying.getHttpCompliance(), complying.getNotifyViolation(), fields);
         return new org.eclipse.jetty.http.MutableHttpFields(fields);
     }
 
@@ -132,6 +134,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      */
     static Mutable build(HttpFields fields, HttpField replaceField)
     {
+        if (fields instanceof org.eclipse.jetty.http.MutableHttpFields.Complying complying)
+            return new org.eclipse.jetty.http.MutableHttpFields.Compliant(complying.getHttpCompliance(), complying.getNotifyViolation(), fields, replaceField);
         return new org.eclipse.jetty.http.MutableHttpFields(fields, replaceField);
     }
 
@@ -147,12 +151,19 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      */
     static Mutable build(HttpFields fields, EnumSet<HttpHeader> removeFields)
     {
+        if (fields instanceof org.eclipse.jetty.http.MutableHttpFields.Complying complying)
+            return new org.eclipse.jetty.http.MutableHttpFields.Compliant(complying.getHttpCompliance(), complying.getNotifyViolation(), fields, removeFields);
         return new org.eclipse.jetty.http.MutableHttpFields(fields, removeFields);
     }
 
     static Mutable build(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyViolation)
     {
         return new org.eclipse.jetty.http.MutableHttpFields.Compliant(httpCompliance, notifyViolation);
+    }
+
+    static Mutable build(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyViolation, HttpFields fields)
+    {
+        return new org.eclipse.jetty.http.MutableHttpFields.Compliant(httpCompliance, notifyViolation, fields);
     }
 
     /**
