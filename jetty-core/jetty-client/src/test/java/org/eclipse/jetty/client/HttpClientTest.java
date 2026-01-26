@@ -68,6 +68,7 @@ import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
@@ -87,6 +88,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -2198,6 +2200,84 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .send());
 
         assertInstanceOf(IllegalArgumentException.class, failure.getCause());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testUnconsumedRequestContentWithLastWrite(Scenario scenario) throws Exception
+    {
+        start(scenario, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            {
+                // Do not consume the request content.
+                response.write(true, null, callback);
+                return true;
+            }
+        });
+
+        AtomicReference<Response> responseRef = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1024));
+        client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .body(content)
+            .onResponseSuccess(response ->
+            {
+                responseRef.set(response);
+                latch.countDown();
+            })
+            .send(null);
+        // Do not complete the request content.
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Response response = responseRef.get();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        await().atMost(5, TimeUnit.SECONDS).until(connector::getConnectedEndPoints, empty());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testUnconsumedRequestContentWithNonLastWriteThenTrow(Scenario scenario) throws Exception
+    {
+        start(scenario, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            {
+                try (Blocker.Callback cb = Blocker.callback())
+                {
+                    response.write(false, null, cb);
+                    cb.block();
+                }
+                // Throwing will fail the Handler callback.
+                throw new ArithmeticException();
+            }
+        });
+
+        AtomicReference<Response> responseRef = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1024));
+        client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .body(content)
+            .onResponseSuccess(response ->
+            {
+                responseRef.set(response);
+                latch.countDown();
+            })
+            .send(null);
+        // Do not complete the request content.
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Response response = responseRef.get();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        await().atMost(5, TimeUnit.SECONDS).until(connector::getConnectedEndPoints, empty());
     }
 
     private void assertCopyRequest(Request original)

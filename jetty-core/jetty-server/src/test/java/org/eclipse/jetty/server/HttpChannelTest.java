@@ -849,13 +849,13 @@ public class HttpChannelTest
             .add(HttpHeader.HOST, "localhost")
             .put(HttpHeader.CONTENT_LENGTH, 10)
             .asImmutable();
-        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 10);
 
         Runnable task = channel.onRequest(request);
         task.run();
 
         assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getFailure(), notNullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
@@ -892,13 +892,13 @@ public class HttpChannelTest
             .add(HttpHeader.HOST, "localhost")
             .put(HttpHeader.CONTENT_LENGTH, 10)
             .asImmutable();
-        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 10);
 
         Runnable task = channel.onRequest(request);
         task.run();
 
         assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getFailure(), notNullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));

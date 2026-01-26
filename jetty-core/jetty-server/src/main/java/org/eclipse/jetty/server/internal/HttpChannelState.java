@@ -617,15 +617,14 @@ public class HttpChannelState implements HttpChannel, Components
     private Throwable lockedCompleteStreamFailure()
     {
         assert _lock.isHeldByCurrentThread();
-        if (_streamSendState != StreamSendState.FAILED)
-            return null;
         Throwable completeStreamFailure = _lastWriteFailure;
         if (completeStreamFailure == null)
             completeStreamFailure = _writeFailure;
         if (completeStreamFailure == null)
             completeStreamFailure = _consumeAvailableFailure;
-        // Check for committed response with a non-last write then throwing an exception.
-        if (completeStreamFailure == null)
+        // Check the case for a committed response with a non-last
+        // successful write, then throwing an exception.
+        if (completeStreamFailure == null && _streamSendState == StreamSendState.FAILED)
             completeStreamFailure = _callbackFailure;
         return completeStreamFailure;
     }
@@ -818,7 +817,6 @@ public class HttpChannelState implements HttpChannel, Components
                 completeStream = _handling == null; // if we have not handled yet or have completed handling
                 stream = _stream;
                 _lastWriteFailure = failure;
-                _callbackFailure = ExceptionUtil.combine(failure, _callbackFailure);
                 completeStreamFailure = lockedCompleteStreamFailure();
             }
 
@@ -1583,7 +1581,7 @@ public class HttpChannelState implements HttpChannel, Components
             MetaData.Response responseMetaData = null;
             boolean completeStream = false;
             ErrorResponse errorResponse = null;
-            Callback failedCallback = null;
+            Callback writeCallback = null;
             Throwable completeStreamFailure;
 
             try (AutoLock ignored = _request._lock.lock())
@@ -1611,6 +1609,7 @@ public class HttpChannelState implements HttpChannel, Components
                     // persistent otherwise RequestLog.log() would be able to read
                     // x-www-form-urlencoded parameters in one case and not the other.
                     Throwable unconsumed = stream.consumeAvailable();
+                    httpChannelState._consumeAvailableFailure = unconsumed;
                     if (httpChannelState.getConnectionMetaData().isPersistent() && !httpChannelState._expects100Continue)
                         failure = ExceptionUtil.combine(failure, unconsumed);
                     else if (failure != null && unconsumed != null)
@@ -1688,7 +1687,7 @@ public class HttpChannelState implements HttpChannel, Components
                         {
                             // We are currently writing so fail the app callback now and let the write completion handle the failure
                             Runnable task = response.lockedFailWrite(failure);
-                            failedCallback = Callback.from(task, httpChannelState._lastWriteCallback);
+                            writeCallback = Callback.from(task, httpChannelState._lastWriteCallback);
                         }
                         else
                         {
@@ -1706,7 +1705,7 @@ public class HttpChannelState implements HttpChannel, Components
                         {
                             // We are currently writing so fail the app callback now and let the write completion handle the failure
                             Runnable task = response.lockedFailWrite(failure);
-                            failedCallback = Callback.from(task, httpChannelState._lastWriteCallback);
+                            writeCallback = Callback.from(task, httpChannelState._lastWriteCallback);
                         }
                         else if (!httpChannelState.lockedIsLastStreamSendCompleted())
                         {
@@ -1722,8 +1721,8 @@ public class HttpChannelState implements HttpChannel, Components
             if (LOG.isDebugEnabled())
                 LOG.debug("succeeded: failure={} doLastStreamSend={} {}", failure, doLastStreamSend, this);
 
-            if (failedCallback != null)
-                failedCallback.failed(Objects.requireNonNullElseGet(failure, IOException::new));
+            if (writeCallback != null)
+                writeCallback.failed(Objects.requireNonNullElseGet(failure, IOException::new));
             else if (errorResponse != null)
                 Response.writeError(request, errorResponse, new ErrorCallback(request, errorResponse, stream, failure), failure);
             else if (doLastStreamSend)
