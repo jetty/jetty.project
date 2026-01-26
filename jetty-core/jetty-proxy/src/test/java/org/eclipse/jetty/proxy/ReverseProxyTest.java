@@ -174,6 +174,7 @@ public class ReverseProxyTest extends AbstractProxyTest
                 // would trigger ErrorHandler and result in a 500 to the proxy.
                 // With HTTP/2, the HpackContext cannot be rolled back, so the
                 // connection is aborted, which the proxy interprets as a 502.
+                // The same for HTTP/3 and QpackContext.
                 callback.succeeded();
                 return true;
             }
