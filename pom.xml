@@ -151,12 +151,12 @@
 
   <distributionManagement>
     <repository>
-      <id>sonatype-cp</id>
-      <url>https://repo.maven.apache.org/maven2</url>
+      <id>${dist-management-release-id}</id>
+      <url>${dist-management-release-url}</url>
     </repository>
     <snapshotRepository>
-      <id>sonatype-cp</id>
-      <url>https://central.sonatype.com/repository/maven-snapshots</url>
+      <id>${dist-management-snapshot-id}</id>
+      <url>${dist-management-snapshot-url}</url>
     </snapshotRepository>
   </distributionManagement>
 
@@ -193,6 +193,10 @@
     <cyclonedx.maven.plugin.version>2.9.1</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
     <detectOfflineLinks>false</detectOfflineLinks>
+    <dist-management-release-id>sonatype-cp</dist-management-release-id>
+    <dist-management-release-url>https://repo.maven.apache.org/maven2</dist-management-release-url>
+    <dist-management-snapshot-id>sonatype-cp</dist-management-snapshot-id>
+    <dist-management-snapshot-url>https://central.sonatype.com/repository/maven-snapshots</dist-management-snapshot-url>
     <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
     <eclipse.jdt.ecj.version>3.44.0</eclipse.jdt.ecj.version>
 
@@ -293,6 +297,7 @@
     <maven.remote-resources-plugin.version>3.3.0</maven.remote-resources-plugin.version>
     <maven.resolver.version>1.9.25</maven.resolver.version>
     <maven.resources.plugin.version>3.4.0</maven.resources.plugin.version>
+    <maven.retryFailedDeploymentCount>10</maven.retryFailedDeploymentCount>
     <maven.shade.plugin.version>3.6.1</maven.shade.plugin.version>
     <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
     <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
@@ -328,7 +333,7 @@
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
     <plexus-xml.version>4.1.0</plexus-xml.version>
-    <project.build.outputTimestamp>2025-12-03T22:31:40Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-01-26T11:26:48Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <settings.path/>
@@ -1595,7 +1600,7 @@
           <artifactId>maven-deploy-plugin</artifactId>
           <version>${maven.deploy.plugin.version}</version>
           <configuration>
-            <retryFailedDeploymentCount>10</retryFailedDeploymentCount>
+            <retryFailedDeploymentCount>${maven.retryFailedDeploymentCount}</retryFailedDeploymentCount>
           </configuration>
         </plugin>
         <plugin>
