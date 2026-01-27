@@ -63,7 +63,7 @@ class MutableHttpFields implements HttpFields.Mutable
     protected MutableHttpFields(int capacity)
     {
         _httpCompliance = null;
-        _listenerSupplier = null;
+        _listenerSupplier = () -> null;
         _fields = new HttpField[capacity];
     }
 
