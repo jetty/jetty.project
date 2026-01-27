@@ -72,6 +72,23 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     private static final Logger LOG = LoggerFactory.getLogger(AcmeCertificateManager.class);
     private static final int DRY_RUN_VALIDITY_DAYS = 90;
 
+    /**
+     * Exponential backoff intervals in seconds for renewal failures.
+     * Starts at 1 minute, escalates up to 6 hours.
+     */
+    private static final long[] BACKOFF_INTERVALS_SECONDS = {
+        60,       // 1 minute
+        120,      // 2 minutes
+        300,      // 5 minutes
+        600,      // 10 minutes
+        1200,     // 20 minutes
+        1800,     // 30 minutes
+        3600,     // 1 hour
+        7200,     // 2 hours
+        10800,    // 3 hours
+        21600     // 6 hours (max)
+    };
+
     private final AutoLock _lock = new AutoLock();
     private final AcmeConfiguration _config;
     private final SslContextFactory.Server _sslContextFactory;
@@ -85,6 +102,7 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     private boolean _ownHttpClient;
     private KeyPair _accountKeyPair;
     private KeyPair _domainKeyPair;
+    private int _consecutiveFailures;
 
     /**
      * Creates a new ACME certificate manager.
@@ -500,6 +518,7 @@ public class AcmeCertificateManager extends AbstractLifeCycle
         @Override
         public void run()
         {
+            boolean success = false;
             try
             {
                 if (isStopping() || isStopped())
@@ -522,6 +541,18 @@ public class AcmeCertificateManager extends AbstractLifeCycle
                 {
                     checkAndRenewIfNeeded();
                 }
+                success = true;
+            }
+            catch (AcmeException e)
+            {
+                if (e.isRateLimited())
+                {
+                    LOG.warn("ACME rate limit exceeded, will retry with backoff: {}", e.getMessage());
+                }
+                else
+                {
+                    LOG.warn("Certificate renewal check failed", e);
+                }
             }
             catch (Exception e)
             {
@@ -529,16 +560,42 @@ public class AcmeCertificateManager extends AbstractLifeCycle
             }
             finally
             {
-                // Reschedule
+                // Reschedule with backoff on failure
                 try (AutoLock l = _lock.lock())
                 {
                     if (_scheduler != null && _scheduler.isRunning() && isRunning())
                     {
-                        long intervalMs = _config.getCheckIntervalSeconds() * 1000;
+                        long intervalMs;
+                        if (success)
+                        {
+                            _consecutiveFailures = 0;
+                            intervalMs = _config.getCheckIntervalSeconds() * 1000;
+                        }
+                        else
+                        {
+                            _consecutiveFailures++;
+                            intervalMs = getBackoffIntervalMs(_consecutiveFailures);
+                            LOG.info("Scheduling next renewal attempt in {} seconds (failure #{})",
+                                intervalMs / 1000, _consecutiveFailures);
+                        }
                         _renewalTask = _scheduler.schedule(this, intervalMs, TimeUnit.MILLISECONDS);
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Calculates the backoff interval based on the number of consecutive failures.
+     *
+     * @param failureCount the number of consecutive failures
+     * @return the backoff interval in milliseconds
+     */
+    private long getBackoffIntervalMs(int failureCount)
+    {
+        int index = Math.min(failureCount - 1, BACKOFF_INTERVALS_SECONDS.length - 1);
+        if (index < 0)
+            index = 0;
+        return BACKOFF_INTERVALS_SECONDS[index] * 1000;
     }
 }
