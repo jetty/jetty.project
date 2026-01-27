@@ -27,7 +27,7 @@
       <Property name="jetty.acme.keystorePath" default="etc/keystore.p12"/>
     </Set>
     <Set name="keystorePassword">
-      <Property name="jetty.acme.keystorePassword" default="changeit"/>
+      <Property name="jetty.acme.keystorePassword" default="storepwd"/>
     </Set>
     <Set name="renewalThresholdDays">
       <Property name="jetty.acme.renewalThresholdDays" default="30"/>

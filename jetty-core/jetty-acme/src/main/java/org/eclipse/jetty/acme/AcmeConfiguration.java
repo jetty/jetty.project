@@ -58,7 +58,7 @@ public class AcmeConfiguration
     private String _accountEmail;
     private Path _accountKeyPath = Path.of("acme/account.key");
     private Path _keystorePath = Path.of("etc/keystore.p12");
-    private String _keystorePassword = "changeit";
+    private String _keystorePassword = "storepwd";
     private int _renewalThresholdDays = 30;
     private Duration _checkInterval = Duration.ofDays(1);
     private boolean _termsOfServiceAgreed = false;

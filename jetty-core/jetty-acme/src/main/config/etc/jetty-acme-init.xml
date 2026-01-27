@@ -11,7 +11,7 @@
   <Call class="org.eclipse.jetty.acme.AcmeKeyStoreManager" name="ensureKeyStoreExists">
     <Arg><Property name="jetty.base"/></Arg>
     <Arg><Property name="jetty.acme.keystorePath" default="etc/keystore.p12"/></Arg>
-    <Arg><Property name="jetty.acme.keystorePassword" default="changeit"/></Arg>
+    <Arg><Property name="jetty.acme.keystorePassword" default="storepwd"/></Arg>
     <Arg><Property name="jetty.acme.domains" default=""/></Arg>
   </Call>
 
