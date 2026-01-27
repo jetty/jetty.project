@@ -23,8 +23,8 @@ etc/jetty-acme.xml
 [ini]
 # Set ssl-context properties to use the same keystore as ACME
 jetty.sslContext.keyStorePath?=etc/keystore.p12
-jetty.sslContext.keyStorePassword?=changeit
-jetty.sslContext.keyManagerPassword?=changeit
+jetty.sslContext.keyStorePassword?=storepwd
+jetty.sslContext.keyManagerPassword?=storepwd
 
 [ini-template]
 # tag::documentation[]
@@ -52,7 +52,7 @@ jetty.sslContext.keyManagerPassword?=changeit
 
 ## Keystore path and password
 # jetty.acme.keystorePath=etc/keystore.p12
-# jetty.acme.keystorePassword=changeit
+# jetty.acme.keystorePassword=storepwd
 
 ## Days before expiry to trigger renewal (default 30)
 # jetty.acme.renewalThresholdDays=30
