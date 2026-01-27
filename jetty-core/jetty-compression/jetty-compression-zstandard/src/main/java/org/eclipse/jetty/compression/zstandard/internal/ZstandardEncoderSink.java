@@ -110,23 +110,14 @@ public class ZstandardEncoderSink extends EncoderSink
             return RetainableByteBuffer.wrap(buffer);
         }
 
-        RetainableByteBuffer direct = compression.acquireByteBuffer(size);
-
-        // Remember the original pos/limit
         int pos = buffer.position();
-        int limit = buffer.limit();
         int length = Math.min(buffer.remaining(), size);
-        buffer.limit(pos + length);
-
-        BufferUtil.flipToFill(direct.getByteBuffer());
-        direct.getByteBuffer().put(buffer);
-
-        BufferUtil.flipToFlush(direct.getByteBuffer(), 0);
-
-        // consume length on original buffer
-        buffer.limit(limit);
-        buffer.position(pos + length);
-
+        RetainableByteBuffer direct = compression.acquireByteBuffer(size);
+        ByteBuffer directBuf = direct.getByteBuffer();
+        directBuf.clear();
+        directBuf.put(0, buffer, pos, length);
+        directBuf.limit(length);
+        // buffer.position() is NOT modified - tracking happens in continueOp()
         return direct;
     }
 
@@ -150,16 +141,17 @@ public class ZstandardEncoderSink extends EncoderSink
                 if (outputBuf.getByteBuffer().hasRemaining())
                 {
                     Callback writeCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, outputBuf::release);
-                    if (inputBuf.hasRemaining())
-                    {
-                        // rollback unprocessed inputBuf to content buffer position.
-                        content.position(originalPosition);
-                    }
-                    // we are about to return, release inputBuffer
+                    // For heap buffers, manually track position (ZSTD operated on a copy).
+                    // For direct buffers, ZSTD already advanced content.position().
+                    if (!content.isDirect())
+                        content.position(originalPosition + inputBuf.getByteBuffer().position());
                     inputBuf.release();
                     return new WriteRecord(false, outputBuf.getByteBuffer(), writeCallback);
                 }
             }
+            // Chunk fully consumed - update position for heap buffers.
+            if (!content.isDirect())
+                content.position(originalPosition + inputBuf.getByteBuffer().position());
             inputBuf.release();
         }
         outputBuf.release();
