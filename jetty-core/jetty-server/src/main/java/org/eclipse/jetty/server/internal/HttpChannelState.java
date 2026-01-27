@@ -614,7 +614,7 @@ public class HttpChannelState implements HttpChannel, Components
         return true;
     }
 
-    private Throwable lockedCompleteStreamFailure()
+    private Throwable lockedGetCompleteStreamFailure()
     {
         assert _lock.isHeldByCurrentThread();
 
@@ -764,7 +764,7 @@ public class HttpChannelState implements HttpChannel, Components
                 callbackCompleted = _callbackCompleted;
                 lastStreamSendComplete = lockedIsLastStreamSendCompleted();
                 completeStream = callbackCompleted && lastStreamSendComplete;
-                completeStreamFailure = lockedCompleteStreamFailure();
+                completeStreamFailure = lockedGetCompleteStreamFailure();
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("handler invoked: completeStream={} failure={} callbackCompleted={} {}", completeStream, completeStreamFailure, callbackCompleted, HttpChannelState.this);
@@ -816,7 +816,7 @@ public class HttpChannelState implements HttpChannel, Components
                 completeStream = _handling == null; // if we have not handled yet or have completed handling
                 stream = _stream;
                 _lastWriteFailure = failure;
-                completeStreamFailure = lockedCompleteStreamFailure();
+                completeStreamFailure = lockedGetCompleteStreamFailure();
             }
 
             if (completeStream)
@@ -1714,7 +1714,7 @@ public class HttpChannelState implements HttpChannel, Components
                     }
                 }
 
-                completeStreamFailure = completeStream ? httpChannelState.lockedCompleteStreamFailure() : null;
+                completeStreamFailure = completeStream ? httpChannelState.lockedGetCompleteStreamFailure() : null;
             }
 
             if (LOG.isDebugEnabled())
