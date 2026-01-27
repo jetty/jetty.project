@@ -81,7 +81,10 @@ public class ServletCoreRequest implements Request
         _servletContextRequest = ServletContextRequest.getServletContextRequest(_servletRequest);
         _attributes = attributes == null ? _servletContextRequest : attributes;
 
-        HttpFields.Mutable fields = HttpFields.build();
+        // Copy the original headers to carry over the
+        // HttpCompliance and the violation listener.
+        HttpFields.Mutable fields = HttpFields.build(_servletContextRequest.getHeaders());
+        fields.clear();
 
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements())

@@ -193,24 +193,15 @@ public interface ComplianceViolation
     {
         public static final String VIOLATIONS_ATTR_KEY = "org.eclipse.jetty.http.compliance.violations";
 
-        private final List<Event> events;
-
-        public CapturingListener()
-        {
-            this(null);
-        }
-
-        private CapturingListener(List<Event> events)
-        {
-            this.events = events != null ? events : new ArrayList<>();
-        }
+        private final List<Event> events = new ArrayList<>();
 
         @Override
         public Listener initialize()
         {
             // Create new events list (prepopulated) for request layer.
-            List<Event> requestEvents = new ArrayList<>(events);
-            return new CapturingListener(requestEvents);
+            CapturingListener copy = new CapturingListener();
+            copy.events.addAll(events);
+            return copy;
         }
 
         @Override

@@ -172,7 +172,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
 
     static Mutable build(HttpCompliance httpCompliance, Supplier<ComplianceViolation.Listener> listenerSupplier)
     {
-        return new org.eclipse.jetty.http.MutableHttpFields.Compliant(httpCompliance, listenerSupplier);
+        return new org.eclipse.jetty.http.MutableHttpFields(httpCompliance, listenerSupplier);
     }
 
     /**
