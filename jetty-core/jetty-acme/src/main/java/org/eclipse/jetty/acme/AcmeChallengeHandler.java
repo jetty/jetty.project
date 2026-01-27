@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * </pre>
  */
 @ManagedObject("ACME Challenge Handler")
-public class AcmeChallengeHandler extends Handler.Abstract.NonBlocking
+public class AcmeChallengeHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(AcmeChallengeHandler.class);
 
@@ -66,22 +66,33 @@ public class AcmeChallengeHandler extends Handler.Abstract.NonBlocking
      */
     public AcmeChallengeHandler()
     {
+        this(null);
+    }
+
+    /**
+     * Creates a new ACME challenge handler wrapping the given handler.
+     *
+     * @param handler the handler to wrap
+     */
+    public AcmeChallengeHandler(Handler handler)
+    {
+        super(handler);
     }
 
     @Override
-    public boolean handle(Request request, Response response, Callback callback)
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         String path = request.getHttpURI().getPath();
 
         // Only handle requests to the challenge path
         if (!path.startsWith(CHALLENGE_PATH_PREFIX))
-            return false;
+            return super.handle(request, response, callback);
 
         String token = path.substring(CHALLENGE_PATH_PREFIX.length());
 
         // Ignore empty tokens
         if (token.isEmpty())
-            return false;
+            return super.handle(request, response, callback);
 
         String keyAuthorization = _challenges.get(token);
 
@@ -89,7 +100,10 @@ public class AcmeChallengeHandler extends Handler.Abstract.NonBlocking
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Challenge not found for token: {}", token);
-            return false;
+
+            // Return 404 for challenge URLs with unknown tokens
+            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            return true;
         }
 
         if (LOG.isDebugEnabled())

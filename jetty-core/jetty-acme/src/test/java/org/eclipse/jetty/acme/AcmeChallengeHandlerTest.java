@@ -46,12 +46,8 @@ public class AcmeChallengeHandlerTest
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        challengeHandler = new AcmeChallengeHandler();
-
-        // Add a fallback handler
-        Handler.Sequence sequence = new Handler.Sequence();
-        sequence.addHandler(challengeHandler);
-        sequence.addHandler(new Handler.Abstract.NonBlocking()
+        // Create fallback handler that returns 404 for non-challenge requests
+        Handler fallbackHandler = new Handler.Abstract.NonBlocking()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -60,9 +56,12 @@ public class AcmeChallengeHandlerTest
                 callback.succeeded();
                 return true;
             }
-        });
+        };
 
-        server.setHandler(sequence);
+        // Wrap the fallback handler with the challenge handler
+        challengeHandler = new AcmeChallengeHandler(fallbackHandler);
+
+        server.setHandler(challengeHandler);
         server.start();
     }
 
