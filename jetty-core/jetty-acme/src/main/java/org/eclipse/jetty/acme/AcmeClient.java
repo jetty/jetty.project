@@ -55,6 +55,7 @@ public class AcmeClient
     private static final long REQUEST_TIMEOUT_MS = 30000;
     private static final int MAX_POLL_ATTEMPTS = 30;
     private static final long POLL_DELAY_MS = 2000;
+    private static final int MAX_NONCE_RETRY_ATTEMPTS = 5;
 
     private final HttpClient _httpClient;
     private final JSON _json;
@@ -395,6 +396,34 @@ public class AcmeClient
 
     private Map<String, Object> signedPost(String url, Object payload, boolean expectLocation) throws AcmeException
     {
+        for (int attempt = 0; attempt < MAX_NONCE_RETRY_ATTEMPTS; attempt++)
+        {
+            try
+            {
+                return doSignedPost(url, payload);
+            }
+            catch (AcmeException e)
+            {
+                // Retry on badNonce errors (nonce expired or invalid)
+                if (e.isBadNonce() && attempt < MAX_NONCE_RETRY_ATTEMPTS - 1)
+                {
+                    LOG.debug("BadNonce error, retrying (attempt {}/{})", attempt + 1, MAX_NONCE_RETRY_ATTEMPTS);
+                    _lastNonce = null; // Force fresh nonce on retry
+                    continue;
+                }
+                // Log rate limit warnings
+                if (e.isRateLimited())
+                {
+                    LOG.warn("ACME rate limit exceeded: {}", e.getMessage());
+                }
+                throw e;
+            }
+        }
+        throw new AcmeException("Max nonce retry attempts exceeded");
+    }
+
+    private Map<String, Object> doSignedPost(String url, Object payload) throws AcmeException
+    {
         try
         {
             ensureNonce();
@@ -427,7 +456,8 @@ public class AcmeClient
                 Map<String, Object> error = (Map<String, Object>)_json.fromJSON(content);
                 String type = (String)error.get("type");
                 String detail = (String)error.get("detail");
-                throw new AcmeException(detail != null ? detail : "ACME error", type, status);
+                String retryAfter = response.getHeaders().get("Retry-After");
+                throw new AcmeException(detail != null ? detail : "ACME error", type, status, retryAfter);
             }
 
             // Parse response
