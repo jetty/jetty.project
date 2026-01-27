@@ -43,9 +43,9 @@ public class AcmeJwsSigner
 {
     private static final Base64.Encoder URL_ENCODER = Base64.getUrlEncoder().withoutPadding();
 
-    private final KeyPair accountKeyPair;
-    private final JSON json;
-    private String accountUrl;
+    private final KeyPair _accountKeyPair;
+    private final JSON _json;
+    private String _accountUrl;
 
     /**
      * Creates a new JWS signer with the given account key pair.
@@ -55,8 +55,8 @@ public class AcmeJwsSigner
      */
     public AcmeJwsSigner(KeyPair accountKeyPair, JSON json)
     {
-        this.accountKeyPair = Objects.requireNonNull(accountKeyPair, "accountKeyPair");
-        this.json = Objects.requireNonNull(json, "json");
+        _accountKeyPair = Objects.requireNonNull(accountKeyPair, "accountKeyPair");
+        _json = Objects.requireNonNull(json, "json");
     }
 
     /**
@@ -66,7 +66,7 @@ public class AcmeJwsSigner
      */
     public void setAccountUrl(String accountUrl)
     {
-        this.accountUrl = accountUrl;
+        _accountUrl = accountUrl;
     }
 
     /**
@@ -74,7 +74,7 @@ public class AcmeJwsSigner
      */
     public String getAccountUrl()
     {
-        return accountUrl;
+        return _accountUrl;
     }
 
     /**
@@ -97,9 +97,9 @@ public class AcmeJwsSigner
             protectedHeader.put("url", url);
 
             // Use kid (account URL) if available, otherwise jwk (public key)
-            if (accountUrl != null)
+            if (_accountUrl != null)
             {
-                protectedHeader.put("kid", accountUrl);
+                protectedHeader.put("kid", _accountUrl);
             }
             else
             {
@@ -107,7 +107,7 @@ public class AcmeJwsSigner
             }
 
             // Encode protected header
-            String protectedJson = json.toJSON(protectedHeader);
+            String protectedJson = _json.toJSON(protectedHeader);
             String protectedB64 = base64UrlEncode(protectedJson.getBytes(StandardCharsets.UTF_8));
 
             // Encode payload (empty string for POST-as-GET)
@@ -118,7 +118,7 @@ public class AcmeJwsSigner
             }
             else
             {
-                String payloadJson = json.toJSON(payload);
+                String payloadJson = _json.toJSON(payload);
                 payloadB64 = base64UrlEncode(payloadJson.getBytes(StandardCharsets.UTF_8));
             }
 
@@ -133,7 +133,7 @@ public class AcmeJwsSigner
             jwsMap.put("payload", payloadB64);
             jwsMap.put("signature", signatureB64);
 
-            return json.toJSON(jwsMap);
+            return _json.toJSON(jwsMap);
         }
         catch (Exception e)
         {
@@ -174,7 +174,7 @@ public class AcmeJwsSigner
 
         // Create canonical JWK JSON (keys in lexicographic order)
         StringBuilder canonical = new StringBuilder("{");
-        PublicKey publicKey = accountKeyPair.getPublic();
+        PublicKey publicKey = _accountKeyPair.getPublic();
 
         if (publicKey instanceof RSAPublicKey)
         {
@@ -207,7 +207,7 @@ public class AcmeJwsSigner
     public Map<String, Object> getJwk()
     {
         Map<String, Object> jwk = new LinkedHashMap<>();
-        PublicKey publicKey = accountKeyPair.getPublic();
+        PublicKey publicKey = _accountKeyPair.getPublic();
 
         if (publicKey instanceof RSAPublicKey rsaKey)
         {
@@ -232,7 +232,7 @@ public class AcmeJwsSigner
 
     private String getAlgorithm()
     {
-        PublicKey publicKey = accountKeyPair.getPublic();
+        PublicKey publicKey = _accountKeyPair.getPublic();
         if (publicKey instanceof RSAPublicKey)
         {
             return "RS256";
@@ -253,7 +253,7 @@ public class AcmeJwsSigner
 
     private byte[] computeSignature(byte[] data) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException
     {
-        PublicKey publicKey = accountKeyPair.getPublic();
+        PublicKey publicKey = _accountKeyPair.getPublic();
         String algorithm;
 
         if (publicKey instanceof RSAPublicKey)
@@ -277,7 +277,7 @@ public class AcmeJwsSigner
         }
 
         Signature sig = Signature.getInstance(algorithm);
-        sig.initSign(accountKeyPair.getPrivate());
+        sig.initSign(_accountKeyPair.getPrivate());
         sig.update(data);
         byte[] signatureBytes = sig.sign();
 

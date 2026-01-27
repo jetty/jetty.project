@@ -72,19 +72,19 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     private static final Logger LOG = LoggerFactory.getLogger(AcmeCertificateManager.class);
     private static final int DRY_RUN_VALIDITY_DAYS = 90;
 
-    private final AutoLock lock = new AutoLock();
-    private final AcmeConfiguration config;
-    private final SslContextFactory.Server sslContextFactory;
-    private final AcmeChallengeHandler challengeHandler;
+    private final AutoLock _lock = new AutoLock();
+    private final AcmeConfiguration _config;
+    private final SslContextFactory.Server _sslContextFactory;
+    private final AcmeChallengeHandler _challengeHandler;
 
-    private Server server;
-    private HttpClient httpClient;
-    private AcmeKeyStoreManager keyStoreManager;
-    private Scheduler scheduler;
-    private Scheduler.Task renewalTask;
-    private boolean ownHttpClient;
-    private KeyPair accountKeyPair;
-    private KeyPair domainKeyPair;
+    private Server _server;
+    private HttpClient _httpClient;
+    private AcmeKeyStoreManager _keyStoreManager;
+    private Scheduler _scheduler;
+    private Scheduler.Task _renewalTask;
+    private boolean _ownHttpClient;
+    private KeyPair _accountKeyPair;
+    private KeyPair _domainKeyPair;
 
     /**
      * Creates a new ACME certificate manager.
@@ -96,9 +96,9 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     public AcmeCertificateManager(AcmeConfiguration config, SslContextFactory.Server sslContextFactory,
                                    AcmeChallengeHandler challengeHandler)
     {
-        this.config = Objects.requireNonNull(config, "config");
-        this.sslContextFactory = Objects.requireNonNull(sslContextFactory, "sslContextFactory");
-        this.challengeHandler = Objects.requireNonNull(challengeHandler, "challengeHandler");
+        _config = Objects.requireNonNull(config, "config");
+        _sslContextFactory = Objects.requireNonNull(sslContextFactory, "sslContextFactory");
+        _challengeHandler = Objects.requireNonNull(challengeHandler, "challengeHandler");
     }
 
     /**
@@ -108,7 +108,7 @@ public class AcmeCertificateManager extends AbstractLifeCycle
      */
     public void setServer(Server server)
     {
-        this.server = server;
+        _server = server;
     }
 
     /**
@@ -117,30 +117,30 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     @ManagedAttribute("ACME Configuration")
     public AcmeConfiguration getConfiguration()
     {
-        return config;
+        return _config;
     }
 
     @Override
     protected void doStart() throws Exception
     {
-        if (!config.isDryRun())
-            config.validate();
+        if (!_config.isDryRun())
+            _config.validate();
 
         // Get base path from server
         Path basePath = Path.of(".");
-        if (server != null)
+        if (_server != null)
         {
-            Object jettyBase = server.getAttribute("jetty.base");
+            Object jettyBase = _server.getAttribute("jetty.base");
             if (jettyBase != null)
                 basePath = Path.of(jettyBase.toString());
         }
 
-        keyStoreManager = new AcmeKeyStoreManager(basePath);
+        _keyStoreManager = new AcmeKeyStoreManager(basePath);
 
         // Load or generate account key
-        accountKeyPair = keyStoreManager.loadOrGenerateAccountKey(config.getAccountKeyPath());
+        _accountKeyPair = _keyStoreManager.loadOrGenerateAccountKey(_config.getAccountKeyPath());
 
-        if (config.isDryRun())
+        if (_config.isDryRun())
         {
             LOG.info("ACME dry-run mode enabled - generating self-signed certificate");
             generateDryRunCertificate();
@@ -163,18 +163,18 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock l = _lock.lock())
         {
-            if (renewalTask != null)
+            if (_renewalTask != null)
             {
-                renewalTask.cancel();
-                renewalTask = null;
+                _renewalTask.cancel();
+                _renewalTask = null;
             }
 
-            if (ownHttpClient && httpClient != null)
+            if (_ownHttpClient && _httpClient != null)
             {
-                httpClient.stop();
-                httpClient = null;
+                _httpClient.stop();
+                _httpClient = null;
             }
         }
 
@@ -189,7 +189,7 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     @ManagedOperation(value = "Force certificate renewal check", impact = "ACTION")
     public void forceRenewalCheck() throws AcmeException
     {
-        if (config.isDryRun())
+        if (_config.isDryRun())
         {
             LOG.info("Dry-run mode: regenerating self-signed certificate");
             generateDryRunCertificate();
@@ -208,8 +208,8 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     {
         try
         {
-            X509Certificate cert = keyStoreManager.loadCertificate(
-                config.getKeystorePath(), config.getKeystorePassword());
+            X509Certificate cert = _keyStoreManager.loadCertificate(
+                _config.getKeystorePath(), _config.getKeystorePassword());
             return cert != null && !needsRenewal(cert);
         }
         catch (Exception e)
@@ -226,8 +226,8 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     {
         try
         {
-            X509Certificate cert = keyStoreManager.loadCertificate(
-                config.getKeystorePath(), config.getKeystorePassword());
+            X509Certificate cert = _keyStoreManager.loadCertificate(
+                _config.getKeystorePath(), _config.getKeystorePassword());
             if (cert == null)
                 return -1;
 
@@ -242,17 +242,17 @@ public class AcmeCertificateManager extends AbstractLifeCycle
 
     private void setupHttpClient() throws Exception
     {
-        if (server != null)
+        if (_server != null)
         {
             // Try to find an existing HttpClient bean
-            httpClient = server.getBean(HttpClient.class);
+            _httpClient = _server.getBean(HttpClient.class);
         }
 
-        if (httpClient == null)
+        if (_httpClient == null)
         {
-            httpClient = new HttpClient();
-            httpClient.start();
-            ownHttpClient = true;
+            _httpClient = new HttpClient();
+            _httpClient.start();
+            _ownHttpClient = true;
         }
     }
 
@@ -260,8 +260,8 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     {
         try
         {
-            X509Certificate currentCert = keyStoreManager.loadCertificate(
-                config.getKeystorePath(), config.getKeystorePassword());
+            X509Certificate currentCert = _keyStoreManager.loadCertificate(
+                _config.getKeystorePath(), _config.getKeystorePassword());
 
             if (currentCert == null || needsRenewal(currentCert))
             {
@@ -287,26 +287,26 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     private boolean needsRenewal(X509Certificate cert)
     {
         Instant expiry = cert.getNotAfter().toInstant();
-        Instant threshold = Instant.now().plus(config.getRenewalThresholdDays(), ChronoUnit.DAYS);
+        Instant threshold = Instant.now().plus(_config.getRenewalThresholdDays(), ChronoUnit.DAYS);
         return expiry.isBefore(threshold);
     }
 
     private void obtainNewCertificate() throws AcmeException
     {
-        AcmeClient acmeClient = new AcmeClient(httpClient, accountKeyPair, config.getDirectoryUrl());
+        AcmeClient acmeClient = new AcmeClient(_httpClient, _accountKeyPair, _config.getDirectoryUrl());
 
         try
         {
             // Step 1: Fetch directory
-            LOG.info("Fetching ACME directory from {}", config.getDirectoryUrl());
+            LOG.info("Fetching ACME directory from {}", _config.getDirectoryUrl());
             acmeClient.fetchDirectory();
 
             // Step 2: Create/find account
             LOG.info("Creating/finding ACME account");
-            acmeClient.createAccount(config.getAccountEmail(), config.isTermsOfServiceAgreed());
+            acmeClient.createAccount(_config.getAccountEmail(), _config.isTermsOfServiceAgreed());
 
             // Step 3: Create order
-            List<String> domains = config.getDomains();
+            List<String> domains = _config.getDomains();
             LOG.info("Creating order for domains: {}", domains);
             Map<String, Object> order = acmeClient.createOrder(domains);
 
@@ -322,8 +322,8 @@ public class AcmeCertificateManager extends AbstractLifeCycle
             }
 
             // Step 5: Generate domain key pair and CSR
-            domainKeyPair = keyStoreManager.generateDomainKeyPair();
-            byte[] csr = keyStoreManager.generateCSR(domainKeyPair, domains);
+            _domainKeyPair = _keyStoreManager.generateDomainKeyPair();
+            byte[] csr = _keyStoreManager.generateCSR(_domainKeyPair, domains);
 
             // Step 6: Finalize order
             LOG.info("Finalizing order");
@@ -339,10 +339,10 @@ public class AcmeCertificateManager extends AbstractLifeCycle
 
             // Step 9: Store certificate
             LOG.info("Storing certificate chain ({} certificates)", certificates.size());
-            keyStoreManager.storeCertificates(
-                config.getKeystorePath(),
-                config.getKeystorePassword(),
-                domainKeyPair.getPrivate(),
+            _keyStoreManager.storeCertificates(
+                _config.getKeystorePath(),
+                _config.getKeystorePassword(),
+                _domainKeyPair.getPrivate(),
                 certificates
             );
 
@@ -395,7 +395,7 @@ public class AcmeCertificateManager extends AbstractLifeCycle
 
         // Register challenge with handler
         LOG.info("Setting up HTTP-01 challenge for domain: {}", domain);
-        challengeHandler.addChallenge(token, keyAuthorization);
+        _challengeHandler.addChallenge(token, keyAuthorization);
 
         try
         {
@@ -410,30 +410,30 @@ public class AcmeCertificateManager extends AbstractLifeCycle
         finally
         {
             // Clean up challenge
-            challengeHandler.removeChallenge(token);
+            _challengeHandler.removeChallenge(token);
         }
     }
 
     private void generateDryRunCertificate() throws AcmeException
     {
-        List<String> domains = config.getDomains();
+        List<String> domains = _config.getDomains();
         if (domains.isEmpty())
         {
             domains = Collections.singletonList("localhost");
         }
 
         // Generate domain key pair
-        domainKeyPair = keyStoreManager.generateDomainKeyPair();
+        _domainKeyPair = _keyStoreManager.generateDomainKeyPair();
 
         // Generate self-signed certificate
-        X509Certificate cert = keyStoreManager.generateSelfSignedCertificate(
-            domainKeyPair, domains, DRY_RUN_VALIDITY_DAYS);
+        X509Certificate cert = _keyStoreManager.generateSelfSignedCertificate(
+            _domainKeyPair, domains, DRY_RUN_VALIDITY_DAYS);
 
         // Store certificate
-        keyStoreManager.storeCertificates(
-            config.getKeystorePath(),
-            config.getKeystorePassword(),
-            domainKeyPair.getPrivate(),
+        _keyStoreManager.storeCertificates(
+            _config.getKeystorePath(),
+            _config.getKeystorePassword(),
+            _domainKeyPair.getPrivate(),
             Collections.singletonList(cert)
         );
 
@@ -447,20 +447,20 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     {
         try
         {
-            Path keystorePath = config.getKeystorePath();
-            if (!keystorePath.isAbsolute() && server != null)
+            Path keystorePath = _config.getKeystorePath();
+            if (!keystorePath.isAbsolute() && _server != null)
             {
-                Object jettyBase = server.getAttribute("jetty.base");
+                Object jettyBase = _server.getAttribute("jetty.base");
                 if (jettyBase != null)
                     keystorePath = Path.of(jettyBase.toString()).resolve(keystorePath);
             }
 
             String keystorePathStr = keystorePath.toString();
 
-            sslContextFactory.reload(scf ->
+            _sslContextFactory.reload(scf ->
             {
                 scf.setKeyStorePath(keystorePathStr);
-                scf.setKeyStorePassword(config.getKeystorePassword());
+                scf.setKeyStorePassword(_config.getKeystorePassword());
             });
 
             LOG.info("SSL context reloaded with new certificate");
@@ -473,25 +473,25 @@ public class AcmeCertificateManager extends AbstractLifeCycle
 
     private void scheduleRenewalCheck()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock l = _lock.lock())
         {
-            if (server != null)
+            if (_server != null)
             {
-                scheduler = server.getScheduler();
+                _scheduler = _server.getScheduler();
             }
 
-            if (scheduler == null || !scheduler.isStarted())
+            if (_scheduler == null || !_scheduler.isStarted())
             {
                 LOG.debug("No scheduler available, renewal checks will not be scheduled");
                 return;
             }
 
-            long intervalMs = config.getCheckIntervalSeconds() * 1000;
+            long intervalMs = _config.getCheckIntervalSeconds() * 1000;
 
-            renewalTask = scheduler.schedule(new RenewalRunner(), intervalMs, TimeUnit.MILLISECONDS);
+            _renewalTask = _scheduler.schedule(new RenewalRunner(), intervalMs, TimeUnit.MILLISECONDS);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Scheduled renewal check in {} seconds", config.getCheckIntervalSeconds());
+                LOG.debug("Scheduled renewal check in {} seconds", _config.getCheckIntervalSeconds());
         }
     }
 
@@ -508,10 +508,10 @@ public class AcmeCertificateManager extends AbstractLifeCycle
                 if (LOG.isDebugEnabled())
                     LOG.debug("Running scheduled renewal check");
 
-                if (config.isDryRun())
+                if (_config.isDryRun())
                 {
-                    X509Certificate cert = keyStoreManager.loadCertificate(
-                        config.getKeystorePath(), config.getKeystorePassword());
+                    X509Certificate cert = _keyStoreManager.loadCertificate(
+                        _config.getKeystorePath(), _config.getKeystorePassword());
                     if (cert == null || needsRenewal(cert))
                     {
                         LOG.info("Dry-run certificate needs renewal");
@@ -530,12 +530,12 @@ public class AcmeCertificateManager extends AbstractLifeCycle
             finally
             {
                 // Reschedule
-                try (AutoLock l = lock.lock())
+                try (AutoLock l = _lock.lock())
                 {
-                    if (scheduler != null && scheduler.isRunning() && isRunning())
+                    if (_scheduler != null && _scheduler.isRunning() && isRunning())
                     {
-                        long intervalMs = config.getCheckIntervalSeconds() * 1000;
-                        renewalTask = scheduler.schedule(this, intervalMs, TimeUnit.MILLISECONDS);
+                        long intervalMs = _config.getCheckIntervalSeconds() * 1000;
+                        _renewalTask = _scheduler.schedule(this, intervalMs, TimeUnit.MILLISECONDS);
                     }
                 }
             }
