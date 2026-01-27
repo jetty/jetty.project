@@ -14,6 +14,7 @@
 package org.eclipse.jetty.acme;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,7 @@ public class AcmeConfigurationTest
         assertThat(config.getDirectoryUrl(), equalTo(AcmeConfiguration.LETSENCRYPT_STAGING_URL));
         assertThat(config.getDomains(), is(empty()));
         assertThat(config.getRenewalThresholdDays(), is(30));
-        assertThat(config.getCheckIntervalSeconds(), is(86400L));
+        assertThat(config.getCheckInterval(), equalTo(Duration.ofDays(1)));
         assertThat(config.isTermsOfServiceAgreed(), is(false));
     }
 

@@ -16,6 +16,7 @@ package org.eclipse.jetty.acme;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -73,20 +74,20 @@ public class AcmeCertificateManager extends AbstractLifeCycle
     private static final int DRY_RUN_VALIDITY_DAYS = 90;
 
     /**
-     * Exponential backoff intervals in seconds for renewal failures.
+     * Exponential backoff intervals for renewal failures.
      * Starts at 1 minute, escalates up to 6 hours.
      */
-    private static final long[] BACKOFF_INTERVALS_SECONDS = {
-        60,       // 1 minute
-        120,      // 2 minutes
-        300,      // 5 minutes
-        600,      // 10 minutes
-        1200,     // 20 minutes
-        1800,     // 30 minutes
-        3600,     // 1 hour
-        7200,     // 2 hours
-        10800,    // 3 hours
-        21600     // 6 hours (max)
+    private static final Duration[] BACKOFF_INTERVALS = {
+        Duration.ofMinutes(1),
+        Duration.ofMinutes(2),
+        Duration.ofMinutes(5),
+        Duration.ofMinutes(10),
+        Duration.ofMinutes(20),
+        Duration.ofMinutes(30),
+        Duration.ofHours(1),
+        Duration.ofHours(2),
+        Duration.ofHours(3),
+        Duration.ofHours(6)
     };
 
     private final AutoLock _lock = new AutoLock();
@@ -504,12 +505,12 @@ public class AcmeCertificateManager extends AbstractLifeCycle
                 return;
             }
 
-            long intervalMs = _config.getCheckIntervalSeconds() * 1000;
+            long intervalMs = _config.getCheckInterval().toMillis();
 
             _renewalTask = _scheduler.schedule(new RenewalRunner(), intervalMs, TimeUnit.MILLISECONDS);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Scheduled renewal check in {} seconds", _config.getCheckIntervalSeconds());
+                LOG.debug("Scheduled renewal check in {} seconds", _config.getCheckInterval().toSeconds());
         }
     }
 
@@ -569,7 +570,7 @@ public class AcmeCertificateManager extends AbstractLifeCycle
                         if (success)
                         {
                             _consecutiveFailures = 0;
-                            intervalMs = _config.getCheckIntervalSeconds() * 1000;
+                            intervalMs = _config.getCheckInterval().toMillis();
                         }
                         else
                         {
@@ -593,9 +594,9 @@ public class AcmeCertificateManager extends AbstractLifeCycle
      */
     private long getBackoffIntervalMs(int failureCount)
     {
-        int index = Math.min(failureCount - 1, BACKOFF_INTERVALS_SECONDS.length - 1);
+        int index = Math.min(failureCount - 1, BACKOFF_INTERVALS.length - 1);
         if (index < 0)
             index = 0;
-        return BACKOFF_INTERVALS_SECONDS[index] * 1000;
+        return BACKOFF_INTERVALS[index].toMillis();
     }
 }
