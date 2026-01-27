@@ -356,6 +356,50 @@ public class AcmeKeyStoreManager
         }
     }
 
+    /**
+     * Ensures a keystore exists at the given path, creating a self-signed certificate if needed.
+     * This static method can be called from XML configuration to initialize the keystore
+     * before the SSL context tries to load it.
+     *
+     * @param basePath the base path (typically jetty.base)
+     * @param keystorePath the relative path to the keystore
+     * @param password the keystore password
+     * @param domain the domain name for the self-signed certificate
+     * @throws Exception if keystore creation fails
+     */
+    public static void ensureKeyStoreExists(String basePath, String keystorePath, String password, String domain)
+        throws Exception
+    {
+        Path base = Path.of(basePath);
+        Path keystore = base.resolve(keystorePath);
+
+        if (Files.exists(keystore))
+        {
+            LOG.debug("Keystore already exists: {}", keystore);
+            return;
+        }
+
+        LOG.info("Creating initial self-signed keystore at {}", keystore);
+
+        // Create parent directories
+        Files.createDirectories(keystore.getParent());
+
+        // Generate key pair
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance(RSA_ALGORITHM);
+        keyGen.initialize(RSA_KEY_SIZE, new SecureRandom());
+        KeyPair keyPair = keyGen.generateKeyPair();
+
+        // Generate self-signed certificate
+        AcmeKeyStoreManager manager = new AcmeKeyStoreManager(base);
+        List<String> domains = domain != null && !domain.isEmpty()
+            ? List.of(domain)
+            : List.of("localhost");
+        X509Certificate cert = manager.generateSelfSignedCertificate(keyPair, domains, 90);
+
+        // Store in keystore
+        manager.storeCertificates(Path.of(keystorePath), password, keyPair.getPrivate(), List.of(cert));
+    }
+
     private KeyPair generateKeyPair() throws Exception
     {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance(RSA_ALGORITHM);

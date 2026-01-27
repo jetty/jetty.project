@@ -9,6 +9,7 @@ security
 acme
 
 [depend]
+acme-init
 ssl-context
 server
 client
