@@ -370,8 +370,14 @@ public class AcmeKeyStoreManager
     public static void ensureKeyStoreExists(String basePath, String keystorePath, String password, String domain)
         throws Exception
     {
-        Path base = Path.of(basePath);
-        Path keystore = base.resolve(keystorePath);
+        Path base = Path.of(basePath).toAbsolutePath().normalize();
+        Path keystore = base.resolve(keystorePath).normalize();
+
+        // Validate that the keystore path stays within the base directory
+        if (!keystore.startsWith(base))
+        {
+            throw new IllegalArgumentException("Keystore path escapes base directory: " + keystorePath);
+        }
 
         if (Files.exists(keystore))
         {
@@ -436,9 +442,25 @@ public class AcmeKeyStoreManager
 
     private Path resolvePath(Path path)
     {
+        Path resolved;
         if (path.isAbsolute())
-            return path;
-        return _basePath.resolve(path);
+        {
+            resolved = path.normalize();
+        }
+        else
+        {
+            resolved = _basePath.resolve(path).normalize();
+        }
+
+        // Validate that the resolved path stays within the base directory
+        Path normalizedBase = _basePath.toAbsolutePath().normalize();
+        Path normalizedResolved = resolved.toAbsolutePath().normalize();
+        if (!normalizedResolved.startsWith(normalizedBase))
+        {
+            throw new IllegalArgumentException("Path escapes base directory: " + path);
+        }
+
+        return resolved;
     }
 
     // ASN.1 DER encoding helpers
