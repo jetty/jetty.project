@@ -20,6 +20,12 @@ lib/jetty-acme-${jetty.version}.jar
 [xml]
 etc/jetty-acme.xml
 
+[ini]
+# Set ssl-context properties to use the same keystore as ACME
+jetty.sslContext.keyStorePath?=etc/keystore.p12
+jetty.sslContext.keyStorePassword?=changeit
+jetty.sslContext.keyManagerPassword?=changeit
+
 [ini-template]
 # tag::documentation[]
 ### ACME Certificate Management Configuration
