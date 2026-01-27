@@ -245,10 +245,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     public void setIdleTimeout(long idleTimeout)
     {
         _idleTimeout = idleTimeout;
-        if (_idleTimeout == 0)
-            _shutdownIdleTimeout = 0;
-        else if (_idleTimeout < _shutdownIdleTimeout)
-            _shutdownIdleTimeout = Math.min(1000L, _idleTimeout);
     }
 
     /**
@@ -790,5 +786,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             _name == null ? TypeUtil.toShortName(getClass()) : _name,
             hashCode(),
             getDefaultProtocol(), getProtocols().stream().collect(Collectors.joining(", ", "(", ")")));
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpObjects(out, indent,
+            String.format("idleTimeout=%s", _idleTimeout),
+            String.format("shutdownIdleTimeout=%s", _shutdownIdleTimeout));
     }
 }

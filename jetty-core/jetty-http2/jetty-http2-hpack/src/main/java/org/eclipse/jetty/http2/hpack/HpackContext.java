@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http2.hpack.internal.StaticTableHttpField;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -321,21 +322,19 @@ public class HpackContext
     private class DynamicTable
     {
         private Entry[] _entries;
-        private final int _growby;
         private int _size;
         private int _offset;
 
         private DynamicTable(int initCapacity)
         {
             _entries = new Entry[initCapacity];
-            _growby = initCapacity;
         }
 
         public void add(Entry entry)
         {
             if (_size == _entries.length)
             {
-                Entry[] entries = new Entry[_entries.length + _growby];
+                Entry[] entries = new Entry[ArrayUtil.growCapacity(_entries.length, 1, Integer.MAX_VALUE)];
                 for (int i = 0; i < _size; i++)
                 {
                     int slot = (_offset + i) % _entries.length;
