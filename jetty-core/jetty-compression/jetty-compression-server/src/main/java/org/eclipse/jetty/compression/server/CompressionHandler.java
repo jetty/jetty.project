@@ -274,7 +274,7 @@ public class CompressionHandler extends Handler.Wrapper
                         HttpChannel httpChannel = HttpChannel.from(request);
                         HttpCompliance httpCompliance = httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
                         ComplianceViolation.Listener complianceListener = httpChannel.getComplianceViolationListener();
-                        qualityCSV = new QuotedQualityCSV.Compliant(httpCompliance, complianceListener);
+                        qualityCSV = new QuotedQualityCSV(httpCompliance, complianceListener, null);
                     }
                     qualityCSV.addValue(field.getValue());
                 }

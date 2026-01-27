@@ -2380,7 +2380,7 @@ public class HttpParser
             if (getHeader() != null && HttpField.ETAG_HEADER.contains(this.getHeader()))
                 return new QuotedCSV.Etags(_complianceMode, _handler.getComplianceViolationListener(), value);
 
-            return new QuotedCSV.Compliant(_complianceMode, _handler.getComplianceViolationListener(), keepQuotes, value);
+            return new QuotedCSV(_complianceMode, _handler.getComplianceViolationListener(), keepQuotes, value);
         }
     }
 }
