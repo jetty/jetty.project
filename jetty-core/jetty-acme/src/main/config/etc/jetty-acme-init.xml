@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<!-- ============================================================= -->
+<!-- Initialize ACME keystore before SSL context loads             -->
+<!-- This XML runs BEFORE ssl-context to ensure keystore exists    -->
+<!-- ============================================================= -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- Ensure keystore exists (creates self-signed cert if missing) -->
+  <Call class="org.eclipse.jetty.acme.AcmeKeyStoreManager" name="ensureKeyStoreExists">
+    <Arg><Property name="jetty.base"/></Arg>
+    <Arg><Property name="jetty.acme.keystorePath" default="etc/keystore.p12"/></Arg>
+    <Arg><Property name="jetty.acme.keystorePassword" default="changeit"/></Arg>
+    <Arg><Property name="jetty.acme.domains" default=""/></Arg>
+  </Call>
+
+</Configure>
