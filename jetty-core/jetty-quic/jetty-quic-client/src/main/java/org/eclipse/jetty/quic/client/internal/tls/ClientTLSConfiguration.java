@@ -13,14 +13,8 @@
 
 package org.eclipse.jetty.quic.client.internal.tls;
 
-import java.util.List;
-
-import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.common.tls.TLSConfiguration;
-import org.eclipse.jetty.tls.CipherSuite;
-import org.eclipse.jetty.tls.NamedGroup;
-import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public final class ClientTLSConfiguration extends TLSConfiguration
@@ -35,29 +29,14 @@ public final class ClientTLSConfiguration extends TLSConfiguration
         this.sslContextFactory = sslContextFactory;
     }
 
+    public QuicClientQuicConfiguration getClientQuicConfiguration()
+    {
+        return quicConfiguration;
+    }
+
     public SslContextFactory.Client getSslContextFactory()
     {
         return sslContextFactory;
-    }
-
-    public QuicVersion getQuicVersion()
-    {
-        return quicConfiguration.getQuicVersion();
-    }
-
-    public List<SignatureAlgorithm> getSignatureAlgorithms()
-    {
-        return quicConfiguration.getSignatureAlgorithms();
-    }
-
-    public List<NamedGroup> getNamedGroups()
-    {
-        return quicConfiguration.getNamedGroups();
-    }
-
-    public List<CipherSuite> getCipherSuites()
-    {
-        return quicConfiguration.getCipherSuites();
     }
 
     public byte[] getInputKeyMaterial()

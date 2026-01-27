@@ -198,7 +198,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
             .filter(ext -> ext instanceof QuicTransportParametersExtension)
             .map(QuicTransportParametersExtension.class::cast)
             .findFirst()
-            .map(QuicTransportParametersExtension::parameters)
+            .map(QuicTransportParametersExtension::transportParameters)
             .orElse(null);
         // TODO: apply verifications to TransportParameters as per RFC.
         notifyTransportParameters(transportParameters);

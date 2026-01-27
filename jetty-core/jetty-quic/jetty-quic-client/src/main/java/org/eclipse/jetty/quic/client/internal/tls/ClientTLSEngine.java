@@ -35,8 +35,10 @@ import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.common.GroupKeyPair;
+import org.eclipse.jetty.tls.ext.ALPNExtension;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.KeyShareExtension;
+import org.eclipse.jetty.tls.ext.PreSharedKeyExtension;
 import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
@@ -75,9 +77,9 @@ public class ClientTLSEngine extends TLSEngine
 
             this.configuration = configuration;
 
-            List<CipherSuite> cipherSuites = configuration.getCipherSuites();
+            List<CipherSuite> cipherSuites = configuration.getClientQuicConfiguration().getCipherSuites();
 
-            List<NamedGroup> namedGroups = configuration.getNamedGroups();
+            List<NamedGroup> namedGroups = configuration.getClientQuicConfiguration().getNamedGroups();
             configuration.addExtension(new SupportedGroupsExtension(namedGroups));
 
             // KeyPairs and KeyShares.
@@ -93,7 +95,7 @@ public class ClientTLSEngine extends TLSEngine
 
             configuration.addExtension(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3)));
 
-            List<SignatureAlgorithm> signatureAlgorithms = configuration.getSignatureAlgorithms();
+            List<SignatureAlgorithm> signatureAlgorithms = configuration.getClientQuicConfiguration().getSignatureAlgorithms();
             configuration.addExtension(new SignatureAlgorithmsExtension(signatureAlgorithms));
 
             clientHello = new ClientHelloMessage(newRandomBytes(32), cipherSuites, configuration.getExtensions());
@@ -102,7 +104,7 @@ public class ClientTLSEngine extends TLSEngine
 
             PacketProtector packetProtector = getPacketProtector();
             byte[] inputKeyMaterial = configuration.getInputKeyMaterial();
-            packetProtector.allocateInitialKeys(configuration.getQuicVersion(), inputKeyMaterial);
+            packetProtector.allocateInitialKeys(configuration.getClientQuicConfiguration().getQuicVersion(), inputKeyMaterial);
 
             getPacketProtector().getTranscriptHash().offer(clientHello, false);
 
@@ -255,7 +257,7 @@ public class ClientTLSEngine extends TLSEngine
                 LOG.debug("negotiated KeyPair in NamedGroup {} on {}", serverKeyShare.namedGroup(), this);
 
             getPacketProtector().getTranscriptHash().offer(serverHello, true);
-            getPacketProtector().allocateHandshakeKeys(configuration.getQuicVersion(), cipherSuite, sharedSecret);
+            getPacketProtector().allocateHandshakeKeys(configuration.getClientQuicConfiguration().getQuicVersion(), cipherSuite, sharedSecret);
 
             state = State.NEED_ENCRYPTED_EXTENSIONS;
         }
@@ -273,18 +275,40 @@ public class ClientTLSEngine extends TLSEngine
         if (state != State.NEED_ENCRYPTED_EXTENSIONS)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
+        List<Extension> extensions = encryptedExtensions.extensions();
+        List<String> serverProtocols = List.of();
+        for (Extension extension : extensions)
+        {
+            switch (extension)
+            {
+                case ALPNExtension alpn -> serverProtocols = alpn.protocols();
+                case KeyShareExtension _, PreSharedKeyExtension _, SupportedVersionsExtension _ ->
+                    throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "forbidden_extension");
+                default ->
+                {
+                }
+            }
+        }
 
-        // TODO: validate extensions are allowed (e.g. key_share_extension not allowed in EncryptedExtensionsMessage).
+        List<String> clientProtocols = clientHello.extensions().stream()
+            .filter(e -> e instanceof ALPNExtension)
+            .map(ALPNExtension.class::cast)
+            .findFirst()
+            .map(ALPNExtension::protocols)
+            .orElse(List.of());
 
-        // TODO: ALPN must be present and match what offered by in the ClientHello.
-//        setNegotiatedApplicationProtocol();
-
-        // TODO: QuicTransports must be present and validated:
-        //  * No forbidden parameters are present
-        //  * No duplicates
-        //  * Values are within allowed ranges
-        //  Apply Quic transport params to the various components.
-        //   This would require reach back to the session, must use a listener.
+        if (clientProtocols.isEmpty() && serverProtocols.isEmpty())
+        {
+            // No application protocol, just QUIC.
+        }
+        else
+        {
+            List<String> negotiatedProtocols = new ArrayList<>(serverProtocols);
+            negotiatedProtocols.retainAll(clientProtocols);
+            if (negotiatedProtocols.isEmpty())
+                throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_application_protocol");
+            setNegotiatedApplicationProtocol(negotiatedProtocols.getFirst());
+        }
 
         getPacketProtector().getTranscriptHash().offer(encryptedExtensions, true);
 
@@ -298,7 +322,7 @@ public class ClientTLSEngine extends TLSEngine
 
         if (state != State.NEED_CERTIFICATE)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
-        // RFC 8446, 4.4.2.4.
+        // RFC-8446[4.4.2.4].
         if (certificate.entries().isEmpty())
             throw new TLSException(TLSException.Alert.DECODE_ERROR, "missing_certificate");
 
@@ -346,7 +370,7 @@ public class ClientTLSEngine extends TLSEngine
             LOG.debug("verified {} on {}", finished, this);
 
         getPacketProtector().getTranscriptHash().offer(finished, true);
-        getPacketProtector().allocateApplicationKeys(configuration.getQuicVersion(), cipherSuite);
+        getPacketProtector().allocateApplicationKeys(configuration.getClientQuicConfiguration().getQuicVersion(), cipherSuite);
 
         FinishedMessage message = createFinishedMessage(cipherSuite);
         getPacketProtector().getTranscriptHash().offer(message, false);

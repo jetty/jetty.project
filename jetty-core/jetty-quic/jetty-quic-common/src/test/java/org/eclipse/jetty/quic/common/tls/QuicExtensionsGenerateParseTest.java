@@ -82,7 +82,7 @@ public class QuicExtensionsGenerateParseTest
 
         assertEquals(1, extensions.size());
         QuicTransportParametersExtension parsed = (QuicTransportParametersExtension)extensions.getFirst();
-        TransportParameters parseParams = parsed.parameters();
+        TransportParameters parseParams = parsed.transportParameters();
         for (Map.Entry<TransportParameters.Id<?>, Object> entry : generatedParams)
         {
             switch (entry.getKey())
@@ -114,7 +114,7 @@ public class QuicExtensionsGenerateParseTest
         assertNotNull(extensions);
         assertEquals(1, extensions.size());
         parsed = (QuicTransportParametersExtension)extensions.getFirst();
-        parseParams = parsed.parameters();
+        parseParams = parsed.transportParameters();
         for (Map.Entry<TransportParameters.Id<?>, Object> entry : generatedParams)
         {
             switch (entry.getKey())

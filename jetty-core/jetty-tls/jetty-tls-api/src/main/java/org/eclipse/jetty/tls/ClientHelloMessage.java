@@ -19,6 +19,16 @@ import org.eclipse.jetty.tls.ext.Extension;
 
 public record ClientHelloMessage(byte[] random, List<CipherSuite> cipherSuites, List<Extension> extensions) implements Message
 {
+    public ClientHelloMessage
+    {
+        if (random.length != 32)
+            throw new IllegalArgumentException("invalid_random_length");
+        if (cipherSuites.isEmpty())
+            throw new IllegalArgumentException("invalid_cipher_suites");
+        if (extensions.isEmpty())
+            throw new IllegalArgumentException("invalid_extensions");
+    }
+
     @Override
     public Type type()
     {
