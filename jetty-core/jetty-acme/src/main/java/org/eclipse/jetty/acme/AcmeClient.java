@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -52,9 +53,9 @@ public class AcmeClient
     private static final Logger LOG = LoggerFactory.getLogger(AcmeClient.class);
     private static final String JOSE_JSON_CONTENT_TYPE = "application/jose+json";
     private static final String PEM_CHAIN_CONTENT_TYPE = "application/pem-certificate-chain";
-    private static final long REQUEST_TIMEOUT_MS = 30000;
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
     private static final int MAX_POLL_ATTEMPTS = 30;
-    private static final long POLL_DELAY_MS = 2000;
+    private static final Duration POLL_DELAY = Duration.ofSeconds(2);
     private static final int MAX_NONCE_RETRY_ATTEMPTS = 5;
 
     private final HttpClient _httpClient;
@@ -129,7 +130,7 @@ public class AcmeClient
             String newNonceUrl = getEndpoint("newNonce");
             ContentResponse response = _httpClient.newRequest(newNonceUrl)
                 .method(HttpMethod.HEAD)
-                .timeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                .timeout(REQUEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
                 .send();
 
             String nonce = response.getHeaders().get("Replay-Nonce");
@@ -267,7 +268,7 @@ public class AcmeClient
 
             try
             {
-                Thread.sleep(POLL_DELAY_MS);
+                Thread.sleep(POLL_DELAY.toMillis());
             }
             catch (InterruptedException e)
             {
@@ -309,7 +310,7 @@ public class AcmeClient
 
             try
             {
-                Thread.sleep(POLL_DELAY_MS);
+                Thread.sleep(POLL_DELAY.toMillis());
             }
             catch (InterruptedException e)
             {
@@ -359,7 +360,7 @@ public class AcmeClient
                 .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, JOSE_JSON_CONTENT_TYPE))
                 .headers(headers -> headers.put(HttpHeader.ACCEPT, PEM_CHAIN_CONTENT_TYPE))
                 .body(new StringRequestContent(JOSE_JSON_CONTENT_TYPE, jwsBody))
-                .timeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                .timeout(REQUEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
 
             ContentResponse response = request.send();
             _lastNonce = response.getHeaders().get("Replay-Nonce");
@@ -434,7 +435,7 @@ public class AcmeClient
                 .method(HttpMethod.POST)
                 .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, JOSE_JSON_CONTENT_TYPE))
                 .body(new StringRequestContent(JOSE_JSON_CONTENT_TYPE, jwsBody))
-                .timeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                .timeout(REQUEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
 
             ContentResponse response = request.send();
 

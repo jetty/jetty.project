@@ -14,6 +14,7 @@
 package org.eclipse.jetty.acme;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -59,7 +60,7 @@ public class AcmeConfiguration
     private Path _keystorePath = Path.of("etc/keystore.p12");
     private String _keystorePassword = "changeit";
     private int _renewalThresholdDays = 30;
-    private long _checkIntervalSeconds = 86400;
+    private Duration _checkInterval = Duration.ofDays(1);
     private boolean _termsOfServiceAgreed = false;
 
     /**
@@ -265,22 +266,33 @@ public class AcmeConfiguration
     }
 
     /**
-     * @return the renewal check interval in seconds
+     * @return the renewal check interval
      */
-    @ManagedAttribute("Renewal check interval in seconds")
-    public long getCheckIntervalSeconds()
+    @ManagedAttribute("Renewal check interval")
+    public Duration getCheckInterval()
     {
-        return _checkIntervalSeconds;
+        return _checkInterval;
     }
 
     /**
      * Sets how often to check if certificates need renewal.
      *
+     * @param checkInterval the check interval
+     */
+    public void setCheckInterval(Duration checkInterval)
+    {
+        _checkInterval = Objects.requireNonNull(checkInterval, "checkInterval");
+    }
+
+    /**
+     * Sets how often to check if certificates need renewal.
+     * This method is provided for XML configuration compatibility.
+     *
      * @param checkIntervalSeconds the interval in seconds
      */
     public void setCheckIntervalSeconds(long checkIntervalSeconds)
     {
-        _checkIntervalSeconds = checkIntervalSeconds;
+        _checkInterval = Duration.ofSeconds(checkIntervalSeconds);
     }
 
     /**
