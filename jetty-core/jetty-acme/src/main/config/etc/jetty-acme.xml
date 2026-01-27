@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<!-- ============================================================= -->
+<!-- Configure ACME (Let's Encrypt) certificate management         -->
+<!-- ============================================================= -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- ACME Configuration -->
+  <New id="AcmeConfiguration" class="org.eclipse.jetty.acme.AcmeConfiguration">
+    <Set name="dryRun">
+      <Property name="jetty.acme.dryRun" default="true"/>
+    </Set>
+    <Set name="directoryUrl">
+      <Property name="jetty.acme.directoryUrl" default="https://acme-staging-v02.api.letsencrypt.org/directory"/>
+    </Set>
+    <Set name="domains">
+      <Property name="jetty.acme.domains" default=""/>
+    </Set>
+    <Set name="accountEmail">
+      <Property name="jetty.acme.accountEmail"/>
+    </Set>
+    <Set name="accountKeyPath">
+      <Property name="jetty.acme.accountKeyPath" default="acme/account.key"/>
+    </Set>
+    <Set name="keystorePath">
+      <Property name="jetty.acme.keystorePath" default="etc/keystore.p12"/>
+    </Set>
+    <Set name="keystorePassword">
+      <Property name="jetty.acme.keystorePassword" default="changeit"/>
+    </Set>
+    <Set name="renewalThresholdDays">
+      <Property name="jetty.acme.renewalThresholdDays" default="30"/>
+    </Set>
+    <Set name="checkIntervalSeconds">
+      <Property name="jetty.acme.checkIntervalSeconds" default="86400"/>
+    </Set>
+    <Set name="termsOfServiceAgreed">
+      <Property name="jetty.acme.termsOfServiceAgreed" default="false"/>
+    </Set>
+  </New>
+
+  <!-- ACME Challenge Handler - serves /.well-known/acme-challenge/ -->
+  <New id="AcmeChallengeHandler" class="org.eclipse.jetty.acme.AcmeChallengeHandler"/>
+
+  <!-- Insert challenge handler at the front of the handler chain -->
+  <Call name="insertHandler">
+    <Arg><Ref refid="AcmeChallengeHandler"/></Arg>
+  </Call>
+
+  <!-- ACME Certificate Manager -->
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.acme.AcmeCertificateManager">
+        <Arg><Ref refid="AcmeConfiguration"/></Arg>
+        <Arg><Ref refid="sslContextFactory"/></Arg>
+        <Arg><Ref refid="AcmeChallengeHandler"/></Arg>
+        <Call name="setServer">
+          <Arg><Ref refid="Server"/></Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+
+</Configure>
