@@ -1,3 +1,5 @@
+jetty-12.1.7-SNAPSHOT
+
 12.1.6 - 27 January 2026
  + 9019 Server cannot be closed gracefully when ServerConnector's IdleTimeout is 0
  + 10281 pom.xml description tags need updated

@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.1.6</version>
+  <version>12.1.7-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
@@ -328,7 +328,7 @@
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
     <plexus-xml.version>4.1.0</plexus-xml.version>
-    <project.build.outputTimestamp>2026-01-27T18:52:28Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-01-27T19:01:12Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <settings.path/>
