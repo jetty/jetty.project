@@ -37,6 +37,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-acme</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
     </dependency>
     <dependency>
