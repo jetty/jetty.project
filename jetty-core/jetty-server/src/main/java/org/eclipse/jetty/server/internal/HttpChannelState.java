@@ -28,6 +28,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -144,14 +145,54 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public void initialize()
     {
-        // TODO this should be moved somewhere common?
-        List<ComplianceViolation.Listener> listeners = _connectionMetaData.getHttpConfiguration().getComplianceViolationListeners();
-        _complianceViolationListener = switch (listeners.size())
+        if (_complianceViolationListener == null)
         {
-            case 0 -> ComplianceViolation.Listener.NOOP;
-            case 1 -> listeners.get(0).initialize();
-            default -> new InitializedCompositeComplianceViolationListener(listeners);
-        };
+            List<ComplianceViolation.Listener> listeners = _connectionMetaData.getHttpConfiguration().getComplianceViolationListeners();
+            _complianceViolationListener = switch (listeners.size())
+            {
+                case 0 -> ComplianceViolation.Listener.NOOP;
+                case 1 -> listeners.get(0).initialize();
+                default -> new InitializedCompositeComplianceViolationListener(listeners);
+            };
+        }
+
+        if (!_connectionMetaData.getHttpConfiguration().isNotifyForbiddenComplianceViolations())
+            _complianceViolationListener = new AllowedOnlyComplianceListener(_complianceViolationListener);
+    }
+
+    private static class AllowedOnlyComplianceListener implements ComplianceViolation.Listener
+    {
+        private final ComplianceViolation.Listener delegate;
+
+        public AllowedOnlyComplianceListener(ComplianceViolation.Listener delegate)
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void onComplianceViolation(ComplianceViolation.Event event)
+        {
+            if (event.allowed())
+                delegate.onComplianceViolation(event);
+        }
+
+        @Override
+        public ComplianceViolation.Listener initialize()
+        {
+            return delegate.initialize();
+        }
+
+        @Override
+        public void onRequestBegin(Attributes request)
+        {
+            delegate.onRequestBegin(request);
+        }
+
+        @Override
+        public void onRequestEnd(Attributes request)
+        {
+            delegate.onRequestEnd(request);
+        }
     }
 
     @Override
@@ -286,6 +327,7 @@ public class HttpChannelState implements HttpChannel, Components
                 throw new IllegalStateException("No HttpStream");
             if (_request != null)
                 throw new IllegalStateException("duplicate request");
+            initialize();
             _request = new ChannelRequest(this, request);
             _response = new ChannelResponse(_request);
             _expects100Continue = request.is100ContinueExpected();
@@ -675,8 +717,7 @@ public class HttpChannelState implements HttpChannel, Components
         finally
         {
             ComplianceViolation.Listener listener = getComplianceViolationListener();
-            if (listener != null)
-                listener.onRequestEnd(_request);
+            listener.onRequestEnd(_request);
 
             // This is THE ONLY PLACE the stream is succeeded or failed.
             LOG.atDebug().setCause(failure).log("completing the stream of {}", this);
@@ -723,9 +764,10 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpURI uri = request.getHttpURI();
                 if (uri.hasViolations())
                 {
-                    String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri, HttpChannel.from(request).getComplianceViolationListener());
-                    if (badMessage != null)
-                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, badMessage);
+                    HttpConfiguration httpConfiguration = getConnectionMetaData().getHttpConfiguration();
+                    UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
+                    ComplianceViolation.Listener listener = getComplianceViolationListener();
+                    ComplianceUtils.verify(uriCompliance, uri, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
                 }
 
                 // Customize before processing.
@@ -786,6 +828,8 @@ public class HttpChannelState implements HttpChannel, Components
 
     private class LastWriteCallback implements Callback
     {
+        private Throwable _failure;
+
         /**
          * Called only as {@link Callback} by last write from {@link ChannelCallback#succeeded}
          */
@@ -842,6 +886,7 @@ public class HttpChannelState implements HttpChannel, Components
         private HttpChannelState _httpChannelState;
         private Request _loggedRequest;
         private HttpFields _trailers;
+        private Throwable _consumeAvailableFailure;
 
         ChannelRequest(HttpChannelState httpChannelState, MetaData.Request metaData)
         {

@@ -27,9 +27,12 @@ import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceUtils;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Fields;
 import org.slf4j.Logger;
@@ -255,14 +258,15 @@ public class Dispatcher implements RequestDispatcher
 
     private static void checkUriViolations(HttpURI uri, Request baseRequest)
     {
-        if (uri.hasViolations())
-        {
-            HttpChannel channel = baseRequest.getHttpChannel();
-            UriCompliance compliance = channel == null || channel.getHttpConfiguration() == null ? null : channel.getHttpConfiguration().getUriCompliance();
-            String illegalState = UriCompliance.checkUriCompliance(compliance, uri, org.eclipse.jetty.server.HttpChannel.from(baseRequest.getCoreRequest()).getComplianceViolationListener());
-            if (illegalState != null)
-                throw new IllegalStateException(illegalState);
-        }
+        if (!uri.hasViolations())
+            return;
+        org.eclipse.jetty.server.HttpChannel channel = org.eclipse.jetty.server.HttpChannel.from(baseRequest.getCoreRequest());
+        if (channel == null)
+            return;
+        HttpConfiguration httpConfiguration = channel.getConnectionMetaData().getHttpConfiguration();
+        UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
+        ComplianceViolation.Listener listener = channel.getComplianceViolationListener();
+        ComplianceUtils.verify(uriCompliance, uri, listener, IllegalStateException::new);
     }
 
     @Override

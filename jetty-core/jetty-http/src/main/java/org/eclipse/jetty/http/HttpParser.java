@@ -366,9 +366,10 @@ public class HttpParser
 
     protected void checkViolation(Violation violation) throws HttpException.RuntimeException
     {
-        if (violation.isAllowedBy(_complianceMode))
-            reportComplianceViolation(violation, violation.getDescription());
-        else
+        boolean allowed = violation.isAllowedBy(_complianceMode);
+        reportComplianceViolation(violation, violation.getDescription());
+
+        if (!allowed)
             throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, violation.getDescription());
     }
 
@@ -380,7 +381,10 @@ public class HttpParser
     protected void reportComplianceViolation(Violation violation, String reason)
     {
         if (_requestParser)
-            _requestHandler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, reason));
+        {
+            boolean allowed = _complianceMode.allows(violation);
+            _requestHandler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, reason, allowed));
+        }
     }
 
     protected String caseInsensitiveHeader(String orig, String normative)
@@ -772,13 +776,16 @@ public class HttpParser
                             {
                                 _methodString = method.asString();
                             }
-                            else if (Violation.CASE_INSENSITIVE_METHOD.isAllowedBy(_complianceMode))
+                            else
                             {
-                                method = HttpMethod.INSENSITIVE_CACHE.get(_methodString);
-                                if (method != null)
+                                reportComplianceViolation(Violation.CASE_INSENSITIVE_METHOD, _methodString);
+                                if (_complianceMode.allows(Violation.CASE_INSENSITIVE_METHOD))
                                 {
-                                    _methodString = method.asString();
-                                    reportComplianceViolation(Violation.CASE_INSENSITIVE_METHOD, _methodString);
+                                    method = HttpMethod.INSENSITIVE_CACHE.get(_methodString);
+                                    if (method != null)
+                                    {
+                                        _methodString = method.asString();
+                                    }
                                 }
                             }
 
@@ -941,9 +948,9 @@ public class HttpParser
 
                         case EOL:
                             // HTTP/0.9
+                            reportComplianceViolation(HTTP_0_9, HTTP_0_9.getDescription());
                             if (Violation.HTTP_0_9.isAllowedBy(_complianceMode))
                             {
-                                reportComplianceViolation(HTTP_0_9, HTTP_0_9.getDescription());
                                 _requestHandler.startRequest(_methodString, _uri.toCompleteString(), HttpVersion.HTTP_0_9);
                                 setState(State.CONTENT);
                                 _endOfContent = EndOfContent.NO_CONTENT;
@@ -1550,9 +1557,9 @@ public class HttpParser
                             _valueString = "";
                             _length = -1;
 
+                            reportComplianceViolation(NO_COLON_AFTER_FIELD_NAME, "Field " + _headerString);
                             if (NO_COLON_AFTER_FIELD_NAME.isAllowedBy(_complianceMode))
                             {
-                                reportComplianceViolation(NO_COLON_AFTER_FIELD_NAME, "Field " + _headerString);
                                 setState(FieldState.FIELD);
                                 break;
                             }
@@ -2220,6 +2227,17 @@ public class HttpParser
          */
         default void onViolation(ComplianceViolation.Event event)
         {
+            getComplianceViolationListener().onComplianceViolation(event);
+        }
+
+        /**
+         * Get the request specific {@link ComplianceViolation.Listener}
+         *
+         * @return the ComplianceViolation.Listener belonging to this HttpChannel.
+         */
+        default ComplianceViolation.Listener getComplianceViolationListener()
+        {
+            return ComplianceViolation.Listener.NOOP;
         }
 
         /**
@@ -2360,30 +2378,9 @@ public class HttpParser
         protected QuotedCSV newQuotedCSV(boolean keepQuotes, String value)
         {
             if (getHeader() != null && HttpField.ETAG_HEADER.contains(this.getHeader()))
-                return new QuotedCSV.Etags(_complianceMode,
-                    (v, r) ->
-                    {
-                        try
-                        {
-                            _handler.onViolation(new ComplianceViolation.Event(_complianceMode, v, r));
-                        }
-                        catch (Throwable t)
-                        {
-                            HttpException.throwAsUncheckedHttpException(t);
-                        }
-                    }, value);
+                return new QuotedCSV.Etags(_complianceMode, _handler.getComplianceViolationListener(), value);
 
-            return new QuotedCSV(keepQuotes, value)
-            {
-                @Override
-                protected void onComplianceViolation(ComplianceViolation violation, String value)
-                {
-                    if (_complianceMode.allows(violation))
-                        _handler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, value));
-                    else
-                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, violation.toString());
-                }
-            };
+            return new QuotedCSV.Compliant(_complianceMode, _handler.getComplianceViolationListener(), keepQuotes, value);
         }
     }
 }

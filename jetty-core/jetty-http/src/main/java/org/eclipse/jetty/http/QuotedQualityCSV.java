@@ -18,7 +18,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
@@ -330,36 +329,43 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     public static class Compliant extends QuotedQualityCSV
     {
         private final ComplianceViolation.Mode _complianceMode;
-        private final BiConsumer<ComplianceViolation, String> _violationNotifier;
+        private final ComplianceViolation.Listener _listener;
 
-        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, String[] preferredOrder)
+        public Compliant(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener)
+        {
+            super();
+            _complianceMode = complianceMode;
+            _listener = listener;
+        }
+
+        public Compliant(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, String[] preferredOrder)
         {
             super(preferredOrder);
             _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
+            _listener = listener;
         }
 
-        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, List<String> preferredOrder)
+        public Compliant(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, List<String> preferredOrder)
         {
             super(preferredOrder);
             _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
+            _listener = listener;
         }
 
-        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, ToIntFunction<String> secondaryOrdering)
+        public Compliant(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, ToIntFunction<String> secondaryOrdering)
         {
             super(secondaryOrdering);
             _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
+            _listener = listener;
         }
 
         @Override
         protected void onComplianceViolation(ComplianceViolation violation, String value)
         {
-            if (_complianceMode != null && _complianceMode.allows(violation))
-                _violationNotifier.accept(violation, value);
-            else
-                super.onComplianceViolation(violation, value);
+            if (!ComplianceUtils.allows(_complianceMode, violation, _listener))
+            {
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid quoted-quality: " + value);
+            }
         }
     }
 }

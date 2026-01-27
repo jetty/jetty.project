@@ -22,6 +22,7 @@ import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.server.internal.CompressionResponse;
 import org.eclipse.jetty.compression.server.internal.DecompressionRequest;
 import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -33,7 +34,7 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -270,18 +271,10 @@ public class CompressionHandler extends Handler.Wrapper
                     // Collect all Accept-Encoding headers.
                     if (qualityCSV == null)
                     {
-                        HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
-                        qualityCSV = new QuotedQualityCSV()
-                        {
-                            @Override
-                            protected void onComplianceViolation(ComplianceViolation violation, String value)
-                            {
-                                if (httpConfiguration.getHttpCompliance().allows(violation))
-                                    httpConfiguration.notifyViolation(violation, value);
-                                else
-                                    throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, violation.toString());
-                            }
-                        };
+                        HttpChannel httpChannel = HttpChannel.from(request);
+                        HttpCompliance httpCompliance = httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
+                        ComplianceViolation.Listener complianceListener = httpChannel.getComplianceViolationListener();
+                        qualityCSV = new QuotedQualityCSV.Compliant(httpCompliance, complianceListener);
                     }
                     qualityCSV.addValue(field.getValue());
                 }

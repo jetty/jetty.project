@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 /**
  * Implements a quoted comma-separated list of values
@@ -197,35 +196,47 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
     public static class Compliant extends QuotedCSV
     {
         private final ComplianceViolation.Mode _complianceMode;
-        private final BiConsumer<ComplianceViolation, String> _violationNotifier;
+        private final ComplianceViolation.Listener _listener;
 
-        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier)
+        public Compliant(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener)
         {
-            this(complianceMode, violationNotifier, true);
+            this(complianceMode, listener, true);
         }
 
-        public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, boolean keepQuotes, String... values)
+        public Compliant(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, boolean keepQuotes, String... values)
         {
-            super(keepQuotes, values);
+            // Do not pass in `values` here.
+            super(keepQuotes);
             _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
+            _listener = listener;
+            // Need to parse AFTER the complianceMode and listener are set.
+            if (values != null)
+            {
+                for (String value : values)
+                {
+                    addValue(value);
+                }
+            }
         }
 
         @Override
         protected void onComplianceViolation(ComplianceViolation violation, String value)
         {
-            if (_complianceMode != null && _complianceMode.allows(violation))
-                _violationNotifier.accept(violation, value);
-            else
-                super.onComplianceViolation(violation, value);
+            if (_complianceMode != null)
+            {
+                boolean allowed = _complianceMode.allows(violation);
+                _listener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, value, allowed));
+                if (!allowed)
+                    throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid quoted: " + value);
+            }
         }
     }
 
     public static class Etags extends Compliant
     {
-        public Etags(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, String... values)
+        public Etags(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, String... values)
         {
-            super(complianceMode, violationNotifier, true, values);
+            super(complianceMode, listener, true, values);
         }
 
         @Override

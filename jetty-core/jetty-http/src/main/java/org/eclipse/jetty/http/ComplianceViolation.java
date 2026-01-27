@@ -82,10 +82,13 @@ public interface ComplianceViolation
         Set<? extends ComplianceViolation> getAllowed();
     }
 
-    static void notify(List<ComplianceViolation.Listener> listeners, ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+    /**
+     * @deprecated no replacement
+     */
+    @Deprecated(forRemoval = true, since = "12.1.6")
+    static void notify(List<ComplianceViolation.Listener> listeners, ComplianceViolation.Mode mode, ComplianceViolation violation, String details, boolean allowed)
     {
-        Event event = new Event(mode, violation, details);
-
+        Event event = new Event(mode, violation, details, allowed);
         Throwable throwable = null;
         for (Listener listener : listeners)
         {
@@ -101,13 +104,18 @@ public interface ComplianceViolation
         ExceptionUtil.ifExceptionThrowUnchecked(throwable);
     }
 
-    record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+    record Event(ComplianceViolation.Mode mode, ComplianceViolation violation, String details, boolean allowed)
     {
+        public Event(String details, Mode mode, ComplianceViolation violation)
+        {
+            this(mode, violation, details, false);
+        }
+
         @Override
         public String toString()
         {
-            return String.format("%s (see %s) in mode %s for %s",
-                violation.getDescription(), violation.getURL(), mode, details);
+            return String.format("%s (see %s) in mode %s for %s (%s)",
+                violation.getDescription(), violation.getURL(), mode, details, allowed ? "allowed" : "forbidden");
         }
     }
 
@@ -161,7 +169,7 @@ public interface ComplianceViolation
          * @param mode the mode
          * @param violation the violation
          * @param details the details
-         * @deprecated use {@link #onComplianceViolation(Event)} instead.  Will be removed in Jetty 12.1.0
+         * @deprecated use {@link #onComplianceViolation(Event)} instead.
          */
         @Deprecated(since = "12.0.6", forRemoval = true)
         default void onComplianceViolation(Mode mode, ComplianceViolation violation, String details)
@@ -194,13 +202,15 @@ public interface ComplianceViolation
 
         private CapturingListener(List<Event> events)
         {
-            this.events = events;
+            this.events = events != null ? events : new ArrayList<>();
         }
 
         @Override
         public Listener initialize()
         {
-            return new CapturingListener(new ArrayList<>());
+            // Create new events list (prepopulated) for request layer.
+            List<Event> requestEvents = new ArrayList<>(events);
+            return new CapturingListener(requestEvents);
         }
 
         @Override

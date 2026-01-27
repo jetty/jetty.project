@@ -22,10 +22,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -43,6 +45,7 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.instanceOf;
@@ -317,10 +320,10 @@ public class MultiPartFormDataTest
             assertThat(partContent.getLength(), is(11L));
             assertThat(Content.Source.asString(partContent), is("Hello World"));
 
-            List<ComplianceViolation.Event> events = violations.getEvents();
-            assertThat(events.size(), is(1));
-            ComplianceViolation.Event event = events.get(0);
-            assertThat(event.violation(), is(MultiPartCompliance.Violation.LF_LINE_TERMINATION));
+            String[] expectedViolations = {
+                "LF_LINE_TERMINATION: multipart spec violation"
+            };
+            assertHasViolations(violations, expectedViolations);
         }
     }
 
@@ -355,10 +358,10 @@ public class MultiPartFormDataTest
             assertThat(partContent.getLength(), is(11L));
             assertThat(Content.Source.asString(partContent), is("Hello World"));
 
-            List<ComplianceViolation.Event> events = violations.getEvents();
-            assertThat(events.size(), is(1));
-            ComplianceViolation.Event event = events.get(0);
-            assertThat(event.violation(), is(MultiPartCompliance.Violation.LF_LINE_TERMINATION));
+            String[] expectedViolations = {
+                "LF_LINE_TERMINATION: multipart spec violation"
+            };
+            assertHasViolations(violations, expectedViolations);
         }
     }
 
@@ -393,10 +396,10 @@ public class MultiPartFormDataTest
             assertThat(partContent.getLength(), is(11L));
             assertThat(Content.Source.asString(partContent), is("Hello World"));
 
-            List<ComplianceViolation.Event> events = violations.getEvents();
-            assertThat(events.size(), is(1));
-            ComplianceViolation.Event event = events.get(0);
-            assertThat(event.violation(), is(MultiPartCompliance.Violation.LF_LINE_TERMINATION));
+            String[] expectedViolations = {
+                "LF_LINE_TERMINATION: multipart spec violation"
+            };
+            assertHasViolations(violations, expectedViolations);
         }
     }
 
@@ -1606,6 +1609,17 @@ public class MultiPartFormDataTest
             partContent = part2.getContentSource();
             assertThat(Content.Source.asString(partContent), is("aaaabbbbb"));
         }
+    }
+
+    private void assertHasViolations(CaptureMultiPartViolations violations, String[] expectedViolations)
+    {
+        List<String> actualViolations = violations.getEvents().stream()
+            .map(v -> String.format("%s%s: %s", v.violation().getName(), (!v.allowed() ? "(forbidden)" : ""), v.details()))
+            .toList();
+        assertThat("Actual Violations " + actualViolations.stream()
+                .map(Objects::toString)
+                .collect(Collectors.joining(",  \n", "[\n  ", "\n]")),
+            actualViolations, containsInAnyOrder(expectedViolations));
     }
 
     private class TestContent extends AsyncContent

@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
@@ -45,7 +46,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
-import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
@@ -142,7 +142,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         _requestHandler = newRequestHandler();
         _parser = newHttpParser(configuration.getHttpCompliance());
         _minBufferSpace = configuration.getMinInputBufferSpace() < 0 ? Math.min(1500, configuration.getInputBufferSize()) : configuration.getMinInputBufferSpace();
-        _headerBuilder = HttpFields.build(configuration.getHttpCompliance(), configuration::notifyViolation);
+        _headerBuilder = HttpFields.build(configuration.getHttpCompliance(), _httpChannel::getComplianceViolationListener);
 
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
@@ -1139,9 +1139,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
+        public ComplianceViolation.Listener getComplianceViolationListener()
+        {
+            return getHttpChannel().getComplianceViolationListener();
+        }
+
+        @Override
         public void onViolation(ComplianceViolation.Event event)
         {
-            getHttpChannel().getComplianceViolationListener().onComplianceViolation(event);
+            ComplianceUtils.notify(getComplianceViolationListener(), event);
         }
 
         @Override
@@ -1163,7 +1169,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             else
                 stream._chunk = Content.Chunk.EOF;
 
-            getHttpChannel().getComplianceViolationListener().onRequestBegin(getHttpChannel().getRequest());
             return false;
         }
 
@@ -1329,15 +1334,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         public Runnable headerComplete()
         {
-            UriCompliance compliance;
-            if (_uri.hasViolations())
-            {
-                compliance = getHttpConfiguration().getUriCompliance();
-                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, getHttpChannel().getComplianceViolationListener());
-                if (badMessage != null)
-                    throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, badMessage);
-            }
-
             // Check host field matches the authority in the absolute URI or is not blank
             if (_hostField != null)
             {
@@ -1345,11 +1341,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 {
                     if (!_hostField.getValue().equals(_uri.getAuthority()))
                     {
-                        HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
-                        if (httpCompliance.allows(MISMATCHED_AUTHORITY))
-                            getHttpChannel().getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
-                        else
+                        HttpCompliance httpCompliance = getHttpChannel().getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
+                        ComplianceViolation.Listener complianceListener = getHttpChannel().getComplianceViolationListener();
+                        if (!ComplianceUtils.allows(httpCompliance, MISMATCHED_AUTHORITY, "Authority!=Host", complianceListener))
+                        {
                             throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
+                        }
                     }
                 }
                 else
@@ -1390,7 +1387,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             _requests.incrementAndGet();
 
             Request request = _httpChannel.getRequest();
-            getHttpChannel().getComplianceViolationListener().onRequestBegin(request);
+            _httpChannel.getComplianceViolationListener().onRequestBegin(request);
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {
