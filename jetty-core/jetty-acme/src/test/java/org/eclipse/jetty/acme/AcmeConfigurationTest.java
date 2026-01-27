@@ -16,8 +16,13 @@ package org.eclipse.jetty.acme;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -102,41 +107,46 @@ public class AcmeConfigurationTest
         assertDoesNotThrow(config::validate);
     }
 
-    @Test
-    public void testValidateRequiresDomains()
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("validationFailureCases")
+    public void testValidationFailures(String description, Consumer<AcmeConfiguration> setup, String expectedMessage)
     {
         AcmeConfiguration config = new AcmeConfiguration();
         config.setDryRun(false);
-        config.setAccountEmail("admin@example.com");
-        config.setTermsOfServiceAgreed(true);
+        setup.accept(config);
 
         IllegalStateException e = assertThrows(IllegalStateException.class, config::validate);
-        assertThat(e.getMessage(), equalTo("At least one domain must be configured"));
+        assertThat(e.getMessage(), equalTo(expectedMessage));
     }
 
-    @Test
-    public void testValidateRequiresEmail()
+    static Stream<Arguments> validationFailureCases()
     {
-        AcmeConfiguration config = new AcmeConfiguration();
-        config.setDryRun(false);
-        config.setDomains("example.com");
-        config.setTermsOfServiceAgreed(true);
-
-        IllegalStateException e = assertThrows(IllegalStateException.class, config::validate);
-        assertThat(e.getMessage(), equalTo("Account email must be configured"));
-    }
-
-    @Test
-    public void testValidateRequiresTermsAgreement()
-    {
-        AcmeConfiguration config = new AcmeConfiguration();
-        config.setDryRun(false);
-        config.setDomains("example.com");
-        config.setAccountEmail("admin@example.com");
-        config.setTermsOfServiceAgreed(false);
-
-        IllegalStateException e = assertThrows(IllegalStateException.class, config::validate);
-        assertThat(e.getMessage(), equalTo("Terms of service must be agreed to for production use"));
+        return Stream.of(
+            Arguments.of(
+                "missing domains",
+                (Consumer<AcmeConfiguration>)c ->
+                {
+                    c.setAccountEmail("admin@example.com");
+                    c.setTermsOfServiceAgreed(true);
+                },
+                "At least one domain must be configured"),
+            Arguments.of(
+                "missing email",
+                (Consumer<AcmeConfiguration>)c ->
+                {
+                    c.setDomains("example.com");
+                    c.setTermsOfServiceAgreed(true);
+                },
+                "Account email must be configured"),
+            Arguments.of(
+                "missing terms agreement",
+                (Consumer<AcmeConfiguration>)c ->
+                {
+                    c.setDomains("example.com");
+                    c.setAccountEmail("admin@example.com");
+                },
+                "Terms of service must be agreed to for production use")
+        );
     }
 
     @Test
