@@ -188,7 +188,11 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                     // must be called as the last release for it to be able to null out the
                     // inputBuffer field exactly when the latter isn't used anymore.
                     if (parse(inputBuffer.getByteBuffer()))
+                    {
+                        if (stream == null && inputBuffer.isEmpty())
+                            releaseInputBuffer();
                         return;
+                    }
                 }
                 else if (read == 0)
                 {
