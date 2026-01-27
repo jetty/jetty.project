@@ -23,6 +23,17 @@
       <groupId>org.eclipse.jetty.quic</groupId>
       <artifactId>jetty-quic-common</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 </project>

@@ -39,7 +39,7 @@ public class QuicTransportParametersExtensionGenerator implements ExtensionGener
     private int generate(RetainableByteBuffer.Mutable accumulator, QuicTransportParametersExtension extension)
     {
         accumulator.putShort((short)extension.code());
-        TransportParameters parameters = extension.parameters();
+        TransportParameters parameters = extension.transportParameters();
         int totalLength = 0;
         for (Map.Entry<TransportParameters.Id<?>, Object> entry : parameters)
         {

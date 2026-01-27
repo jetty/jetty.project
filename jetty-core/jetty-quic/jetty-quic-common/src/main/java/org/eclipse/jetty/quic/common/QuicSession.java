@@ -64,6 +64,7 @@ public abstract class QuicSession extends AbstractSession
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
     private final Map<EncryptionLevel, FrameStream> cryptoStreams = new HashMap<>();
+    // TODO: FrameStream should be in QuicStream, and here only a Map<Long, QuicStream>.
     private final Map<Long, FrameStream> streamStreams = new HashMap<>();
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;

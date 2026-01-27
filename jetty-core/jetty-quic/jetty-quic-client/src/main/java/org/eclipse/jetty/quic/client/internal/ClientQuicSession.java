@@ -215,8 +215,8 @@ public class ClientQuicSession extends QuicSession
     {
         switch (message)
         {
-            case ServerHelloMessage serverHello -> processServerHello(serverHello);
-            case EncryptedExtensionsMessage encryptedExtensions -> getTLSEngine().onMessageParsed(encryptedExtensions);
+            case ServerHelloMessage serverHello -> getTLSEngine().onMessageParsed(serverHello);
+            case EncryptedExtensionsMessage encryptedExtensions -> processEncryptedExtensions(encryptedExtensions);
             case CertificateMessage certificate -> getTLSEngine().onMessageParsed(certificate);
             case CertificateVerifyMessage certificateVerify -> getTLSEngine().onMessageParsed(certificateVerify);
             case FinishedMessage finished -> getTLSEngine().onMessageParsed(finished);
@@ -224,18 +224,25 @@ public class ClientQuicSession extends QuicSession
         }
     }
 
-    private void processServerHello(ServerHelloMessage serverHello)
+    private void processEncryptedExtensions(EncryptedExtensionsMessage encryptedExtensions)
     {
-        TransportParameters transportParameters = serverHello.extensions().stream()
+        TransportParameters transportParameters = encryptedExtensions.extensions().stream()
             .filter(ext -> ext instanceof QuicTransportParametersExtension)
             .map(QuicTransportParametersExtension.class::cast)
             .findFirst()
-            .map(QuicTransportParametersExtension::parameters)
+            .map(QuicTransportParametersExtension::transportParameters)
             .orElse(null);
+
         // TODO: apply verifications to TransportParameters as per RFC.
+        // TODO: QuicTransports must be present and validated:
+        //  * No forbidden parameters are present
+        //  * No duplicates
+        //  * Values are within allowed ranges
+        //  Apply Quic transport params to the various components.
+
         notifyTransportParameters(transportParameters);
 
-        getTLSEngine().onMessageParsed(serverHello);
+        getTLSEngine().onMessageParsed(encryptedExtensions);
     }
 
     private void processRetryPacket(RetryPacket packet)

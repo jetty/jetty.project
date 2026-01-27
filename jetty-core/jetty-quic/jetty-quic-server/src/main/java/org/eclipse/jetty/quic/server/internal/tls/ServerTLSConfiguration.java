@@ -13,15 +13,9 @@
 
 package org.eclipse.jetty.quic.server.internal.tls;
 
-import java.util.List;
-
-import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.tls.TLSConfiguration;
 import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
-import org.eclipse.jetty.tls.CipherSuite;
-import org.eclipse.jetty.tls.NamedGroup;
-import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public final class ServerTLSConfiguration extends TLSConfiguration
@@ -38,6 +32,11 @@ public final class ServerTLSConfiguration extends TLSConfiguration
         quicConfiguration.configure(transportParameters);
     }
 
+    public QuicServerQuicConfiguration getServerQuicConfiguration()
+    {
+        return quicConfiguration;
+    }
+
     public SslContextFactory.Server getSslContextFactory()
     {
         return sslContextFactory;
@@ -46,25 +45,5 @@ public final class ServerTLSConfiguration extends TLSConfiguration
     public TransportParameters getTransportParameters()
     {
         return transportParameters;
-    }
-
-    public QuicVersion getQuicVersion()
-    {
-        return quicConfiguration.getQuicVersion();
-    }
-
-    public List<SignatureAlgorithm> getSignatureAlgorithms()
-    {
-        return quicConfiguration.getSignatureAlgorithms();
-    }
-
-    public List<NamedGroup> getNamedGroups()
-    {
-        return quicConfiguration.getNamedGroups();
-    }
-
-    public List<CipherSuite> getCipherSuites()
-    {
-        return quicConfiguration.getCipherSuites();
     }
 }

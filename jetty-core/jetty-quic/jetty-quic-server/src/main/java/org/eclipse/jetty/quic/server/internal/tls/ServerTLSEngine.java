@@ -27,6 +27,7 @@ import javax.crypto.SecretKey;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 
+import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
@@ -135,7 +136,7 @@ public class ServerTLSEngine extends TLSEngine
 
         // RFC-8446[4.1.2,4.2.1]: SupportedVersionsExtension must be present.
         if (clientVersions.isEmpty())
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing_supported_versions_extension");
+            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_supported_versions_extension");
         if (!clientVersions.contains(TLSVersion.TLS_1_3))
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "unsupported_tls_version");
         // Only TLS 1.3 is supported for now.
@@ -145,7 +146,7 @@ public class ServerTLSEngine extends TLSEngine
 
         List<CipherSuite> clientCipherSuites = clientHello.cipherSuites();
         List<CipherSuite> negotiatedCipherSuites = new ArrayList<>(clientCipherSuites);
-        negotiatedCipherSuites.retainAll(tlsConfiguration.getCipherSuites());
+        negotiatedCipherSuites.retainAll(tlsConfiguration.getServerQuicConfiguration().getCipherSuites());
         if (negotiatedCipherSuites.isEmpty())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_cipher_suite");
         cipherSuite = negotiatedCipherSuites.getFirst();
@@ -157,7 +158,7 @@ public class ServerTLSEngine extends TLSEngine
         KeyShare clientKeyShare = null;
         for (KeyShare keyShare : clientKeyShares)
         {
-            if (tlsConfiguration.getNamedGroups().contains(keyShare.namedGroup()))
+            if (tlsConfiguration.getServerQuicConfiguration().getNamedGroups().contains(keyShare.namedGroup()))
             {
                 clientKeyShare = keyShare;
                 break;
@@ -183,7 +184,8 @@ public class ServerTLSEngine extends TLSEngine
             LOG.debug("produced {} on {}", serverHello, this);
 
         getPacketProtector().getTranscriptHash().offer(serverHello, false);
-        getPacketProtector().allocateHandshakeKeys(tlsConfiguration.getQuicVersion(), cipherSuite, sharedSecret);
+        QuicVersion quicVersion = tlsConfiguration.getServerQuicConfiguration().getQuicVersion();
+        getPacketProtector().allocateHandshakeKeys(quicVersion, cipherSuite, sharedSecret);
 
         List<Message> handshakeMessages = new ArrayList<>();
 
@@ -192,6 +194,7 @@ public class ServerTLSEngine extends TLSEngine
         if (negotiatedProtocols.isEmpty())
             throw new TLSException(TLSException.Alert.NO_APPLICATION_PROTOCOL, "no_common_application_protocol");
         String protocol = negotiatedProtocols.getFirst();
+        setNegotiatedApplicationProtocol(protocol);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated alpn protocol {} on {}", protocol, this);
 
@@ -204,11 +207,12 @@ public class ServerTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("produced {} on {}", encryptedExtensions, this);
 
+        List<SignatureAlgorithm> serverSignatureAlgorithms = tlsConfiguration.getServerQuicConfiguration().getSignatureAlgorithms();
         SslContextFactory.Server sslContextFactory = tlsConfiguration.getSslContextFactory();
         boolean clientAuthentication = sslContextFactory.getWantClientAuth() || sslContextFactory.getNeedClientAuth();
         if (clientAuthentication)
         {
-            List<Extension> extensions = List.of(new SignatureAlgorithmsExtension(tlsConfiguration.getSignatureAlgorithms()));
+            List<Extension> extensions = List.of(new SignatureAlgorithmsExtension(serverSignatureAlgorithms));
             CertificateRequestMessage certificateRequest = new CertificateRequestMessage(BufferUtil.EMPTY_BYTES, extensions);
             handshakeMessages.add(certificateRequest);
         }
@@ -216,7 +220,7 @@ public class ServerTLSEngine extends TLSEngine
         if (clientSignatureAlgorithms.isEmpty())
             throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_signature_algorithms_extension");
         List<SignatureAlgorithm> negotiatedSignatureAlgorithms = new ArrayList<>(clientSignatureAlgorithms);
-        negotiatedSignatureAlgorithms.retainAll(tlsConfiguration.getSignatureAlgorithms());
+        negotiatedSignatureAlgorithms.retainAll(serverSignatureAlgorithms);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated signature algorithms {} on {}", negotiatedSignatureAlgorithms, this);
 
@@ -295,7 +299,7 @@ public class ServerTLSEngine extends TLSEngine
             LOG.debug("produced {} on {}", finished, this);
 
         getPacketProtector().getTranscriptHash().offer(finished, false);
-        getPacketProtector().allocateApplicationKeys(tlsConfiguration.getQuicVersion(), cipherSuite);
+        getPacketProtector().allocateApplicationKeys(quicVersion, cipherSuite);
 
         state = clientAuthentication ? State.NEED_CERTIFICATE : State.NEED_FINISHED;
 
@@ -401,12 +405,12 @@ public class ServerTLSEngine extends TLSEngine
 
     private void processCertificate(CertificateMessage certificate)
     {
-
+        // TODO:
     }
 
     private void processCertificateVerify(CertificateVerifyMessage certificateVerify)
     {
-
+        // TODO:
     }
 
     private void processFinished(FinishedMessage finished) throws Exception
