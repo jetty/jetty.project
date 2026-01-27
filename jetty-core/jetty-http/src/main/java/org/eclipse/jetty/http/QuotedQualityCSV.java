@@ -254,6 +254,10 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             if (!ComplianceUtils.allows(_compliance, violation, _listener))
                 throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid quoted-quality: " + value);
         }
+        else
+        {
+            super.onComplianceViolation(violation, value);
+        }
     }
 
     /**

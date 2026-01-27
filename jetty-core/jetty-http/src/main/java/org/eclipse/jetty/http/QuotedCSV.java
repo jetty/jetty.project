@@ -190,6 +190,10 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
             if (!allowed)
                 throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid quoted: " + value);
         }
+        else
+        {
+            super.onComplianceViolation(violation, value);
+        }
     }
 
     public String asString()
