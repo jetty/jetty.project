@@ -56,13 +56,13 @@ public class AcmeClient
     private static final int MAX_POLL_ATTEMPTS = 30;
     private static final long POLL_DELAY_MS = 2000;
 
-    private final HttpClient httpClient;
-    private final JSON json;
-    private final AcmeJwsSigner signer;
-    private final String directoryUrl;
+    private final HttpClient _httpClient;
+    private final JSON _json;
+    private final AcmeJwsSigner _signer;
+    private final String _directoryUrl;
 
-    private Map<String, Object> directory;
-    private String lastNonce;
+    private Map<String, Object> _directory;
+    private String _lastNonce;
 
     /**
      * Creates a new ACME client.
@@ -73,10 +73,10 @@ public class AcmeClient
      */
     public AcmeClient(HttpClient httpClient, KeyPair accountKeyPair, String directoryUrl)
     {
-        this.httpClient = Objects.requireNonNull(httpClient, "httpClient");
-        this.directoryUrl = Objects.requireNonNull(directoryUrl, "directoryUrl");
-        this.json = new JSON();
-        this.signer = new AcmeJwsSigner(accountKeyPair, json);
+        _httpClient = Objects.requireNonNull(httpClient, "httpClient");
+        _directoryUrl = Objects.requireNonNull(directoryUrl, "directoryUrl");
+        _json = new JSON();
+        _signer = new AcmeJwsSigner(accountKeyPair, _json);
     }
 
     /**
@@ -89,9 +89,9 @@ public class AcmeClient
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Fetching ACME directory from {}", directoryUrl);
+                LOG.debug("Fetching ACME directory from {}", _directoryUrl);
 
-            ContentResponse response = httpClient.GET(directoryUrl);
+            ContentResponse response = _httpClient.GET(_directoryUrl);
 
             if (response.getStatus() != HttpStatus.OK_200)
             {
@@ -99,11 +99,11 @@ public class AcmeClient
             }
 
             @SuppressWarnings("unchecked")
-            Map<String, Object> result = (Map<String, Object>)json.fromJSON(response.getContentAsString());
-            directory = result;
+            Map<String, Object> result = (Map<String, Object>)_json.fromJSON(response.getContentAsString());
+            _directory = result;
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Directory endpoints: {}", directory.keySet());
+                LOG.debug("Directory endpoints: {}", _directory.keySet());
         }
         catch (AcmeException e)
         {
@@ -126,7 +126,7 @@ public class AcmeClient
         try
         {
             String newNonceUrl = getEndpoint("newNonce");
-            ContentResponse response = httpClient.newRequest(newNonceUrl)
+            ContentResponse response = _httpClient.newRequest(newNonceUrl)
                 .method(HttpMethod.HEAD)
                 .timeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                 .send();
@@ -135,7 +135,7 @@ public class AcmeClient
             if (nonce == null)
                 throw new AcmeException("No Replay-Nonce header in response");
 
-            lastNonce = nonce;
+            _lastNonce = nonce;
             return nonce;
         }
         catch (AcmeException e)
@@ -172,7 +172,7 @@ public class AcmeClient
         if (accountUrl == null)
             throw new AcmeException("No Location header in account response");
 
-        signer.setAccountUrl(accountUrl);
+        _signer.setAccountUrl(accountUrl);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Account URL: {}", accountUrl);
@@ -351,9 +351,9 @@ public class AcmeClient
         {
             ensureNonce();
 
-            String jwsBody = signer.sign(null, lastNonce, certificateUrl);
+            String jwsBody = _signer.sign(null, _lastNonce, certificateUrl);
 
-            Request request = httpClient.newRequest(certificateUrl)
+            Request request = _httpClient.newRequest(certificateUrl)
                 .method(HttpMethod.POST)
                 .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, JOSE_JSON_CONTENT_TYPE))
                 .headers(headers -> headers.put(HttpHeader.ACCEPT, PEM_CHAIN_CONTENT_TYPE))
@@ -361,7 +361,7 @@ public class AcmeClient
                 .timeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
             ContentResponse response = request.send();
-            lastNonce = response.getHeaders().get("Replay-Nonce");
+            _lastNonce = response.getHeaders().get("Replay-Nonce");
 
             if (response.getStatus() != HttpStatus.OK_200)
             {
@@ -390,7 +390,7 @@ public class AcmeClient
      */
     public String computeKeyAuthorization(String token) throws AcmeException
     {
-        return signer.computeKeyAuthorization(token);
+        return _signer.computeKeyAuthorization(token);
     }
 
     private Map<String, Object> signedPost(String url, Object payload, boolean expectLocation) throws AcmeException
@@ -399,9 +399,9 @@ public class AcmeClient
         {
             ensureNonce();
 
-            String jwsBody = signer.sign(payload, lastNonce, url);
+            String jwsBody = _signer.sign(payload, _lastNonce, url);
 
-            Request request = httpClient.newRequest(url)
+            Request request = _httpClient.newRequest(url)
                 .method(HttpMethod.POST)
                 .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, JOSE_JSON_CONTENT_TYPE))
                 .body(new StringRequestContent(JOSE_JSON_CONTENT_TYPE, jwsBody))
@@ -412,7 +412,7 @@ public class AcmeClient
             // Always capture the new nonce
             String nonce = response.getHeaders().get("Replay-Nonce");
             if (nonce != null)
-                lastNonce = nonce;
+                _lastNonce = nonce;
 
             int status = response.getStatus();
             String content = response.getContentAsString();
@@ -424,7 +424,7 @@ public class AcmeClient
             if (status >= 400)
             {
                 @SuppressWarnings("unchecked")
-                Map<String, Object> error = (Map<String, Object>)json.fromJSON(content);
+                Map<String, Object> error = (Map<String, Object>)_json.fromJSON(content);
                 String type = (String)error.get("type");
                 String detail = (String)error.get("detail");
                 throw new AcmeException(detail != null ? detail : "ACME error", type, status);
@@ -433,7 +433,7 @@ public class AcmeClient
             // Parse response
             @SuppressWarnings("unchecked")
             Map<String, Object> result = content.isEmpty() ? new LinkedHashMap<>()
-                : (Map<String, Object>)json.fromJSON(content);
+                : (Map<String, Object>)_json.fromJSON(content);
 
             // Store location if present
             String location = response.getHeaders().get("Location");
@@ -454,16 +454,16 @@ public class AcmeClient
 
     private void ensureNonce() throws AcmeException
     {
-        if (lastNonce == null)
+        if (_lastNonce == null)
             fetchNonce();
     }
 
     private String getEndpoint(String name) throws AcmeException
     {
-        if (directory == null)
+        if (_directory == null)
             throw new AcmeException("Directory not fetched");
 
-        String endpoint = (String)directory.get(name);
+        String endpoint = (String)_directory.get(name);
         if (endpoint == null)
             throw new AcmeException("No endpoint for: " + name);
 

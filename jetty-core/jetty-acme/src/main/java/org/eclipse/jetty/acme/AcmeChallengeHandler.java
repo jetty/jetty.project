@@ -59,7 +59,7 @@ public class AcmeChallengeHandler extends Handler.Abstract.NonBlocking
      */
     public static final String CHALLENGE_PATH_PREFIX = "/.well-known/acme-challenge/";
 
-    private final ConcurrentMap<String, String> challenges = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, String> _challenges = new ConcurrentHashMap<>();
 
     /**
      * Creates a new ACME challenge handler.
@@ -83,7 +83,7 @@ public class AcmeChallengeHandler extends Handler.Abstract.NonBlocking
         if (token.isEmpty())
             return false;
 
-        String keyAuthorization = challenges.get(token);
+        String keyAuthorization = _challenges.get(token);
 
         if (keyAuthorization == null)
         {
@@ -119,7 +119,7 @@ public class AcmeChallengeHandler extends Handler.Abstract.NonBlocking
         if (LOG.isDebugEnabled())
             LOG.debug("Adding challenge: token={}", token);
 
-        challenges.put(token, keyAuthorization);
+        _challenges.put(token, keyAuthorization);
     }
 
     /**
@@ -133,7 +133,7 @@ public class AcmeChallengeHandler extends Handler.Abstract.NonBlocking
         if (LOG.isDebugEnabled())
             LOG.debug("Removing challenge: token={}", token);
 
-        challenges.remove(token);
+        _challenges.remove(token);
     }
 
     /**
@@ -142,7 +142,7 @@ public class AcmeChallengeHandler extends Handler.Abstract.NonBlocking
     @ManagedAttribute("Number of pending challenges")
     public int getPendingChallengeCount()
     {
-        return challenges.size();
+        return _challenges.size();
     }
 
     /**
@@ -154,6 +154,6 @@ public class AcmeChallengeHandler extends Handler.Abstract.NonBlocking
         if (LOG.isDebugEnabled())
             LOG.debug("Clearing all challenges");
 
-        challenges.clear();
+        _challenges.clear();
     }
 }

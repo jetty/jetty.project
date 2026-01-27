@@ -51,16 +51,16 @@ public class AcmeConfiguration
      */
     public static final String LETSENCRYPT_STAGING_URL = "https://acme-staging-v02.api.letsencrypt.org/directory";
 
-    private boolean dryRun = true;
-    private String directoryUrl = LETSENCRYPT_STAGING_URL;
-    private List<String> domains = new ArrayList<>();
-    private String accountEmail;
-    private Path accountKeyPath = Path.of("acme/account.key");
-    private Path keystorePath = Path.of("etc/keystore.p12");
-    private String keystorePassword = "changeit";
-    private int renewalThresholdDays = 30;
-    private long checkIntervalSeconds = 86400;
-    private boolean termsOfServiceAgreed = false;
+    private boolean _dryRun = true;
+    private String _directoryUrl = LETSENCRYPT_STAGING_URL;
+    private List<String> _domains = new ArrayList<>();
+    private String _accountEmail;
+    private Path _accountKeyPath = Path.of("acme/account.key");
+    private Path _keystorePath = Path.of("etc/keystore.p12");
+    private String _keystorePassword = "changeit";
+    private int _renewalThresholdDays = 30;
+    private long _checkIntervalSeconds = 86400;
+    private boolean _termsOfServiceAgreed = false;
 
     /**
      * Creates a new AcmeConfiguration with default settings.
@@ -75,7 +75,7 @@ public class AcmeConfiguration
     @ManagedAttribute("Dry run mode - simulates certificate flow without contacting ACME")
     public boolean isDryRun()
     {
-        return dryRun;
+        return _dryRun;
     }
 
     /**
@@ -86,7 +86,7 @@ public class AcmeConfiguration
      */
     public void setDryRun(boolean dryRun)
     {
-        this.dryRun = dryRun;
+        _dryRun = dryRun;
     }
 
     /**
@@ -95,7 +95,7 @@ public class AcmeConfiguration
     @ManagedAttribute("ACME directory URL")
     public String getDirectoryUrl()
     {
-        return directoryUrl;
+        return _directoryUrl;
     }
 
     /**
@@ -106,7 +106,7 @@ public class AcmeConfiguration
      */
     public void setDirectoryUrl(String directoryUrl)
     {
-        this.directoryUrl = Objects.requireNonNull(directoryUrl, "directoryUrl");
+        _directoryUrl = Objects.requireNonNull(directoryUrl, "directoryUrl");
     }
 
     /**
@@ -115,7 +115,7 @@ public class AcmeConfiguration
     @ManagedAttribute("Domain names for the certificate")
     public List<String> getDomains()
     {
-        return Collections.unmodifiableList(domains);
+        return Collections.unmodifiableList(_domains);
     }
 
     /**
@@ -125,7 +125,7 @@ public class AcmeConfiguration
      */
     public void setDomains(List<String> domains)
     {
-        this.domains = new ArrayList<>(Objects.requireNonNull(domains, "domains"));
+        _domains = new ArrayList<>(Objects.requireNonNull(domains, "domains"));
     }
 
     /**
@@ -135,14 +135,14 @@ public class AcmeConfiguration
      */
     public void setDomains(String domains)
     {
-        this.domains.clear();
+        _domains.clear();
         if (StringUtil.isNotBlank(domains))
         {
             for (String domain : StringUtil.csvSplit(domains))
             {
                 String trimmed = domain.trim();
                 if (!trimmed.isEmpty())
-                    this.domains.add(trimmed);
+                    _domains.add(trimmed);
             }
         }
     }
@@ -153,7 +153,7 @@ public class AcmeConfiguration
     @ManagedAttribute("Contact email for ACME account")
     public String getAccountEmail()
     {
-        return accountEmail;
+        return _accountEmail;
     }
 
     /**
@@ -163,7 +163,7 @@ public class AcmeConfiguration
      */
     public void setAccountEmail(String accountEmail)
     {
-        this.accountEmail = accountEmail;
+        _accountEmail = accountEmail;
     }
 
     /**
@@ -172,7 +172,7 @@ public class AcmeConfiguration
     @ManagedAttribute("Path to store account key")
     public Path getAccountKeyPath()
     {
-        return accountKeyPath;
+        return _accountKeyPath;
     }
 
     /**
@@ -182,7 +182,7 @@ public class AcmeConfiguration
      */
     public void setAccountKeyPath(Path accountKeyPath)
     {
-        this.accountKeyPath = Objects.requireNonNull(accountKeyPath, "accountKeyPath");
+        _accountKeyPath = Objects.requireNonNull(accountKeyPath, "accountKeyPath");
     }
 
     /**
@@ -193,7 +193,7 @@ public class AcmeConfiguration
     public void setAccountKeyPath(String accountKeyPath)
     {
         if (StringUtil.isNotBlank(accountKeyPath))
-            this.accountKeyPath = Path.of(accountKeyPath);
+            _accountKeyPath = Path.of(accountKeyPath);
     }
 
     /**
@@ -202,7 +202,7 @@ public class AcmeConfiguration
     @ManagedAttribute("Keystore path")
     public Path getKeystorePath()
     {
-        return keystorePath;
+        return _keystorePath;
     }
 
     /**
@@ -212,7 +212,7 @@ public class AcmeConfiguration
      */
     public void setKeystorePath(Path keystorePath)
     {
-        this.keystorePath = Objects.requireNonNull(keystorePath, "keystorePath");
+        _keystorePath = Objects.requireNonNull(keystorePath, "keystorePath");
     }
 
     /**
@@ -223,7 +223,7 @@ public class AcmeConfiguration
     public void setKeystorePath(String keystorePath)
     {
         if (StringUtil.isNotBlank(keystorePath))
-            this.keystorePath = Path.of(keystorePath);
+            _keystorePath = Path.of(keystorePath);
     }
 
     /**
@@ -232,7 +232,7 @@ public class AcmeConfiguration
     @ManagedAttribute("Keystore password")
     public String getKeystorePassword()
     {
-        return keystorePassword;
+        return _keystorePassword;
     }
 
     /**
@@ -242,7 +242,7 @@ public class AcmeConfiguration
      */
     public void setKeystorePassword(String keystorePassword)
     {
-        this.keystorePassword = keystorePassword;
+        _keystorePassword = keystorePassword;
     }
 
     /**
@@ -251,7 +251,7 @@ public class AcmeConfiguration
     @ManagedAttribute("Days before expiry to trigger renewal")
     public int getRenewalThresholdDays()
     {
-        return renewalThresholdDays;
+        return _renewalThresholdDays;
     }
 
     /**
@@ -261,7 +261,7 @@ public class AcmeConfiguration
      */
     public void setRenewalThresholdDays(int renewalThresholdDays)
     {
-        this.renewalThresholdDays = renewalThresholdDays;
+        _renewalThresholdDays = renewalThresholdDays;
     }
 
     /**
@@ -270,7 +270,7 @@ public class AcmeConfiguration
     @ManagedAttribute("Renewal check interval in seconds")
     public long getCheckIntervalSeconds()
     {
-        return checkIntervalSeconds;
+        return _checkIntervalSeconds;
     }
 
     /**
@@ -280,7 +280,7 @@ public class AcmeConfiguration
      */
     public void setCheckIntervalSeconds(long checkIntervalSeconds)
     {
-        this.checkIntervalSeconds = checkIntervalSeconds;
+        _checkIntervalSeconds = checkIntervalSeconds;
     }
 
     /**
@@ -289,7 +289,7 @@ public class AcmeConfiguration
     @ManagedAttribute("Terms of service agreement")
     public boolean isTermsOfServiceAgreed()
     {
-        return termsOfServiceAgreed;
+        return _termsOfServiceAgreed;
     }
 
     /**
@@ -300,7 +300,7 @@ public class AcmeConfiguration
      */
     public void setTermsOfServiceAgreed(boolean termsOfServiceAgreed)
     {
-        this.termsOfServiceAgreed = termsOfServiceAgreed;
+        _termsOfServiceAgreed = termsOfServiceAgreed;
     }
 
     /**
@@ -310,14 +310,14 @@ public class AcmeConfiguration
      */
     public void validate()
     {
-        if (dryRun)
+        if (_dryRun)
             return;
 
-        if (domains.isEmpty())
+        if (_domains.isEmpty())
             throw new IllegalStateException("At least one domain must be configured");
-        if (StringUtil.isBlank(accountEmail))
+        if (StringUtil.isBlank(_accountEmail))
             throw new IllegalStateException("Account email must be configured");
-        if (!termsOfServiceAgreed)
+        if (!_termsOfServiceAgreed)
             throw new IllegalStateException("Terms of service must be agreed to for production use");
     }
 
@@ -327,9 +327,9 @@ public class AcmeConfiguration
         return String.format("%s@%x{dryRun=%b,directoryUrl=%s,domains=%s,accountEmail=%s}",
             getClass().getSimpleName(),
             hashCode(),
-            dryRun,
-            directoryUrl,
-            domains,
-            accountEmail);
+            _dryRun,
+            _directoryUrl,
+            _domains,
+            _accountEmail);
     }
 }

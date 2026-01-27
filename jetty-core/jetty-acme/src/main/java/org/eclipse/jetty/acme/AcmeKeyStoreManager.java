@@ -63,7 +63,7 @@ public class AcmeKeyStoreManager
     private static final String KEYSTORE_TYPE = "PKCS12";
     private static final String DEFAULT_ALIAS = "jetty";
 
-    private final Path basePath;
+    private final Path _basePath;
 
     /**
      * Creates a new keystore manager.
@@ -72,7 +72,7 @@ public class AcmeKeyStoreManager
      */
     public AcmeKeyStoreManager(Path basePath)
     {
-        this.basePath = basePath != null ? basePath : Path.of(".");
+        _basePath = basePath != null ? basePath : Path.of(".");
     }
 
     /**
@@ -394,7 +394,7 @@ public class AcmeKeyStoreManager
     {
         if (path.isAbsolute())
             return path;
-        return basePath.resolve(path);
+        return _basePath.resolve(path);
     }
 
     // ASN.1 DER encoding helpers
