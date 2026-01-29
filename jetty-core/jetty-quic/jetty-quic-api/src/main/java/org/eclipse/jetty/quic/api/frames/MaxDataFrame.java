@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class MaxDataFrame extends Frame.Abstract
+public final class MaxDataFrame extends Frame.Abstract
 {
     private final long maxData;
 

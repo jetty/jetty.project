@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class NewTokenFrame extends Frame.Abstract
+public final class NewTokenFrame extends Frame.Abstract
 {
     private final byte[] token;
 

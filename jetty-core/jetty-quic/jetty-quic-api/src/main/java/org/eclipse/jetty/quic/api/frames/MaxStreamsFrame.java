@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class MaxStreamsFrame extends Frame.Abstract
+public final class MaxStreamsFrame extends Frame.Abstract
 {
     private final long maxStreams;
 

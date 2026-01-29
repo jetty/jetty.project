@@ -44,7 +44,9 @@ public sealed interface Packet permits LongHeaderPacket, Packet.WithFrames, Shor
             {
                 switch (frame)
                 {
-                    case AckFrame _, ConnectionCloseFrame _, PaddingFrame _ -> {}
+                    case AckFrame _, ConnectionCloseFrame _, PaddingFrame _ ->
+                    {
+                    }
                     default ->
                     {
                         return true;

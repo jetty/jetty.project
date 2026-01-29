@@ -20,8 +20,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -35,7 +37,11 @@ import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
-import org.eclipse.jetty.quic.api.frames.StreamFrame;
+import org.eclipse.jetty.quic.api.frames.PingFrame;
+import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
+import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
+import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.common.frames.FrameStream;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.QuicFlusher;
@@ -64,8 +70,11 @@ public abstract class QuicSession extends AbstractSession
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
     private final Map<EncryptionLevel, FrameStream> cryptoStreams = new HashMap<>();
-    // TODO: FrameStream should be in QuicStream, and here only a Map<Long, QuicStream>.
-    private final Map<Long, FrameStream> streamStreams = new HashMap<>();
+    private final Map<Long, QuicStream> streams = new ConcurrentHashMap<>();
+    private final AtomicLong biLocalStreamCount = new AtomicLong();
+    private final AtomicLong biLocalStreamMaxCount = new AtomicLong();
+    private final AtomicLong uniLocalStreamCount = new AtomicLong();
+    private final AtomicLong uniLocalStreamMaxCount = new AtomicLong();
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private final QuicConnection connection;
@@ -206,45 +215,120 @@ public abstract class QuicSession extends AbstractSession
     }
 
     @Override
-    public long newStreamId(boolean bidirectional)
-    {
-        return 0;
-    }
+    public abstract long newStreamId(boolean bidirectional);
 
     @Override
     public Stream newStream(long streamId, Stream.Listener listener)
     {
-        return null;
+        QuicStream stream = createLocalStream(streamId);
+        stream.setListener(listener);
+        return stream;
+    }
+
+    private QuicStream createLocalStream(long streamId)
+    {
+        QuicStream stream = new QuicStream(this, streamId, true);
+        if (streams.putIfAbsent(streamId, stream) == null)
+        {
+            stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("created local {} on {}", stream, this);
+
+            return stream;
+        }
+        throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "duplicate_local_stream");
+    }
+
+    protected QuicStream getOrCreateLocalStream(long streamId)
+    {
+        boolean bidirectional = StreamId.isBidirectional(streamId);
+        AtomicLong localStreamCount = bidirectional ? biLocalStreamCount : uniLocalStreamCount;
+        AtomicLong localStreamMaxCount = bidirectional ? biLocalStreamMaxCount : uniLocalStreamMaxCount;
+
+        while (true)
+        {
+            long count = localStreamCount.get();
+            long max = localStreamMaxCount.get();
+            if (max > 0 && count >= max)
+                throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "local_stream_count_exceeded");
+            if (localStreamCount.compareAndSet(count, count + 1))
+                break;
+        }
+
+        QuicStream stream = streams.computeIfAbsent(streamId, _ -> new QuicStream(this, streamId, true));
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("created local {} on {}", stream, this);
+
+        return stream;
     }
 
     @Override
-    public Stream getStream(long streamId)
+    public QuicStream getStream(long streamId)
     {
-        return null;
+        return streams.get(streamId);
     }
 
     @Override
     public Collection<Stream> getStreams()
     {
-        return List.of();
+        return streams.values().stream()
+            .map(Stream.class::cast)
+            .toList();
+    }
+
+    boolean remove(QuicStream stream)
+    {
+        boolean removed = streams.remove(stream.getId()) != null;
+        if (LOG.isDebugEnabled())
+            LOG.debug("removed {} {} from {}", removed, stream, this);
+        return removed;
     }
 
     @Override
     public void maxStreams(MaxStreamsFrame frame, Promise.Invocable<Session> promise)
     {
-
+        if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, this)))
+            flusher.iterate();
     }
 
     @Override
     public void ping(Promise.Invocable<Session> promise)
     {
-
+        if (flusher.offer(List.of(new PingFrame()), Promise.Invocable.toCallback(promise, this)))
+            flusher.iterate();
     }
 
     @Override
     public void maxData(MaxDataFrame frame, Promise.Invocable<Session> promise)
     {
+        if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, this)))
+            flusher.iterate();
+    }
 
+    void maxData(QuicStream stream, StreamMaxDataFrame frame, Promise.Invocable<Stream> promise)
+    {
+        if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, stream)))
+            flusher.iterate();
+    }
+
+    void reset(QuicStream stream, ResetFrame frame, Promise.Invocable<Stream> promise)
+    {
+        if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, stream)))
+            flusher.iterate();
+    }
+
+    void stopSending(QuicStream stream, StopSendingFrame frame, Promise.Invocable<Stream> promise)
+    {
+        if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, stream)))
+            flusher.iterate();
+    }
+
+    void dataBlocked(QuicStream stream, StreamDataBlockedFrame frame, Promise.Invocable<Stream> promise)
+    {
+        if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, stream)))
+            flusher.iterate();
     }
 
     @Override
@@ -391,11 +475,6 @@ public abstract class QuicSession extends AbstractSession
                 EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
                 cryptoStreams.computeIfAbsent(encryptionLevel, _ -> new FrameStream(this::processCryptoFrame)).offer(cryptoFrame);
             }
-            case StreamFrame streamFrame ->
-            {
-                long streamId = streamFrame.streamId();
-                streamStreams.computeIfAbsent(streamId, _ -> new FrameStream(this::processStreamFrame)).offer(streamFrame);
-            }
             default ->
             {
                 // TODO: notify Session.Listener
@@ -426,17 +505,6 @@ public abstract class QuicSession extends AbstractSession
     }
 
     protected abstract void processMessage(Message message);
-
-    private void processStreamFrame(Frame frame)
-    {
-        StreamFrame streamFrame = (StreamFrame)frame;
-        if (streamFrame.isEndStream())
-            streamStreams.remove(streamFrame.streamId());
-
-        // TODO: computeIfAbsent() the Stream object.
-        //  Then offer frame data to the stream object.
-        //  Then notify the Stream.Listener.
-    }
 
     private void ack(Packet packet)
     {

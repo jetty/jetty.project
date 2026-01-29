@@ -13,11 +13,8 @@
 
 package org.eclipse.jetty.quic.common;
 
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.quic.api.Stream;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +86,21 @@ public abstract class AbstractStream implements Stream, CyclicTimeouts.Expirable
     public long getExpireNanoTime()
     {
         return expireNanoTime;
+    }
+
+    protected void notifyClose()
+    {
+        Stream.Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                listener.onClose(this);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+        }
     }
 
     @Override

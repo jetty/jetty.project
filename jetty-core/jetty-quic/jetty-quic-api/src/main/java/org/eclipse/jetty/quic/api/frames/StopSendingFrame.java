@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class StopSendingFrame extends Frame.WithStreamId.Abstract
+public final class StopSendingFrame extends Frame.WithStreamId.Abstract
 {
     private final long appErrorCode;
 

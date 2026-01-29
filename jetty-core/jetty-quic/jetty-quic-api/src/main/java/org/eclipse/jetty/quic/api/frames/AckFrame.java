@@ -38,7 +38,7 @@ import java.util.List;
 /// * Acknowledged packets are 90-92; it's 3 packets, but encoded as length=2.
 /// * Unacknowledged packets are 76-89; it's 14 packets, but encoded as gap=13.
 /// * Acknowledged packets are 70-75; it's 6 packets, but encoded as length=5.
-public class AckFrame extends Frame.Abstract
+public final class AckFrame extends Frame.Abstract
 {
     private final long largestAcknowledged;
     private final long ackDelay;

@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class PaddingFrame extends Frame.Abstract
+public final class PaddingFrame extends Frame.Abstract
 {
     public PaddingFrame()
     {

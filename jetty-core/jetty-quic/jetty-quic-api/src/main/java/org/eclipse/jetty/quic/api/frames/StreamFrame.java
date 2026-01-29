@@ -21,7 +21,7 @@ import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.util.Promise;
 
 /// A QUIC frame carrying stream data bytes.
-public class StreamFrame extends Frame.WithStreamId.Abstract implements Frame.WithOffset, Comparable<StreamFrame>
+public final class StreamFrame extends Frame.WithStreamId.Abstract implements Frame.WithOffset, Comparable<StreamFrame>
 {
     public static final long END_STREAM_MASK = 0x01;
     public static final long LENGTH_MASK = 0x02;

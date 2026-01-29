@@ -15,7 +15,7 @@ package org.eclipse.jetty.quic.api.frames;
 
 import org.eclipse.jetty.util.StringUtil;
 
-public class NewConnectionIdFrame extends Frame.Abstract
+public final class NewConnectionIdFrame extends Frame.Abstract
 {
     private final byte[] connectionId;
     private final long sequenceNumber;

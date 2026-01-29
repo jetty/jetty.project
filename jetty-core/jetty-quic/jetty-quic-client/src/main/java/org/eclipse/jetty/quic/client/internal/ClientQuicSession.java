@@ -18,6 +18,7 @@ import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
@@ -32,11 +33,15 @@ import org.eclipse.jetty.quic.client.internal.tls.ClientTLSConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.QuicStream;
+import org.eclipse.jetty.quic.common.StreamId;
 import org.eclipse.jetty.quic.common.Tokens;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.RetryPacket;
+import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
 import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
@@ -56,6 +61,8 @@ public class ClientQuicSession extends QuicSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(ClientQuicSession.class);
 
+    private final AtomicLong biStreamIds = new AtomicLong();
+    private final AtomicLong uniStreamIds = new AtomicLong();
     private final Tokens tokens = new Tokens();
     private final Map<String, Object> context;
     private byte[] firstDstConnectionId;
@@ -183,6 +190,13 @@ public class ClientQuicSession extends QuicSession
     }
 
     @Override
+    public long newStreamId(boolean bidirectional)
+    {
+        AtomicLong streamIds = bidirectional ? biStreamIds : uniStreamIds;
+        return StreamId.newStreamId(streamIds.getAndIncrement(), bidirectional, true);
+    }
+
+    @Override
     protected void processPacket(Packet packet)
     {
         switch (packet)
@@ -197,17 +211,27 @@ public class ClientQuicSession extends QuicSession
     {
         switch (frame)
         {
-            case HandshakeDoneFrame handshakeDone -> processHandshakeDone(packet, handshakeDone);
+            case HandshakeDoneFrame handshakeDone -> processHandshakeDoneFrame(packet, handshakeDone);
+            case Frame.WithStreamId withStreamId -> processWithStreamId(packet, withStreamId);
             default -> super.processFrame(packet, frame);
         }
     }
 
-    private void processHandshakeDone(Packet.WithFrames packet, HandshakeDoneFrame frame)
+    private void processHandshakeDoneFrame(Packet.WithFrames packet, HandshakeDoneFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} in {} on {}", frame, packet, this);
         notifyOpen();
         sessionPromise(context).succeeded(this);
+    }
+
+    private void processWithStreamId(Packet.WithFrames packet, Frame.WithStreamId frame)
+    {
+        long streamId = frame.streamId();
+        if (StreamId.isLocal(streamId, true))
+            throw new QuicException(ErrorCode.STREAM_STATE_ERROR, "invalid_stream_initiator", frame.type());
+        QuicStream stream = getOrCreateLocalStream(streamId);
+        stream.processFrame(frame);
     }
 
     @Override
