@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class HandshakeDoneFrame extends Frame.Abstract
+public final class HandshakeDoneFrame extends Frame.Abstract
 {
     public HandshakeDoneFrame()
     {

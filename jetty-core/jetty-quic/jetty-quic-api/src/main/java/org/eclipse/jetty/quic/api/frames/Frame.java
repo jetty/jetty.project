@@ -18,13 +18,29 @@ import org.eclipse.jetty.util.TypeUtil;
 /// A generic QUIC frame carrying a frame type.
 ///
 /// @see WithStreamId
-public interface Frame
+public sealed interface Frame
 {
     int DEFAULT_MAX_SIZE = 16384;
 
     long type();
 
-    abstract class Abstract implements Frame
+    abstract sealed class Abstract implements Frame permits
+        AckFrame,
+        ConnectionCloseFrame,
+        CryptoFrame,
+        DataBlockedFrame,
+        WithStreamId.Abstract,
+        HandshakeDoneFrame,
+        MaxDataFrame,
+        MaxStreamsFrame,
+        NewConnectionIdFrame,
+        NewTokenFrame,
+        PaddingFrame,
+        PathChallengeFrame,
+        PathResponseFrame,
+        PingFrame,
+        RetireConnectionIdFrame,
+        StreamsBlockedFrame
     {
         private final long type;
 
@@ -47,11 +63,16 @@ public interface Frame
     }
 
     /// A QUIC frame carrying a stream id.
-    interface WithStreamId extends Frame
+    sealed interface WithStreamId extends Frame
     {
         long streamId();
 
-        abstract class Abstract extends Frame.Abstract implements WithStreamId
+        abstract sealed class Abstract extends Frame.Abstract implements WithStreamId permits
+            ResetFrame,
+            StopSendingFrame,
+            StreamDataBlockedFrame,
+            StreamFrame,
+            StreamMaxDataFrame
         {
             private final long streamId;
 
@@ -76,7 +97,7 @@ public interface Frame
     }
 
     /// A QUIC frame carrying an offset and a length.
-    interface WithOffset extends Frame
+    sealed interface WithOffset extends Frame permits CryptoFrame, ResetFrame, StreamFrame
     {
         long offset();
 

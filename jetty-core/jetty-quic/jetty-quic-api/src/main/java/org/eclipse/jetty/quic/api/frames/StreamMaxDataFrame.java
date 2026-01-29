@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class StreamMaxDataFrame extends Frame.WithStreamId.Abstract
+public final class StreamMaxDataFrame extends Frame.WithStreamId.Abstract
 {
     private final long maxData;
 

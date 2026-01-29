@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class DataBlockedFrame extends Frame.Abstract
+public final class DataBlockedFrame extends Frame.Abstract
 {
     private final long offset;
 

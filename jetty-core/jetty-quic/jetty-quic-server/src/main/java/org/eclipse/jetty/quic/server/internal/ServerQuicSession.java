@@ -16,6 +16,7 @@ package org.eclipse.jetty.quic.server.internal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.StreamId;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
@@ -54,6 +56,8 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerQuicSession.class);
 
+    private final AtomicLong biStreamIds = new AtomicLong();
+    private final AtomicLong uniStreamIds = new AtomicLong();
     private long expireNanoTime = Long.MAX_VALUE;
     private byte[] originalDestinationConnectionId;
     private TransportParameters transportParameters;
@@ -127,6 +131,13 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         // TODO: token creation and validation.
         byte[] token = new byte[0];
         return new InitialPacket(getQuicConfiguration().getQuicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, getPacketNumbers().nextPacketNumber(EncryptionLevel.INITIAL), frames);
+    }
+
+    @Override
+    public long newStreamId(boolean bidirectional)
+    {
+        AtomicLong streamIds = bidirectional ? biStreamIds : uniStreamIds;
+        return StreamId.newStreamId(streamIds.getAndIncrement(), bidirectional, false);
     }
 
     @Override

@@ -15,7 +15,7 @@ package org.eclipse.jetty.quic.api.frames;
 
 import org.eclipse.jetty.quic.api.Session;
 
-public class ConnectionCloseFrame extends Frame.Abstract
+public final class ConnectionCloseFrame extends Frame.Abstract
 {
     private final long errorCode;
     private final String reason;

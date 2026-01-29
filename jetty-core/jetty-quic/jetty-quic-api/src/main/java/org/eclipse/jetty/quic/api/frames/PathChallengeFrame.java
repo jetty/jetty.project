@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class PathChallengeFrame extends Frame.Abstract
+public final class PathChallengeFrame extends Frame.Abstract
 {
     private final long data;
 

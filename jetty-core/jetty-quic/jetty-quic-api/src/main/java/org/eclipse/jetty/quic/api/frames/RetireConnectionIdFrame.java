@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class RetireConnectionIdFrame extends Frame.Abstract
+public final class RetireConnectionIdFrame extends Frame.Abstract
 {
     private final long sequenceNumber;
 

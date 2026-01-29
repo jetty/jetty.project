@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-public class ResetFrame extends Frame.WithStreamId.Abstract
+public final class ResetFrame extends Frame.WithStreamId.Abstract implements Frame.WithOffset
 {
     private final long appErrorCode;
     private final long finalSize;
@@ -33,6 +33,18 @@ public class ResetFrame extends Frame.WithStreamId.Abstract
     public long finalSize()
     {
         return finalSize;
+    }
+
+    @Override
+    public long offset()
+    {
+        return finalSize();
+    }
+
+    @Override
+    public long length()
+    {
+        return 0;
     }
 
     @Override
