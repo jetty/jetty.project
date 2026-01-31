@@ -169,7 +169,7 @@
     <bouncycastle.version>1.83</bouncycastle.version>
     <build-helper.maven.plugin.version>3.6.1</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
-    <buildnumber.maven.plugin.version>3.2.1</buildnumber.maven.plugin.version>
+    <buildnumber.maven.plugin.version>3.3.0</buildnumber.maven.plugin.version>
     <bundle.debug>false</bundle.debug>
     <checkstyle.version>10.26.1</checkstyle.version>
     <commons-codec.version>1.20.0</commons-codec.version>
@@ -321,7 +321,7 @@
     <testcontainers.version>1.21.4</testcontainers.version>
     <testng.version>7.12.0</testng.version>
     <tinybundles.version>4.0.1</tinybundles.version>
-    <versions.maven.plugin.version>2.20.1</versions.maven.plugin.version>
+    <versions.maven.plugin.version>2.21.0</versions.maven.plugin.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
     <wildfly.elytron.version>2.7.1.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.9</xmemcached.version>
