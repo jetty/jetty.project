@@ -17,6 +17,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.ListIterator;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -39,8 +40,9 @@ class CryptoFlusher implements Callback
     private static final Logger LOG = LoggerFactory.getLogger(CryptoFlusher.class);
 
     private final AutoLock lock = new AutoLock();
-    private final Deque<QuicFlusher.FramesEntry> framesEntries = new ArrayDeque<>();
-    private final List<QuicFlusher.FramesEntry> processingFramesEntries = new ArrayList<>();
+    private final Deque<QuicFlusher.FramesEntry> entries = new ArrayDeque<>();
+    private final List<QuicFlusher.FramesEntry> candidates = new ArrayList<>();
+    private final List<QuicFlusher.FramesEntry> processing = new ArrayList<>();
     private final QuicFlusher flusher;
     private final EncryptionLevel encryptionLevel;
     private long cryptoOffset;
@@ -57,7 +59,7 @@ class CryptoFlusher implements Callback
         {
             // TODO: check if closed/failed, etc.
             QuicFlusher.FramesEntry entry = new QuicFlusher.FramesEntry(null, frames, callback);
-            boolean result = framesEntries.add(entry);
+            boolean result = entries.add(entry);
             if (LOG.isDebugEnabled())
                 LOG.debug("offered={} {} on {}", result, entry, this);
             return result;
@@ -66,79 +68,94 @@ class CryptoFlusher implements Callback
 
     boolean process() throws Exception
     {
+        try (var _ = lock.lock())
+        {
+            candidates.addAll(entries);
+            entries.clear();
+        }
+
+        FramesGenerator framesGenerator = flusher.getFramesGenerator();
         RetainableByteBuffer.Mutable framesAccumulator = flusher.getPlaintextBuffer();
         QuicSession session = flusher.getQuicSession();
         int packetHeaderLength = session.estimatePacketHeaderLength(encryptionLevel);
         long maxBytes = session.getUDPPayloadLength() - packetHeaderLength;
-        try (var _ = lock.lock())
+
+        ListIterator<QuicFlusher.FramesEntry> iterator = candidates.listIterator();
+        while (iterator.hasNext())
         {
-            while (true)
+            QuicFlusher.FramesEntry entry = iterator.next();
+            boolean progress = false;
+            boolean processed = true;
+            List<Frame> frames = entry.frames();
+            for (int i = 0; i < frames.size(); ++i)
             {
-                QuicFlusher.FramesEntry framesEntry = framesEntries.poll();
-                if (framesEntry == null)
-                    break;
-
-                boolean processed = true;
-                boolean progress = false;
-                FramesGenerator framesGenerator = flusher.getFramesGenerator();
-                List<Frame> frames = framesEntry.frames();
-                for (int i = 0; i < frames.size(); ++i)
+                Frame frame = frames.get(i);
+                long generated = switch (frame)
                 {
-                    Frame frame = frames.get(i);
-                    long generated = switch (frame)
+                    case CryptoFrame cryptoFrame ->
                     {
-                        case CryptoFrame cryptoFrame ->
-                        {
-                            long initialDataBytes = cryptoFrame.data().size();
-                            long frameBytesGenerated = framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, cryptoOffset, maxBytes);
-                            cryptoOffset += initialDataBytes - cryptoFrame.data().size();
-                            yield frameBytesGenerated;
-                        }
-                        default -> framesGenerator.generateFrame(framesAccumulator, frame, maxBytes);
-                    };
-                    maxBytes -= generated;
-                    progress |= generated > 0;
-
-                    if (generated == 0 || maxBytes == 0)
-                    {
-                        if (!progress)
-                            throw new QuicException(ErrorCode.INTERNAL_ERROR, "frame_generation_failure", frame.type());
-
-                        // Only some frames of the entry could be generated, split the entry.
-                        Callback callback = framesEntry.callback();
-                        // The first half does not notify successful completion
-                        // until all frames are processed but does notify failures.
-                        framesEntry = new QuicFlusher.FramesEntry(framesEntry.stream(), frames.subList(0, i), Callback.from(callback.getInvocationType(), () ->
-                        {}, callback::failed));
-                        processingFramesEntries.add(framesEntry);
-
-                        // Re-offer the second half.
-                        QuicFlusher.FramesEntry remainingFramesEntry = new QuicFlusher.FramesEntry(framesEntry.stream(), frames.subList(i, frames.size()), callback);
-                        framesEntries.offerFirst(remainingFramesEntry);
-
-                        // Cannot generate more, so not fully processed.
-                        processed = false;
-                        break;
+                        long initialDataBytes = cryptoFrame.data().size();
+                        long frameBytesGenerated = framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, cryptoOffset, maxBytes);
+                        cryptoOffset += initialDataBytes - cryptoFrame.data().size();
+                        yield frameBytesGenerated;
                     }
-                }
+                    default -> framesGenerator.generateFrame(framesAccumulator, frame, maxBytes);
+                };
 
-                if (processed)
-                    processingFramesEntries.add(framesEntry);
-                else
+                maxBytes -= generated;
+                progress |= generated > 0;
+
+                if (generated == 0 || maxBytes == 0)
+                {
+                    if (!progress)
+                        throw new QuicException(ErrorCode.INTERNAL_ERROR, "frame_generation_failure", frame.type());
+
+                    // Only some frames of the entry could be generated, split the entry.
+                    Callback callback = entry.callback();
+                    // The first half does not notify successful completion
+                    // until all frames are processed but does notify failures.
+                    Callback splitCallback = Callback.from(callback.getInvocationType(), () -> {}, callback::failed);
+                    var splitEntry = new QuicFlusher.FramesEntry(entry.stream(), frames.subList(0, i), splitCallback);
+                    processing.add(splitEntry);
+
+                    // Update the current entry with the second half.
+                    QuicFlusher.FramesEntry remainingEntry = new QuicFlusher.FramesEntry(entry.stream(), frames.subList(i, frames.size()), callback);
+                    iterator.set(remainingEntry);
+
+                    // Cannot generate more, so not fully processed.
+                    processed = false;
                     break;
+                }
+            }
+            if (!processed)
+                break;
+            // Fully processed, move the entry from candidates to processing.
+            processing.add(entry);
+            iterator.remove();
+        }
+
+        if (!candidates.isEmpty())
+        {
+            // Put back unprocessed entries.
+            try (var _ = lock.lock())
+            {
+                candidates.addAll(entries);
+                entries.clear();
+                entries.addAll(candidates);
+                candidates.clear();
             }
         }
 
-        if (processingFramesEntries.isEmpty())
+        if (processing.isEmpty())
             return false;
 
         RetainableByteBuffer.Mutable packetAccumulator = flusher.getEncryptedBuffer();
         PacketsGenerator packetGenerator = flusher.getPacketsGenerator();
         EndPoint endPoint = session.getEndPoint();
 
-        List<Frame> frames = processingFramesEntries.size() == 1 ?
-            processingFramesEntries.getFirst().frames() :
-            processingFramesEntries.stream()
+        List<Frame> frames = processing.size() == 1 ?
+            processing.getFirst().frames() :
+            processing.stream()
                 .flatMap(entry -> entry.frames().stream())
                 .toList();
         Packet packet = session.newPacket(encryptionLevel, frames);
@@ -155,8 +172,8 @@ class CryptoFlusher implements Callback
     {
         if (LOG.isDebugEnabled())
             LOG.debug("write succeeded to {} on {}", flusher.getQuicSession().getEndPoint(), this);
-        processingFramesEntries.forEach(QuicFlusher.FramesEntry::succeeded);
-        processingFramesEntries.clear();
+        processing.forEach(QuicFlusher.FramesEntry::succeeded);
+        processing.clear();
     }
 
     @Override
@@ -164,8 +181,8 @@ class CryptoFlusher implements Callback
     {
         if (LOG.isDebugEnabled())
             LOG.atDebug().setCause(x).log("write failed to {} on {}", flusher.getQuicSession().getEndPoint(), this);
-        processingFramesEntries.forEach(e -> e.failed(x));
-        processingFramesEntries.clear();
+        processing.forEach(e -> e.failed(x));
+        processing.clear();
         // TODO: fail the queued entries.
     }
 

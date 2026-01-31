@@ -714,6 +714,14 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
+    public void notifyMaxData(QuicStream stream, long maxData)
+    {
+        if (stream == null)
+            notifyMaxData(new MaxDataFrame(maxData));
+        else
+            stream.processFrame(new StreamMaxDataFrame(stream.getId(), maxData));
+    }
+
     public void fail(Throwable x)
     {
         if (LOG.isDebugEnabled())
