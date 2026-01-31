@@ -47,13 +47,13 @@ public class FrameGeneratorParserTest
     @BeforeEach
     public void prepare()
     {
-        parser.setFrameMaxSize(Frame.DEFAULT_MAX_SIZE);
+        parser.setStreamFrameLength(Frame.DEFAULT_MAX_SIZE);
     }
 
     private <T extends Frame> List<T> generateParse(T frame)
     {
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        generator.generate(accumulator, frame);
+        generator.generateFrame(accumulator, frame, 0);
         return parse(accumulator);
     }
 
@@ -107,7 +107,7 @@ public class FrameGeneratorParserTest
         ByteBuffer bytes = StandardCharsets.UTF_8.encode("DATA");
         StreamFrame frame = new StreamFrame(3290901290300L, RetainableByteBuffer.wrap(bytes), 120911129347656L, true, true);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        generator.generate(accumulator, frame, bytes.remaining(), Frame.DEFAULT_MAX_SIZE);
+        generator.generateFrame(accumulator, frame, bytes.remaining(), Frame.DEFAULT_MAX_SIZE);
         bytes.clear();
         List<StreamFrame> list = parse(accumulator);
         list.forEach(result -> assertStreamFrameEqual(frame, result));

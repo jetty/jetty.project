@@ -60,7 +60,6 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     private final AtomicLong uniStreamIds = new AtomicLong();
     private long expireNanoTime = Long.MAX_VALUE;
     private byte[] originalDestinationConnectionId;
-    private TransportParameters transportParameters;
 
     public ServerQuicSession(Connector connector, QuicServerQuicConfiguration configuration, ServerQuicConnection connection, PacketNumbers packetNumbers, ServerTLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint)
     {
@@ -123,6 +122,12 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     private void notIdle()
     {
         expireNanoTime = CyclicTimeouts.Expirable.calcExpireNanoTime(getIdleTimeout());
+    }
+
+    @Override
+    public int getUDPPayloadLength()
+    {
+        return getQuicConfiguration().getUDPPayloadLength();
     }
 
     @Override
@@ -205,14 +210,16 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 
     private void processClientHello(ClientHelloMessage clientHello)
     {
-        transportParameters = clientHello.extensions().stream()
+        TransportParameters transportParameters = clientHello.extensions().stream()
             .filter(ext -> ext instanceof QuicTransportParametersExtension)
             .map(QuicTransportParametersExtension.class::cast)
             .findFirst()
             .map(QuicTransportParametersExtension::transportParameters)
             .orElse(null);
+
         // TODO: apply verifications to TransportParameters as per RFC.
-        notifyTransportParameters(transportParameters);
+
+        processTransportParameters(transportParameters);
 
         getTLSEngine().onMessageParsed(clientHello);
     }

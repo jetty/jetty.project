@@ -25,7 +25,6 @@ import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
-import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.internal.packets.InitialPacketGenerator;
 import org.eclipse.jetty.quic.common.internal.packets.InitialPacketParser;
 import org.eclipse.jetty.tls.common.TranscriptHash;
@@ -79,7 +78,7 @@ public class PacketGeneratorParserTest
         // Unclear why the RFC uses 1162 as the InitialPacket payload length, but that's what it uses.
         generator.setPayloadMinimumLength(1162);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
-        generator.generate(accumulator, initialPacket);
+        generator.generate(accumulator, initialPacket, null);
 
         ByteBuffer byteBuffer = accumulator.getByteBuffer();
 
@@ -161,7 +160,7 @@ public class PacketGeneratorParserTest
         generator.setPayloadMinimumLength(0);
 
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
-        generator.generate(accumulator, initialPacket);
+        generator.generate(accumulator, initialPacket, null);
 
         ByteBuffer byteBuffer = accumulator.getByteBuffer();
 
@@ -203,7 +202,7 @@ public class PacketGeneratorParserTest
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
         InitialPacketGenerator generator = new InitialPacketGenerator(clientPacketNumbers, framesGenerator, clientProtector);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
-        generator.generate(accumulator, generated);
+        generator.generate(accumulator, generated, null);
 
         PacketNumbers serverPacketNumbers = new PacketNumbers();
         TranscriptHash serverTranscriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, true), new MessagesGenerator(byteBufferPool, false));

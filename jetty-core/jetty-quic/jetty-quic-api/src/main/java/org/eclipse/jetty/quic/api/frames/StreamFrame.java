@@ -21,7 +21,7 @@ import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.util.Promise;
 
 /// A QUIC frame carrying stream data bytes.
-public final class StreamFrame extends Frame.WithStreamId.Abstract implements Frame.WithOffset, Comparable<StreamFrame>
+public final class StreamFrame extends Frame.WithStreamId.Abstract implements Frame.WithOffset
 {
     public static final long END_STREAM_MASK = 0x01;
     public static final long LENGTH_MASK = 0x02;
@@ -135,16 +135,14 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
         return endStream;
     }
 
-    /// @return whether this frame is the last carrying data for the stream
+    /// Returns whether this frame is the last of a larger frame that has been split.
+    ///
+    /// This is only useful for QUIC-STREAMS, since in QUIC frames are never split.
+    ///
+    /// @return whether this frame is the last chunk of a larger frame that has been split.
     public boolean isEndData()
     {
         return endData;
-    }
-
-    @Override
-    public int compareTo(StreamFrame that)
-    {
-        return Long.compare(offset, that.offset);
     }
 
     @Override

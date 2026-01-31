@@ -173,8 +173,9 @@ public class VarLenInt
      *
      * @param byteBuffer the {@code ByteBuffer} to encode into
      * @param value the {@code long} value to encode
+     * @return the number of bytes used to encode the given value
      */
-    public static void encode(ByteBuffer byteBuffer, long value)
+    public static int encode(ByteBuffer byteBuffer, long value)
     {
         int length = length(value);
         int encoding = 31 - Integer.numberOfLeadingZeros(length);
@@ -189,6 +190,7 @@ public class VarLenInt
         }
         byteBuffer.put(position, (byte)((value & VALUE_MASK) | (encoding << 6)));
         byteBuffer.position(position + length);
+        return length;
     }
 
     /**
@@ -197,8 +199,9 @@ public class VarLenInt
      *
      * @param buffer the {@code RetainableByteBuffer.Mutable} to encode into
      * @param value the {@code long} value to encode
+     * @return the number of bytes used to encode the given value
      */
-    public static void encode(RetainableByteBuffer.Mutable buffer, long value)
+    public static int encode(RetainableByteBuffer.Mutable buffer, long value)
     {
         int length = length(value);
         int encoding = 31 - Integer.numberOfLeadingZeros(length);
@@ -211,6 +214,7 @@ public class VarLenInt
             shift -= Byte.SIZE;
             buffer.put((byte)((value >>> shift) & 0xFF));
         }
+        return length;
     }
 
     /**

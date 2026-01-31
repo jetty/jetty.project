@@ -18,6 +18,7 @@ import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
+import org.eclipse.jetty.quic.common.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
@@ -39,7 +40,7 @@ public class InitialPacketGenerator implements PacketGenerator
         this.packetNumbers = packetNumbers;
         this.framesGenerator = framesGenerator;
         this.encrypter = encrypter;
-        // RFC 9000, 14.1: UDP payload must be at least 1200 bytes.
+        // RFC-9000[14.1]: UDP payload must be at least 1200 bytes.
         // The minimum InitialPacket header length is 11, considering
         // empty connection IDs and empty token; the AEAD tag is 16,
         // so 1200 - 11 - 16 = 1173 bytes.
@@ -57,34 +58,35 @@ public class InitialPacketGenerator implements PacketGenerator
     }
 
     @Override
-    public void generate(RetainableByteBuffer.Mutable accumulator, Packet packet) throws Exception
+    public void generate(RetainableByteBuffer.Mutable packetAccumulator, Packet packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
     {
-        generate(accumulator, (InitialPacket)packet);
+        generate(packetAccumulator, (InitialPacket)packet, framesAccumulator);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, InitialPacket packet) throws Exception
+    private void generate(RetainableByteBuffer.Mutable packetAccumulator, InitialPacket packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("generating {}", packet);
 
-        RetainableByteBuffer.Mutable payloadAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        packet.frames().forEach(frame -> framesGenerator.generate(payloadAccumulator, frame));
+        boolean releaseFramesAccumulator = false;
+        if (framesAccumulator == null)
+        {
+            releaseFramesAccumulator = true;
+            RetainableByteBuffer.Mutable payloadAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
+            packet.frames().forEach(frame -> framesGenerator.generateFrame(payloadAccumulator, frame, Integer.MAX_VALUE));
+            if (LOG.isDebugEnabled())
+                LOG.debug("generated {} frame bytes for {}", payloadAccumulator.size(), packet);
+            framesAccumulator = payloadAccumulator;
+        }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("generated {} frame bytes for {}", payloadAccumulator.size(), packet);
-
-        // TODO: handle the case where framesLength is bigger than maxUDPPayloadSize?
-        //  Although we have not received it yet from the other peer.
-        //  See RFC 9000, 14 and 18.2.
-
-        long framesLength = payloadAccumulator.size();
+        long framesLength = framesAccumulator.size();
         int payloadMinLength = getPayloadMinimumLength();
         if (framesLength < payloadMinLength)
         {
             // A PADDING frame is just the byte 0x00.
             long paddingLength = payloadMinLength - framesLength;
             byte[] padding = new byte[Math.toIntExact(paddingLength)];
-            payloadAccumulator.put(padding);
+            framesAccumulator.put(padding);
             if (LOG.isDebugEnabled())
                 LOG.debug("generated {} padding bytes for {}", paddingLength, packet);
         }
@@ -112,22 +114,23 @@ public class InitialPacketGenerator implements PacketGenerator
         headerAccumulator.put(token);
 
         // AEAD encryption produces 16 additional bytes.
-        long encryptedFramesLength = payloadAccumulator.size() + 16;
+        long encryptedFramesLength = framesAccumulator.size() + 16;
         long packetLength = encodedPacketNumber.length() + encryptedFramesLength;
 
         VarLenInt.encode(headerAccumulator, packetLength);
 
         encodedPacketNumber.putTo(headerAccumulator);
 
-        PacketBuffers packetBuffers = encrypter.encrypt(EncryptionLevel.INITIAL, packetNumber, headerAccumulator, payloadAccumulator);
+        PacketBuffers packetBuffers = encrypter.encrypt(EncryptionLevel.INITIAL, packetNumber, headerAccumulator, framesAccumulator);
 
         if (LOG.isDebugEnabled())
             LOG.debug("encrypted {} {}", packet, packetBuffers);
 
         headerAccumulator.release();
-        payloadAccumulator.release();
+        if (releaseFramesAccumulator)
+            framesAccumulator.release();
 
-        accumulator.add(packetBuffers.header());
-        accumulator.add(packetBuffers.payload());
+        packetAccumulator.add(packetBuffers.header());
+        packetAccumulator.add(packetBuffers.payload());
     }
 }

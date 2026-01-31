@@ -25,7 +25,7 @@ public class StreamFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
-    private int maxFrameSize;
+    private long maxFrameSize;
     private int frameSize;
     private long frameType;
     private boolean hasOffset;
@@ -39,12 +39,12 @@ public class StreamFrameParser implements FrameParser
         this.varLenInt = varLenInt;
     }
 
-    public int getFrameMaxSize()
+    public long getStreamFrameLength()
     {
         return maxFrameSize;
     }
 
-    public void setFrameMaxSize(int maxFrameSize)
+    public void setStreamFrameLength(long maxFrameSize)
     {
         this.maxFrameSize = maxFrameSize;
     }
@@ -115,11 +115,16 @@ public class StreamFrameParser implements FrameParser
                 }
                 case DATA ->
                 {
-                    // SPEC: if no data length, the STREAM frame size is the max frame size.
+                    long streamFrameLength = getStreamFrameLength();
+                    // RFC-9000[19.8]: if no length, the frame data extends to the packet payload.
                     if (dataLength < 0)
-                        dataLength = getFrameMaxSize() - frameSize;
+                    {
+                        if (streamFrameLength <= 0)
+                            throw new QuicException(ErrorCode.INTERNAL_ERROR, "unexpected_frame_size", frameType);
+                        dataLength = streamFrameLength - frameSize;
+                    }
 
-                    if (dataLength + frameSize > getFrameMaxSize())
+                    if (streamFrameLength > 0 && dataLength + frameSize > streamFrameLength)
                         throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_frame_size", frameType);
 
                     int length = (int)Math.min(dataLength, byteBuffer.remaining());

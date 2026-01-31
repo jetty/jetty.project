@@ -29,7 +29,6 @@ import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
-import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.internal.packets.QuicCrypto;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.tls.CipherSuite;

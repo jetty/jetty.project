@@ -16,7 +16,6 @@ package org.eclipse.jetty.quic.quiche;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.WritePendingException;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -265,7 +264,7 @@ public class QuicheStream extends AbstractStream
     }
 
     @Override
-    public void data(boolean last, List<ByteBuffer> buffers, Promise.Invocable<Stream> promise)
+    public void data(boolean last, RetainableByteBuffer buffer, Promise.Invocable<Stream> promise)
     {
         Writer current;
         while (true)
@@ -276,7 +275,7 @@ public class QuicheStream extends AbstractStream
                 promise.failed(new WritePendingException());
                 return;
             }
-            current = Writer.forWriting(last, buffers, promise);
+            current = Writer.forWriting(last, buffer, promise);
             if (writer.compareAndSet(null, current))
                 break;
         }
@@ -297,33 +296,34 @@ public class QuicheStream extends AbstractStream
             if (LOG.isDebugEnabled())
                 LOG.debug("writing {} for {}", current, this);
 
-            int length = current.buffers().size();
-            for (int i = 0; i < length; ++i)
-            {
-                ByteBuffer buffer = current.buffers().get(i);
-
-                int remaining = buffer.remaining();
-                boolean lastBuffer = i == length - 1;
-
-                if (remaining == 0 && !lastBuffer)
-                    continue;
-
-                int written = session.data(this, current.last() && lastBuffer, buffer);
-                if (written != remaining)
-                {
-                    // Write stalled, save state and return.
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("pending {} for {}", current, this);
-                    if (!current.pending())
-                    {
-                        Writer pending = Writer.forPending(current);
-                        // If the CAS fails (e.g. due to asynchronous failures), just return.
-                        writer.compareAndSet(current, pending);
-                    }
-                    session.flush();
-                    return;
-                }
-            }
+            // TODO: restore
+//            int length = current.buffer().size();
+//            for (int i = 0; i < length; ++i)
+//            {
+//                ByteBuffer buffer = current.buffer().get(i);
+//
+//                int remaining = buffer.remaining();
+//                boolean lastBuffer = i == length - 1;
+//
+//                if (remaining == 0 && !lastBuffer)
+//                    continue;
+//
+//                int written = session.data(this, current.last() && lastBuffer, buffer);
+//                if (written != remaining)
+//                {
+//                    // Write stalled, save state and return.
+//                    if (LOG.isDebugEnabled())
+//                        LOG.debug("pending {} for {}", current, this);
+//                    if (!current.pending())
+//                    {
+//                        Writer pending = Writer.forPending(current);
+//                        // If the CAS fails (e.g. due to asynchronous failures), just return.
+//                        writer.compareAndSet(current, pending);
+//                    }
+//                    session.flush();
+//                    return;
+//                }
+//            }
 
             session.flush();
 
@@ -516,26 +516,6 @@ public class QuicheStream extends AbstractStream
         write(current);
     }
 
-    void onNewStream()
-    {
-        notifyNewStream();
-    }
-
-    private void notifyNewStream()
-    {
-        Stream.Listener listener = getListener();
-        try
-        {
-            if (listener != null)
-                // No frame available from Quiche.
-                listener.onNewStream(this, null);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure while notifying listener {}", listener, x);
-        }
-    }
-
     private void notifyDataAvailable()
     {
         Stream.Listener listener = Objects.requireNonNullElse(getListener(), DEFAULT_LISTENER);
@@ -586,16 +566,16 @@ public class QuicheStream extends AbstractStream
         return "%s[%s,writer=%s]".formatted(super.toString(), closeState, writer);
     }
 
-    private record Writer(boolean last, List<ByteBuffer> buffers, Promise.Invocable<Stream> promise, boolean pending)
+    private record Writer(boolean last, RetainableByteBuffer buffer, Promise.Invocable<Stream> promise, boolean pending)
     {
-        private static Writer forWriting(boolean last, List<ByteBuffer> buffers, Promise.Invocable<Stream> promise)
+        private static Writer forWriting(boolean last, RetainableByteBuffer buffer, Promise.Invocable<Stream> promise)
         {
-            return new Writer(last, buffers, promise, false);
+            return new Writer(last, buffer, promise, false);
         }
 
         public static Writer forPending(Writer writer)
         {
-            return new Writer(writer.last, writer.buffers, writer.promise, true);
+            return new Writer(writer.last, writer.buffer, writer.promise, true);
         }
 
         @Override
@@ -606,7 +586,7 @@ public class QuicheStream extends AbstractStream
                 hashCode(),
                 last,
                 pending,
-                buffers
+                buffer
             );
         }
     }

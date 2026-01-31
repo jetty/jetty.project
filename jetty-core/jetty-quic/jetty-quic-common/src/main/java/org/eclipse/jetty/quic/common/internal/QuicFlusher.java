@@ -13,24 +13,23 @@
 
 package org.eclipse.jetty.quic.common.internal;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Queue;
 
-import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
+import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.QuicStream;
 import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.internal.packets.PacketsGenerator;
 import org.eclipse.jetty.quic.common.packets.Packet;
+import org.eclipse.jetty.quic.common.packets.RetryPacket;
+import org.eclipse.jetty.quic.common.packets.VersionNegotiationPacket;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,137 +37,171 @@ public class QuicFlusher extends IteratingCallback
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicFlusher.class);
 
-    private final AutoLock lock = new AutoLock();
-    private final Queue<Entry> entries = new ArrayDeque<>();
-    private final EnumMap<EncryptionLevel, List<Entry>> processing = new EnumMap<>(EncryptionLevel.class);
-    private final PacketsGenerator packetGenerator;
-    private final RetainableByteBuffer.Mutable accumulator;
+    private final PacketFlusher packetFlusher = new PacketFlusher(this);
+    private final CryptoFlusher initialFlusher = new CryptoFlusher(this, EncryptionLevel.INITIAL);
+    private final CryptoFlusher handshakeFlusher = new CryptoFlusher(this, EncryptionLevel.HANDSHAKE);
+    private final OneRTTFlusher oneRTTFlusher = new OneRTTFlusher(this);
     private final QuicSession session;
+    private final FramesGenerator framesGenerator;
+    private final PacketsGenerator packetsGenerator;
+    private final RetainableByteBuffer.Mutable plaintextBuffer;
+    private final RetainableByteBuffer.Mutable encryptedBuffer;
+    private Callback flusher;
 
     public QuicFlusher(QuicSession session)
     {
         this.session = session;
-        this.packetGenerator = new PacketsGenerator(session.getPacketNumbers(), new FramesGenerator(session.getByteBufferPool()), session.getTLSEngine().getPacketProtector());
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(session.getByteBufferPool(), session.getQuicConfiguration().isUseOutputDirectByteBuffers(), -1, 0, 0);
+        ByteBufferPool byteBufferPool = session.getByteBufferPool();
+        this.framesGenerator = new FramesGenerator(byteBufferPool);
+        this.packetsGenerator = new PacketsGenerator(session.getPacketNumbers(), framesGenerator, session.getTLSEngine().getPacketProtector());
+        boolean direct = session.getQuicConfiguration().isUseOutputDirectByteBuffers();
+        this.plaintextBuffer = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, direct, -1, 0, 0);
+        this.encryptedBuffer = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, direct, -1, 0, 0);
     }
 
-    public boolean offer(EncryptionLevel encryptionLevel, Packet packet, Callback callback)
+    public QuicSession getQuicSession()
     {
-        boolean result;
-        try (var _ = lock.lock())
-        {
-            // TODO: check if closed/failed, etc.
-            result = entries.offer(new PacketEntry(encryptionLevel, packet, callback));
-        }
-        if (LOG.isDebugEnabled())
-            LOG.debug("offered={} {} on {}", result, packet, this);
-        return result;
+        return session;
     }
 
-    public boolean offer(List<Frame> frames, Callback callback)
+    public FramesGenerator getFramesGenerator()
     {
-        return offer(EncryptionLevel.ONE_RTT, frames, callback);
+        return framesGenerator;
     }
 
+    public PacketsGenerator getPacketsGenerator()
+    {
+        return packetsGenerator;
+    }
+
+    RetainableByteBuffer.Mutable getPlaintextBuffer()
+    {
+        return plaintextBuffer;
+    }
+
+    RetainableByteBuffer.Mutable getEncryptedBuffer()
+    {
+        return encryptedBuffer;
+    }
+
+    /// Sends the given packet.
+    ///
+    /// This method should be called for [RetryPacket] and [VersionNegotiationPacket].
+    ///
+    /// @param packet the [Packet] to send
+    /// @param callback the [Callback] to notify when the send is complete
+    public boolean offer(Packet packet, Callback callback)
+    {
+        return packetFlusher.offer(packet, callback);
+    }
+
+    /// Offers the given list of session frames to send at the given [EncryptionLevel].
+    ///
+    /// @param encryptionLevel the encryption level to use for the send
+    /// @param frames the list of frames to send
+    /// @param callback the [Callback] to notify when the send is complete
     public boolean offer(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback)
     {
-        boolean result;
-        try (var _ = lock.lock())
+        return switch (encryptionLevel)
         {
-            // TODO: check if closed/failed, etc.
-            result = entries.offer(new FramesEntry(encryptionLevel, frames, callback));
-        }
-        if (LOG.isDebugEnabled())
-            LOG.debug("offered={} {} on {}", result, frames, this);
-        return result;
+            case INITIAL -> initialFlusher.offer(frames, callback);
+            case HANDSHAKE -> handshakeFlusher.offer(frames, callback);
+            case ONE_RTT -> oneRTTFlusher.offer(null, frames, callback);
+            default -> throw new UnsupportedOperationException();
+        };
+    }
+
+    /// Offers the [MaxDataFrame] to update the session send max data.
+    ///
+    /// @param frame the [MaxDataFrame] with the session send max data update
+    public boolean offer(MaxDataFrame frame)
+    {
+        return oneRTTFlusher.offer(null, frame.maxData());
+    }
+
+    /// Offers the [StreamMaxDataFrame] for the given stream to update the stream send max data.
+    ///
+    /// @param stream the stream
+    /// @param frame the [StreamMaxDataFrame] with the stream send max data update
+    public boolean offer(QuicStream stream, StreamMaxDataFrame frame)
+    {
+        return oneRTTFlusher.offer(stream, frame.maxData());
+    }
+
+    /// Offers the given list of session frames to send at [EncryptionLevel#ONE_RTT].
+    ///
+    /// @param frames the list of frames to send
+    /// @param callback the [Callback] to notify when the send is complete
+    public boolean offer(List<Frame> frames, Callback callback)
+    {
+        return oneRTTFlusher.offer(null, frames, callback);
+    }
+
+    /// Offers the given list of stream frames to send at [EncryptionLevel#ONE_RTT].
+    ///
+    /// @param stream the stream
+    /// @param frames the list of frames to send
+    /// @param callback the [Callback] to notify when the send is complete
+    public boolean offer(QuicStream stream, List<Frame> frames, Callback callback)
+    {
+        return oneRTTFlusher.offer(stream, frames, callback);
     }
 
     @Override
     protected Action process() throws Throwable
     {
-        int entryCount = 0;
-        try (var _ = lock.lock())
+        if (oneRTTFlusher.process())
         {
-            for (Entry entry : entries)
-            {
-                processing.computeIfAbsent(entry.encryptionLevel(), _ -> new ArrayList<>()).add(entry);
-                ++entryCount;
-            }
-            entries.clear();
+            flusher = oneRTTFlusher;
+            return Action.SCHEDULED;
         }
 
-        if (entryCount == 0)
-            return Action.IDLE;
-
-        List<Packet> packets = new ArrayList<>();
-        List<Frame> frames = new ArrayList<>();
-        for (Map.Entry<EncryptionLevel, List<Entry>> mapEntry : processing.entrySet())
+        if (handshakeFlusher.process())
         {
-            packets.clear();
-            frames.clear();
-            for (Entry entry : mapEntry.getValue())
-            {
-                switch (entry)
-                {
-                    case FramesEntry framesEntry -> frames.addAll(framesEntry.frames());
-                    case PacketEntry packetEntry -> packets.add(packetEntry.packet());
-                }
-            }
-            if (frames.isEmpty() && packets.isEmpty())
-                continue;
-
-            if (!frames.isEmpty())
-                packets.add(session.newPacket(mapEntry.getKey(), List.copyOf(frames)));
-            for (Packet packet : packets)
-            {
-                packetGenerator.generate(accumulator, packet);
-                session.notifyOutgoingPacket(packet);
-            }
+            flusher = handshakeFlusher;
+            return Action.SCHEDULED;
         }
 
-        EndPoint endPoint = session.getEndPoint();
-        if (LOG.isDebugEnabled())
-            LOG.debug("writing {} to {} on {}", accumulator, endPoint, this);
-        endPoint.write(this, session.getRemoteSocketAddress(), accumulator.getByteBuffer());
-        return Action.SCHEDULED;
+        if (initialFlusher.process())
+        {
+            flusher = initialFlusher;
+            return Action.SCHEDULED;
+        }
+
+        if (packetFlusher.process())
+        {
+            flusher = packetFlusher;
+            return Action.SCHEDULED;
+        }
+
+        return Action.IDLE;
     }
 
     @Override
     protected void onSuccess()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("write succeeded to {} on {}", session.getEndPoint(), this);
-
-        accumulator.clear();
-
-        for (Map.Entry<EncryptionLevel, List<Entry>> mapEntry : processing.entrySet())
-        {
-            List<Entry> entries = mapEntry.getValue();
-            entries.forEach(Entry::succeeded);
-            entries.clear();
-        }
+        encryptedBuffer.clear();
+        plaintextBuffer.clear();
+        flusher.succeeded();
+        flusher = null;
     }
 
     @Override
     protected void onCompleteFailure(Throwable cause)
     {
-        if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(cause).log("write failed to {} on {}", session.getEndPoint(), this);
-
-        accumulator.release();
-
-        for (Map.Entry<EncryptionLevel, List<Entry>> mapEntry : processing.entrySet())
-        {
-            List<Entry> entries = mapEntry.getValue();
-            entries.forEach(entry -> entry.failed(cause));
-            entries.clear();
-        }
+        encryptedBuffer.clear();
+        plaintextBuffer.clear();
+        flusher.failed(cause);
+        flusher = null;
     }
 
-    private sealed interface Entry extends Callback permits FramesEntry, PacketEntry
+    public void resetCrypto()
     {
-        EncryptionLevel encryptionLevel();
+        initialFlusher.resetCrypto();
+    }
 
+    sealed interface Entry extends Callback permits PacketFlusher.PacketEntry, OneRTTFlusher.MaxDataEntry, FramesEntry
+    {
         Callback callback();
 
         @Override
@@ -190,11 +223,7 @@ public class QuicFlusher extends IteratingCallback
         }
     }
 
-    private record FramesEntry(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback) implements Entry
-    {
-    }
-
-    private record PacketEntry(EncryptionLevel encryptionLevel, Packet packet, Callback callback) implements Entry
+    record FramesEntry(QuicStream stream, List<Frame> frames, Callback callback) implements Entry
     {
     }
 }

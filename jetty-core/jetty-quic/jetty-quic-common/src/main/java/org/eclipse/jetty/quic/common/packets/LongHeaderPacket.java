@@ -17,7 +17,7 @@ import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
-public sealed class LongHeaderPacket implements Packet permits HandshakePacket, InitialPacket, RetryPacket, ZeroRTTPacket
+public sealed class LongHeaderPacket implements Packet permits HandshakePacket, InitialPacket, RetryPacket, VersionNegotiationPacket, ZeroRTTPacket
 {
     private final PacketType packetType;
     private final QuicVersion quicVersion;
@@ -70,12 +70,13 @@ public sealed class LongHeaderPacket implements Packet permits HandshakePacket, 
         INITIAL,
         ZERO_RTT,
         HANDSHAKE,
-        RETRY;
+        RETRY,
+        VERSION_NEGOTIATION;
 
         public int type(QuicVersion quicVersion)
         {
-            // RFC-9000:[17.2].
-            // RFC-9369:[3.2].
+            // RFC-9000[17.2].
+            // RFC-9369[3.2].
             return switch (this)
             {
                 case INITIAL -> switch (quicVersion)
@@ -98,6 +99,7 @@ public sealed class LongHeaderPacket implements Packet permits HandshakePacket, 
                     case V1 -> 0x03;
                     case V2 -> 0x00;
                 };
+                case VERSION_NEGOTIATION -> 0x00;
             };
         }
 

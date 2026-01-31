@@ -35,14 +35,14 @@ public class LongHeaderPacketsGenerator
         retryGenerator = new RetryPacketGenerator(encrypter);
     }
 
-    public void generate(RetainableByteBuffer.Mutable accumulator, LongHeaderPacket longPacket) throws Exception
+    public void generate(RetainableByteBuffer.Mutable packetAccumulator, LongHeaderPacket longPacket, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
     {
         switch (longPacket)
         {
-            case InitialPacket initialPacket -> initialGenerator.generate(accumulator, initialPacket);
-            case HandshakePacket handshakePacket -> handshakeGenerator.generate(accumulator, handshakePacket);
-            case RetryPacket retryPacket -> retryGenerator.generate(accumulator, retryPacket);
-//            case ZeroRTTPacket zeroRTTPacket -> zeroGenerator.generate(accumulator, zeroRTTPacket);
+            case InitialPacket initialPacket -> initialGenerator.generate(packetAccumulator, initialPacket, framesAccumulator);
+            case HandshakePacket handshakePacket -> handshakeGenerator.generate(packetAccumulator, handshakePacket, framesAccumulator);
+            case RetryPacket retryPacket -> retryGenerator.generate(packetAccumulator, retryPacket, framesAccumulator);
+//            case ZeroRTTPacket zeroRTTPacket -> zeroGenerator.generate(packetAccumulator, zeroRTTPacket);
             default -> throw new UnsupportedOperationException();
         }
     }

@@ -15,7 +15,7 @@ package org.eclipse.jetty.quic.api.frames;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
-public final class CryptoFrame extends Frame.Abstract implements Frame.WithOffset, Comparable<CryptoFrame>
+public final class CryptoFrame extends Frame.Abstract implements Frame.WithOffset
 {
     private final long offset;
     private final long length;
@@ -44,12 +44,6 @@ public final class CryptoFrame extends Frame.Abstract implements Frame.WithOffse
     public RetainableByteBuffer data()
     {
         return data;
-    }
-
-    @Override
-    public int compareTo(CryptoFrame that)
-    {
-        return Long.compare(offset, that.offset);
     }
 
     @Override

@@ -32,12 +32,12 @@ public class RetryPacketGenerator implements PacketGenerator
     }
 
     @Override
-    public void generate(RetainableByteBuffer.Mutable accumulator, Packet packet) throws Exception
+    public void generate(RetainableByteBuffer.Mutable packetAccumulator, Packet packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
     {
-        generate(accumulator, (RetryPacket)packet);
+        generate(packetAccumulator, (RetryPacket)packet);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, RetryPacket packet)
+    private void generate(RetainableByteBuffer.Mutable packetAccumulator, RetryPacket packet)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("generating {}", packet);
@@ -45,25 +45,25 @@ public class RetryPacketGenerator implements PacketGenerator
         int form = 0b11000000;
         int type = packet.packetType().type(packet.quicVersion()) << 4;
         int msb = form | type;
-        accumulator.put((byte)msb);
+        packetAccumulator.put((byte)msb);
 
-        accumulator.putInt(packet.quicVersion().code());
+        packetAccumulator.putInt(packet.quicVersion().code());
 
         byte[] dstConnectionId = packet.destinationConnectionId();
-        accumulator.put((byte)dstConnectionId.length);
-        accumulator.put(dstConnectionId);
+        packetAccumulator.put((byte)dstConnectionId.length);
+        packetAccumulator.put(dstConnectionId);
 
         byte[] srcConnectionId = packet.sourceConnectionId();
-        accumulator.put((byte)srcConnectionId.length);
-        accumulator.put(srcConnectionId);
+        packetAccumulator.put((byte)srcConnectionId.length);
+        packetAccumulator.put(srcConnectionId);
 
         // The token length is implicit.
         byte[] token = packet.token();
-        accumulator.put(token);
+        packetAccumulator.put(token);
 
         // TODO
 //        byte[] integrity = encrypter.generateRetryIntegrity(retryAccumulator);
-//        accumulator.put(integrity);
-        accumulator.put(new byte[16]);
+//        packetAccumulator.put(integrity);
+        packetAccumulator.put(new byte[16]);
     }
 }

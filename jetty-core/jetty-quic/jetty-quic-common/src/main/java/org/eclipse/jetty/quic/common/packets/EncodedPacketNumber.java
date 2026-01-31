@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common.internal.packets;
+package org.eclipse.jetty.quic.common.packets;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 

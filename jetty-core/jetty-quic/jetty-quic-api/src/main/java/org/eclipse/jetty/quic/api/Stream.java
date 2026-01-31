@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.quic.api;
 
-import java.nio.ByteBuffer;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.ResetFrame;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
@@ -149,7 +149,7 @@ public interface Stream
     /// @param data the list of data bytes to send
     /// @param promise the [Promise.Invocable] that gets notified when the
     /// data has been sent
-    void data(boolean last, List<ByteBuffer> data, Promise.Invocable<Stream> promise);
+    void data(boolean last, RetainableByteBuffer data, Promise.Invocable<Stream> promise);
 
     /// Sends a `MAX_STREAM_DATA` frame with the new total max data bytes
     /// that this peer is willing to receive.

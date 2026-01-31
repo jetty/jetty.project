@@ -97,11 +97,17 @@ public sealed interface Frame
     }
 
     /// A QUIC frame carrying an offset and a length.
-    sealed interface WithOffset extends Frame permits CryptoFrame, ResetFrame, StreamFrame
+    sealed interface WithOffset extends Frame, Comparable<WithOffset> permits CryptoFrame, ResetFrame, StreamFrame
     {
         long offset();
 
         long length();
+
+        @Override
+        default int compareTo(WithOffset that)
+        {
+            return Long.compare(offset(), that.offset());
+        }
     }
 
     interface Listener

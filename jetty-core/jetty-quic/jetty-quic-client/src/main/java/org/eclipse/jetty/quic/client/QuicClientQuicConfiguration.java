@@ -26,10 +26,16 @@ public class QuicClientQuicConfiguration extends ClientQuicConfiguration
     private List<SignatureAlgorithm> signatureAlgorithms = List.of(SignatureAlgorithm.ECDSA_SECP256R1_SHA256, SignatureAlgorithm.RSA_PSS_RSAE_SHA256);
     private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519/*, NamedGroup.secp256r1, NamedGroup.ffdhe2048*/);
     private List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256);
+    // A value that does not exceed the usual MTU of 1500 and allows for encapsulation (VPN).
+    private int udpPayloadSize = 1344;
+    // RFC-9000[18.2].
     private long udpPayloadMaxSize = 65527;
+    // RFC-9000[18.2].
     private long ackDelayExponent = 3;
+    // RFC-9000[18.2].
     private long ackMaxDelay = 25;
     private boolean enableConnectionMigration;
+    // RFC-9000[18.2].
     private long connectionIdMaxCount = 2;
 
     public List<SignatureAlgorithm> getSignatureAlgorithms()
@@ -62,12 +68,24 @@ public class QuicClientQuicConfiguration extends ClientQuicConfiguration
         this.cipherSuites = cipherSuites;
     }
 
-    public Long getUDPPayloadMaxSize()
+    public int getUDPPayloadLength()
+    {
+        return udpPayloadSize;
+    }
+
+    public void setUDPPayloadSize(int udpPayloadSize)
+    {
+        if (udpPayloadSize < 1200)
+            throw new IllegalArgumentException("invalid UDPPayloadSize: " + udpPayloadSize);
+        this.udpPayloadSize = udpPayloadSize;
+    }
+
+    public long getUDPPayloadMaxSize()
     {
         return udpPayloadMaxSize;
     }
 
-    public void setUdpPayloadMaxSize(long udpPayloadMaxSize)
+    public void setUDPPayloadMaxSize(long udpPayloadMaxSize)
     {
         if (udpPayloadMaxSize < 1200)
             throw new IllegalArgumentException("invalid UDPPayloadMaxSize: " + udpPayloadMaxSize);

@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Blocker;
@@ -440,17 +441,22 @@ public class StreamEndPoint implements EndPoint
                     {
                         if (!writeState.compareAndSet(current, WriteState.PENDING))
                             continue;
-                        stream.data(last, buffers, new Promise.Invocable.Abstract<>(callback.getInvocationType())
+
+                        RetainableByteBuffer.Mutable buffer = new RetainableByteBuffer.DynamicCapacity(protocolSession.getByteBufferPool(), true, -1, 0, 0);
+                        buffers.forEach(buffer::add);
+                        stream.data(last, buffer, new Promise.Invocable.Abstract<>(callback.getInvocationType())
                         {
                             @Override
                             public void succeeded(Stream result)
                             {
+                                buffer.release();
                                 writeSuccess(callback);
                             }
 
                             @Override
                             public void failed(Throwable x)
                             {
+                                buffer.release();
                                 writeFailure(x, callback);
                             }
                         });

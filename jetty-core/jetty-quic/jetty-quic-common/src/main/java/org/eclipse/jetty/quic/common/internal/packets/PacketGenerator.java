@@ -18,5 +18,5 @@ import org.eclipse.jetty.quic.common.packets.Packet;
 
 public interface PacketGenerator
 {
-    void generate(RetainableByteBuffer.Mutable accumulator, Packet packet) throws Exception;
+    void generate(RetainableByteBuffer.Mutable packetAccumulator, Packet packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception;
 }
