@@ -29,10 +29,16 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
     private List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256);
     private TokenFactory tokenFactory = new DefaultTokenFactory();
     private int destinationConnectionIdLength = 8;
+    // A value that does not exceed the usual MTU of 1500 and allows for encapsulation (VPN).
+    private int udpPayloadSize = 1344;
+    // RFC-9000[18.2].
     private long udpPayloadMaxSize = 65527;
+    // RFC-9000[18.2].
     private long ackDelayExponent = 3;
+    // RFC-9000[18.2].
     private long ackMaxDelay = 25;
     private boolean enableConnectionMigration;
+    // RFC-9000[18.2].
     private long connectionIdMaxCount = 2;
 
     public List<SignatureAlgorithm> getSignatureAlgorithms()
@@ -85,6 +91,18 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
         if (destinationConnectionIdLength < 0 || destinationConnectionIdLength > 20)
             throw new IllegalArgumentException("invalid destinationConnectionId length: " + destinationConnectionIdLength);
         this.destinationConnectionIdLength = destinationConnectionIdLength;
+    }
+
+    public int getUDPPayloadLength()
+    {
+        return udpPayloadSize;
+    }
+
+    public void setUDPPayloadSize(int udpPayloadSize)
+    {
+        if (udpPayloadSize < 1200)
+            throw new IllegalArgumentException("invalid UDPPayloadSize: " + udpPayloadSize);
+        this.udpPayloadSize = udpPayloadSize;
     }
 
     public Long getUDPPayloadMaxSize()

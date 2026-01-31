@@ -67,219 +67,386 @@ public class FramesGenerator
         this.useDirectBuffers = useDirectBuffers;
     }
 
-    public void generate(RetainableByteBuffer.Mutable accumulator, Frame frame)
+    public long generateFrame(RetainableByteBuffer.Mutable accumulator, Frame frame, long maxBytes)
     {
         long type = frame.type();
         FrameType frameType = FrameType.from(type);
         if (frameType == null)
             throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_frame_type", type);
-        switch (frameType)
+        return switch (frameType)
         {
-            case PADDING, PING, HANDSHAKE_DONE -> generateNoContentFrame(accumulator, frame);
-            case ACK -> generateAckFrame(accumulator, (AckFrame)frame);
-            case RESET_STREAM -> generateResetStreamFrame(accumulator, (ResetFrame)frame);
-            case STOP_SENDING -> generateStopSendingFrame(accumulator, (StopSendingFrame)frame);
-            case CRYPTO -> generateCryptoFrame(accumulator, (CryptoFrame)frame);
-            case NEW_TOKEN -> generateNewTokenFrame(accumulator, (NewTokenFrame)frame);
-            case MAX_DATA -> generateMaxDataFrame(accumulator, (MaxDataFrame)frame);
-            case STREAM_MAX_DATA -> generateStreamMaxDataFrame(accumulator, (StreamMaxDataFrame)frame);
-            case MAX_STREAMS -> generateMaxStreamsFrame(accumulator, (MaxStreamsFrame)frame);
-            case DATA_BLOCKED -> generateDataBlockedFrame(accumulator, (DataBlockedFrame)frame);
-            case STREAM_DATA_BLOCKED -> generateStreamDataBlockedFrame(accumulator, (StreamDataBlockedFrame)frame);
-            case STREAMS_BLOCKED -> generateStreamsBlockedFrame(accumulator, (StreamsBlockedFrame)frame);
-            case NEW_CONNECTION_ID -> generateNewConnectionIdFrame(accumulator, (NewConnectionIdFrame)frame);
-            case RETIRE_CONNECTION_ID -> generateRetireConnectionIdFrame(accumulator, (RetireConnectionIdFrame)frame);
-            case PATH_CHALLENGE -> generatePathChallengeFrame(accumulator, (PathChallengeFrame)frame);
-            case PATH_RESPONSE -> generatePathResponseFrame(accumulator, (PathResponseFrame)frame);
-            case CONNECTION_CLOSE -> generateConnectionCloseFrame(accumulator, (ConnectionCloseFrame)frame);
+            case PADDING, PING, HANDSHAKE_DONE -> generateNoContentFrame(accumulator, frame, maxBytes);
+            case ACK -> generateAckFrame(accumulator, (AckFrame)frame, maxBytes);
+            case RESET_STREAM -> generateResetStreamFrame(accumulator, (ResetFrame)frame, maxBytes);
+            case STOP_SENDING -> generateStopSendingFrame(accumulator, (StopSendingFrame)frame, maxBytes);
+            case NEW_TOKEN -> generateNewTokenFrame(accumulator, (NewTokenFrame)frame, maxBytes);
+            case MAX_DATA -> generateMaxDataFrame(accumulator, (MaxDataFrame)frame, maxBytes);
+            case STREAM_MAX_DATA -> generateStreamMaxDataFrame(accumulator, (StreamMaxDataFrame)frame, maxBytes);
+            case MAX_STREAMS -> generateMaxStreamsFrame(accumulator, (MaxStreamsFrame)frame, maxBytes);
+            case DATA_BLOCKED -> generateDataBlockedFrame(accumulator, (DataBlockedFrame)frame, maxBytes);
+            case STREAM_DATA_BLOCKED -> generateStreamDataBlockedFrame(accumulator, (StreamDataBlockedFrame)frame, maxBytes);
+            case STREAMS_BLOCKED -> generateStreamsBlockedFrame(accumulator, (StreamsBlockedFrame)frame, maxBytes);
+            case NEW_CONNECTION_ID -> generateNewConnectionIdFrame(accumulator, (NewConnectionIdFrame)frame, maxBytes);
+            case RETIRE_CONNECTION_ID -> generateRetireConnectionIdFrame(accumulator, (RetireConnectionIdFrame)frame, maxBytes);
+            case PATH_CHALLENGE -> generatePathChallengeFrame(accumulator, (PathChallengeFrame)frame, maxBytes);
+            case PATH_RESPONSE -> generatePathResponseFrame(accumulator, (PathResponseFrame)frame, maxBytes);
+            case CONNECTION_CLOSE -> generateConnectionCloseFrame(accumulator, (ConnectionCloseFrame)frame, maxBytes);
             default -> throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_frame_type", type);
         };
     }
 
-    public void generate(RetainableByteBuffer.Mutable accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
+    private int rollback(RetainableByteBuffer.Mutable accumulator, long limit)
+    {
+        accumulator.limit(limit);
+        return 0;
+    }
+
+    public void generateFrame(RetainableByteBuffer.Mutable accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
     {
         generateStreamFrame(accumulator, frame, maxDataBytes, maxFrameBytes);
     }
 
-    private void generateNoContentFrame(RetainableByteBuffer.Mutable accumulator, Frame frame)
+    private long generateNoContentFrame(RetainableByteBuffer.Mutable accumulator, Frame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
+        long limit = accumulator.size();
+        int generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        return generated;
     }
 
-    private void generateAckFrame(RetainableByteBuffer.Mutable accumulator, AckFrame frame)
+    private long generateAckFrame(RetainableByteBuffer.Mutable accumulator, AckFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.largestAcknowledged());
-        VarLenInt.encode(accumulator, frame.ackDelay());
-        VarLenInt.encode(accumulator, frame.firstRangeLength());
+        long limit = accumulator.size();
+        int generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.largestAcknowledged());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.ackDelay());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.firstRangeLength());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
         List<AckFrame.AckRange> ranges = frame.ackRanges();
-        VarLenInt.encode(accumulator, ranges.size());
+        generated += VarLenInt.encode(accumulator, ranges.size());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
         for (AckFrame.AckRange range : ranges)
         {
-            VarLenInt.encode(accumulator, range.gap());
-            VarLenInt.encode(accumulator, range.length());
+            generated += VarLenInt.encode(accumulator, range.gap());
+            if (maxBytes - generated < 0)
+                return rollback(accumulator, limit);
+            generated += VarLenInt.encode(accumulator, range.length());
+            if (maxBytes - generated < 0)
+                return rollback(accumulator, limit);
         }
+        return generated;
     }
 
-    private void generateResetStreamFrame(RetainableByteBuffer.Mutable accumulator, ResetFrame frame)
+    private long generateResetStreamFrame(RetainableByteBuffer.Mutable accumulator, ResetFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.streamId());
-        VarLenInt.encode(accumulator, frame.applicationErrorCode());
-        VarLenInt.encode(accumulator, frame.finalSize());
+        long limit = accumulator.size();
+        int generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.streamId());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.applicationErrorCode());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.finalSize());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        return generated;
     }
 
-    private void generateStopSendingFrame(RetainableByteBuffer.Mutable accumulator, StopSendingFrame frame)
+    private long generateStopSendingFrame(RetainableByteBuffer.Mutable accumulator, StopSendingFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.streamId());
-        VarLenInt.encode(accumulator, frame.applicationErrorCode());
+        long limit = accumulator.size();
+        int generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.streamId());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.applicationErrorCode());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        return generated;
     }
 
-    private void generateCryptoFrame(RetainableByteBuffer.Mutable accumulator, CryptoFrame frame)
+    public long generateCryptoFrame(RetainableByteBuffer.Mutable accumulator, CryptoFrame frame, long offset, final long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.offset());
+        // TODO: same logic as StreamFrame regarding
+        //  the length field that may be overestimated.
+        long limit = accumulator.size();
+        int generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, offset);
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
         RetainableByteBuffer data = frame.data();
-        VarLenInt.encode(accumulator, data.remaining());
-        accumulator.append(data);
+        long remaining = data.size();
+        long length = Math.min(remaining, maxBytes);
+        generated += VarLenInt.encode(accumulator, length);
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        if (length == remaining)
+            accumulator.append(data);
+        else
+            accumulator.add(data.slice(length));
+        return generated + length;
     }
 
-    private void generateNewTokenFrame(RetainableByteBuffer.Mutable accumulator, NewTokenFrame frame)
+    private long generateNewTokenFrame(RetainableByteBuffer.Mutable accumulator, NewTokenFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
+        long limit = accumulator.size();
+        int generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
         byte[] token = frame.token();
-        VarLenInt.encode(accumulator, token.length);
+        generated += VarLenInt.encode(accumulator, token.length);
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += token.length;
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
         accumulator.append(ByteBuffer.wrap(token));
+        return generated;
     }
 
-    private void generateStreamFrame(RetainableByteBuffer.Mutable accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
+    public long generateStreamFrame(RetainableByteBuffer.Mutable accumulator, StreamFrame frame, long offset, long maxBytes)
     {
-        // TODO: review this logic about truncating the data to maxDataBytes.
-
         long frameType = frame.type();
         int capacity = VarLenInt.length(frameType);
         long streamId = frame.streamId();
         capacity += VarLenInt.length(streamId);
-        long offset = frame.offset();
         boolean hasOffset = offset > 0 || (frameType & StreamFrame.OFFSET_MASK) == StreamFrame.OFFSET_MASK;
         if (hasOffset)
             capacity += VarLenInt.length(offset);
         boolean hasLength = (frameType & StreamFrame.LENGTH_MASK) == StreamFrame.LENGTH_MASK;
+
         // Handle the case where the bytes to send are more than they fit in the frame.
-        int dataLength = maxDataBytes;
+        // The data length is calculated without taking into account the length field.
+        // This means that the data length is temporarily overestimated, which may lead
+        // to reserving more bytes for the length field than necessary.
+        // VarLenInt encodes 0-63 in 1 byte, and 64-16383 in 2 bytes.
+        // If the data length below is estimated at 64, this means that the length field
+        // will occupy 2 bytes; however, when correcting the data length subtracting the
+        // length field length (2 bytes), the data length will be 62, which can be encoded
+        // as just 1 byte, so 63 data bytes could have been generated, but we don't bother.
+        RetainableByteBuffer data = frame.data();
+        long estimatedDataLength = Math.min(data.size(), maxBytes - capacity);
+        if (estimatedDataLength < 0 || (estimatedDataLength == 0 && !frame.isEndStream()))
+            return 0;
         int dataLengthLength = 0;
         if (hasLength)
-            dataLengthLength = VarLenInt.length(dataLength);
-        int dataBytesInFrame = maxFrameBytes - capacity - dataLengthLength;
-        if (dataBytesInFrame < maxDataBytes)
-        {
-            hasLength = true;
-            dataLength = dataBytesInFrame;
-            dataLengthLength = VarLenInt.length(dataLength);
-        }
+            dataLengthLength = VarLenInt.length(estimatedDataLength);
         capacity += dataLengthLength;
+        long dataLength = Math.min(data.size(), maxBytes - capacity);
+        if (dataLength <= 0)
+            return 0;
+
         boolean endStream = (frameType & StreamFrame.END_STREAM_MASK) == StreamFrame.END_STREAM_MASK;
         // Clear the endStream bit if the frame cannot be fully generated.
-        RetainableByteBuffer data = frame.data();
-        boolean dataExceedsFrame = data.remaining() > dataLength;
-        if (endStream && dataExceedsFrame)
+        boolean excessData = data.size() > dataLength;
+        if (endStream && excessData)
             frameType = frameType & ~StreamFrame.END_STREAM_MASK;
 
-        VarLenInt.encode(accumulator, frameType);
-        VarLenInt.encode(accumulator, streamId);
+        long generated = VarLenInt.encode(accumulator, frameType);
+        generated += VarLenInt.encode(accumulator, streamId);
         if (hasOffset)
-            VarLenInt.encode(accumulator, offset);
+            generated += VarLenInt.encode(accumulator, offset);
         if (hasLength)
-            VarLenInt.encode(accumulator, dataLength);
-
-        if (dataExceedsFrame)
+            generated += VarLenInt.encode(accumulator, dataLength);
+        if (excessData)
         {
             RetainableByteBuffer slice = data.slice(dataLength);
             data.skip(dataLength);
-            data = slice;
+            generated += dataLength;
+            accumulator.add(slice);
         }
-
-        accumulator.add(data);
+        else
+        {
+            generated += data.size();
+            accumulator.add(data);
+        }
+        return generated;
     }
 
-    private void generateMaxDataFrame(RetainableByteBuffer.Mutable accumulator, MaxDataFrame frame)
+    private long generateMaxDataFrame(RetainableByteBuffer.Mutable accumulator, MaxDataFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.maxData());
+        long limit = accumulator.size();
+        long generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.maxData());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        return generated;
     }
 
-    private void generateStreamMaxDataFrame(RetainableByteBuffer.Mutable accumulator, StreamMaxDataFrame frame)
+    private long generateStreamMaxDataFrame(RetainableByteBuffer.Mutable accumulator, StreamMaxDataFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.streamId());
-        VarLenInt.encode(accumulator, frame.maxData());
+        long limit = accumulator.size();
+        long generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.streamId());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.maxData());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        return generated;
     }
 
-    private void generateMaxStreamsFrame(RetainableByteBuffer.Mutable accumulator, MaxStreamsFrame frame)
+    private long generateMaxStreamsFrame(RetainableByteBuffer.Mutable accumulator, MaxStreamsFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.maxStreams());
+        long limit = accumulator.size();
+        long generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.maxStreams());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        return generated;
     }
 
-    private void generateDataBlockedFrame(RetainableByteBuffer.Mutable accumulator, DataBlockedFrame frame)
+    private long generateDataBlockedFrame(RetainableByteBuffer.Mutable accumulator, DataBlockedFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.offset());
+        long limit = accumulator.size();
+        long generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.offset());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        return generated;
     }
 
-    private void generateStreamDataBlockedFrame(RetainableByteBuffer.Mutable accumulator, StreamDataBlockedFrame frame)
+    private long generateStreamDataBlockedFrame(RetainableByteBuffer.Mutable accumulator, StreamDataBlockedFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.streamId());
-        VarLenInt.encode(accumulator, frame.offset());
+        long limit = accumulator.size();
+        long generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.streamId());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.offset());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        return generated;
     }
 
-    private void generateStreamsBlockedFrame(RetainableByteBuffer.Mutable accumulator, StreamsBlockedFrame frame)
+    private long generateStreamsBlockedFrame(RetainableByteBuffer.Mutable accumulator, StreamsBlockedFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.maxStreams());
+        long limit = accumulator.size();
+        long generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.maxStreams());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        return generated;
     }
 
-    private void generateNewConnectionIdFrame(RetainableByteBuffer.Mutable accumulator, NewConnectionIdFrame frame)
+    private long generateNewConnectionIdFrame(RetainableByteBuffer.Mutable accumulator, NewConnectionIdFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.sequenceNumber());
-        VarLenInt.encode(accumulator, frame.retirePriorTo());
+        long limit = accumulator.size();
+        long generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.sequenceNumber());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.retirePriorTo());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
         byte[] connectionId = frame.connectionId();
-        VarLenInt.encode(accumulator, connectionId.length);
+        generated += VarLenInt.encode(accumulator, connectionId.length);
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += connectionId.length;
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
         accumulator.append(ByteBuffer.wrap(connectionId));
         byte[] resetToken = frame.resetToken();
+        generated += resetToken.length;
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
         accumulator.append(ByteBuffer.wrap(resetToken));
+        return generated;
     }
 
-    private void generateRetireConnectionIdFrame(RetainableByteBuffer.Mutable accumulator, RetireConnectionIdFrame frame)
+    private long generateRetireConnectionIdFrame(RetainableByteBuffer.Mutable accumulator, RetireConnectionIdFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.sequenceNumber());
+        long limit = accumulator.size();
+        long generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.sequenceNumber());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        return generated;
     }
 
-    private void generatePathChallengeFrame(RetainableByteBuffer.Mutable accumulator, PathChallengeFrame frame)
+    private long generatePathChallengeFrame(RetainableByteBuffer.Mutable accumulator, PathChallengeFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
+        long limit = accumulator.size();
+        long generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += 8;
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
         accumulator.putLong(frame.data());
+        return generated;
     }
 
-    private void generatePathResponseFrame(RetainableByteBuffer.Mutable accumulator, PathResponseFrame frame)
+    private long generatePathResponseFrame(RetainableByteBuffer.Mutable accumulator, PathResponseFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
+        long limit = accumulator.size();
+        long generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += 8;
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
         accumulator.putLong(frame.data());
+        return generated;
     }
 
-    private void generateConnectionCloseFrame(RetainableByteBuffer.Mutable accumulator, ConnectionCloseFrame frame)
+    private long generateConnectionCloseFrame(RetainableByteBuffer.Mutable accumulator, ConnectionCloseFrame frame, long maxBytes)
     {
-        VarLenInt.encode(accumulator, frame.type());
-        VarLenInt.encode(accumulator, frame.errorCode());
+        long limit = accumulator.size();
+        long generated = VarLenInt.encode(accumulator, frame.type());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.errorCode());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
         if (frame.type() == 0x1C)
-            VarLenInt.encode(accumulator, frame.causeFrameType());
+        {
+            generated += VarLenInt.encode(accumulator, frame.causeFrameType());
+            if (maxBytes - generated < 0)
+                return rollback(accumulator, limit);
+        }
         String reason = frame.reason();
         ByteBuffer reasonBytes = StandardCharsets.UTF_8.encode(reason);
-        VarLenInt.encode(accumulator, reasonBytes.remaining());
+        generated += VarLenInt.encode(accumulator, reasonBytes.remaining());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        generated += reasonBytes.remaining();
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
         accumulator.append(RetainableByteBuffer.wrap(reasonBytes));
+        return generated;
     }
 }

@@ -17,6 +17,7 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,10 @@ public class FrameStream
         //  but it is already in the queue (it will have an existing offset).
 
         queue.offer(frame);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("offered {} on {}", frame, this);
+
         while (true)
         {
             Frame.WithOffset candidate = queue.peek();
@@ -58,6 +63,10 @@ public class FrameStream
             // This frame is in order, deliver it.
             queue.poll();
             offset += candidate.length();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("notifying {} on {}", candidate, this);
+
             notifyFrame(candidate);
         }
     }
@@ -70,7 +79,14 @@ public class FrameStream
         }
         catch (Throwable x)
         {
-            LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
+            if (LOG.isDebugEnabled())
+                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[offset=%d,queue=%d]", TypeUtil.toShortName(getClass()), hashCode(), offset, queue.size());
     }
 }

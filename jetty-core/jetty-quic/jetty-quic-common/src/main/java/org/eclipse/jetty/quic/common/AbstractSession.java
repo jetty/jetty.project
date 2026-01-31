@@ -22,6 +22,7 @@ import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
+import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
 import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
@@ -117,12 +118,11 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         }
     }
 
-    protected Stream.Listener notifyNewStream()
+    protected Stream.Listener notifyNewStream(Frame.WithStreamId frame)
     {
         try
         {
-            // The frame is not available from Quiche.
-            return listener.onNewStream(this, null);
+            return listener.onNewStream(this, frame);
         }
         catch (Throwable x)
         {

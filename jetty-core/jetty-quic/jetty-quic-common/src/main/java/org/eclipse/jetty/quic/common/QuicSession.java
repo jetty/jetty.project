@@ -41,7 +41,9 @@ import org.eclipse.jetty.quic.api.frames.PingFrame;
 import org.eclipse.jetty.quic.api.frames.ResetFrame;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
+import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.frames.FrameStream;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.QuicFlusher;
@@ -56,11 +58,14 @@ import org.eclipse.jetty.quic.common.packets.ZeroRTTPacket;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
+import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,12 +74,15 @@ public abstract class QuicSession extends AbstractSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
+    private final AutoLock lock = new AutoLock();
     private final Map<EncryptionLevel, FrameStream> cryptoStreams = new HashMap<>();
     private final Map<Long, QuicStream> streams = new ConcurrentHashMap<>();
-    private final AtomicLong biLocalStreamCount = new AtomicLong();
-    private final AtomicLong biLocalStreamMaxCount = new AtomicLong();
-    private final AtomicLong uniLocalStreamCount = new AtomicLong();
-    private final AtomicLong uniLocalStreamMaxCount = new AtomicLong();
+    private final AtomicLong biRemoteStreamCount = new AtomicLong();
+    private final AtomicLong biRemoteStreamMaxCount = new AtomicLong();
+    private final AtomicLong uniRemoteStreamCount = new AtomicLong();
+    private final AtomicLong uniRemoteStreamMaxCount = new AtomicLong();
+    private final AtomicLong sendData = new AtomicLong();
+    private final AtomicLong sendMaxData = new AtomicLong();
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private final QuicConnection connection;
@@ -88,6 +96,8 @@ public abstract class QuicSession extends AbstractSession
     private byte[] srcConnectionId;
     private long idleTimeout;
     private SocketAddress remoteSocketAddress;
+    private TransportParameters transportParameters;
+    private boolean writeStalled;
 
     protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint)
     {
@@ -173,6 +183,28 @@ public abstract class QuicSession extends AbstractSession
         return false;
     }
 
+    public abstract int getUDPPayloadLength();
+
+    /// Returns an estimate (by excess) of the packet header length.
+    ///
+    /// @param encryptionLevel the encryption level of the packet
+    public int estimatePacketHeaderLength(EncryptionLevel encryptionLevel)
+    {
+        // Use the UDP payload length as the length of the packet payload.
+        long length = getUDPPayloadLength();
+        return switch (encryptionLevel)
+        {
+            // Form, version, dcid, scid, no token, length, packet number.
+            case INITIAL ->
+                1 + 4 + 1 + getDestinationConnectionId().length + 1 + getSourceConnectionId().length + 1 + VarLenInt.length(length) + 4;
+            // Form, version, dcid, scid, length, packet number.
+            case HANDSHAKE, ZERO_RTT ->
+                1 + 4 + 1 + getDestinationConnectionId().length + 1 + getSourceConnectionId().length + VarLenInt.length(length) + 4;
+            // Form, dcid, packet number.
+            case ONE_RTT -> 1 + getDestinationConnectionId().length + 4;
+        };
+    }
+
     public Packet newPacket(EncryptionLevel encryptionLevel, List<Frame> frames)
     {
         QuicVersion quicVersion = getQuicConfiguration().getQuicVersion();
@@ -200,6 +232,11 @@ public abstract class QuicSession extends AbstractSession
     {
         if (flusher.offer(encryptionLevel, List.of(frame), callback))
             flusher.iterate();
+    }
+
+    protected void resetCrypto()
+    {
+        flusher.resetCrypto();
     }
 
     protected void frames(List<Frame> frames, Callback callback)
@@ -231,6 +268,9 @@ public abstract class QuicSession extends AbstractSession
         if (streams.putIfAbsent(streamId, stream) == null)
         {
             stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
+            Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE);
+            if (maxData != null)
+                stream.updateSendMaxData(maxData);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("created local {} on {}", stream, this);
@@ -240,26 +280,44 @@ public abstract class QuicSession extends AbstractSession
         throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "duplicate_local_stream");
     }
 
-    protected QuicStream getOrCreateLocalStream(long streamId)
+    private QuicStream getOrCreateRemoteStream(Frame.WithStreamId frame)
     {
-        boolean bidirectional = StreamId.isBidirectional(streamId);
-        AtomicLong localStreamCount = bidirectional ? biLocalStreamCount : uniLocalStreamCount;
-        AtomicLong localStreamMaxCount = bidirectional ? biLocalStreamMaxCount : uniLocalStreamMaxCount;
+        long streamId = frame.streamId();
 
-        while (true)
+        QuicStream stream;
+        try (var _ = lock.lock())
         {
-            long count = localStreamCount.get();
-            long max = localStreamMaxCount.get();
+            // TODO: check close state.
+
+            stream = streams.get(streamId);
+            if (stream != null)
+                return stream;
+
+            // Create a new stream, if allowed.
+            boolean bidirectional = StreamId.isBidirectional(streamId);
+            AtomicLong remoteStreamCount = bidirectional ? biRemoteStreamCount : uniRemoteStreamCount;
+            AtomicLong remoteStreamMaxCount = bidirectional ? biRemoteStreamMaxCount : uniRemoteStreamMaxCount;
+            long max = remoteStreamMaxCount.get();
+            long count = remoteStreamCount.get();
             if (max > 0 && count >= max)
-                throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "local_stream_count_exceeded");
-            if (localStreamCount.compareAndSet(count, count + 1))
-                break;
+                throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "remote_stream_count_exceeded");
+            remoteStreamCount.incrementAndGet();
+
+            stream = new QuicStream(this, streamId, false);
+            streams.put(streamId, stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("created remote {} on {}", stream, this);
         }
 
-        QuicStream stream = streams.computeIfAbsent(streamId, _ -> new QuicStream(this, streamId, true));
+        stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("created local {} on {}", stream, this);
+        Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL);
+        if (maxData != null)
+            stream.updateSendMaxData(maxData);
+
+        Stream.Listener listener = notifyNewStream(frame);
+        stream.setListener(listener);
+        stream.onNewStream(frame);
 
         return stream;
     }
@@ -304,6 +362,12 @@ public abstract class QuicSession extends AbstractSession
     public void maxData(MaxDataFrame frame, Promise.Invocable<Session> promise)
     {
         if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, this)))
+            flusher.iterate();
+    }
+
+    void data(QuicStream stream, StreamFrame frame, Promise.Invocable<Stream> promise)
+    {
+        if (flusher.offer(stream, List.of(frame), Promise.Invocable.toCallback(promise, stream)))
             flusher.iterate();
     }
 
@@ -475,11 +539,65 @@ public abstract class QuicSession extends AbstractSession
                 EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
                 cryptoStreams.computeIfAbsent(encryptionLevel, _ -> new FrameStream(this::processCryptoFrame)).offer(cryptoFrame);
             }
+            case MaxDataFrame maxDataFrame ->
+            {
+                flusher.offer(maxDataFrame);
+            }
+            case Frame.WithStreamId withStreamId -> processWithStreamId(packet, withStreamId);
             default ->
             {
                 // TODO: notify Session.Listener
             }
         }
+    }
+
+    private void processWithStreamId(Packet.WithFrames packet, Frame.WithStreamId frame)
+    {
+        QuicStream stream = getOrCreateRemoteStream(frame);
+        stream.processFrame(frame);
+    }
+
+    public void updateSendMaxData(QuicStream stream, long newValue)
+    {
+        if (stream == null)
+        {
+            if (Atomics.updateMax(sendMaxData, newValue))
+                writeStalled = false;
+        }
+        else
+        {
+            stream.updateSendMaxData(newValue);
+        }
+    }
+
+    public long getSendWindow(QuicStream stream)
+    {
+        if (stream == null)
+            return sendMaxData.get() - sendData.get();
+        else
+            return stream.getSendWindow();
+    }
+
+    public long getSendData(QuicStream stream)
+    {
+        if (stream == null)
+            return sendData.get();
+        else
+            return stream.getSendData();
+    }
+
+    public void updateSendData(QuicStream stream, long sent)
+    {
+        sendData.addAndGet(sent);
+        if (stream != null)
+            stream.updateSendData(sent);
+    }
+
+    public boolean stall()
+    {
+        boolean result = !writeStalled;
+        writeStalled = true;
+        return result;
     }
 
     private void processCryptoFrame(Frame frame)
@@ -506,6 +624,16 @@ public abstract class QuicSession extends AbstractSession
 
     protected abstract void processMessage(Message message);
 
+    protected void processTransportParameters(TransportParameters transportParameters)
+    {
+        this.transportParameters = transportParameters;
+        Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_DATA);
+        if (maxData != null)
+            updateSendMaxData(null, maxData);
+
+        // TODO: other parameters.
+    }
+
     private void ack(Packet packet)
     {
         if (packet instanceof Packet.WithFrames p && p.requiresAcknowledgement())
@@ -521,7 +649,7 @@ public abstract class QuicSession extends AbstractSession
 
     protected void packet(Packet packet)
     {
-        if (flusher.offer(EncryptionLevel.from(packet), packet, Callback.NOOP))
+        if (flusher.offer(packet, Callback.NOOP))
             flusher.iterate();
     }
 
@@ -540,6 +668,10 @@ public abstract class QuicSession extends AbstractSession
         if (LOG.isDebugEnabled())
             LOG.debug("sending TLS messages {} on {}", messages, this);
 
+        // TODO: why the messages need to be generated here?
+        //  Perhaps I can have a version of CryptoFrame that carries the messages.
+        //  When parsing, it must be a RBB because they can be out of order.
+        //  But for generation, should not be necessary.
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), getQuicConfiguration().isUseOutputDirectByteBuffers(), -1, 0, 0);
         try
         {
@@ -547,7 +679,7 @@ public abstract class QuicSession extends AbstractSession
             {
                 getTLSEngine().getMessagesGenerator().generate(accumulator, message);
             }
-            // TODO: cannot assume offset is 0 here.
+            // Always use offset 0, as it will be calculated properly when flushing the frame.
             CryptoFrame cryptoFrame = new CryptoFrame(0, accumulator);
             crypto(encryptionLevel, cryptoFrame, callback);
         }

@@ -29,15 +29,15 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -248,7 +248,7 @@ public class StreamEndPoint implements EndPoint
     }
 
     @Override
-    public int fill(RetainableByteBuffer.Mutable sink) throws IOException
+    public int fill(ByteBuffer sink) throws IOException
     {
         Content.Chunk current;
         try (AutoLock ignored = lock.lock())
@@ -263,16 +263,13 @@ public class StreamEndPoint implements EndPoint
         {
             if (current != null)
             {
-                if (current.hasRemaining())
+                ByteBuffer source = current.getByteBuffer();
+                if (source.hasRemaining())
                 {
-                    int filled;
-                    try (RetainableByteBuffer buffer = current.acquire())
-                    {
-                        filled = (int)sink.append(buffer);
-                    }
+                    int filled = copy(current, sink);
 
                     boolean release = true;
-                    if (current.hasRemaining())
+                    if (source.hasRemaining())
                     {
                         try (AutoLock ignored = lock.lock())
                         {
@@ -342,7 +339,7 @@ public class StreamEndPoint implements EndPoint
 
     /**
      * <p>Fills from this {@code StreamEndPoint}.</p>
-     * <p>This method should be used in alternative to {@link #fill(RetainableByteBuffer.Mutable)},
+     * <p>This method should be used in alternative to {@link #fill(ByteBuffer)},
      * when the {@link Connection} installed on top of this {@code StreamEndPoint}
      * needs to know both the bytes and whether the QUIC data is the last in the
      * stream, for example in HTTP/3.</p>
@@ -366,12 +363,30 @@ public class StreamEndPoint implements EndPoint
         return current;
     }
 
+    private int copy(Content.Chunk chunk, ByteBuffer sink)
+    {
+        int length = 0;
+        ByteBuffer source = chunk.getByteBuffer();
+        if (source.hasRemaining())
+        {
+            int sinkPosition = BufferUtil.flipToFill(sink);
+            int sourceLength = source.remaining();
+            length = Math.min(sourceLength, sink.remaining());
+            int sourceLimit = source.limit();
+            source.limit(source.position() + length);
+            sink.put(source);
+            source.limit(sourceLimit);
+            BufferUtil.flipToFlush(sink, sinkPosition);
+        }
+        return length;
+    }
+
     @Override
-    public boolean flush(RetainableByteBuffer buffer) throws IOException
+    public boolean flush(ByteBuffer... buffers) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("flushing {} on {}", buffer, this);
-        if (buffer == null || !buffer.hasRemaining())
+            LOG.debug("flushing {} on {}", BufferUtil.toDetailString(buffers), this);
+        if (buffers == null || buffers.length == 0 || BufferUtil.remaining(buffers) == 0)
             return true;
 
         // Differently from other EndPoint implementations, where write() calls
@@ -393,24 +408,29 @@ public class StreamEndPoint implements EndPoint
     }
 
     @Override
+    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    {
+        write(false, List.of(buffers), callback);
+    }
+
+    @Override
+    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    {
+        write(last, List.of(byteBuffer), callback);
+    }
+
+    @Override
     public Callback cancelWrite(Throwable cause)
     {
         // TODO
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
-    {
-        write(false, buffer, callback);
-    }
-
-    @Override
-    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
+    public void write(boolean last, List<ByteBuffer> buffers, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("writing last={} {} on {}", last, buffer, this);
-        if (last || buffer.hasRemaining())
+            LOG.debug("writing last={} {} on {}", last, BufferUtil.toDetailString(buffers.toArray(ByteBuffer[]::new)), this);
+        if (last || remaining(buffers) > 0)
         {
             while (true)
             {
@@ -421,17 +441,22 @@ public class StreamEndPoint implements EndPoint
                     {
                         if (!writeState.compareAndSet(current, WriteState.PENDING))
                             continue;
+
+                        RetainableByteBuffer.Mutable buffer = new RetainableByteBuffer.DynamicCapacity(protocolSession.getByteBufferPool(), true, -1, 0, 0);
+                        buffers.forEach(buffer::add);
                         stream.data(last, buffer, new Promise.Invocable.Abstract<>(callback.getInvocationType())
                         {
                             @Override
                             public void succeeded(Stream result)
                             {
+                                buffer.release();
                                 writeSuccess(callback);
                             }
 
                             @Override
                             public void failed(Throwable x)
                             {
+                                buffer.release();
                                 writeFailure(x, callback);
                             }
                         });
@@ -590,33 +615,26 @@ public class StreamEndPoint implements EndPoint
     {
         Connection oldConnection = getConnection();
 
-        RetainableByteBuffer.Mutable buffer = null;
+        ByteBuffer byteBuffer = null;
         if (oldConnection instanceof Connection.UpgradeFrom from)
-            buffer = from.onUpgradeFrom();
+            byteBuffer = from.onUpgradeFrom();
 
-        try
+        oldConnection.onClose(null);
+        setConnection(newConnection);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} upgrading from {} to {} with {}",
+                this, oldConnection, newConnection, BufferUtil.toDetailString(byteBuffer));
+
+        if (BufferUtil.hasContent(byteBuffer))
         {
-            oldConnection.onClose(null);
-            setConnection(newConnection);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} upgrading from {} to {} with {}",
-                    this, oldConnection, newConnection, buffer);
-
-            if (buffer != null && buffer.hasRemaining())
-            {
-                if (newConnection instanceof Connection.UpgradeTo to)
-                    to.onUpgradeTo(buffer);
-                else
-                    throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
-            }
-
-            newConnection.onOpen();
+            if (newConnection instanceof Connection.UpgradeTo to)
+                to.onUpgradeTo(byteBuffer);
+            else
+                throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
         }
-        finally
-        {
-            Retainable.dispose(buffer);
-        }
+
+        newConnection.onOpen();
     }
 
     @Override

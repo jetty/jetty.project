@@ -15,10 +15,12 @@ package org.eclipse.jetty.quic.tests;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -32,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -99,8 +102,15 @@ public class QuicTest extends AbstractQuicTest
     @Test
     public void testStreamEcho() throws Exception
     {
+        AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         start(() -> new Session.Listener()
         {
+            @Override
+            public void onOpen(Session session)
+            {
+                serverSessionRef.set(session);
+            }
+
             @Override
             public Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
             {
@@ -115,9 +125,9 @@ public class QuicTest extends AbstractQuicTest
                             stream.demand();
                             return;
                         }
-                        stream.data(chunk.isLast(), List.of(chunk.getByteBuffer()), Promise.Invocable.from(NON_BLOCKING, (s, x) ->
+                        stream.data(chunk.isLast(), chunk, Promise.Invocable.from(NON_BLOCKING, (s, x) ->
                         {
-                            if (x == null)
+                            if (x == null && !chunk.isLast())
                                 s.demand();
                         }));
                     }
@@ -125,14 +135,14 @@ public class QuicTest extends AbstractQuicTest
             }
         });
 
-        Session session = Promise.Completable.<Session>with(p ->
+        Session clientSession = Promise.Completable.<Session>with(p ->
             client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, p)
         ).get(5, TimeUnit.SECONDS);
 
         CountDownLatch dataLatch = new CountDownLatch(1);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(client.getClientConnector().getByteBufferPool(), false, -1, 0, 0);
-        long streamId = session.newStreamId(true);
-        Stream stream = session.newStream(streamId, new Stream.Listener()
+        long streamId = clientSession.newStreamId(true);
+        Stream stream = clientSession.newStream(streamId, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream, boolean immediate)
@@ -155,10 +165,16 @@ public class QuicTest extends AbstractQuicTest
             }
         });
 
-        byte[] bytes = "Hello QUIC".getBytes();
-        stream.data(true, List.of(ByteBuffer.wrap(bytes)), Promise.Invocable.noop());
+        byte[] bytes = "Hello QUIC".getBytes(StandardCharsets.UTF_8);
+        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.wrap(bytes)), Promise.Invocable.noop());
+
+        stream.demand();
 
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
         assertEquals(ByteBuffer.wrap(bytes), accumulator.getByteBuffer());
+
+        Session serverSession = serverSessionRef.get();
+        await().atMost(5, TimeUnit.SECONDS).until(serverSession::getStreams, empty());
+        await().atMost(5, TimeUnit.SECONDS).until(clientSession::getStreams, empty());
     }
 }

@@ -18,6 +18,7 @@ import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
+import org.eclipse.jetty.quic.common.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.packets.HandshakePacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
@@ -41,25 +42,15 @@ public class HandshakePacketGenerator implements PacketGenerator
     }
 
     @Override
-    public void generate(RetainableByteBuffer.Mutable accumulator, Packet packet) throws Exception
+    public void generate(RetainableByteBuffer.Mutable packetAccumulator, Packet packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
     {
-        generate(accumulator, (HandshakePacket)packet);
+        generate(packetAccumulator, (HandshakePacket)packet, framesAccumulator);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, HandshakePacket packet) throws Exception
+    private void generate(RetainableByteBuffer.Mutable packetAccumulator, HandshakePacket packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("generating {}", packet);
-
-        RetainableByteBuffer.Mutable payloadAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        packet.frames().forEach(frame -> framesGenerator.generate(payloadAccumulator, frame));
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("generated {} frame bytes for {}", payloadAccumulator.size(), packet);
-
-        // TODO: handle the case where framesLength is bigger than maxUDPPayloadSize?
-        //  Although we have not received it yet from the other peer.
-        //  See RFC 9000, 14 and 18.2.
 
         RetainableByteBuffer.Mutable headerAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
         int form = 0b11000000;
@@ -80,22 +71,21 @@ public class HandshakePacketGenerator implements PacketGenerator
         headerAccumulator.put(srcConnectionId);
 
         // AEAD encryption produces 16 additional bytes.
-        long encryptedFramesLength = payloadAccumulator.size() + 16;
+        long encryptedFramesLength = framesAccumulator.size() + 16;
         long packetLength = encodedPacketNumber.length() + encryptedFramesLength;
 
         VarLenInt.encode(headerAccumulator, packetLength);
 
         encodedPacketNumber.putTo(headerAccumulator);
 
-        PacketBuffers packetBuffers = encrypter.encrypt(EncryptionLevel.HANDSHAKE, packetNumber, headerAccumulator, payloadAccumulator);
+        PacketBuffers packetBuffers = encrypter.encrypt(EncryptionLevel.HANDSHAKE, packetNumber, headerAccumulator, framesAccumulator);
 
         if (LOG.isDebugEnabled())
             LOG.debug("encrypted {} {}", packet, packetBuffers);
 
         headerAccumulator.release();
-        payloadAccumulator.release();
 
-        accumulator.add(packetBuffers.header());
-        accumulator.add(packetBuffers.payload());
+        packetAccumulator.add(packetBuffers.header());
+        packetAccumulator.add(packetBuffers.payload());
     }
 }

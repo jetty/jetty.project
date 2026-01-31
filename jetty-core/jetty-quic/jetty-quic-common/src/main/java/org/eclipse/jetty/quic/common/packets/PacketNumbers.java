@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.quic.common.EncryptionLevel;
-import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
 
 // TODO: I need:
 //  - a class that holds epn and epnl, required for generation.
@@ -36,13 +35,13 @@ import org.eclipse.jetty.quic.common.internal.packets.EncodedPacketNumber;
 //  PN are per-encryption-level, so the largestAck can be stored in another class.
 public class PacketNumbers
 {
-    private final Map<Space, Info> infos = new EnumMap<>(Space.class);
+    private final Map<Space, Info> spaces = new EnumMap<>(Space.class);
 
     public PacketNumbers()
     {
-        infos.put(Space.INITIAL, new Info());
-        infos.put(Space.HANDSHAKE, new Info());
-        infos.put(Space.APPLICATION, new Info());
+        spaces.put(Space.INITIAL, new Info());
+        spaces.put(Space.HANDSHAKE, new Info());
+        spaces.put(Space.APPLICATION, new Info());
     }
 
     /// Called to record the largest acked number for the given encryption level.
@@ -51,14 +50,16 @@ public class PacketNumbers
     /// @param packetNumber the packet number
     public void onAcked(EncryptionLevel encryptionLevel, long packetNumber)
     {
-        infos.get(Space.from(encryptionLevel)).onAcked(packetNumber);
+        spaces.get(Space.from(encryptionLevel)).onAcked(packetNumber);
     }
 
     /// @param encryptionLevel the encryption level
     /// @return a new packet number for the given encryption level
     public long nextPacketNumber(EncryptionLevel encryptionLevel)
     {
-        return infos.get(Space.from(encryptionLevel)).nextPacketNumber();
+        // TODO: skip packet numbers from time to time, to detect
+        //  "optimistic ack" attacks.
+        return spaces.get(Space.from(encryptionLevel)).nextPacketNumber();
     }
 
     /// @param encryptionLevel the encryption level
@@ -66,7 +67,7 @@ public class PacketNumbers
     /// @return an [EncodedPacketNumber] from the given encryption level and packet number
     public EncodedPacketNumber encode(EncryptionLevel encryptionLevel, long packetNumber)
     {
-        return infos.get(Space.from(encryptionLevel)).encode(packetNumber);
+        return spaces.get(Space.from(encryptionLevel)).encode(packetNumber);
     }
 
     public long decode(EncryptionLevel encryptionLevel, byte[] encoded)
@@ -81,7 +82,7 @@ public class PacketNumbers
 
     public long decode(EncryptionLevel encryptionLevel, EncodedPacketNumber encoded)
     {
-        return infos.get(Space.from(encryptionLevel)).decode(encoded);
+        return spaces.get(Space.from(encryptionLevel)).decode(encoded);
     }
 
     private enum Space
@@ -106,18 +107,17 @@ public class PacketNumbers
         private final AtomicLong ids = new AtomicLong();
         private final AtomicLong acks = new AtomicLong();
 
-        public void onAcked(long packetNumber)
+        private void onAcked(long packetNumber)
         {
             // TODO
         }
 
-        public long nextPacketNumber()
+        private long nextPacketNumber()
         {
-            // TODO: limit to VarLenInt.MAX_VALUE.
             return ids.getAndIncrement();
         }
 
-        public EncodedPacketNumber encode(long packetNumber)
+        private EncodedPacketNumber encode(long packetNumber)
         {
             // RFC 9000, 17.1 and A.2.
             long acked = acks.get();
@@ -132,7 +132,7 @@ public class PacketNumbers
             return new EncodedPacketNumber((int)(packetNumber & mask), length);
         }
 
-        public long decode(EncodedPacketNumber encoded)
+        private long decode(EncodedPacketNumber encoded)
         {
             // RFC 9000, 17.1 and A.3.
             long acked = acks.get();

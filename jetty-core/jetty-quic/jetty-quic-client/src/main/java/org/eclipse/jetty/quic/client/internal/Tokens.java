@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.common;
+package org.eclipse.jetty.quic.client.internal;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.BufferUtil;
 /// via a [RetryPacket].
 ///
 /// Refer to RFC 9000, sections 8 and 17.2.5.
-// TODO: move this class to client module.
 public class Tokens
 {
     private final Map<Key, byte[]> tokens = new ConcurrentHashMap<>();

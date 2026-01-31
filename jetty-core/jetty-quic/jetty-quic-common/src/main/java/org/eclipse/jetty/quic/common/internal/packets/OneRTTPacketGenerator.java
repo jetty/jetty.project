@@ -16,8 +16,8 @@ package org.eclipse.jetty.quic.common.internal.packets;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketBuffers;
-import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
+import org.eclipse.jetty.quic.common.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.packets.OneRTTPacket;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.slf4j.Logger;
@@ -28,26 +28,18 @@ public class OneRTTPacketGenerator
     private static final Logger LOG = LoggerFactory.getLogger(OneRTTPacketGenerator.class);
 
     private final PacketNumbers packetNumbers;
-    private final FramesGenerator framesGenerator;
     private final Encrypter encrypter;
 
-    public OneRTTPacketGenerator(PacketNumbers packetNumbers, FramesGenerator framesGenerator, Encrypter encrypter)
+    public OneRTTPacketGenerator(PacketNumbers packetNumbers, Encrypter encrypter)
     {
         this.packetNumbers = packetNumbers;
-        this.framesGenerator = framesGenerator;
         this.encrypter = encrypter;
     }
 
-    public void generate(RetainableByteBuffer.Mutable accumulator, OneRTTPacket packet) throws Exception
+    public void generate(RetainableByteBuffer.Mutable packetAccumulator, OneRTTPacket packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("generating {}", packet);
-
-        RetainableByteBuffer.Mutable payloadAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        packet.frames().forEach(frame -> framesGenerator.generate(payloadAccumulator, frame));
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("generated {} frame bytes for {}", payloadAccumulator.size(), packet);
 
         RetainableByteBuffer.Mutable headerAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
         int form = 0b01000000;
@@ -62,15 +54,14 @@ public class OneRTTPacketGenerator
 
         encodedPacketNumber.putTo(headerAccumulator);
 
-        PacketBuffers packetBuffers = encrypter.encrypt(EncryptionLevel.ONE_RTT, packetNumber, headerAccumulator, payloadAccumulator);
+        PacketBuffers packetBuffers = encrypter.encrypt(EncryptionLevel.ONE_RTT, packetNumber, headerAccumulator, framesAccumulator);
 
         if (LOG.isDebugEnabled())
             LOG.debug("encrypted {} {}", packet, packetBuffers);
 
         headerAccumulator.release();
-        payloadAccumulator.release();
 
-        accumulator.add(packetBuffers.header());
-        accumulator.add(packetBuffers.payload());
+        packetAccumulator.add(packetBuffers.header());
+        packetAccumulator.add(packetBuffers.payload());
     }
 }

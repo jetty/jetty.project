@@ -29,15 +29,15 @@ public class PacketsGenerator
     public PacketsGenerator(PacketNumbers packetNumbers, FramesGenerator framesGenerator, Encrypter encrypter)
     {
         longHeaderPacketsGenerator = new LongHeaderPacketsGenerator(packetNumbers, framesGenerator, encrypter);
-        shortHeaderPacketsGenerator = new ShortHeaderPacketsGenerator(packetNumbers, framesGenerator, encrypter);
+        shortHeaderPacketsGenerator = new ShortHeaderPacketsGenerator(packetNumbers, encrypter);
     }
 
-    public void generate(RetainableByteBuffer.Mutable accumulator, Packet packet) throws Exception
+    public void generate(RetainableByteBuffer.Mutable packetAccumulator, Packet packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
     {
         switch (packet)
         {
-            case LongHeaderPacket longHeader -> longHeaderPacketsGenerator.generate(accumulator, longHeader);
-            case ShortHeaderPacket shortHeader -> shortHeaderPacketsGenerator.generate(accumulator, shortHeader);
+            case LongHeaderPacket longHeader -> longHeaderPacketsGenerator.generate(packetAccumulator, longHeader, framesAccumulator);
+            case ShortHeaderPacket shortHeader -> shortHeaderPacketsGenerator.generate(packetAccumulator, shortHeader, framesAccumulator);
         }
     }
 }

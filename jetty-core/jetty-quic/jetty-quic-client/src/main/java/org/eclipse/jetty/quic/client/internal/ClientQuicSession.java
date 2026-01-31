@@ -33,15 +33,11 @@ import org.eclipse.jetty.quic.client.internal.tls.ClientTLSConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicSession;
-import org.eclipse.jetty.quic.common.QuicStream;
 import org.eclipse.jetty.quic.common.StreamId;
-import org.eclipse.jetty.quic.common.Tokens;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.RetryPacket;
-import org.eclipse.jetty.quic.util.ErrorCode;
-import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
 import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
@@ -174,6 +170,25 @@ public class ClientQuicSession extends QuicSession
     }
 
     @Override
+    public int getUDPPayloadLength()
+    {
+        return getQuicConfiguration().getUDPPayloadLength();
+    }
+
+    @Override
+    public int estimatePacketHeaderLength(EncryptionLevel encryptionLevel)
+    {
+        int result = super.estimatePacketHeaderLength(encryptionLevel);
+        if (encryptionLevel == EncryptionLevel.INITIAL)
+        {
+            // TODO
+            int tokenLength = 0;
+            result += tokenLength;
+        }
+        return result;
+    }
+
+    @Override
     protected InitialPacket newInitialPacket(List<Frame> frames)
     {
         byte[] token;
@@ -212,7 +227,6 @@ public class ClientQuicSession extends QuicSession
         switch (frame)
         {
             case HandshakeDoneFrame handshakeDone -> processHandshakeDoneFrame(packet, handshakeDone);
-            case Frame.WithStreamId withStreamId -> processWithStreamId(packet, withStreamId);
             default -> super.processFrame(packet, frame);
         }
     }
@@ -223,15 +237,6 @@ public class ClientQuicSession extends QuicSession
             LOG.debug("processing {} in {} on {}", frame, packet, this);
         notifyOpen();
         sessionPromise(context).succeeded(this);
-    }
-
-    private void processWithStreamId(Packet.WithFrames packet, Frame.WithStreamId frame)
-    {
-        long streamId = frame.streamId();
-        if (StreamId.isLocal(streamId, true))
-            throw new QuicException(ErrorCode.STREAM_STATE_ERROR, "invalid_stream_initiator", frame.type());
-        QuicStream stream = getOrCreateLocalStream(streamId);
-        stream.processFrame(frame);
     }
 
     @Override
@@ -264,7 +269,7 @@ public class ClientQuicSession extends QuicSession
         //  * Values are within allowed ranges
         //  Apply Quic transport params to the various components.
 
-        notifyTransportParameters(transportParameters);
+        processTransportParameters(transportParameters);
 
         getTLSEngine().onMessageParsed(encryptedExtensions);
     }
@@ -287,9 +292,11 @@ public class ClientQuicSession extends QuicSession
                 LOG.debug("discarding non-first {} on {}", packet, this);
             return;
         }
+
         retryPacketProcessed = true;
         retryToken = packet.token();
 
+        resetCrypto();
         getTLSEngine().retryHandshake();
     }
 }

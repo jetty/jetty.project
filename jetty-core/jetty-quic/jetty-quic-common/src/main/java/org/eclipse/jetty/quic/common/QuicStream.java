@@ -13,15 +13,16 @@
 
 package org.eclipse.jetty.quic.common;
 
-import java.nio.ByteBuffer;
+import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.ResetFrame;
@@ -30,6 +31,7 @@ import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.common.frames.FrameStream;
+import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -43,10 +45,13 @@ public class QuicStream extends AbstractStream
     private final FrameStream frameStream = new FrameStream(this::processDataFrame);
     private final Deque<Content.Chunk> dataQueue = new ArrayDeque<>(1);
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
+    private final Sender sender = new Sender();
+    private final AtomicLong sendMaxData = new AtomicLong();
     private final AtomicLong sendData = new AtomicLong();
     private final QuicSession session;
-    private boolean dataDemand;
-    private boolean dataStalled;
+    private boolean readDemand;
+    private boolean readStalled;
+    private boolean writeStalled;
 
     public QuicStream(QuicSession session, long streamId, boolean local)
     {
@@ -117,10 +122,10 @@ public class QuicStream extends AbstractStream
         boolean process = false;
         try (var _ = lock.lock())
         {
-            dataDemand = true;
-            if (dataStalled && !dataQueue.isEmpty())
+            readDemand = true;
+            if (readStalled && !dataQueue.isEmpty())
             {
-                dataStalled = false;
+                readStalled = false;
                 process = true;
             }
         }
@@ -133,10 +138,33 @@ public class QuicStream extends AbstractStream
         }
     }
 
-    @Override
-    public void data(boolean last, List<ByteBuffer> data, Promise.Invocable<Stream> promise)
+    private boolean hasDemand()
     {
-        // TODO: consider changing List<ByteBuffer> to RetainableByteBuffer.
+        try (var _ = lock.lock())
+        {
+            return readDemand;
+        }
+    }
+
+    @Override
+    public void data(boolean last, RetainableByteBuffer data, Promise.Invocable<Stream> promise)
+    {
+        try
+        {
+            // Avoid infinite buffering in the session flusher.
+            if (!sender.begin(last, promise))
+                throw new WritePendingException();
+
+            // If already locally closed, fail the write.
+            if (last && !initiateLocalClose())
+                throw new IllegalStateException("stream_closed");
+
+            session.data(this, new StreamFrame(getId(), data, last), sender);
+        }
+        catch (Throwable x)
+        {
+            promise.failed(x);
+        }
     }
 
     @Override
@@ -145,10 +173,44 @@ public class QuicStream extends AbstractStream
         session.maxData(this, new StreamMaxDataFrame(getId(), maxData), promise);
     }
 
+    void updateSendMaxData(long maxData)
+    {
+        Atomics.updateMax(sendMaxData, maxData);
+    }
+
+    long getSendWindow()
+    {
+        return sendMaxData.get() - getSendData();
+    }
+
+    long getSendData()
+    {
+        return sendData.get();
+    }
+
+    void updateSendData(long sent)
+    {
+        sendData.addAndGet(sent);
+    }
+
+    public boolean stall()
+    {
+        boolean result = !writeStalled;
+        writeStalled = true;
+        return result;
+    }
+
     @Override
     public void reset(long appErrorCode, Promise.Invocable<Stream> promise)
     {
-        session.reset(this, new ResetFrame(getId(), appErrorCode, sendData.get()), promise);
+        if (!initiateLocalClose())
+            promise.failed(new IllegalStateException("stream_closed"));
+
+        session.reset(this, new ResetFrame(getId(), appErrorCode, sendData.get()), Promise.Invocable.from(promise, () ->
+        {
+            if (updateCloseState(CloseState.LOCALLY_CLOSED))
+                removeAndNotifyClose();
+        }));
     }
 
     @Override
@@ -219,7 +281,7 @@ public class QuicStream extends AbstractStream
         boolean process;
         try (var _ = lock.lock())
         {
-            process = dataQueue.isEmpty() && dataDemand;
+            process = dataQueue.isEmpty() && readDemand;
             Content.Chunk chunk = Content.Chunk.from(frame.data(), frame.isEndStream());
             // Retain the chunk because it is stored for later use.
             chunk.retain();
@@ -238,17 +300,42 @@ public class QuicStream extends AbstractStream
         {
             try (var _ = lock.lock())
             {
-                if (dataQueue.isEmpty() || !dataDemand)
+                if (dataQueue.isEmpty() || !readDemand)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("stalling data processing on {}", this);
-                    dataStalled = true;
+                    readStalled = true;
                     return;
                 }
-                dataDemand = false;
-                dataStalled = false;
+                readDemand = false;
+                readStalled = false;
             }
             notifyDataAvailable(immediate);
+        }
+    }
+
+    private boolean initiateLocalClose()
+    {
+        while (true)
+        {
+            CloseState current = closeState.get();
+            switch (current)
+            {
+                case NOT_CLOSED ->
+                {
+                    if (closeState.compareAndSet(current, CloseState.LOCALLY_CLOSING))
+                        return true;
+                }
+                case REMOTELY_CLOSED ->
+                {
+                    if (closeState.compareAndSet(current, CloseState.CLOSING))
+                        return true;
+                }
+                case LOCALLY_CLOSING, LOCALLY_CLOSED, CLOSING, CLOSED ->
+                {
+                    return false;
+                }
+            }
         }
     }
 
@@ -395,6 +482,65 @@ public class QuicStream extends AbstractStream
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s[demand=%b]".formatted(super.toString(), hasDemand());
+    }
+
+    private class Sender implements Promise.Invocable<Stream>
+    {
+        private final AtomicMarkableReference<Invocable<Stream>> sendPromise = new AtomicMarkableReference<>(null, false);
+
+        private boolean begin(boolean last, Invocable<Stream> promise)
+        {
+            return sendPromise.compareAndSet(null, promise, false, last);
+        }
+
+        @Override
+        public void succeeded(Stream result)
+        {
+            boolean[] mark = new boolean[1];
+            Invocable<Stream> promise;
+            while (true)
+            {
+                promise = sendPromise.get(mark);
+                boolean last = mark[0];
+                if (sendPromise.compareAndSet(promise, null, last, last))
+                    break;
+            }
+            if (mark[0])
+            {
+                if (updateCloseState(CloseState.LOCALLY_CLOSED))
+                    removeAndNotifyClose();
+            }
+            promise.succeeded(result);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            boolean[] mark = new boolean[1];
+            Invocable<Stream> promise;
+            while (true)
+            {
+                promise = sendPromise.get(mark);
+                boolean last = mark[0];
+                if (sendPromise.compareAndSet(promise, null, last, true))
+                    break;
+            }
+            if (updateCloseState(CloseState.CLOSED))
+                removeAndNotifyClose();
+            promise.failed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return sendPromise.get(new boolean[1]).getInvocationType();
         }
     }
 }
