@@ -14,7 +14,6 @@
 package org.eclipse.jetty.quic.common.internal.packets;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.RetryPacket;
 import org.slf4j.Logger;
@@ -24,20 +23,13 @@ public class RetryPacketGenerator implements PacketGenerator
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryPacketGenerator.class);
 
-    private final Encrypter encrypter;
-
-    public RetryPacketGenerator(Encrypter encrypter)
-    {
-        this.encrypter = encrypter;
-    }
-
     @Override
     public void generate(RetainableByteBuffer.Mutable packetAccumulator, Packet packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
     {
         generate(packetAccumulator, (RetryPacket)packet);
     }
 
-    private void generate(RetainableByteBuffer.Mutable packetAccumulator, RetryPacket packet)
+    public void generate(RetainableByteBuffer.Mutable packetAccumulator, RetryPacket packet)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("generating {}", packet);
@@ -61,9 +53,8 @@ public class RetryPacketGenerator implements PacketGenerator
         byte[] token = packet.token();
         packetAccumulator.put(token);
 
-        // TODO
-//        byte[] integrity = encrypter.generateRetryIntegrity(retryAccumulator);
-//        packetAccumulator.put(integrity);
-        packetAccumulator.put(new byte[16]);
+        byte[] integrity = packet.integrity();
+        if (integrity != null)
+            packetAccumulator.put(integrity);
     }
 }

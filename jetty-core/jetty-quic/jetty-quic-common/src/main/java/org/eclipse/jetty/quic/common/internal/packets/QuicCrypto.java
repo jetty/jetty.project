@@ -14,21 +14,14 @@
 package org.eclipse.jetty.quic.common.internal.packets;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.util.StringUtil;
 
 public class QuicCrypto
 {
-    private static final byte[] INITIAL_SALT_V1 = new byte[]
-    {
-        (byte)0x38, (byte)0x76, (byte)0x2C, (byte)0xF7, (byte)0xF5, (byte)0x59, (byte)0x34, (byte)0xB3,
-        (byte)0x4D, (byte)0x17, (byte)0x9A, (byte)0xE6, (byte)0xA4, (byte)0xC8, (byte)0x0C, (byte)0xAD,
-        (byte)0xCC, (byte)0xBB, (byte)0x7F, (byte)0x0A
-    };
-    private static final byte[] INITIAL_SALT_V2 = new byte[]
-    {
-        (byte)0x0D, (byte)0xED, (byte)0xE3, (byte)0xDE, (byte)0xF7, (byte)0x00, (byte)0xA6, (byte)0xDB,
-        (byte)0x81, (byte)0x93, (byte)0x81, (byte)0xBE, (byte)0x6E, (byte)0x26, (byte)0x9D, (byte)0xCB,
-        (byte)0xF9, (byte)0xBD, (byte)0x2E, (byte)0xD9
-    };
+    private static final byte[] INITIAL_SALT_V1 = StringUtil.fromHexString("38762cf7f55934b34d179ae6a4c80cadccbb7f0a");
+    private static final byte[] INITIAL_SALT_V2 = StringUtil.fromHexString("0dede3def700a6db819381be6e269dcbf9bd2ed9");
+    private static final byte[] RETRY_INTEGRITY_SECRET_V1 = StringUtil.fromHexString("d9c9943e6101fd200021506bcc02814c73030f25c79d71ce876eca876e6fca8e");
+    private static final byte[] RETRY_INTEGRITY_SECRET_V2 = StringUtil.fromHexString("c4dd2484d681aefa4ff4d69c2c20299984a765a5d3c31982f38fc74162155e9f");
 
     /// @return the salt used to derive initial secrets.
     public static byte[] initialSalt(QuicVersion version)
@@ -77,6 +70,16 @@ public class QuicCrypto
         {
             case QuicVersion.V1 -> "quic ku";
             case QuicVersion.V2 -> "quicv2 ku";
+        };
+    }
+
+    /// @return the QUIC secret used for `RetryPacket` integrity.
+    public static byte[] retryIntegritySecret(QuicVersion version)
+    {
+        return switch (version)
+        {
+            case QuicVersion.V1 -> RETRY_INTEGRITY_SECRET_V1;
+            case QuicVersion.V2 -> RETRY_INTEGRITY_SECRET_V2;
         };
     }
 

@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -170,11 +171,15 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
             if (LOG.isDebugEnabled())
                 LOG.debug("no token in {} on {}", packet, this);
 
-            // Store the odcid to be used for the next InitialPacket.
+            // Store the odcid to be used for the next InitialPacket and for the RetryPacket.
             originalDestinationConnectionId = packet.destinationConnectionId();
 
             token = getQuicConfiguration().getTokenFactory().newRetryToken(getRemoteSocketAddress(), originalDestinationConnectionId);
-            RetryPacket retryPacket = new RetryPacket(packet.quicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token);
+            RetryPacket retryPacket = new RetryPacket(packet.quicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, null);
+            RetainableByteBuffer.Mutable retryAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), false, -1, 0, 0);
+            generateRetryPacket(retryAccumulator, retryPacket);
+            byte[] integrity = getTLSEngine().getPacketProtector().generateRetryIntegrity(retryAccumulator, originalDestinationConnectionId);
+            retryPacket = retryPacket.withIntegrity(integrity);
             packet(retryPacket);
             // And drop the received InitialPacket.
         }
@@ -185,10 +190,6 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
                 LOG.debug("token {} in {} on {}", valid ? "valid" : "invalid", packet, this);
             if (!valid)
                 throw new QuicException(ErrorCode.INVALID_TOKEN_ERROR, "invalid_token");
-
-            // The token was valid, clear the odcid.
-            originalDestinationConnectionId = null;
-
             // Process the InitialPacket.
             super.processPacket(packet);
         }

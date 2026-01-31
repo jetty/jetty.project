@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
-import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.RetryPacket;
 import org.eclipse.jetty.util.BufferUtil;
@@ -27,13 +26,6 @@ import org.slf4j.LoggerFactory;
 public class RetryPacketParser implements PacketParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryPacketParser.class);
-
-    private final Decrypter decrypter;
-
-    public RetryPacketParser(Decrypter decrypter)
-    {
-        this.decrypter = decrypter;
-    }
 
     @Override
     public Packet parse(RetainableByteBuffer buffer) throws Exception
@@ -68,10 +60,7 @@ public class RetryPacketParser implements PacketParser
 
         assert byteBuffer.remaining() == 0;
 
-        // TODO
-//        decrypter.verifyRetryIntegrity(integrityAccumulator, integrity);
-
-        RetryPacket packet = new RetryPacket(quicVersion, dstConnectionId, srcConnectionId, token);
+        RetryPacket packet = new RetryPacket(quicVersion, dstConnectionId, srcConnectionId, token, integrity);
 
         if (LOG.isDebugEnabled())
             LOG.debug("parsed {}", packet);
