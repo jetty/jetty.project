@@ -18,15 +18,27 @@ import org.eclipse.jetty.quic.api.QuicVersion;
 public final class RetryPacket extends LongHeaderPacket
 {
     private final byte[] token;
+    private final byte[] integrity;
 
-    public RetryPacket(QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId, byte[] token)
+    public RetryPacket(QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId, byte[] token, byte[] integrity)
     {
         super(PacketType.RETRY, quicVersion, destinationConnectionId, sourceConnectionId);
         this.token = token;
+        this.integrity = integrity;
     }
 
     public byte[] token()
     {
         return token;
+    }
+
+    public byte[] integrity()
+    {
+        return integrity;
+    }
+
+    public RetryPacket withIntegrity(byte[] integrity)
+    {
+        return new RetryPacket(quicVersion(), destinationConnectionId(), sourceConnectionId(), token(), integrity);
     }
 }

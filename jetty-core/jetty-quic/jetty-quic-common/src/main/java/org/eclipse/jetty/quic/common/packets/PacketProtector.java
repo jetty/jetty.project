@@ -14,6 +14,7 @@
 package org.eclipse.jetty.quic.common.packets;
 
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.crypto.Cipher;
@@ -21,6 +22,7 @@ import javax.crypto.KDF;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.HKDFParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -35,6 +37,7 @@ import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.common.HKDF;
 import org.eclipse.jetty.tls.common.TranscriptHash;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -261,6 +264,57 @@ public class PacketProtector implements Encrypter, Decrypter
         if (keyManager == null)
             throw new IllegalStateException("no KeyManager for encryption level " + EncryptionLevel.ONE_RTT);
         return keyManager.decryptShortHeaderPacket(dstConnectionId, encrypted);
+    }
+
+    public byte[] generateRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
+    {
+        // RFC-9001[5.8]: build a retry pseudo-packet.
+        // The buffer contains up to the token bytes but no integrity bytes.
+        return generateRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, false);
+    }
+
+    private byte[] generateRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId, boolean integrityPresent) throws Exception
+    {
+        ByteBuffer byteBuffer = retryPacketBuffer.getByteBuffer();
+        QuicVersion quicVersion = QuicVersion.from(byteBuffer.getInt(1));
+        int capacity = 1 + originalDestinationConnectionId.length + byteBuffer.remaining();
+        if (integrityPresent)
+            capacity -= 16;
+        byte[] pseudoPacket = new byte[capacity];
+        int offset = 0;
+        pseudoPacket[offset] = (byte)originalDestinationConnectionId.length;
+        ++offset;
+        System.arraycopy(originalDestinationConnectionId, 0, pseudoPacket, offset, originalDestinationConnectionId.length);
+        offset += originalDestinationConnectionId.length;
+        byteBuffer.get(pseudoPacket, offset, capacity - offset);
+
+        // RFC-9001[5.8]: compute the integrity.
+        KDF kdf = KDF.getInstance("HKDF-SHA256");
+        byte[] retryIntegritySecret = QuicCrypto.retryIntegritySecret(quicVersion);
+        // Derive the key and the nonce from the secret.
+        HKDFParameterSpec spec = HKDF.expandLabel(new SecretKeySpec(retryIntegritySecret, "AES"), QuicCrypto.encryptionLabel(quicVersion), 16);
+        SecretKey integrityKey = kdf.deriveKey("AES", spec);
+        spec = HKDF.expandLabel(new SecretKeySpec(retryIntegritySecret, "AES"), QuicCrypto.initializationVectorLabel(quicVersion), 12);
+        SecretKey integrityNonce = kdf.deriveKey("IntegrityNonce", spec);
+        // Generate the integrity.
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.ENCRYPT_MODE, integrityKey, new GCMParameterSpec(128, integrityNonce.getEncoded()));
+        cipher.updateAAD(pseudoPacket);
+        byte[] bytes = cipher.doFinal();
+        LOG.info("generated {}", StringUtil.toHexString(bytes));
+        return bytes;
+    }
+
+    public boolean verifyRetryIntegrity(RetainableByteBuffer.Mutable retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
+    {
+        // RFC-9001[5.8]: build a retry pseudo-packet.
+        // The buffer contains up to the integrity bytes (16 bytes).
+        byte[] expected = generateRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, true);
+        byte[] integrity = new byte[16];
+        ByteBuffer byteBuffer = retryPacketBuffer.getByteBuffer();
+        byteBuffer.get(integrity);
+        // Verify the integrity.
+        return MessageDigest.isEqual(integrity, expected);
     }
 
     @Override

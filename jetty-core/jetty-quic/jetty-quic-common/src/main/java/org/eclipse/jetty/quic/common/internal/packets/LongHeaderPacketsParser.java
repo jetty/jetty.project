@@ -34,7 +34,7 @@ public class LongHeaderPacketsParser
         // TODO: other types.
         parsers.put(LongHeaderPacket.PacketType.INITIAL, new InitialPacketParser(decrypter, packetNumbers, framesParser));
         parsers.put(LongHeaderPacket.PacketType.HANDSHAKE, new HandshakePacketParser(decrypter, packetNumbers, framesParser));
-        parsers.put(LongHeaderPacket.PacketType.RETRY, new RetryPacketParser(decrypter));
+        parsers.put(LongHeaderPacket.PacketType.RETRY, new RetryPacketParser());
     }
 
     public Packet parse(RetainableByteBuffer buffer) throws Exception

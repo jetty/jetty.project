@@ -48,6 +48,7 @@ import org.eclipse.jetty.quic.common.frames.FrameStream;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.QuicFlusher;
 import org.eclipse.jetty.quic.common.internal.packets.PacketsParser;
+import org.eclipse.jetty.quic.common.internal.packets.RetryPacketGenerator;
 import org.eclipse.jetty.quic.common.packets.HandshakePacket;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.OneRTTPacket;
@@ -75,6 +76,7 @@ public abstract class QuicSession extends AbstractSession
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
     private final AutoLock lock = new AutoLock();
+    private final RetryPacketGenerator retryPacketGenerator = new RetryPacketGenerator();
     private final Map<EncryptionLevel, FrameStream> cryptoStreams = new HashMap<>();
     private final Map<Long, QuicStream> streams = new ConcurrentHashMap<>();
     private final AtomicLong biRemoteStreamCount = new AtomicLong();
@@ -458,6 +460,8 @@ public abstract class QuicSession extends AbstractSession
                 return;
             }
 
+            // Minimally process first packets to set
+            // the dcid be used by acknowledgments.
             switch (packet)
             {
                 case InitialPacket initialPacket -> setDestinationConnectionId(initialPacket.sourceConnectionId());
@@ -467,9 +471,10 @@ public abstract class QuicSession extends AbstractSession
                 }
             }
 
-            // The packet was fully decrypted and parsed, ack it.
-            // Processing of frames by a different layer (such as the TLS layer or
-            // the application layer) is independent of acks at the transport layer.
+            // The packet was fully decrypted and parsed, ack it now.
+            // Processing of frames by a different layer (such as the
+            // TLS layer or the application layer) is independent of
+            // acknowledgments at the transport layer.
             ack(packet);
 
             if (packet instanceof InitialPacket || Arrays.equals(getSourceConnectionId(), packet.destinationConnectionId()))
@@ -487,32 +492,39 @@ public abstract class QuicSession extends AbstractSession
 
     protected void processPacket(Packet packet)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("processing {} on {}", packet, this);
-
-        switch (packet)
+        try
         {
-            case InitialPacket initialPacket ->
+            if (LOG.isDebugEnabled())
+                LOG.debug("processing {} on {}", packet, this);
+
+            switch (packet)
             {
-                processFrames(initialPacket);
+                case InitialPacket initialPacket ->
+                {
+                    processFrames(initialPacket);
+                }
+                case HandshakePacket handshakePacket ->
+                {
+                    getTLSEngine().getPacketProtector().discardKeys(EncryptionLevel.INITIAL);
+                    processFrames(handshakePacket);
+                }
+                case ZeroRTTPacket zeroRTTPacket ->
+                {
+                    // TODO:
+                    processFrames(zeroRTTPacket);
+                }
+                case OneRTTPacket oneRTTPacket ->
+                {
+                    // TODO: handle here keyPhase shift?
+                    processFrames(oneRTTPacket);
+                }
+                // RetryPacket and VersionNegotiationPacket only handled by clients.
+                default -> throw new UnsupportedOperationException();
             }
-            case HandshakePacket handshakePacket ->
-            {
-                getTLSEngine().getPacketProtector().discardKeys(EncryptionLevel.INITIAL);
-                processFrames(handshakePacket);
-            }
-            case ZeroRTTPacket zeroRTTPacket ->
-            {
-                // TODO:
-                processFrames(zeroRTTPacket);
-            }
-            case OneRTTPacket oneRTTPacket ->
-            {
-                // TODO: handle here keyPhase shift?
-                processFrames(oneRTTPacket);
-            }
-            // RetryPacket and VersionNegotiationPacket only handled by clients.
-            default -> throw new UnsupportedOperationException();
+        }
+        catch (Throwable x)
+        {
+            fail(x);
         }
     }
 
@@ -720,6 +732,11 @@ public abstract class QuicSession extends AbstractSession
             notifyMaxData(new MaxDataFrame(maxData));
         else
             stream.processFrame(new StreamMaxDataFrame(stream.getId(), maxData));
+    }
+
+    protected void generateRetryPacket(RetainableByteBuffer.Mutable retryAccumulator, RetryPacket retryPacket)
+    {
+        retryPacketGenerator.generate(retryAccumulator, retryPacket);
     }
 
     public void fail(Throwable x)

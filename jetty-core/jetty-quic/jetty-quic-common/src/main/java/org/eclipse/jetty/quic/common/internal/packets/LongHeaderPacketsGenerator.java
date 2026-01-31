@@ -32,7 +32,7 @@ public class LongHeaderPacketsGenerator
     {
         initialGenerator = new InitialPacketGenerator(packetNumbers, framesGenerator, encrypter);
         handshakeGenerator = new HandshakePacketGenerator(packetNumbers, framesGenerator, encrypter);
-        retryGenerator = new RetryPacketGenerator(encrypter);
+        retryGenerator = new RetryPacketGenerator();
     }
 
     public void generate(RetainableByteBuffer.Mutable packetAccumulator, LongHeaderPacket longPacket, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
