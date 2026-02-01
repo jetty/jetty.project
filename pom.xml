@@ -172,7 +172,7 @@
     <buildnumber.maven.plugin.version>3.2.1</buildnumber.maven.plugin.version>
     <bundle.debug>false</bundle.debug>
     <checkstyle.version>10.26.1</checkstyle.version>
-    <commons-codec.version>1.20.0</commons-codec.version>
+    <commons-codec.version>1.21.0</commons-codec.version>
     <commons-io.version>2.21.0</commons-io.version>
     <commons-lang3.version>3.20.0</commons-lang3.version>
     <commons.compress.version>1.28.0</commons.compress.version>
@@ -210,7 +210,7 @@
     <jboss-threads.version>3.9.2</jboss-threads.version>
     <jboss.logging.annotations.version>2.2.2.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.2.Final</jboss.logging.processor.version>
-    <jboss.logging.version>3.6.1.Final</jboss.logging.version>
+    <jboss.logging.version>3.6.2.Final</jboss.logging.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty-quiche-native.version>0.24.5</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
@@ -243,12 +243,12 @@
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.25.3</log4j2.version>
-    <logback.version>1.5.25</logback.version>
+    <logback.version>1.5.27</logback.version>
     <lucene.version>9.11.1</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.7</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven-build-cache.version>1.2.1</maven-build-cache.version>
+    <maven-build-cache.version>1.2.2</maven-build-cache.version>
     <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.2.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
@@ -306,7 +306,7 @@
     <plexus-classworlds.version>2.9.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
-    <plexus-xml.version>4.1.0</plexus-xml.version>
+    <plexus-xml.version>4.1.1</plexus-xml.version>
     <project.build.outputTimestamp>2023-06-05T23:12:49Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
