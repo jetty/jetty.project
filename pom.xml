@@ -180,6 +180,7 @@
     <build-helper.maven.plugin.version>3.6.1</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.3.0</buildnumber.maven.plugin.version>
+    <built-by>${user.name}</built-by>
     <checkstyle.version>10.26.1</checkstyle.version>
     <commons-codec.version>1.21.0</commons-codec.version>
     <commons-io.version>2.21.0</commons-io.version>
@@ -1658,6 +1659,7 @@
                 <Implementation-Vendor>Eclipse Jetty Project</Implementation-Vendor>
                 <SPDX-License-Identifier>EPL-2.0 OR Apache-2.0</SPDX-License-Identifier>
                 <url>${jetty.url}</url>
+                <Built-By>${built-by}</Built-By>
               </manifestEntries>
             </archive>
           </configuration>
