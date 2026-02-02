@@ -1878,7 +1878,7 @@ public class HttpParser
             switch (_state)
             {
                 case EOF_CONTENT:
-                    _contentChunk = buffer.asReadOnlyBuffer();
+                    _contentChunk = buffer.slice();
                     _contentPosition += remaining;
                     buffer.position(buffer.position() + remaining);
                     if (_handler.content(_contentChunk))
@@ -1895,18 +1895,17 @@ public class HttpParser
                     }
                     else
                     {
-                        _contentChunk = buffer.asReadOnlyBuffer();
-
-                        // limit content by expected size if _contentLength is >= 0 (i.e.: not infinite)
+                        int length = remaining;
+                        // Limit the content by the expected length if _contentLength is >= 0 (i.e.: not infinite).
                         if (_contentLength > -1 && remaining > content)
                         {
-                            // We can cast remaining to an int as we know that it is smaller than
-                            // or equal to length which is already an int.
-                            _contentChunk.limit(_contentChunk.position() + (int)content);
+                            // The cast to int is safe, since remaining is an int.
+                            length = (int)content;
                         }
+                        _contentChunk = buffer.slice(buffer.position(), length);
 
-                        _contentPosition += _contentChunk.remaining();
-                        buffer.position(buffer.position() + _contentChunk.remaining());
+                        _contentPosition += length;
+                        buffer.position(buffer.position() + length);
 
                         if (_handler.content(_contentChunk))
                             return true;
@@ -2025,14 +2024,12 @@ public class HttpParser
                     }
                     else
                     {
-                        _contentChunk = buffer.asReadOnlyBuffer();
+                        int length = Math.min(remaining, chunkLength);
+                        _contentChunk = buffer.slice(buffer.position(), length);
 
-                        if (remaining > chunkLength)
-                            _contentChunk.limit(_contentChunk.position() + chunkLength);
-                        chunkLength = _contentChunk.remaining();
-                        _contentPosition += chunkLength;
-                        _chunkOffset += chunkLength;
-                        buffer.position(buffer.position() + chunkLength);
+                        _contentPosition += length;
+                        _chunkOffset += length;
+                        buffer.position(buffer.position() + length);
                         if (_handler.content(_contentChunk))
                             return true;
                     }

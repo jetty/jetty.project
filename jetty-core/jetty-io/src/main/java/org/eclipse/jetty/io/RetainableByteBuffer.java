@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 
+import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -2461,6 +2462,23 @@ public interface RetainableByteBuffer extends Retainable
                     }.iterate();
                 }
             }
+        }
+
+        public Content.Source takeContentSource()
+        {
+            List<Content.Chunk> list = new ArrayList<>();
+            Iterator<RetainableByteBuffer> iterator = _buffers.iterator();
+            while (iterator.hasNext())
+            {
+                RetainableByteBuffer buffer = iterator.next();
+                if (buffer instanceof Content.Chunk chunk)
+                    list.add(chunk);
+                else
+                    list.add(Content.Chunk.asChunk(buffer.getByteBuffer(), !iterator.hasNext(), buffer));
+            }
+            ChunksContentSource contentSource = new ChunksContentSource(list);
+            release();
+            return contentSource;
         }
 
         @Override
