@@ -56,7 +56,7 @@ public class MetaData
     protected final List<Resource> _webInfClasses = new ArrayList<>();
     protected final List<Resource> _webInfJars = new ArrayList<>();
     protected final List<Resource> _orderedContainerResources = new ArrayList<>();
-    protected final List<Resource> _orderedWebInfResources = new ArrayList<>();
+    protected List<Resource> _orderedWebInfResources;
     protected Ordering _ordering; //can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
     protected boolean _validateXml = false;
@@ -180,7 +180,8 @@ public class MetaData
         _webFragmentResourceMap.clear();
         _annotations.clear();
         _webInfJars.clear();
-        _orderedWebInfResources.clear();
+        if (_orderedWebInfResources != null)
+            _orderedWebInfResources.clear();
         _orderedContainerResources.clear();
         _ordering = null;
         _allowDuplicateFragmentNames = false;
@@ -430,9 +431,11 @@ public class MetaData
 
     public void orderFragments()
     {
-        _orderedWebInfResources.clear();
-        if (getOrdering() != null)
+        if (getOrdering() != null && _orderedWebInfResources == null)
+        {
+            _orderedWebInfResources = new ArrayList<>(_webInfJars.size());
             _orderedWebInfResources.addAll(getOrdering().order(_webInfJars));
+        }
     }
 
     /**
@@ -486,7 +489,7 @@ public class MetaData
         resources.add(null); //always apply annotations with no resource first
         resources.addAll(_orderedContainerResources); //next all annotations from container path
         resources.addAll(_webInfClasses); //next everything from web-inf classes
-        resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path 
+        resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path
 
         for (Resource r : resources)
         {
@@ -529,7 +532,7 @@ public class MetaData
     {
         boolean distributable = (
             (_webDefaultsRoot != null && _webDefaultsRoot.isDistributable()) ||
-                (_webXmlRoot != null && _webXmlRoot.isDistributable()));
+            (_webXmlRoot != null && _webXmlRoot.isDistributable()));
 
         for (WebDescriptor d : _webOverrideRoots)
         {
@@ -577,7 +580,7 @@ public class MetaData
     public void setOrdering(Ordering o)
     {
         _ordering = o;
-        orderFragments();
+        _orderedWebInfResources = null;
     }
 
     /**
@@ -706,7 +709,10 @@ public class MetaData
         if (!withOrdering)
             return Collections.unmodifiableList(_webInfJars);
         else
+        {
+            orderFragments();
             return Collections.unmodifiableList(_orderedWebInfResources);
+        }
     }
 
     public List<Resource> getContainerResources()
