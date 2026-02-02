@@ -150,9 +150,29 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return new org.eclipse.jetty.http.MutableHttpFields(fields, removeFields);
     }
 
-    static Mutable build(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyViolation)
+    /**
+     * Builds HttpFields with behavior based on {@link HttpCompliance}.
+     *
+     * @param httpCompliance the compliance to use
+     * @param notifyConsumer the consumer of the violation.
+     * @deprecated use {@link #build(HttpCompliance, Supplier)} instead.
+     */
+    @Deprecated(since = "12.1.6", forRemoval = true)
+    static Mutable build(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyConsumer)
     {
-        return new org.eclipse.jetty.http.MutableHttpFields.Compliant(httpCompliance, notifyViolation);
+        return build(httpCompliance, () -> new ComplianceViolation.Listener()
+        {
+            @Override
+            public void onComplianceViolation(ComplianceViolation.Event event)
+            {
+                notifyConsumer.accept(event.violation(), event.details());
+            }
+        });
+    }
+
+    static Mutable build(HttpCompliance httpCompliance, Supplier<ComplianceViolation.Listener> listenerSupplier)
+    {
+        return new org.eclipse.jetty.http.MutableHttpFields(httpCompliance, listenerSupplier);
     }
 
     /**

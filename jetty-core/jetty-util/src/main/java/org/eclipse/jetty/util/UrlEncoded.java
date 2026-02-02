@@ -364,10 +364,32 @@ public class UrlEncoded
     {
         CodingErrorAction onCodingError = (allowBadUtf8 || allowBadPercent || allowTruncatedUtf8) ? CodingErrorAction.REPLACE : CodingErrorAction.REPORT;
         CharsetStringBuilder charsetStringBuilder = new Utf8StringBuilder(onCodingError, onCodingError);
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, -1, -1, allowBadUtf8, allowBadPercent, allowTruncatedUtf8);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, -1, -1, allowBadUtf8, allowBadPercent, allowTruncatedUtf8,
+            null, null, null);
         try
         {
             return !decoder.parse(query, offset, length);
+        }
+        catch (IOException e)
+        {
+            // TODO: why do we do this only for String parsing, but not InputStream?
+            throw new Utf8StringBuilder.Utf8IllegalArgumentException(e);
+        }
+    }
+
+    public static void decodeUtf8To(String query, int offset, int length, BiConsumer<String, String> adder, boolean allowBadPercent, boolean allowBadUtf8, boolean allowTruncatedUtf8,
+                                    BiConsumer<String, Boolean> onBadEncoding,
+                                    BiConsumer<String, Boolean> onBadPercentage,
+                                    BiConsumer<String, Boolean> onTruncatedUtf8)
+        throws Utf8StringBuilder.Utf8IllegalArgumentException
+    {
+        CodingErrorAction onCodingError = (allowBadUtf8 || allowBadPercent || allowTruncatedUtf8) ? CodingErrorAction.REPLACE : CodingErrorAction.REPORT;
+        CharsetStringBuilder charsetStringBuilder = new Utf8StringBuilder(onCodingError, onCodingError);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, -1, -1, allowBadUtf8, allowBadPercent, allowTruncatedUtf8,
+            onBadEncoding, onBadPercentage, onTruncatedUtf8);
+        try
+        {
+            decoder.parse(query, offset, length);
         }
         catch (IOException e)
         {
@@ -404,7 +426,8 @@ public class UrlEncoded
         throws IOException
     {
         CharsetStringBuilder charsetStringBuilder = new CharsetStringBuilder.Iso88591StringBuilder();
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys, false, false, false);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys, false, false, false,
+            null, null, null);
         decoder.parse(in, StandardCharsets.ISO_8859_1);
     }
 
@@ -520,7 +543,7 @@ public class UrlEncoded
         boolean allowBadEncoding = true;
         boolean allowBadPercent = false;
         boolean allowTruncatedEncoding = true;
-        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys, allowBadEncoding, allowBadPercent, allowTruncatedEncoding);
+        UrlParameterDecoder decoder = new UrlParameterDecoder(charsetStringBuilder, adder, maxLength, maxKeys, allowBadEncoding, allowBadPercent, allowTruncatedEncoding, null, null, null);
         decoder.parse(in, charset);
     }
 

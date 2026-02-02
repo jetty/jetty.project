@@ -103,7 +103,7 @@ public class QuotedCSVTest
     @Test
     public void testETag()
     {
-        QuotedCSV values = new QuotedCSV.Etags(null, null, "W/\"000000000\", W/\"123456789\", W/\"999999999\"");
+        QuotedCSV values = new QuotedCSV.Etags(null, (ComplianceViolation.Listener)null, "W/\"000000000\", W/\"123456789\", W/\"999999999\"");
         assertThat(values, Matchers.contains(
             "W/\"000000000\"",
             "W/\"123456789\"",

@@ -830,30 +830,15 @@ public class MultiPartFormData
                         switch (StringUtil.asciiToLowerCase(value))
                         {
                             case "base64" ->
-                            {
-                                complianceListener.onComplianceViolation(
-                                    new ComplianceViolation.Event(compliance,
-                                        MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING,
-                                        value));
-                            }
+                                onViolation(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING);
                             case "quoted-printable" ->
-                            {
-                                complianceListener.onComplianceViolation(
-                                    new ComplianceViolation.Event(compliance,
-                                        MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING,
-                                        value));
-                            }
+                                onViolation(MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING);
                             case "8bit", "binary" ->
                             {
                                 // ignore
                             }
                             default ->
-                            {
-                                complianceListener.onComplianceViolation(
-                                    new ComplianceViolation.Event(compliance,
-                                        MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING,
-                                        value));
-                            }
+                                onViolation(MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING);
                         }
                     }
 
@@ -914,16 +899,9 @@ public class MultiPartFormData
             @Override
             public void onViolation(MultiPartCompliance.Violation violation)
             {
-                try
-                {
-                    ComplianceViolation.Event event = new ComplianceViolation.Event(compliance, violation, "multipart spec violation");
-                    complianceListener.onComplianceViolation(event);
-                }
-                catch (Throwable x)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("failure while notifying listener {}", complianceListener);
-                }
+                boolean allowed = compliance.allows(violation);
+                ComplianceViolation.Event event = new ComplianceViolation.Event(compliance, violation, "multipart spec violation", allowed);
+                ComplianceUtils.notify(complianceListener, event);
             }
 
             private void fail(Throwable cause)

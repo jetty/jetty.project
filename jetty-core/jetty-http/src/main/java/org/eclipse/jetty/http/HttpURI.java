@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.eclipse.jetty.http.UriCompliance.Violation;
 import org.eclipse.jetty.util.HostPort;
@@ -64,7 +65,7 @@ import org.eclipse.jetty.util.URIUtil;
  * <p>This class collates any {@link UriCompliance.Violation violations} against the specification
  * and/or best practises in the {@link #getViolations()}.  Users of this class should check against a
  * configured {@link UriCompliance} mode if the {@code HttpURI} is suitable for use
- * (see {@link UriCompliance#checkUriCompliance(UriCompliance, HttpURI, ComplianceViolation.Listener)}).</p>
+ * (see {@link ComplianceUtils#verify(UriCompliance, HttpURI, ComplianceViolation.Listener, Function)}).</p>
  * <p>For example, implementations that wish to process ambiguous URI paths must configure the compliance
  * modes to accept them and then perform their own decoding of {@link #getPath()}.</p>
  * <p>If there are multiple path parameters, only the last one is returned by {@link #getParam()}.</p>

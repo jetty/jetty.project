@@ -21,8 +21,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -47,6 +47,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.TunnelSupport;
@@ -95,14 +96,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         {
             _requestMetaData = (MetaData.Request)frame.getMetaData();
 
-            // Grab freshly initialized ComplianceViolation.Listener here, no need to reinitialize.
-            ComplianceViolation.Listener listener = _httpChannel.getComplianceViolationListener();
+            HttpConfiguration httpConfiguration = _httpChannel.getConnectionMetaData().getHttpConfiguration();
+
             Runnable handler = _httpChannel.onRequest(_requestMetaData);
             Request request = _httpChannel.getRequest();
+            // Grab the request specific ComplianceViolation Listener (possibly a composite).
+            ComplianceViolation.Listener listener = _httpChannel.getComplianceViolationListener();
             listener.onRequestBegin(request);
-            // Note UriCompliance is done by HandlerInvoker
-            HttpCompliance httpCompliance = _httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
-            HttpCompliance.checkHttpCompliance(_requestMetaData, httpCompliance, listener);
+
+            // Note: UriCompliance is done by HandlerInvoker
+            // Perform HttpCompliance
+            ComplianceUtils.verify(httpConfiguration.getHttpCompliance(), _requestMetaData, listener);
 
             if (frame.isEndStream())
             {
