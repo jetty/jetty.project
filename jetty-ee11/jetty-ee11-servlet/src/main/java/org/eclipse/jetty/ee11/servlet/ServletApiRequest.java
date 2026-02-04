@@ -260,7 +260,7 @@ public class ServletApiRequest implements HttpServletRequest
     /**
      * @deprecated use {@link #getAuthenticationState()} instead.
      */
-    @Deprecated(since = "12.1.6", forRemoval = true)
+    @Deprecated(since = "12.1.7", forRemoval = true)
     public AuthenticationState getAuthentication()
     {
         return getAuthenticationState();

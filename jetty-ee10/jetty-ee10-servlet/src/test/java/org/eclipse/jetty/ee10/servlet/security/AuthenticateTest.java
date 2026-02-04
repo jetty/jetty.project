@@ -319,8 +319,6 @@ public class AuthenticateTest
                     }
                 }
             }, "/");
-
-
         });
         String response;
 
@@ -363,8 +361,6 @@ public class AuthenticateTest
                     }
                 }
             }, "/");
-
-
         });
         String response;
 
