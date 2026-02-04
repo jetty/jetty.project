@@ -31,10 +31,11 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee11.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
@@ -193,7 +194,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
             }
             catch (Throwable t)
             {
-                throw new BadMessageException("Bad WebSocket UpgradeRequest URI", t);
+                throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, "Bad WebSocket UpgradeRequest URI", t);
             }
         }
 

@@ -59,8 +59,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class CompressionHandlerTest extends AbstractCompressionTest
@@ -918,6 +920,168 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             .send();
         assertThat(response.getStatus(), is(status));
         assertFalse(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING), "Status code " + status + " should not be compressed");
+    }
+
+    /**
+     * <p>Test of a child handler that handles If-None-Match behavior.</p>
+     *
+     * <p>Child will call setStatus(304) first, then set the ETag header.</p>
+     */
+    @Test
+    public void testIfNoneMatchNotModifiedEtag() throws Exception
+    {
+        pool = new ArrayByteBufferPool.Tracking();
+        GzipCompression gzipCompression = new GzipCompression();
+        gzipCompression.setByteBufferPool(pool);
+
+        String resourceName = "texts/quotes.txt";
+        String resourceContentType = "text/plain;charset=utf-8";
+        String requestedPath = "/path/to/quotes.txt";
+
+        Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
+        byte[] resourceBody = Files.readAllBytes(resourcePath);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(gzipCompression);
+
+        CompressionConfig config = CompressionConfig.builder()
+            .build();
+
+        compressionHandler.putConfiguration("/", config);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
+                String etag = request.getHeaders().get(HttpHeader.IF_NONE_MATCH);
+                if (etag != null)
+                {
+                    // status first
+                    response.setStatus(HttpStatus.NOT_MODIFIED_304);
+                    response.getHeaders().put(HttpHeader.ETAG, etag);
+                    // No write
+                    callback.succeeded();
+                }
+                else
+                {
+                    response.getHeaders().put(HttpHeader.ETAG, "W\"deadbeef\"");
+                    response.setStatus(HttpStatus.OK_200);
+                    response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                }
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        client.getContentDecoderFactories().clear();
+
+        // Initial request, to get actual etag value.
+        ContentResponse response = client.newRequest(server.getURI())
+            .headers(h -> h.put(HttpHeader.ACCEPT_ENCODING, "gzip"))
+            .path(requestedPath)
+            .send();
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertTrue(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING));
+        HttpField etagField = response.getHeaders().getField(HttpHeader.ETAG);
+        assertNotNull(etagField);
+        String etag = etagField.getValue();
+
+        // Next request, using etag, should produce a 304 Not Modified response
+        response = client.newRequest(server.getURI())
+            .headers(h ->
+            {
+                h.put(HttpHeader.ACCEPT_ENCODING, "gzip");
+                h.put(HttpHeader.IF_NONE_MATCH, etag);
+            })
+            .path(requestedPath)
+            .send();
+        assertThat(response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        etagField = response.getHeaders().getField(HttpHeader.ETAG);
+        assertNotNull(etagField);
+        assertEquals(etag, etagField.getValue());
+    }
+
+    /**
+     * <p>Test of a child handler that handles If-None-Match behavior.</p>
+     *
+     * <p>Child will set the ETag header first, then call setStatus(304).</p>
+     */
+    @Test
+    public void testIfNoneMatchEtagNotModified() throws Exception
+    {
+        pool = new ArrayByteBufferPool.Tracking();
+        GzipCompression gzipCompression = new GzipCompression();
+        gzipCompression.setByteBufferPool(pool);
+
+        String resourceName = "texts/quotes.txt";
+        String resourceContentType = "text/plain;charset=utf-8";
+        String requestedPath = "/path/to/quotes.txt";
+
+        Path resourcePath = MavenPaths.findTestResourceFile(resourceName);
+        byte[] resourceBody = Files.readAllBytes(resourcePath);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(gzipCompression);
+
+        CompressionConfig config = CompressionConfig.builder()
+            .build();
+
+        compressionHandler.putConfiguration("/", config);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
+                String etag = request.getHeaders().get(HttpHeader.IF_NONE_MATCH);
+                if (etag != null)
+                {
+                    // header first
+                    response.getHeaders().put(HttpHeader.ETAG, etag);
+                    response.setStatus(HttpStatus.NOT_MODIFIED_304);
+                    // No write
+                    callback.succeeded();
+                }
+                else
+                {
+                    response.getHeaders().put(HttpHeader.ETAG, "W\"deadbeef\"");
+                    response.setStatus(HttpStatus.OK_200);
+                    response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                }
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        client.getContentDecoderFactories().clear();
+
+        // Initial request, to get actual etag value.
+        ContentResponse response = client.newRequest(server.getURI())
+            .headers(h -> h.put(HttpHeader.ACCEPT_ENCODING, "gzip"))
+            .path(requestedPath)
+            .send();
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertTrue(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING));
+        HttpField etagField = response.getHeaders().getField(HttpHeader.ETAG);
+        assertNotNull(etagField);
+        String etag = etagField.getValue();
+
+        // Next request, using etag, should produce a 304 Not Modified response
+        response = client.newRequest(server.getURI())
+            .headers(h ->
+            {
+                h.put(HttpHeader.ACCEPT_ENCODING, "gzip");
+                h.put(HttpHeader.IF_NONE_MATCH, etag);
+            })
+            .path(requestedPath)
+            .send();
+        assertThat(response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        etagField = response.getHeaders().getField(HttpHeader.ETAG);
+        assertNotNull(etagField);
+        assertEquals(etag, etagField.getValue());
     }
 
     private void dumpResponse(org.eclipse.jetty.client.Response response)

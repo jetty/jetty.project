@@ -19,9 +19,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
@@ -85,14 +85,17 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             MetaData.Request requestMetaData = (MetaData.Request)frame.getMetaData();
 
-            // Grab freshly initialized ComplianceViolation.Listener here, no need to reinitialize.
-            ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
+            HttpConfiguration httpConfiguration = httpChannel.getConnectionMetaData().getHttpConfiguration();
+
             Runnable handler = httpChannel.onRequest(requestMetaData);
-            Request request = this.httpChannel.getRequest();
+            Request request = httpChannel.getRequest();
+            // Grab the request specific ComplianceViolation Listener (possibly a composite).
+            ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
             listener.onRequestBegin(request);
-            // Note UriCompliance is done by HandlerInvoker
-            HttpCompliance httpCompliance = httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
-            HttpCompliance.checkHttpCompliance(requestMetaData, httpCompliance, listener);
+
+            // Note: UriCompliance is done by HandlerInvoker
+            // Perform HttpCompliance
+            ComplianceUtils.verify(httpConfiguration.getHttpCompliance(), requestMetaData, listener);
 
             if (frame.isLast())
             {
@@ -114,27 +117,23 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
             HttpField expectField = fields.getField(HttpHeader.EXPECT);
             if (expectField != null && !HttpHeaderValue.CONTINUE.is(expectField.getValue()))
-                throw new BadMessageException(HttpStatus.EXPECTATION_FAILED_417);
+                throw new HttpException.RuntimeException(HttpStatus.EXPECTATION_FAILED_417);
 
             InvocationType invocationType = Invocable.getInvocationType(handler);
-            return new ReadyTask(invocationType, handler)
+            return Invocable.from(invocationType, () ->
             {
-                @Override
-                public void run()
+                if (stream.isClosed())
                 {
-                    if (stream.isClosed())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("HTTP3 request #{}/{} skipped handling, stream already closed {}",
-                                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                                stream);
-                    }
-                    else
-                    {
-                        super.run();
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP3 request #{}/{} skipped handling, stream already closed {}",
+                            stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                            stream);
                 }
-            };
+                else
+                {
+                    handler.run();
+                }
+            });
         }
         catch (Throwable x)
         {

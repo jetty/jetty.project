@@ -30,11 +30,11 @@ Jetty can either be used as a standalone server to deploy web applications, or a
 
 | Jetty 12.0.x | Java 17 | Jakarta EE10, EE9, EE8 | Stable
 
-| Jetty 11.0.x | Java 11 | Jakarta EE9 | EOL (see link:https://github.com/jetty/jetty.project/issues/10485[#10485])
+| Jetty 11.0.x | Java 11 | Jakarta EE9 | EOL (see link:https://github.com/jetty/jetty.project/issues/13918[#13918])
 
-| Jetty 10.0.x | Java 11 | Jakarta EE8 | EOL (see link:https://github.com/jetty/jetty.project/issues/10485[#10485])
+| Jetty 10.0.x | Java 11 | Jakarta EE8 | EOL (see link:https://github.com/jetty/jetty.project/issues/13918[#13918])
 
-| Jetty 9.4.x | Java 8 | Jakarta EE7 | EOL (see link:https://github.com/jetty/jetty.project/issues/7958[#7958])
+| Jetty 9.4.x | Java 8 | Jakarta EE7 | EOL (see link:https://github.com/jetty/jetty.project/issues/13918[#13918])
 |===
 
 == xref:operations-guide:index.adoc[]

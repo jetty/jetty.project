@@ -692,7 +692,7 @@ public class HttpField
     protected QuotedCSV newQuotedCSV(boolean keepQuotes, String value)
     {
         if (getHeader() != null && ETAG_HEADER.contains(this.getHeader()))
-            return new QuotedCSV.Etags(null, null, value);
+            return new QuotedCSV.Etags(null, (ComplianceViolation.Listener)null, value);
         return new QuotedCSV(keepQuotes, value);
     }
 

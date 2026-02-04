@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.session.infinispan;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 
 import org.infinispan.protostream.FileDescriptorSource;
@@ -25,22 +26,36 @@ import org.infinispan.protostream.SerializationContextInitializer;
  */
 public class InfinispanSerializationContextInitializer implements SerializationContextInitializer
 {
-    @Override
     public String getProtoFileName()
     {
         return "session.proto";
     }
 
     @Override
-    public String getProtoFile() throws UncheckedIOException
+    public void register(SerializationContext serCtx)
     {
-        return FileDescriptorSource.getResourceAsString(getClass(), "/" + getProtoFileName());
+        try
+        {
+            serCtx.registerProtoFiles(FileDescriptorSource.fromResources(getProtoFileName()));
+        }
+        catch (IOException e)
+        {
+            throw new UncheckedIOException(e);
+        }
+        SerializationContextInitializer.super.register(serCtx);
     }
 
     @Override
     public void registerSchema(SerializationContext serCtx)
     {
-        serCtx.registerProtoFiles(FileDescriptorSource.fromString(getProtoFileName(), getProtoFile()));
+        try
+        {
+            serCtx.registerProtoFiles(FileDescriptorSource.fromResources(getProtoFileName()));
+        }
+        catch (IOException e)
+        {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override

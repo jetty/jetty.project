@@ -21,9 +21,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.TunnelSupport;
@@ -96,14 +96,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         {
             _requestMetaData = (MetaData.Request)frame.getMetaData();
 
-            // Grab freshly initialized ComplianceViolation.Listener here, no need to reinitialize.
-            ComplianceViolation.Listener listener = _httpChannel.getComplianceViolationListener();
+            HttpConfiguration httpConfiguration = _httpChannel.getConnectionMetaData().getHttpConfiguration();
+
             Runnable handler = _httpChannel.onRequest(_requestMetaData);
             Request request = _httpChannel.getRequest();
+            // Grab the request specific ComplianceViolation Listener (possibly a composite).
+            ComplianceViolation.Listener listener = _httpChannel.getComplianceViolationListener();
             listener.onRequestBegin(request);
-            // Note UriCompliance is done by HandlerInvoker
-            HttpCompliance httpCompliance = _httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
-            HttpCompliance.checkHttpCompliance(_requestMetaData, httpCompliance, listener);
+
+            // Note: UriCompliance is done by HandlerInvoker
+            // Perform HttpCompliance
+            ComplianceUtils.verify(httpConfiguration.getHttpCompliance(), _requestMetaData, listener);
 
             if (frame.isEndStream())
             {
@@ -128,27 +131,23 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             HttpField expectField = fields.getField(HttpHeader.EXPECT);
             if (expectField != null && !HttpHeaderValue.CONTINUE.is(expectField.getValue()))
-                throw new BadMessageException(HttpStatus.EXPECTATION_FAILED_417);
+                throw new HttpException.RuntimeException(HttpStatus.EXPECTATION_FAILED_417);
 
             InvocationType invocationType = Invocable.getInvocationType(handler);
-            return new ReadyTask(invocationType, handler)
+            return Invocable.from(invocationType, () ->
             {
-                @Override
-                public void run()
+                if (_stream.isClosed())
                 {
-                    if (_stream.isClosed())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("HTTP2 request #{}/{} skipped handling, stream already closed {}",
-                                _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                                _stream);
-                    }
-                    else
-                    {
-                        super.run();
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP2 request #{}/{} skipped handling, stream already closed {}",
+                            _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
+                            _stream);
                 }
-            };
+                else
+                {
+                    handler.run();
+                }
+            });
         }
         catch (Throwable x)
         {

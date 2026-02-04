@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.AsyncContext;
@@ -63,9 +64,11 @@ import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -83,6 +86,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.CookieCache;
 import org.eclipse.jetty.server.FormFields;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
@@ -426,16 +430,33 @@ public class Request implements HttpServletRequest
 
                 if (StandardCharsets.UTF_8.equals(_queryEncoding) || _queryEncoding == null && UrlEncoded.ENCODING.equals(StandardCharsets.UTF_8))
                 {
-                    UriCompliance uriCompliance = getHttpChannel().getHttpConfiguration().getUriCompliance();
+                    HttpConfiguration httpConfiguration = getHttpChannel().getHttpConfiguration();
+                    ComplianceViolation.Listener complianceViolationListener = getHttpChannel().getRequest().getComplianceViolationListener();
+                    UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
                     boolean allowBadPercent = uriCompliance.allows(UriCompliance.Violation.BAD_PERCENT_ENCODING);
                     boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
                     boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
-                    if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), _queryParameters::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8))
+                    BiConsumer<String, Boolean> onBadEncodingConsumer = (cause, allowed) ->
                     {
-                        ComplianceViolation.Listener complianceViolationListener = getComplianceViolationListener();
-                        if (complianceViolationListener != null)
-                            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, "query=" + query));
-                    }
+                        ComplianceUtils.notify(complianceViolationListener, new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, cause, allowed));
+                        if (!allowed)
+                            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
+                    };
+                    BiConsumer<String, Boolean> onBadPercentConsumer = (cause, allowed) ->
+                    {
+                        ComplianceUtils.notify(complianceViolationListener, new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_PERCENT_ENCODING, cause, allowed));
+                        if (!allowed)
+                            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
+                    };
+                    BiConsumer<String, Boolean> onTruncatedEncodingConsumer = (cause, allowed) ->
+                    {
+                        ComplianceUtils.notify(complianceViolationListener, new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.TRUNCATED_UTF8_ENCODING, cause, allowed));
+                        if (!allowed)
+                            throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
+                    };
+                    UrlEncoded.decodeUtf8To(query, 0, query.length(), _queryParameters::add,
+                        allowBadPercent, allowBadUtf8, allowTruncatedUtf8,
+                        onBadEncodingConsumer, onBadPercentConsumer, onTruncatedEncodingConsumer);
                 }
                 else
                 {
@@ -599,10 +620,6 @@ public class Request implements HttpServletRequest
         return _channel.getState();
     }
 
-    /**
-     * @deprecated use core level ComplianceViolation.Listener instead. - will be removed in Jetty 12.1.0
-     */
-    @Deprecated(since = "12.0.6", forRemoval = true)
     public ComplianceViolation.Listener getComplianceViolationListener()
     {
         return org.eclipse.jetty.server.HttpChannel.from(getCoreRequest()).getComplianceViolationListener();
@@ -2079,16 +2096,14 @@ public class Request implements HttpServletRequest
             {
                 parts = _multiParts.getParts();
             }
-            catch (BadMessageException e)
-            {
-                throw e;
-            }
             // Catch RuntimeException to handle IllegalStateException, IllegalArgumentException, CharacterEncodingException, etc .. (long list)
             catch (RuntimeException | IOException e)
             {
+                HttpException.throwIfHttpException(e);
                 throw new BadMessageException("Unable to parse form content", e);
             }
-            reportComplianceViolations();
+            // Only report compliance violations after the whole multipart has been read.
+            multipartComplianceCheck();
 
             String formCharset = null;
             Part charsetPart = _multiParts.getPart("_charset_");
@@ -2157,12 +2172,21 @@ public class Request implements HttpServletRequest
         return _multiParts.getParts();
     }
 
-    private void reportComplianceViolations()
+    private void multipartComplianceCheck()
     {
         ComplianceViolation.Listener complianceViolationListener = org.eclipse.jetty.server.HttpChannel.from(getCoreRequest()).getComplianceViolationListener();
         List<ComplianceViolation.Event> nonComplianceWarnings = _multiParts.getNonComplianceWarnings();
         for (ComplianceViolation.Event nc : nonComplianceWarnings)
-            complianceViolationListener.onComplianceViolation(new ComplianceViolation.Event(nc.mode(), nc.violation(), nc.details()));
+        {
+            if (nc.mode() instanceof MultiPartCompliance multiPartCompliance)
+            {
+                MultiPartCompliance.Violation violation = (MultiPartCompliance.Violation)nc.violation();
+                if (!ComplianceUtils.allows(multiPartCompliance, violation, complianceViolationListener))
+                {
+                    throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, nc.details());
+                }
+            }
+        }
     }
 
     private MultiPart.Parser newMultiParts(MultiPartCompliance multiPartCompliance, MultipartConfigElement config, int maxParts) throws IOException
@@ -2206,12 +2230,9 @@ public class Request implements HttpServletRequest
             {
                 UrlEncoded.decodeTo(newQuery, newQueryParams::add, UrlEncoded.ENCODING);
             }
-            catch (BadMessageException e)
-            {
-                throw e;
-            }
             catch (Throwable th)
             {
+                HttpException.throwIfHttpException(th);
                 throw new BadMessageException("Bad query encoding", th);
             }
         }
@@ -2224,13 +2245,10 @@ public class Request implements HttpServletRequest
             {
                 UrlEncoded.decodeTo(oldQuery, oldQueryParams::add, getQueryCharset());
             }
-            catch (BadMessageException e)
-            {
-                throw e;
-            }
             catch (Throwable th)
             {
                 _queryParameters = BAD_PARAMS;
+                HttpException.throwIfHttpException(th);
                 throw new BadMessageException("Bad query encoding", th);
             }
         }

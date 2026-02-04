@@ -19,7 +19,7 @@
               <Default><Ref refid="namePrefix" />-virtual-</Default>
             </Property>
           </Set>
-          <Set name="maxThreads" property="jetty.threadPool.virtual.maxThreads" />
+          <Set name="maxThreads"><Property name="jetty.threadPool.virtual.maxConcurrentTasks" deprecated="jetty.threadPool.virtual.maxThreads" default="200" /></Set>
           <Set name="tracking" property="jetty.threadPool.virtual.tracking" />
           <Set name="detailedDump" property="jetty.threadPool.detailedDump" />
         </New>

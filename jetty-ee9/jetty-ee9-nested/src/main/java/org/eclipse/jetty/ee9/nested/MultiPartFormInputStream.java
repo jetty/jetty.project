@@ -704,7 +704,9 @@ public class MultiPartFormInputStream implements MultiPart.Parser
             if (key.equalsIgnoreCase("content-transfer-encoding"))
             {
                 if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
-                    _nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.RFC7578, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value));
+                {
+                    _nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.RFC7578, MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value, false));
+                }
             }
         }
 

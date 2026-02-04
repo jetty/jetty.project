@@ -105,6 +105,8 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
     }
 
     private final List<String> _values = new ArrayList<>();
+    private final ComplianceViolation.Mode _compliance;
+    private final ComplianceViolation.Listener _listener;
 
     public QuotedCSV(String... values)
     {
@@ -113,7 +115,14 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
 
     public QuotedCSV(boolean keepQuotes, String... values)
     {
+        this(null, null, keepQuotes, values);
+    }
+
+    public QuotedCSV(ComplianceViolation.Mode compliance, ComplianceViolation.Listener listener, boolean keepQuotes, String... values)
+    {
         super(keepQuotes);
+        _compliance = compliance;
+        _listener = listener;
         for (String v : values)
         {
             addValue(v);
@@ -171,6 +180,22 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
         return _values.iterator();
     }
 
+    @Override
+    protected void onComplianceViolation(ComplianceViolation violation, String value)
+    {
+        if (_compliance != null)
+        {
+            boolean allowed = _compliance.allows(violation);
+            _listener.onComplianceViolation(new ComplianceViolation.Event(_compliance, violation, value, allowed));
+            if (!allowed)
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid quoted: " + value);
+        }
+        else
+        {
+            super.onComplianceViolation(violation, value);
+        }
+    }
+
     public String asString()
     {
         if (_values.isEmpty())
@@ -194,11 +219,12 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
         return list.toString();
     }
 
+    /**
+     * @deprecated use {@link QuotedCSV} instead
+     */
+    @Deprecated(since = "12.1.6", forRemoval = true)
     public static class Compliant extends QuotedCSV
     {
-        private final ComplianceViolation.Mode _complianceMode;
-        private final BiConsumer<ComplianceViolation, String> _violationNotifier;
-
         public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier)
         {
             this(complianceMode, violationNotifier, true);
@@ -206,26 +232,43 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
 
         public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, boolean keepQuotes, String... values)
         {
-            super(keepQuotes, values);
-            _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
+            this(complianceMode, new ComplianceViolation.Listener()
+            {
+                @Override
+                public void onComplianceViolation(ComplianceViolation.Event event)
+                {
+                    violationNotifier.accept(event.violation(), event.details());
+                }
+            }, keepQuotes, values);
         }
 
-        @Override
-        protected void onComplianceViolation(ComplianceViolation violation, String value)
+        private Compliant(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, boolean keepQuotes, String[] values)
         {
-            if (_complianceMode != null && _complianceMode.allows(violation))
-                _violationNotifier.accept(violation, value);
-            else
-                super.onComplianceViolation(violation, value);
+            super(complianceMode, listener, keepQuotes, values);
         }
     }
 
     public static class Etags extends Compliant
     {
+        /**
+         * @deprecated use {@link #Etags(ComplianceViolation.Mode, ComplianceViolation.Listener, String[])} instead.
+         */
+        @Deprecated(since = "12.1.6", forRemoval = true)
         public Etags(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, String... values)
         {
-            super(complianceMode, violationNotifier, true, values);
+            this(complianceMode, new ComplianceViolation.Listener()
+            {
+                @Override
+                public void onComplianceViolation(ComplianceViolation.Event event)
+                {
+                    violationNotifier.accept(event.violation(), event.details());
+                }
+            }, values);
+        }
+
+        public Etags(ComplianceViolation.Mode complianceMode, ComplianceViolation.Listener listener, String... values)
+        {
+            super(complianceMode, listener, true, values);
         }
 
         @Override

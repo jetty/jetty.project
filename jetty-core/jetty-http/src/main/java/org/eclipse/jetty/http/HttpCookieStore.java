@@ -131,6 +131,10 @@ public interface HttpCookieStore
         {
             // TODO: reject if cookie size is too big?
 
+            // Validate cookie name prefixes (RFC 6265bis).
+            if (!validateCookiePrefix(uri, cookie))
+                return false;
+
             String resolvedDomain = resolveDomain(uri, cookie);
             if (resolvedDomain == null)
                 return false;
@@ -223,6 +227,57 @@ public interface HttpCookieStore
                 }
             }
             return resolvedPath;
+        }
+
+        /**
+         * <p>Validates cookie name prefixes as defined in RFC 6265bis.</p>
+         * <p>Cookies with the {@code __Secure-} prefix must have the
+         * {@code Secure} attribute and be received over a secure connection.</p>
+         * <p>Cookies with the {@code __Host-} prefix must have the
+         * {@code Secure} attribute, be received over a secure connection,
+         * must not have a {@code Domain} attribute, and must have
+         * {@code Path=/} explicitly set.</p>
+         *
+         * @param uri the URI associated with the cookie
+         * @param cookie the cookie to validate
+         * @return whether the cookie passes prefix validation
+         */
+        private boolean validateCookiePrefix(URI uri, HttpCookie cookie)
+        {
+            String name = cookie.getName();
+            if (name == null)
+                return true;
+
+            boolean secure = HttpScheme.isSecure(uri.getScheme());
+
+            // __Host- prefix validation (case-sensitive per RFC 6265bis).
+            if (name.startsWith("__Host-"))
+            {
+                // Must be secure connection.
+                if (!secure)
+                    return false;
+                // Must have Secure attribute.
+                if (!cookie.isSecure())
+                    return false;
+                // Must NOT have Domain attribute (host-only).
+                if (cookie.getDomain() != null)
+                    return false;
+                // Must have Path=/ explicitly.
+                if (!"/".equals(cookie.getPath()))
+                    return false;
+            }
+            // __Secure- prefix validation (case-sensitive per RFC 6265bis).
+            else if (name.startsWith("__Secure-"))
+            {
+                // Must be secure connection.
+                if (!secure)
+                    return false;
+                // Must have Secure attribute.
+                if (!cookie.isSecure())
+                    return false;
+            }
+
+            return true;
         }
 
         /**

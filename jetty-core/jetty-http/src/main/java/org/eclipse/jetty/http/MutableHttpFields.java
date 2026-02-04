@@ -21,11 +21,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
+
+import org.eclipse.jetty.util.ArrayUtil;
 
 /**
  * HTTP Fields. A collection of HTTP header and or Trailer fields.
@@ -40,6 +44,8 @@ class MutableHttpFields implements HttpFields.Mutable
     private static final int INITIAL_SIZE = 16;
     private static final int SIZE_INCREMENT = 4;
 
+    private final HttpCompliance _httpCompliance;
+    private final Supplier<ComplianceViolation.Listener> _listenerSupplier;
     private HttpField[] _fields;
     private boolean _immutable;
     private int _size;
@@ -59,6 +65,8 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(int capacity)
     {
+        _httpCompliance = null;
+        _listenerSupplier = () -> null;
         _fields = new HttpField[capacity];
     }
 
@@ -69,10 +77,12 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields)
     {
+        _httpCompliance = copyHttpCompliance(fields);
+        _listenerSupplier = copyComplianceListener(fields);
         if (fields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
         {
-            _immutable = true;
             _fields = immutable._fields;
+            _immutable = true;
             _size = immutable._size;
         }
         else if (fields != null)
@@ -94,6 +104,8 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields, HttpField replaceField)
     {
+        _httpCompliance = copyHttpCompliance(fields);
+        _listenerSupplier = copyComplianceListener(fields);
         _fields = new HttpField[fields.size() + SIZE_INCREMENT];
         _size = 0;
         boolean put = false;
@@ -118,16 +130,55 @@ class MutableHttpFields implements HttpFields.Mutable
      * Initialize HttpFields from another and remove fields
      *
      * @param fields the fields to copy data from
-     * @param removeFields the the fields to remove
+     * @param removeFields the fields to remove
      */
     protected MutableHttpFields(HttpFields fields, EnumSet<HttpHeader> removeFields)
     {
+        _httpCompliance = copyHttpCompliance(fields);
+        _listenerSupplier = copyComplianceListener(fields);
         _fields = new HttpField[fields.size() + SIZE_INCREMENT];
         _size = 0;
         for (HttpField f : fields)
         {
             if (f.getHeader() == null || !removeFields.contains(f.getHeader()))
                 _fields[_size++] = f;
+        }
+    }
+
+    MutableHttpFields(HttpCompliance httpCompliance, Supplier<ComplianceViolation.Listener> listenerSupplier)
+    {
+        _httpCompliance = httpCompliance;
+        _listenerSupplier = listenerSupplier;
+        _fields = new HttpField[INITIAL_SIZE];
+    }
+
+    private static HttpCompliance copyHttpCompliance(HttpFields httpFields)
+    {
+        while (true)
+        {
+            if (httpFields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
+                return immutable._httpCompliance;
+            if (httpFields instanceof org.eclipse.jetty.http.MutableHttpFields mutable)
+                return mutable._httpCompliance;
+            if (httpFields instanceof Wrapper wrapper)
+                httpFields = wrapper.getWrapped();
+            else
+                return null;
+        }
+    }
+
+    private static Supplier<ComplianceViolation.Listener> copyComplianceListener(HttpFields httpFields)
+    {
+        while (true)
+        {
+            if (httpFields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
+                return immutable._listenerSupplier;
+            if (httpFields instanceof org.eclipse.jetty.http.MutableHttpFields mutable)
+                return mutable._listenerSupplier;
+            if (httpFields instanceof Wrapper wrapper)
+                httpFields = wrapper.getWrapped();
+            else
+                return null;
         }
     }
 
@@ -139,7 +190,7 @@ class MutableHttpFields implements HttpFields.Mutable
             if (_immutable || _size == _fields.length)
             {
                 _immutable = false;
-                _fields = Arrays.copyOf(_fields, _size + SIZE_INCREMENT);
+                _fields = ArrayUtil.grow(_fields, 1, Integer.MAX_VALUE);
             }
             _fields[_size++] = field;
         }
@@ -154,8 +205,9 @@ class MutableHttpFields implements HttpFields.Mutable
 
         if (_immutable || _size + fields.size() >= _fields.length)
         {
+            // First try to grow so that an exception is thrown before modifying _immutable if that cannot happen.
+            _fields = ArrayUtil.grow(_fields, fields.size(), Integer.MAX_VALUE);
             _immutable = false;
-            _fields = Arrays.copyOf(_fields, _size + fields.size() + SIZE_INCREMENT);
         }
 
         if (fields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
@@ -187,7 +239,7 @@ class MutableHttpFields implements HttpFields.Mutable
 
     protected HttpFields newImmutableHttpFields(HttpField[] fields, int size)
     {
-        return new org.eclipse.jetty.http.ImmutableHttpFields(fields, size);
+        return new org.eclipse.jetty.http.ImmutableHttpFields(_httpCompliance, _listenerSupplier, fields, size);
     }
 
     private void copyImmutable()
@@ -498,6 +550,18 @@ class MutableHttpFields implements HttpFields.Mutable
     }
 
     @Override
+    public QuotedCSV newQuotedCSV(boolean keepQuotes)
+    {
+        return new QuotedCSV(_httpCompliance, _listenerSupplier.get(), keepQuotes);
+    }
+
+    @Override
+    public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
+    {
+        return new QuotedQualityCSV(_httpCompliance, _listenerSupplier.get(), secondaryOrdering);
+    }
+
+    @Override
     public String toString()
     {
         return asString();
@@ -523,7 +587,7 @@ class MutableHttpFields implements HttpFields.Mutable
 
             int last = _size++;
             if (_fields.length < _size)
-                _fields = Arrays.copyOf(_fields, _fields.length + SIZE_INCREMENT);
+                _fields = ArrayUtil.grow(_fields, 1, Integer.MAX_VALUE);
             System.arraycopy(_fields, _index, _fields, _index + 1, last - _index);
             _fields[_index++] = field;
             _last = -1;
@@ -593,46 +657,22 @@ class MutableHttpFields implements HttpFields.Mutable
         }
     }
 
+    /**
+     * @deprecated use {@link org.eclipse.jetty.http.MutableHttpFields} instead.
+     */
+    @Deprecated(since = "12.1.6", forRemoval = true)
     public static class Compliant extends org.eclipse.jetty.http.MutableHttpFields
     {
-        private final HttpCompliance _httpCompliance;
-        private final BiConsumer<ComplianceViolation, String> _notifyViolation;
-
         public Compliant(HttpCompliance httpCompliance, BiConsumer<ComplianceViolation, String> notifyViolation)
         {
-            _httpCompliance = httpCompliance;
-            _notifyViolation = notifyViolation;
-        }
-
-        @Override
-        public QuotedCSV newQuotedCSV(boolean keepQuotes)
-        {
-            return new QuotedCSV.Compliant(_httpCompliance, _notifyViolation, keepQuotes);
-        }
-
-        @Override
-        public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
-        {
-            return new QuotedQualityCSV.Compliant(_httpCompliance, _notifyViolation, secondaryOrdering);
-        }
-
-        @Override
-        protected HttpFields newImmutableHttpFields(HttpField[] fields, int size)
-        {
-            return new org.eclipse.jetty.http.ImmutableHttpFields(fields, size)
+            super(httpCompliance, () -> new ComplianceViolation.Listener()
             {
                 @Override
-                public QuotedCSV newQuotedCSV(boolean keepQuotes)
+                public void onComplianceViolation(ComplianceViolation.Event event)
                 {
-                    return new QuotedCSV.Compliant(_httpCompliance, _notifyViolation, keepQuotes);
+                    notifyViolation.accept(event.violation(), event.details());
                 }
-
-                @Override
-                public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
-                {
-                    return new QuotedQualityCSV.Compliant(_httpCompliance, _notifyViolation, secondaryOrdering);
-                }
-            };
+            });
         }
     }
 }

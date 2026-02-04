@@ -109,7 +109,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
         if (exchange == null)
             return null;
 
-        return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), () ->
+        return Invocable.from(getHttpConnection().getInvocationType(), () ->
         {
             HttpResponse httpResponse = exchange.getResponse();
             MetaData.Response response = (MetaData.Response)frame.getMetaData();
@@ -139,7 +139,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
             return null;
 
         Runnable task = () -> responseContentAvailable(exchange);
-        return new Invocable.ReadyTask(getInvocationType(), task);
+        return Invocable.from(getInvocationType(), task);
     }
 
     Runnable onTrailer(HeadersFrame frame)
@@ -152,7 +152,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
         trailers.forEach(exchange.getResponse()::trailer);
 
         Runnable task = () -> responseSuccess(null);
-        return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);
+        return Invocable.from(getHttpConnection().getInvocationType(), task);
     }
 
     Runnable onIdleTimeout(Throwable failure, Promise<Boolean> promise)
@@ -164,7 +164,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
             return null;
         }
         Runnable task = () -> Promise.completeWith(promise, exchange.getRequest().abort(failure));
-        return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);
+        return Invocable.from(getHttpConnection().getInvocationType(), task);
     }
 
     Runnable onFailure(Throwable failure)
@@ -173,6 +173,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
             failure = new RetryableRequestException(failure);
         Throwable f = failure;
         Runnable task = () -> responseFailure(f, Promise.noop());
-        return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);
+        return Invocable.from(getHttpConnection().getInvocationType(), task);
     }
 }

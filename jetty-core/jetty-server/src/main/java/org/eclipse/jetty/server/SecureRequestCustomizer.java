@@ -24,10 +24,11 @@ import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.TypeUtil;
@@ -222,16 +223,16 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
             X509 x509 = getX509(session);
             if (x509 == null)
-                throw new BadMessageException(400, "Invalid SNI");
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid SNI");
             String serverName = Request.getServerName(request);
             if (LOG.isDebugEnabled())
                 LOG.debug("Host={}, SNI={}, SNI Certificate={}", serverName, sniHost, x509);
 
             if (isSniRequired() && (sniHost == null || !x509.matches(sniHost)))
-                throw new BadMessageException(400, "Invalid SNI");
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid SNI");
 
             if (isSniHostCheck() && !x509.matches(serverName))
-                throw new BadMessageException(400, "Invalid SNI");
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid SNI");
         }
     }
 
