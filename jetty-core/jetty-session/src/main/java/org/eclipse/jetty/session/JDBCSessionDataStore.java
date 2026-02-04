@@ -75,6 +75,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         protected String _expiryTimeColumn = "expiryTime";
         protected String _maxIntervalColumn = "maxInterval";
         protected String _mapColumn = "map";
+        protected boolean _createSessionIndex = true;
 
         protected void setDatabaseAdaptor(DatabaseAdaptor dbadaptor)
         {
@@ -253,6 +254,16 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         {
             checkNotNull(mapColumn);
             _mapColumn = mapColumn;
+        }
+
+        public boolean isCreateSessionIndex()
+        {
+            return _createSessionIndex;
+        }
+
+        public void setCreateSessionIndex(boolean createSessionIndex)
+        {
+            _createSessionIndex = createSessionIndex;
         }
 
         public String getCreateStatementAsString()
@@ -579,7 +590,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
                 }
                 if (!index1Exists)
                     statement.executeUpdate(getCreateIndexOverExpiryStatementAsString(index1));
-                if (!index2Exists)
+                if (!index2Exists && isCreateSessionIndex())
                     statement.executeUpdate(getCreateIndexOverSessionStatementAsString(index2));
             }
         }

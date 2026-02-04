@@ -60,6 +60,9 @@
             <Set name="tableName">
               <Property name="jetty.session.jdbc.schema.table" default="JettySessions" />
             </Set>
+            <Set name="createSessionIndex">
+              <Property name="jetty.session.jdbc.schema.createSessionIndex" default="true" />
+            </Set>
           </New>
         </Set>
       </New>

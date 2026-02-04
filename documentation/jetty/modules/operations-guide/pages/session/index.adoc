@@ -429,6 +429,11 @@ jetty.session.jdbc.schema.mapColumn::
 Default `map`.
 This is the name of the column that stores the serialized attributes of a session.
 
+jetty.session.jdbc.schema.createSessionIndex::
+Default `true`.
+Whether to create an index over `idColumn` and `contextPathColumn` or not. Since the primary key already contains `idColumn`, `contextPathColumn` and `virtualHostColumn`
+some databases may be able to use that index without the need to create a second one specific to the only two columns needed to lookup sessions.
+
 [[mongo]]
 == Modules for Persistent HTTP Sessions: MongoDB
 
