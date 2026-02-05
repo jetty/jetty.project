@@ -211,7 +211,7 @@
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.7.3</flatten.maven.plugin.version>
     <groovy.version>4.0.26</groovy.version>
-    <grpc.version>1.78.0</grpc.version>
+    <grpc.version>1.79.0</grpc.version>
     <gson.version>2.13.2</gson.version>
     <guava.version>33.5.0-jre</guava.version>
     <guice.version>7.0.0</guice.version>
@@ -324,7 +324,7 @@
     <osgi-version>3.24.0</osgi-version>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.14.0</pax.exam.version>
-    <pax.url.version>3.0.1</pax.url.version>
+    <pax.url.version>3.0.2</pax.url.version>
     <plexus-classworlds.version>2.9.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
