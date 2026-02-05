@@ -37,7 +37,7 @@ public class DataFrame extends StreamFrame
 
     public DataFrame(int streamId, Content.Source.Seekable source, boolean endStream)
     {
-        this(streamId, Content.Sink.TRANSFER_TO, source, endStream, 0);
+        this(streamId, Content.Sink.CONTENT_SOURCE, source, endStream, 0);
     }
 
     public DataFrame(int streamId, ByteBuffer data, boolean endStream, int padding)
@@ -83,7 +83,7 @@ public class DataFrame extends StreamFrame
      */
     public  long bytesLeft()
     {
-        return data == Content.Sink.TRANSFER_TO ? source.remaining() : data.remaining();
+        return data == Content.Sink.CONTENT_SOURCE ? source.remaining() : data.remaining();
     }
 
     /**

@@ -38,13 +38,13 @@ public class ByteChannelContentSource implements Content.Source
     private final AutoLock lock = new AutoLock();
     private final SerializedInvoker _invoker = new SerializedInvoker(ByteChannelContentSource.class);
     private final ByteBufferPool.Sized _byteBufferPool;
-    private ByteChannel _byteChannel;
     private final long _offset;
     private final long _length;
+    private ByteChannel _byteChannel;
     private RetainableByteBuffer _buffer;
     private long _offsetRemaining;
     private long _totalRead;
-    private Runnable demandCallback;
+    private Runnable _demandCallback;
     private Content.Chunk _terminal;
 
     /**
@@ -118,9 +118,9 @@ public class ByteChannelContentSource implements Content.Source
     {
         try (AutoLock ignored = lock())
         {
-            if (this.demandCallback != null)
+            if (this._demandCallback != null)
                 throw new IllegalStateException("demand pending");
-            this.demandCallback = demandCallback;
+            this._demandCallback = demandCallback;
         }
         _invoker.run(this::invokeDemandCallback);
     }
@@ -130,8 +130,8 @@ public class ByteChannelContentSource implements Content.Source
         Runnable demandCallback;
         try (AutoLock ignored = lock())
         {
-            demandCallback = this.demandCallback;
-            this.demandCallback = null;
+            demandCallback = this._demandCallback;
+            this._demandCallback = null;
         }
         if (demandCallback != null)
             ExceptionUtil.run(demandCallback, this::fail);
@@ -205,7 +205,7 @@ public class ByteChannelContentSource implements Content.Source
                 BufferUtil.clearToFill(byteBuffer);
                 if (_length > 0)
                     byteBuffer.limit((int)Math.min(_buffer.capacity(), _length - _totalRead));
-                int read = _byteChannel.read(byteBuffer);
+                int read = read(byteBuffer);
                 BufferUtil.flipToFlush(byteBuffer, 0);
                 if (read > 0)
                 {
@@ -255,12 +255,33 @@ public class ByteChannelContentSource implements Content.Source
         return Content.Chunk.EMPTY;
     }
 
+    protected int read(ByteBuffer byteBuffer) throws IOException
+    {
+        return _byteChannel.read(byteBuffer);
+    }
+
     @Override
     public void fail(Throwable failure)
     {
         try (AutoLock ignored = lock())
         {
             lockedSetTerminal(Content.Chunk.from(failure, true));
+        }
+    }
+
+    @Override
+    public boolean rewind()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            IO.close(_byteChannel);
+            _byteChannel = null;
+            _buffer = null;
+            _offsetRemaining = 0;
+            _totalRead = 0;
+            _demandCallback = null;
+            _terminal = null;
+            return true;
         }
     }
 }

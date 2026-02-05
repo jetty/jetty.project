@@ -38,10 +38,11 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class ResourceHttpContent implements HttpContent
 {
-    final Resource _resource;
-    final HttpField _contentType;
-    final HttpField _etag;
-    final ByteBufferPool.Sized _sizedBufferPool;
+    private final Resource _resource;
+    private final HttpField _contentType;
+    private final HttpField _etag;
+    private final ByteBufferPool.Sized _sizedBufferPool;
+    private final boolean _tryTransferTo;
 
     public ResourceHttpContent(Resource resource, String contentType)
     {
@@ -50,10 +51,16 @@ public class ResourceHttpContent implements HttpContent
 
     public ResourceHttpContent(Resource resource, String contentType, ByteBufferPool.Sized sizedByteBufferPool)
     {
+        this(resource, contentType, sizedByteBufferPool, false);
+    }
+
+    public ResourceHttpContent(Resource resource, String contentType, ByteBufferPool.Sized sizedByteBufferPool, boolean tryTransferTo)
+    {
         _resource = resource;
         _contentType = contentType == null ? null : new HttpField(HttpHeader.CONTENT_TYPE, contentType);
         _etag = EtagUtils.createWeakEtagField(resource);
         _sizedBufferPool = sizedByteBufferPool;
+        _tryTransferTo = tryTransferTo;
     }
 
     @Override
@@ -127,7 +134,7 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
     {
-        IOResources.copy(_resource, sink, _sizedBufferPool, offset, length, callback);
+        IOResources.copy(_resource, sink, _sizedBufferPool, offset, length, _tryTransferTo, callback);
     }
 
     @Override

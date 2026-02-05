@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.server.internal;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -250,11 +251,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
     @Override
     public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
-        if (response != null)
+        ByteBuffer content = Objects.requireNonNullElse(byteBuffer, BufferUtil.EMPTY_BUFFER);
+        if (responseMetaData == null)
             sendHeaders(request, response, content, last, callback);
         else
-            sendContent(request, content, last, callback);
+            sendContent(request, response, content, last, callback);
     }
 
     @Override
@@ -283,24 +284,25 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        this.responseMetaData = response;
+        responseMetaData = response;
 
         HeadersFrame headersFrame;
         DataFrame dataFrame = null;
         HeadersFrame trailersFrame = null;
 
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
+        Content.Source.Seekable contentSource = response.getContentSource();
+        boolean contentAsSource = content == Content.Sink.CONTENT_SOURCE;
+        long contentLength = contentAsSource ? contentSource.getLength() : BufferUtil.length(content);
+        boolean hasContent = (contentLength > 0 || contentAsSource) && !isHeadRequest;
         if (HttpStatus.isInterim(response.getStatus()))
         {
             // Must not commit interim responses.
-
             if (hasContent)
             {
                 callback.failed(new IllegalStateException("Interim response cannot have content"));
                 return;
             }
-
             headersFrame = new HeadersFrame(response, false);
         }
         else
@@ -308,20 +310,19 @@ public class HttpStreamOverHTTP3 implements HttpStream
             committed = true;
             if (lastContent)
             {
-                long realContentLength = BufferUtil.length(content);
-                long contentLength = response.getContentLength();
-                if (contentLength < 0)
+                long responseContentLength = response.getContentLength();
+                if (responseContentLength < 0)
                 {
-                    this.responseMetaData = new MetaData.Response(
+                    responseMetaData = new MetaData.Response(
                         response.getStatus(), response.getReason(), response.getHttpVersion(),
                         response.getHttpFields(),
-                        realContentLength,
+                        contentLength,
                         response.getTrailersSupplier()
                     );
                 }
-                else if (hasContent && contentLength != realContentLength)
+                else if (hasContent && responseContentLength != contentLength)
                 {
-                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
+                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", responseContentLength, contentLength)));
                     return;
                 }
             }
@@ -334,17 +335,17 @@ public class HttpStreamOverHTTP3 implements HttpStream
                     HttpFields trailers = retrieveTrailers();
                     if (trailers == null)
                     {
-                        dataFrame = new DataFrame(content, true);
+                        dataFrame = contentAsSource ? new DataFrame(contentSource, true) : new DataFrame(content, true);
                     }
                     else
                     {
-                        dataFrame = new DataFrame(content, false);
+                        dataFrame = contentAsSource ? new DataFrame(contentSource, false) : new DataFrame(content, false);
                         trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
                     }
                 }
                 else
                 {
-                    dataFrame = new DataFrame(content, false);
+                    dataFrame = contentAsSource ? new DataFrame(contentSource, false) : new DataFrame(content, false);
                 }
             }
             else
@@ -406,10 +407,13 @@ public class HttpStreamOverHTTP3 implements HttpStream
         }, callback::failed));
     }
 
-    private void sendContent(MetaData.Request request, ByteBuffer content, boolean lastContent, Callback callback)
+    private void sendContent(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
+        boolean contentAsSource = content == Content.Sink.CONTENT_SOURCE;
+        Content.Source.Seekable contentSource = response.getContentSource();
+        long contentLength = contentAsSource ? contentSource.getLength() : BufferUtil.length(content);
+        boolean hasContent = (contentLength > 0 || contentAsSource) && !isHeadRequest;
         if (hasContent || (lastContent && !isTunnel(request, responseMetaData)))
         {
             if (!hasContent)
@@ -419,14 +423,14 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 HttpFields trailers = retrieveTrailers();
                 if (trailers == null)
                 {
-                    DataFrame df = new DataFrame(content, true);
+                    DataFrame df = contentAsSource ? new DataFrame(contentSource, true) : new DataFrame(content, true);
                     sendData(df, true, callback);
                 }
                 else
                 {
                     if (hasContent)
                     {
-                        DataFrame df = new DataFrame(content, false);
+                        DataFrame df = contentAsSource ? new DataFrame(contentSource, false) : new DataFrame(content, false);
                         HeadersFrame tf = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
                         sendDataAndTrailer(df, true, tf, callback);
                     }
@@ -439,7 +443,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             }
             else
             {
-                DataFrame df = new DataFrame(content, false);
+                DataFrame df = contentAsSource ? new DataFrame(contentSource, false) : new DataFrame(content, false);
                 sendData(df, false, callback);
             }
         }

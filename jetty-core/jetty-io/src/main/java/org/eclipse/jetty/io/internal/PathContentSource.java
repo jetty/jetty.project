@@ -69,7 +69,6 @@ public class PathContentSource extends SeekableByteChannelContentSource implemen
     @Override
     public Seekable slice(long position, int length)
     {
-        // TODO: check position and length?
         return new PathContentSource(getByteBufferPool(), getPath(), position, length);
     }
 
@@ -83,7 +82,11 @@ public class PathContentSource extends SeekableByteChannelContentSource implemen
                 return false;
             if (!(sink instanceof Transferable.To to))
                 return false;
-            return to.transferFrom(getByteChannel(), getOffset(), getLength(), callback);
+            return to.transferFrom(getByteChannel(), getOffset(), getLength(), Callback.from(callback, x ->
+            {
+                if (x == null)
+                    position(position() + getLength());
+            }));
         }
     }
 

@@ -15,18 +15,32 @@ package org.eclipse.jetty.http3.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.Content;
+
 public class DataFrame extends Frame
 {
     private final ByteBuffer data;
+    private final Content.Source.Seekable source;
     private final boolean last;
-    private final int length;
+    private final long length;
 
     public DataFrame(ByteBuffer data, boolean last)
     {
+        this(data, null, last);
+    }
+
+    public DataFrame(Content.Source.Seekable source, boolean last)
+    {
+        this(Content.Sink.CONTENT_SOURCE, source, last);
+    }
+
+    private DataFrame(ByteBuffer data, Content.Source.Seekable source, boolean last)
+    {
         super(FrameType.DATA);
         this.data = data;
+        this.source = source;
         this.last = last;
-        this.length = data.remaining();
+        this.length = remaining();
     }
 
     public ByteBuffer getByteBuffer()
@@ -34,9 +48,19 @@ public class DataFrame extends Frame
         return data;
     }
 
+    public Content.Source.Seekable getContentSource()
+    {
+        return source;
+    }
+
     public boolean isLast()
     {
         return last;
+    }
+
+    public long remaining()
+    {
+        return data == Content.Sink.CONTENT_SOURCE ? source.remaining() : data.remaining();
     }
 
     @Override

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.Flags;
@@ -40,7 +39,7 @@ public class DataGenerator
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
         ByteBuffer byteBuffer = frame.getByteBuffer();
-        if (byteBuffer == Content.Sink.TRANSFER_TO)
+        if (byteBuffer == Content.Sink.CONTENT_SOURCE)
             return generateData(accumulator, streamId, frame.getContentSource(), frame.isEndStream(), maxLength);
         else
             return generateData(accumulator, streamId, byteBuffer, frame.isEndStream(), maxLength);
@@ -79,7 +78,7 @@ public class DataGenerator
             accumulator.add(data);
     }
 
-    public int generateData(RetainableByteBuffer.Mutable accumulator, int streamId, Content.Source.Seekable source, boolean last, int maxLength)
+    private int generateData(RetainableByteBuffer.Mutable accumulator, int streamId, Content.Source.Seekable source, boolean last, int maxLength)
     {
         long dataLength = source.remaining();
         int maxFrameSize = headerGenerator.getMaxFrameSize();
@@ -94,24 +93,24 @@ public class DataGenerator
         headerGenerator.generate(accumulator, FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
         Content.Source.Seekable slice = source.slice(source.position(), length);
         source.position(source.position() + length);
-        accumulator.add(new TransferableRetainableByteBuffer(slice));
+        accumulator.add(new ContentSourceRetainableByteBuffer(slice));
 
         return Frame.HEADER_LENGTH + length;
     }
 
-    private static class TransferableRetainableByteBuffer implements RetainableByteBuffer
+    private static class ContentSourceRetainableByteBuffer implements RetainableByteBuffer
     {
         private final Content.Source.Seekable source;
 
-        public TransferableRetainableByteBuffer(Content.Source.Seekable source)
+        private ContentSourceRetainableByteBuffer(Content.Source.Seekable source)
         {
             this.source = source;
         }
 
         @Override
-        public ByteBuffer getByteBuffer() throws BufferOverflowException
+        public ByteBuffer getByteBuffer()
         {
-            return Content.Sink.TRANSFER_TO;
+            return Content.Sink.CONTENT_SOURCE;
         }
 
         @Override
@@ -131,7 +130,7 @@ public class DataGenerator
         {
             // The "last" parameter is not used here, since "last-ness" has
             // already been encoded by the generator in DATA frame header bytes.
-            Content.transfer(source, sink, callback);
+            Content.transfer(source, false, sink, callback);
         }
     }
 }

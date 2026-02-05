@@ -142,11 +142,12 @@ public class Content
      * to {@link #copy(Source, boolean, Sink, Callback) copy(source, false, sink, callback)}.</p>
      *
      * @param source the source to transfer from
+     * @param last whether the final write is the last write
      * @param sink the sink to transfer to
      * @param callback the callback to notify when the transfer is complete
      * @return whether the transfer was performed
      */
-    public static boolean transfer(Source.Seekable source, Sink sink, Callback callback)
+    public static boolean transfer(Source.Seekable source, boolean last, Sink sink, Callback callback)
     {
         if (source instanceof Transferable.From from)
         {
@@ -154,7 +155,7 @@ public class Content
                 return true;
         }
         // Cannot transfer, fall back to regular copy.
-        Content.copy(source, false, sink, callback);
+        Content.copy(source, last, sink, callback);
         return false;
     }
 
@@ -822,7 +823,7 @@ public class Content
         /**
          * <p>A special {@link ByteBuffer} used to implement {@link #write(Sink, boolean, Source, Callback)}.</p>
          */
-        ByteBuffer TRANSFER_TO = ByteBuffer.allocate(0);
+        ByteBuffer CONTENT_SOURCE = ByteBuffer.allocate(0);
 
         /**
          * <p>Wraps the given {@link OutputStream} as a {@link Sink}.
@@ -1034,32 +1035,64 @@ public class Content
         }
 
         /**
-         * <p>Writes the given {@link Source}, trying to optimize for zero-copy of bytes
-         * between the source and the sink.</p>
-         * <p>For the zero-copy optimization to happen, the sink or one of its wrapped
-         * sinks must implement {@link Source.Seekable.Aware}, so that the source can
-         * be associated with the sink.
-         * This call is then converted to {@code sink.write(last, TRANSFER_TO, callback)}
-         * and sink implementation should check whether the {@link ByteBuffer} is
-         * {@link #TRANSFER_TO}, and if so they can retrieve the source via
-         * {@link #findSourceSeekable(Sink)}.
-         * Eventually, the {@code sink.write(last, TRANSFER_TO, callback)} call
-         * arrives to a sink implementation that supports the zero-copy optimization,
-         * and can therefore call {@link #transfer(Source.Seekable, Sink, Callback)}.
+         * <p>Writes the given {@link Source} to the given {@code Sink}.</p>
+         * <p>This method enables the possibility to perform zero-copy of bytes
+         * between the source and the sink, although many conditions need to
+         * be met for the zero-copy to actually happen.
+         * If the conditions are not met, then this method falls back to a
+         * normal copy by reading from the source and writing to the sink.</p>
+         * <p>The call to this method is converted to {@code sink.write(last, CONTENT_SOURCE, callback)}
+         * and sink implementations should check whether the {@link ByteBuffer} is
+         * {@link #CONTENT_SOURCE}, and if so they can retrieve the source via
+         * {@link #findContentSourceSeekable(Sink)}.</p>
+         * <p>Eventually, the {@code sink.write(last, CONTENT_SOURCE, callback)} call
+         * arrives to the last sink, that can decide whether to attempt the zero-copy
+         * operation.
+         * If the last sink wants to attempt the zero-copy operation, it must call
+         * {@link #transfer(Source.Seekable, boolean, Sink, Callback)}, otherwise it
+         * must call {@link #copy(Source, boolean, Sink, Callback)}.
+         * <p>For the zero-copy optimization to happen, the following conditions must
+         * be met:</p>
+         * <ul>
+         * <li>The sink must implement {@link Source.Seekable.Aware}</li>
+         * <li>The source must implement {@link Source.Seekable} and {@link Transferable.From}.</li>
+         * <li>The implementation must call {@link #transfer(Source.Seekable, boolean, Sink, Callback)},
+         * where the sink is the last sink, typically an {@link EndPoint}, and must
+         * implement {@link Transferable.To}.</li>
+         * </ul>
+         * <p>NOTE: Calling this method produces a call to
+         * {@code sink.write(last, CONTENT_SOURCE, callback)}, which must be
+         * handled correctly by {@link Sink.Wrapper}s that want to intercept the
+         * call to {@link #write(boolean, ByteBuffer, Callback)}.
+         * For example, a {@link Sink.Wrapper} that counts the bytes written would
+         * need to perform the logic similar to the following:</p>
+         * <pre>{@code
+         * class ByteCountingSinkWrapper extends Sink.Wrapper {
+         *   @Override
+         *   public void write(boolean last, ByteBuffer byteBuffer, Callback callback) {
+         *       if (byteBuffer == CONTENT_SOURCE) {
+         *           bytes += findContentSourceSeekable(this).remaining();
+         *       } else {
+         *           bytes += byteBuffer.remaining();
+         *       }
+         *       super.write(last, byteBuffer, callback);
+         *   }
+         * }
+         * }</pre>
          *
          * @param sink the sink to write to
-         * @param last whether the write should be last
+         * @param last whether the write is the last
          * @param source the source to read from
-         * @param callback – the callback to notify when the write is complete
+         * @param callback the callback to notify when the write is complete
          */
         static void write(Sink sink, boolean last, Content.Source source, Callback callback)
         {
-            Source.Seekable.Aware aware = findContentSourceAware(sink);
+            Source.Seekable.Aware aware = findContentSourceSeekableAware(sink);
             if (aware != null && source instanceof Source.Seekable seekable)
             {
                 // Optimization to enable zero-copy.
                 aware.setContentSource(seekable);
-                sink.write(last, TRANSFER_TO, callback);
+                sink.write(last, CONTENT_SOURCE, callback);
             }
             else
             {
@@ -1076,13 +1109,13 @@ public class Content
          * @param sink the sink to probe
          * @return the associated sink, or {@code null} if the sink is not found
          */
-        static Source.Seekable findSourceSeekable(Sink sink)
+        static Source.Seekable findContentSourceSeekable(Sink sink)
         {
-            Source.Seekable.Aware aware = findContentSourceAware(sink);
+            Source.Seekable.Aware aware = findContentSourceSeekableAware(sink);
             return aware == null ? null : aware.getContentSource();
         }
 
-        private static Source.Seekable.Aware findContentSourceAware(Sink sink)
+        private static Source.Seekable.Aware findContentSourceSeekableAware(Sink sink)
         {
             while (true)
             {

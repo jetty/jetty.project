@@ -15,6 +15,7 @@ package org.eclipse.jetty.io.internal;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -66,8 +67,26 @@ public class SeekableByteChannelContentSource extends ByteChannelContentSource i
     @Override
     protected Content.Chunk skipToOffset()
     {
-        position(getOffset());
-        return Content.Chunk.EMPTY;
+        try
+        {
+            position(position());
+            return Content.Chunk.EMPTY;
+        }
+        catch (Throwable x)
+        {
+            Content.Chunk failure = Content.Chunk.from(x, true);
+            lockedSetTerminal(failure);
+            return failure;
+        }
+    }
+
+    @Override
+    protected int read(ByteBuffer byteBuffer) throws IOException
+    {
+        int read = super.read(byteBuffer);
+        if (read > 0)
+            _position += read;
+        return read;
     }
 
     @Override
@@ -83,6 +102,7 @@ public class SeekableByteChannelContentSource extends ByteChannelContentSource i
         {
             if (position < 0)
                 throw new IllegalArgumentException("invalid position " + position);
+            // Allow the position to be set before the channel is opened.
             _position = position;
             SeekableByteChannel seekable = getByteChannel();
             if (seekable != null)
@@ -104,14 +124,6 @@ public class SeekableByteChannelContentSource extends ByteChannelContentSource i
     @Override
     public Seekable slice(long position, int length)
     {
-        // TODO: check position and length
         return new SeekableByteChannelContentSource(getByteBufferPool(), getByteChannel(), position, length);
-    }
-
-    @Override
-    public boolean rewind()
-    {
-        // TODO
-        return false;
     }
 }

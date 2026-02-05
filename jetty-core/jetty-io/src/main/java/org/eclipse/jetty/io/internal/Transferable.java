@@ -14,11 +14,14 @@
 package org.eclipse.jetty.io.internal;
 
 import java.nio.channels.FileChannel;
+import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Transferable
 {
@@ -44,6 +47,8 @@ public class Transferable
 
     private static class Transferrer extends IteratingNestedCallback
     {
+        private static final Logger LOG = LoggerFactory.getLogger(Transferrer.class);
+
         private final FileChannel fileChannel;
         private final long offset;
         private final long length;
@@ -64,10 +69,17 @@ public class Transferable
         {
             long count = length - transferred;
             if (count == 0)
+            {
                 return Action.SUCCEEDED;
+            }
 
-            long transfer = fileChannel.transferTo(offset + transferred, count, endPoint.getChannel());
+            SocketChannel channel = endPoint.getChannel();
+
+            long transfer = fileChannel.transferTo(offset + transferred, count, channel);
             transferred += transfer;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Transferred {}/{} bytes from {} to {}", transfer, count, fileChannel, channel);
 
             if (transfer > 0)
             {

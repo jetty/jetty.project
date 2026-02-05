@@ -861,6 +861,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         if (maxHeaderBytes < 0)
                             maxHeaderBytes = responseHeadersSize;
                         _generator.setMaxHeaderBytes(maxHeaderBytes);
+                        _generator.setMaxChunkLength(1024 * 1024 * 1024);
                         _header = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
                     }
@@ -892,7 +893,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     }
                     case FLUSH:
                     {
-                        // Don't write the chunk or the content if this is a HEAD response, or any other type of response that should have no content
+                        // Don't write the chunk or the content if this is a HEAD response,
+                        // or any other type of response that should have no content.
                         if (_head || _generator.isNoContent())
                         {
                             if (_chunk != null)
@@ -920,33 +922,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         _bytesOut.addAndGet(bytes);
                         switch (gatherWrite)
                         {
-                            case 7:
-                                getEndPoint().write(this, headerByteBuffer, chunkByteBuffer, _content);
-                                break;
-                            case 6:
-                                getEndPoint().write(this, headerByteBuffer, chunkByteBuffer);
-                                break;
-                            case 5:
-                                getEndPoint().write(this, headerByteBuffer, _content);
-                                break;
-                            case 4:
-                                getEndPoint().write(this, headerByteBuffer);
-                                break;
-                            case 3:
-                                getEndPoint().write(this, chunkByteBuffer, _content);
-                                break;
-                            case 2:
-                                getEndPoint().write(this, chunkByteBuffer);
-                                break;
-                            case 1:
-                                getEndPoint().write(this, _content);
-                                break;
-                            default:
-                                Content.Source.Seekable source = _info.getContentSource();
-                                if (source != null)
-                                    Content.transfer(source, getEndPoint(), this);
-                                else
-                                    succeeded();
+                            case 7 -> write(this, headerByteBuffer, chunkByteBuffer, _content);
+                            case 6 -> writeContent(this, headerByteBuffer, chunkByteBuffer);
+                            case 5 -> write(this, headerByteBuffer, _content);
+                            case 4 -> writeContent(this, headerByteBuffer);
+                            case 3 -> write(this, chunkByteBuffer, _content);
+                            case 2 -> writeContent(this, chunkByteBuffer);
+                            case 1 -> write(this, _content);
+                            default -> writeContent(this);
                         }
 
                         return Action.SCHEDULED;
@@ -975,6 +958,47 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         throw new IllegalStateException("generateResponse=" + result);
                     }
                 }
+            }
+        }
+
+        private void write(Callback callback, ByteBuffer... byteBuffers)
+        {
+            getEndPoint().write(callback, byteBuffers);
+        }
+
+        private void writeContent(Callback callback, ByteBuffer... byteBuffers)
+        {
+            if (_content == Content.Sink.CONTENT_SOURCE)
+            {
+                Content.Source.Seekable source = _info.getContentSource();
+                long remaining = source.remaining();
+                if (byteBuffers.length == 0)
+                {
+                    _bytesOut.addAndGet(remaining);
+                    if (remaining > 0)
+                        Content.transfer(source, false, getEndPoint(), callback);
+                    else
+                        callback.succeeded();
+                }
+                else
+                {
+                    if (remaining > 0)
+                    {
+                        Callback cb = Callback.from(callback.getInvocationType(), () -> writeContent(callback), callback::failed);
+                        write(cb, byteBuffers);
+                    }
+                    else
+                    {
+                        write(callback, byteBuffers);
+                    }
+                }
+            }
+            else
+            {
+                if (byteBuffers.length == 0)
+                    callback.succeeded();
+                else
+                    write(callback, byteBuffers);
             }
         }
 

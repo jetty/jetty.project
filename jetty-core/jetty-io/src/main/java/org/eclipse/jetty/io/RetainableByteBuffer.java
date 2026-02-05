@@ -2412,7 +2412,7 @@ public interface RetainableByteBuffer extends Retainable
                         {
                             RetainableByteBuffer rbb = _buffers.get(i);
                             ByteBuffer byteBuffer = buffers[i] = rbb.getByteBuffer();
-                            canGather &= byteBuffer != Content.Sink.TRANSFER_TO;
+                            canGather &= byteBuffer != Content.Sink.CONTENT_SOURCE;
                         }
                         if (canGather)
                         {

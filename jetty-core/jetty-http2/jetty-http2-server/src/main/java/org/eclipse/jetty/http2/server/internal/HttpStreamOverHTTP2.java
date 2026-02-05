@@ -298,16 +298,16 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
     {
-        ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
+        content = Objects.requireNonNullElse(content, BufferUtil.EMPTY_BUFFER);
         if (_responseMetaData == null)
             sendHeaders(request, response, content, last, callback);
         else
             sendContent(request, response, content, last, callback);
     }
 
-    private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer byteBuffer, boolean last, Callback callback)
+    private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
     {
         _responseMetaData = response;
 
@@ -316,20 +316,19 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         HeadersFrame trailersFrame = null;
 
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean transferable = byteBuffer == Content.Sink.TRANSFER_TO;
-        long contentLength = transferable ? response.getContentSource().getLength() : BufferUtil.length(byteBuffer);
-        boolean hasContent = contentLength > 0 && !isHeadRequest;
+        Content.Source.Seekable contentSource = response.getContentSource();
+        boolean contentAsSource = content == Content.Sink.CONTENT_SOURCE;
+        long contentLength = contentAsSource ? contentSource.getLength() : BufferUtil.length(content);
+        boolean hasContent = (contentLength > 0 || contentAsSource) && !isHeadRequest;
         int streamId = _stream.getId();
         if (HttpStatus.isInterim(response.getStatus()))
         {
             // Must not commit interim responses.
-
             if (hasContent)
             {
                 callback.failed(new IllegalStateException("Interim response cannot have content"));
                 return;
             }
-
             headersFrame = new HeadersFrame(streamId, response, null, false);
         }
         else
@@ -362,17 +361,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                     HttpFields trailers = retrieveTrailers();
                     if (trailers == null)
                     {
-                        dataFrame = transferable ? new DataFrame(streamId, response.getContentSource(), true) : new DataFrame(streamId, byteBuffer, true);
+                        dataFrame = contentAsSource ? new DataFrame(streamId, contentSource, true) : new DataFrame(streamId, content, true);
                     }
                     else
                     {
-                        dataFrame = transferable ? new DataFrame(streamId, response.getContentSource(), false) : new DataFrame(streamId, byteBuffer, false);
+                        dataFrame = contentAsSource ? new DataFrame(streamId, contentSource, false) : new DataFrame(streamId, content, false);
                         trailersFrame = new HeadersFrame(streamId, new MetaData(HttpVersion.HTTP_2, trailers), null, true);
                     }
                 }
                 else
                 {
-                    dataFrame = transferable ? new DataFrame(streamId, response.getContentSource(), false) : new DataFrame(streamId, byteBuffer, false);
+                    dataFrame = contentAsSource ? new DataFrame(streamId, contentSource, false) : new DataFrame(streamId, content, false);
                 }
             }
             else
@@ -415,30 +414,30 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         _stream.send(new HTTP2Stream.FrameList(headersFrame, dataFrame, trailersFrame), callback);
     }
 
-    private void sendContent(MetaData.Request request, MetaData.Response response, ByteBuffer byteBuffer, boolean last, Callback callback)
+    private void sendContent(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean transferable = byteBuffer == Content.Sink.TRANSFER_TO;
-        Content.Source.Seekable source = response.getContentSource();
-        long contentLength = transferable ? source.getLength() : BufferUtil.length(byteBuffer);
-        boolean hasContent = contentLength > 0 && !isHeadRequest;
+        boolean contentAsSource = content == Content.Sink.CONTENT_SOURCE;
+        Content.Source.Seekable contentSource = response.getContentSource();
+        long contentLength = contentAsSource ? contentSource.getLength() : BufferUtil.length(content);
+        boolean hasContent = (contentLength > 0 || contentAsSource) && !isHeadRequest;
         if (hasContent || (last && !isTunnel(request, response)))
         {
             if (!hasContent)
-                byteBuffer = BufferUtil.EMPTY_BUFFER;
+                content = BufferUtil.EMPTY_BUFFER;
             if (last)
             {
                 HttpFields trailers = retrieveTrailers();
                 if (trailers == null)
                 {
-                    sendDataFrame(byteBuffer, source, true, true, callback);
+                    sendDataFrame(content, contentSource, true, true, callback);
                 }
                 else
                 {
                     if (hasContent)
                     {
                         SendTrailers sendTrailers = new SendTrailers(callback, trailers);
-                        sendDataFrame(byteBuffer, source, true, false, sendTrailers);
+                        sendDataFrame(content, contentSource, true, false, sendTrailers);
                     }
                     else
                     {
@@ -448,7 +447,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             }
             else
             {
-                sendDataFrame(byteBuffer, source, false, false, callback);
+                sendDataFrame(content, contentSource, false, false, callback);
             }
         }
         else
@@ -558,17 +557,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
     }
 
-    private void sendDataFrame(ByteBuffer byteBuffer, Content.Source.Seekable source, boolean lastContent, boolean endStream, Callback callback)
+    private void sendDataFrame(ByteBuffer content, Content.Source.Seekable contentSource, boolean lastContent, boolean endStream, Callback callback)
     {
-        boolean transferable = byteBuffer == Content.Sink.TRANSFER_TO;
+        boolean contentAsSource = content == Content.Sink.CONTENT_SOURCE;
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Response #{}/{}: {} content bytes{}",
                 _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                transferable ? source.remaining() : byteBuffer.remaining(),
+                contentAsSource ? contentSource.remaining() : content.remaining(),
                 lastContent ? " (last chunk)" : "");
         }
-        DataFrame frame = transferable ? new DataFrame(_stream.getId(), source, endStream) : new DataFrame(_stream.getId(), byteBuffer, endStream);
+        DataFrame frame = contentAsSource ? new DataFrame(_stream.getId(), contentSource, endStream) : new DataFrame(_stream.getId(), content, endStream);
         _stream.data(frame, callback);
     }
 

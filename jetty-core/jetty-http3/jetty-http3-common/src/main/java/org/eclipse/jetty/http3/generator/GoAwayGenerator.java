@@ -35,13 +35,13 @@ public class GoAwayGenerator extends FrameGenerator
     }
 
     @Override
-    public long generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(RetainableByteBuffer.Mutable accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
         return generateGoAwayFrame(accumulator, goAwayFrame);
     }
 
-    private long generateGoAwayFrame(ByteBufferPool.Accumulator accumulator, GoAwayFrame frame)
+    private long generateGoAwayFrame(RetainableByteBuffer.Mutable accumulator, GoAwayFrame frame)
     {
         long lastId = frame.getLastId();
         int lastIdLength = VarLenInt.length(lastId);
@@ -53,7 +53,7 @@ public class GoAwayGenerator extends FrameGenerator
         VarLenInt.encode(byteBuffer, lastIdLength);
         VarLenInt.encode(byteBuffer, lastId);
         byteBuffer.flip();
-        accumulator.append(buffer);
+        accumulator.add(buffer);
         return length;
     }
 }

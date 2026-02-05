@@ -83,6 +83,7 @@ public class HttpGenerator
     private Boolean _persistent = null;
     private boolean _needCRLF = false;
     private int _maxHeaderBytes;
+    private int _maxChunkLength;
 
     public HttpGenerator()
     {
@@ -107,6 +108,16 @@ public class HttpGenerator
     public void setMaxHeaderBytes(int maxHeaderBytes)
     {
         _maxHeaderBytes = maxHeaderBytes;
+    }
+
+    public int getMaxChunkLength()
+    {
+        return _maxChunkLength;
+    }
+
+    public void setMaxChunkLength(int maxChunkLength)
+    {
+        _maxChunkLength = maxChunkLength;
     }
 
     public State getState()
@@ -490,8 +501,8 @@ public class HttpGenerator
         // Add the chunk size to the header
         if (remaining > 0)
         {
-            // TODO: we need a long as required by RFC 9110.
-            BufferUtil.putHexInt(chunk, (int)remaining);
+            int chunkLength = (int)Math.min(remaining, getMaxChunkLength());
+            BufferUtil.putHexInt(chunk, chunkLength);
             BufferUtil.putCRLF(chunk);
             _needCRLF = true;
         }

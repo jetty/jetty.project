@@ -90,9 +90,18 @@ public class StatisticsHandler extends EventsHandler
     }
 
     @Override
-    protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+    protected void onResponseWrite(Request request, Response response, boolean last, ByteBuffer content)
     {
-        int length = BufferUtil.length(content);
+        long length;
+        if (content == Content.Sink.CONTENT_SOURCE)
+        {
+            Content.Source.Seekable seekable = Content.Sink.findContentSourceSeekable(response);
+            length = seekable != null ? seekable.getLength() : -1;
+        }
+        else
+        {
+            length = BufferUtil.length(content);
+        }
         if (length > 0)
             _bytesWritten.add(length);
     }

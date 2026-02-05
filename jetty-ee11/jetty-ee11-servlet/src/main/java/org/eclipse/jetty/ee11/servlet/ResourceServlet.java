@@ -196,6 +196,11 @@ import org.slf4j.LoggerFactory;
  *     The maximum size in bytes of a file that will used with file mapping;
  *     or {@code -1} (or not set) for a default size of {@link Integer#MAX_VALUE}.
  *   </dd>
+ *   <dt>tryTransferTo</dt>
+ *   <dd>
+ *     Use {@code true} to try to serve static files using the transfer-to
+ *     optimization.
+ *   </dd>
  *   <dt>welcomeServlets</dt>
  *   <dd>
  *     Use {@code false} to only serve welcome resources when they exist on the file system.
@@ -293,7 +298,8 @@ public class ResourceServlet extends HttpServlet
         {
             MimeTypes mimeTypes = contextHandler.getMimeTypes();
             ByteBufferPool.Sized bufferPool = new ByteBufferPool.Sized(getByteBufferPool(contextHandler), getInitBoolean("useDirectByteBuffers", true), getInitInt("byteBufferSize", 32768));
-            contentFactory = new ResourceHttpContentFactory(baseResource, mimeTypes, bufferPool);
+            boolean tryTransferTo = getInitBoolean("tryTransferTo", false);
+            contentFactory = new ResourceHttpContentFactory(baseResource, mimeTypes, bufferPool, tryTransferTo);
 
             // Use the servers default stylesheet unless there is one explicitly set by an init param.
             Resource styleSheet = contextHandler.getServer().getDefaultStyleSheet();

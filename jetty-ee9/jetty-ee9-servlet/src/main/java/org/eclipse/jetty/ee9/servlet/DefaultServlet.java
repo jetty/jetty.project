@@ -149,13 +149,11 @@ import org.slf4j.LoggerFactory;
 public class DefaultServlet extends HttpServlet implements WelcomeFactory
 {
     public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
-
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
 
     private final ResourceService _resourceService;
     private ServletContext _servletContext;
     private ContextHandler _contextHandler;
-
     private boolean _welcomeServlets = false;
     private boolean _welcomeExactServlets = false;
     private Resource _baseResource;
@@ -306,7 +304,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
             if (contentFactory == null)
             {
                 ByteBufferPool.Sized bufferPool = new ByteBufferPool.Sized(getByteBufferPool(_contextHandler), getInitBoolean("useDirectByteBuffers", true), getInitInt("byteBufferSize", 32768));
-                contentFactory = new ResourceHttpContentFactory(_baseResource, _mimeTypes, bufferPool)
+                contentFactory = new ResourceHttpContentFactory(_baseResource, _mimeTypes, bufferPool, false)
                 {
                     @Override
                     protected Resource resolve(String pathInContext)

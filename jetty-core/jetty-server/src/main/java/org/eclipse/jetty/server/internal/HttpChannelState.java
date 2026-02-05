@@ -1337,7 +1337,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             Callback writeCallback = Objects.requireNonNullElse(callback, NOOP);
 
-            long length = content == Content.Sink.TRANSFER_TO ? _source.remaining() : BufferUtil.length(content);
+            long length = content == Content.Sink.CONTENT_SOURCE ? getContentSource().remaining() : BufferUtil.length(content);
 
             HttpChannelState httpChannelState;
             HttpStream stream;
@@ -1400,16 +1400,6 @@ public class HttpChannelState implements HttpChannel, Components
                     httpChannelState._lastWriteFailure = writeFailure;
                     Throwable failure = writeFailure;
                     httpChannelState._writeInvoker.run(() -> HttpChannelState.failed(writeCallback, failure));
-                    return;
-                }
-
-                Throwable dataFailure = null;
-                if (content == TRANSFER_TO && _source == null)
-                    dataFailure = new IllegalStateException("No source for transferTo() operation");
-                if (dataFailure != null)
-                {
-                    Throwable failure = dataFailure;
-                    httpChannelState._writeInvoker.run(() -> HttpChannelState.failed(callback, failure));
                     return;
                 }
 
@@ -1527,7 +1517,10 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public Content.Source.Seekable getContentSource()
         {
-            return _source;
+            if (_metaData != null)
+                return _metaData.getContentSource();
+            else
+                return _source;
         }
 
         @Override

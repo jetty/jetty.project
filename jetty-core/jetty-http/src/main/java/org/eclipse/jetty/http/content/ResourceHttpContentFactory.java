@@ -33,13 +33,20 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
     private final Resource _baseResource;
     private final MimeTypes _mimeTypes;
     private final ByteBufferPool.Sized _sizedBufferPool;
+    private final boolean _tryTransferTo;
 
     public ResourceHttpContentFactory(Resource baseResource, MimeTypes mimeTypes, ByteBufferPool.Sized sizedBufferPool)
+    {
+        this(baseResource, mimeTypes, sizedBufferPool, false);
+    }
+
+    public ResourceHttpContentFactory(Resource baseResource, MimeTypes mimeTypes, ByteBufferPool.Sized sizedBufferPool, boolean tryTransferTo)
     {
         Objects.requireNonNull(mimeTypes, "MimeTypes cannot be null");
         _baseResource = Objects.requireNonNullElse(baseResource, ResourceFactory.root().newResource("."));
         _mimeTypes = mimeTypes;
         _sizedBufferPool = sizedBufferPool;
+        _tryTransferTo = tryTransferTo;
     }
 
     @Override
@@ -76,7 +83,7 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
     {
         if (resource == null || !resource.exists())
             return null;
-        return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(pathInContext), _sizedBufferPool);
+        return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(pathInContext), _sizedBufferPool, _tryTransferTo);
     }
 
     @Override

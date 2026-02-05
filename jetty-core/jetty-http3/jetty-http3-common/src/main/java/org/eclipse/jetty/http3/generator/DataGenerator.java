@@ -20,9 +20,11 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 
 public class DataGenerator extends FrameGenerator
 {
@@ -35,16 +37,34 @@ public class DataGenerator extends FrameGenerator
     }
 
     @Override
-    public long generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(RetainableByteBuffer.Mutable accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         DataFrame dataFrame = (DataFrame)frame;
-        return generateDataFrame(accumulator, dataFrame);
+        ByteBuffer byteBuffer = dataFrame.getByteBuffer();
+        if (byteBuffer == Content.Sink.CONTENT_SOURCE)
+            return generateDataFrame(accumulator, dataFrame.getContentSource());
+        else
+            return generateDataFrame(accumulator, byteBuffer);
     }
 
-    private long generateDataFrame(ByteBufferPool.Accumulator accumulator, DataFrame frame)
+    private long generateDataFrame(RetainableByteBuffer.Mutable accumulator, ByteBuffer data)
     {
-        ByteBuffer data = frame.getByteBuffer();
         long dataLength = data.remaining();
+        int headerLength = generateHeader(accumulator, dataLength);
+        accumulator.add(RetainableByteBuffer.wrap(data));
+        return headerLength + dataLength;
+    }
+
+    private long generateDataFrame(RetainableByteBuffer.Mutable accumulator, Content.Source.Seekable contentSource)
+    {
+        long dataLength = contentSource.getLength();
+        int headerLength = generateHeader(accumulator, dataLength);
+        accumulator.add(new ContentSourceRetainableByteBuffer(contentSource));
+        return headerLength + dataLength;
+    }
+
+    private int generateHeader(RetainableByteBuffer.Mutable accumulator, long dataLength)
+    {
         int headerLength = VarLenInt.length(FrameType.DATA.type()) + VarLenInt.length(dataLength);
         RetainableByteBuffer header = getByteBufferPool().acquire(headerLength, useDirectByteBuffers);
         ByteBuffer byteBuffer = header.getByteBuffer();
@@ -52,8 +72,41 @@ public class DataGenerator extends FrameGenerator
         VarLenInt.encode(byteBuffer, FrameType.DATA.type());
         VarLenInt.encode(byteBuffer, dataLength);
         byteBuffer.flip();
-        accumulator.append(header);
-        accumulator.append(RetainableByteBuffer.wrap(data));
-        return headerLength + dataLength;
+        accumulator.add(header);
+        return headerLength;
+    }
+
+    private static class ContentSourceRetainableByteBuffer implements RetainableByteBuffer
+    {
+        private final Content.Source.Seekable source;
+
+        private ContentSourceRetainableByteBuffer(Content.Source.Seekable source)
+        {
+            this.source = source;
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return Content.Sink.CONTENT_SOURCE;
+        }
+
+        @Override
+        public long size()
+        {
+            return source.remaining();
+        }
+
+        @Override
+        public int remaining()
+        {
+            return Math.toIntExact(size());
+        }
+
+        @Override
+        public void writeTo(Content.Sink sink, boolean last, Callback callback)
+        {
+            Content.transfer(source, last, sink, callback);
+        }
     }
 }

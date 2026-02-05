@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.List;
 
@@ -27,6 +28,7 @@ import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -65,6 +67,7 @@ public class ResourceHandler extends Handler.Wrapper
     private List<String> _welcomes = List.of("index.html");
     private int _minMappedFileSize = -1;
     private int _maxMappedFileSize = -1;
+    private boolean _tryTransferTo;
 
     public ResourceHandler()
     {
@@ -146,7 +149,7 @@ public class ResourceHandler extends Handler.Wrapper
 
     protected HttpContent.Factory newHttpContentFactory(ByteBufferPool.Sized byteBufferPool)
     {
-        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), byteBufferPool);
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(getBaseResource(), getMimeTypes(), byteBufferPool, isTryTransferTo());
         if (getMinMappedFileSize() != 0)
             contentFactory = new FileMappingHttpContentFactory(contentFactory, getMinMappedFileSize(), getMaxMappedFileSize());
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css", byteBufferPool);
@@ -425,6 +428,34 @@ public class ResourceHandler extends Handler.Wrapper
         if (isRunning())
             throw new IllegalStateException("Unable to set when started " + this);
         _minMappedFileSize = minMappedFileSize;
+    }
+
+    /**
+     * @return whether to try to send static content from the filesystem using the
+     * transfer-to optimization.
+     */
+    public boolean isTryTransferTo()
+    {
+        return _tryTransferTo;
+    }
+
+    /**
+     * <p>Sets whether to try to send static content from the filesystem using the
+     * transfer-to optimization.</p>
+     * <p>Enabling the transfer-to optimization requires setting
+     * {@link #setMinMappedFileSize(int) minMappedFileSize=0}, otherwise the static
+     * content will be served using file mapping, that involves one data copy.</p>
+     * <p>NOTE: the transfer-to optimization may break {@code Handler}s that process
+     * response content by wrapping the {@code Response} and intercepting
+     * {@link Response#write(boolean, ByteBuffer, Callback)}.</p>
+     *
+     * @param tryTransferTo whether to try to send static content from the filesystem
+     * using the transfer-to optimization.
+     * @see Content.Sink#write(Content.Sink, boolean, Content.Source, Callback) 
+     */
+    public void setTryTransferTo(boolean tryTransferTo)
+    {
+        _tryTransferTo = tryTransferTo;
     }
 
     public void setWelcomeMode(ResourceService.WelcomeMode welcomeMode)
