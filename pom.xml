@@ -151,12 +151,12 @@
 
   <distributionManagement>
     <repository>
-      <id>sonatype-cp</id>
-      <url>https://repo.maven.apache.org/maven2</url>
+      <id>${dist-management-release-id}</id>
+      <url>${dist-management-release-url}</url>
     </repository>
     <snapshotRepository>
-      <id>sonatype-cp</id>
-      <url>https://central.sonatype.com/repository/maven-snapshots</url>
+      <id>${dist-management-snapshot-id}</id>
+      <url>${dist-management-snapshot-url}</url>
     </snapshotRepository>
   </distributionManagement>
 
@@ -194,6 +194,10 @@
     <cyclonedx.maven.plugin.version>2.9.1</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
     <detectOfflineLinks>false</detectOfflineLinks>
+    <dist-management-release-id>sonatype-cp</dist-management-release-id>
+    <dist-management-release-url>https://repo.maven.apache.org/maven2</dist-management-release-url>
+    <dist-management-snapshot-id>sonatype-cp</dist-management-snapshot-id>
+    <dist-management-snapshot-url>https://central.sonatype.com/repository/maven-snapshots</dist-management-snapshot-url>
     <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
     <eclipse.jdt.ecj.version>3.44.0</eclipse.jdt.ecj.version>
 
@@ -294,6 +298,7 @@
     <maven.remote-resources-plugin.version>3.3.0</maven.remote-resources-plugin.version>
     <maven.resolver.version>1.9.25</maven.resolver.version>
     <maven.resources.plugin.version>3.4.0</maven.resources.plugin.version>
+    <maven.retryFailedDeploymentCount>10</maven.retryFailedDeploymentCount>
     <maven.shade.plugin.version>3.6.1</maven.shade.plugin.version>
     <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
     <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
@@ -1596,7 +1601,7 @@
           <artifactId>maven-deploy-plugin</artifactId>
           <version>${maven.deploy.plugin.version}</version>
           <configuration>
-            <retryFailedDeploymentCount>10</retryFailedDeploymentCount>
+            <retryFailedDeploymentCount>${maven.retryFailedDeploymentCount}</retryFailedDeploymentCount>
           </configuration>
         </plugin>
         <plugin>
@@ -2070,11 +2075,11 @@
                   <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 17 or newer</message>
                 </requireJavaVersion>
                 <!-- do not support alphax as a version number -->
-                <!--
-                  <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
-                  <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
-                  <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
-                -->
+
+                <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule"/>
+                <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule"/>
+                <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule"/>
+
                 <requireUpperBoundDeps/>
               </rules>
             </configuration>
