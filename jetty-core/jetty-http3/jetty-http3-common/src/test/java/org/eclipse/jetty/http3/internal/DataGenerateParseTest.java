@@ -25,6 +25,7 @@ import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
@@ -56,7 +57,7 @@ public class DataGenerateParseTest
         DataFrame input = new DataFrame(ByteBuffer.wrap(inputBytes), true);
 
         ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator(); // TODO remove
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1, 0, 0);
         new MessageGenerator(bufferPool, null, true).generate(accumulator, 0, input, null);
 
         List<DataFrame> frames = new ArrayList<>();
@@ -71,11 +72,8 @@ public class DataGenerateParseTest
             }
         }, decoder, 13);
         parser.init(UnaryOperator.identity());
-        for (ByteBuffer buffer : accumulator.getByteBuffers())
-        {
-            parser.parse(buffer, false);
-            assertFalse(buffer.hasRemaining());
-        }
+        parser.parse(accumulator.getByteBuffer(), false);
+        assertFalse(accumulator.hasRemaining());
 
         assertEquals(1, frames.size());
         DataFrame output = frames.get(0);

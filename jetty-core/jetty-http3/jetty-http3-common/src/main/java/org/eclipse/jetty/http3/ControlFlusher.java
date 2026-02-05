@@ -42,7 +42,7 @@ public class ControlFlusher extends IteratingCallback
     private final Queue<Entry> queue = new ArrayDeque<>();
     private final StreamEndPoint endPoint;
     private final ControlGenerator generator;
-    private final ByteBufferPool.Accumulator accumulator;
+    private final RetainableByteBuffer.Mutable accumulator;
     private boolean initialized;
     private Throwable terminated;
     private List<Entry> entries;
@@ -52,7 +52,7 @@ public class ControlFlusher extends IteratingCallback
     {
         this.endPoint = endPoint;
         this.generator = new ControlGenerator(byteBufferPool, useDirectByteBuffers);
-        this.accumulator = new ByteBufferPool.Accumulator();
+        this.accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
     }
 
     public boolean offer(Frame frame, Callback callback)
@@ -86,24 +86,22 @@ public class ControlFlusher extends IteratingCallback
 
         for (Entry entry : entries)
         {
+            if (!initialized)
+            {
+                initialized = true;
+                long streamType = StreamType.CONTROL_STREAM.type();
+                ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(streamType));
+                VarLenInt.encode(buffer, streamType);
+                buffer.flip();
+                accumulator.add(buffer);
+            }
             generator.generate(accumulator, endPoint.getStream().getId(), entry.frame, null);
             invocationType = Invocable.combine(invocationType, entry.callback.getInvocationType());
         }
 
-        if (!initialized)
-        {
-            initialized = true;
-            long streamType = StreamType.CONTROL_STREAM.type();
-            ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(streamType));
-            VarLenInt.encode(buffer, streamType);
-            buffer.flip();
-            accumulator.insert(0, RetainableByteBuffer.wrap(buffer));
-        }
-
-        List<ByteBuffer> buffers = accumulator.getByteBuffers();
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} buffers ({} bytes) on {}", buffers.size(), accumulator.getTotalLength(), this);
-        endPoint.write(false, buffers, this);
+            LOG.debug("writing {} bytes on {}", accumulator.size(), this);
+        accumulator.writeTo(endPoint, false, this);
         return Action.SCHEDULED;
     }
 
@@ -113,7 +111,7 @@ public class ControlFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("succeeded to write {} on {}", entries, this);
 
-        accumulator.release();
+        accumulator.clear();
 
         entries.forEach(e -> e.callback.succeeded());
         entries.clear();

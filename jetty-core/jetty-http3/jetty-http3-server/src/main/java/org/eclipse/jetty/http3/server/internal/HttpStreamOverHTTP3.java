@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.server.internal;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -250,11 +251,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
     @Override
     public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
-        if (response != null)
+        ByteBuffer content = Objects.requireNonNullElse(byteBuffer, BufferUtil.EMPTY_BUFFER);
+        if (responseMetaData == null)
             sendHeaders(request, response, content, last, callback);
         else
-            sendContent(request, content, last, callback);
+            sendContent(request, response, content, last, callback);
     }
 
     @Override
@@ -283,7 +284,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        this.responseMetaData = response;
+        responseMetaData = response;
 
         HeadersFrame headersFrame;
         DataFrame dataFrame = null;
@@ -294,13 +295,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
         if (HttpStatus.isInterim(response.getStatus()))
         {
             // Must not commit interim responses.
-
             if (hasContent)
             {
                 callback.failed(new IllegalStateException("Interim response cannot have content"));
                 return;
             }
-
             headersFrame = new HeadersFrame(response, false);
         }
         else
@@ -312,7 +311,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 long contentLength = response.getContentLength();
                 if (contentLength < 0)
                 {
-                    this.responseMetaData = new MetaData.Response(
+                    responseMetaData = new MetaData.Response(
                         response.getStatus(), response.getReason(), response.getHttpVersion(),
                         response.getHttpFields(),
                         realContentLength,
@@ -406,11 +405,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
         }, callback::failed));
     }
 
-    private void sendContent(MetaData.Request request, ByteBuffer content, boolean lastContent, Callback callback)
+    private void sendContent(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        if (hasContent || (lastContent && !isTunnel(request, responseMetaData)))
+        if (hasContent || (lastContent && !isTunnel(request, response)))
         {
             if (!hasContent)
                 content = BufferUtil.EMPTY_BUFFER;

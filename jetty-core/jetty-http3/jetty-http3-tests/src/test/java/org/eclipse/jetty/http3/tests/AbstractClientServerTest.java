@@ -35,6 +35,7 @@ import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -57,6 +58,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
 public class AbstractClientServerTest
@@ -102,7 +107,8 @@ public class AbstractClientServerTest
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        server = new Server(serverThreads);
+        ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(serverThreads, null, byteBufferPool);
 
         serverSslContextFactory = new SslContextFactory.Server();
         serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
@@ -134,6 +140,8 @@ public class AbstractClientServerTest
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         clientConnector.setExecutor(clientThreads);
+        ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();
+        clientConnector.setByteBufferPool(byteBufferPool);
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
 
         ClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(switch (transportType)
@@ -180,10 +188,23 @@ public class AbstractClientServerTest
     }
 
     @AfterEach
-    public void dispose()
+    public void dispose() throws Exception
     {
         LifeCycle.stop(http3Client);
         LifeCycle.stop(httpClient);
+
+        if (http3Client != null)
+        {
+            ArrayByteBufferPool.Tracking clientByteBufferPool = (ArrayByteBufferPool.Tracking)http3Client.getClientConnector().getByteBufferPool();
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("client leaks: " + clientByteBufferPool.dumpLeaks(), clientByteBufferPool.getLeaks().size(), is(0)));
+        }
+
+        if (server != null)
+        {
+            ArrayByteBufferPool.Tracking serverByteBufferPool = (ArrayByteBufferPool.Tracking)server.getByteBufferPool();
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("server leaks: " + serverByteBufferPool.dumpLeaks(), serverByteBufferPool.getLeaks().size(), is(0)));
+        }
+
         LifeCycle.stop(server);
     }
 
