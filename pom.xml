@@ -215,7 +215,7 @@
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.7.3</flatten.maven.plugin.version>
     <groovy.version>4.0.26</groovy.version>
-    <grpc.version>1.78.0</grpc.version>
+    <grpc.version>1.79.0</grpc.version>
     <gson.version>2.13.2</gson.version>
     <guava.version>33.5.0-jre</guava.version>
     <guice.version>7.0.0</guice.version>
@@ -269,7 +269,7 @@
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.25.3</log4j2.version>
-    <logback.version>1.5.27</logback.version>
+    <logback.version>1.5.28</logback.version>
     <lucene.version>9.12.2</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.7</mariadb.version>
@@ -307,7 +307,7 @@
     <modify-sources-plugin.version>1.0.13</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.6.2</mongodb.version>
-    <netty.version>4.2.9.Final</netty.version>
+    <netty.version>4.2.10.Final</netty.version>
     <njord.version>0.9.3</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
@@ -329,7 +329,7 @@
     <osgi-version>3.24.0</osgi-version>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.14.0</pax.exam.version>
-    <pax.url.version>3.0.1</pax.url.version>
+    <pax.url.version>3.0.2</pax.url.version>
     <plexus-classworlds.version>2.9.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
@@ -483,12 +483,12 @@
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-annotation</artifactId>
-        <version>2.15.0</version>
+        <version>2.16.0</version>
       </dependency>
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-cpu</artifactId>
-        <version>2.15.0</version>
+        <version>2.16.0</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
