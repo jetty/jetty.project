@@ -75,7 +75,6 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         protected String _expiryTimeColumn = "expiryTime";
         protected String _maxIntervalColumn = "maxInterval";
         protected String _mapColumn = "map";
-        protected boolean _createSessionIndex = true;
 
         protected void setDatabaseAdaptor(DatabaseAdaptor dbadaptor)
         {
@@ -256,16 +255,6 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             _mapColumn = mapColumn;
         }
 
-        public boolean isCreateSessionIndex()
-        {
-            return _createSessionIndex;
-        }
-
-        public void setCreateSessionIndex(boolean createSessionIndex)
-        {
-            _createSessionIndex = createSessionIndex;
-        }
-
         public String getCreateStatementAsString()
         {
             if (_dbAdaptor == null)
@@ -285,11 +274,6 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         public String getCreateIndexOverExpiryStatementAsString(String indexName)
         {
             return "create index " + indexName + " on " + getSchemaTableName() + " (" + getExpiryTimeColumn() + ")";
-        }
-
-        public String getCreateIndexOverSessionStatementAsString(String indexName)
-        {
-            return "create index " + indexName + " on " + getSchemaTableName() + " (" + getIdColumn() + ", " + getContextPathColumn() + ")";
         }
 
         public String getAlterTableForMaxIntervalAsString()
@@ -573,25 +557,22 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
                 }
                 //make some indexes on the JettySessions table
                 String index1 = "idx_" + getTableName() + "_expiry";
-                String index2 = "idx_" + getTableName() + "_session";
 
                 boolean index1Exists = false;
-                boolean index2Exists = false;
                 try (ResultSet result = metaData.getIndexInfo(catalogName, schemaName, tableName, false, true))
                 {
                     while (result.next())
                     {
                         String idxName = result.getString("INDEX_NAME");
                         if (index1.equalsIgnoreCase(idxName))
+                        {
                             index1Exists = true;
-                        else if (index2.equalsIgnoreCase(idxName))
-                            index2Exists = true;
+                            break;
+                        }
                     }
                 }
                 if (!index1Exists)
                     statement.executeUpdate(getCreateIndexOverExpiryStatementAsString(index1));
-                if (!index2Exists && isCreateSessionIndex())
-                    statement.executeUpdate(getCreateIndexOverSessionStatementAsString(index2));
             }
         }
 
