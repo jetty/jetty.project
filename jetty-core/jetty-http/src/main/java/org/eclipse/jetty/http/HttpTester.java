@@ -519,6 +519,13 @@ public class HttpTester
                             }
                             if (BufferUtil.hasContent(content))
                             {
+                                int chunkMaxLength = generator.getChunkMaxLength();
+                                if (generator.isChunking() && content.remaining() > chunkMaxLength)
+                                {
+                                    ByteBuffer slice = content.slice(content.position(), chunkMaxLength);
+                                    content.position(content.position() + chunkMaxLength);
+                                    content = slice;
+                                }
                                 out.write(BufferUtil.toArray(content));
                                 BufferUtil.clear(content);
                             }
