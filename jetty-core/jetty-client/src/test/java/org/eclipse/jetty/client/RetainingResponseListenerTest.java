@@ -73,6 +73,9 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
         int read = inputStream.read();
         // If we read the modified value, there was no data copy.
         assertEquals(modified, read);
+        // We must be at EOF.
+        assertEquals(-1, inputStream.read());
+        // Read again at EOF to be sure -1 is returned again.
         assertEquals(-1, inputStream.read());
     }
 
