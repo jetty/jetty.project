@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpStatus;
@@ -27,6 +28,7 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
@@ -71,5 +73,39 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
         int read = inputStream.read();
         // If we read the modified value, there was no data copy.
         assertEquals(modified, read);
+        assertEquals(-1, inputStream.read());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testInputStreamReadAllBytes(Scenario scenario) throws Exception
+    {
+        byte[] content = new byte[1024 * 1024];
+        ThreadLocalRandom.current().nextBytes(content);
+        start(scenario, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
+            }
+        });
+
+        RetainingResponseListener listener = new RetainingResponseListener()
+        {
+        };
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .onResponseContentAsync(listener)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        InputStream inputStream = listener.getContentAsInputStream();
+        byte[] bytes = inputStream.readAllBytes();
+
+        assertArrayEquals( content, bytes);
     }
 }
