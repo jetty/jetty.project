@@ -283,7 +283,7 @@
     <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
     <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
     <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.9.0</maven.dependency.plugin.version>
+    <maven.dependency.plugin.version>3.10.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
     <maven.deps.version>3.9.12</maven.deps.version>
     <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
