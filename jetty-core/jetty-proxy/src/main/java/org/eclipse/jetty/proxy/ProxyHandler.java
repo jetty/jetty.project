@@ -89,15 +89,6 @@ public abstract class ProxyHandler extends Handler.Abstract
         HttpHeader.TRAILER,
         HttpHeader.UPGRADE
     );
-    private static final EnumSet<HttpHeader> SINGLE_VALUE_HEADERS = EnumSet.of(
-        HttpHeader.CONTENT_LENGTH,
-        HttpHeader.CONTENT_TYPE,
-        HttpHeader.DATE,
-        HttpHeader.ETAG,
-        HttpHeader.LOCATION,
-        HttpHeader.SERVER
-    );
-
     private HttpClient httpClient;
     private String proxyToServerHost;
     private String viaHost;
@@ -355,7 +346,7 @@ public abstract class ProxyHandler extends Handler.Abstract
             if (headersToRemove != null && headersToRemove.contains(clientToProxyRequestField.getLowerCaseName()))
                 continue;
 
-            proxyToServerRequest.headers(headers -> headers.add(clientToProxyRequestField));
+            proxyToServerRequest.headers(headers -> headers.put(clientToProxyRequestField));
         }
     }
 
@@ -697,12 +688,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                 HttpField newField = filterServerToProxyResponseField(serverToProxyResponseField);
                 if (newField == null)
                     continue;
-                // Use put() for single-value headers to avoid duplicates when both
-                // the proxy and backend server add these headers.
-                if (SINGLE_VALUE_HEADERS.contains(newField.getHeader()))
-                    proxyToClientResponse.getHeaders().put(newField);
-                else
-                    proxyToClientResponse.getHeaders().add(newField);
+                proxyToClientResponse.getHeaders().put(newField);
             }
             if (LOG.isDebugEnabled())
             {
