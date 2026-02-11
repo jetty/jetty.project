@@ -332,9 +332,9 @@ public class HttpConnectionTest
         }
         request.append("Content-Type: text/plain\r\n");
         request.append("\r\n");
-        request.append("8;\r\n"); // chunk header
+        request.append("8\r\n"); // chunk header
         request.append("abcdefgh"); // actual content of 8 bytes
-        request.append("\r\n0;\r\n\r\n"); // last chunk
+        request.append("\r\n0\r\n\r\n"); // last chunk
 
         String rawResponse = _connector.getResponse(request.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -430,9 +430,9 @@ public class HttpConnectionTest
         tokens.forEach((token) -> request.append("Transfer-Encoding: ").append(token).append("\r\n"));
         request.append("Content-Type: text/plain\r\n");
         request.append("\r\n");
-        request.append("8;\r\n"); // chunk header
+        request.append("8\r\n"); // chunk header
         request.append("abcdefgh"); // actual content of 8 bytes
-        request.append("\r\n0;\r\n\r\n"); // last chunk
+        request.append("\r\n0\r\n\r\n"); // last chunk
 
         String rawResponse = _connector.getResponse(request.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -1097,9 +1097,9 @@ public class HttpConnectionTest
                 "Transfer-Encoding: chunked\r\n" +
                 "Content-Type: text/plain; charset=utf-8\r\n" +
                 "\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "12345\r\n" +
-                "0;\r\n" +
+                "0\r\n" +
                 "\r\n");
             checkContains(response, offset, "Connection: close");
         }
