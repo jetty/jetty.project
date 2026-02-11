@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -25,6 +26,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.content.ChunksContentSource;
 
 public abstract class AbstractResponseListener implements Response.Listener
 {
@@ -198,7 +200,16 @@ public abstract class AbstractResponseListener implements Response.Listener
     {
         if (accumulator instanceof RetainableByteBuffer.DynamicCapacity dynamic)
             return dynamic.takeContentSource();
-        return Content.Source.from(ByteBuffer.wrap(getContent()));
+
+        RetainableByteBuffer buffer = accumulator.take();
+        Content.Chunk c;
+        if (buffer instanceof Content.Chunk chunk)
+            c = chunk;
+        else
+            c = Content.Chunk.asChunk(buffer.getByteBuffer(), true, buffer);
+        ChunksContentSource chunksContentSource = new ChunksContentSource(List.of(c));
+        buffer.release();
+        return chunksContentSource;
     }
 
     private byte[] take()
