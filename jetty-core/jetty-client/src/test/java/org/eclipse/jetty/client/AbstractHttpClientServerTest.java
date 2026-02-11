@@ -104,19 +104,23 @@ public abstract class AbstractHttpClientServerTest
     @AfterEach
     public void dispose() throws Exception
     {
-        LifeCycle.stop(client);
+        if (client != null)
+        {
+            LifeCycle.stop(client);
+            ArrayByteBufferPool.Tracking clientBufferPool = (ArrayByteBufferPool.Tracking)client.getClientConnector().getByteBufferPool();
+            await().atMost(5, java.util.concurrent.TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat("client leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0))
+            );
+        }
 
-        ArrayByteBufferPool.Tracking clientBufferPool = (ArrayByteBufferPool.Tracking)client.getClientConnector().getByteBufferPool();
-        await().atMost(5, java.util.concurrent.TimeUnit.SECONDS).untilAsserted(() ->
-            assertThat("client leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0))
-        );
-
-        ArrayByteBufferPool.Tracking serverBufferPool = (ArrayByteBufferPool.Tracking)server.getByteBufferPool();
-        await().atMost(5, java.util.concurrent.TimeUnit.SECONDS).untilAsserted(() ->
-            assertThat("server leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0))
-        );
-
-        LifeCycle.stop(server);
+        if (server != null)
+        {
+            ArrayByteBufferPool.Tracking serverBufferPool = (ArrayByteBufferPool.Tracking)server.getByteBufferPool();
+            await().atMost(5, java.util.concurrent.TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat("server leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0))
+            );
+            LifeCycle.stop(server);
+        }
     }
 
     @AfterEach
