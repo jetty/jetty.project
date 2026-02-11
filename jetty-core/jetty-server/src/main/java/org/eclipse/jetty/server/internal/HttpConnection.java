@@ -811,7 +811,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _content = content;
                 _lastContent = last;
                 _callback = callback;
-                _header = null;
+                if (_header != null)
+                {
+                    _header.release();
+                    _header = null;
+                }
                 if (getConnector().isShutdown())
                     _generator.setPersistent(false);
                 return true;
