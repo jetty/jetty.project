@@ -125,9 +125,9 @@ public class HttpConnectionTest
                 "Content-Type: text/plain\r\n" +
                 "Connection: close\r\n" +
                 "\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "12345\r\n" +
-                "0;\r\n" +
+                "0\r\n" +
                 "\r\n");
             offset = checkContains(response, offset, "HTTP/1.1 200");
             offset = checkContains(response, offset, "/R1");
@@ -140,9 +140,9 @@ public class HttpConnectionTest
                 "Content-Type: text/plain\r\n" +
                 "Connection: close\r\n" +
                 "\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "ABCDE\r\n" +
-                "0;\r\n" +
+                "0\r\n" +
                 "\r\n");
             offset = checkContains(response, offset, "HTTP/1.1 200");
             offset = checkContains(response, offset, "/R2");
@@ -377,9 +377,9 @@ public class HttpConnectionTest
         tokens.forEach((token) -> request.append("Transfer-Encoding: ").append(token).append("\r\n"));
         request.append("Content-Type: text/plain\r\n");
         request.append("\r\n");
-        request.append("8;\r\n"); // chunk header
+        request.append("8\r\n"); // chunk header
         request.append("abcdefgh"); // actual content of 8 bytes
-        request.append("\r\n0;\r\n\r\n"); // last chunk
+        request.append("\r\n0\r\n\r\n"); // last chunk
 
         String rawResponse = _connector.getResponse(request.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -884,9 +884,9 @@ public class HttpConnectionTest
             "Content-Type: text/plain\r\n" +
             "Connection: close\r\n" +
             "\r\n" +
-            "5;\r\n" +
+            "5\r\n" +
             "12345\r\n" +
-            "0;\r\n" +
+            "0\r\n" +
             "\r\n");
         offset = checkContains(response, offset, "HTTP/1.1 200");
         checkNotContained(response, offset, "IgnoreMe");
@@ -928,11 +928,11 @@ public class HttpConnectionTest
                 "Transfer-Encoding: chunked\r\n" +
                 "Content-Type: text/plain; charset=utf-8\r\n" +
                 "\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "12345\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "67890\r\n" +
-                "0;\r\n" +
+                "0\r\n" +
                 "\r\n" +
                 "GET /R2 HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
@@ -967,7 +967,7 @@ public class HttpConnectionTest
                 "Transfer-Encoding: chunked\r\n" +
                 "Content-Type: text/plain; charset=utf-8\r\n" +
                 "\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "12345\r\n";
 
         long start = NanoTime.now();
@@ -991,11 +991,11 @@ public class HttpConnectionTest
                 "Transfer-Encoding: chunked\r\n" +
                 "Content-Type: text/plain; charset=utf-8\r\n" +
                 "\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "12345\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "67890\r\n" +
-                "0;\r\n" +
+                "0\r\n" +
                 "\r\n" +
                 "GET /R2 HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
@@ -1026,11 +1026,11 @@ public class HttpConnectionTest
                 "Content-Type: application/data; charset=utf-8\r\n" +
                 "Some: header\r\n" +
                 "\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "12345\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "67890\r\n" +
-                "0;\r\n" +
+                "0\r\n" +
                 "\r\n" +
                 "GET /R2 HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
@@ -1061,11 +1061,11 @@ public class HttpConnectionTest
             "Transfer-Encoding: chunked\r\n" +
             "Content-Type: text/plain; charset=utf-8\r\n" +
             "\r\n" +
-            "5;\r\n" +
+            "5\r\n" +
             "12345\r\n" +
-            "5;\r\n" +
+            "5\r\n" +
             "67890\r\n" +
-            "0;\r\n" +
+            "0\r\n" +
             "\r\n" +
             "GET /R2 HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
@@ -1264,9 +1264,9 @@ public class HttpConnectionTest
                 "Content-Type: text/plain; charset=utf-8\r\n" +
                 "Connection: close\r\n" +
                 "\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "12345\r\n" +
-                "0;\r\n" +
+                "0\r\n" +
                 "\r\n");
             checkContains(response, offset, "HTTP/1.1 200");
 
@@ -1277,9 +1277,9 @@ public class HttpConnectionTest
                 "Content-Type: text/plain; charset=utf-8\r\n" +
                 "Connection: close\r\n" +
                 "\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "12345\r\n" +
-                "0;\r\n" +
+                "0\r\n" +
                 "\r\n");
             checkContains(response, offset, "HTTP/1.1 400");
 
@@ -1290,9 +1290,9 @@ public class HttpConnectionTest
                 "Content-Type: text/plain; charset=utf-8\r\n" +
                 "Connection: close\r\n" +
                 "\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "12345\r\n" +
-                "0;\r\n" +
+                "0\r\n" +
                 "\r\n");
             checkContains(response, offset, "HTTP/1.1 400 Bad Request");
         }
@@ -1757,11 +1757,11 @@ public class HttpConnectionTest
             Host: localhost\r
             Transfer-Encoding: chunked\r
             \r
-            3;\r
+            3\r
             one\r
-            3;\r
+            3\r
             two\r
-            5;\r
+            5\r
             """);
 
         // Wait for the server to block on the read().
@@ -1770,21 +1770,21 @@ public class HttpConnectionTest
         // Send more content.
         localEndPoint.addInput("""
             three\r
-            4;\r
+            4\r
             four\r
-            4;\r
+            4\r
             five\r
-            3;\r
+            3\r
             si""");
 
         // Send more content.
         localEndPoint.addInput("""
             x\r
-            5;\r
+            5\r
             seven\r
-            5;\r
+            5\r
             eight\r
-            0;\r
+            0\r
             \r
             """);
 

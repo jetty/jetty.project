@@ -440,9 +440,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 Host: localhost\r
                 Transfer-Encoding: chunked\r
                 \r
-                0a;\r
+                0a\r
                 1234567890\r
-                xx;\r
+                xx\r
                 \r
                 \r
                 """;
