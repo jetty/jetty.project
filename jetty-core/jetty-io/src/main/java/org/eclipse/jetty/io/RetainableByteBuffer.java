@@ -2477,7 +2477,10 @@ public interface RetainableByteBuffer extends Retainable
                     list.add(Content.Chunk.asChunk(buffer.getByteBuffer(), !iterator.hasNext(), buffer));
             }
             ChunksContentSource contentSource = new ChunksContentSource(list);
-            release();
+            for (RetainableByteBuffer buffer : _buffers)
+                buffer.release();
+            _buffers.clear();
+            _aggregate = null;
             return contentSource;
         }
 
