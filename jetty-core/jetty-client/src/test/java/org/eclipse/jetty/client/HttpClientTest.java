@@ -57,6 +57,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -1563,6 +1564,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 };
             }
         });
+        client.setByteBufferPool(new ArrayByteBufferPool.Tracking());
         client.start();
 
         CountDownLatch latch = new CountDownLatch(2);
