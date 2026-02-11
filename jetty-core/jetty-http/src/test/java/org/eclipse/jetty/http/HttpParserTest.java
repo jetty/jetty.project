@@ -1421,7 +1421,7 @@ public class HttpParserTest
             "Header1: value1" + scenario.eol +
             "Transfer-Encoding: chunked" + scenario.eol +
             scenario.eol +
-            "a;" + scenario.eolChunk +
+            "a;ext" + scenario.eolChunk +
             "0123456789" + scenario.eolChunk +
             "1a" + scenario.eolChunk +
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
@@ -1536,7 +1536,7 @@ public class HttpParserTest
                 "Header1: value1" + scenario.eol +
                 "Transfer-Encoding: chunked" + scenario.eol +
                 scenario.eol +
-                "a;" + scenario.eolChunk +
+                "a;ext" + scenario.eolChunk +
                 "0123456789" + scenario.eolChunk +
                 "1a" + scenario.eolChunk +
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
@@ -1581,7 +1581,7 @@ public class HttpParserTest
             "GET /chunk HTTP/1.0" + scenario.eol +
                 "Transfer-Encoding: chunked" + scenario.eol +
                 scenario.eol +
-                "a;" + scenario.eolChunk +
+                "a;ext" + scenario.eolChunk +
                 "0123456789" + scenario.eolChunk +
                 "1a" + scenario.eolChunk +
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
@@ -1631,7 +1631,7 @@ public class HttpParserTest
                 "Header1: value1" + scenario.eol +
                 "Transfer-Encoding: chunked" + scenario.eol +
                 scenario.eol +
-                "a;" + scenario.eolChunk +
+                "a;ext" + scenario.eolChunk +
                 "0123456789" + scenario.eolChunk +
                 "1a" + scenario.eolChunk +
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
@@ -1675,7 +1675,7 @@ public class HttpParserTest
                 "Header1: value1" + scenario.eol +
                 "Transfer-Encoding: chunked" + scenario.eol +
                 scenario.eol +
-                "a;" + scenario.eolChunk +
+                "a;ext" + scenario.eolChunk +
                 "0123456789" + scenario.eolChunk +
                 "1a" + scenario.eolChunk +
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
@@ -1756,7 +1756,7 @@ public class HttpParserTest
                 "Header1: value1" + scenario.eol +
                 "Transfer-Encoding: chunked" + scenario.eol +
                 scenario.eol +
-                "a;" + scenario.eolChunk +
+                "a;ext" + scenario.eolChunk +
                 "0123456789" + scenario.eolChunk);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -1796,7 +1796,7 @@ public class HttpParserTest
                 "Header1: value1" + scenario.eol +
                 "Transfer-Encoding: chunked" + scenario.eol +
                 scenario.eol +
-                "a;" + scenario.eolChunk +
+                "a;ext" + scenario.eolChunk +
                 "0123456789" + scenario.eolChunk +
                 "1a" + scenario.eolChunk +
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
@@ -1873,7 +1873,7 @@ public class HttpParserTest
         ByteBuffer buffer1 = BufferUtil.toBuffer("Header1: value1" + scenario.eol +
             "Transfer-Encoding: chunked" + scenario.eol +
             scenario.eol +
-            "a;" + scenario.eolChunk +
+            "a;ext" + scenario.eolChunk +
             "0123456789" + scenario.eolChunk +
             "1a" + scenario.eolChunk +
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
