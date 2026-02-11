@@ -109,6 +109,6 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
         InputStream inputStream = listener.getContentAsInputStream();
         byte[] bytes = inputStream.readAllBytes();
 
-        assertArrayEquals( content, bytes);
+        assertArrayEquals(content, bytes);
     }
 }
