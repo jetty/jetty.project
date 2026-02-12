@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 
 public abstract class AbstractResponseListener implements Response.Listener
 {
@@ -196,9 +197,14 @@ public abstract class AbstractResponseListener implements Response.Listener
      */
     public Content.Source getContentAsContentSource()
     {
-        if (accumulator instanceof RetainableByteBuffer.DynamicCapacity dynamic)
+        // Take the DynamicCapacity's content source only if the content hasn't been already taken.
+        if (content == null && accumulator instanceof RetainableByteBuffer.DynamicCapacity dynamic)
+        {
+            // When the content is taken, further getContent* calls will find an empty content.
+            content = BufferUtil.EMPTY_BYTES;
             return dynamic.takeContentSource();
-        return Content.Source.from(ByteBuffer.wrap(take()));
+        }
+        return Content.Source.from(ByteBuffer.wrap(getContent()));
     }
 
     private byte[] take()

@@ -38,4 +38,10 @@ public abstract class RetainingResponseListener extends AbstractResponseListener
         // A DynamicCapacity that always retains.
         super(new RetainableByteBuffer.DynamicCapacity(null, maxLength, 0));
     }
+
+    @Override
+    public void onSuccess(Response response)
+    {
+        // Make sure the content is not taken on success.
+    }
 }
