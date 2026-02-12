@@ -82,10 +82,11 @@ public class ChunksContentSource implements Content.Source
                 return terminated;
             if (iterator == null)
                 iterator = chunks.iterator();
-            chunk = iterator.next();
+            boolean hasNext = iterator.hasNext();
+            chunk = hasNext ? iterator.next() : null;
             if (chunk != null && chunk.isLast())
                 terminated = Content.Chunk.next(chunk);
-            if (terminated == null && !iterator.hasNext())
+            if (terminated == null && !hasNext)
                 terminated = Content.Chunk.EOF;
         }
         return chunk;
