@@ -17,7 +17,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -26,7 +25,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.content.ChunksContentSource;
 
 public abstract class AbstractResponseListener implements Response.Listener
 {
