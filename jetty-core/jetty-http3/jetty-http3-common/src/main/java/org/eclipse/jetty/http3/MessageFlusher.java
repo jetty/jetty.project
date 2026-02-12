@@ -14,6 +14,8 @@
 package org.eclipse.jetty.http3;
 
 import java.util.ArrayDeque;
+import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 
 import org.eclipse.jetty.http3.frames.Frame;
@@ -36,6 +38,7 @@ public class MessageFlusher extends IteratingCallback
     private final Queue<Entry> entries = new ArrayDeque<>();
     private final MessageGenerator generator;
     private final RetainableByteBuffer.Mutable accumulator;
+    private Throwable terminated;
     private Entry entry;
 
     public MessageFlusher(ByteBufferPool bufferPool, QpackEncoder encoder, boolean useDirectByteBuffers)
@@ -46,11 +49,18 @@ public class MessageFlusher extends IteratingCallback
 
     public boolean offer(StreamEndPoint endPoint, Frame frame, Callback callback)
     {
+        Throwable closed;
         try (AutoLock ignored = lock.lock())
         {
-            entries.offer(new Entry(endPoint, frame, callback));
+            closed = terminated;
+            if (closed == null)
+            {
+                entries.offer(new Entry(endPoint, frame, callback));
+                return true;
+            }
         }
-        return true;
+        callback.failed(closed);
+        return false;
     }
 
     @Override
@@ -68,11 +78,11 @@ public class MessageFlusher extends IteratingCallback
 
         Frame frame = entry.frame;
 
-        long generated = generator.generate(accumulator, entry.endPoint.getStream().getId(), frame, this::onGenerateFailure);
+        StreamEndPoint endPoint = entry.endPoint();
+        long generated = generator.generate(accumulator, endPoint.getStream().getId(), frame, this::onGenerateFailure);
         if (generated < 0)
             return Action.SCHEDULED;
 
-        StreamEndPoint endPoint = entry.endPoint;
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} bytes for stream #{} on {}", accumulator.size(), endPoint.getStream().getId(), this);
 
@@ -101,7 +111,7 @@ public class MessageFlusher extends IteratingCallback
 
         accumulator.clear();
 
-        entry.callback.succeeded();
+        entry.callback().succeeded();
         entry = null;
 
         succeeded();
@@ -114,7 +124,7 @@ public class MessageFlusher extends IteratingCallback
 
         accumulator.clear();
 
-        entry.callback.failed(failure);
+        entry.callback().failed(failure);
         entry = null;
 
         // Failure to write to one StreamEndPoint
@@ -123,11 +133,28 @@ public class MessageFlusher extends IteratingCallback
     }
 
     @Override
+    protected void onFailure(Throwable failure)
+    {
+        List<Entry> allEntries;
+        try (AutoLock ignored = lock.lock())
+        {
+            terminated = failure;
+            allEntries = List.copyOf(entries);
+            entries.clear();
+        }
+        allEntries.forEach(e -> e.callback.failed(failure));
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable failure)
+    {
+        accumulator.release();
+    }
+
+    @Override
     public InvocationType getInvocationType()
     {
-        if (entry == null)
-            return InvocationType.NON_BLOCKING;
-        return entry.callback.getInvocationType();
+        return Objects.requireNonNullElse(entry.callback(), NOOP).getInvocationType();
     }
 
     private record Entry(StreamEndPoint endPoint, Frame frame, Callback callback)

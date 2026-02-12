@@ -2046,10 +2046,15 @@ public interface RetainableByteBuffer extends Retainable
             checkNotReleased();
             if (_buffers.isEmpty())
                 return;
-            _aggregate = null;
             for (RetainableByteBuffer rbb : _buffers)
-                rbb.release();
+            {
+                if (rbb instanceof DynamicCapacity dynamic)
+                    dynamic.clear();
+                else
+                    rbb.release();
+            }
             _buffers.clear();
+            _aggregate = null;
         }
 
         @Override
@@ -2399,7 +2404,7 @@ public interface RetainableByteBuffer extends Retainable
                 case 1 ->
                 {
                     RetainableByteBuffer buffer = _buffers.get(0);
-                    buffer.writeTo(sink, last, Callback.from(this::clear, callback));
+                    buffer.writeTo(sink, last, callback);
                 }
                 default ->
                 {
@@ -2410,53 +2415,24 @@ public interface RetainableByteBuffer extends Retainable
                         int i = 0;
                         for (RetainableByteBuffer rbb : _buffers)
                             buffers[i++] = rbb.getByteBuffer();
-                        endPoint.write(Callback.from(this::clear, callback), buffers);
+                        endPoint.write(callback, buffers);
                         return;
                     }
 
-                    // write buffer by buffer
+                    // Write buffer by buffer.
                     new IteratingNestedCallback(callback)
                     {
-                        int _index;
-                        RetainableByteBuffer _buffer;
-                        boolean _lastWritten;
+                        private int _index;
 
                         @Override
                         protected Action process()
                         {
-                            // write next buffer
-                            if (_index < _buffers.size())
-                            {
-                                _buffer = _buffers.get(_index++);
-                                _lastWritten = last && (_index == _buffers.size());
-                                _buffer.writeTo(sink, _lastWritten, this);
-                                return Action.SCHEDULED;
-                            }
-
-                            // All buffers written
-                            if (last && !_lastWritten)
-                            {
-                                _buffer = null;
-                                _lastWritten = true;
-                                sink.write(true, BufferUtil.EMPTY_BUFFER, this);
-                                return Action.SCHEDULED;
-                            }
-                            _buffers.clear();
-                            return Action.SUCCEEDED;
-                        }
-
-                        @Override
-                        protected void onSuccess()
-                        {
-                            // release the last buffer written
-                            _buffer = Retainable.release(_buffer);
-                        }
-
-                        @Override
-                        protected void onCompleteFailure(Throwable x)
-                        {
-                            // release the last buffer written
-                            _buffer = Retainable.release(_buffer);
+                            if (_index == _buffers.size())
+                                return Action.SUCCEEDED;
+                            RetainableByteBuffer buffer = _buffers.get(_index++);
+                            boolean lastWritten = last && (_index == _buffers.size());
+                            buffer.writeTo(sink, lastWritten, this);
+                            return Action.SCHEDULED;
                         }
                     }.iterate();
                 }

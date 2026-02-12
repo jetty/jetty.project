@@ -55,7 +55,9 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
     private final HTTP3Configuration configuration;
     private final HTTP3SessionClient session;
+    private final InstructionFlusher encoderFlusher;
     private final QpackEncoder encoder;
+    private final InstructionFlusher decoderFlusher;
     private final QpackDecoder decoder;
     private final ControlFlusher controlFlusher;
     private final MessageFlusher messageFlusher;
@@ -76,8 +78,9 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
         long encoderStreamId = quicSession.newStreamId(false);
         StreamEndPoint encoderEndPoint = openInstructionEndPoint(encoderStreamId);
-        InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(getByteBufferPool(), encoderEndPoint, StreamType.ENCODER_STREAM);
-        encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher));
+        encoderFlusher = new InstructionFlusher(getByteBufferPool(), encoderEndPoint, StreamType.ENCODER_STREAM);
+        installBean(encoderFlusher);
+        encoder = new QpackEncoder(new InstructionHandler(encoderFlusher));
         encoder.setMaxHeadersSize(configuration.getMaxRequestHeadersSize());
         installBean(encoder);
         if (LOG.isDebugEnabled())
@@ -85,8 +88,9 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
         long decoderStreamId = quicSession.newStreamId(false);
         StreamEndPoint decoderEndPoint = openInstructionEndPoint(decoderStreamId);
-        InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(getByteBufferPool(), decoderEndPoint, StreamType.DECODER_STREAM);
-        decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher));
+        decoderFlusher = new InstructionFlusher(getByteBufferPool(), decoderEndPoint, StreamType.DECODER_STREAM);
+        installBean(decoderFlusher);
+        decoder = new QpackDecoder(new InstructionHandler(decoderFlusher));
         installBean(decoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);
@@ -171,6 +175,15 @@ public class ClientHTTP3Session extends ClientProtocolSession
         SettingsFrame frame = new SettingsFrame(settings);
         if (controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, session::onOpen, this::failControlStream)))
             controlFlusher.iterate();
+    }
+
+    @Override
+    protected void onStop()
+    {
+        messageFlusher.close();
+        controlFlusher.close();
+        decoderFlusher.close();
+        encoderFlusher.close();
     }
 
     public void onSettings(SettingsFrame frame)
