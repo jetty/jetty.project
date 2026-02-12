@@ -111,8 +111,6 @@ public class ControlFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("succeeded to write {} on {}", entries, this);
 
-        accumulator.clear();
-
         entries.forEach(e -> e.callback.succeeded());
         entries.clear();
 
