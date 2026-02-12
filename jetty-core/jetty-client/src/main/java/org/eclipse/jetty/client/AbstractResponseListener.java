@@ -200,16 +200,7 @@ public abstract class AbstractResponseListener implements Response.Listener
     {
         if (accumulator instanceof RetainableByteBuffer.DynamicCapacity dynamic)
             return dynamic.takeContentSource();
-
-        RetainableByteBuffer buffer = accumulator.take();
-        Content.Chunk c;
-        if (buffer instanceof Content.Chunk chunk)
-            c = chunk;
-        else
-            c = Content.Chunk.asChunk(buffer.getByteBuffer(), true, buffer);
-        ChunksContentSource chunksContentSource = new ChunksContentSource(List.of(c));
-        buffer.release();
-        return chunksContentSource;
+        return Content.Source.from(ByteBuffer.wrap(take()));
     }
 
     private byte[] take()
