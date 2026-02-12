@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -189,6 +190,8 @@ public abstract class AbstractResponseListener implements Response.Listener
      */
     public InputStream getContentAsInputStream()
     {
+        if (content != null)
+            return new ByteArrayInputStream(content);
         return Content.Source.asInputStream(getContentAsContentSource());
     }
 
