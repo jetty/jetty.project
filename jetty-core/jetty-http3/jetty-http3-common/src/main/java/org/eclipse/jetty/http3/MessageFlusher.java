@@ -95,8 +95,6 @@ public class MessageFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.atDebug().setCause(cause).log("failed to generate {} on {}", entry, this);
 
-        accumulator.clear();
-
         entry.callback.failed(cause);
         entry = null;
 
@@ -109,8 +107,6 @@ public class MessageFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("succeeded to write {} on {}", entry, this);
 
-        accumulator.clear();
-
         entry.callback().succeeded();
         entry = null;
 
@@ -121,8 +117,6 @@ public class MessageFlusher extends IteratingCallback
     {
         if (LOG.isDebugEnabled())
             LOG.atDebug().setCause(failure).log("failed to write {} on {}", entry, this);
-
-        accumulator.clear();
 
         entry.callback().failed(failure);
         entry = null;

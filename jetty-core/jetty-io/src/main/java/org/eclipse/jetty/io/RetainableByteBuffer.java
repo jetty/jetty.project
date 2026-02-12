@@ -2404,7 +2404,7 @@ public interface RetainableByteBuffer extends Retainable
                 case 1 ->
                 {
                     RetainableByteBuffer buffer = _buffers.get(0);
-                    buffer.writeTo(sink, last, callback);
+                    buffer.writeTo(sink, last, Callback.from(this::clear, callback));
                 }
                 default ->
                 {
@@ -2415,7 +2415,7 @@ public interface RetainableByteBuffer extends Retainable
                         int i = 0;
                         for (RetainableByteBuffer rbb : _buffers)
                             buffers[i++] = rbb.getByteBuffer();
-                        endPoint.write(callback, buffers);
+                        endPoint.write(Callback.from(this::clear, callback), buffers);
                         return;
                     }
 
@@ -2428,7 +2428,10 @@ public interface RetainableByteBuffer extends Retainable
                         protected Action process()
                         {
                             if (_index == _buffers.size())
+                            {
+                                clear();
                                 return Action.SUCCEEDED;
+                            }
                             RetainableByteBuffer buffer = _buffers.get(_index++);
                             boolean lastWritten = last && (_index == _buffers.size());
                             buffer.writeTo(sink, lastWritten, this);
