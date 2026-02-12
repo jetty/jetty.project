@@ -246,19 +246,31 @@ public class ConnectorServerTest
         // needs these system properties.
         System.setProperty("javax.net.ssl.trustStore", keyStorePath);
         System.setProperty("javax.net.ssl.trustStorePassword", keyStorePassword);
+        System.setProperty("jdk.tls.allowCommonNameMatching", "true");
+        System.setProperty("java.rmi.server.hostname", "localhost");
 
-        connectorServer = new ConnectorServer(new JMXServiceURL("rmi", null, 0, "/jndi/rmi://localhost:1100/jmxrmi"), null, objectName, sslContextFactory);
-        connectorServer.start();
-
-        // The client needs to talk TLS to the RMI registry to download
-        // the RMI server stub, and this is independent from JMX.
-        // The RMI server stub then contains the SslRMIClientSocketFactory
-        // needed to talk to the RMI server.
-        Map<String, Object> clientEnv = new HashMap<>();
-        clientEnv.put(ConnectorServer.RMI_REGISTRY_CLIENT_SOCKET_FACTORY_ATTRIBUTE, new SslRMIClientSocketFactory());
-        try (JMXConnector client = JMXConnectorFactory.connect(connectorServer.getAddress(), clientEnv))
+        try
         {
-            client.getMBeanServerConnection().queryNames(null, null);
+            connectorServer = new ConnectorServer(new JMXServiceURL("rmi", "localhost", 0, "/jndi/rmi://localhost:1100/jmxrmi"), null, objectName, sslContextFactory);
+            connectorServer.start();
+
+            // The client needs to talk TLS to the RMI registry to download
+            // the RMI server stub, and this is independent from JMX.
+            // The RMI server stub then contains the SslRMIClientSocketFactory
+            // needed to talk to the RMI server.
+            Map<String, Object> clientEnv = new HashMap<>();
+            clientEnv.put(ConnectorServer.RMI_REGISTRY_CLIENT_SOCKET_FACTORY_ATTRIBUTE, new SslRMIClientSocketFactory());
+            try (JMXConnector client = JMXConnectorFactory.connect(connectorServer.getAddress(), clientEnv))
+            {
+                client.getMBeanServerConnection().queryNames(null, null);
+            }
+        }
+        finally
+        {
+            System.clearProperty("javax.net.ssl.trustStore");
+            System.clearProperty("javax.net.ssl.trustStorePassword");
+            System.clearProperty("jdk.tls.allowCommonNameMatching");
+            System.clearProperty("java.rmi.server.hostname");
         }
     }
 }
