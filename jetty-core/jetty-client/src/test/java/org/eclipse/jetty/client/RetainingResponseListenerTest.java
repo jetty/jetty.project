@@ -77,6 +77,59 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
         assertEquals(-1, inputStream.read());
         // Read again at EOF to be sure -1 is returned again.
         assertEquals(-1, inputStream.read());
+        // Further getContent() calls see an empty byte[].
+        assertEquals(0, listener.getContent().length);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testContentIsCopiedWithInputStreamIfGetContentIsCalledFirst(Scenario scenario) throws Exception
+    {
+        start(scenario, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.write(true, ByteBuffer.allocate(1), callback);
+                return true;
+            }
+        });
+
+        List<ByteBuffer> byteBuffers = new ArrayList<>();
+        RetainingResponseListener listener = new RetainingResponseListener()
+        {
+        };
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .onResponseContent((r, b) -> byteBuffers.add(b))
+            .onResponseContentAsync(listener)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // Force copying the content into a byte[].
+        listener.getContent();
+        InputStream inputStream = listener.getContentAsInputStream();
+
+        // Modify the content so that we can check if there was a copy.
+        assertEquals(1, byteBuffers.size());
+        ByteBuffer byteBuffer = byteBuffers.get(0);
+        assertEquals(1, byteBuffer.remaining());
+        byte modified = 1;
+        byteBuffer.put(0, modified);
+
+        // Read from the input stream.
+        int read = inputStream.read();
+        // If we read the modified value, there was no data copy.
+        assertEquals(0, read);
+        // We must be at EOF.
+        assertEquals(-1, inputStream.read());
+        // Read again at EOF to be sure -1 is returned again.
+        assertEquals(-1, inputStream.read());
+        // Further getContent() calls see the content's byte[].
+        assertEquals(1, listener.getContent().length);
+        assertEquals(0, listener.getContent()[0]);
     }
 
     @ParameterizedTest
@@ -110,5 +163,44 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
         byte[] bytes = inputStream.readAllBytes();
 
         assertArrayEquals(content, bytes);
+        // Further getContent() calls see an empty byte[].
+        assertEquals(0, listener.getContent().length);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testInputStreamReadAllBytesFromByteArrayCopy(Scenario scenario) throws Exception
+    {
+        byte[] content = new byte[1024 * 1024];
+        ThreadLocalRandom.current().nextBytes(content);
+        start(scenario, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
+            }
+        });
+
+        RetainingResponseListener listener = new RetainingResponseListener()
+        {
+        };
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .onResponseContentAsync(listener)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // Force copying the content into a byte[].
+        listener.getContent();
+        InputStream inputStream = listener.getContentAsInputStream();
+        byte[] bytes = inputStream.readAllBytes();
+
+        assertArrayEquals(content, bytes);
+        // Further getContent() calls see the same byte[].
+        assertArrayEquals(content, listener.getContent());
     }
 }
