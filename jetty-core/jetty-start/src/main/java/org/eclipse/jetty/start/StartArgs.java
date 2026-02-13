@@ -16,10 +16,12 @@ package org.eclipse.jetty.start;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,6 +54,9 @@ public class StartArgs
     public static final Set<String> ALL_PARTS = Set.of("java", "opts", "path", "main", "args", "envs");
     public static final Set<String> ARG_PARTS = Set.of("args", "envs");
     public static final String ARG_ALLOW_INSECURE_HTTP_DOWNLOADS = "--allow-insecure-http-downloads";
+    public static final String ARG_DOWNLOAD_USERNAME = "--download-username";
+    public static final String ARG_DOWNLOAD_PASSWORD = "--download-password";
+    public static final String ARG_DOWNLOAD_AUTH_HEADER = "--download-auth-header";
 
     private static final String JETTY_VERSION_KEY = "jetty.version";
     private static final String JETTY_TAG_NAME_KEY = "jetty.tag.version";
@@ -183,6 +188,9 @@ public class StartArgs
     private String execProperties;
     private boolean allowInsecureHttpDownloads = false;
     private boolean approveAllLicenses = false;
+    private String downloadUsername;
+    private String downloadPassword;
+    private String downloadAuthHeader;
 
     /**
      * The jetty environment holds the main configuration used from the primary classloader for Jetty.
@@ -787,6 +795,42 @@ public class StartArgs
         return allowInsecureHttpDownloads;
     }
 
+    public String getDownloadUsername()
+    {
+        return downloadUsername;
+    }
+
+    public String getDownloadPassword()
+    {
+        return downloadPassword;
+    }
+
+    public String getDownloadAuthHeader()
+    {
+        return downloadAuthHeader;
+    }
+
+    /**
+     * Returns the resolved {@code Authorization} header value for HTTP downloads.
+     * <p>If {@code --download-auth-header} is set, it is returned as-is (e.g. {@code "Bearer token"}).
+     * Otherwise, if {@code --download-username} and {@code --download-password} are set,
+     * an HTTP Basic Auth header value is computed.</p>
+     *
+     * @return the Authorization header value, or {@code null} if no credentials are configured
+     */
+    public String getDownloadAuthorizationHeader()
+    {
+        if (downloadAuthHeader != null)
+            return downloadAuthHeader;
+        if (downloadUsername != null && downloadPassword != null)
+        {
+            String credentials = downloadUsername + ":" + downloadPassword;
+            String encoded = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+            return "Basic " + encoded;
+        }
+        return null;
+    }
+
     public boolean isApproveAllLicenses()
     {
         return approveAllLicenses;
@@ -1076,6 +1120,23 @@ public class StartArgs
         if (ARG_ALLOW_INSECURE_HTTP_DOWNLOADS.equals(arg))
         {
             allowInsecureHttpDownloads = true;
+            return environment;
+        }
+
+        // Download authentication
+        if (arg.startsWith(ARG_DOWNLOAD_USERNAME + "="))
+        {
+            downloadUsername = Props.getValue(arg);
+            return environment;
+        }
+        if (arg.startsWith(ARG_DOWNLOAD_PASSWORD + "="))
+        {
+            downloadPassword = Props.getValue(arg);
+            return environment;
+        }
+        if (arg.startsWith(ARG_DOWNLOAD_AUTH_HEADER + "="))
+        {
+            downloadAuthHeader = Props.getValue(arg);
             return environment;
         }
 

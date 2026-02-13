@@ -30,6 +30,80 @@ The standard Jetty modules that Jetty provides out-of-the-box are under `$JETTY_
 
 xref:modules/custom.adoc[Custom Jetty modules] should be put under `$JETTY_BASE/modules/`.
 
+[[remote]]
+== Installing Modules from a Remote URL
+
+In addition to enabling modules that are already present on the filesystem, you can install modules by downloading a _config JAR_ from a remote URL.
+
+A config JAR is a JAR (or ZIP) archive whose contents are extracted directly into `$JETTY_BASE`.
+It typically contains:
+
+* `modules/*.mod` -- module definition files
+* `etc/*.xml` -- XML configuration files
+* `lib/*.jar` -- library files
+* `resources/` -- resource files
+
+To install modules from a remote config JAR, pass the full URL as the value of `--add-modules`:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=https://repo.example.com/org/acme/jetty-acme-config/1.0.0/jetty-acme-config-1.0.0.jar
+----
+
+When a URL is detected in `--add-modules`, Jetty will:
+
+. Download the config JAR from the URL.
+. Extract its contents into `$JETTY_BASE` (the `META-INF/` directory is excluded).
+. Register any new `+*.mod+` files found under `$JETTY_BASE/modules/`.
+. Enable all newly discovered modules and their transitive dependencies.
+
+If the config JAR contains multiple `+*.mod+` files, all of them are registered and enabled.
+
+You can combine remote URLs with regular module names in the same `--add-modules` option:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,https://repo.example.com/acme-config-1.0.jar
+----
+
+[NOTE]
+====
+By default, only `https://` URLs are allowed.
+To permit downloads over plain `http://`, you must also pass the `--allow-insecure-http-downloads` option:
+
+----
+$ java -jar $JETTY_HOME/start.jar --allow-insecure-http-downloads --add-modules=http://internal-server/acme-config.jar
+----
+====
+
+[[remote-auth]]
+=== Authenticated Downloads
+
+If the remote server requires authentication, you can provide credentials via command-line options.
+
+==== HTTP Basic Authentication
+
+Use `--download-username` and `--download-password` to authenticate with HTTP Basic Auth:
+
+----
+$ java -jar $JETTY_HOME/start.jar \
+    --download-username=myuser \
+    --download-password=mypassword \
+    --add-modules=https://private-repo.example.com/acme-config-1.0.jar
+----
+
+==== Custom Authorization Header
+
+For other authentication schemes (such as Bearer tokens), use `--download-auth-header` to set the `Authorization` header directly:
+
+----
+$ java -jar $JETTY_HOME/start.jar \
+    --download-auth-header="Bearer eyJhbGciOi..." \
+    --add-modules=https://private-repo.example.com/acme-config-1.0.jar
+----
+
+If `--download-auth-header` is provided, it takes precedence over `--download-username` / `--download-password`.
+
+NOTE: These authentication options apply to all HTTP downloads performed during the session, including files referenced in the `<<directive-files,[files]>>` sections of modules.
+
 [[names]]
 == Module Names
 
