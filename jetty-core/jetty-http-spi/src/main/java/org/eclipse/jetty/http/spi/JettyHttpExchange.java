@@ -73,6 +73,18 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     @Override
+    public Request getRequest()
+    {
+        return _delegate.getRequest();
+    }
+
+    @Override
+    public Response getResponse()
+    {
+        return _delegate.getResponse();
+    }
+
+    @Override
     public void close()
     {
         _delegate.close();

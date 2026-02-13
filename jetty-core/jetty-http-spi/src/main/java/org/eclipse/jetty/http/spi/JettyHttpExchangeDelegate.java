@@ -147,6 +147,16 @@ public class JettyHttpExchangeDelegate extends HttpExchange
         }
     }
 
+    Request getRequest()
+    {
+        return _request;
+    }
+
+    Response getResponse()
+    {
+        return _response;
+    }
+
     @Override
     public InputStream getRequestBody()
     {
