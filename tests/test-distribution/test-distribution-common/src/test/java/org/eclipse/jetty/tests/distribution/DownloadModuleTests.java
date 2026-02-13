@@ -14,7 +14,7 @@
 package org.eclipse.jetty.tests.distribution;
 
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,9 +23,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
-import com.sun.net.httpserver.HttpServer;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for downloading modules from a URL via {@code --add-modules=<url>}.
+ *
+ * @see <a href="https://github.com/jetty/jetty.project/issues/175">Issue #175</a>
  */
 public class DownloadModuleTests extends AbstractJettyHomeTest
 {
@@ -47,6 +56,7 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
      */
     private Path createConfigJar(Path directory, String moduleName) throws Exception
     {
+        Files.createDirectories(directory);
         Path jarFile = directory.resolve(moduleName + "-config.jar");
 
         String modContent = """
@@ -73,6 +83,96 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
         return jarFile;
     }
 
+    /**
+     * Starts an embedded Jetty server that serves the given content at the specified path.
+     *
+     * @param contextPath the URL path to serve the content at
+     * @param content the byte content to serve
+     * @return the started Server (caller must stop it)
+     */
+    private Server startFileServer(String contextPath, byte[] content) throws Exception
+    {
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                if (!Request.getPathInContext(request).equals(contextPath))
+                {
+                    Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+                    return true;
+                }
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "application/java-archive");
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length);
+                response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
+            }
+        });
+
+        server.start();
+        return server;
+    }
+
+    /**
+     * Starts an embedded Jetty server that requires the specified Authorization header.
+     * Returns 401 (for Basic) or 403 (for other schemes) if the header is missing or wrong.
+     *
+     * @param contextPath the URL path to serve the content at
+     * @param content the byte content to serve
+     * @param expectedAuthHeader the expected Authorization header value
+     * @param failStatus the HTTP status to return on auth failure (e.g. 401 or 403)
+     * @return the started Server (caller must stop it)
+     */
+    private Server startAuthFileServer(String contextPath, byte[] content,
+                                       String expectedAuthHeader, int failStatus) throws Exception
+    {
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                if (!Request.getPathInContext(request).equals(contextPath))
+                {
+                    Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+                    return true;
+                }
+
+                String authHeader = request.getHeaders().get(HttpHeader.AUTHORIZATION);
+                if (!expectedAuthHeader.equals(authHeader))
+                {
+                    if (failStatus == HttpStatus.UNAUTHORIZED_401)
+                        response.getHeaders().put(HttpHeader.WWW_AUTHENTICATE, "Basic realm=\"test\"");
+                    Response.writeError(request, response, callback, failStatus);
+                    return true;
+                }
+
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "application/java-archive");
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length);
+                response.write(true, ByteBuffer.wrap(content), callback);
+                return true;
+            }
+        });
+
+        server.start();
+        return server;
+    }
+
+    private static int getPort(Server server)
+    {
+        return server.getBean(ServerConnector.class).getLocalPort();
+//        return ((ServerConnector)server.getConnectors()[0]).getLocalPort();
+    }
+
     @Test
     public void testAddModuleFromUrl() throws Exception
     {
@@ -85,25 +185,12 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
 
         String moduleName = "test-download";
         Path configJar = createConfigJar(jettyBase.resolve("work"), moduleName);
-
-        // Start a local HTTP server to serve the config JAR.
-        int httpPort = Tester.freePort();
-        HttpServer httpServer = HttpServer.create(new InetSocketAddress("localhost", httpPort), 0);
         byte[] jarBytes = Files.readAllBytes(configJar);
-        httpServer.createContext("/" + configJar.getFileName(), exchange ->
-        {
-            exchange.getResponseHeaders().set("Content-Type", "application/java-archive");
-            exchange.sendResponseHeaders(200, jarBytes.length);
-            try (OutputStream os = exchange.getResponseBody())
-            {
-                os.write(jarBytes);
-            }
-        });
-        httpServer.start();
 
+        Server fileServer = startFileServer("/" + configJar.getFileName(), jarBytes);
         try
         {
-            String downloadUrl = "http://localhost:" + httpPort + "/" + configJar.getFileName();
+            String downloadUrl = "http://localhost:" + getPort(fileServer) + "/" + configJar.getFileName();
 
             // Use --add-modules with a full URL to download and install the module.
             try (JettyHomeTester.Run run = distribution.start(
@@ -134,7 +221,7 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
         }
         finally
         {
-            httpServer.stop(0);
+            fileServer.stop();
         }
     }
 
@@ -180,24 +267,11 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
             jos.closeEntry();
         }
 
-        // Start a local HTTP server to serve the config JAR.
-        int httpPort = Tester.freePort();
-        HttpServer httpServer = HttpServer.create(new InetSocketAddress("localhost", httpPort), 0);
         byte[] jarBytes = Files.readAllBytes(jarFile);
-        httpServer.createContext("/multi-config.jar", exchange ->
-        {
-            exchange.getResponseHeaders().set("Content-Type", "application/java-archive");
-            exchange.sendResponseHeaders(200, jarBytes.length);
-            try (OutputStream os = exchange.getResponseBody())
-            {
-                os.write(jarBytes);
-            }
-        });
-        httpServer.start();
-
+        Server fileServer = startFileServer("/multi-config.jar", jarBytes);
         try
         {
-            String downloadUrl = "http://localhost:" + httpPort + "/multi-config.jar";
+            String downloadUrl = "http://localhost:" + getPort(fileServer) + "/multi-config.jar";
 
             // Download and install the config JAR containing multiple modules.
             try (JettyHomeTester.Run run = distribution.start(
@@ -216,7 +290,7 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
         }
         finally
         {
-            httpServer.stop(0);
+            fileServer.stop();
         }
     }
 
@@ -251,24 +325,11 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
             jos.closeEntry();
         }
 
-        // Start a local HTTP server to serve the config JAR.
-        int fileServerPort = Tester.freePort();
-        HttpServer httpServer = HttpServer.create(new InetSocketAddress("localhost", fileServerPort), 0);
         byte[] jarBytes = Files.readAllBytes(jarFile);
-        httpServer.createContext("/" + jarFile.getFileName(), exchange ->
-        {
-            exchange.getResponseHeaders().set("Content-Type", "application/java-archive");
-            exchange.sendResponseHeaders(200, jarBytes.length);
-            try (OutputStream os = exchange.getResponseBody())
-            {
-                os.write(jarBytes);
-            }
-        });
-        httpServer.start();
-
+        Server fileServer = startFileServer("/" + jarFile.getFileName(), jarBytes);
         try
         {
-            String downloadUrl = "http://localhost:" + fileServerPort + "/" + jarFile.getFileName();
+            String downloadUrl = "http://localhost:" + getPort(fileServer) + "/" + jarFile.getFileName();
 
             // Step 1: Download and install the module.
             try (JettyHomeTester.Run run1 = distribution.start(
@@ -292,7 +353,7 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
         }
         finally
         {
-            httpServer.stop(0);
+            fileServer.stop();
         }
     }
 
@@ -314,32 +375,12 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
         String expectedAuth = "Basic " + Base64.getEncoder()
             .encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8));
 
-        // Start a local HTTP server that requires Basic Auth.
-        int httpPort = Tester.freePort();
-        HttpServer httpServer = HttpServer.create(new InetSocketAddress("localhost", httpPort), 0);
         byte[] jarBytes = Files.readAllBytes(configJar);
-        httpServer.createContext("/" + configJar.getFileName(), exchange ->
-        {
-            String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
-            if (!expectedAuth.equals(authHeader))
-            {
-                exchange.getResponseHeaders().set("WWW-Authenticate", "Basic realm=\"test\"");
-                exchange.sendResponseHeaders(401, -1);
-                exchange.close();
-                return;
-            }
-            exchange.getResponseHeaders().set("Content-Type", "application/java-archive");
-            exchange.sendResponseHeaders(200, jarBytes.length);
-            try (OutputStream os = exchange.getResponseBody())
-            {
-                os.write(jarBytes);
-            }
-        });
-        httpServer.start();
-
+        Server fileServer = startAuthFileServer(
+            "/" + configJar.getFileName(), jarBytes, expectedAuth, HttpStatus.UNAUTHORIZED_401);
         try
         {
-            String downloadUrl = "http://localhost:" + httpPort + "/" + configJar.getFileName();
+            String downloadUrl = "http://localhost:" + getPort(fileServer) + "/" + configJar.getFileName();
 
             try (JettyHomeTester.Run run = distribution.start(
                 "--allow-insecure-http-downloads",
@@ -357,7 +398,7 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
         }
         finally
         {
-            httpServer.stop(0);
+            fileServer.stop();
         }
     }
 
@@ -376,31 +417,12 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
 
         String bearerToken = "my-secret-token-12345";
 
-        // Start a local HTTP server that requires a Bearer token.
-        int httpPort = Tester.freePort();
-        HttpServer httpServer = HttpServer.create(new InetSocketAddress("localhost", httpPort), 0);
         byte[] jarBytes = Files.readAllBytes(configJar);
-        httpServer.createContext("/" + configJar.getFileName(), exchange ->
-        {
-            String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
-            if (!("Bearer " + bearerToken).equals(authHeader))
-            {
-                exchange.sendResponseHeaders(403, -1);
-                exchange.close();
-                return;
-            }
-            exchange.getResponseHeaders().set("Content-Type", "application/java-archive");
-            exchange.sendResponseHeaders(200, jarBytes.length);
-            try (OutputStream os = exchange.getResponseBody())
-            {
-                os.write(jarBytes);
-            }
-        });
-        httpServer.start();
-
+        Server fileServer = startAuthFileServer(
+            "/" + configJar.getFileName(), jarBytes, "Bearer " + bearerToken, HttpStatus.FORBIDDEN_403);
         try
         {
-            String downloadUrl = "http://localhost:" + httpPort + "/" + configJar.getFileName();
+            String downloadUrl = "http://localhost:" + getPort(fileServer) + "/" + configJar.getFileName();
 
             try (JettyHomeTester.Run run = distribution.start(
                 "--allow-insecure-http-downloads",
@@ -417,7 +439,7 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
         }
         finally
         {
-            httpServer.stop(0);
+            fileServer.stop();
         }
     }
 }
