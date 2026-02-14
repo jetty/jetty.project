@@ -345,7 +345,7 @@
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <swissbox.version>1.9.0</swissbox.version>
-    <testcontainers.version>1.21.4</testcontainers.version>
+    <testcontainers.version>2.0.3</testcontainers.version>
     <testng.version>7.12.0</testng.version>
     <tinybundles.version>4.0.1</tinybundles.version>
     <versions.maven.plugin.version>2.21.0</versions.maven.plugin.version>
