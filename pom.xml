@@ -206,7 +206,7 @@
     <jackson.version>2.21.0</jackson.version>
     <jacoco.maven.plugin.version>0.8.14</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
-    <jboss-logmanager.version>3.2.0.Final</jboss-logmanager.version>
+    <jboss-logmanager.version>3.2.1.Final</jboss-logmanager.version>
     <jboss-threads.version>3.9.2</jboss-threads.version>
     <jboss.logging.annotations.version>2.2.2.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.2.Final</jboss.logging.processor.version>
@@ -243,8 +243,8 @@
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.25.3</log4j2.version>
-    <logback.version>1.5.28</logback.version>
-    <lucene.version>9.11.1</lucene.version>
+    <logback.version>1.5.29</logback.version>
+    <lucene.version>9.12.0</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.7</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
