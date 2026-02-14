@@ -89,9 +89,7 @@ public class QuicClient extends ContainerLifeCycle implements AutoCloseable
         context.put(ClientConnector.CONTEXT_KEY, getClientConnector());
         context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, getApplicationProtocols());
         context.computeIfAbsent(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY, _ -> sslContextFactory);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(_ ->
-        {
-        }, promise::failed));
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(_ -> {}, promise::failed));
         context.put(ClientConnectionFactory.CONTEXT_KEY, resolveClientConnectionFactory(transport));
         context.put(Transport.CONTEXT_KEY, transport);
 
@@ -103,6 +101,7 @@ public class QuicClient extends ContainerLifeCycle implements AutoCloseable
 
     private ClientConnectionFactory resolveClientConnectionFactory(Transport transport)
     {
+        // TODO
         return transport.newClientConnectionFactory(clientConnector, ((endPoint, context) -> null));
     }
 }

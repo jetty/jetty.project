@@ -13,12 +13,10 @@
 
 package org.eclipse.jetty.quic.common.tls.generator;
 
-import java.util.Map;
-
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
-import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.quic.common.TransportParametersGenerator;
 import org.eclipse.jetty.tls.common.generator.ExtensionGenerator;
 import org.eclipse.jetty.tls.ext.Extension;
 
@@ -40,44 +38,10 @@ public class QuicTransportParametersExtensionGenerator implements ExtensionGener
     {
         accumulator.putShort((short)extension.code());
         TransportParameters parameters = extension.transportParameters();
-        int totalLength = 0;
-        for (Map.Entry<TransportParameters.Id<?>, Object> entry : parameters)
-        {
-            TransportParameters.Id<?> id = entry.getKey();
-            // The number of bytes necessary to encode the ID.
-            // For example, MAX_IDLE_TIMEOUT = 1, it is encoded as 1, and its length is 1 byte.
-            // For a GREASE ID such as 0xFF02DE1A, is it encoded as 0xC0000000FF02DE1A, and its length is 8 bytes.
-            totalLength += VarLenInt.length(id.id());
-            // The value can be a long or byte[], we need to know the length of the encoding of the value.
-            // For example, the long value 0xFF02DE1A is encoded as 0xC0000000FF02DE1A, in 8 bytes.
-            // For example, the connection ids are byte[] that are encoded in the byte[] itself, in array.length bytes.
-            int valueEncodingLength = switch (id)
-            {
-                case TransportParameters.LongId longId -> VarLenInt.length(parameters.get(longId));
-                case TransportParameters.BytesId bytesId -> parameters.get(bytesId).length;
-            };
-            // The number of bytes necessary to encode the length of the encoding of the value.
-            totalLength += VarLenInt.length(valueEncodingLength);
-            // The length of the encoding of the value.
-            totalLength += valueEncodingLength;
-        }
+        RetainableByteBuffer.DynamicCapacity parametersAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
+        int totalLength = TransportParametersGenerator.generate(parametersAccumulator, parameters);
         accumulator.putShort((short)totalLength);
-        for (Map.Entry<TransportParameters.Id<?>, Object> entry : parameters)
-        {
-            TransportParameters.Id<?> id = entry.getKey();
-            VarLenInt.encode(accumulator, id.id());
-            int valueEncodingLength = switch (id)
-            {
-                case TransportParameters.LongId longId -> VarLenInt.length(parameters.get(longId));
-                case TransportParameters.BytesId bytesId -> parameters.get(bytesId).length;
-            };
-            VarLenInt.encode(accumulator, valueEncodingLength);
-            switch (id)
-            {
-                case TransportParameters.LongId longId -> VarLenInt.encode(accumulator, parameters.get(longId));
-                case TransportParameters.BytesId bytesId -> accumulator.put(parameters.get(bytesId));
-            }
-        }
+        accumulator.add(parametersAccumulator);
         return 2 + 2 + totalLength;
     }
 }

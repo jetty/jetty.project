@@ -76,18 +76,6 @@ public class FramesParser
         parsers.put(FrameType.HANDSHAKE_DONE, new HandshakeDoneFrameParser());
     }
 
-    public long getStreamFrameLength()
-    {
-        StreamFrameParser parser = (StreamFrameParser)parsers.get(FrameType.STREAM);
-        return parser.getStreamFrameLength();
-    }
-
-    public void setStreamFrameLength(long streamFrameLength)
-    {
-        StreamFrameParser parser = (StreamFrameParser)parsers.get(FrameType.STREAM);
-        parser.setStreamFrameLength(streamFrameLength);
-    }
-
     public int getConnectionCloseReasonMaxLength()
     {
         ConnectionCloseFrameParser parser = (ConnectionCloseFrameParser)parsers.get(FrameType.CONNECTION_CLOSE);
@@ -144,26 +132,18 @@ public class FramesParser
 
     public List<Frame> consume(RetainableByteBuffer buffer)
     {
-        setStreamFrameLength(buffer.size());
-        try
+        List<Frame> result = new ArrayList<>();
+        while (buffer.hasRemaining())
         {
-            List<Frame> result = new ArrayList<>();
-            while (buffer.hasRemaining())
-            {
-                Frame frame = parse(buffer);
-                if (frame == null)
-                    throw new IllegalStateException("insufficient bytes to parse a frame");
-                // Drop PADDING frames.
-                if (frame instanceof PaddingFrame)
-                    continue;
-                result.add(frame);
-            }
-            return result;
+            Frame frame = parse(buffer);
+            if (frame == null)
+                throw new IllegalStateException("insufficient bytes to parse a frame");
+            // Drop PADDING frames.
+            if (frame instanceof PaddingFrame)
+                continue;
+            result.add(frame);
         }
-        finally
-        {
-            setStreamFrameLength(0);
-        }
+        return result;
     }
 
     private Frame parseFrame(RetainableByteBuffer buffer, FrameType frameType, int type)

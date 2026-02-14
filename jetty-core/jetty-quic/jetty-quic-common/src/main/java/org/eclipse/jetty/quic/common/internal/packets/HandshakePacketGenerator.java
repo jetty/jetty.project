@@ -16,7 +16,6 @@ package org.eclipse.jetty.quic.common.internal.packets;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketBuffers;
-import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.packets.HandshakePacket;
@@ -31,13 +30,11 @@ public class HandshakePacketGenerator implements PacketGenerator
     private static final Logger LOG = LoggerFactory.getLogger(HandshakePacketGenerator.class);
 
     private final PacketNumbers packetNumbers;
-    private final FramesGenerator framesGenerator;
     private final Encrypter encrypter;
 
-    public HandshakePacketGenerator(PacketNumbers packetNumbers, FramesGenerator framesGenerator, Encrypter encrypter)
+    public HandshakePacketGenerator(PacketNumbers packetNumbers, Encrypter encrypter)
     {
         this.packetNumbers = packetNumbers;
-        this.framesGenerator = framesGenerator;
         this.encrypter = encrypter;
     }
 

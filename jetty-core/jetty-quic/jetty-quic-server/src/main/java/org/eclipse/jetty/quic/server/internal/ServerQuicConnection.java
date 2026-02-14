@@ -250,7 +250,6 @@ public class ServerQuicConnection extends QuicConnection
             // TODO
 //            transportParameters.put(TransportParameters.Ids.PREFERRED_ADDRESS, null);
             transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, session.getSourceConnectionId());
-
             session.notifyPrepare(transportParameters);
 
             if (LOG.isDebugEnabled())

@@ -36,9 +36,11 @@ public class ExtensionsParser implements ExtensionParser.Listener
 
     public ExtensionsParser(boolean client)
     {
-        put(new ServerNameExtensionParser(this));
         put(new ALPNExtensionParser(this));
+        put(new EarlyDataExtensionParser(this));
         put(new KeyShareExtensionParser(this, client));
+        put(client ? new ServerPreSharedKeyExtensionParser(this) : new ClientPreSharedKeyExtensionParser(this));
+        put(new ServerNameExtensionParser(this));
         put(new SignatureAlgorithmsExtensionParser(this));
         put(new SupportedGroupsExtensionParser(this));
         put(new SupportedVersionsExtensionParser(this, client));

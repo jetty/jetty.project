@@ -51,6 +51,7 @@ import org.eclipse.jetty.quic.common.internal.packets.PacketsParser;
 import org.eclipse.jetty.quic.common.internal.packets.RetryPacketGenerator;
 import org.eclipse.jetty.quic.common.packets.HandshakePacket;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
+import org.eclipse.jetty.quic.common.packets.LongHeaderPacket;
 import org.eclipse.jetty.quic.common.packets.OneRTTPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
@@ -94,6 +95,7 @@ public abstract class QuicSession extends AbstractSession
     private final PacketsParser parser;
     private final QuicFlusher flusher;
     private Packet.Listener packetListener;
+    private QuicVersion quicVersion;
     private byte[] dstConnectionId;
     private byte[] srcConnectionId;
     private long idleTimeout;
@@ -147,6 +149,16 @@ public abstract class QuicSession extends AbstractSession
         return endPoint;
     }
 
+    public QuicVersion getQuicVersion()
+    {
+        return quicVersion;
+    }
+
+    public void setQuicVersion(QuicVersion quicVersion)
+    {
+        this.quicVersion = quicVersion;
+    }
+
     public byte[] getDestinationConnectionId()
     {
         return dstConnectionId;
@@ -163,9 +175,9 @@ public abstract class QuicSession extends AbstractSession
         return srcConnectionId;
     }
 
-    public String getNegotiatedApplicationProtocol()
+    public String getApplicationProtocol()
     {
-        return getTLSEngine().getNegotiatedApplicationProtocol();
+        return getTLSEngine().getApplicationProtocol();
     }
 
     @Override
@@ -209,7 +221,6 @@ public abstract class QuicSession extends AbstractSession
 
     public Packet newPacket(EncryptionLevel encryptionLevel, List<Frame> frames)
     {
-        QuicVersion quicVersion = getQuicConfiguration().getQuicVersion();
         Packet packet = switch (encryptionLevel)
         {
             case EncryptionLevel.INITIAL -> newInitialPacket(frames);
@@ -458,6 +469,13 @@ public abstract class QuicSession extends AbstractSession
                 ConnectionCloseFrame frame = new ConnectionCloseFrame(quicException.getErrorCode().code(), quicException.getMessage(), 0);
                 disconnect(frame, quicException, Promise.Invocable.noop());
                 return;
+            }
+
+            if (packet instanceof LongHeaderPacket longHeaderPacket)
+            {
+                // RFC-9000[6.3]: packets with reserved versions are discarded.
+                if (longHeaderPacket.quicVersion().reserved())
+                    continue;
             }
 
             // Minimally process first packets to set

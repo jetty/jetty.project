@@ -66,7 +66,7 @@ public class KeyShareExtensionParser implements ExtensionParser
                         totalLength = byteBuffer.getShort() & 0xFFFF;
                         // The format of this extension is different depending on
                         // whether is in a ClientHello, ServerHello or RetryHelloRequest.
-                        // RFC 8446, 4.2.8.
+                        // RFC-8446[4.2.8].
                         boolean isRetryFormat = client && totalLength == 2;
                         if (!isRetryFormat && totalLength < 4)
                             throw new IllegalStateException("invalid key share extension length " + totalLength);

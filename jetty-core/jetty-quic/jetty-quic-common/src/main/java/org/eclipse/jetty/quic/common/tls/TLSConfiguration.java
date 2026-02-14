@@ -13,20 +13,24 @@
 
 package org.eclipse.jetty.quic.common.tls;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.util.TypeUtil;
 
 public class TLSConfiguration
 {
-    private final List<Extension> extensions = new ArrayList<>();
+    private QuicVersion quicVersion;
     private List<String> applicationProtocols;
 
-    public void addExtension(Extension extension)
+    public QuicVersion getQuicVersion()
     {
-        extensions.add(extension);
+        return quicVersion;
+    }
+
+    public void setQuicVersion(QuicVersion quicVersion)
+    {
+        this.quicVersion = quicVersion;
     }
 
     public List<String> getApplicationProtocols()
@@ -37,11 +41,6 @@ public class TLSConfiguration
     public void setApplicationProtocols(List<String> applicationProtocols)
     {
         this.applicationProtocols = applicationProtocols;
-    }
-
-    public List<Extension> getExtensions()
-    {
-        return extensions;
     }
 
     @Override

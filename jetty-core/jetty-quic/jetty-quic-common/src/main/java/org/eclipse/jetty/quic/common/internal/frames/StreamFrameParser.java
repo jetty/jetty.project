@@ -17,15 +17,12 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
-import org.eclipse.jetty.quic.util.ErrorCode;
-import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
 
 public class StreamFrameParser implements FrameParser
 {
     private final VarLenInt varLenInt;
     private State state = State.FRAME_TYPE;
-    private long maxFrameSize;
     private int frameSize;
     private long frameType;
     private boolean hasOffset;
@@ -37,16 +34,6 @@ public class StreamFrameParser implements FrameParser
     public StreamFrameParser(VarLenInt varLenInt)
     {
         this.varLenInt = varLenInt;
-    }
-
-    public long getStreamFrameLength()
-    {
-        return maxFrameSize;
-    }
-
-    public void setStreamFrameLength(long maxFrameSize)
-    {
-        this.maxFrameSize = maxFrameSize;
     }
 
     @Override
@@ -115,17 +102,9 @@ public class StreamFrameParser implements FrameParser
                 }
                 case DATA ->
                 {
-                    long streamFrameLength = getStreamFrameLength();
                     // RFC-9000[19.8]: if no length, the frame data extends to the packet payload.
                     if (dataLength < 0)
-                    {
-                        if (streamFrameLength <= 0)
-                            throw new QuicException(ErrorCode.INTERNAL_ERROR, "unexpected_frame_size", frameType);
-                        dataLength = streamFrameLength - frameSize;
-                    }
-
-                    if (streamFrameLength > 0 && dataLength + frameSize > streamFrameLength)
-                        throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_frame_size", frameType);
+                        dataLength = buffer.remaining();
 
                     int length = (int)Math.min(dataLength, byteBuffer.remaining());
                     RetainableByteBuffer data = buffer.slice(length);

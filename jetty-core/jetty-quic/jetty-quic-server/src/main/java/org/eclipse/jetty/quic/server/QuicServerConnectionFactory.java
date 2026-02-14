@@ -146,7 +146,7 @@ public class QuicServerConnectionFactory extends AbstractQuicServerConnectionFac
 
         private ProtocolSession newProtocolSession(ServerQuicSession session)
         {
-            String protocol = session.getNegotiatedApplicationProtocol();
+            String protocol = session.getApplicationProtocol();
             if (protocol == null)
                 throw new IllegalStateException("missing application protocol");
             ConnectionFactory connectionFactory = connector.getConnectionFactory(protocol);

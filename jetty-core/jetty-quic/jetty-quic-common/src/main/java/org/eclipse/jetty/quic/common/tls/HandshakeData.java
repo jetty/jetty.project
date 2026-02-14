@@ -11,16 +11,20 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tls.ext;
+package org.eclipse.jetty.quic.common.tls;
 
-// TODO: has client and server variants?
-public record PreSharedKeyExtension() implements Extension
+import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
+import org.eclipse.jetty.tls.CipherSuite;
+import org.eclipse.jetty.tls.TLSVersion;
+
+public record HandshakeData(
+    QuicVersion quicVersion,
+    TLSVersion tlsVersion,
+    String serverName,
+    CipherSuite cipherSuite,
+    String applicationProtocol,
+    TransportParameters transportParameters
+)
 {
-    public static final int CODE = 0x0029;
-
-    @Override
-    public int code()
-    {
-        return CODE;
-    }
 }

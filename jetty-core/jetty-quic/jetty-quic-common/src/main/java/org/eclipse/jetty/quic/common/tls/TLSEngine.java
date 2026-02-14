@@ -24,6 +24,7 @@ import javax.crypto.KDF;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.tls.TLSException;
+import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
 import org.eclipse.jetty.tls.common.parser.MessageParser;
 import org.eclipse.jetty.tls.common.parser.MessagesParser;
@@ -55,23 +57,17 @@ public abstract class TLSEngine implements MessageParser.Listener
     private final PacketProtector protector;
     private final MessagesGenerator tlsGenerator;
     private final MessagesParser tlsParser;
+    private TLSVersion tlsVersion;
+    private String serverName;
+    private CipherSuite cipherSuite;
     private String applicationProtocol;
+    private TransportParameters transportParameters;
 
     protected TLSEngine(PacketProtector protector, boolean client)
     {
         this.protector = protector;
         tlsGenerator = new QuicMessagesGenerator(protector.getByteBufferPool(), client);
         tlsParser = new QuicMessagesParser(client);
-    }
-
-    public String getNegotiatedApplicationProtocol()
-    {
-        return applicationProtocol;
-    }
-
-    protected void setNegotiatedApplicationProtocol(String applicationProtocol)
-    {
-        this.applicationProtocol = applicationProtocol;
     }
 
     public PacketProtector getPacketProtector()
@@ -114,19 +110,69 @@ public abstract class TLSEngine implements MessageParser.Listener
         handshakeListeners.add(listener);
     }
 
-    protected void notifyHandshakeCompleted(Throwable failure)
+    protected void notifyHandshakeCompleted(HandshakeData data, Throwable failure)
     {
         for (HandshakeListener listener : handshakeListeners)
         {
             try
             {
-                listener.handshakeCompleted(failure);
+                listener.handshakeCompleted(data, failure);
             }
             catch (Throwable x)
             {
                 LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
             }
         }
+    }
+
+    public TLSVersion getTLSVersion()
+    {
+        return tlsVersion;
+    }
+
+    public void setTLSVersion(TLSVersion tlsVersion)
+    {
+        this.tlsVersion = tlsVersion;
+    }
+
+    public String getServerName()
+    {
+        return serverName;
+    }
+
+    public void setServerName(String serverName)
+    {
+        this.serverName = serverName;
+    }
+
+    public CipherSuite getCipherSuite()
+    {
+        return cipherSuite;
+    }
+
+    public void setCipherSuite(CipherSuite cipherSuite)
+    {
+        this.cipherSuite = cipherSuite;
+    }
+
+    public String getApplicationProtocol()
+    {
+        return applicationProtocol;
+    }
+
+    public void setApplicationProtocol(String applicationProtocol)
+    {
+        this.applicationProtocol = applicationProtocol;
+    }
+
+    public TransportParameters getTransportParameters()
+    {
+        return transportParameters;
+    }
+
+    public void setTransportParameters(TransportParameters transportParameters)
+    {
+        this.transportParameters = transportParameters;
     }
 
     public byte[] newRandomBytes(int length)
@@ -203,7 +249,7 @@ public abstract class TLSEngine implements MessageParser.Listener
 
     protected void dispose(Throwable failure)
     {
-        notifyHandshakeCompleted(TLSException.wrap(failure));
+        notifyHandshakeCompleted(null, TLSException.wrap(failure));
     }
 
     protected static void destroy(SecretKey secretKey)
@@ -233,6 +279,6 @@ public abstract class TLSEngine implements MessageParser.Listener
 
     public interface HandshakeListener
     {
-        void handshakeCompleted(Throwable failure);
+        void handshakeCompleted(HandshakeData data, Throwable failure);
     }
 }

@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
@@ -39,14 +40,14 @@ import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.RetryPacket;
+import org.eclipse.jetty.quic.common.packets.VersionNegotiationPacket;
+import org.eclipse.jetty.quic.common.tls.HandshakeData;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
 import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
 import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.ServerHelloMessage;
-import org.eclipse.jetty.tls.ext.ALPNExtension;
-import org.eclipse.jetty.tls.ext.ServerNameExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -120,23 +121,27 @@ public class ClientQuicSession extends QuicSession
 
         ClientTLSConfiguration tlsConfiguration = new ClientTLSConfiguration(getQuicConfiguration(), sslContextFactory);
 
+        QuicVersion quicVersion = getQuicConfiguration().getQuicVersions().getFirst();
+        setQuicVersion(quicVersion);
+        tlsConfiguration.setQuicVersion(quicVersion);
+
         if (remoteSocketAddress instanceof InetSocketAddress inet)
         {
             String serverName = inet.getHostString();
-            tlsConfiguration.addExtension(new ServerNameExtension(serverName));
+            tlsConfiguration.setServerName(serverName);
         }
 
         List<String> protocols = alpnProtocols(context);
         if (protocols == null || protocols.isEmpty())
             throw new IllegalStateException("missing ALPN protocols");
-        tlsConfiguration.addExtension(new ALPNExtension(protocols));
+        tlsConfiguration.setApplicationProtocols(protocols);
 
         TransportParameters transportParameters = new TransportParameters();
         getQuicConfiguration().configure(transportParameters);
         transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, getIdleTimeout());
         transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, getSourceConnectionId());
         notifyPrepare(transportParameters);
-        tlsConfiguration.addExtension(new QuicTransportParametersExtension(transportParameters));
+        tlsConfiguration.setTransportParameters(transportParameters);
 
         byte[] dstConnectionId = getTLSEngine().newRandomBytes(12);
         tlsConfiguration.setInputKeyMaterial(dstConnectionId);
@@ -156,7 +161,7 @@ public class ClientQuicSession extends QuicSession
         getTLSEngine().startHandshake(tlsConfiguration, callback);
     }
 
-    private void handshakeComplete(Throwable failure)
+    private void handshakeComplete(HandshakeData data, Throwable failure)
     {
         if (failure != null)
             fail(failure);
@@ -194,7 +199,7 @@ public class ClientQuicSession extends QuicSession
         {
             token = tokens.get(getEndPoint().getLocalSocketAddress(), getRemoteSocketAddress());
         }
-        return new InitialPacket(getQuicConfiguration().getQuicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, getPacketNumbers().nextPacketNumber(EncryptionLevel.INITIAL), frames);
+        return new InitialPacket(getQuicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, getPacketNumbers().nextPacketNumber(EncryptionLevel.INITIAL), frames);
     }
 
     @Override
@@ -212,6 +217,7 @@ public class ClientQuicSession extends QuicSession
             switch (packet)
             {
                 case RetryPacket retryPacket -> processRetryPacket(retryPacket);
+                case VersionNegotiationPacket versionNegotiationPacket -> processVersionNegotiationPacket(versionNegotiationPacket);
                 default -> super.processPacket(packet);
             }
         }
@@ -309,5 +315,10 @@ public class ClientQuicSession extends QuicSession
 
         resetCrypto();
         getTLSEngine().retryHandshake();
+    }
+
+    private void processVersionNegotiationPacket(VersionNegotiationPacket packet)
+    {
+        // TODO: negotiate version and
     }
 }

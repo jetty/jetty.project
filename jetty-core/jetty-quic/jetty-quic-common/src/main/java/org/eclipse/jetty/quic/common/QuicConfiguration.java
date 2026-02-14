@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.common;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,7 +24,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 public abstract class QuicConfiguration extends ContainerLifeCycle
 {
     private final Map<Object, Object> implementationConfiguration = new ConcurrentHashMap<>();
-    private QuicVersion version = QuicVersion.V1;
+    private List<QuicVersion> versions = List.of(QuicVersion.V1);
     private int inputBufferSize = 2048;
     private boolean useInputDirectByteBuffers = true;
     private int outputBufferSize = 2048;
@@ -37,14 +38,16 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     private long bidirectionalMaxStreams;
     private long unidirectionalMaxStreams;
 
-    public QuicVersion getQuicVersion()
+    public List<QuicVersion> getQuicVersions()
     {
-        return version;
+        return versions;
     }
 
-    public void setQuicVersion(QuicVersion version)
+    public void setQuicVersions(List<QuicVersion> versions)
     {
-        this.version = version;
+        if (versions.isEmpty())
+            throw new IllegalArgumentException("invalid QUIC versions list");
+        this.versions = versions;
     }
 
     public int getInputBufferSize()

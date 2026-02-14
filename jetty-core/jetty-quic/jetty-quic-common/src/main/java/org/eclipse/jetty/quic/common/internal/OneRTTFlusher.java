@@ -205,9 +205,9 @@ class OneRTTFlusher implements Callback
         PacketsGenerator packetGenerator = flusher.getPacketsGenerator();
         EndPoint endPoint = session.getEndPoint();
 
-        List<Frame> frames = processing.size() == 1 ?
-            processing.getFirst().frames() :
-            processing.stream()
+        List<Frame> frames = processing.size() == 1
+            ? processing.getFirst().frames()
+            : processing.stream()
                 .flatMap(entry -> entry.frames().stream())
                 .toList();
         Packet packet = session.newPacket(EncryptionLevel.ONE_RTT, frames);

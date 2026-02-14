@@ -11,17 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tls;
+package org.eclipse.jetty.tls.ext;
 
-import java.util.List;
+import org.eclipse.jetty.tls.ServerHelloMessage;
 
-import org.eclipse.jetty.tls.ext.Extension;
-
-public record NewSessionTicketMessage(long lifetime, int ageAdd, byte[] nonce, byte[] ticket, List<Extension> extensions) implements Message
+/// The pre-shared key extension for the [ServerHelloMessage].
+public record ServerPreSharedKeyExtension(int identityIndex) implements Extension
 {
+    public static final int CODE = 0x0029;
+
     @Override
-    public Type type()
+    public int code()
     {
-        return Type.NEW_SESSION_TICKET;
+        return CODE;
     }
 }

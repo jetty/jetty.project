@@ -54,6 +54,7 @@ public class PacketProtector implements Encrypter, Decrypter
     private final TranscriptHash transcriptHash;
     private final boolean client;
     private SecretKey handshakeSecret;
+    private SecretKey masterSecret;
 
     public PacketProtector(ByteBufferPool byteBufferPool, PacketNumbers packetNumbers, TranscriptHash transcriptHash, boolean client)
     {
@@ -190,7 +191,7 @@ public class PacketProtector implements Encrypter, Decrypter
 
             SecretKey derivedSecret = kdf.deriveKey("ApplicationDerived", HKDF.expandLabel(handshakeSecret, "derived", transcriptHash.getEmptyHash(), hashLength));
             HKDFParameterSpec.Extract extract = HKDFParameterSpec.ofExtract().addSalt(derivedSecret).addIKM(new byte[hashLength]).extractOnly();
-            SecretKey masterSecret = kdf.deriveKey("ApplicationMaster", extract);
+            masterSecret = kdf.deriveKey("ApplicationMaster", extract);
 
             byte[] tlsHash = transcriptHash.getHash();
             int keyLength = cipherSuite.keyLength();
@@ -223,6 +224,24 @@ public class PacketProtector implements Encrypter, Decrypter
         {
             throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
         }
+    }
+
+    public SecretKey generateResumptionMasterSecret(CipherSuite cipherSuite) throws Exception
+    {
+        // RFC-8446[7.1].
+        int hashLength = cipherSuite.hashLength();
+        KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
+        byte[] tlsHash = transcriptHash.getHash();
+        int keyLength = cipherSuite.keyLength();
+        SecretKey resumptionMasterSecret = kdf.deriveKey("AES", HKDF.expandLabel(masterSecret, "res master", tlsHash, keyLength));
+
+        // The master secret is not needed anymore, as both the application
+        // keys and the resumption master secret have been generated.
+        KeyManager.destroy(masterSecret);
+
+        // The resumption master secret does not need to be stored:
+        // it is either stored externally or in the session ticket.
+        return resumptionMasterSecret;
     }
 
     public void discardKeys(EncryptionLevel encryptionLevel)
@@ -500,7 +519,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 ByteBuffer byteBuffer = encrypted.getByteBuffer();
 
                 // To remove header protection, we need a sample of the payload.
-                // RFC 9001, 5.4.2: compute the offset of the sample.
+                // RFC-9001[5.4.2]: compute the offset of the sample.
                 int position = byteBuffer.position();
 
                 // Skip form byte and destination connection ID bytes.

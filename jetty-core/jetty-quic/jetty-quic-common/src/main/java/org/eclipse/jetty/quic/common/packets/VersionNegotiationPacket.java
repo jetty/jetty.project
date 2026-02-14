@@ -13,20 +13,22 @@
 
 package org.eclipse.jetty.quic.common.packets;
 
+import java.util.List;
+
 import org.eclipse.jetty.quic.api.QuicVersion;
 
 public final class VersionNegotiationPacket extends LongHeaderPacket
 {
-    private final QuicVersion supportedVersion;
+    private final List<QuicVersion> supportedVersions;
 
-    public VersionNegotiationPacket(byte[] destinationConnectionId, byte[] sourceConnectionId, QuicVersion supportedVersion)
+    public VersionNegotiationPacket(byte[] destinationConnectionId, byte[] sourceConnectionId, List<QuicVersion> supportedVersions)
     {
         super(PacketType.VERSION_NEGOTIATION, null, destinationConnectionId, sourceConnectionId);
-        this.supportedVersion = supportedVersion;
+        this.supportedVersions = supportedVersions;
     }
 
-    public QuicVersion supportedVersion()
+    public List<QuicVersion> supportedVersions()
     {
-        return supportedVersion;
+        return supportedVersions;
     }
 }

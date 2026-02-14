@@ -11,17 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tls;
+package org.eclipse.jetty.tls.ext;
 
-import java.util.List;
-
-import org.eclipse.jetty.tls.ext.Extension;
-
-public record NewSessionTicketMessage(long lifetime, int ageAdd, byte[] nonce, byte[] ticket, List<Extension> extensions) implements Message
+public record EarlyDataExtension(long maxData) implements Extension
 {
+    public static final int CODE = 0x002A;
+
     @Override
-    public Type type()
+    public int code()
     {
-        return Type.NEW_SESSION_TICKET;
+        return CODE;
     }
 }
