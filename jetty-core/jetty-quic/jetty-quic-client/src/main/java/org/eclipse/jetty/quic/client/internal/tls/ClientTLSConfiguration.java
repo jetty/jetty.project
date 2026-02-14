@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.client.internal.tls;
 
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.common.tls.TLSConfiguration;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -21,6 +22,8 @@ public final class ClientTLSConfiguration extends TLSConfiguration
 {
     private final QuicClientQuicConfiguration quicConfiguration;
     private final SslContextFactory.Client sslContextFactory;
+    private String serverName;
+    private TransportParameters transportParameters;
     private byte[] inputKeyMaterial;
 
     public ClientTLSConfiguration(QuicClientQuicConfiguration quicConfiguration, SslContextFactory.Client sslContextFactory)
@@ -37,6 +40,26 @@ public final class ClientTLSConfiguration extends TLSConfiguration
     public SslContextFactory.Client getSslContextFactory()
     {
         return sslContextFactory;
+    }
+
+    public String getServerName()
+    {
+        return serverName;
+    }
+
+    public void setServerName(String serverName)
+    {
+        this.serverName = serverName;
+    }
+
+    public TransportParameters getTransportParameters()
+    {
+        return transportParameters;
+    }
+
+    public void setTransportParameters(TransportParameters transportParameters)
+    {
+        this.transportParameters = transportParameters;
     }
 
     public byte[] getInputKeyMaterial()

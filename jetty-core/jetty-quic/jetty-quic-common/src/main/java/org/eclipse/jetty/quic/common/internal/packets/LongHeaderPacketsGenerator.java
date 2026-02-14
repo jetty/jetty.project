@@ -31,7 +31,7 @@ public class LongHeaderPacketsGenerator
     public LongHeaderPacketsGenerator(PacketNumbers packetNumbers, FramesGenerator framesGenerator, Encrypter encrypter)
     {
         initialGenerator = new InitialPacketGenerator(packetNumbers, framesGenerator, encrypter);
-        handshakeGenerator = new HandshakePacketGenerator(packetNumbers, framesGenerator, encrypter);
+        handshakeGenerator = new HandshakePacketGenerator(packetNumbers, encrypter);
         retryGenerator = new RetryPacketGenerator();
     }
 

@@ -83,21 +83,25 @@ public sealed class LongHeaderPacket implements Packet permits HandshakePacket, 
                 {
                     case V1 -> 0x00;
                     case V2 -> 0x01;
+                    default -> throw new AssertionError();
                 };
                 case ZERO_RTT -> switch (quicVersion)
                 {
                     case V1 -> 0x01;
                     case V2 -> 0x02;
+                    default -> throw new AssertionError();
                 };
                 case HANDSHAKE -> switch (quicVersion)
                 {
                     case V1 -> 0x02;
                     case V2 -> 0x03;
+                    default -> throw new AssertionError();
                 };
                 case RETRY -> switch (quicVersion)
                 {
                     case V1 -> 0x03;
                     case V2 -> 0x00;
+                    default -> throw new AssertionError();
                 };
                 case VERSION_NEGOTIATION -> 0x00;
             };
@@ -111,21 +115,25 @@ public sealed class LongHeaderPacket implements Packet permits HandshakePacket, 
                 {
                     case V1 -> INITIAL;
                     case V2 -> RETRY;
+                    default -> throw new AssertionError();
                 };
                 case 0x01 -> switch (quicVersion)
                 {
                     case V1 -> ZERO_RTT;
                     case V2 -> INITIAL;
+                    default -> throw new AssertionError();
                 };
                 case 0x02 -> switch (quicVersion)
                 {
                     case V1 -> HANDSHAKE;
                     case V2 -> ZERO_RTT;
+                    default -> throw new AssertionError();
                 };
                 case 0x03 -> switch (quicVersion)
                 {
                     case V1 -> RETRY;
                     case V2 -> HANDSHAKE;
+                    default -> throw new AssertionError();
                 };
                 default -> throw new IllegalArgumentException("invalid packet type: " + type);
             };

@@ -27,15 +27,21 @@ import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.common.generator.ExtensionsGenerator;
 import org.eclipse.jetty.tls.common.parser.ExtensionsParser;
 import org.eclipse.jetty.tls.ext.ALPNExtension;
+import org.eclipse.jetty.tls.ext.ClientPreSharedKeyExtension;
+import org.eclipse.jetty.tls.ext.EarlyDataExtension;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.KeyShareExtension;
+import org.eclipse.jetty.tls.ext.PreSharedKeyIdentity;
 import org.eclipse.jetty.tls.ext.ServerNameExtension;
+import org.eclipse.jetty.tls.ext.ServerPreSharedKeyExtension;
 import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -282,5 +288,132 @@ public class ExtensionsGenerateParseTest
         assertEquals(1, extensions.size());
         result = (SupportedGroupsExtension)extensions.getFirst();
         assertEquals(expected.namedGroups(), result.namedGroups());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGenerateParseEarlyDataExtension(boolean client)
+    {
+        ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+
+        EarlyDataExtension expected = new EarlyDataExtension(2L * Integer.MAX_VALUE);
+        ExtensionsGenerator generator = new ExtensionsGenerator(client);
+        int length = generator.generate(accumulator, List.of(expected));
+        assertEquals(accumulator.remaining(), length);
+
+        ExtensionsParser parser = new ExtensionsParser(!client);
+        ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
+        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
+        List<Extension> extensions = parser.parse(accumulator);
+        assertNotNull(extensions);
+
+        assertEquals(1, extensions.size());
+        EarlyDataExtension result = (EarlyDataExtension)extensions.getFirst();
+        assertEquals(expected.maxData(), result.maxData());
+
+        // Parse again one byte at a time.
+        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
+        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
+        while (byteBuffer.hasRemaining())
+        {
+            int position = byteBuffer.position();
+            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
+            byteBuffer.position(position + 1);
+            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
+        }
+
+        assertNotNull(extensions);
+        assertEquals(1, extensions.size());
+        result = (EarlyDataExtension)extensions.getFirst();
+        assertEquals(expected.maxData(), result.maxData());
+    }
+
+    @Test
+    public void testGenerateParseServerPreSharedKeyExtension()
+    {
+        ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+
+        ServerPreSharedKeyExtension expected = new ServerPreSharedKeyExtension(3);
+        ExtensionsGenerator generator = new ExtensionsGenerator(false);
+        int length = generator.generate(accumulator, List.of(expected));
+        assertEquals(accumulator.remaining(), length);
+
+        ExtensionsParser parser = new ExtensionsParser(true);
+        ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
+        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
+        List<Extension> extensions = parser.parse(accumulator);
+        assertNotNull(extensions);
+
+        assertEquals(1, extensions.size());
+        ServerPreSharedKeyExtension result = (ServerPreSharedKeyExtension)extensions.getFirst();
+        assertEquals(expected.identityIndex(), result.identityIndex());
+
+        // Parse again one byte at a time.
+        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
+        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
+        while (byteBuffer.hasRemaining())
+        {
+            int position = byteBuffer.position();
+            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
+            byteBuffer.position(position + 1);
+            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
+        }
+
+        assertNotNull(extensions);
+        assertEquals(1, extensions.size());
+        result = (ServerPreSharedKeyExtension)extensions.getFirst();
+        assertEquals(expected.identityIndex(), result.identityIndex());
+    }
+
+    @Test
+    public void testGenerateParseClientPreSharedKeyExtension()
+    {
+        ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+
+        byte[] identity1 = new byte[] {1, 2, 3, 4, 5};
+        byte[] identity2 = new byte[] {6, 7, 8};
+        List<PreSharedKeyIdentity> identities = List.of(new PreSharedKeyIdentity(identity1, 39), new PreSharedKeyIdentity(identity2, 41));
+        List<byte[]> binders = List.of(new byte[] {9, 0x0A, 0x0B}, new byte[] {0x0C, 0x0D, 0x0E, 0x0F});
+        ClientPreSharedKeyExtension expected = new ClientPreSharedKeyExtension(identities, binders);
+        ExtensionsGenerator generator = new ExtensionsGenerator(true);
+        int length = generator.generate(accumulator, List.of(expected));
+        assertEquals(accumulator.remaining(), length);
+
+        ExtensionsParser parser = new ExtensionsParser(false);
+        ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
+        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
+        List<Extension> extensions = parser.parse(accumulator);
+        assertNotNull(extensions);
+
+        assertEquals(1, extensions.size());
+        ClientPreSharedKeyExtension result = (ClientPreSharedKeyExtension)extensions.getFirst();
+        assertEquals(expected.identities(), result.identities());
+        for (int i = 0; i < binders.size(); ++i)
+        {
+            assertArrayEquals(binders.get(i), result.binders().get(i));
+        }
+
+        // Parse again one byte at a time.
+        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
+        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
+        while (byteBuffer.hasRemaining())
+        {
+            int position = byteBuffer.position();
+            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
+            byteBuffer.position(position + 1);
+            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
+        }
+
+        assertNotNull(extensions);
+        assertEquals(1, extensions.size());
+        result = (ClientPreSharedKeyExtension)extensions.getFirst();
+        assertEquals(expected.identities(), result.identities());
+        for (int i = 0; i < binders.size(); ++i)
+        {
+            assertArrayEquals(binders.get(i), result.binders().get(i));
+        }
     }
 }

@@ -30,6 +30,7 @@ public class QuicCrypto
         {
             case QuicVersion.V1 -> INITIAL_SALT_V1;
             case QuicVersion.V2 -> INITIAL_SALT_V2;
+            default -> throw new AssertionError();
         };
     }
 
@@ -40,6 +41,7 @@ public class QuicCrypto
         {
             case QuicVersion.V1 -> "quic key";
             case QuicVersion.V2 -> "quicv2 key";
+            default -> throw new AssertionError();
         };
     }
 
@@ -50,6 +52,7 @@ public class QuicCrypto
         {
             case QuicVersion.V1 -> "quic iv";
             case QuicVersion.V2 -> "quicv2 iv";
+            default -> throw new AssertionError();
         };
     }
 
@@ -60,6 +63,7 @@ public class QuicCrypto
         {
             case QuicVersion.V1 -> "quic hp";
             case QuicVersion.V2 -> "quicv2 hp";
+            default -> throw new AssertionError();
         };
     }
 
@@ -70,6 +74,7 @@ public class QuicCrypto
         {
             case QuicVersion.V1 -> "quic ku";
             case QuicVersion.V2 -> "quicv2 ku";
+            default -> throw new AssertionError();
         };
     }
 
@@ -80,6 +85,7 @@ public class QuicCrypto
         {
             case QuicVersion.V1 -> RETRY_INTEGRITY_SECRET_V1;
             case QuicVersion.V2 -> RETRY_INTEGRITY_SECRET_V2;
+            default -> throw new AssertionError();
         };
     }
 

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.server.internal.tls;
 
+import java.nio.ByteBuffer;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -31,8 +32,11 @@ import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
+import org.eclipse.jetty.quic.common.tls.HandshakeData;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.quic.common.tls.X509KeyStorePair;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
+import org.eclipse.jetty.quic.server.SessionTicket;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.CertificateRequestMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
@@ -42,12 +46,14 @@ import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
 import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.KeyShare;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.tls.NewSessionTicketMessage;
 import org.eclipse.jetty.tls.ServerHelloMessage;
 import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.common.GroupKeyPair;
 import org.eclipse.jetty.tls.ext.ALPNExtension;
+import org.eclipse.jetty.tls.ext.EarlyDataExtension;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.KeyShareExtension;
 import org.eclipse.jetty.tls.ext.ServerNameExtension;
@@ -67,7 +73,6 @@ public class ServerTLSEngine extends TLSEngine
 
     private final ServerTLSConfiguration tlsConfiguration;
     private State state = State.NEED_CLIENT_HELLO;
-    private CipherSuite cipherSuite;
     private SecretKey sharedSecret;
 
     public ServerTLSEngine(PacketProtector packetProtector, ServerTLSConfiguration tlsConfiguration)
@@ -118,7 +123,6 @@ public class ServerTLSEngine extends TLSEngine
         List<KeyShare> clientKeyShares = List.of();
         List<String> clientProtocols = List.of();
         List<SignatureAlgorithm> clientSignatureAlgorithms = List.of();
-        String serverName = null;
         for (Extension extension : clientExtensions)
         {
             switch (extension)
@@ -127,7 +131,8 @@ public class ServerTLSEngine extends TLSEngine
                 case KeyShareExtension kse -> clientKeyShares = kse.keyShares();
                 case ALPNExtension ae -> clientProtocols = ae.protocols();
                 case SignatureAlgorithmsExtension sae -> clientSignatureAlgorithms = sae.signatureAlgorithms();
-                case ServerNameExtension sne -> serverName = sne.serverName();
+                case ServerNameExtension sne -> setServerName(sne.serverName());
+                case QuicTransportParametersExtension qtpe -> setTransportParameters(qtpe.transportParameters());
                 default ->
                 {
                 }
@@ -149,7 +154,8 @@ public class ServerTLSEngine extends TLSEngine
         negotiatedCipherSuites.retainAll(tlsConfiguration.getServerQuicConfiguration().getCipherSuites());
         if (negotiatedCipherSuites.isEmpty())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_cipher_suite");
-        cipherSuite = negotiatedCipherSuites.getFirst();
+        CipherSuite cipherSuite = negotiatedCipherSuites.getFirst();
+        setCipherSuite(cipherSuite);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated CipherSuite {} on {}", cipherSuite, this);
 
@@ -184,7 +190,7 @@ public class ServerTLSEngine extends TLSEngine
             LOG.debug("produced {} on {}", serverHello, this);
 
         getPacketProtector().getTranscriptHash().offer(serverHello, false);
-        QuicVersion quicVersion = tlsConfiguration.getServerQuicConfiguration().getQuicVersion();
+        QuicVersion quicVersion = tlsConfiguration.getQuicVersion();
         getPacketProtector().allocateHandshakeKeys(quicVersion, cipherSuite, sharedSecret);
 
         List<Message> handshakeMessages = new ArrayList<>();
@@ -194,7 +200,7 @@ public class ServerTLSEngine extends TLSEngine
         if (negotiatedProtocols.isEmpty())
             throw new TLSException(TLSException.Alert.NO_APPLICATION_PROTOCOL, "no_common_application_protocol");
         String protocol = negotiatedProtocols.getFirst();
-        setNegotiatedApplicationProtocol(protocol);
+        setApplicationProtocol(protocol);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated alpn protocol {} on {}", protocol, this);
 
@@ -257,6 +263,7 @@ public class ServerTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("supported certificates at aliases {} on {}", pairs.stream().map(p -> p.keyStorePair().alias()).toList(), this);
 
+        String serverName = getServerName();
         boolean sniRequired = sslContextFactory.isSniRequired();
         if (serverName == null && sniRequired)
             throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_server_name_extension");
@@ -421,17 +428,34 @@ public class ServerTLSEngine extends TLSEngine
         if (state != State.NEED_FINISHED)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
+        CipherSuite cipherSuite = getCipherSuite();
         if (!verifyFinishedMessage(cipherSuite, finished))
             throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid_verify_data");
 
         getPacketProtector().getTranscriptHash().offer(finished, true);
+        SecretKey resumptionMasterSecret = getPacketProtector().generateResumptionMasterSecret(cipherSuite);
 
         state = State.HANDSHAKE_SUCCESSFUL;
 
         if (LOG.isDebugEnabled())
             LOG.debug("handshake completed on {}", this);
 
-        notifyHandshakeCompleted(null);
+        // RFC-9001[4.1.1]: handshake is complete when the Finished message
+        // is sent, and the peer's Finished message has been verified.
+        HandshakeData handshakeData = new HandshakeData(tlsConfiguration.getQuicVersion(), getTLSVersion(), getServerName(), cipherSuite, getApplicationProtocol(), getTransportParameters());
+        notifyHandshakeCompleted(handshakeData, null);
+
+        QuicServerQuicConfiguration serverQuicConfiguration = getTLSConfiguration().getServerQuicConfiguration();
+        int lifetime = (int)serverQuicConfiguration.getSessionTicketFactory().getSessionTicketLifetime().toMillis();
+        int ageAdd = ByteBuffer.wrap(newRandomBytes(4)).getInt();
+
+        SessionTicket.Configuration configuration = new SessionTicket.Configuration(lifetime, ageAdd, newRandomBytes(8));
+        SessionTicket sessionTicket = new SessionTicket(configuration, handshakeData, resumptionMasterSecret);
+
+        byte[] ticket = serverQuicConfiguration.getSessionTicketFactory().generateSessionTicket(sessionTicket);
+        List<Extension> extensions = List.of(new EarlyDataExtension(-1));
+        NewSessionTicketMessage newSessionTicket = new NewSessionTicketMessage(lifetime, ageAdd, newRandomBytes(8), ticket, extensions);
+        notifyMessages(EncryptionLevel.ONE_RTT, List.of(newSessionTicket), Callback.from(Callback.NOOP, this::fail));
     }
 
     @Override

@@ -32,7 +32,6 @@ import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -44,16 +43,10 @@ public class FrameGeneratorParserTest
     private final FramesGenerator generator = new FramesGenerator(byteBufferPool);
     private final FramesParser parser = new FramesParser();
 
-    @BeforeEach
-    public void prepare()
-    {
-        parser.setStreamFrameLength(Frame.DEFAULT_MAX_SIZE);
-    }
-
     private <T extends Frame> List<T> generateParse(T frame)
     {
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        generator.generateFrame(accumulator, frame, 0);
+        generator.generateFrame(accumulator, frame, Integer.MAX_VALUE);
         return parse(accumulator);
     }
 
@@ -107,7 +100,7 @@ public class FrameGeneratorParserTest
         ByteBuffer bytes = StandardCharsets.UTF_8.encode("DATA");
         StreamFrame frame = new StreamFrame(3290901290300L, RetainableByteBuffer.wrap(bytes), 120911129347656L, true, true);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        generator.generateFrame(accumulator, frame, bytes.remaining(), Frame.DEFAULT_MAX_SIZE);
+        generator.generateFrame(accumulator, frame, Integer.MAX_VALUE);
         bytes.clear();
         List<StreamFrame> list = parse(accumulator);
         list.forEach(result -> assertStreamFrameEqual(frame, result));
@@ -118,7 +111,7 @@ public class FrameGeneratorParserTest
         assertEqual(StreamFrame::type, frame, result);
         assertEqual(StreamFrame::streamId, frame, result);
         assertEqual(StreamFrame::offset, frame, result);
-        assertEqual(f -> f.data().getByteBuffer(), frame, result);
+        assertEquals(frame.data().getByteBuffer(), result.data().getByteBuffer());
         assertEqual(StreamFrame::isEndStream, frame, result);
     }
 

@@ -17,7 +17,7 @@ import java.util.List;
 
 import org.eclipse.jetty.tls.ext.Extension;
 
-public record NewSessionTicketMessage(int lifetime, int ageAdd, byte[] nonce, byte[] ticket, List<Extension> extensions) implements Message
+public record NewSessionTicketMessage(long lifetime, int ageAdd, byte[] nonce, byte[] ticket, List<Extension> extensions) implements Message
 {
     @Override
     public Type type()

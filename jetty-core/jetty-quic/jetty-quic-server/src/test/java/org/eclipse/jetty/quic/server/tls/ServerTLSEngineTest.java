@@ -74,7 +74,7 @@ public class ServerTLSEngineTest
             callback.succeeded();
         });
 
-        engine.addHandshakeListener(failure -> handshake.set(failure == null ? success : failure));
+        engine.addHandshakeListener((_, failure) -> handshake.set(failure == null ? success : failure));
     }
 
     @Test

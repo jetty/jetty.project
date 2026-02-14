@@ -28,7 +28,9 @@ public class ExtensionsGenerator
     public ExtensionsGenerator(boolean client)
     {
         put(new ALPNExtensionGenerator());
+        put(new EarlyDataExtensionGenerator());
         put(new KeyShareExtensionGenerator(client));
+        put(client ? new ClientPreSharedKeyExtensionGenerator() : new ServerPreSharedKeyExtensionGenerator());
         put(new ServerNameExtensionGenerator());
         put(new SignatureAlgorithmsExtensionGenerator());
         put(new SupportedGroupsExtensionGenerator());

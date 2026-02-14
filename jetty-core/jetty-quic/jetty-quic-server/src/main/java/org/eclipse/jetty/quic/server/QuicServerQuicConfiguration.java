@@ -14,8 +14,10 @@
 package org.eclipse.jetty.quic.server;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
+import org.eclipse.jetty.quic.server.internal.DefaultSessionTicketFactory;
 import org.eclipse.jetty.quic.server.internal.DefaultTokenFactory;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.NamedGroup;
@@ -28,6 +30,7 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
     private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519/*, NamedGroup.secp256r1, NamedGroup.ffdhe2048*/);
     private List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256);
     private TokenFactory tokenFactory = new DefaultTokenFactory();
+    private SessionTicket.Factory sessionTicketFactory = new DefaultSessionTicketFactory();
     private int destinationConnectionIdLength = 8;
     // A value that does not exceed the usual MTU of 1500 and allows for encapsulation (VPN).
     private int udpPayloadSize = 1344;
@@ -40,6 +43,7 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
     private boolean enableConnectionMigration;
     // RFC-9000[18.2].
     private long connectionIdMaxCount = 2;
+    private int earlyMaxData;
 
     public List<SignatureAlgorithm> getSignatureAlgorithms()
     {
@@ -78,7 +82,17 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
 
     public void setTokenFactory(TokenFactory tokenFactory)
     {
-        this.tokenFactory = tokenFactory;
+        this.tokenFactory = Objects.requireNonNull(tokenFactory);
+    }
+
+    public SessionTicket.Factory getSessionTicketFactory()
+    {
+        return sessionTicketFactory;
+    }
+
+    public void setSessionTicketFactory(SessionTicket.Factory sessionTicketFactory)
+    {
+        this.sessionTicketFactory = Objects.requireNonNull(sessionTicketFactory);
     }
 
     public int getDestinationConnectionIdLength()
@@ -161,6 +175,16 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
         if (connectionIdMaxCount < 2)
             throw new IllegalArgumentException("invalid ConnectionIdMaxCount: " + connectionIdMaxCount);
         this.connectionIdMaxCount = connectionIdMaxCount;
+    }
+
+    public int getEarlyMaxData()
+    {
+        return earlyMaxData;
+    }
+
+    public void setEarlyMaxData(int earlyMaxData)
+    {
+        this.earlyMaxData = earlyMaxData;
     }
 
     @Override

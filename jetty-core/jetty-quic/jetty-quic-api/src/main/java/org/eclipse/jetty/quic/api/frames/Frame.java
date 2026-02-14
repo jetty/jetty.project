@@ -20,8 +20,6 @@ import org.eclipse.jetty.util.TypeUtil;
 /// @see WithStreamId
 public sealed interface Frame
 {
-    int DEFAULT_MAX_SIZE = 16384;
-
     long type();
 
     abstract sealed class Abstract implements Frame permits

@@ -42,7 +42,7 @@ public class ErrorCode
     private ErrorCode(long code)
     {
         this.code = code;
-        Codes.codes.putIfAbsent(code, this);
+        Codes.CODES.putIfAbsent(code, this);
     }
 
     public long code()
@@ -84,7 +84,7 @@ public class ErrorCode
 
     public static ErrorCode from(long code)
     {
-        ErrorCode result = Codes.codes.get(code);
+        ErrorCode result = Codes.CODES.get(code);
         if (result == null && isCrypto(code))
             result = new ErrorCode(code);
         return result;
@@ -92,6 +92,6 @@ public class ErrorCode
 
     private static class Codes
     {
-        private static final Map<Long, ErrorCode> codes = new ConcurrentHashMap<>();
+        private static final Map<Long, ErrorCode> CODES = new ConcurrentHashMap<>();
     }
 }
