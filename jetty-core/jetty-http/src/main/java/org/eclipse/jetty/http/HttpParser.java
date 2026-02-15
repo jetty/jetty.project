@@ -558,7 +558,11 @@ public class HttpParser
 
     private void addAndCheckHeadersSize(int delta)
     {
-        if (_maxHeaderBytes > 0 && (_state.ordinal() <= State.HEADER.ordinal() || _state.ordinal() == State.TRAILER.ordinal()))
+        if (_maxHeaderBytes <= 0)
+            return;
+        if (_state.ordinal() <= State.HEADER.ordinal() ||
+            (_state == State.CHUNK_SIZE && _chunkSizeState != ChunkSizeState.SIZE) ||
+            _state == State.TRAILER)
         {
             _headerBytes += delta;
             if (_headerBytes > _maxHeaderBytes)
