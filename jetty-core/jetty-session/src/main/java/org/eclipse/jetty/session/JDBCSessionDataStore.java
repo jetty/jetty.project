@@ -282,7 +282,7 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
         @Deprecated(forRemoval = true, since = "12.1.6")
         public String getCreateIndexOverSessionStatementAsString(String indexName)
         {
-            return "";
+            return "create index " + indexName + " on " + getSchemaTableName() + " (" + getIdColumn() + ", " + getContextPathColumn() + ")";
         }
 
         public String getAlterTableForMaxIntervalAsString()
