@@ -2437,6 +2437,13 @@ public interface RetainableByteBuffer extends Retainable
                             buffer.writeTo(sink, lastWritten, this);
                             return Action.SCHEDULED;
                         }
+
+                        @Override
+                        protected void onCompleted(Throwable causeOrNull)
+                        {
+                            clear();
+                            super.onCompleted(causeOrNull);
+                        }
                     }.iterate();
                 }
             }
