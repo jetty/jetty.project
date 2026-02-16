@@ -14,6 +14,8 @@
 package org.eclipse.jetty.http.spi;
 
 import com.sun.net.httpserver.HttpPrincipal;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 
 /**
  *
@@ -24,4 +26,14 @@ public interface JettyExchange
     HttpPrincipal getPrincipal();
 
     void setPrincipal(HttpPrincipal principal);
+
+    /**
+     * @return the Jetty Request object associated with this exchange
+     */
+    Request getRequest();
+    
+    /**
+     * @return the Jetty Response object associated with this exchange
+     */
+    Response getResponse();
 }

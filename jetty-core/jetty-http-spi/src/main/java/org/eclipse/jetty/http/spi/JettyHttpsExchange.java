@@ -101,6 +101,18 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
     }
 
     @Override
+    public Request getRequest()
+    {
+        return _delegate.getRequest();
+    }
+    
+    @Override
+    public Response getResponse()
+    {
+        return _delegate.getResponse();
+    }
+
+    @Override
     public void sendResponseHeaders(int rCode, long responseLength) throws IOException
     {
         _delegate.sendResponseHeaders(rCode, responseLength);
