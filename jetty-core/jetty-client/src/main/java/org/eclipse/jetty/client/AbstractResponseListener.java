@@ -28,6 +28,16 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
+/**
+ * <p>Instances of this class are not reusable, so one must be allocated for each request.</p>
+ * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
+ * via one of the {@code getContent*()} or {@code takeContent*()} methods.</p>
+ * <p>IMPORTANT: The content MUST be consumed by calling one of the {@code getContent*()} or
+ * {@code takeContent*()} methods otherwise the backing buffers may be leaked. If either of
+ * {@link #takeContentAsInputStream()} or {@link #takeContentAsContentSource()} is called, the content
+ * MUST be read until the end (or closed/failed appropriately) otherwise the backing buffers of the unread
+ * content may also be leaked.</p>
+ */
 public abstract class AbstractResponseListener implements Response.Listener
 {
     private final RetainableByteBuffer.Mutable accumulator;
@@ -127,13 +137,6 @@ public abstract class AbstractResponseListener implements Response.Listener
     }
 
     @Override
-    public void onSuccess(Response response)
-    {
-        // Always take here to be sure the accumulator is released.
-        content = take();
-    }
-
-    @Override
     public void onFailure(Response response, Throwable failure)
     {
         accumulator.clear();
@@ -219,8 +222,13 @@ public abstract class AbstractResponseListener implements Response.Listener
         if (content == null && accumulator instanceof RetainableByteBuffer.DynamicCapacity dynamic)
             result = dynamic.takeContentSource();
         else
-            result = Content.Source.from(ByteBuffer.wrap(getContent()));
-        // When the content is taken, further getContent* and takeContent* calls will find an empty content.
+            result = Content.Source.from(ByteBuffer.wrap(takeContent()));
+        return result;
+    }
+
+    private byte[] takeContent()
+    {
+        byte[] result = getContent();
         content = BufferUtil.EMPTY_BYTES;
         return result;
     }
