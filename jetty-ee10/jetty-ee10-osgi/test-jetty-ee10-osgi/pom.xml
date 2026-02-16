@@ -239,6 +239,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.apache.aries.spifly</groupId>
       <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
       <scope>test</scope>
@@ -554,13 +560,13 @@
             </excludes>
           </configuration>
           <!-- paxexam still using junit 4 so we have to force the provider here -->
-          <dependencies>
-            <dependency>
-              <groupId>org.apache.maven.surefire</groupId>
-              <artifactId>surefire-junit47</artifactId>
-              <version>${maven.surefire.plugin.version}</version>
-            </dependency>
-          </dependencies>
+          <!--          <dependencies>-->
+          <!--            <dependency>-->
+          <!--              <groupId>org.apache.maven.surefire</groupId>-->
+          <!--              <artifactId>surefire-junit47</artifactId>-->
+          <!--              <version>${maven.surefire.plugin.version}</version>-->
+          <!--            </dependency>-->
+          <!--          </dependencies>-->
         </plugin>
         <plugin>
           <groupId>org.apache.servicemix.tooling</groupId>
