@@ -213,13 +213,12 @@ public class QuicheStream extends AbstractStream
                 buffer = null;
             }
         }
-        if (buffer == null)
-        {
-            buffer = getSession().getByteBufferPool().acquire(quicConfiguration.getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
-            if (LOG.isDebugEnabled())
-                LOG.debug("acquired {} on {}", buffer, this);
-        }
-        return buffer;
+        RetainableByteBuffer candidate = buffer;
+        if (candidate == null)
+            candidate = getSession().getByteBufferPool().acquire(quicConfiguration.getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
+        if (LOG.isDebugEnabled())
+            LOG.debug("acquired {} {} on {}", buffer == null ? "fresh" : "stored", candidate, this);
+        return candidate;
     }
 
     private void tryStoreInputBuffer(RetainableByteBuffer buffer)

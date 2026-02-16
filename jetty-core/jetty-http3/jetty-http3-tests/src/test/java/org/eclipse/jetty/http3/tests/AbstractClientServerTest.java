@@ -36,6 +36,7 @@ import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -107,7 +108,7 @@ public class AbstractClientServerTest
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();
+        ByteBufferPool byteBufferPool = new ArrayByteBufferPool.Tracking();
         server = new Server(serverThreads, null, byteBufferPool);
 
         serverSslContextFactory = new SslContextFactory.Server();
@@ -140,7 +141,7 @@ public class AbstractClientServerTest
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         clientConnector.setExecutor(clientThreads);
-        ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();
+        ByteBufferPool byteBufferPool = new ArrayByteBufferPool.Tracking();
         clientConnector.setByteBufferPool(byteBufferPool);
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
 
@@ -188,21 +189,23 @@ public class AbstractClientServerTest
     }
 
     @AfterEach
-    public void dispose() throws Exception
+    public void dispose()
     {
         LifeCycle.stop(http3Client);
         LifeCycle.stop(httpClient);
 
         if (http3Client != null)
         {
-            ArrayByteBufferPool.Tracking clientByteBufferPool = (ArrayByteBufferPool.Tracking)http3Client.getClientConnector().getByteBufferPool();
-            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("client leaks: " + clientByteBufferPool.dumpLeaks(), clientByteBufferPool.getLeaks().size(), is(0)));
+            ByteBufferPool clientByteBufferPool = http3Client.getClientConnector().getByteBufferPool();
+            if (clientByteBufferPool instanceof ArrayByteBufferPool.Tracking tracking)
+                await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("client leaks: " + tracking.dumpLeaks(), tracking.getLeaks().size(), is(0)));
         }
 
         if (server != null)
         {
-            ArrayByteBufferPool.Tracking serverByteBufferPool = (ArrayByteBufferPool.Tracking)server.getByteBufferPool();
-            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("server leaks: " + serverByteBufferPool.dumpLeaks(), serverByteBufferPool.getLeaks().size(), is(0)));
+            ByteBufferPool serverByteBufferPool = server.getByteBufferPool();
+            if (serverByteBufferPool instanceof ArrayByteBufferPool.Tracking tracking)
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("server leaks: " + tracking.dumpLeaks(), tracking.getLeaks().size(), is(0)));
         }
 
         LifeCycle.stop(server);
