@@ -187,7 +187,8 @@ public abstract class AbstractResponseListener implements Response.Listener
 
     /**
      * Return the content as {@link InputStream}. A copy of the content is kept in memory to
-     * allow the following {@code getContent*() calls to read the same content.
+     * allow the following {@code getContent*()} and {@code takeContent*()} calls to read the
+     * content again.
      * @return the content as {@link InputStream}
      */
     public InputStream getContentAsInputStream()
@@ -197,7 +198,8 @@ public abstract class AbstractResponseListener implements Response.Listener
 
     /**
      * Take the content and return it as {@link InputStream}.
-     * Following {@code getContent*()} and {@code takeContent*()} calls will see an empty content.
+     * Following {@code getContent*()} and {@code takeContent*()} calls will see an empty
+     * content.
      * @return the content as {@link InputStream}
      */
     public InputStream takeContentAsInputStream()
