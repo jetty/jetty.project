@@ -276,6 +276,15 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             return "create index " + indexName + " on " + getSchemaTableName() + " (" + getExpiryTimeColumn() + ")";
         }
 
+        /**
+         * @deprecated There is no index over the session anymore.
+         */
+        @Deprecated(forRemoval = true, since = "12.1.6")
+        public String getCreateIndexOverSessionStatementAsString(String indexName)
+        {
+            return "";
+        }
+
         public String getAlterTableForMaxIntervalAsString()
         {
             if (_dbAdaptor == null)
