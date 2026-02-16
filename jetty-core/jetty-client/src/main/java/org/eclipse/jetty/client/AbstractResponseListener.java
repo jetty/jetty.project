@@ -186,28 +186,41 @@ public abstract class AbstractResponseListener implements Response.Listener
     }
 
     /**
+     * Return the content as {@link InputStream}. A copy of the content is kept in memory to
+     * allow the following {@code getContent*() calls to read the same content.
      * @return the content as {@link InputStream}
      */
     public InputStream getContentAsInputStream()
     {
-        if (content != null)
-            return new ByteArrayInputStream(content);
-        return Content.Source.asInputStream(getContentAsContentSource());
+        return new ByteArrayInputStream(getContent());
     }
 
     /**
+     * Take the content and return it as {@link InputStream}.
+     * Following {@code getContent*()} and {@code takeContent*()} calls will see an empty content.
+     * @return the content as {@link InputStream}
+     */
+    public InputStream takeContentAsInputStream()
+    {
+        return Content.Source.asInputStream(takeContentAsContentSource());
+    }
+
+    /**
+     * Take the content and return it as {@link Content.Source}.
+     * Following {@code getContent*()} and {@code takeContent*()} calls will see an empty content.
      * @return the content as {@link Content.Source}
      */
-    public Content.Source getContentAsContentSource()
+    public Content.Source takeContentAsContentSource()
     {
+        Content.Source result;
         // Take the DynamicCapacity's content source only if the content hasn't been already taken.
         if (content == null && accumulator instanceof RetainableByteBuffer.DynamicCapacity dynamic)
-        {
-            // When the content is taken, further getContent* calls will find an empty content.
-            content = BufferUtil.EMPTY_BYTES;
-            return dynamic.takeContentSource();
-        }
-        return Content.Source.from(ByteBuffer.wrap(getContent()));
+            result = dynamic.takeContentSource();
+        else
+            result = Content.Source.from(ByteBuffer.wrap(getContent()));
+        // When the content is taken, further getContent* and takeContent* calls will find an empty content.
+        content = BufferUtil.EMPTY_BYTES;
+        return result;
     }
 
     private byte[] take()

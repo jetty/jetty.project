@@ -60,30 +60,31 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        InputStream inputStream = listener.getContentAsInputStream();
+        try (InputStream inputStream = listener.takeContentAsInputStream())
+        {
+            // Modify the content so that we can check if there was a copy.
+            assertEquals(1, byteBuffers.size());
+            ByteBuffer byteBuffer = byteBuffers.get(0);
+            assertEquals(1, byteBuffer.remaining());
+            byte modified = 1;
+            byteBuffer.put(0, modified);
 
-        // Modify the content so that we can check if there was a copy.
-        assertEquals(1, byteBuffers.size());
-        ByteBuffer byteBuffer = byteBuffers.get(0);
-        assertEquals(1, byteBuffer.remaining());
-        byte modified = 1;
-        byteBuffer.put(0, modified);
-
-        // Read from the input stream.
-        int read = inputStream.read();
-        // If we read the modified value, there was no data copy.
-        assertEquals(modified, read);
-        // We must be at EOF.
-        assertEquals(-1, inputStream.read());
-        // Read again at EOF to be sure -1 is returned again.
-        assertEquals(-1, inputStream.read());
-        // Further getContent() calls see an empty byte[].
-        assertEquals(0, listener.getContent().length);
+            // Read from the input stream.
+            int read = inputStream.read();
+            // If we read the modified value, there was no data copy.
+            assertEquals(modified, read);
+            // We must be at EOF.
+            assertEquals(-1, inputStream.read());
+            // Read again at EOF to be sure -1 is returned again.
+            assertEquals(-1, inputStream.read());
+            // Further getContent() calls see an empty byte[].
+            assertEquals(0, listener.getContent().length);
+        }
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testContentIsCopiedWithInputStreamIfGetContentIsCalledFirst(Scenario scenario) throws Exception
+    public void testContentIsCopiedWithInputStream(Scenario scenario) throws Exception
     {
         start(scenario, new Handler.Abstract()
         {
@@ -108,28 +109,27 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        // Force copying the content into a byte[].
-        listener.getContent();
-        InputStream inputStream = listener.getContentAsInputStream();
+        try (InputStream inputStream = listener.getContentAsInputStream())
+        {
+            // Modify the content so that we can check if there was a copy.
+            assertEquals(1, byteBuffers.size());
+            ByteBuffer byteBuffer = byteBuffers.get(0);
+            assertEquals(1, byteBuffer.remaining());
+            byte modified = 1;
+            byteBuffer.put(0, modified);
 
-        // Modify the content so that we can check if there was a copy.
-        assertEquals(1, byteBuffers.size());
-        ByteBuffer byteBuffer = byteBuffers.get(0);
-        assertEquals(1, byteBuffer.remaining());
-        byte modified = 1;
-        byteBuffer.put(0, modified);
-
-        // Read from the input stream.
-        int read = inputStream.read();
-        // If we read the modified value, there was no data copy.
-        assertEquals(0, read);
-        // We must be at EOF.
-        assertEquals(-1, inputStream.read());
-        // Read again at EOF to be sure -1 is returned again.
-        assertEquals(-1, inputStream.read());
-        // Further getContent() calls see the content's byte[].
-        assertEquals(1, listener.getContent().length);
-        assertEquals(0, listener.getContent()[0]);
+            // Read from the input stream.
+            int read = inputStream.read();
+            // If we read the modified value, there was no data copy.
+            assertEquals(0, read);
+            // We must be at EOF.
+            assertEquals(-1, inputStream.read());
+            // Read again at EOF to be sure -1 is returned again.
+            assertEquals(-1, inputStream.read());
+            // Further getContent() calls see the content's byte[].
+            assertEquals(1, listener.getContent().length);
+            assertEquals(0, listener.getContent()[0]);
+        }
     }
 
     @ParameterizedTest
@@ -159,12 +159,14 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        InputStream inputStream = listener.getContentAsInputStream();
-        byte[] bytes = inputStream.readAllBytes();
+        try (InputStream inputStream = listener.takeContentAsInputStream())
+        {
+            byte[] bytes = inputStream.readAllBytes();
 
-        assertArrayEquals(content, bytes);
-        // Further getContent() calls see an empty byte[].
-        assertEquals(0, listener.getContent().length);
+            assertArrayEquals(content, bytes);
+            // Further getContent() calls see an empty byte[].
+            assertEquals(0, listener.getContent().length);
+        }
     }
 
     @ParameterizedTest
@@ -194,8 +196,6 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        // Force copying the content into a byte[].
-        listener.getContent();
         InputStream inputStream = listener.getContentAsInputStream();
         byte[] bytes = inputStream.readAllBytes();
 

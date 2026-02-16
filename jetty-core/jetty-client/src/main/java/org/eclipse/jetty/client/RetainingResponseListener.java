@@ -20,16 +20,13 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
  * content without copying it, up to a configurable number of bytes.</p>
  * <p>Instances of this class are not reusable, so one must be allocated for each request.</p>
  * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
- * via one of the {@code getContent*()} methods.</p>
- * <p>If {@link #getContent()} or {@link #getContentAsString()} is called first, then the content is copied
- * into a {@code byte[]} and all further calls will read this {@code byte[]}, while if
- * {@link #getContentAsInputStream()} or {@link #getContentAsContentSource()} is called first, the content will be
- * read without copying it, but further {@code getContent*()} calls will see an empty content.</p>
- * <p>ATTENTION: {@link #onSuccess(Response)} is overridden to avoid copying the contents into a {@code byte[]},
- * so this means the contents MUST be consumed by calling one of the {@code getContent*()} methods
- * otherwise the backing buffers will be leaked. If a streaming method like {@link #getContentAsInputStream()}
- * or {@link #getContentAsContentSource()} is called, the contents MUST be read until the end
- * (or closed/failed appropriately) otherwise the backing buffers of the unread content will also be leaked.</p>
+ * via one of the {@code getContent*()} or {@code takeContent*()} methods.</p>
+ * <p>IMPORTANT: {@link #onSuccess(Response)} is overridden to avoid copying the contents into a {@code byte[]},
+ * so this means the contents MUST be consumed by calling one of the {@code getContent*()} or
+ * {@code takeContent*()} methods otherwise the backing buffers may be leaked. If a streaming method like
+ * {@link #takeContentAsInputStream()} or {@link #takeContentAsContentSource()} is called, the content
+ * MUST be read until the end (or closed/failed appropriately) otherwise the backing buffers of the unread
+ * content may also be leaked.</p>
  */
 public abstract class RetainingResponseListener extends AbstractResponseListener
 {
