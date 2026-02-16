@@ -260,6 +260,7 @@ public class HttpParser
     private final HttpCompliance _complianceMode;
     private final Utf8StringBuilder _uri = new Utf8StringBuilder(INITIAL_URI_LENGTH);
     private final FieldCache _fieldCache = new FieldCache();
+    private final StringBuilder _string = new StringBuilder();
     private HttpField _field;
     private HttpHeader _header;
     private long _beginNanoTime;
@@ -286,7 +287,6 @@ public class HttpParser
     private boolean _cr;
     private ByteBuffer _contentChunk;
     private int _length;
-    private final StringBuilder _string = new StringBuilder();
     private ChunkSizeState _chunkSizeState = ChunkSizeState.SIZE;
     private boolean _chunkQuotedEscape = false;
 
@@ -2228,17 +2228,36 @@ public class HttpParser
         if (_state == State.CLOSE || _state == State.CLOSED)
             return;
 
-        setState(State.START);
-        _endOfContent = EndOfContent.UNKNOWN_CONTENT;
-        _contentLength = -1;
-        _hasContentLength = false;
-        _hasTransferEncoding = false;
-        _contentPosition = 0;
+        _uri.reset();
+        _string.setLength(0);
+        _field = null;
+        _header = null;
+        _beginNanoTime = 0;
+        _headerString = null;
+        _valueString = null;
         _responseStatus = 0;
-        _contentChunk = null;
         _headerBytes = 0;
         _parsedHost = null;
         _headerComplete = false;
+        _state = State.START;
+        _fieldState = FieldState.FIELD;
+        _eof = false;
+        _method = null;
+        _methodString = null;
+        _version = null;
+        _endOfContent = null;
+        _hasContentLength = false;
+        _hasTransferEncoding = false;
+        _contentLength = -1;
+        _contentPosition = 0;
+        _chunkLength = 0;
+        _chunkOffset = 0;
+        _headResponse = false;
+        _cr = false;
+        _contentChunk = null;
+        _length = 0;
+        _chunkSizeState = ChunkSizeState.SIZE;
+        _chunkQuotedEscape = false;
     }
 
     public void startTunnel()
