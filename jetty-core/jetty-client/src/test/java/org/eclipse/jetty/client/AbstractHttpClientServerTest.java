@@ -21,7 +21,6 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -108,13 +107,10 @@ public abstract class AbstractHttpClientServerTest
         if (client != null)
         {
             LifeCycle.stop(client);
-            ByteBufferPool byteBufferPool = client.getClientConnector().getByteBufferPool();
-            if (byteBufferPool instanceof ArrayByteBufferPool.Tracking trackingPool)
-            {
-                await().atMost(5, java.util.concurrent.TimeUnit.SECONDS).untilAsserted(() ->
-                    assertThat("client leaks: " + trackingPool.dumpLeaks(), trackingPool.getLeaks().size(), is(0))
-                );
-            }
+            ArrayByteBufferPool.Tracking clientBufferPool = (ArrayByteBufferPool.Tracking)client.getClientConnector().getByteBufferPool();
+            await().atMost(5, java.util.concurrent.TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat("client leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0))
+            );
         }
 
         if (server != null)
