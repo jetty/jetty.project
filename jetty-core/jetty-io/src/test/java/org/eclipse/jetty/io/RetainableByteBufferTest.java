@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -55,6 +56,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1539,5 +1541,72 @@ public class RetainableByteBufferTest
         assertThat(buffer.size(), is(size));
 
         assertTrue(buffer.release());
+    }
+
+    @Test
+    public void testNestedDynamicCapacityClear()
+    {
+        ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
+        ByteBufferPool.Sized sized = new ByteBufferPool.Sized(pool, false, 10);
+        RetainableByteBuffer.DynamicCapacity root = new RetainableByteBuffer.DynamicCapacity(sized, 1024, 0);
+
+        Mutable mutable1 = pool.acquire(1, false);
+        mutable1.putShort((short)1);
+        root.add(mutable1);
+        RetainableByteBuffer.DynamicCapacity sub = new RetainableByteBuffer.DynamicCapacity(sized, 1024, 0);
+        Mutable mutable2 = pool.acquire(2, false);
+        mutable2.putShort((short)2);
+        sub.add(mutable2);
+        assertThat(sub.remaining(), is(2));
+        mutable2.retain();
+        root.add(sub);
+        Mutable mutable3 = pool.acquire(3, false);
+        mutable3.putShort((short)3);
+        root.add(mutable3);
+        assertThat(root.remaining(), is(6));
+        root.clear();
+        assertThat(root.remaining(), is(0));
+        assertThat(mutable2.release(), is(true));
+
+        assertThat(pool.getLeaks().size(), is(0));
+    }
+
+    @Test
+    public void testNestedDynamicCapacityTakeContentSource()
+    {
+        ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
+        ByteBufferPool.Sized sized = new ByteBufferPool.Sized(pool, false, 10);
+        RetainableByteBuffer.DynamicCapacity root = new RetainableByteBuffer.DynamicCapacity(sized, 1024, 0);
+
+        Mutable mutable1 = pool.acquire(1, false);
+        mutable1.putShort((short)1);
+        root.add(mutable1);
+        RetainableByteBuffer.DynamicCapacity sub = new RetainableByteBuffer.DynamicCapacity(sized, 1024, 0);
+        Mutable mutable2 = pool.acquire(2, false);
+        mutable2.putShort((short)2);
+        sub.add(mutable2);
+        assertThat(sub.remaining(), is(2));
+        mutable2.retain();
+        root.add(sub);
+        Mutable mutable3 = pool.acquire(3, false);
+        mutable3.putShort((short)3);
+        root.add(mutable3);
+        assertThat(root.remaining(), is(6));
+
+        Content.Source source = root.takeContentSource();
+        assertThat(root.remaining(), is(0));
+        for (int i = 0; i < 3; i++)
+        {
+            Content.Chunk read = source.read();
+            assertInstanceOf(RetainableByteBuffer.FixedCapacity.class, read);
+            assertFalse(read.isLast());
+            read.release();
+        }
+        Content.Chunk last = source.read();
+        assertTrue(last.isLast());
+        assertTrue(last.isEmpty());
+
+        assertThat(mutable2.release(), is(true));
+        assertThat(pool.getLeaks().size(), is(0));
     }
 }
