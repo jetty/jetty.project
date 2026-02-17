@@ -44,6 +44,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -830,6 +831,24 @@ public class HttpFieldsTest
         assertEquals(HttpField.getValueParameters(list.get(3), null), "two");
         assertEquals(HttpField.getValueParameters(list.get(4), null), "three");
         assertEquals(HttpField.getValueParameters(list.get(5), null), "four");
+    }
+
+    private static Stream<Arguments> immutableFieldsForQualityCSV()
+    {
+        String value = "en-US;q=0.8,en;q=0.6";
+        return Stream.of(
+            Arguments.of("from", HttpFields.from(new HttpField(HttpHeader.ACCEPT_LANGUAGE, value))),
+            Arguments.of("buildAsImmutable", HttpFields.build().add(HttpHeader.ACCEPT_LANGUAGE, value).asImmutable())
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("immutableFieldsForQualityCSV")
+    public void testImmutableGetQualityCSV(String scenario, HttpFields fields)
+    {
+        List<String> list = assertDoesNotThrow(() -> fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE), scenario);
+        assertEquals(HttpField.getValueParameters(list.get(0), null), "en-US");
+        assertEquals(HttpField.getValueParameters(list.get(1), null), "en");
     }
 
     @Test
