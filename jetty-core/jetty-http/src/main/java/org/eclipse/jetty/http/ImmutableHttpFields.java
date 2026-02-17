@@ -43,7 +43,7 @@ class ImmutableHttpFields implements HttpFields
 
     protected ImmutableHttpFields(HttpField[] fields, int size)
     {
-        this(null, null, fields, size);
+        this(null, () -> null, fields, size);
     }
 
     ImmutableHttpFields(HttpCompliance httpCompliance, Supplier<ComplianceViolation.Listener> listenerSupplier, HttpField[] fields, int size)
