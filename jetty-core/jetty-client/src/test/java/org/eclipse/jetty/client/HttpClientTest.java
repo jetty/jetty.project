@@ -2168,7 +2168,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
             {
                 int capacity = (int)request.getHeaders().getLongField("X-Capacity");
-                // Overflow the max request headers size, should generate a 500.
+                // Overflow the max response headers size, should generate a 500.
                 response.getHeaders().put("X-Large", "A".repeat(3 * capacity));
             }
         });

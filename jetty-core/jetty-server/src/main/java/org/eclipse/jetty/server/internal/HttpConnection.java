@@ -811,11 +811,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _content = content;
                 _lastContent = last;
                 _callback = callback;
-                if (_header != null)
-                {
-                    _header.release();
-                    _header = null;
-                }
+                // Cannot call reset unless we are
+                // finished with the previous send.
+                assert _header == null;
+                assert _chunk == null;
+                _shutdownOut = false;
                 if (getConnector().isShutdown())
                     _generator.setPersistent(false);
                 return true;
@@ -1026,17 +1026,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
-        public void onFailure(final Throwable x)
-        {
-            Callback callback = takeCallbackAndReset();
-            if (callback != null)
-                callback.failed(x);
-        }
-
-        @Override
         protected void onCompleteFailure(Throwable cause)
         {
+            // Failing the callback may re-enter SendCallback to write the error
+            // response, release the buffers used previously in the failed response.
+            Callback callback = takeCallbackAndReset();
             release();
+            if (callback != null)
+                callback.failed(cause);
         }
 
         @Override
