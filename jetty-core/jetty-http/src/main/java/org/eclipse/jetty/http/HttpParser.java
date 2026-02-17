@@ -276,7 +276,7 @@ public class HttpParser
     private HttpMethod _method;
     private String _methodString;
     private HttpVersion _version;
-    private EndOfContent _endOfContent;
+    private EndOfContent _endOfContent = EndOfContent.UNKNOWN_CONTENT;
     private boolean _hasContentLength;
     private boolean _hasTransferEncoding;
     private long _contentLength = -1;
@@ -561,8 +561,7 @@ public class HttpParser
         if (_maxHeaderBytes <= 0)
             return;
         if (_state.ordinal() <= State.HEADER.ordinal() ||
-            (_state == State.CHUNK_SIZE && _chunkSizeState != ChunkSizeState.SIZE) ||
-            _state == State.TRAILER)
+            _state == State.CHUNK_SIZE || _state == State.TRAILER)
         {
             _headerBytes += delta;
             if (_headerBytes > _maxHeaderBytes)
@@ -1966,127 +1965,8 @@ public class HttpParser
 
                 case CHUNK_SIZE:
                 {
-                    while (_state == State.CHUNK_SIZE && buffer.hasRemaining())
-                    {
-                        HttpTokens.Token t = next(buffer);
-                        if (t == null)
-                            break;
-
-                        switch (_chunkSizeState)
-                        {
-                            case SIZE ->
-                            {
-                                if (t.getType() == HttpTokens.Type.EOL)
-                                {
-                                    if (chunkSizeEnd(t))
-                                        return true;
-                                }
-                                else if (t.isHexDigit())
-                                {
-                                    if (_chunkLength > MAX_CHUNK_LENGTH)
-                                        throw new HttpException.RuntimeException(HttpStatus.PAYLOAD_TOO_LARGE_413);
-                                    _chunkLength = _chunkLength * 16 + t.getHexDigit();
-                                }
-                                else if (isBWS(t))
-                                    setChunkSizeState(ChunkSizeState.EXT_BWS);
-                                else if (t.getChar() == ';')
-                                    setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_BEFORE);
-                                else
-                                    throw new IllegalCharacterException(_state, t, buffer);
-                            }
-                            case EXT_BWS ->
-                            {
-                                if (t.getChar() == ';')
-                                    setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_BEFORE);
-                                else if (!isBWS(t))
-                                    throw new IllegalCharacterException(_state, t, buffer);
-                            }
-                            case EXT_NAME_BWS_BEFORE ->
-                            {
-                                if (isTchar(t))
-                                    setChunkSizeState(ChunkSizeState.EXT_NAME);
-                                else if (!isBWS(t))
-                                    throw new IllegalCharacterException(_state, t, buffer);
-                            }
-                            case EXT_NAME ->
-                            {
-                                if (t.getType() == HttpTokens.Type.EOL)
-                                {
-                                    if (chunkSizeEnd(t))
-                                        return true;
-                                }
-                                else if (t.getChar() == ';')
-                                    setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_BEFORE);
-                                else if (isBWS(t))
-                                    setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_AFTER);
-                                else if (t.getChar() == '=')
-                                    setChunkSizeState(ChunkSizeState.EXT_VALUE_BWS_BEFORE);
-                                else if (!isTchar(t))
-                                    throw new IllegalCharacterException(_state, t, buffer);
-                            }
-                            case EXT_NAME_BWS_AFTER ->
-                            {
-                                if (t.getChar() == ';')
-                                    setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_BEFORE);
-                                else if (t.getChar() == '=')
-                                    setChunkSizeState(ChunkSizeState.EXT_VALUE_BWS_BEFORE);
-                                else if (!isBWS(t))
-                                    throw new IllegalCharacterException(_state, t, buffer);
-                            }
-                            case EXT_VALUE_BWS_BEFORE ->
-                            {
-                                if (t.getChar() == '"')
-                                    setChunkSizeState(ChunkSizeState.EXT_VALUE_OPEN_QUOTE);
-                                else if (isTchar(t))
-                                    setChunkSizeState(ChunkSizeState.EXT_VALUE);
-                                else if (!isBWS(t))
-                                    throw new IllegalCharacterException(_state, t, buffer);
-                            }
-                            case EXT_VALUE_OPEN_QUOTE ->
-                            {
-                                if (_chunkQuotedEscape)
-                                {
-                                    if (!isQuotedPair(t))
-                                        throw new IllegalCharacterException(_state, t, buffer);
-                                    _chunkQuotedEscape = false;
-                                }
-                                else if (t.getChar() == '\\')
-                                    _chunkQuotedEscape = true;
-                                else if (t.getChar() == '"')
-                                    setChunkSizeState(ChunkSizeState.EXT_VALUE_CLOSE_QUOTE);
-                                else if (!isQdText(t))
-                                    throw new IllegalCharacterException(_state, t, buffer);
-                            }
-                            case EXT_VALUE ->
-                            {
-                                if (t.getType() == HttpTokens.Type.EOL)
-                                {
-                                    if (chunkSizeEnd(t))
-                                        return true;
-                                }
-                                else if (isBWS(t))
-                                    setChunkSizeState(ChunkSizeState.EXT_BWS);
-                                else if (t.getChar() == ';')
-                                    setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_BEFORE);
-                                else if (!isTchar(t))
-                                    throw new IllegalCharacterException(_state, t, buffer);
-                            }
-                            case EXT_VALUE_CLOSE_QUOTE ->
-                            {
-                                if (t.getType() == HttpTokens.Type.EOL)
-                                {
-                                    if (chunkSizeEnd(t))
-                                        return true;
-                                }
-                                else if (isBWS(t))
-                                    setChunkSizeState(ChunkSizeState.EXT_BWS);
-                                else if (t.getChar() == ';')
-                                    setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_BEFORE);
-                                else
-                                    throw new IllegalCharacterException(_state, t, buffer);
-                            }
-                        }
-                    }
+                    if (parseChunkSize(buffer))
+                        return true;
                     break;
                 }
 
@@ -2141,6 +2021,132 @@ public class HttpParser
         return false;
     }
 
+    private boolean parseChunkSize(ByteBuffer buffer)
+    {
+        while (_state == State.CHUNK_SIZE && buffer.hasRemaining())
+        {
+            HttpTokens.Token t = next(buffer);
+            if (t == null)
+                break;
+
+            switch (_chunkSizeState)
+            {
+                case SIZE ->
+                {
+                    if (t.getType() == HttpTokens.Type.EOL)
+                    {
+                        if (chunkSizeEnd(t))
+                            return true;
+                    }
+                    else if (t.isHexDigit())
+                    {
+                        if (_chunkLength > MAX_CHUNK_LENGTH)
+                            throw new HttpException.RuntimeException(HttpStatus.PAYLOAD_TOO_LARGE_413);
+                        _chunkLength = _chunkLength * 16 + t.getHexDigit();
+                    }
+                    else if (isBWS(t))
+                        setChunkSizeState(ChunkSizeState.EXT_BWS);
+                    else if (t.getChar() == ';')
+                        setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_BEFORE);
+                    else
+                        throw new IllegalCharacterException(_state, t, buffer);
+                }
+                case EXT_BWS ->
+                {
+                    if (t.getChar() == ';')
+                        setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_BEFORE);
+                    else if (!isBWS(t))
+                        throw new IllegalCharacterException(_state, t, buffer);
+                }
+                case EXT_NAME_BWS_BEFORE ->
+                {
+                    if (isTchar(t))
+                        setChunkSizeState(ChunkSizeState.EXT_NAME);
+                    else if (!isBWS(t))
+                        throw new IllegalCharacterException(_state, t, buffer);
+                }
+                case EXT_NAME ->
+                {
+                    if (t.getType() == HttpTokens.Type.EOL)
+                    {
+                        if (chunkSizeEnd(t))
+                            return true;
+                    }
+                    else if (t.getChar() == ';')
+                        setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_BEFORE);
+                    else if (isBWS(t))
+                        setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_AFTER);
+                    else if (t.getChar() == '=')
+                        setChunkSizeState(ChunkSizeState.EXT_VALUE_BWS_BEFORE);
+                    else if (!isTchar(t))
+                        throw new IllegalCharacterException(_state, t, buffer);
+                }
+                case EXT_NAME_BWS_AFTER ->
+                {
+                    if (t.getChar() == ';')
+                        setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_BEFORE);
+                    else if (t.getChar() == '=')
+                        setChunkSizeState(ChunkSizeState.EXT_VALUE_BWS_BEFORE);
+                    else if (!isBWS(t))
+                        throw new IllegalCharacterException(_state, t, buffer);
+                }
+                case EXT_VALUE_BWS_BEFORE ->
+                {
+                    if (t.getChar() == '"')
+                        setChunkSizeState(ChunkSizeState.EXT_VALUE_OPEN_QUOTE);
+                    else if (isTchar(t))
+                        setChunkSizeState(ChunkSizeState.EXT_VALUE);
+                    else if (!isBWS(t))
+                        throw new IllegalCharacterException(_state, t, buffer);
+                }
+                case EXT_VALUE_OPEN_QUOTE ->
+                {
+                    if (_chunkQuotedEscape)
+                    {
+                        if (!isQuotedPair(t))
+                            throw new IllegalCharacterException(_state, t, buffer);
+                        _chunkQuotedEscape = false;
+                    }
+                    else if (t.getChar() == '\\')
+                        _chunkQuotedEscape = true;
+                    else if (t.getChar() == '"')
+                        setChunkSizeState(ChunkSizeState.EXT_VALUE_CLOSE_QUOTE);
+                    else if (!isQdText(t))
+                        throw new IllegalCharacterException(_state, t, buffer);
+                }
+                case EXT_VALUE ->
+                {
+                    if (t.getType() == HttpTokens.Type.EOL)
+                    {
+                        if (chunkSizeEnd(t))
+                            return true;
+                    }
+                    else if (isBWS(t))
+                        setChunkSizeState(ChunkSizeState.EXT_BWS);
+                    else if (t.getChar() == ';')
+                        setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_BEFORE);
+                    else if (!isTchar(t))
+                        throw new IllegalCharacterException(_state, t, buffer);
+                }
+                case EXT_VALUE_CLOSE_QUOTE ->
+                {
+                    if (t.getType() == HttpTokens.Type.EOL)
+                    {
+                        if (chunkSizeEnd(t))
+                            return true;
+                    }
+                    else if (isBWS(t))
+                        setChunkSizeState(ChunkSizeState.EXT_BWS);
+                    else if (t.getChar() == ';')
+                        setChunkSizeState(ChunkSizeState.EXT_NAME_BWS_BEFORE);
+                    else
+                        throw new IllegalCharacterException(_state, t, buffer);
+                }
+            }
+        }
+        return false;
+    }
+
     private boolean chunkSizeEnd(HttpTokens.Token t)
     {
         if (t == EOL_LF)
@@ -2158,11 +2164,23 @@ public class HttpParser
         }
     }
 
+    /**
+     * Bad white space is defined in RFC-9110[5.6.3].
+     *
+     * @param t the token
+     * @return whether the token is a bad white space
+     */
     private boolean isBWS(HttpTokens.Token t)
     {
         return t.getType() == HttpTokens.Type.SPACE || t.getType() == HttpTokens.Type.HTAB;
     }
 
+    /**
+     * Token and token characters are defined in RFC-9110[5.6.2].
+     *
+     * @param t the token
+     * @return whether the token is a token character
+     */
     private boolean isTchar(HttpTokens.Token t)
     {
         return switch (t.getType())
@@ -2172,6 +2190,12 @@ public class HttpParser
         };
     }
 
+    /**
+     * Text inside quotes (qdtext) is defined in RFC-9110[5.6.4].
+     *
+     * @param t the token
+     * @return whether the token is quoted text
+     */
     private boolean isQdText(HttpTokens.Token t)
     {
         return switch (t.getType())
@@ -2185,6 +2209,12 @@ public class HttpParser
         };
     }
 
+    /**
+     * Escaped text inside quotes (quoted-pair) is defined in RFC-9110[5.6.4].
+     *
+     * @param t the token
+     * @return whether the token is a quoted pair
+     */
     private boolean isQuotedPair(HttpTokens.Token t)
     {
         return switch (t.getType())
@@ -2245,7 +2275,7 @@ public class HttpParser
         _method = null;
         _methodString = null;
         _version = null;
-        _endOfContent = null;
+        _endOfContent = EndOfContent.UNKNOWN_CONTENT;
         _hasContentLength = false;
         _hasTransferEncoding = false;
         _contentLength = -1;
