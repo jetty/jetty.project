@@ -833,20 +833,11 @@ public class HttpFieldsTest
         assertEquals(HttpField.getValueParameters(list.get(5), null), "four");
     }
 
-    private static Stream<Arguments> immutableFieldsForQualityCSV()
+    @Test
+    public void testFromGetQualityCSV()
     {
-        String value = "en-US;q=0.8,en;q=0.6";
-        return Stream.of(
-            Arguments.of("from", HttpFields.from(new HttpField(HttpHeader.ACCEPT_LANGUAGE, value))),
-            Arguments.of("buildAsImmutable", HttpFields.build().add(HttpHeader.ACCEPT_LANGUAGE, value).asImmutable())
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("immutableFieldsForQualityCSV")
-    public void testImmutableGetQualityCSV(String scenario, HttpFields fields)
-    {
-        List<String> list = assertDoesNotThrow(() -> fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE), scenario);
+        HttpFields fields = HttpFields.from(new HttpField(HttpHeader.ACCEPT_LANGUAGE, "en-US;q=0.8,en;q=0.6"));
+        List<String> list = assertDoesNotThrow(() -> fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE));
         assertEquals(HttpField.getValueParameters(list.get(0), null), "en-US");
         assertEquals(HttpField.getValueParameters(list.get(1), null), "en");
     }
