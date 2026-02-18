@@ -276,6 +276,10 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
             return "create index " + indexName + " on " + getSchemaTableName() + " (" + getExpiryTimeColumn() + ")";
         }
 
+        /**
+         * @deprecated There is no index over the session anymore.
+         */
+        @Deprecated(forRemoval = true, since = "12.1.6")
         public String getCreateIndexOverSessionStatementAsString(String indexName)
         {
             return "create index " + indexName + " on " + getSchemaTableName() + " (" + getIdColumn() + ", " + getContextPathColumn() + ")";
@@ -562,25 +566,22 @@ public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
                 }
                 //make some indexes on the JettySessions table
                 String index1 = "idx_" + getTableName() + "_expiry";
-                String index2 = "idx_" + getTableName() + "_session";
 
                 boolean index1Exists = false;
-                boolean index2Exists = false;
                 try (ResultSet result = metaData.getIndexInfo(catalogName, schemaName, tableName, false, true))
                 {
                     while (result.next())
                     {
                         String idxName = result.getString("INDEX_NAME");
                         if (index1.equalsIgnoreCase(idxName))
+                        {
                             index1Exists = true;
-                        else if (index2.equalsIgnoreCase(idxName))
-                            index2Exists = true;
+                            break;
+                        }
                     }
                 }
                 if (!index1Exists)
                     statement.executeUpdate(getCreateIndexOverExpiryStatementAsString(index1));
-                if (!index2Exists)
-                    statement.executeUpdate(getCreateIndexOverSessionStatementAsString(index2));
             }
         }
 
