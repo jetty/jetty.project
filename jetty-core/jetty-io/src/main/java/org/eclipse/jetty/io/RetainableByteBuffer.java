@@ -2428,10 +2428,7 @@ public interface RetainableByteBuffer extends Retainable
                         protected Action process()
                         {
                             if (_index == _buffers.size())
-                            {
-                                clear();
                                 return Action.SUCCEEDED;
-                            }
                             RetainableByteBuffer buffer = _buffers.get(_index++);
                             boolean lastWritten = last && (_index == _buffers.size());
                             buffer.writeTo(sink, lastWritten, this);
