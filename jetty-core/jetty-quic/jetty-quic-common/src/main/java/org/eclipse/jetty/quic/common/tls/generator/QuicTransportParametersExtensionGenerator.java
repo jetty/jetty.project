@@ -22,6 +22,8 @@ import org.eclipse.jetty.tls.ext.Extension;
 
 public class QuicTransportParametersExtensionGenerator implements ExtensionGenerator
 {
+    private final TransportParametersGenerator generator = new TransportParametersGenerator();
+
     @Override
     public int type()
     {
@@ -38,10 +40,7 @@ public class QuicTransportParametersExtensionGenerator implements ExtensionGener
     {
         accumulator.putShort((short)extension.code());
         TransportParameters parameters = extension.transportParameters();
-        RetainableByteBuffer.DynamicCapacity parametersAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        int totalLength = TransportParametersGenerator.generate(parametersAccumulator, parameters);
-        accumulator.putShort((short)totalLength);
-        accumulator.add(parametersAccumulator);
-        return 2 + 2 + totalLength;
+        int totalLength = generator.generate(accumulator, parameters);
+        return 2 + totalLength;
     }
 }

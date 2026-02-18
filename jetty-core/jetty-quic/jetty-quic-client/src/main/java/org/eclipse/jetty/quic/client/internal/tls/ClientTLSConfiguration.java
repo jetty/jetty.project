@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.quic.client.internal.tls;
 
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.common.ZeroRTTStore;
 import org.eclipse.jetty.quic.common.tls.TLSConfiguration;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -22,14 +24,17 @@ public final class ClientTLSConfiguration extends TLSConfiguration
 {
     private final QuicClientQuicConfiguration quicConfiguration;
     private final SslContextFactory.Client sslContextFactory;
+    private final ZeroRTTStore zeroRTTStore;
     private String serverName;
     private TransportParameters transportParameters;
     private byte[] inputKeyMaterial;
+    private RetainableByteBuffer earlyData;
 
-    public ClientTLSConfiguration(QuicClientQuicConfiguration quicConfiguration, SslContextFactory.Client sslContextFactory)
+    public ClientTLSConfiguration(QuicClientQuicConfiguration quicConfiguration, SslContextFactory.Client sslContextFactory, ZeroRTTStore zeroRTTStore)
     {
         this.quicConfiguration = quicConfiguration;
         this.sslContextFactory = sslContextFactory;
+        this.zeroRTTStore = zeroRTTStore;
     }
 
     public QuicClientQuicConfiguration getClientQuicConfiguration()
@@ -42,9 +47,24 @@ public final class ClientTLSConfiguration extends TLSConfiguration
         return sslContextFactory;
     }
 
+    public ZeroRTTStore getZeroRTTStore()
+    {
+        return zeroRTTStore;
+    }
+
     public String getServerName()
     {
         return serverName;
+    }
+
+    public RetainableByteBuffer getEarlyData()
+    {
+        return earlyData;
+    }
+
+    public void setEarlyData(RetainableByteBuffer earlyData)
+    {
+        this.earlyData = earlyData;
     }
 
     public void setServerName(String serverName)

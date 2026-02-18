@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -37,7 +36,6 @@ import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.packets.RetryPacket;
-import org.eclipse.jetty.quic.common.packets.VersionNegotiationPacket;
 import org.eclipse.jetty.quic.common.tls.HandshakeData;
 import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.quic.server.internal.tls.ServerTLSEngine;
@@ -98,6 +96,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     {
         PacketProtector packetProtector = getTLSEngine().getPacketProtector();
         packetProtector.allocateInitialKeys(getQuicVersion(), dstConnectionId);
+        getTLSEngine().initialize(getQuicVersion());
     }
 
     @Override
@@ -168,24 +167,6 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 
     private void processInitialPacket(InitialPacket packet) throws Exception
     {
-        QuicVersion clientQuicVersion = packet.quicVersion();
-        List<QuicVersion> serverQuicVersions = getQuicConfiguration().getQuicVersions();
-        if (!serverQuicVersions.contains(clientQuicVersion))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("unsupported quic version {} in {} on {}", clientQuicVersion, packet, this);
-
-            VersionNegotiationPacket versionNegotiationPacket = new VersionNegotiationPacket(getDestinationConnectionId(), getSourceConnectionId(), serverQuicVersions);
-            packet(versionNegotiationPacket);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("dropping {} on {}", packet, this);
-            return;
-        }
-
-        setQuicVersion(clientQuicVersion);
-        getTLSEngine().getTLSConfiguration().setQuicVersion(getQuicVersion());
-
         byte[] token = packet.token();
         if (token.length == 0)
         {
@@ -196,12 +177,12 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
             originalDestinationConnectionId = packet.destinationConnectionId();
 
             token = getQuicConfiguration().getTokenFactory().newRetryToken(getRemoteSocketAddress(), originalDestinationConnectionId);
-            RetryPacket retryPacket = new RetryPacket(clientQuicVersion, getDestinationConnectionId(), getSourceConnectionId(), token, null);
+            RetryPacket retryPacket = new RetryPacket(packet.quicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, null);
             RetainableByteBuffer.Mutable retryAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), false, -1, 0, 0);
             generateRetryPacket(retryAccumulator, retryPacket);
-            byte[] integrity = getTLSEngine().getPacketProtector().generateRetryIntegrity(retryAccumulator, originalDestinationConnectionId);
+            byte[] integrity = getTLSEngine().getPacketProtector().createRetryIntegrity(retryAccumulator, originalDestinationConnectionId);
             retryPacket = retryPacket.withIntegrity(integrity);
-            packet(retryPacket);
+            packet(retryPacket, Callback.NOOP);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("dropping {} on {}", packet, this);

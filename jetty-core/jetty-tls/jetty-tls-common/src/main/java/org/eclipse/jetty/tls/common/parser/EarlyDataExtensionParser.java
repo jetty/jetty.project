@@ -107,7 +107,7 @@ public class EarlyDataExtensionParser implements ExtensionParser
     private int maxDataComplete()
     {
         int result = 2 + totalLength;
-        long max = totalLength == 0 ? -1 : maxData;
+        long max = maxData;
         state = State.TOTAL_LENGTH;
         totalLength = 0;
         maxData = 0;

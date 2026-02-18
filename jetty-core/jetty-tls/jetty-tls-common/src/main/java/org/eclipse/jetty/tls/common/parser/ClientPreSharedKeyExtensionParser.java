@@ -145,7 +145,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                     if (remaining > 3)
                     {
                         obfuscatedTicketAge = byteBuffer.getInt();
-                        identities.add(new PreSharedKeyIdentity(identity, obfuscatedTicketAge));
+                        identities.add(new PreSharedKeyIdentity(identity, obfuscatedTicketAge, null));
                         identity = null;
                         obfuscatedTicketAge = 0;
                         identitiesLength -= 4;
@@ -164,7 +164,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                     obfuscatedTicketAge += b << (8 * cursor);
                     if (cursor == 0)
                     {
-                        identities.add(new PreSharedKeyIdentity(identity, obfuscatedTicketAge));
+                        identities.add(new PreSharedKeyIdentity(identity, obfuscatedTicketAge, null));
                         identity = null;
                         obfuscatedTicketAge = 0;
                         identitiesLength -= 4;
@@ -214,7 +214,12 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                         {
                             if (identities.size() != binders.size())
                                 throw new IllegalStateException("invalid number of identities and binders");
-                            ClientPreSharedKeyExtension extension = new ClientPreSharedKeyExtension(List.copyOf(identities), List.copyOf(binders));
+                            for (int i = 0; i < identities.size(); ++i)
+                            {
+                                PreSharedKeyIdentity identity = identities.get(i);
+                                identities.set(i, identity.withBinder(binders.get(i)));
+                            }
+                            ClientPreSharedKeyExtension extension = new ClientPreSharedKeyExtension(List.copyOf(identities), true);
                             identities.clear();
                             binders.clear();
                             state = State.TOTAL_LENGTH;

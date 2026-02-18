@@ -16,8 +16,8 @@ package org.eclipse.jetty.tls.common;
 import java.security.MessageDigest;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
-import java.util.Queue;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -38,7 +38,7 @@ public class TranscriptHash
 {
     private static final Logger LOG = LoggerFactory.getLogger(TranscriptHash.class);
 
-    private final Queue<Entry> entries = new ArrayDeque<>();
+    private final Deque<Entry> entries = new ArrayDeque<>();
     private final MessagesGenerator inputGenerator;
     private final MessagesGenerator outputGenerator;
     private final RetainableByteBuffer.Mutable accumulator;
@@ -111,6 +111,11 @@ public class TranscriptHash
         if (LOG.isDebugEnabled())
             LOG.debug("clear on {}", this);
         entries.clear();
+    }
+
+    public void removeLast()
+    {
+        entries.pollLast();
     }
 
     public void dispose()

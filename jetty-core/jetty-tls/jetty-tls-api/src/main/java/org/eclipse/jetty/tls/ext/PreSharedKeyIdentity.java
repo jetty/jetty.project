@@ -16,17 +16,18 @@ package org.eclipse.jetty.tls.ext;
 import java.util.Arrays;
 import java.util.Objects;
 
-public record PreSharedKeyIdentity(byte[] identity, int obfuscatedTicketAge)
+public record PreSharedKeyIdentity(byte[] identity, int obfuscatedTicketAge, byte[] binder)
 {
     public PreSharedKeyIdentity
     {
         Objects.requireNonNull(identity);
+        Objects.requireNonNull(binder);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(Arrays.hashCode(identity()), obfuscatedTicketAge());
+        return Objects.hash(Arrays.hashCode(identity()), obfuscatedTicketAge(), Arrays.hashCode(binder()));
     }
 
     @Override
@@ -34,8 +35,15 @@ public record PreSharedKeyIdentity(byte[] identity, int obfuscatedTicketAge)
     {
         if (obj == this)
             return true;
-        if (obj instanceof PreSharedKeyIdentity(byte[] thatIdentity, int thatObfuscatedTicketAge))
-            return Arrays.equals(identity(), thatIdentity) && obfuscatedTicketAge() == thatObfuscatedTicketAge;
+        if (obj instanceof PreSharedKeyIdentity that)
+            return Arrays.equals(identity(), that.identity()) &&
+                obfuscatedTicketAge() == that.obfuscatedTicketAge() &&
+                Arrays.equals(binder(), that.binder());
         return false;
+    }
+
+    public PreSharedKeyIdentity withBinder(byte[] binder)
+    {
+        return new PreSharedKeyIdentity(identity(), obfuscatedTicketAge(), binder);
     }
 }

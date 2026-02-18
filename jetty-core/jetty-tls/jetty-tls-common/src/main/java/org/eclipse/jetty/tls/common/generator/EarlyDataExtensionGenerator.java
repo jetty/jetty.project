@@ -35,7 +35,7 @@ public class EarlyDataExtensionGenerator implements ExtensionGenerator
     {
         accumulator.putShort((short)extension.code());
         long maxData = extension.maxData();
-        if (maxData >= 0)
+        if (maxData > 0)
         {
             accumulator.putShort((short)4);
             accumulator.putInt((int)maxData);

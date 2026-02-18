@@ -39,7 +39,7 @@ public class ClientHelloMessageGenerator extends MessageGenerator
 
     private void generate(RetainableByteBuffer.Mutable accumulator, ClientHelloMessage message)
     {
-        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getBufferPool(), true, -1, 0, 0);
+        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), true, -1, 0, 0);
         int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
         if (extensionsLength > 0xFFFF)
             throw new IllegalStateException("could not generate ClientHello, extensions too long");

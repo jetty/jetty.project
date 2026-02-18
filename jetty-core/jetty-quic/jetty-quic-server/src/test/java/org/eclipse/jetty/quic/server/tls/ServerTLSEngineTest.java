@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
@@ -55,7 +56,7 @@ public class ServerTLSEngineTest
     private List<Message> outMessages;
 
     @BeforeEach
-    public void prepare()
+    public void prepare() throws Exception
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers packetNumbers = new PacketNumbers();
@@ -66,6 +67,8 @@ public class ServerTLSEngineTest
         sslContextFactory.setKeyStorePassword("storepwd");
         ServerTLSConfiguration configuration = new ServerTLSConfiguration(new QuicServerQuicConfiguration(), sslContextFactory);
         engine = new ServerTLSEngine(packetProtector, configuration);
+        // TODO: parametrize on the version.
+        engine.initialize(QuicVersion.V1);
 
         outMessages = new ArrayList<>();
         engine.addMessageListener((_, msgs, callback) ->
@@ -102,6 +105,16 @@ public class ServerTLSEngineTest
     {
         engine.getTLSConfiguration().getServerQuicConfiguration().setCipherSuites(List.of(CipherSuite.TLS_CHACHA20_POLY1305_SHA256));
 
+        ClientHelloMessage message = new ClientHelloMessage(new byte[32], List.of(CipherSuite.TLS_AES_128_GCM_SHA256), List.of(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3))));
+        engine.onMessageParsed(message);
+
+        assertThat(outMessages, empty());
+        assertHandshakeFailed(TLSException.Alert.ILLEGAL_PARAMETER);
+    }
+
+    @Test
+    public void testMissingKeyShareExtension()
+    {
         ClientHelloMessage message = new ClientHelloMessage(new byte[32], List.of(CipherSuite.TLS_AES_128_GCM_SHA256), List.of(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3))));
         engine.onMessageParsed(message);
 

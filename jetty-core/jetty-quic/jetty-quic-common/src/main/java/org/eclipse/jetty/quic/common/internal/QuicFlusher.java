@@ -189,6 +189,7 @@ public class QuicFlusher extends IteratingCallback
     @Override
     protected void onCompleteFailure(Throwable cause)
     {
+        // TODO: release the buffers here, this instance is thrown away.
         encryptedBuffer.clear();
         plaintextBuffer.clear();
         flusher.failed(cause);

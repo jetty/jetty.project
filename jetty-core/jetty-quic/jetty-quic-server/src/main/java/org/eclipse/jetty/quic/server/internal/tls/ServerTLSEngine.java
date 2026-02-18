@@ -71,6 +71,7 @@ public class ServerTLSEngine extends TLSEngine
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerTLSEngine.class);
 
+    private final List<X509KeyStorePair> keyStorePairs = new ArrayList<>();
     private final ServerTLSConfiguration tlsConfiguration;
     private State state = State.NEED_CLIENT_HELLO;
     private SecretKey sharedSecret;
@@ -79,6 +80,38 @@ public class ServerTLSEngine extends TLSEngine
     {
         super(packetProtector, false);
         this.tlsConfiguration = tlsConfiguration;
+    }
+
+    public void initialize(QuicVersion quicVersion)
+    {
+        try
+        {
+            tlsConfiguration.setQuicVersion(quicVersion);
+            SslContextFactory.Server sslContextFactory = tlsConfiguration.getSslContextFactory();
+            KeyStore keyStore = sslContextFactory.getKeyStore();
+            char[] chars = sslContextFactory.getKeyStorePassword().toCharArray();
+            KeyStore.PasswordProtection password = new KeyStore.PasswordProtection(chars);
+            Arrays.fill(chars, ' ');
+            Enumeration<String> aliases = keyStore.aliases();
+            while (aliases.hasMoreElements())
+            {
+                String alias = aliases.nextElement();
+                KeyStore.Entry entry = keyStore.getEntry(alias, password);
+                if (entry instanceof KeyStore.PrivateKeyEntry pke)
+                {
+                    PrivateKey privateKey = pke.getPrivateKey();
+                    X509KeyStorePair keyStorePair = new X509KeyStorePair(alias, privateKey, Arrays.stream(pke.getCertificateChain())
+                        .map(X509Certificate.class::cast)
+                        .toList());
+                    keyStorePairs.add(keyStorePair);
+                }
+            }
+            password.destroy();
+        }
+        catch (Throwable x)
+        {
+            throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
+        }
     }
 
     public ServerTLSConfiguration getTLSConfiguration()
@@ -119,20 +152,24 @@ public class ServerTLSEngine extends TLSEngine
         getPacketProtector().getTranscriptHash().offer(clientHello, true);
 
         List<Extension> clientExtensions = clientHello.extensions();
-        List<TLSVersion> clientVersions = List.of();
-        List<KeyShare> clientKeyShares = List.of();
+
+        if (clientExtensions.size() != clientExtensions.stream().map(Object::getClass).distinct().count())
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "duplicate_extension");
+
         List<String> clientProtocols = List.of();
+        List<KeyShare> clientKeyShares = List.of();
         List<SignatureAlgorithm> clientSignatureAlgorithms = List.of();
+        List<TLSVersion> clientVersions = List.of();
         for (Extension extension : clientExtensions)
         {
             switch (extension)
             {
-                case SupportedVersionsExtension sve -> clientVersions = sve.versions();
-                case KeyShareExtension kse -> clientKeyShares = kse.keyShares();
                 case ALPNExtension ae -> clientProtocols = ae.protocols();
-                case SignatureAlgorithmsExtension sae -> clientSignatureAlgorithms = sae.signatureAlgorithms();
-                case ServerNameExtension sne -> setServerName(sne.serverName());
+                case KeyShareExtension kse -> clientKeyShares = kse.keyShares();
                 case QuicTransportParametersExtension qtpe -> setTransportParameters(qtpe.transportParameters());
+                case ServerNameExtension sne -> setServerName(sne.serverName());
+                case SignatureAlgorithmsExtension sae -> clientSignatureAlgorithms = sae.signatureAlgorithms();
+                case SupportedVersionsExtension sve -> clientVersions = sve.versions();
                 default ->
                 {
                 }
@@ -146,18 +183,65 @@ public class ServerTLSEngine extends TLSEngine
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "unsupported_tls_version");
         // Only TLS 1.3 is supported for now.
         TLSVersion tlsVersion = TLSVersion.TLS_1_3;
+        setTLSVersion(tlsVersion);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated TLS version {} on {}", tlsVersion, this);
 
+        SslContextFactory.Server sslContextFactory = tlsConfiguration.getSslContextFactory();
+        String serverName = getServerName();
+        boolean sniRequired = sslContextFactory.isSniRequired();
+        if (serverName == null && sniRequired)
+            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_server_name_extension");
+
+        // Prefer server cipher suites.
+        List<CipherSuite> negotiatedCipherSuites = new ArrayList<>(tlsConfiguration.getServerQuicConfiguration().getCipherSuites());
         List<CipherSuite> clientCipherSuites = clientHello.cipherSuites();
-        List<CipherSuite> negotiatedCipherSuites = new ArrayList<>(clientCipherSuites);
-        negotiatedCipherSuites.retainAll(tlsConfiguration.getServerQuicConfiguration().getCipherSuites());
+        negotiatedCipherSuites.retainAll(clientCipherSuites);
         if (negotiatedCipherSuites.isEmpty())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_cipher_suite");
         CipherSuite cipherSuite = negotiatedCipherSuites.getFirst();
         setCipherSuite(cipherSuite);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated CipherSuite {} on {}", cipherSuite, this);
+
+        // Prefer server application protocols.
+        List<String> negotiatedProtocols = new ArrayList<>(tlsConfiguration.getApplicationProtocols());
+        negotiatedProtocols.retainAll(clientProtocols);
+        if (negotiatedProtocols.isEmpty())
+            throw new TLSException(TLSException.Alert.NO_APPLICATION_PROTOCOL, "no_common_application_protocol");
+        String protocol = negotiatedProtocols.getFirst();
+        setApplicationProtocol(protocol);
+        if (LOG.isDebugEnabled())
+            LOG.debug("negotiated alpn protocol {} on {}", protocol, this);
+
+        if (clientSignatureAlgorithms.isEmpty())
+            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_signature_algorithms_extension");
+        List<SignatureAlgorithm> serverSignatureAlgorithms = tlsConfiguration.getServerQuicConfiguration().getSignatureAlgorithms();
+        // Prefer server signature algorithms.
+        List<SignatureAlgorithm> negotiatedSignatureAlgorithms = new ArrayList<>(serverSignatureAlgorithms);
+        negotiatedSignatureAlgorithms.retainAll(clientSignatureAlgorithms);
+        if (negotiatedSignatureAlgorithms.isEmpty())
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_signature_algorithm");
+        if (LOG.isDebugEnabled())
+            LOG.debug("negotiated signature algorithms {} on {}", negotiatedSignatureAlgorithms, this);
+
+        List<SignatureWithKeyStorePair> negotiatedKeyStorePairs = new ArrayList<>();
+        for (X509KeyStorePair keyStorePair : keyStorePairs)
+        {
+            PublicKey publicKey = keyStorePair.certificates().getFirst().getPublicKey();
+            for (SignatureAlgorithm signatureAlgorithm : negotiatedSignatureAlgorithms)
+            {
+                if (signatureAlgorithm.supports(publicKey))
+                {
+                    negotiatedKeyStorePairs.add(new SignatureWithKeyStorePair(signatureAlgorithm, keyStorePair));
+                    break;
+                }
+            }
+        }
+        if (negotiatedKeyStorePairs.isEmpty())
+            throw new TLSException(TLSException.Alert.UNSUPPORTED_CERTIFICATE, "unsupported_certificate");
+        if (LOG.isDebugEnabled())
+            LOG.debug("supported certificates at aliases {} on {}", negotiatedKeyStorePairs.stream().map(p -> p.keyStorePair().alias()).toList(), this);
 
         if (clientKeyShares.isEmpty())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing_key_shares");
@@ -195,26 +279,14 @@ public class ServerTLSEngine extends TLSEngine
 
         List<Message> handshakeMessages = new ArrayList<>();
 
-        List<String> negotiatedProtocols = new ArrayList<>(tlsConfiguration.getApplicationProtocols());
-        negotiatedProtocols.retainAll(clientProtocols);
-        if (negotiatedProtocols.isEmpty())
-            throw new TLSException(TLSException.Alert.NO_APPLICATION_PROTOCOL, "no_common_application_protocol");
-        String protocol = negotiatedProtocols.getFirst();
-        setApplicationProtocol(protocol);
-        if (LOG.isDebugEnabled())
-            LOG.debug("negotiated alpn protocol {} on {}", protocol, this);
-
         ALPNExtension alpnExtension = new ALPNExtension(List.of(protocol));
         QuicTransportParametersExtension quicTransportParametersExtension = new QuicTransportParametersExtension(tlsConfiguration.getTransportParameters());
-
         EncryptedExtensionsMessage encryptedExtensions = new EncryptedExtensionsMessage(List.of(alpnExtension, quicTransportParametersExtension));
         handshakeMessages.add(encryptedExtensions);
         getPacketProtector().getTranscriptHash().offer(encryptedExtensions, false);
         if (LOG.isDebugEnabled())
             LOG.debug("produced {} on {}", encryptedExtensions, this);
 
-        List<SignatureAlgorithm> serverSignatureAlgorithms = tlsConfiguration.getServerQuicConfiguration().getSignatureAlgorithms();
-        SslContextFactory.Server sslContextFactory = tlsConfiguration.getSslContextFactory();
         boolean clientAuthentication = sslContextFactory.getWantClientAuth() || sslContextFactory.getNeedClientAuth();
         if (clientAuthentication)
         {
@@ -223,61 +295,18 @@ public class ServerTLSEngine extends TLSEngine
             handshakeMessages.add(certificateRequest);
         }
 
-        if (clientSignatureAlgorithms.isEmpty())
-            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_signature_algorithms_extension");
-        List<SignatureAlgorithm> negotiatedSignatureAlgorithms = new ArrayList<>(clientSignatureAlgorithms);
-        negotiatedSignatureAlgorithms.retainAll(serverSignatureAlgorithms);
-        if (LOG.isDebugEnabled())
-            LOG.debug("negotiated signature algorithms {} on {}", negotiatedSignatureAlgorithms, this);
-
-        List<SignatureWithKeyStorePair> pairs = new ArrayList<>();
-        KeyStore keyStore = sslContextFactory.getKeyStore();
-        char[] chars = sslContextFactory.getKeyStorePassword().toCharArray();
-        KeyStore.PasswordProtection password = new KeyStore.PasswordProtection(chars);
-        Arrays.fill(chars, ' ');
-        Enumeration<String> aliases = keyStore.aliases();
-        while (aliases.hasMoreElements())
-        {
-            String alias = aliases.nextElement();
-            KeyStore.Entry entry = keyStore.getEntry(alias, password);
-            if (entry instanceof KeyStore.PrivateKeyEntry pke)
-            {
-                PrivateKey privateKey = pke.getPrivateKey();
-                X509KeyStorePair keyStorePair = new X509KeyStorePair(alias, privateKey, Arrays.stream(pke.getCertificateChain())
-                    .map(X509Certificate.class::cast)
-                    .toList());
-                PublicKey publicKey = keyStorePair.certificates().getFirst().getPublicKey();
-                for (SignatureAlgorithm signatureAlgorithm : negotiatedSignatureAlgorithms)
-                {
-                    if (signatureAlgorithm.supports(publicKey))
-                    {
-                        pairs.add(new SignatureWithKeyStorePair(signatureAlgorithm, keyStorePair));
-                        break;
-                    }
-                }
-            }
-        }
-        password.destroy();
-        if (pairs.isEmpty())
-            throw new TLSException(TLSException.Alert.UNSUPPORTED_CERTIFICATE, "unsupported_certificate");
-        if (LOG.isDebugEnabled())
-            LOG.debug("supported certificates at aliases {} on {}", pairs.stream().map(p -> p.keyStorePair().alias()).toList(), this);
-
-        String serverName = getServerName();
-        boolean sniRequired = sslContextFactory.isSniRequired();
-        if (serverName == null && sniRequired)
-            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_server_name_extension");
         SignatureWithKeyStorePair match = null;
         if (serverName != null)
-            match = selectCertificate(pairs, serverName);
-        SignatureWithKeyStorePair candidate = serverName == null ? pairs.getFirst() : match;
+            match = selectCertificate(negotiatedKeyStorePairs, serverName);
+        SignatureWithKeyStorePair candidate = serverName == null ? negotiatedKeyStorePairs.getFirst() : match;
         if (candidate == null)
         {
             if (sniRequired)
                 throw new TLSException(TLSException.Alert.UNRECOGNIZED_NAME, "no_matching_certificate");
             else
-                candidate = pairs.getFirst();
+                candidate = negotiatedKeyStorePairs.getFirst();
         }
+        // TODO: also default certificates must be checked for validity: split the check out of selectCertificate().
         if (LOG.isDebugEnabled())
             LOG.debug("certificate {} at alias {} on {}", match != null ? "match" : "default", candidate.keyStorePair().alias(), this);
 
@@ -433,7 +462,7 @@ public class ServerTLSEngine extends TLSEngine
             throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid_verify_data");
 
         getPacketProtector().getTranscriptHash().offer(finished, true);
-        SecretKey resumptionMasterSecret = getPacketProtector().generateResumptionMasterSecret(cipherSuite);
+        SecretKey resumptionMasterSecret = getPacketProtector().createResumptionMasterSecret(cipherSuite);
 
         state = State.HANDSHAKE_SUCCESSFUL;
 

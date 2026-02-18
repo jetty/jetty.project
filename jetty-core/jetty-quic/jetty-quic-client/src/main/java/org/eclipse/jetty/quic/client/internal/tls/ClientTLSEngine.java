@@ -18,8 +18,10 @@ import java.util.List;
 import java.util.Locale;
 import javax.crypto.SecretKey;
 
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
+import org.eclipse.jetty.quic.common.ZeroRTTStore;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.HandshakeData;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
@@ -32,6 +34,7 @@ import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.KeyShare;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.NamedGroup;
+import org.eclipse.jetty.tls.NewSessionTicketMessage;
 import org.eclipse.jetty.tls.ServerHelloMessage;
 import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.tls.TLSException;
@@ -39,8 +42,10 @@ import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.common.GroupKeyPair;
 import org.eclipse.jetty.tls.ext.ALPNExtension;
 import org.eclipse.jetty.tls.ext.ClientPreSharedKeyExtension;
+import org.eclipse.jetty.tls.ext.EarlyDataExtension;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.KeyShareExtension;
+import org.eclipse.jetty.tls.ext.PreSharedKeyIdentity;
 import org.eclipse.jetty.tls.ext.ServerNameExtension;
 import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
@@ -106,11 +111,58 @@ public class ClientTLSEngine extends TLSEngine
             List<SignatureAlgorithm> signatureAlgorithms = configuration.getClientQuicConfiguration().getSignatureAlgorithms();
             extensions.add(new SignatureAlgorithmsExtension(signatureAlgorithms));
 
-            // RFC-8446[4.2.11]: the pre-shared key extension must be the last.
-            // TODO:
-//            extensions.add(new ClientPreSharedKeyExtension())
+            // Check whether the application wants to resume a connection or send early data.
+            RetainableByteBuffer earlyDataByteBuffer = configuration.getEarlyData();
+            if (earlyDataByteBuffer != null)
+            {
+                ZeroRTTStore.Entry zeroRTTEntry = configuration.getZeroRTTStore().match(entry ->
+                {
+                    if (!serverName.equals(entry.handshakeData().serverName()))
+                        return false;
+                    if (!cipherSuites.contains(entry.handshakeData().cipherSuite()))
+                        return false;
+                    return true;
+                });
 
-            clientHello = new ClientHelloMessage(newRandomBytes(32), cipherSuites, extensions);
+                if (zeroRTTEntry != null)
+                {
+                    long earlyMaxData = zeroRTTEntry.newSessionTicket().extensions().stream()
+                        .filter(e -> e instanceof EarlyDataExtension)
+                        .map(EarlyDataExtension.class::cast)
+                        .map(EarlyDataExtension::maxData)
+                        .findFirst()
+                        .orElse(0L);
+
+                    int earlyData = earlyDataByteBuffer.remaining();
+                    if (earlyData > 0 && earlyData <= earlyMaxData)
+                    {
+                        // Just add the presence of the early data extension.
+                        extensions.add(new EarlyDataExtension(0));
+                    }
+
+                    CipherSuite cipherSuite = zeroRTTEntry.handshakeData().cipherSuite();
+                    int hashLength = cipherSuite.hashLength();
+                    PreSharedKeyIdentity truncated = new PreSharedKeyIdentity(zeroRTTEntry.newSessionTicket().ticket(), zeroRTTEntry.obfuscatedTicketAge(), new byte[hashLength]);
+
+                    // RFC-8446[4.2.11]: the pre-shared key extension must be the last.
+                    // RFC-8446[4.2.11.2]: truncate the extension to compute the binders.
+                    extensions.add(new ClientPreSharedKeyExtension(List.of(truncated), false));
+
+                    clientHello = new ClientHelloMessage(newRandomBytes(32), cipherSuites, extensions);
+                    getPacketProtector().getTranscriptHash().offer(clientHello, false);
+
+                    PreSharedKeyIdentity identity = getPacketProtector().createPreSharedKeyIdentity(zeroRTTEntry);
+
+                    extensions.removeLast();
+                    extensions.add(new ClientPreSharedKeyExtension(List.of(identity), true));
+
+                    clientHello = new ClientHelloMessage(clientHello.random(), clientHello.cipherSuites(), extensions);
+                    getPacketProtector().getTranscriptHash().removeLast();
+                }
+            }
+
+            if (clientHello == null)
+                clientHello = new ClientHelloMessage(newRandomBytes(32), cipherSuites, extensions);
             if (LOG.isDebugEnabled())
                 LOG.debug("produced {} on {}", clientHello, this);
 
@@ -165,6 +217,7 @@ public class ClientTLSEngine extends TLSEngine
                 case CertificateMessage certificate -> processCertificate(certificate);
                 case CertificateVerifyMessage certificateVerify -> processCertificateVerify(certificateVerify);
                 case FinishedMessage finished -> processFinished(finished);
+                case NewSessionTicketMessage newSessionTicket -> processNewSessionTicket(newSessionTicket);
                 default -> throw new IllegalStateException("unexpected_tls_message_" + message.type().name().toLowerCase(Locale.ROOT));
             }
         }
@@ -410,6 +463,12 @@ public class ClientTLSEngine extends TLSEngine
     private void handshakeFailed(Throwable failure)
     {
         notifyHandshakeCompleted(null, failure);
+    }
+
+    private void processNewSessionTicket(NewSessionTicketMessage newSessionTicket) throws Exception
+    {
+        HandshakeData handshakeData = new HandshakeData(configuration.getQuicVersion(), getTLSVersion(), getServerName(), getCipherSuite(), getApplicationProtocol(), getTransportParameters());
+        configuration.getZeroRTTStore().put(new ZeroRTTStore.Entry(handshakeData, newSessionTicket, getPacketProtector().createResumptionMasterSecret(getCipherSuite())));
     }
 
     @Override
