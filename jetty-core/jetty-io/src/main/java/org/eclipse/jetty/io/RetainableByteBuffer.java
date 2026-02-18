@@ -2051,8 +2051,7 @@ public interface RetainableByteBuffer extends Retainable
             {
                 if (rbb instanceof DynamicCapacity dynamic)
                     dynamic.clear();
-                else
-                    rbb.release();
+                rbb.release();
             }
             _buffers.clear();
             _aggregate = null;
