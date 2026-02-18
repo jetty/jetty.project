@@ -566,4 +566,35 @@ public class HpackDecoderTest
         StreamException ex = assertThrows(StreamException.class, () -> decoder.decode(buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Illegal header"));
     }
+
+    @Test
+    public void testNonAsciiHeaderValue() throws Exception
+    {
+        HpackEncoder encoder = new HpackEncoder();
+        byte[] bytes = new byte[1024];
+        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+        // Use the Authorization header because its value is not Huffman-encoded.
+        encoder.encode(byteBuffer, new HttpField(HttpHeader.AUTHORIZATION, "São Paulo"));
+        byteBuffer.flip();
+        // Jetty's implementation encodes chars as bytes, so "ã" becomes just "E3".
+        // We want to simulate that the implementation sends UTF-8 bytes, so "C3 A3".
+        // The length is the third byte, must be increased by 1.
+        assertEquals(9, bytes[2] & 0xFF);
+        bytes[2] = 10;
+        assertEquals('S', bytes[3] & 0xFF);
+        assertEquals(0xE3, bytes[4] & 0xFF);
+        // Shift by 1 byte to make room for the additional UTF-8 byte.
+        System.arraycopy(bytes, 5, bytes, 6, byteBuffer.remaining() - 5);
+        bytes[4] = (byte)0xC3;
+        bytes[5] = (byte)0xA3;
+        byteBuffer.limit(byteBuffer.limit() + 1);
+
+        HpackDecoder decoder = new HpackDecoder(4096, NanoTime::now);
+        MetaData metaData = decoder.decode(byteBuffer);
+        assertEquals(1, metaData.getHttpFields().size());
+
+        // The encoding was modified to be UTF-8 above, but the decoding was ISO-8859-1.
+        String value = metaData.getHttpFields().get(HttpHeader.AUTHORIZATION);
+        assertEquals("SÃ£o Paulo", value);
+    }
 }
