@@ -196,15 +196,13 @@ public class AbstractClientServerTest
 
         if (http3Client != null)
         {
-            ByteBufferPool clientByteBufferPool = http3Client.getClientConnector().getByteBufferPool();
-            if (clientByteBufferPool instanceof ArrayByteBufferPool.Tracking tracking)
-                await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("client leaks: " + tracking.dumpLeaks(), tracking.getLeaks().size(), is(0)));
+            ArrayByteBufferPool.Tracking tracking = (ArrayByteBufferPool.Tracking)http3Client.getClientConnector().getByteBufferPool();
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("client leaks: " + tracking.dumpLeaks(), tracking.getLeaks().size(), is(0)));
         }
 
         if (server != null)
         {
-            ByteBufferPool serverByteBufferPool = server.getByteBufferPool();
-            if (serverByteBufferPool instanceof ArrayByteBufferPool.Tracking tracking)
+            ArrayByteBufferPool.Tracking tracking = (ArrayByteBufferPool.Tracking)server.getByteBufferPool();
             await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("server leaks: " + tracking.dumpLeaks(), tracking.getLeaks().size(), is(0)));
         }
 
