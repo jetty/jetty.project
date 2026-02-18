@@ -19,20 +19,16 @@ import java.util.Objects;
 import org.eclipse.jetty.tls.ClientHelloMessage;
 
 /// The pre-shared key extension for the [ClientHelloMessage].
-public record ClientPreSharedKeyExtension(List<PreSharedKeyIdentity> identities, List<byte[]> binders) implements Extension
+public record ClientPreSharedKeyExtension(List<PreSharedKeyIdentity> identities, boolean hasBinders) implements Extension
 {
     public static final int CODE = 0x0029;
 
     public ClientPreSharedKeyExtension
     {
-        if (identities.size() != binders.size())
-            throw new IllegalArgumentException("invalid number of identities and binders");
         if (identities.isEmpty())
             throw new IllegalArgumentException("missing identities");
         if (identities.stream().anyMatch(Objects::isNull))
             throw new IllegalArgumentException("invalid identity");
-        if (binders.stream().anyMatch(Objects::isNull))
-            throw new IllegalArgumentException("invalid binder");
     }
 
     @Override

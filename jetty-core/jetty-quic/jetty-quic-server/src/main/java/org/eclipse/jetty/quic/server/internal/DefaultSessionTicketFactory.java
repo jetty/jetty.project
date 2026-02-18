@@ -18,10 +18,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.List;
-import java.util.ListIterator;
 import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -78,8 +78,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 /// This implementation encrypts the plaintext structure with keys that
 /// encryption keys are rotated every [#getKeyRotationPeriod()].
 /// Encryption key rotation provides forward secrecy so that if a key
-/// is compromised, an attacker won't be able to decrypt tickets issued
-/// with older keys.
+/// is compromised, tickets issued with older keys cannot be decrypted.
 ///
 /// Decryption keys are kept around for the [#getSessionTicketLifetime()]
 /// so that old tickets can still be decrypted and used.
@@ -93,7 +92,9 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
     private final SecureRandom random = new SecureRandom();
 
     private final AutoLock lock = new AutoLock();
-    private final List<TicketKey> ticketKeys = new ArrayList<>();
+    // Most recent key at the head.
+    private final Deque<TicketKey> ticketKeys = new ArrayDeque<>();
+    private final TransportParametersGenerator generator = new TransportParametersGenerator();
     private Duration sessionTicketLifetime = Duration.ofHours(6);
     private Duration keyRotationPeriod = Duration.ofHours(1);
 
@@ -126,7 +127,7 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
         TicketKey key;
         try (var _ = lock.lock())
         {
-            key = ticketKeys.getFirst();
+            key = ticketKeys.peekFirst();
             if (key == null || NanoTime.secondsSince(key.nanoTime()) > getKeyRotationPeriod().toSeconds())
                 key = lockedRotateKey();
         }
@@ -136,7 +137,7 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
         byte[] serverName = handshake.serverName().getBytes(StandardCharsets.UTF_8);
         byte[] protocol = handshake.applicationProtocol().getBytes(StandardCharsets.US_ASCII);
         RetainableByteBuffer.DynamicCapacity accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        int length = TransportParametersGenerator.generate(accumulator, handshake.transportParameters());
+        int length = generator.generate(accumulator, handshake.transportParameters());
         byte[] transportParameters = new byte[length];
         accumulator.get(transportParameters, 0, length);
         byte[] resumptionSecret = ticket.resumptionMasterSecret().getEncoded();
@@ -250,12 +251,12 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
     private TicketKey lockedRotateKey() throws Exception
     {
         // Remove expired keys.
-        ListIterator<TicketKey> iterator = ticketKeys.listIterator(ticketKeys.size());
-        while (iterator.hasPrevious())
+        while (true)
         {
-            TicketKey ticketKey = iterator.previous();
-            if (NanoTime.secondsSince(ticketKey.nanoTime()) > getSessionTicketLifetime().toSeconds())
-                iterator.remove();
+            TicketKey ticketKey = ticketKeys.peekLast();
+            if (ticketKey == null || NanoTime.secondsSince(ticketKey.nanoTime()) < getSessionTicketLifetime().toSeconds())
+                break;
+            ticketKeys.pollLast();
         }
 
         // Generate and store a new key.
@@ -263,7 +264,7 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
         keyGen.init(256);
         SecretKey secretKey = keyGen.generateKey();
         TicketKey ticketKey = new TicketKey(secretKey, NanoTime.now());
-        ticketKeys.addFirst(ticketKey);
+        ticketKeys.offerFirst(ticketKey);
         return ticketKey;
     }
 

@@ -24,9 +24,9 @@ public class TransportParametersParser
 {
     private final VarLenInt varLenInt;
     private State state = State.LENGTH;
+    private int cursor;
+    private int length;
     private TransportParameters parameters;
-    private long frameType;
-    private long length;
     private TransportParameters.Id<?> parameterId;
     private int parameterLength;
     private byte[] parameterValue;
@@ -38,14 +38,38 @@ public class TransportParametersParser
 
     public TransportParameters parse(ByteBuffer byteBuffer)
     {
-        while (byteBuffer.hasRemaining())
+        while (true)
         {
+            int remaining = byteBuffer.remaining();
+            if (remaining == 0)
+                return null;
+
             switch (state)
             {
                 case LENGTH ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, v -> length = v))
+                    if (remaining > 1)
+                    {
+                        length = (byteBuffer.getShort() & 0xFFFF);
+                        parameters = new TransportParameters();
                         state = State.PARAMETER_ID;
+                    }
+                    else
+                    {
+                        cursor = 2;
+                        state = State.LENGTH_BYTES;
+                    }
+                }
+                case LENGTH_BYTES ->
+                {
+                    int b = byteBuffer.get() & 0xFF;
+                    --cursor;
+                    length += b << (8 * cursor);
+                    if (cursor == 0)
+                    {
+                        parameters = new TransportParameters();
+                        state = State.PARAMETER_ID;
+                    }
                 }
                 case PARAMETER_ID ->
                 {
@@ -56,9 +80,9 @@ public class TransportParametersParser
                     }))
                     {
                         if (parameterId == null)
-                            throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter_id", frameType);
+                            throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter_id");
                         if (length <= 0)
-                            throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_transport_parameters_length", frameType);
+                            throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_transport_parameters_length");
                         state = State.PARAMETER_LENGTH;
                     }
                 }
@@ -71,12 +95,12 @@ public class TransportParametersParser
                     }))
                     {
                         if (length < 0)
-                            throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_transport_parameters_length", frameType);
+                            throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_transport_parameters_length");
                         parameterValue = new byte[parameterLength];
                         if (length == 0)
                         {
                             if (parameterLength != 0)
-                                throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_transport_parameters_length", frameType);
+                                throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_transport_parameters_length");
                             store(parameterId, parameterValue);
                             return result();
                         }
@@ -85,7 +109,6 @@ public class TransportParametersParser
                 }
                 case PARAMETER_VALUE ->
                 {
-                    int remaining = byteBuffer.remaining();
                     if (remaining >= parameterLength)
                     {
                         byteBuffer.get(parameterValue);
@@ -104,7 +127,6 @@ public class TransportParametersParser
                 }
             }
         }
-        return null;
     }
 
     private void store(TransportParameters.Id<?> parameterId, byte[] parameterValue)
@@ -115,16 +137,15 @@ public class TransportParametersParser
             parameters.put(bytesId, parameterValue);
             // TODO: preferred address
         else
-            throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "unsupported_transport_parameter_id", frameType);
+            throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "unsupported_transport_parameter_id");
     }
 
     private TransportParameters result()
     {
         TransportParameters result = parameters;
         state = State.LENGTH;
-        parameters = null;
-        frameType = 0;
         length = 0;
+        parameters = null;
         parameterId = null;
         parameterLength = 0;
         parameterValue = null;
@@ -145,6 +166,10 @@ public class TransportParametersParser
 
     private enum State
     {
-        LENGTH, PARAMETER_ID, PARAMETER_LENGTH, PARAMETER_VALUE
+        LENGTH,
+        LENGTH_BYTES,
+        PARAMETER_ID,
+        PARAMETER_LENGTH,
+        PARAMETER_VALUE
     }
 }

@@ -24,6 +24,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
+import org.eclipse.jetty.quic.common.DefaultZeroRTTStore;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
@@ -63,7 +64,7 @@ public class ClientTLSEngineTest
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, true), new QuicMessagesGenerator(byteBufferPool, false));
         PacketProtector packetProtector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        configuration = new ClientTLSConfiguration(new QuicClientQuicConfiguration(), sslContextFactory);
+        configuration = new ClientTLSConfiguration(new QuicClientQuicConfiguration(), sslContextFactory, new DefaultZeroRTTStore());
         configuration.setInputKeyMaterial(new byte[12]);
         engine = new ClientTLSEngine(packetProtector);
 

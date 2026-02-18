@@ -58,7 +58,7 @@ public class CertificateMessageGenerator extends MessageGenerator
             // The extensions length is encoded in 2 bytes.
             entriesLength += 2;
 
-            RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getBufferPool(), true, -1, 0, 0);
+            RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), true, -1, 0, 0);
             encodedExtensions.add(extensionsAccumulator);
             int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, entry.extensions());
             if (extensionsLength > 0xFFFF)

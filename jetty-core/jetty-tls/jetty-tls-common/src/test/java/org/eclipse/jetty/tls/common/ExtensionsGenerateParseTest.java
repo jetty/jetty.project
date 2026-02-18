@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -375,9 +374,10 @@ public class ExtensionsGenerateParseTest
 
         byte[] identity1 = new byte[] {1, 2, 3, 4, 5};
         byte[] identity2 = new byte[] {6, 7, 8};
-        List<PreSharedKeyIdentity> identities = List.of(new PreSharedKeyIdentity(identity1, 39), new PreSharedKeyIdentity(identity2, 41));
-        List<byte[]> binders = List.of(new byte[] {9, 0x0A, 0x0B}, new byte[] {0x0C, 0x0D, 0x0E, 0x0F});
-        ClientPreSharedKeyExtension expected = new ClientPreSharedKeyExtension(identities, binders);
+        byte[] binder1 = {9, 0x0A, 0x0B};
+        byte[] binder2 = {0x0C, 0x0D, 0x0E, 0x0F};
+        List<PreSharedKeyIdentity> identities = List.of(new PreSharedKeyIdentity(identity1, 39, binder1), new PreSharedKeyIdentity(identity2, 41, binder2));
+        ClientPreSharedKeyExtension expected = new ClientPreSharedKeyExtension(identities, true);
         ExtensionsGenerator generator = new ExtensionsGenerator(true);
         int length = generator.generate(accumulator, List.of(expected));
         assertEquals(accumulator.remaining(), length);
@@ -391,10 +391,6 @@ public class ExtensionsGenerateParseTest
         assertEquals(1, extensions.size());
         ClientPreSharedKeyExtension result = (ClientPreSharedKeyExtension)extensions.getFirst();
         assertEquals(expected.identities(), result.identities());
-        for (int i = 0; i < binders.size(); ++i)
-        {
-            assertArrayEquals(binders.get(i), result.binders().get(i));
-        }
 
         // Parse again one byte at a time.
         parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
@@ -411,9 +407,5 @@ public class ExtensionsGenerateParseTest
         assertEquals(1, extensions.size());
         result = (ClientPreSharedKeyExtension)extensions.getFirst();
         assertEquals(expected.identities(), result.identities());
-        for (int i = 0; i < binders.size(); ++i)
-        {
-            assertArrayEquals(binders.get(i), result.binders().get(i));
-        }
     }
 }

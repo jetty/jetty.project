@@ -36,14 +36,14 @@ public class ServerHelloMessageGenerator extends MessageGenerator
 
     private void generate(RetainableByteBuffer.Mutable accumulator, ServerHelloMessage message)
     {
-        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getBufferPool(), true, -1, 0, 0);
+        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), true, -1, 0, 0);
         int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
         if (extensionsLength > 0xFFFF)
             throw new IllegalStateException("could not generate ServerHello, extensions too long");
 
         byte[] sessionId = message.sessionId();
 
-        // RFC 8446, 4.1.3.
+        // RFC-8446[4.1.3].
         // Field                             | (bytes)
         // ----------------------------------+--------
         // Legacy version                    | (2)
@@ -54,6 +54,7 @@ public class ServerHelloMessageGenerator extends MessageGenerator
         // Legacy compression methods Length | (1)
         // Extensions length                 | (2)
         // Extensions                        | (M)
+
         int length = 2 + 32 + 1 + sessionId.length + 2 + 1 + 2 + extensionsLength;
 
         int typeAndLength = (message.type().code() << 24) | length;

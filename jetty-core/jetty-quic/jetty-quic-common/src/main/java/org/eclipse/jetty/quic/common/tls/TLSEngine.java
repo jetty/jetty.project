@@ -36,6 +36,7 @@ import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.TLSVersion;
+import org.eclipse.jetty.tls.common.HKDF;
 import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
 import org.eclipse.jetty.tls.common.parser.MessageParser;
 import org.eclipse.jetty.tls.common.parser.MessagesParser;
@@ -208,7 +209,7 @@ public abstract class TLSEngine implements MessageParser.Listener
         int shaLength = hashLength * 8;
         KDF kdf = KDF.getInstance("HKDF-SHA" + shaLength);
         SecretKey trafficKey = getPacketProtector().getTrafficSecretKey(false);
-        SecretKey finishedKey = kdf.deriveKey("Generic", org.eclipse.jetty.tls.common.HKDF.expandLabel(trafficKey, "finished", hashLength));
+        SecretKey finishedKey = kdf.deriveKey("Generic", HKDF.expandLabel(trafficKey, "finished", hashLength));
 
         Mac mac = Mac.getInstance("HmacSHA" + shaLength);
         mac.init(finishedKey);
@@ -227,7 +228,7 @@ public abstract class TLSEngine implements MessageParser.Listener
         int shaLength = hashLength * 8;
         KDF kdf = KDF.getInstance("HKDF-SHA" + shaLength);
         SecretKey trafficKey = getPacketProtector().getTrafficSecretKey(true);
-        SecretKey finishedKey = kdf.deriveKey("Generic", org.eclipse.jetty.tls.common.HKDF.expandLabel(trafficKey, "finished", hashLength));
+        SecretKey finishedKey = kdf.deriveKey("Generic", HKDF.expandLabel(trafficKey, "finished", hashLength));
 
         Mac mac = Mac.getInstance("HmacSHA" + shaLength);
         mac.init(finishedKey);

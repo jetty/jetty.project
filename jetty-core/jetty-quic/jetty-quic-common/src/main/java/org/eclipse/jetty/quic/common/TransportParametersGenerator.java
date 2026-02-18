@@ -21,26 +21,32 @@ import org.eclipse.jetty.quic.util.VarLenInt;
 
 public class TransportParametersGenerator
 {
-    public static int generate(RetainableByteBuffer.Mutable accumulator, TransportParameters parameters)
+    public int generate(RetainableByteBuffer.Mutable accumulator, TransportParameters parameters)
     {
+        RetainableByteBuffer.DynamicCapacity parametersAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
+
         int totalLength = 0;
         for (Map.Entry<TransportParameters.Id<?>, Object> entry : parameters)
         {
             TransportParameters.Id<?> id = entry.getKey();
-            totalLength += VarLenInt.encode(accumulator, id.id());
+            totalLength += VarLenInt.encode(parametersAccumulator, id.id());
             int valueLength = switch (id)
             {
                 case TransportParameters.LongId longId -> VarLenInt.length(parameters.get(longId));
                 case TransportParameters.BytesId bytesId -> parameters.get(bytesId).length;
             };
-            totalLength += VarLenInt.encode(accumulator, valueLength);
+            totalLength += VarLenInt.encode(parametersAccumulator, valueLength);
             switch (id)
             {
-                case TransportParameters.LongId longId -> VarLenInt.encode(accumulator, parameters.get(longId));
-                case TransportParameters.BytesId bytesId -> accumulator.put(parameters.get(bytesId));
+                case TransportParameters.LongId longId -> VarLenInt.encode(parametersAccumulator, parameters.get(longId));
+                case TransportParameters.BytesId bytesId -> parametersAccumulator.put(parameters.get(bytesId));
             }
             totalLength += valueLength;
         }
-        return totalLength;
+
+        accumulator.putShort((short)totalLength);
+        accumulator.add(parametersAccumulator);
+
+        return 2 + totalLength;
     }
 }

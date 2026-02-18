@@ -677,9 +677,9 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    protected void packet(Packet packet)
+    public void packet(Packet packet, Callback callback)
     {
-        if (flusher.offer(packet, Callback.NOOP))
+        if (flusher.offer(packet, callback))
             flusher.iterate();
     }
 
@@ -762,6 +762,12 @@ public abstract class QuicSession extends AbstractSession
         if (LOG.isDebugEnabled())
             LOG.atDebug().setCause(x).log("failure on {}", this);
         // TODO: initiate inward close? or outward?
+    }
+
+    public void dispose()
+    {
+        // TODO: dipose all components, that may have allocated a buffer or such
+        //  For example TranscriptHash.dispose()
     }
 
     @Override

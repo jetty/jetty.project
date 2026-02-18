@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.quic.common;
 
+import java.util.function.Predicate;
 import javax.crypto.SecretKey;
 
-import org.eclipse.jetty.quic.api.frames.TransportParameters;
-import org.eclipse.jetty.tls.CipherSuite;
+import org.eclipse.jetty.quic.common.tls.HandshakeData;
 import org.eclipse.jetty.tls.NewSessionTicketMessage;
+import org.eclipse.jetty.util.NanoTime;
 
 /// A store for TLS session data used for ZeroRTT communication with a server.
 ///
@@ -26,11 +27,56 @@ import org.eclipse.jetty.tls.NewSessionTicketMessage;
 /// TLS session ticket.
 /// However, servers can also be implemented in a stateful way, where the
 /// TLS session ticket is the key to access this data structure.
-public class ZeroRTTStore
+public interface ZeroRTTStore
 {
-    // The information necessary for ZeroRTT communication.
-    public record Entry(SecretKey resumptionMasterSecret, NewSessionTicketMessage newSessionTicket, CipherSuite cipherSuite,
-                        String alpnProtocol, TransportParameters transportParameters)
+    default void put(Entry entry)
     {
+    }
+
+    default Entry match(Predicate<Entry> filter)
+    {
+        return null;
+    }
+
+    final class Entry
+    {
+        private final long nanoTime;
+        private final HandshakeData handshakeData;
+        private final NewSessionTicketMessage newSessionTicket;
+        private final SecretKey secretKey;
+
+        public Entry(HandshakeData handshakeData, NewSessionTicketMessage newSessionTicket, SecretKey secretKey)
+        {
+            this.nanoTime = NanoTime.now();
+            this.handshakeData = handshakeData;
+            this.newSessionTicket = newSessionTicket;
+            this.secretKey = secretKey;
+        }
+
+        public HandshakeData handshakeData()
+        {
+            return handshakeData;
+        }
+
+        public NewSessionTicketMessage newSessionTicket()
+        {
+            return newSessionTicket;
+        }
+
+        public int obfuscatedTicketAge()
+        {
+            // RFC-8446[4.2.11.1]: cast to int is equivalent to mod 2^32.
+            return (int)(NanoTime.millisSince(nanoTime) + newSessionTicket().ageAdd());
+        }
+
+        public SecretKey secretKey()
+        {
+            return secretKey;
+        }
+
+        public boolean expired()
+        {
+            return NanoTime.millisSince(nanoTime) > newSessionTicket().lifetime();
+        }
     }
 }

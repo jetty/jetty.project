@@ -39,6 +39,7 @@ public class MessagesParser
         parsers.put(Message.Type.CERTIFICATE, new CertificateMessageParser(extensionsParser));
         parsers.put(Message.Type.CERTIFICATE_VERIFY, new CertificateVerifyMessageParser());
         parsers.put(Message.Type.FINISHED, new FinishedMessageParser());
+        parsers.put(Message.Type.NEW_SESSION_TICKET, new NewSessionTicketMessageParser(extensionsParser));
     }
 
     public ExtensionsParser getExtensionsParser()

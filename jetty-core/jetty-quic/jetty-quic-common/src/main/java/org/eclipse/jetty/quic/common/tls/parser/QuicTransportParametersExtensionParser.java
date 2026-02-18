@@ -48,6 +48,6 @@ public class QuicTransportParametersExtensionParser implements ExtensionParser
         if (parameters == null)
             throw new BufferUnderflowException();
         listener.onExtension(new QuicTransportParametersExtension(parameters));
-        return 2 + (remaining - byteBuffer.remaining());
+        return remaining - byteBuffer.remaining();
     }
 }

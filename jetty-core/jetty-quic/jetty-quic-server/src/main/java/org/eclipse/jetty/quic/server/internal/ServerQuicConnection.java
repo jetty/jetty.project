@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.quic.common.packets.ConnectionId;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
+import org.eclipse.jetty.quic.common.packets.VersionNegotiationPacket;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.quic.server.internal.tls.ServerTLSConfiguration;
@@ -48,6 +50,7 @@ import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
@@ -229,13 +232,50 @@ public class ServerQuicConnection extends QuicConnection
         ServerQuicSession session = sessions.get(dstConnectionId);
         if (session == null)
         {
+            ByteBuffer byteBuffer = buffer.getByteBuffer();
+            int position = byteBuffer.position();
+
+            if (!Packet.isLongHeader(byteBuffer.get(position)))
+            {
+                // No session, cannot decrypt (no keys), just drop it.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("dropping datagram {} on {}", BufferUtil.toDetailString(byteBuffer), this);
+                BufferUtil.clear(byteBuffer);
+                return null;
+            }
+
             // Create the session.
             session = newSession();
+
+            // RFC-9000[17.2.1]: version negotiation.
+            int quicVersionCode = byteBuffer.getInt(position + 1);
+            QuicVersion quicVersion = QuicVersion.from(quicVersionCode);
+            List<QuicVersion> quicVersions = getServerQuicConfiguration().getQuicVersions();
+            if (quicVersion == null || !quicVersions.contains(quicVersion))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("unsupported quic version 0x{} on {}", Integer.toHexString(quicVersionCode), this);
+                // RFC-9000[17.2.1]: echo scid and dcid.
+                byte[] dcid = dstConnectionId.bytes();
+                int offset = position + 1 + 4 + 1 + dcid.length;
+                int scidLength = byteBuffer.get(offset) & 0xFF;
+                byte[] scid = new byte[scidLength];
+                byteBuffer.get(offset + 1, scid);
+                VersionNegotiationPacket versionNegotiationPacket = new VersionNegotiationPacket(scid, dcid, quicVersions);
+                // Use the un-initialized session to send the version
+                // negotiation packet and then throw the session away.
+                session.packet(versionNegotiationPacket, Callback.from(session::dispose));
+                BufferUtil.clear(byteBuffer);
+                return null;
+            }
+
             // Configure the session.
-            session.initialize(dstConnectionId.bytes());
+            session.setQuicVersion(quicVersion);
             session.setRemoteSocketAddress(remoteAddress);
             long idleTimeout = getEndPoint().getIdleTimeout();
             session.setIdleTimeout(idleTimeout);
+            // TODO: initialize() may throw, must dispose the session.
+            session.initialize(dstConnectionId.bytes());
             // Start and store the session.
             LifeCycle.start(session);
             sessions.put(new ConnectionId(session.getSourceConnectionId()), session);

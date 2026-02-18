@@ -38,7 +38,7 @@ public class CertificateRequestMessageGenerator extends MessageGenerator
     {
         byte[] context = message.context();
 
-        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getBufferPool(), true, -1, 0, 0);
+        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), true, -1, 0, 0);
         int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
         if (extensionsLength > 0xFFFF)
             throw new IllegalStateException("could not generate ClientHello, extensions too long");

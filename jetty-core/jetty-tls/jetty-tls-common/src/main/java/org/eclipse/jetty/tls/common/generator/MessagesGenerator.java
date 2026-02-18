@@ -35,6 +35,7 @@ public class MessagesGenerator
         generators.put(Message.Type.CERTIFICATE, new CertificateMessageGenerator(byteBufferPool, extensionsGenerator));
         generators.put(Message.Type.CERTIFICATE_VERIFY, new CertificateVerifyMessageGenerator(byteBufferPool));
         generators.put(Message.Type.FINISHED, new FinishedMessageGenerator(byteBufferPool));
+        generators.put(Message.Type.NEW_SESSION_TICKET, new NewSessionTicketMessageGenerator(byteBufferPool, extensionsGenerator));
     }
 
     public ExtensionsGenerator getExtensionsGenerator()

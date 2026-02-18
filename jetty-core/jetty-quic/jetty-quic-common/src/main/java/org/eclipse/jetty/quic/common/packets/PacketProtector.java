@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.crypto.Cipher;
 import javax.crypto.KDF;
+import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.HKDFParameterSpec;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketBuffers;
+import org.eclipse.jetty.quic.common.ZeroRTTStore;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.internal.packets.QuicCrypto;
@@ -37,6 +39,7 @@ import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.common.HKDF;
 import org.eclipse.jetty.tls.common.TranscriptHash;
+import org.eclipse.jetty.tls.ext.PreSharedKeyIdentity;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -226,20 +229,20 @@ public class PacketProtector implements Encrypter, Decrypter
         }
     }
 
-    public SecretKey generateResumptionMasterSecret(CipherSuite cipherSuite) throws Exception
+    public SecretKey createResumptionMasterSecret(CipherSuite cipherSuite) throws Exception
     {
         // RFC-8446[7.1].
         int hashLength = cipherSuite.hashLength();
         KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
         byte[] tlsHash = transcriptHash.getHash();
         int keyLength = cipherSuite.keyLength();
-        SecretKey resumptionMasterSecret = kdf.deriveKey("AES", HKDF.expandLabel(masterSecret, "res master", tlsHash, keyLength));
+        SecretKey resumptionMasterSecret = kdf.deriveKey("AES", HKDF.expandLabel(masterSecret, "res master", tlsHash, hashLength));
 
         // The master secret is not needed anymore, as both the application
         // keys and the resumption master secret have been generated.
         KeyManager.destroy(masterSecret);
 
-        // The resumption master secret does not need to be stored:
+        // The resumption master secret does not need to be stored here:
         // it is either stored externally or in the session ticket.
         return resumptionMasterSecret;
     }
@@ -285,14 +288,14 @@ public class PacketProtector implements Encrypter, Decrypter
         return keyManager.decryptShortHeaderPacket(dstConnectionId, encrypted);
     }
 
-    public byte[] generateRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
+    public byte[] createRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
     {
         // RFC-9001[5.8]: build a retry pseudo-packet.
         // The buffer contains up to the token bytes but no integrity bytes.
-        return generateRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, false);
+        return createRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, false);
     }
 
-    private byte[] generateRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId, boolean integrityPresent) throws Exception
+    private byte[] createRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId, boolean integrityPresent) throws Exception
     {
         ByteBuffer byteBuffer = retryPacketBuffer.getByteBuffer();
         QuicVersion quicVersion = QuicVersion.from(byteBuffer.getInt(1));
@@ -320,7 +323,7 @@ public class PacketProtector implements Encrypter, Decrypter
         cipher.init(Cipher.ENCRYPT_MODE, integrityKey, new GCMParameterSpec(128, integrityNonce.getEncoded()));
         cipher.updateAAD(pseudoPacket);
         byte[] bytes = cipher.doFinal();
-        LOG.info("generated {}", StringUtil.toHexString(bytes));
+        LOG.info("generated retry integrity {}", StringUtil.toHexString(bytes));
         return bytes;
     }
 
@@ -328,12 +331,30 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         // RFC-9001[5.8]: build a retry pseudo-packet.
         // The buffer contains up to the integrity bytes (16 bytes).
-        byte[] expected = generateRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, true);
+        byte[] expected = createRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, true);
         byte[] integrity = new byte[16];
         ByteBuffer byteBuffer = retryPacketBuffer.getByteBuffer();
         byteBuffer.get(integrity);
         // Verify the integrity.
         return MessageDigest.isEqual(integrity, expected);
+    }
+
+    public PreSharedKeyIdentity createPreSharedKeyIdentity(ZeroRTTStore.Entry entry) throws Exception
+    {
+        CipherSuite cipherSuite = entry.handshakeData().cipherSuite();
+        int hashLength = cipherSuite.hashLength();
+        KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
+
+        SecretKey preSharedKey = kdf.deriveKey("Generic", HKDF.expandLabel(entry.secretKey(), "resumption", entry.newSessionTicket().nonce(), hashLength));
+        HKDFParameterSpec extract = HKDFParameterSpec.ofExtract().addSalt(new byte[hashLength]).addIKM(preSharedKey).extractOnly();
+        SecretKey earlySecret = kdf.deriveKey("Generic", extract);
+        SecretKey binderKey = kdf.deriveKey("Generic", HKDF.expandLabel(earlySecret, "res binder", getTranscriptHash().getEmptyHash(), hashLength));
+        SecretKey finishedKey = kdf.deriveKey("Generic", HKDF.expandLabel(binderKey, "finished", hashLength));
+
+        Mac mac = Mac.getInstance("HmacSHA" + (hashLength * 8));
+        mac.init(finishedKey);
+        byte[] binder = mac.doFinal(transcriptHash.getHash());
+        return new PreSharedKeyIdentity(entry.newSessionTicket().ticket(), entry.obfuscatedTicketAge(), binder);
     }
 
     @Override

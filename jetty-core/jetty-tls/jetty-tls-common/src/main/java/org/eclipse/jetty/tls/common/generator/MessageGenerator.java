@@ -34,6 +34,11 @@ public abstract class MessageGenerator
         this.bufferPool = bufferPool;
     }
 
+    public ByteBufferPool getByteBufferPool()
+    {
+        return bufferPool;
+    }
+
     public void addListener(Listener listener)
     {
         listeners.add(listener);
@@ -52,11 +57,6 @@ public abstract class MessageGenerator
                 LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
             }
         }
-    }
-
-    public ByteBufferPool getBufferPool()
-    {
-        return bufferPool;
     }
 
     public abstract void generate(RetainableByteBuffer.Mutable accumulator, Message message) throws Exception;

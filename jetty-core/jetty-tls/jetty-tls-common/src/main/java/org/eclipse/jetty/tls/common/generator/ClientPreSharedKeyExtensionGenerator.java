@@ -38,17 +38,15 @@ public class ClientPreSharedKeyExtensionGenerator implements ExtensionGenerator
     {
         accumulator.putShort((short)extension.code());
         List<PreSharedKeyIdentity> identities = extension.identities();
-        List<byte[]> binders = extension.binders();
         // Identities length + binders length.
         int totalLength = 2 + 2;
         int identitiesLength = 0;
         int bindersLength = 0;
-        for (int i = 0; i < identities.size(); ++i)
+        for (PreSharedKeyIdentity identity : identities)
         {
-            PreSharedKeyIdentity identity = identities.get(i);
             int identityLength = 2 + identity.identity().length + 4;
             identitiesLength += identityLength;
-            int binderLength = 1 + binders.get(i).length;
+            int binderLength = 1 + identity.binder().length;
             bindersLength += binderLength;
             totalLength += identityLength + binderLength;
         }
@@ -62,11 +60,15 @@ public class ClientPreSharedKeyExtensionGenerator implements ExtensionGenerator
             accumulator.put(identity.identity());
             accumulator.putInt(identity.obfuscatedTicketAge());
         }
-        accumulator.putShort((short)bindersLength);
-        for (byte[] binder : binders)
+        if (extension.hasBinders())
         {
-            accumulator.put((byte)binder.length);
-            accumulator.put(binder);
+            accumulator.putShort((short)bindersLength);
+            for (PreSharedKeyIdentity identity : identities)
+            {
+                byte[] binder = identity.binder();
+                accumulator.put((byte)binder.length);
+                accumulator.put(binder);
+            }
         }
         return 2 + 2 + totalLength;
     }
