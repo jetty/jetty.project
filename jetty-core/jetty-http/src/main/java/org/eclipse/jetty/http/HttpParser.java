@@ -561,7 +561,8 @@ public class HttpParser
         if (_maxHeaderBytes <= 0)
             return;
         if (_state.ordinal() <= State.HEADER.ordinal() ||
-            _state == State.CHUNK_SIZE || _state == State.TRAILER)
+            (_state == State.CHUNK_SIZE && _chunkSizeState != ChunkSizeState.SIZE) ||
+            _state == State.TRAILER)
         {
             _headerBytes += delta;
             if (_headerBytes > _maxHeaderBytes)
