@@ -20,12 +20,14 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -34,6 +36,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
+
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public abstract class AbstractHttpClientServerTest
 {
@@ -53,7 +59,7 @@ public abstract class AbstractHttpClientServerTest
         {
             QueuedThreadPool serverThreads = new QueuedThreadPool();
             serverThreads.setName("server");
-            server = new Server(serverThreads);
+            server = new Server(serverThreads, null, new ArrayByteBufferPool.Tracking());
         }
         connector = new ServerConnector(server, scenario.newServerSslContextFactory());
         connector.setPort(0);
@@ -82,6 +88,7 @@ public abstract class AbstractHttpClientServerTest
         clientConnector.setExecutor(executor);
         Scheduler scheduler = new ScheduledExecutorScheduler("client-scheduler", false);
         clientConnector.setScheduler(scheduler);
+        clientConnector.setByteBufferPool(new ArrayByteBufferPool.Tracking());
         client = newHttpClient(transport.apply(clientConnector));
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         if (config != null)
@@ -95,12 +102,24 @@ public abstract class AbstractHttpClientServerTest
     }
 
     @AfterEach
-    public void disposeClient() throws Exception
+    public void dispose() throws Exception
     {
         if (client != null)
         {
-            client.stop();
-            client = null;
+            LifeCycle.stop(client);
+            ArrayByteBufferPool.Tracking clientBufferPool = (ArrayByteBufferPool.Tracking)client.getClientConnector().getByteBufferPool();
+            await().atMost(5, java.util.concurrent.TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat("client leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0))
+            );
+        }
+
+        if (server != null)
+        {
+            ArrayByteBufferPool.Tracking serverBufferPool = (ArrayByteBufferPool.Tracking)server.getByteBufferPool();
+            await().atMost(5, java.util.concurrent.TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat("server leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0))
+            );
+            LifeCycle.stop(server);
         }
     }
 

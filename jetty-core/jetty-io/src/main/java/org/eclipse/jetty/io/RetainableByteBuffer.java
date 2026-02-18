@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 
+import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -2048,7 +2049,11 @@ public interface RetainableByteBuffer extends Retainable
                 return;
             _aggregate = null;
             for (RetainableByteBuffer rbb : _buffers)
+            {
+                if (rbb instanceof DynamicCapacity dynamicCapacity)
+                    dynamicCapacity.clear();
                 rbb.release();
+            }
             _buffers.clear();
         }
 
@@ -2461,6 +2466,38 @@ public interface RetainableByteBuffer extends Retainable
                     }.iterate();
                 }
             }
+        }
+
+        public Content.Source takeContentSource()
+        {
+            List<Content.Chunk> list = new ArrayList<>();
+            for (RetainableByteBuffer buffer : _buffers)
+            {
+                if (buffer instanceof Content.Chunk chunk)
+                    list.add(chunk);
+                else if (buffer instanceof DynamicCapacity dynamic)
+                    list.addAll(flattenToChunks(dynamic));
+                else
+                    list.add(Content.Chunk.asChunk(buffer.getByteBuffer(), false, buffer));
+            }
+            ChunksContentSource contentSource = new ChunksContentSource(list);
+            clear();
+            return contentSource;
+        }
+
+        private static List<Content.Chunk> flattenToChunks(DynamicCapacity dynamic)
+        {
+            List<Content.Chunk> list = new ArrayList<>();
+            for (RetainableByteBuffer buffer : dynamic._buffers)
+            {
+                if (buffer instanceof Content.Chunk chunk)
+                    list.add(chunk);
+                else if (buffer instanceof DynamicCapacity d)
+                    list.addAll(flattenToChunks(d));
+                else
+                    list.add(Content.Chunk.asChunk(buffer.getByteBuffer(), false, buffer));
+            }
+            return list;
         }
 
         @Override
