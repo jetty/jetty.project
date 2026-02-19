@@ -744,7 +744,7 @@ public class ScannerTest
 
     private static void touch(Path file) throws IOException
     {
-        touch(file, (ft) -> System.currentTimeMillis());
+        touch(file, (ft) -> ft + 1L);
     }
 
     private static void touch(Path file, Function<Long, Long> fileTimeDelta) throws IOException
