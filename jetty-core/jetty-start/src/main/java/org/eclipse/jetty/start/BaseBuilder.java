@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.builders.StartDirBuilder;
 import org.eclipse.jetty.start.builders.StartIniBuilder;
@@ -541,6 +542,9 @@ public class BaseBuilder
      */
     private Path downloadConfigJar(URI uri) throws IOException
     {
+        // Validate the initial URL against the allowlist
+        validateDownloadUrl(uri);
+
         if ("http".equalsIgnoreCase(uri.getScheme()) && !startArgs.isAllowInsecureHttpDownloads())
         {
             throw new IOException("Insecure HTTP download not allowed (use " +
@@ -568,6 +572,11 @@ public class BaseBuilder
             HttpResponse<InputStream> response =
                 httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
+            // Validate the final URI after any redirects
+            URI finalUri = response.uri();
+            if (!finalUri.equals(uri))
+                validateDownloadUrl(finalUri);
+
             int status = response.statusCode();
             if (status != 200)
             {
@@ -592,5 +601,34 @@ public class BaseBuilder
             Files.deleteIfExists(tempFile);
             throw e;
         }
+    }
+
+    /**
+     * Validates that a download URI matches at least one allowed URL prefix.
+     * If {@code --allow-insecure-http-downloads} is enabled, the check is bypassed.
+     *
+     * @param uri the URI to validate
+     * @throws IOException if the URI does not match any allowed prefix
+     */
+    private void validateDownloadUrl(URI uri) throws IOException
+    {
+        if (startArgs.isAllowInsecureHttpDownloads())
+            return;
+
+        String uriString = uri.toString();
+        List<String> allowedUrls = startArgs.getDownloadAllowedUrls();
+
+        for (String prefix : allowedUrls)
+        {
+            if (uriString.startsWith(prefix))
+                return;
+        }
+
+        throw new IOException(String.format(
+            "Download URL not in allowlist: %s%nAllowed URL prefixes:%n%s%nUse %s=<prefix> or %s=<file> to add trusted download sources.",
+            uri,
+            allowedUrls.stream().map(p -> "  - " + p).collect(Collectors.joining(System.lineSeparator())),
+            StartArgs.ARG_DOWNLOAD_ALLOWED_URLS,
+            StartArgs.ARG_DOWNLOAD_ALLOWED_URLS_FILE));
     }
 }

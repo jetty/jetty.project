@@ -104,6 +104,58 @@ If `--download-auth-header` is provided, it takes precedence over `--download-us
 
 NOTE: These authentication options apply to all HTTP downloads performed during the session, including files referenced in the `<<directive-files,[files]>>` sections of modules.
 
+[[remote-security]]
+=== Download URL Allowlist
+
+For security, Jetty restricts which URLs are accepted for remote module downloads.
+By default, only URLs starting with `https://repo1.maven.org/maven2/` are allowed.
+
+To add additional trusted URL prefixes, use one of the following options:
+
+==== URL Prefixes (Comma-Separated)
+
+----
+$ java -jar $JETTY_HOME/start.jar \
+    --download-allowed-urls=https://repo-a.example.com/,https://repo-b.example.com/ \
+    --add-modules=https://repo-a.example.com/acme-config-1.0.jar
+----
+
+==== URL Prefixes from a File
+
+----
+$ java -jar $JETTY_HOME/start.jar \
+    --download-allowed-urls-file=etc/download-allowlist.txt \
+    --add-modules=https://private-repo.example.com/artifacts/acme-config-1.0.jar
+----
+
+The file should contain one URL prefix per line.
+Lines starting with `#` are treated as comments, and blank lines are ignored:
+
+.etc/download-allowlist.txt
+----
+# Allowed download sources for remote modules
+
+# Maven Central (already included by default)
+# https://repo1.maven.org/maven2/
+
+# Corporate artifact repository
+https://private-repo.example.com/artifacts/
+
+# Staging repository
+https://staging.example.com/releases/
+----
+
+[IMPORTANT]
+====
+URL prefixes should end with `/` to prevent partial domain matching.
+For example, `https://repo.example.com/` will not match `https://repo.example.com.evil.org/`.
+
+Redirect targets are also validated against the allowlist -- a trusted server cannot redirect the download to an untrusted destination.
+
+The `--allow-insecure-http-downloads` option bypasses the allowlist entirely.
+This should only be used for testing purposes.
+====
+
 [[names]]
 == Module Names
 

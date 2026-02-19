@@ -442,4 +442,127 @@ public class DownloadModuleTests extends AbstractJettyHomeTest
             fileServer.stop();
         }
     }
+
+    @Test
+    public void testAddModuleFromDisallowedUrl() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        String moduleName = "test-blocked";
+        Path configJar = createConfigJar(jettyBase.resolve("work"), moduleName);
+        byte[] jarBytes = Files.readAllBytes(configJar);
+
+        Server fileServer = startFileServer("/" + configJar.getFileName(), jarBytes);
+        try
+        {
+            String downloadUrl = "https://localhost:" + getPort(fileServer) + "/" + configJar.getFileName();
+
+            // Without --allow-insecure-http-downloads, the URL must match the allowlist.
+            // localhost is not in the default allowlist, so the download should be rejected.
+            try (JettyHomeTester.Run run = distribution.start(
+                "--add-modules=" + downloadUrl))
+            {
+                assertTrue(run.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), run.logs());
+                assertTrue(run.getExitValue() != 0 || run.getLogs().stream().anyMatch(l -> l.contains("not in allowlist")),
+                    "Download from non-allowed URL should fail: " + run.getLogs());
+            }
+        }
+        finally
+        {
+            fileServer.stop();
+        }
+    }
+
+    @Test
+    public void testAddModuleFromExplicitlyAllowedUrl() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        String moduleName = "test-explicit-allow";
+        Path configJar = createConfigJar(jettyBase.resolve("work"), moduleName);
+        byte[] jarBytes = Files.readAllBytes(configJar);
+
+        Server fileServer = startFileServer("/" + configJar.getFileName(), jarBytes);
+        try
+        {
+            int port = getPort(fileServer);
+            String downloadUrl = "http://localhost:" + port + "/" + configJar.getFileName();
+            String allowedPrefix = "http://localhost:" + port + "/";
+
+            // Use --download-allowed-urls to explicitly allow this localhost URL.
+            try (JettyHomeTester.Run run = distribution.start(
+                "--download-allowed-urls=" + allowedPrefix,
+                "--add-modules=" + downloadUrl))
+            {
+                assertTrue(run.awaitForStart(START_TIMEOUT, TimeUnit.SECONDS), run.logs());
+                assertEquals(0, run.getExitValue(), run.logs());
+            }
+
+            Path installedMod = jettyBase.resolve("modules/" + moduleName + ".mod");
+            assertTrue(Files.exists(installedMod),
+                "Module file should have been extracted to " + installedMod);
+        }
+        finally
+        {
+            fileServer.stop();
+        }
+    }
+
+    @Test
+    public void testAddModuleFromUrlWithAllowlistFile() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        String moduleName = "test-file-allowlist";
+        Path configJar = createConfigJar(jettyBase.resolve("work"), moduleName);
+        byte[] jarBytes = Files.readAllBytes(configJar);
+
+        Server fileServer = startFileServer("/" + configJar.getFileName(), jarBytes);
+        try
+        {
+            int port = getPort(fileServer);
+            String downloadUrl = "http://localhost:" + port + "/" + configJar.getFileName();
+            String allowedPrefix = "http://localhost:" + port + "/";
+
+            // Create an allowlist file with comments and blank lines.
+            Path allowlistFile = jettyBase.resolve("download-allowlist.txt");
+            Files.writeString(allowlistFile,
+                "# Allowed download sources\n" +
+                "\n" +
+                "# Test server\n" +
+                allowedPrefix + "\n");
+
+            // Use --download-allowed-urls-file to load allowed prefixes from file.
+            try (JettyHomeTester.Run run = distribution.start(
+                "--download-allowed-urls-file=" + allowlistFile.toAbsolutePath(),
+                "--add-modules=" + downloadUrl))
+            {
+                assertTrue(run.awaitForStart(START_TIMEOUT, TimeUnit.SECONDS), run.logs());
+                assertEquals(0, run.getExitValue(), run.logs());
+            }
+
+            Path installedMod = jettyBase.resolve("modules/" + moduleName + ".mod");
+            assertTrue(Files.exists(installedMod),
+                "Module file should have been extracted to " + installedMod);
+        }
+        finally
+        {
+            fileServer.stop();
+        }
+    }
 }

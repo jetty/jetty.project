@@ -57,6 +57,9 @@ public class StartArgs
     public static final String ARG_DOWNLOAD_USERNAME = "--download-username";
     public static final String ARG_DOWNLOAD_PASSWORD = "--download-password";
     public static final String ARG_DOWNLOAD_AUTH_HEADER = "--download-auth-header";
+    public static final String ARG_DOWNLOAD_ALLOWED_URLS = "--download-allowed-urls";
+    public static final String ARG_DOWNLOAD_ALLOWED_URLS_FILE = "--download-allowed-urls-file";
+    public static final String DEFAULT_ALLOWED_URL_PREFIX = "https://repo1.maven.org/maven2/";
 
     private static final String JETTY_VERSION_KEY = "jetty.version";
     private static final String JETTY_TAG_NAME_KEY = "jetty.tag.version";
@@ -191,6 +194,7 @@ public class StartArgs
     private String downloadUsername;
     private String downloadPassword;
     private String downloadAuthHeader;
+    private final List<String> downloadAllowedUrls = new ArrayList<>(List.of(DEFAULT_ALLOWED_URL_PREFIX));
 
     /**
      * The jetty environment holds the main configuration used from the primary classloader for Jetty.
@@ -831,6 +835,11 @@ public class StartArgs
         return null;
     }
 
+    public List<String> getDownloadAllowedUrls()
+    {
+        return downloadAllowedUrls;
+    }
+
     public boolean isApproveAllLicenses()
     {
         return approveAllLicenses;
@@ -1137,6 +1146,32 @@ public class StartArgs
         if (arg.startsWith(ARG_DOWNLOAD_AUTH_HEADER + "="))
         {
             downloadAuthHeader = Props.getValue(arg);
+            return environment;
+        }
+
+        // Download URL allowlist
+        if (arg.startsWith(ARG_DOWNLOAD_ALLOWED_URLS + "=") && !arg.startsWith(ARG_DOWNLOAD_ALLOWED_URLS_FILE + "="))
+        {
+            downloadAllowedUrls.addAll(Props.getValues(arg));
+            return environment;
+        }
+        if (arg.startsWith(ARG_DOWNLOAD_ALLOWED_URLS_FILE + "="))
+        {
+            Path allowlistFile = baseHome.getPath(Props.getValue(arg));
+            if (!FS.canReadFile(allowlistFile))
+                throw new UsageException(UsageException.ERR_BAD_ARG, "%s file is not readable: %s", ARG_DOWNLOAD_ALLOWED_URLS_FILE, allowlistFile);
+            try
+            {
+                TextFile file = new TextFile(allowlistFile);
+                for (String line : file)
+                {
+                    downloadAllowedUrls.add(line);
+                }
+            }
+            catch (IOException e)
+            {
+                throw new UsageException(UsageException.ERR_BAD_ARG, "Failed to read %s: %s", ARG_DOWNLOAD_ALLOWED_URLS_FILE, allowlistFile);
+            }
             return environment;
         }
 
