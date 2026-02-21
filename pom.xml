@@ -323,7 +323,7 @@
     <tinybundles.version>4.0.1</tinybundles.version>
     <versions.maven.plugin.version>2.21.0</versions.maven.plugin.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
-    <wildfly.elytron.version>2.8.2.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.8.3.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.9</xmemcached.version>
   </properties>
 
