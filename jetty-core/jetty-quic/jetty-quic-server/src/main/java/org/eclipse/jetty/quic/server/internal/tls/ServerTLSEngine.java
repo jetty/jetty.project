@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.server.internal.tls;
 
 import java.nio.ByteBuffer;
 import java.security.KeyStore;
+import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
@@ -24,11 +25,14 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.HKDFParameterSpec;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
@@ -52,11 +56,15 @@ import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.common.GroupKeyPair;
+import org.eclipse.jetty.tls.common.HKDF;
 import org.eclipse.jetty.tls.ext.ALPNExtension;
+import org.eclipse.jetty.tls.ext.ClientPreSharedKeyExtension;
 import org.eclipse.jetty.tls.ext.EarlyDataExtension;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.KeyShareExtension;
+import org.eclipse.jetty.tls.ext.PreSharedKeyIdentity;
 import org.eclipse.jetty.tls.ext.ServerNameExtension;
+import org.eclipse.jetty.tls.ext.ServerPreSharedKeyExtension;
 import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
 import org.eclipse.jetty.util.BufferUtil;
@@ -149,15 +157,16 @@ public class ServerTLSEngine extends TLSEngine
         if (state != State.NEED_CLIENT_HELLO)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
-        getPacketProtector().getTranscriptHash().offer(clientHello, true);
-
         List<Extension> clientExtensions = clientHello.extensions();
 
         if (clientExtensions.size() != clientExtensions.stream().map(Object::getClass).distinct().count())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "duplicate_extension");
 
         List<String> clientProtocols = List.of();
+        List<PreSharedKeyIdentity> clientIdentities = List.of();
         List<KeyShare> clientKeyShares = List.of();
+        TransportParameters clientTransportParameters = null;
+        String serverName = null;
         List<SignatureAlgorithm> clientSignatureAlgorithms = List.of();
         List<TLSVersion> clientVersions = List.of();
         for (Extension extension : clientExtensions)
@@ -165,14 +174,45 @@ public class ServerTLSEngine extends TLSEngine
             switch (extension)
             {
                 case ALPNExtension ae -> clientProtocols = ae.protocols();
+                case ClientPreSharedKeyExtension pske -> clientIdentities = pske.identities();
                 case KeyShareExtension kse -> clientKeyShares = kse.keyShares();
-                case QuicTransportParametersExtension qtpe -> setTransportParameters(qtpe.transportParameters());
-                case ServerNameExtension sne -> setServerName(sne.serverName());
+                case QuicTransportParametersExtension qtpe -> clientTransportParameters = qtpe.transportParameters();
+                case ServerNameExtension sne -> serverName = sne.serverName();
                 case SignatureAlgorithmsExtension sae -> clientSignatureAlgorithms = sae.signatureAlgorithms();
                 case SupportedVersionsExtension sve -> clientVersions = sve.versions();
                 default ->
                 {
                 }
+            }
+        }
+
+        SessionTicket sessionTicket = null;
+        if (!clientIdentities.isEmpty())
+        {
+            PreSharedKeyIdentity clientIdentity = clientIdentities.getFirst();
+            sessionTicket = getTLSConfiguration().getServerQuicConfiguration().getSessionTicketFactory().parseSessionTicket(clientIdentity.identity());
+            if (sessionTicket != null)
+            {
+                // RFC-8446[4.2.11]: the pre-shared key extension must be the last.
+                // RFC-8446[4.2.11.2]: truncate the extension to verify the binder.
+                List<Extension> truncatedExtensions = new ArrayList<>(clientExtensions);
+                ClientPreSharedKeyExtension pske = (ClientPreSharedKeyExtension)truncatedExtensions.removeLast();
+                List<PreSharedKeyIdentity> truncatedIdentities = new ArrayList<>();
+                for (PreSharedKeyIdentity identity : pske.identities())
+                {
+                    truncatedIdentities.add(new PreSharedKeyIdentity(identity.identity(), identity.obfuscatedTicketAge(), new byte[identity.binder().length]));
+                }
+                truncatedExtensions.add(new ClientPreSharedKeyExtension(truncatedIdentities, false));
+                ClientHelloMessage truncatedClientHello = new ClientHelloMessage(clientHello.random(), clientHello.cipherSuites(), truncatedExtensions);
+                getPacketProtector().getTranscriptHash().offer(truncatedClientHello, true);
+
+                CipherSuite cipherSuite = sessionTicket.handshakeData().cipherSuite();
+                getPacketProtector().getTranscriptHash().initialize(cipherSuite);
+                byte[] binder = getPacketProtector().createPreSharedKeyIdentityBinder(cipherSuite, sessionTicket.resumptionMasterSecret(), sessionTicket.configuration().nonce());
+                getPacketProtector().getTranscriptHash().clear();
+                if (!MessageDigest.isEqual(clientIdentity.binder(), binder))
+                    sessionTicket = null;
+                // TODO: early data?
             }
         }
 
@@ -182,30 +222,42 @@ public class ServerTLSEngine extends TLSEngine
         if (!clientVersions.contains(TLSVersion.TLS_1_3))
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "unsupported_tls_version");
         // Only TLS 1.3 is supported for now.
-        TLSVersion tlsVersion = TLSVersion.TLS_1_3;
+        TLSVersion tlsVersion = sessionTicket != null ? sessionTicket.handshakeData().tlsVersion() : TLSVersion.TLS_1_3;
         setTLSVersion(tlsVersion);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated TLS version {} on {}", tlsVersion, this);
 
+        if (sessionTicket != null && !Objects.equals(serverName, sessionTicket.handshakeData().serverName()))
+            sessionTicket = null;
         SslContextFactory.Server sslContextFactory = tlsConfiguration.getSslContextFactory();
-        String serverName = getServerName();
         boolean sniRequired = sslContextFactory.isSniRequired();
         if (serverName == null && sniRequired)
             throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_server_name_extension");
+        setServerName(serverName);
+
+        setTransportParameters(clientTransportParameters);
 
         // Prefer server cipher suites.
-        List<CipherSuite> negotiatedCipherSuites = new ArrayList<>(tlsConfiguration.getServerQuicConfiguration().getCipherSuites());
+        List<CipherSuite> serverCipherSuites = sessionTicket != null
+            ? List.of(sessionTicket.handshakeData().cipherSuite())
+            : tlsConfiguration.getServerQuicConfiguration().getCipherSuites();
+        List<CipherSuite> negotiatedCipherSuites = new ArrayList<>(serverCipherSuites);
         List<CipherSuite> clientCipherSuites = clientHello.cipherSuites();
         negotiatedCipherSuites.retainAll(clientCipherSuites);
         if (negotiatedCipherSuites.isEmpty())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_cipher_suite");
         CipherSuite cipherSuite = negotiatedCipherSuites.getFirst();
         setCipherSuite(cipherSuite);
+        if (sessionTicket == null)
+            getPacketProtector().getTranscriptHash().initialize(cipherSuite);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated CipherSuite {} on {}", cipherSuite, this);
 
         // Prefer server application protocols.
-        List<String> negotiatedProtocols = new ArrayList<>(tlsConfiguration.getApplicationProtocols());
+        List<String> serverProtocols = sessionTicket != null
+            ? List.of(sessionTicket.handshakeData().applicationProtocol())
+            : tlsConfiguration.getApplicationProtocols();
+        List<String> negotiatedProtocols = new ArrayList<>(serverProtocols);
         negotiatedProtocols.retainAll(clientProtocols);
         if (negotiatedProtocols.isEmpty())
             throw new TLSException(TLSException.Alert.NO_APPLICATION_PROTOCOL, "no_common_application_protocol");
@@ -214,34 +266,37 @@ public class ServerTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated alpn protocol {} on {}", protocol, this);
 
-        if (clientSignatureAlgorithms.isEmpty())
-            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_signature_algorithms_extension");
         List<SignatureAlgorithm> serverSignatureAlgorithms = tlsConfiguration.getServerQuicConfiguration().getSignatureAlgorithms();
-        // Prefer server signature algorithms.
-        List<SignatureAlgorithm> negotiatedSignatureAlgorithms = new ArrayList<>(serverSignatureAlgorithms);
-        negotiatedSignatureAlgorithms.retainAll(clientSignatureAlgorithms);
-        if (negotiatedSignatureAlgorithms.isEmpty())
-            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_signature_algorithm");
-        if (LOG.isDebugEnabled())
-            LOG.debug("negotiated signature algorithms {} on {}", negotiatedSignatureAlgorithms, this);
-
         List<SignatureWithKeyStorePair> negotiatedKeyStorePairs = new ArrayList<>();
-        for (X509KeyStorePair keyStorePair : keyStorePairs)
+        if (sessionTicket == null)
         {
-            PublicKey publicKey = keyStorePair.certificates().getFirst().getPublicKey();
-            for (SignatureAlgorithm signatureAlgorithm : negotiatedSignatureAlgorithms)
+            if (clientSignatureAlgorithms.isEmpty())
+                throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_signature_algorithms_extension");
+            // Prefer server signature algorithms.
+            List<SignatureAlgorithm> negotiatedSignatureAlgorithms = new ArrayList<>(serverSignatureAlgorithms);
+            negotiatedSignatureAlgorithms.retainAll(clientSignatureAlgorithms);
+            if (negotiatedSignatureAlgorithms.isEmpty())
+                throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_signature_algorithm");
+            if (LOG.isDebugEnabled())
+                LOG.debug("negotiated signature algorithms {} on {}", negotiatedSignatureAlgorithms, this);
+
+            for (X509KeyStorePair keyStorePair : keyStorePairs)
             {
-                if (signatureAlgorithm.supports(publicKey))
+                PublicKey publicKey = keyStorePair.certificates().getFirst().getPublicKey();
+                for (SignatureAlgorithm signatureAlgorithm : negotiatedSignatureAlgorithms)
                 {
-                    negotiatedKeyStorePairs.add(new SignatureWithKeyStorePair(signatureAlgorithm, keyStorePair));
-                    break;
+                    if (signatureAlgorithm.supports(publicKey))
+                    {
+                        negotiatedKeyStorePairs.add(new SignatureWithKeyStorePair(signatureAlgorithm, keyStorePair));
+                        break;
+                    }
                 }
             }
+            if (negotiatedKeyStorePairs.isEmpty())
+                throw new TLSException(TLSException.Alert.UNSUPPORTED_CERTIFICATE, "unsupported_certificate");
+            if (LOG.isDebugEnabled())
+                LOG.debug("supported certificates at aliases {} on {}", negotiatedKeyStorePairs.stream().map(p -> p.keyStorePair().alias()).toList(), this);
         }
-        if (negotiatedKeyStorePairs.isEmpty())
-            throw new TLSException(TLSException.Alert.UNSUPPORTED_CERTIFICATE, "unsupported_certificate");
-        if (LOG.isDebugEnabled())
-            LOG.debug("supported certificates at aliases {} on {}", negotiatedKeyStorePairs.stream().map(p -> p.keyStorePair().alias()).toList(), this);
 
         if (clientKeyShares.isEmpty())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing_key_shares");
@@ -269,13 +324,20 @@ public class ServerTLSEngine extends TLSEngine
         List<Extension> serverExtensions = new ArrayList<>();
         serverExtensions.add(new SupportedVersionsExtension(List.of(tlsVersion)));
         serverExtensions.add(new KeyShareExtension(List.of(serverKeyShare)));
+        if (sessionTicket != null)
+            serverExtensions.add(new ServerPreSharedKeyExtension(0));
         ServerHelloMessage serverHello = new ServerHelloMessage(newRandomBytes(32), cipherSuite, serverExtensions);
         if (LOG.isDebugEnabled())
             LOG.debug("produced {} on {}", serverHello, this);
 
+        getPacketProtector().getTranscriptHash().offer(clientHello, true);
         getPacketProtector().getTranscriptHash().offer(serverHello, false);
+
         QuicVersion quicVersion = tlsConfiguration.getQuicVersion();
-        getPacketProtector().allocateHandshakeKeys(quicVersion, cipherSuite, sharedSecret);
+        HKDFParameterSpec inputKeyMaterial = null;
+        if (sessionTicket != null)
+            inputKeyMaterial = HKDF.expandLabel(sessionTicket.resumptionMasterSecret(), "resumption", sessionTicket.configuration().nonce(), sessionTicket.handshakeData().cipherSuite().hashLength());
+        getPacketProtector().generateHandshakeKeys(quicVersion, cipherSuite, sharedSecret, inputKeyMaterial);
 
         List<Message> handshakeMessages = new ArrayList<>();
 
@@ -287,55 +349,59 @@ public class ServerTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("produced {} on {}", encryptedExtensions, this);
 
-        boolean clientAuthentication = sslContextFactory.getWantClientAuth() || sslContextFactory.getNeedClientAuth();
-        if (clientAuthentication)
+        boolean clientAuthentication = false;
+        if (sessionTicket == null)
         {
-            List<Extension> extensions = List.of(new SignatureAlgorithmsExtension(serverSignatureAlgorithms));
-            CertificateRequestMessage certificateRequest = new CertificateRequestMessage(BufferUtil.EMPTY_BYTES, extensions);
-            handshakeMessages.add(certificateRequest);
+            clientAuthentication = sslContextFactory.getWantClientAuth() || sslContextFactory.getNeedClientAuth();
+            if (clientAuthentication)
+            {
+                List<Extension> extensions = List.of(new SignatureAlgorithmsExtension(serverSignatureAlgorithms));
+                CertificateRequestMessage certificateRequest = new CertificateRequestMessage(BufferUtil.EMPTY_BYTES, extensions);
+                handshakeMessages.add(certificateRequest);
+            }
+
+            SignatureWithKeyStorePair match = null;
+            if (serverName != null)
+                match = selectCertificate(negotiatedKeyStorePairs, serverName);
+            SignatureWithKeyStorePair candidate = serverName == null ? negotiatedKeyStorePairs.getFirst() : match;
+            if (candidate == null)
+            {
+                if (sniRequired)
+                    throw new TLSException(TLSException.Alert.UNRECOGNIZED_NAME, "no_matching_certificate");
+                else
+                    candidate = negotiatedKeyStorePairs.getFirst();
+            }
+            // TODO: also default certificates must be checked for validity: split the check out of selectCertificate().
+            if (LOG.isDebugEnabled())
+                LOG.debug("certificate {} at alias {} on {}", match != null ? "match" : "default", candidate.keyStorePair().alias(), this);
+
+            List<CertificateMessage.Entry> entries = candidate.keyStorePair().certificates().stream()
+                .map(c -> new CertificateMessage.Entry(c, List.of()))
+                .toList();
+            CertificateMessage certificate = new CertificateMessage(BufferUtil.EMPTY_BYTES, entries);
+            handshakeMessages.add(certificate);
+            if (LOG.isDebugEnabled())
+                LOG.debug("produced {} on {}", certificate, this);
+
+            // Add CertificateMessage to the TranscriptHash to
+            // calculate the signature for CertificateVerifyMessage.
+            getPacketProtector().getTranscriptHash().offer(certificate, false);
+            CertificateVerifyMessage certificateVerify = createCertificateVerifyMessage(candidate.signatureAlgorithm(), candidate.keyStorePair().privateKey(), false);
+            handshakeMessages.add(certificateVerify);
+            if (LOG.isDebugEnabled())
+                LOG.debug("produced {} on {}", certificateVerify, this);
+
+            // Add CertificateVerifyMessage to calculate the verifyData for FinishedMessage.
+            getPacketProtector().getTranscriptHash().offer(certificateVerify, false);
         }
 
-        SignatureWithKeyStorePair match = null;
-        if (serverName != null)
-            match = selectCertificate(negotiatedKeyStorePairs, serverName);
-        SignatureWithKeyStorePair candidate = serverName == null ? negotiatedKeyStorePairs.getFirst() : match;
-        if (candidate == null)
-        {
-            if (sniRequired)
-                throw new TLSException(TLSException.Alert.UNRECOGNIZED_NAME, "no_matching_certificate");
-            else
-                candidate = negotiatedKeyStorePairs.getFirst();
-        }
-        // TODO: also default certificates must be checked for validity: split the check out of selectCertificate().
-        if (LOG.isDebugEnabled())
-            LOG.debug("certificate {} at alias {} on {}", match != null ? "match" : "default", candidate.keyStorePair().alias(), this);
-
-        List<CertificateMessage.Entry> entries = candidate.keyStorePair().certificates().stream()
-            .map(c -> new CertificateMessage.Entry(c, List.of()))
-            .toList();
-        CertificateMessage certificate = new CertificateMessage(BufferUtil.EMPTY_BYTES, entries);
-        handshakeMessages.add(certificate);
-        if (LOG.isDebugEnabled())
-            LOG.debug("produced {} on {}", certificate, this);
-
-        // Add CertificateMessage to the TranscriptHash to
-        // calculate the signature for CertificateVerifyMessage.
-        getPacketProtector().getTranscriptHash().offer(certificate, false);
-        CertificateVerifyMessage certificateVerify = createCertificateVerifyMessage(candidate.signatureAlgorithm(), candidate.keyStorePair().privateKey(), false);
-        handshakeMessages.add(certificateVerify);
-        if (LOG.isDebugEnabled())
-            LOG.debug("produced {} on {}", certificateVerify, this);
-
-        // Add CertificateVerifyMessage to calculate
-        // the verifyData for FinishedMessage.
-        getPacketProtector().getTranscriptHash().offer(certificateVerify, false);
         FinishedMessage finished = createFinishedMessage(cipherSuite);
         handshakeMessages.add(finished);
         if (LOG.isDebugEnabled())
             LOG.debug("produced {} on {}", finished, this);
 
         getPacketProtector().getTranscriptHash().offer(finished, false);
-        getPacketProtector().allocateApplicationKeys(quicVersion, cipherSuite);
+        getPacketProtector().generateApplicationKeys(quicVersion, cipherSuite);
 
         state = clientAuthentication ? State.NEED_CERTIFICATE : State.NEED_FINISHED;
 
@@ -482,9 +548,12 @@ public class ServerTLSEngine extends TLSEngine
         SessionTicket sessionTicket = new SessionTicket(configuration, handshakeData, resumptionMasterSecret);
 
         byte[] ticket = serverQuicConfiguration.getSessionTicketFactory().generateSessionTicket(sessionTicket);
-        List<Extension> extensions = List.of(new EarlyDataExtension(-1));
-        NewSessionTicketMessage newSessionTicket = new NewSessionTicketMessage(lifetime, ageAdd, newRandomBytes(8), ticket, extensions);
-        notifyMessages(EncryptionLevel.ONE_RTT, List.of(newSessionTicket), Callback.from(Callback.NOOP, this::fail));
+        if (ticket != null)
+        {
+            List<Extension> extensions = List.of(new EarlyDataExtension(serverQuicConfiguration.getEarlyMaxData()));
+            NewSessionTicketMessage newSessionTicket = new NewSessionTicketMessage(lifetime, ageAdd, configuration.nonce(), ticket, extensions);
+            notifyMessages(EncryptionLevel.ONE_RTT, List.of(newSessionTicket), Callback.from(Callback.NOOP, this::fail));
+        }
     }
 
     @Override

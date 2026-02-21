@@ -18,31 +18,66 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DefaultZeroRTTStore implements ZeroRTTStore
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultZeroRTTStore.class);
+
+    private final AutoLock lock = new AutoLock();
     private final List<Entry> entries = new ArrayList<>();
 
     @Override
-    public void put(Entry entry)
+    public void store(Entry entry)
     {
-        entries.add(entry);
+        if (LOG.isDebugEnabled())
+            LOG.debug("storing {} on {}", entry, this);
+        try (var _ = lock.lock())
+        {
+            entries.add(entry);
+        }
     }
 
     @Override
     public Entry match(Predicate<Entry> filter)
     {
-        Iterator<Entry> iterator = entries.iterator();
-        while (iterator.hasNext())
+        Entry result = null;
+        try (var _ = lock.lock())
         {
-            Entry entry = iterator.next();
-            if (entry.expired())
-                continue;
-            if (filter.test(entry))
+            Iterator<Entry> iterator = entries.iterator();
+            while (iterator.hasNext())
             {
-                iterator.remove();
-                return entry;
+                Entry entry = iterator.next();
+                if (entry.expired())
+                    continue;
+                if (filter.test(entry))
+                {
+                    iterator.remove();
+                    result = entry;
+                    break;
+                }
             }
         }
-        return null;
+        if (LOG.isDebugEnabled())
+            LOG.debug("matched {} on {}", result, this);
+        return result;
+    }
+
+    @Override
+    public int size()
+    {
+        try (var _ = lock.lock())
+        {
+            return entries.size();
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s@%x[size=%d]".formatted(TypeUtil.toShortName(getClass()), hashCode(), size());
     }
 }

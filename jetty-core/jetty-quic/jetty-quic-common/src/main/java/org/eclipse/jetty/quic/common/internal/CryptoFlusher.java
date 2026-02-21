@@ -25,6 +25,7 @@ import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.QuicStream;
 import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.internal.packets.PacketsGenerator;
 import org.eclipse.jetty.quic.common.packets.Packet;
@@ -53,12 +54,27 @@ class CryptoFlusher implements Callback
         this.encryptionLevel = encryptionLevel;
     }
 
+    QuicSession getQuicSession()
+    {
+        return flusher.getQuicSession();
+    }
+
+    FramesGenerator getFramesGenerator()
+    {
+        return flusher.getFramesGenerator();
+    }
+
     boolean offer(List<Frame> frames, Callback callback)
+    {
+        return offer(null, frames, callback);
+    }
+
+    boolean offer(QuicStream stream, List<Frame> frames, Callback callback)
     {
         try (var _ = lock.lock())
         {
             // TODO: check if closed/failed, etc.
-            QuicFlusher.FramesEntry entry = new QuicFlusher.FramesEntry(null, frames, callback);
+            QuicFlusher.FramesEntry entry = new QuicFlusher.FramesEntry(stream, frames, callback);
             boolean result = entries.add(entry);
             if (LOG.isDebugEnabled())
                 LOG.debug("offered={} {} on {}", result, entry, this);
@@ -74,7 +90,6 @@ class CryptoFlusher implements Callback
             entries.clear();
         }
 
-        FramesGenerator framesGenerator = flusher.getFramesGenerator();
         RetainableByteBuffer.Mutable framesAccumulator = flusher.getPlaintextBuffer();
         QuicSession session = flusher.getQuicSession();
         int packetHeaderLength = session.estimatePacketHeaderLength(encryptionLevel);
@@ -90,17 +105,7 @@ class CryptoFlusher implements Callback
             for (int i = 0; i < frames.size(); ++i)
             {
                 Frame frame = frames.get(i);
-                long generated = switch (frame)
-                {
-                    case CryptoFrame cryptoFrame ->
-                    {
-                        long initialDataBytes = cryptoFrame.data().size();
-                        long frameBytesGenerated = framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, cryptoOffset, maxBytes);
-                        cryptoOffset += initialDataBytes - cryptoFrame.data().size();
-                        yield frameBytesGenerated;
-                    }
-                    default -> framesGenerator.generateFrame(framesAccumulator, frame, maxBytes);
-                };
+                long generated = generateFrame(framesAccumulator, entry.stream(), frame, maxBytes);
 
                 maxBytes -= generated;
                 progress |= generated > 0;
@@ -165,6 +170,22 @@ class CryptoFlusher implements Callback
             LOG.debug("writing {} {} to {} on {}", packet, packetAccumulator, endPoint, this);
         endPoint.write(flusher, session.getRemoteSocketAddress(), packetAccumulator.getByteBuffer());
         return true;
+    }
+
+    long generateFrame(RetainableByteBuffer.Mutable framesAccumulator, QuicStream stream, Frame frame, long maxBytes)
+    {
+        FramesGenerator framesGenerator = getFramesGenerator();
+        return switch (frame)
+        {
+            case CryptoFrame cryptoFrame ->
+            {
+                long initialDataBytes = cryptoFrame.data().size();
+                long frameBytesGenerated = framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, cryptoOffset, maxBytes);
+                cryptoOffset += initialDataBytes - cryptoFrame.data().size();
+                yield frameBytesGenerated;
+            }
+            default -> framesGenerator.generateFrame(framesAccumulator, frame, maxBytes);
+        };
     }
 
     @Override

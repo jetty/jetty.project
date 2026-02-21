@@ -94,7 +94,7 @@ public class QuicTest extends AbstractQuicTest
         assertNotNull(session);
 
         List<String> expectedEvents = List.of("prepare", "transportParameters", "open");
-        await().atMost(5, TimeUnit.SECONDS).until(serverEvents::size, equalTo(3));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(serverEvents.toString(), serverEvents.size(), equalTo(3)));
         assertThat(serverEvents, equalTo(expectedEvents));
         assertThat(clientEvents, equalTo(expectedEvents));
     }

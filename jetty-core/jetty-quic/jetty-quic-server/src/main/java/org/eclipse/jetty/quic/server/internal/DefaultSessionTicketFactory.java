@@ -22,7 +22,6 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
-import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -72,7 +71,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 ///
 /// The plaintext structure is encrypted so that the final structure is:
 /// ```
-/// [nonce][encrypted_ticket][aead_tag]
+/// [cipher_nonce][encrypted_ticket][aead_tag]
 /// ```
 ///
 /// This implementation encrypts the plaintext structure with keys that
@@ -122,52 +121,59 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
     }
 
     @Override
-    public byte[] generateSessionTicket(SessionTicket ticket) throws Exception
+    public byte[] generateSessionTicket(SessionTicket ticket)
     {
-        TicketKey key;
-        try (var _ = lock.lock())
+        try
         {
-            key = ticketKeys.peekFirst();
-            if (key == null || NanoTime.secondsSince(key.nanoTime()) > getKeyRotationPeriod().toSeconds())
-                key = lockedRotateKey();
+            TicketKey key;
+            try (var _ = lock.lock())
+            {
+                key = ticketKeys.peekFirst();
+                if (key == null || NanoTime.secondsSince(key.nanoTime()) > getKeyRotationPeriod().toSeconds())
+                    key = lockedRotateKey();
+            }
+
+            SessionTicket.Configuration configuration = ticket.configuration();
+            HandshakeData handshake = ticket.handshakeData();
+            byte[] serverName = handshake.serverName().getBytes(StandardCharsets.UTF_8);
+            byte[] protocol = handshake.applicationProtocol().getBytes(StandardCharsets.US_ASCII);
+            RetainableByteBuffer.DynamicCapacity accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
+            int length = generator.generate(accumulator, handshake.transportParameters());
+            byte[] transportParameters = new byte[length];
+            accumulator.get(transportParameters, 0, length);
+            byte[] resumptionSecret = ticket.resumptionMasterSecret().getEncoded();
+            int capacity = 8 + 4 + 4 +
+                1 + configuration.nonce().length +
+                2 + 2 + 2 +
+                1 + serverName.length +
+                1 + protocol.length +
+                1 + transportParameters.length +
+                1 + resumptionSecret.length;
+            byte[] plainText = new byte[capacity];
+            ByteBuffer.wrap(plainText)
+                .putLong(Instant.now().toEpochMilli())
+                .putInt(configuration.lifetime())
+                .putInt(configuration.ageAdd())
+                .put((byte)configuration.nonce().length)
+                .put(configuration.nonce())
+                .putShort((short)handshake.quicVersion().code())
+                .putShort((short)handshake.tlsVersion().code())
+                .putShort((short)handshake.cipherSuite().code())
+                .put((byte)serverName.length)
+                .put(serverName)
+                .put((byte)protocol.length)
+                .put(protocol)
+                .put((byte)transportParameters.length)
+                .put(transportParameters)
+                .put((byte)resumptionSecret.length)
+                .put(resumptionSecret);
+
+            return encrypt(key.secretKey(), plainText);
         }
-
-        SessionTicket.Configuration configuration = ticket.configuration();
-        HandshakeData handshake = ticket.handshakeData();
-        byte[] serverName = handshake.serverName().getBytes(StandardCharsets.UTF_8);
-        byte[] protocol = handshake.applicationProtocol().getBytes(StandardCharsets.US_ASCII);
-        RetainableByteBuffer.DynamicCapacity accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        int length = generator.generate(accumulator, handshake.transportParameters());
-        byte[] transportParameters = new byte[length];
-        accumulator.get(transportParameters, 0, length);
-        byte[] resumptionSecret = ticket.resumptionMasterSecret().getEncoded();
-        int capacity = 8 + 4 + 4 +
-            1 + configuration.nonce().length +
-            2 + 2 + 2 +
-            1 + serverName.length +
-            1 + protocol.length +
-            1 + transportParameters.length +
-            1 + resumptionSecret.length;
-        byte[] plainText = new byte[capacity];
-        ByteBuffer.wrap(plainText)
-            .putLong(Instant.now().toEpochMilli())
-            .putInt(configuration.lifetime())
-            .putInt(configuration.ageAdd())
-            .put((byte)configuration.nonce().length)
-            .put(configuration.nonce())
-            .putShort((short)handshake.quicVersion().code())
-            .putShort((short)handshake.tlsVersion().code())
-            .putShort((short)handshake.cipherSuite().code())
-            .put((byte)serverName.length)
-            .put(serverName)
-            .put((byte)protocol.length)
-            .put(protocol)
-            .put((byte)transportParameters.length)
-            .put(transportParameters)
-            .put((byte)resumptionSecret.length)
-            .put(resumptionSecret);
-
-        return encrypt(key.secretKey(), plainText);
+        catch (Throwable x)
+        {
+            return null;
+        }
     }
 
     private byte[] encrypt(SecretKey secretKey, byte[] plainText) throws Exception
@@ -184,15 +190,18 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
     }
 
     @Override
-    public SessionTicket parseSessionTicket(byte[] bytes) throws Exception
+    public SessionTicket parseSessionTicket(byte[] bytes)
     {
         byte[] decrypted = decrypt(bytes);
+        if (decrypted == null)
+            return null;
+
         ByteBuffer buffer = ByteBuffer.wrap(decrypted);
 
         long epochMillis = buffer.getLong();
         int lifetime = buffer.getInt();
         if (Instant.ofEpochMilli(epochMillis).plusMillis(lifetime).isBefore(Instant.now()))
-            throw new IllegalArgumentException("session ticket expired");
+            return null;
 
         int ageAdd = buffer.getInt();
         int nonceLength = buffer.get() & 0xFF;
@@ -225,13 +234,15 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
         return new SessionTicket(configuration, handshake, resumptionMasterSecret);
     }
 
-    private byte[] decrypt(byte[] bytes) throws Exception
+    private byte[] decrypt(byte[] bytes)
     {
         List<TicketKey> keys;
         try (var _ = lock.lock())
         {
             keys = List.copyOf(ticketKeys);
         }
+        // Try decryption using all the ticket
+        // keys, starting from the most recent.
         for (TicketKey ticketKey : keys)
         {
             try
@@ -245,7 +256,7 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
             {
             }
         }
-        throw new AEADBadTagException();
+        return null;
     }
 
     private TicketKey lockedRotateKey() throws Exception

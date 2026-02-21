@@ -278,13 +278,6 @@ public class ClientQuicSession extends QuicSession
             .map(QuicTransportParametersExtension::transportParameters)
             .orElse(null);
 
-        // TODO: apply verifications to TransportParameters as per RFC.
-        // TODO: QuicTransports must be present and validated:
-        //  * No forbidden parameters are present
-        //  * No duplicates
-        //  * Values are within allowed ranges
-        //  Apply Quic transport params to the various components.
-
         processTransportParameters(transportParameters);
 
         getTLSEngine().onMessageParsed(encryptedExtensions);
