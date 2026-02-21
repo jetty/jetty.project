@@ -19,6 +19,7 @@ import javax.crypto.SecretKey;
 import org.eclipse.jetty.quic.common.tls.HandshakeData;
 import org.eclipse.jetty.tls.NewSessionTicketMessage;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.TypeUtil;
 
 /// A store for TLS session data used for ZeroRTT communication with a server.
 ///
@@ -29,13 +30,18 @@ import org.eclipse.jetty.util.NanoTime;
 /// TLS session ticket is the key to access this data structure.
 public interface ZeroRTTStore
 {
-    default void put(Entry entry)
+    default void store(Entry entry)
     {
     }
 
     default Entry match(Predicate<Entry> filter)
     {
         return null;
+    }
+
+    default int size()
+    {
+        return 0;
     }
 
     final class Entry
@@ -77,6 +83,12 @@ public interface ZeroRTTStore
         public boolean expired()
         {
             return NanoTime.millisSince(nanoTime) > newSessionTicket().lifetime();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
         }
     }
 }

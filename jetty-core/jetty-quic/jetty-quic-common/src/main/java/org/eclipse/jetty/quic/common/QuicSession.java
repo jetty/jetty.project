@@ -656,12 +656,21 @@ public abstract class QuicSession extends AbstractSession
 
     protected void processTransportParameters(TransportParameters transportParameters)
     {
+        // TODO: apply verifications to TransportParameters as per RFC.
+        // TODO: QuicTransports must be present and validated:
+        //  * No forbidden parameters are present
+        //  * No duplicates
+        //  * Values are within allowed ranges
+        //  Apply Quic transport params to the various components.
+
         this.transportParameters = transportParameters;
         Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_DATA);
         if (maxData != null)
             updateSendMaxData(null, maxData);
 
         // TODO: other parameters.
+
+        notifyTransportParameters(transportParameters);
     }
 
     private void ack(Packet packet)

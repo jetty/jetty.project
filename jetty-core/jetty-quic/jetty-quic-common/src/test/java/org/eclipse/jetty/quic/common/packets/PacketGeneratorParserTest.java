@@ -72,7 +72,7 @@ public class PacketGeneratorParserTest
         };
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
-        protector.allocateInitialKeys(QuicVersion.V1, destination);
+        protector.generateInitialKeys(QuicVersion.V1, destination);
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
         InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, framesGenerator, protector);
         // Unclear why the RFC uses 1162 as the InitialPacket payload length, but that's what it uses.
@@ -154,7 +154,7 @@ public class PacketGeneratorParserTest
         };
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
-        protector.allocateInitialKeys(QuicVersion.V1, StringUtil.fromHexString("8394c8f03e515708"));
+        protector.generateInitialKeys(QuicVersion.V1, StringUtil.fromHexString("8394c8f03e515708"));
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
         InitialPacketGenerator generator = new InitialPacketGenerator(packetNumbers, framesGenerator, protector);
         generator.setPayloadMinimumLength(0);
@@ -198,7 +198,7 @@ public class PacketGeneratorParserTest
         PacketNumbers clientPacketNumbers = new PacketNumbers();
         TranscriptHash clientTranscriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
         PacketProtector clientProtector = new PacketProtector(byteBufferPool, clientPacketNumbers, clientTranscriptHash, true);
-        clientProtector.allocateInitialKeys(QuicVersion.V1, destination);
+        clientProtector.generateInitialKeys(QuicVersion.V1, destination);
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
         InitialPacketGenerator generator = new InitialPacketGenerator(clientPacketNumbers, framesGenerator, clientProtector);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
@@ -207,7 +207,7 @@ public class PacketGeneratorParserTest
         PacketNumbers serverPacketNumbers = new PacketNumbers();
         TranscriptHash serverTranscriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, true), new MessagesGenerator(byteBufferPool, false));
         PacketProtector serverProtector = new PacketProtector(byteBufferPool, serverPacketNumbers, serverTranscriptHash, false);
-        serverProtector.allocateInitialKeys(QuicVersion.V1, destination);
+        serverProtector.generateInitialKeys(QuicVersion.V1, destination);
         FramesParser framesParser = new FramesParser();
         InitialPacketParser parser = new InitialPacketParser(serverProtector, serverPacketNumbers, framesParser);
         Packet packet = parser.parse(accumulator);

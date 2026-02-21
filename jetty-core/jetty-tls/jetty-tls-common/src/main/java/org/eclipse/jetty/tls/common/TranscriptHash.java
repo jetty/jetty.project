@@ -113,11 +113,6 @@ public class TranscriptHash
         entries.clear();
     }
 
-    public void removeLast()
-    {
-        entries.pollLast();
-    }
-
     public void dispose()
     {
         entries.clear();

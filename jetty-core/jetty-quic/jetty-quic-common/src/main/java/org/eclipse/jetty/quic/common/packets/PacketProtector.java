@@ -30,7 +30,6 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketBuffers;
-import org.eclipse.jetty.quic.common.ZeroRTTStore;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.internal.packets.QuicCrypto;
@@ -39,7 +38,6 @@ import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.common.HKDF;
 import org.eclipse.jetty.tls.common.TranscriptHash;
-import org.eclipse.jetty.tls.ext.PreSharedKeyIdentity;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -82,7 +80,7 @@ public class PacketProtector implements Encrypter, Decrypter
         return keyManagers.get(EncryptionLevel.HANDSHAKE).getTrafficSecretKey(input);
     }
 
-    public void allocateInitialKeys(QuicVersion quicVersion, byte[] input)
+    public void generateInitialKeys(QuicVersion quicVersion, byte[] inputKeyMaterial)
     {
         try
         {
@@ -92,7 +90,7 @@ public class PacketProtector implements Encrypter, Decrypter
 
             // RFC 9001, 5.2: initial secrets use SHA256.
             KDF kdf = KDF.getInstance("HKDF-SHA256");
-            HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract().addSalt(QuicCrypto.initialSalt(quicVersion)).addIKM(input).extractOnly();
+            HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract().addSalt(QuicCrypto.initialSalt(quicVersion)).addIKM(inputKeyMaterial).extractOnly();
             SecretKey prk = kdf.deriveKey("InitialPseudoRandom", spec);
 
             SecretKey clientTraffic = kdf.deriveKey("InitialClientTraffic", HKDF.expandLabel(prk, "client in", 32));
@@ -125,12 +123,10 @@ public class PacketProtector implements Encrypter, Decrypter
         }
     }
 
-    public void allocateHandshakeKeys(QuicVersion quicVersion, CipherSuite cipherSuite, SecretKey sharedSecret)
+    public void generateHandshakeKeys(QuicVersion quicVersion, CipherSuite cipherSuite, SecretKey sharedSecret, HKDFParameterSpec pskSpec)
     {
         try
         {
-            transcriptHash.initialize(cipherSuite);
-
             KeyManager keyManager = new KeyManager(EncryptionLevel.INITIAL);
             if (keyManagers.put(EncryptionLevel.HANDSHAKE, keyManager) != null)
                 throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.HANDSHAKE);
@@ -138,24 +134,25 @@ public class PacketProtector implements Encrypter, Decrypter
             // RFC-8446[7.1].
             int hashLength = cipherSuite.hashLength();
             KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
-            byte[] salt = new byte[hashLength];
-            byte[] inputKeyMaterial = new byte[hashLength];
-            HKDFParameterSpec.Extract extract = HKDFParameterSpec.ofExtract().addSalt(salt).addIKM(inputKeyMaterial).extractOnly();
-            SecretKey earlySecret = kdf.deriveKey("HandshakeEarly", extract);
 
-            SecretKey derivedSecret = kdf.deriveKey("HandshakeDerived", HKDF.expandLabel(earlySecret, "derived", transcriptHash.getEmptyHash(), hashLength));
+            byte[] salt = new byte[hashLength];
+            byte[] inputKeyMaterial = pskSpec == null ? new byte[hashLength] : kdf.deriveKey("Generic", pskSpec).getEncoded();
+            HKDFParameterSpec.Extract extract = HKDFParameterSpec.ofExtract().addSalt(salt).addIKM(inputKeyMaterial).extractOnly();
+            SecretKey earlySecret = kdf.deriveKey("Generic", extract);
+
+            SecretKey derivedSecret = kdf.deriveKey("Generic", HKDF.expandLabel(earlySecret, "derived", transcriptHash.getEmptyHash(), hashLength));
             extract = HKDFParameterSpec.ofExtract().addSalt(derivedSecret).addIKM(sharedSecret).extractOnly();
-            handshakeSecret = kdf.deriveKey("HandshakeSecret", extract);
+            handshakeSecret = kdf.deriveKey("Generic", extract);
 
             byte[] tlsHash = transcriptHash.getHash();
             int keyLength = cipherSuite.keyLength();
 
-            SecretKey clientTraffic = kdf.deriveKey("HandshakeClientTraffic", HKDF.expandLabel(handshakeSecret, "c hs traffic", tlsHash, hashLength));
+            SecretKey clientTraffic = kdf.deriveKey("Generic", HKDF.expandLabel(handshakeSecret, "c hs traffic", tlsHash, hashLength));
             SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
             SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
             SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
 
-            SecretKey serverTraffic = kdf.deriveKey("HandshakeServerTraffic", HKDF.expandLabel(handshakeSecret, "s hs traffic", tlsHash, hashLength));
+            SecretKey serverTraffic = kdf.deriveKey("Generic", HKDF.expandLabel(handshakeSecret, "s hs traffic", tlsHash, hashLength));
             SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
             SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
             SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
@@ -180,7 +177,7 @@ public class PacketProtector implements Encrypter, Decrypter
         }
     }
 
-    public void allocateApplicationKeys(QuicVersion quicVersion, CipherSuite cipherSuite)
+    public void generateApplicationKeys(QuicVersion quicVersion, CipherSuite cipherSuite)
     {
         try
         {
@@ -235,7 +232,6 @@ public class PacketProtector implements Encrypter, Decrypter
         int hashLength = cipherSuite.hashLength();
         KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
         byte[] tlsHash = transcriptHash.getHash();
-        int keyLength = cipherSuite.keyLength();
         SecretKey resumptionMasterSecret = kdf.deriveKey("AES", HKDF.expandLabel(masterSecret, "res master", tlsHash, hashLength));
 
         // The master secret is not needed anymore, as both the application
@@ -339,13 +335,12 @@ public class PacketProtector implements Encrypter, Decrypter
         return MessageDigest.isEqual(integrity, expected);
     }
 
-    public PreSharedKeyIdentity createPreSharedKeyIdentity(ZeroRTTStore.Entry entry) throws Exception
+    public byte[] createPreSharedKeyIdentityBinder(CipherSuite cipherSuite, SecretKey resumptionMasterSecret, byte[] sessionTicketNonce) throws Exception
     {
-        CipherSuite cipherSuite = entry.handshakeData().cipherSuite();
         int hashLength = cipherSuite.hashLength();
         KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
 
-        SecretKey preSharedKey = kdf.deriveKey("Generic", HKDF.expandLabel(entry.secretKey(), "resumption", entry.newSessionTicket().nonce(), hashLength));
+        SecretKey preSharedKey = kdf.deriveKey("Generic", HKDF.expandLabel(resumptionMasterSecret, "resumption", sessionTicketNonce, hashLength));
         HKDFParameterSpec extract = HKDFParameterSpec.ofExtract().addSalt(new byte[hashLength]).addIKM(preSharedKey).extractOnly();
         SecretKey earlySecret = kdf.deriveKey("Generic", extract);
         SecretKey binderKey = kdf.deriveKey("Generic", HKDF.expandLabel(earlySecret, "res binder", getTranscriptHash().getEmptyHash(), hashLength));
@@ -353,8 +348,7 @@ public class PacketProtector implements Encrypter, Decrypter
 
         Mac mac = Mac.getInstance("HmacSHA" + (hashLength * 8));
         mac.init(finishedKey);
-        byte[] binder = mac.doFinal(transcriptHash.getHash());
-        return new PreSharedKeyIdentity(entry.newSessionTicket().ticket(), entry.obfuscatedTicketAge(), binder);
+        return mac.doFinal(getTranscriptHash().getHash());
     }
 
     @Override

@@ -95,7 +95,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     void initialize(byte[] dstConnectionId)
     {
         PacketProtector packetProtector = getTLSEngine().getPacketProtector();
-        packetProtector.allocateInitialKeys(getQuicVersion(), dstConnectionId);
+        packetProtector.generateInitialKeys(getQuicVersion(), dstConnectionId);
         getTLSEngine().initialize(getQuicVersion());
     }
 
@@ -203,7 +203,6 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     {
         switch (message)
         {
-            // TODO: verify QuicTransportParametersExtension in ClientHello, etc.
             case ClientHelloMessage clientHello -> processClientHello(clientHello);
             case CertificateMessage certificate -> getTLSEngine().onMessageParsed(certificate);
             case CertificateVerifyMessage certificateVerify -> getTLSEngine().onMessageParsed(certificateVerify);
@@ -220,8 +219,6 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
             .findFirst()
             .map(QuicTransportParametersExtension::transportParameters)
             .orElse(null);
-
-        // TODO: apply verifications to TransportParameters as per RFC.
 
         processTransportParameters(transportParameters);
 
