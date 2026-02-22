@@ -47,7 +47,7 @@
 ** xref:troubleshooting/state-tracking.adoc[]
 ** xref:troubleshooting/component-dump.adoc[]
 ** xref:troubleshooting/debugging.adoc[]
-* Jetty Security
+* xref:security/index.adoc[]
 ** xref:security/siwe-support.adoc[]
 ** xref:security/configuring-form-size.adoc[]
 ** xref:security/openid-support.adoc[]
