@@ -35,13 +35,13 @@ public class DataGenerator extends FrameGenerator
     }
 
     @Override
-    public long generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(RetainableByteBuffer.Mutable accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         DataFrame dataFrame = (DataFrame)frame;
         return generateDataFrame(accumulator, dataFrame);
     }
 
-    private long generateDataFrame(ByteBufferPool.Accumulator accumulator, DataFrame frame)
+    private long generateDataFrame(RetainableByteBuffer.Mutable accumulator, DataFrame frame)
     {
         ByteBuffer data = frame.getByteBuffer();
         long dataLength = data.remaining();
@@ -52,8 +52,8 @@ public class DataGenerator extends FrameGenerator
         VarLenInt.encode(byteBuffer, FrameType.DATA.type());
         VarLenInt.encode(byteBuffer, dataLength);
         byteBuffer.flip();
-        accumulator.append(header);
-        accumulator.append(RetainableByteBuffer.wrap(data));
+        accumulator.add(header);
+        accumulator.add(data);
         return headerLength + dataLength;
     }
 }
