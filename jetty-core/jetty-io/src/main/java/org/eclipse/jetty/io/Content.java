@@ -1311,7 +1311,7 @@ public class Content
             {
                 if (retainable.canRetain())
                 {
-                    return new ByteBufferChunk.WithRetainable(byteBuffer, last, Objects.requireNonNull(retainable));
+                    return new ByteBufferChunk.WithRetainable(byteBuffer, last, retainable);
                 }
                 else
                 {

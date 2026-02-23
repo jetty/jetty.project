@@ -43,7 +43,7 @@
     <ee11.jakarta.servlet.api.version>6.1.0</ee11.jakarta.servlet.api.version>
     <ee11.jakarta.servlet.jsp.api.version>4.0.0</ee11.jakarta.servlet.jsp.api.version>
     <ee11.jakarta.servlet.jsp.jstl.impl.version>4.0.0</ee11.jakarta.servlet.jsp.jstl.impl.version>
-    <ee11.jakarta.xml.bind.api.version>4.0.4</ee11.jakarta.xml.bind.api.version>
+    <ee11.jakarta.xml.bind.api.version>4.0.5</ee11.jakarta.xml.bind.api.version>
     <ee11.jakarta.xml.bind.impl.version>4.0.6</ee11.jakarta.xml.bind.impl.version>
     <ee11.jakarta.xml.jaxws.impl.version>4.0.2</ee11.jakarta.xml.jaxws.impl.version>
     <ee11.jersey.version>4.0.2</ee11.jersey.version>

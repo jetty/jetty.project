@@ -272,9 +272,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         }
                         else
                         {
+                            // Retain because multiple frames can be parsed from the same QUIC chunk.
+                            quicChunk.retain();
                             Content.Chunk h3Chunk = Content.Chunk.asChunk(dataFrame.getByteBuffer(), dataFrame.isLast(), quicChunk);
-                            // Retain because multiple data can be parsed from the same QUIC data.
-                            h3Chunk.retain();
                             if (h3Chunk.isLast())
                                 tryReleaseData(true);
                             yield h3Chunk;
@@ -408,7 +408,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             LOG.debug("releasing force={} {} on {}", force, quicChunk, this);
         if (quicChunk == null)
             return;
-        if (force || (quicChunk.isLast() && !quicChunk.hasRemaining()))
+        if (force || !quicChunk.hasRemaining())
         {
             quicChunk.release();
             quicChunk = null;

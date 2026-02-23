@@ -295,6 +295,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         getHttpConfiguration().setUseOutputDirectByteBuffers(useOutputDirectByteBuffers);
     }
 
+    public int getTransferEncodingChunkMaxLength()
+    {
+        return _generator.getChunkMaxLength();
+    }
+
+    public void setTransferEncodingChunkMaxLength(int transferEncodingChunkMaxLength)
+    {
+        _generator.setChunkMaxLength(transferEncodingChunkMaxLength);
+    }
+
     @Override
     public ByteBuffer onUpgradeFrom()
     {
@@ -811,7 +821,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _content = content;
                 _lastContent = last;
                 _callback = callback;
-                _header = null;
+                // Cannot call reset unless we are
+                // finished with the previous send.
+                assert _header == null;
+                assert _chunk == null;
+                _shutdownOut = false;
                 if (getConnector().isShutdown())
                     _generator.setPersistent(false);
                 return true;
@@ -835,6 +849,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             int responseHeadersSize = getHttpConfiguration().getResponseHeaderSize();
             int maxResponseHeadersSize = getHttpConfiguration().getMaxResponseHeaderSize();
             boolean useDirectByteBuffers = isUseOutputDirectByteBuffers();
+            int chunkMaxLength = getTransferEncodingChunkMaxLength();
             while (true)
             {
                 ByteBuffer headerByteBuffer = _header == null ? null : _header.getByteBuffer();
@@ -861,7 +876,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         if (maxHeaderBytes < 0)
                             maxHeaderBytes = responseHeadersSize;
                         _generator.setMaxHeaderBytes(maxHeaderBytes);
-                        _generator.setMaxChunkLength(1024 * 1024 * 1024);
+                        _generator.setChunkMaxLength(1024 * 1024 * 1024);
                         _header = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
                     }
@@ -914,21 +929,28 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                             gatherWrite += 2;
                             bytes += _chunk.remaining();
                         }
-                        if (BufferUtil.hasContent(_content))
+                        ByteBuffer contentByteBuffer = _content;
+                        if (BufferUtil.hasContent(contentByteBuffer))
                         {
                             gatherWrite += 1;
-                            bytes += _content.remaining();
+                            if (_generator.isChunking() && contentByteBuffer.remaining() > chunkMaxLength)
+                            {
+                                ByteBuffer slice = contentByteBuffer.slice(contentByteBuffer.position(), chunkMaxLength);
+                                contentByteBuffer.position(contentByteBuffer.position() + chunkMaxLength);
+                                contentByteBuffer = slice;
+                            }
+                            bytes += contentByteBuffer.remaining();
                         }
                         _bytesOut.addAndGet(bytes);
                         switch (gatherWrite)
                         {
-                            case 7 -> write(this, headerByteBuffer, chunkByteBuffer, _content);
+                            case 7 -> write(this, headerByteBuffer, chunkByteBuffer, contentByteBuffer);
                             case 6 -> writeContent(this, headerByteBuffer, chunkByteBuffer);
-                            case 5 -> write(this, headerByteBuffer, _content);
+                            case 5 -> write(this, headerByteBuffer, contentByteBuffer);
                             case 4 -> writeContent(this, headerByteBuffer);
-                            case 3 -> write(this, chunkByteBuffer, _content);
+                            case 3 -> write(this, chunkByteBuffer, contentByteBuffer);
                             case 2 -> writeContent(this, chunkByteBuffer);
-                            case 1 -> write(this, _content);
+                            case 1 -> write(this, contentByteBuffer);
                             default -> writeContent(this);
                         }
 
@@ -1050,17 +1072,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
-        public void onFailure(final Throwable x)
-        {
-            Callback callback = takeCallbackAndReset();
-            if (callback != null)
-                callback.failed(x);
-        }
-
-        @Override
         protected void onCompleteFailure(Throwable cause)
         {
+            // Failing the callback may re-enter SendCallback to write the error
+            // response, release the buffers used previously in the failed response.
+            Callback callback = takeCallbackAndReset();
             release();
+            if (callback != null)
+                callback.failed(cause);
         }
 
         @Override

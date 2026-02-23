@@ -45,6 +45,7 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
@@ -678,12 +679,13 @@ public interface Response extends Content.Sink
             }
             catch (Throwable e)
             {
-                if (cause != null && cause != e)
-                    cause.addSuppressed(e);
+                cause = ExceptionUtil.combine(cause, e);
+                if (logger.isDebugEnabled())
+                    logger.debug("writeError: failure in error handling", cause);
             }
         }
 
-        // fall back to very empty error page
+        // Fall back to a very empty error page.
         response.getHeaders().put(ErrorHandler.ERROR_CACHE_CONTROL);
         response.write(true, null, callback);
     }

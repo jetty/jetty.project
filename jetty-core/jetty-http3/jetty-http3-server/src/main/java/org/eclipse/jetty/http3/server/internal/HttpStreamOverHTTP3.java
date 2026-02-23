@@ -252,10 +252,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
     public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
     {
         ByteBuffer content = Objects.requireNonNullElse(byteBuffer, BufferUtil.EMPTY_BUFFER);
-        if (responseMetaData == null)
+        if (response != null)
             sendHeaders(request, response, content, last, callback);
         else
-            sendContent(request, response, content, last, callback);
+            sendContent(request, responseMetaData, content, last, callback);
     }
 
     @Override
@@ -414,7 +414,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         Content.Source.Seekable contentSource = response.getContentSource();
         long contentLength = contentAsSource ? contentSource.getLength() : BufferUtil.length(content);
         boolean hasContent = (contentLength > 0 || contentAsSource) && !isHeadRequest;
-        if (hasContent || (lastContent && !isTunnel(request, responseMetaData)))
+        if (hasContent || (lastContent && !isTunnel(request, response)))
         {
             if (!hasContent)
                 content = BufferUtil.EMPTY_BUFFER;

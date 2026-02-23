@@ -151,12 +151,12 @@
 
   <distributionManagement>
     <repository>
-      <id>sonatype-cp</id>
-      <url>https://repo.maven.apache.org/maven2</url>
+      <id>${dist-management-release-id}</id>
+      <url>${dist-management-release-url}</url>
     </repository>
     <snapshotRepository>
-      <id>sonatype-cp</id>
-      <url>https://central.sonatype.com/repository/maven-snapshots</url>
+      <id>${dist-management-snapshot-id}</id>
+      <url>${dist-management-snapshot-url}</url>
     </snapshotRepository>
   </distributionManagement>
 
@@ -194,6 +194,10 @@
     <cyclonedx.maven.plugin.version>2.9.1</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
     <detectOfflineLinks>false</detectOfflineLinks>
+    <dist-management-release-id>sonatype-cp</dist-management-release-id>
+    <dist-management-release-url>https://repo.maven.apache.org/maven2</dist-management-release-url>
+    <dist-management-snapshot-id>sonatype-cp</dist-management-snapshot-id>
+    <dist-management-snapshot-url>https://central.sonatype.com/repository/maven-snapshots</dist-management-snapshot-url>
     <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
     <eclipse.jdt.ecj.version>3.44.0</eclipse.jdt.ecj.version>
 
@@ -211,13 +215,13 @@
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.7.3</flatten.maven.plugin.version>
     <groovy.version>4.0.26</groovy.version>
-    <grpc.version>1.78.0</grpc.version>
+    <grpc.version>1.79.0</grpc.version>
     <gson.version>2.13.2</gson.version>
     <guava.version>33.5.0-jre</guava.version>
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>3.0</hamcrest.version>
     <hazelcast.version>5.6.0</hazelcast.version>
-    <hibernate.search.version>8.2.1.Final</hibernate.search.version>
+    <hibernate.search.version>8.2.2.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
     <infinispan.docker.image.version>15.2.1.Final</infinispan.docker.image.version>
     <infinispan.protostream.version>6.0.4</infinispan.protostream.version>
@@ -228,7 +232,7 @@
     <jackson.version>2.21.0</jackson.version>
     <jacoco.maven.plugin.version>0.8.14</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
-    <jboss-logmanager.version>3.2.0.Final</jboss-logmanager.version>
+    <jboss-logmanager.version>3.2.1.Final</jboss-logmanager.version>
     <jboss-threads.version>3.9.2</jboss-threads.version>
     <jboss.logging.annotations.version>3.0.4.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>3.0.4.Final</jboss.logging.processor.version>
@@ -260,12 +264,12 @@
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
     <junit.platform.version>${junit.version}</junit.platform.version>
-    <junit.version>6.0.2</junit.version>
+    <junit.version>6.0.3</junit.version>
     <kerb-simplekdc.version>2.1.1</kerb-simplekdc.version>
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.25.3</log4j2.version>
-    <logback.version>1.5.27</logback.version>
+    <logback.version>1.5.32</logback.version>
     <lucene.version>9.12.2</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.7</mariadb.version>
@@ -278,8 +282,8 @@
     <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
     <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
     <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
-    <maven.compiler.plugin.version>3.14.1</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.9.0</maven.dependency.plugin.version>
+    <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
+    <maven.dependency.plugin.version>3.10.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
     <maven.deps.version>3.9.12</maven.deps.version>
     <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
@@ -292,8 +296,9 @@
     <maven.plugin-tools.version>3.15.2</maven.plugin-tools.version>
     <maven.release.plugin.version>3.3.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.3.0</maven.remote-resources-plugin.version>
-    <maven.resolver.version>1.9.25</maven.resolver.version>
+    <maven.resolver.version>1.9.26</maven.resolver.version>
     <maven.resources.plugin.version>3.4.0</maven.resources.plugin.version>
+    <maven.retryFailedDeploymentCount>10</maven.retryFailedDeploymentCount>
     <maven.shade.plugin.version>3.6.1</maven.shade.plugin.version>
     <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
     <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
@@ -301,9 +306,9 @@
     <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <modify-sources-plugin.version>1.0.13</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
-    <mongodb.version>5.6.2</mongodb.version>
-    <netty.version>4.2.9.Final</netty.version>
-    <njord.version>0.9.3</njord.version>
+    <mongodb.version>5.6.3</mongodb.version>
+    <netty.version>4.2.10.Final</netty.version>
+    <njord.version>0.9.4</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -324,7 +329,7 @@
     <osgi-version>3.24.0</osgi-version>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.14.0</pax.exam.version>
-    <pax.url.version>3.0.1</pax.url.version>
+    <pax.url.version>3.0.2</pax.url.version>
     <plexus-classworlds.version>2.9.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.2</plexus-utils.version>
@@ -345,7 +350,7 @@
     <tinybundles.version>4.0.1</tinybundles.version>
     <versions.maven.plugin.version>2.21.0</versions.maven.plugin.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
-    <wildfly.elytron.version>2.7.1.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.8.3.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.9</xmemcached.version>
   </properties>
 
@@ -478,12 +483,12 @@
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-annotation</artifactId>
-        <version>2.15.0</version>
+        <version>2.16.0</version>
       </dependency>
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-cpu</artifactId>
-        <version>2.15.0</version>
+        <version>2.16.0</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
@@ -1596,7 +1601,7 @@
           <artifactId>maven-deploy-plugin</artifactId>
           <version>${maven.deploy.plugin.version}</version>
           <configuration>
-            <retryFailedDeploymentCount>10</retryFailedDeploymentCount>
+            <retryFailedDeploymentCount>${maven.retryFailedDeploymentCount}</retryFailedDeploymentCount>
           </configuration>
         </plugin>
         <plugin>
@@ -2070,11 +2075,11 @@
                   <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 17 or newer</message>
                 </requireJavaVersion>
                 <!-- do not support alphax as a version number -->
-                <!--
-                  <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
-                  <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
-                  <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
-                -->
+
+                <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule"/>
+                <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule"/>
+                <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule"/>
+
                 <requireUpperBoundDeps/>
               </rules>
             </configuration>
@@ -2754,7 +2759,7 @@
         </property>
       </activation>
       <properties>
-        <cbi-plugins.version>1.5.3</cbi-plugins.version>
+        <cbi-plugins.version>1.5.4</cbi-plugins.version>
       </properties>
       <pluginRepositories>
         <pluginRepository>

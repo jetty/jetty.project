@@ -361,6 +361,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     {
         onResponseTrailersComplete(request, response.getTrailersSupplier().get());
     }
+
     /**
      * Invoked after the response trailers have been written <em>and</em> the final {@link #onResponseWriteComplete(Request, Throwable)} event was fired.
      *
