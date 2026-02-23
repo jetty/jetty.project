@@ -881,9 +881,9 @@ Jetty can leverage zero-copy primitives such as `FileChannel.transferTo(\...)` t
 
 The transfer-to optimization is possible only when the following conditions are met:
 
-* The communication is in clear-text (this rules out secure HTTP/1 and HTTP/2, unless using specific setups such as link:https://docs.kernel.org/networking/tls.html[Kernel TLS]).
+* The communication is in clear-text (this rules out secure HTTP/1 and secure HTTP/2, unless using specific setups such as link:https://docs.kernel.org/networking/tls.html[Kernel TLS]).
 * The content to send can be accessed using `FileChannel`.
-* The endpoint to write the content to is a `SocketChannel` (this rules out QUIC and HTTP/3).
+* The endpoint to write the content to is a `SocketChannel` (this rules out QUIC and therefore HTTP/3).
 
 The most common case where the transfer-to optimization is possible and worthwhile is clear-text HTTP/1.1, where Jetty can send even moderately large files (hundreds of KiB or larger) with zero-copy of data.
 

@@ -19,7 +19,6 @@ module org.eclipse.jetty.io
 
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
-    requires java.logging;
 
     exports org.eclipse.jetty.io;
     exports org.eclipse.jetty.io.content;

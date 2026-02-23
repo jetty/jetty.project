@@ -291,9 +291,9 @@ public class HttpGenerator
     {
         long contentLength = BufferUtil.length(content);
 
-        Content.Source source = info.getContentSource();
+        Content.Source.Seekable source = info.getContentSource();
         if (contentLength == 0 && source != null)
-            contentLength = source.getLength();
+            contentLength = source.remaining();
 
         long committedLength = contentLength;
         if (committedLength > 0)
@@ -309,13 +309,13 @@ public class HttpGenerator
             _contentPrepared += committedLength;
         }
 
-        if (last)
-        {
-            if (committedLength == contentLength)
-                _state = State.COMPLETING;
-            return committedLength > 0 ? Result.FLUSH : Result.CONTINUE;
-        }
-        return committedLength > 0 ? Result.FLUSH : Result.DONE;
+        if (!last)
+            return committedLength > 0 ? Result.FLUSH : Result.DONE;
+
+        if (committedLength == contentLength)
+            _state = State.COMPLETING;
+
+        return committedLength > 0 ? Result.FLUSH : Result.CONTINUE;
     }
 
     private Result completing(ByteBuffer chunk, ByteBuffer content)
@@ -427,9 +427,9 @@ public class HttpGenerator
 
                     long contentLength = BufferUtil.length(content);
 
-                    Content.Source source = info.getContentSource();
+                    Content.Source.Seekable source = info.getContentSource();
                     if (contentLength == 0 && source != null)
-                        contentLength = source.getLength();
+                        contentLength = source.remaining();
 
                     long committedLength = contentLength;
                     if (committedLength > 0)

@@ -42,7 +42,7 @@ public class ByteChannelContentSource implements Content.Source
     private final long _length;
     private ByteChannel _byteChannel;
     private RetainableByteBuffer _buffer;
-    private long _offsetRemaining;
+    private long _toSkip;
     private long _totalRead;
     private Runnable _demandCallback;
     private Content.Chunk _terminal;
@@ -76,7 +76,7 @@ public class ByteChannelContentSource implements Content.Source
         _byteChannel = byteChannel;
         _offset = offset;
         _length = TypeUtil.checkOffsetLengthSize(offset, length, -1L);
-        _offsetRemaining = offset;
+        _toSkip = offset;
     }
 
     protected AutoLock lock()
@@ -118,9 +118,9 @@ public class ByteChannelContentSource implements Content.Source
     {
         try (AutoLock ignored = lock())
         {
-            if (this._demandCallback != null)
+            if (_demandCallback != null)
                 throw new IllegalStateException("demand pending");
-            this._demandCallback = demandCallback;
+            _demandCallback = demandCallback;
         }
         _invoker.run(this::invokeDemandCallback);
     }
@@ -130,8 +130,8 @@ public class ByteChannelContentSource implements Content.Source
         Runnable demandCallback;
         try (AutoLock ignored = lock())
         {
-            demandCallback = this._demandCallback;
-            this._demandCallback = null;
+            demandCallback = _demandCallback;
+            _demandCallback = null;
         }
         if (demandCallback != null)
             ExceptionUtil.run(demandCallback, this::fail);
@@ -234,23 +234,20 @@ public class ByteChannelContentSource implements Content.Source
     protected Content.Chunk skipToOffset() throws IOException
     {
         ByteBuffer byteBuffer = _buffer.getByteBuffer();
-        if (_offsetRemaining > 0)
+        // Discard all bytes read until we reach the starting offset.
+        while (_toSkip > 0)
         {
-            // Discard all bytes read until we reach the staring offset.
-            while (_offsetRemaining > 0)
+            BufferUtil.clearToFill(byteBuffer);
+            byteBuffer.limit((int)Math.min(_buffer.capacity(), _toSkip));
+            int read = _byteChannel.read(byteBuffer);
+            if (read < 0)
             {
-                BufferUtil.clearToFill(byteBuffer);
-                byteBuffer.limit((int)Math.min(_buffer.capacity(), _offsetRemaining));
-                int read = _byteChannel.read(byteBuffer);
-                if (read < 0)
-                {
-                    lockedSetTerminal(Content.Chunk.EOF);
-                    return Content.Chunk.EOF;
-                }
-                if (read == 0)
-                    return null;
-                _offsetRemaining -= read;
+                lockedSetTerminal(Content.Chunk.EOF);
+                return Content.Chunk.EOF;
             }
+            if (read == 0)
+                return null;
+            _toSkip -= read;
         }
         return Content.Chunk.EMPTY;
     }
@@ -277,7 +274,7 @@ public class ByteChannelContentSource implements Content.Source
             IO.close(_byteChannel);
             _byteChannel = null;
             _buffer = null;
-            _offsetRemaining = 0;
+            _toSkip = _offset;
             _totalRead = 0;
             _demandCallback = null;
             _terminal = null;

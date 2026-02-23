@@ -82,11 +82,12 @@ public class PathContentSource extends SeekableByteChannelContentSource implemen
                 return false;
             if (!(sink instanceof Transferable.To to))
                 return false;
-            return to.transferFrom(getByteChannel(), getOffset(), getLength(), Callback.from(callback, x ->
+            Callback cb = Callback.from(callback.getInvocationType(), () ->
             {
-                if (x == null)
-                    position(position() + getLength());
-            }));
+                position(position() + getLength());
+                callback.succeeded();
+            }, callback::failed);
+            return to.transferFrom(getByteChannel(), getOffset(), getLength(), cb);
         }
     }
 

@@ -67,13 +67,15 @@ public class Transferable
         @Override
         protected Action process() throws Throwable
         {
+            SocketChannel channel = endPoint.getChannel();
+
             long count = length - transferred;
             if (count == 0)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Transferred from offset={} {} bytes from {} to {}", offset, transferred, fileChannel, channel);
                 return Action.SUCCEEDED;
             }
-
-            SocketChannel channel = endPoint.getChannel();
 
             long transfer = fileChannel.transferTo(offset + transferred, count, channel);
             transferred += transfer;

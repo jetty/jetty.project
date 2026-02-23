@@ -876,7 +876,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         if (maxHeaderBytes < 0)
                             maxHeaderBytes = responseHeadersSize;
                         _generator.setMaxHeaderBytes(maxHeaderBytes);
-                        _generator.setChunkMaxLength(1024 * 1024 * 1024);
                         _header = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
                     }
@@ -933,25 +932,27 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         if (BufferUtil.hasContent(contentByteBuffer))
                         {
                             gatherWrite += 1;
-                            if (_generator.isChunking() && contentByteBuffer.remaining() > chunkMaxLength)
+                            int remaining = contentByteBuffer.remaining();
+                            if (_generator.isChunking() && remaining > chunkMaxLength)
                             {
                                 ByteBuffer slice = contentByteBuffer.slice(contentByteBuffer.position(), chunkMaxLength);
                                 contentByteBuffer.position(contentByteBuffer.position() + chunkMaxLength);
                                 contentByteBuffer = slice;
+                                remaining = contentByteBuffer.remaining();
                             }
-                            bytes += contentByteBuffer.remaining();
+                            bytes += remaining;
                         }
                         _bytesOut.addAndGet(bytes);
                         switch (gatherWrite)
                         {
-                            case 7 -> write(this, headerByteBuffer, chunkByteBuffer, contentByteBuffer);
-                            case 6 -> writeContent(this, headerByteBuffer, chunkByteBuffer);
-                            case 5 -> write(this, headerByteBuffer, contentByteBuffer);
-                            case 4 -> writeContent(this, headerByteBuffer);
-                            case 3 -> write(this, chunkByteBuffer, contentByteBuffer);
-                            case 2 -> writeContent(this, chunkByteBuffer);
-                            case 1 -> write(this, contentByteBuffer);
-                            default -> writeContent(this);
+                            case 7 -> writeByteBuffers(this, headerByteBuffer, chunkByteBuffer, contentByteBuffer);
+                            case 6 -> write(this, headerByteBuffer, chunkByteBuffer);
+                            case 5 -> writeByteBuffers(this, headerByteBuffer, contentByteBuffer);
+                            case 4 -> write(this, headerByteBuffer);
+                            case 3 -> writeByteBuffers(this, chunkByteBuffer, contentByteBuffer);
+                            case 2 -> write(this, chunkByteBuffer);
+                            case 1 -> writeByteBuffers(this, contentByteBuffer);
+                            default -> write(this);
                         }
 
                         return Action.SCHEDULED;
@@ -983,12 +984,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             }
         }
 
-        private void write(Callback callback, ByteBuffer... byteBuffers)
+        private void writeByteBuffers(Callback callback, ByteBuffer... byteBuffers)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("flushing {} bytes {} for {}", BufferUtil.remaining(byteBuffers), BufferUtil.toDetailString(byteBuffers), this);
             getEndPoint().write(callback, byteBuffers);
         }
 
-        private void writeContent(Callback callback, ByteBuffer... byteBuffers)
+        private void write(Callback callback, ByteBuffer... byteBuffers)
         {
             if (_content == Content.Sink.CONTENT_SOURCE)
             {
@@ -996,22 +999,36 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 long remaining = source.remaining();
                 if (byteBuffers.length == 0)
                 {
-                    _bytesOut.addAndGet(remaining);
                     if (remaining > 0)
+                    {
+                        if (_generator.isChunking())
+                        {
+                            int length = (int)Math.min(remaining, getTransferEncodingChunkMaxLength());
+                            Content.Source.Seekable slice = source.slice(source.position(), length);
+                            source.position(source.position() + length);
+                            source = slice;
+                            remaining = length;
+                        }
+                        _bytesOut.addAndGet(remaining);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("transferring {} bytes for {}", remaining, this);
                         Content.transfer(source, false, getEndPoint(), callback);
+                    }
                     else
+                    {
                         callback.succeeded();
+                    }
                 }
                 else
                 {
                     if (remaining > 0)
                     {
-                        Callback cb = Callback.from(callback.getInvocationType(), () -> writeContent(callback), callback::failed);
-                        write(cb, byteBuffers);
+                        Callback cb = Callback.from(callback.getInvocationType(), () -> write(callback), callback::failed);
+                        writeByteBuffers(cb, byteBuffers);
                     }
                     else
                     {
-                        write(callback, byteBuffers);
+                        writeByteBuffers(callback, byteBuffers);
                     }
                 }
             }
@@ -1020,7 +1037,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 if (byteBuffers.length == 0)
                     callback.succeeded();
                 else
-                    write(callback, byteBuffers);
+                    writeByteBuffers(callback, byteBuffers);
             }
         }
 

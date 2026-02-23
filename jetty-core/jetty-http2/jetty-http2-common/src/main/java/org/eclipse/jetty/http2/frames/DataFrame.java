@@ -81,7 +81,7 @@ public class DataFrame extends StreamFrame
     /**
      * @return the number of data bytes remaining, as a {@code long}
      */
-    public  long bytesLeft()
+    public long bytesLeft()
     {
         return data == Content.Sink.CONTENT_SOURCE ? source.remaining() : data.remaining();
     }
