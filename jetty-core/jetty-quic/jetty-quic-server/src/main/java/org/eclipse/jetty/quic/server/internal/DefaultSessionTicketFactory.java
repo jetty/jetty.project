@@ -64,7 +64,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 /// | server_name_protocol | N | Server name |
 /// | application_protocol_length | 1 | |
 /// | application_protocol | N | Negotiated application protocol |
-/// | transport_parameters_length | 1 | |
+/// | transport_parameters_length | 2 | |
 /// | transport_parameters | N | Server QUIC transport parameters |
 /// | resumption_secret_length | 1 | |
 /// | resumption_secret | N | The resumption secret |
@@ -147,7 +147,7 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
                 2 + 2 + 2 +
                 1 + serverName.length +
                 1 + protocol.length +
-                1 + transportParameters.length +
+                transportParameters.length +
                 1 + resumptionSecret.length;
             byte[] plainText = new byte[capacity];
             ByteBuffer.wrap(plainText)
@@ -163,7 +163,6 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
                 .put(serverName)
                 .put((byte)protocol.length)
                 .put(protocol)
-                .put((byte)transportParameters.length)
                 .put(transportParameters)
                 .put((byte)resumptionSecret.length)
                 .put(resumptionSecret);
@@ -196,39 +195,36 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
         if (decrypted == null)
             return null;
 
-        ByteBuffer buffer = ByteBuffer.wrap(decrypted);
+        ByteBuffer byteBuffer = ByteBuffer.wrap(decrypted);
 
-        long epochMillis = buffer.getLong();
-        int lifetime = buffer.getInt();
+        long epochMillis = byteBuffer.getLong();
+        int lifetime = byteBuffer.getInt();
         if (Instant.ofEpochMilli(epochMillis).plusMillis(lifetime).isBefore(Instant.now()))
             return null;
 
-        int ageAdd = buffer.getInt();
-        int nonceLength = buffer.get() & 0xFF;
+        int ageAdd = byteBuffer.getInt();
+        int nonceLength = byteBuffer.get() & 0xFF;
         byte[] nonce = new byte[nonceLength];
-        buffer.get(nonce);
+        byteBuffer.get(nonce);
         SessionTicket.Configuration configuration = new SessionTicket.Configuration(lifetime, ageAdd, nonce);
 
-        QuicVersion quicVersion = QuicVersion.from(buffer.getShort() & 0xFFFF);
-        TLSVersion tlsVersion = TLSVersion.from(buffer.getShort() & 0xFFFF);
-        CipherSuite cipherSuite = CipherSuite.from(buffer.getShort() & 0xFFFF);
-        int serverNameLength = buffer.get() & 0xFF;
+        QuicVersion quicVersion = QuicVersion.from(byteBuffer.getShort() & 0xFFFF);
+        TLSVersion tlsVersion = TLSVersion.from(byteBuffer.getShort() & 0xFFFF);
+        CipherSuite cipherSuite = CipherSuite.from(byteBuffer.getShort() & 0xFFFF);
+        int serverNameLength = byteBuffer.get() & 0xFF;
         byte[] serverNameBytes = new byte[serverNameLength];
-        buffer.get(serverNameBytes);
+        byteBuffer.get(serverNameBytes);
         String serverName = new String(serverNameBytes, StandardCharsets.UTF_8);
-        int protocolLength = buffer.get() & 0xFF;
+        int protocolLength = byteBuffer.get() & 0xFF;
         byte[] protocolBytes = new byte[protocolLength];
-        buffer.get(protocolBytes);
+        byteBuffer.get(protocolBytes);
         String protocol = new String(protocolBytes, StandardCharsets.US_ASCII);
-        int transportParametersLength = buffer.get() & 0xFF;
-        byte[] transportParametersBytes = new byte[transportParametersLength];
-        buffer.get(transportParametersBytes);
-        TransportParameters transportParameters = new TransportParametersParser(new VarLenInt()).parse(buffer);
+        TransportParameters transportParameters = new TransportParametersParser(new VarLenInt()).parse(byteBuffer);
         HandshakeData handshake = new HandshakeData(quicVersion, tlsVersion, serverName, cipherSuite, protocol, transportParameters);
 
-        int resumptionSecretLength = buffer.get() & 0xFF;
+        int resumptionSecretLength = byteBuffer.get() & 0xFF;
         byte[] resumptionSecretBytes = new byte[resumptionSecretLength];
-        buffer.get(resumptionSecretBytes);
+        byteBuffer.get(resumptionSecretBytes);
         SecretKey resumptionMasterSecret = new SecretKeySpec(resumptionSecretBytes, "AES");
 
         return new SessionTicket(configuration, handshake, resumptionMasterSecret);

@@ -30,33 +30,25 @@ import org.eclipse.jetty.util.TypeUtil;
 /// TLS session ticket is the key to access this data structure.
 public interface ZeroRTTStore
 {
-    default void store(Entry entry)
-    {
-    }
+    Entry match(Predicate<Entry> filter);
 
-    default Entry match(Predicate<Entry> filter)
-    {
-        return null;
-    }
+    void store(Entry entry);
 
-    default int size()
-    {
-        return 0;
-    }
+    int size();
 
     final class Entry
     {
         private final long nanoTime;
         private final HandshakeData handshakeData;
         private final NewSessionTicketMessage newSessionTicket;
-        private final SecretKey secretKey;
+        private final SecretKey resumptionMasterSecret;
 
-        public Entry(HandshakeData handshakeData, NewSessionTicketMessage newSessionTicket, SecretKey secretKey)
+        public Entry(HandshakeData handshakeData, NewSessionTicketMessage newSessionTicket, SecretKey resumptionMasterSecret)
         {
             this.nanoTime = NanoTime.now();
             this.handshakeData = handshakeData;
             this.newSessionTicket = newSessionTicket;
-            this.secretKey = secretKey;
+            this.resumptionMasterSecret = resumptionMasterSecret;
         }
 
         public HandshakeData handshakeData()
@@ -75,9 +67,9 @@ public interface ZeroRTTStore
             return (int)(NanoTime.millisSince(nanoTime) + newSessionTicket().ageAdd());
         }
 
-        public SecretKey secretKey()
+        public SecretKey resumptionMasterSecret()
         {
-            return secretKey;
+            return resumptionMasterSecret;
         }
 
         public boolean expired()

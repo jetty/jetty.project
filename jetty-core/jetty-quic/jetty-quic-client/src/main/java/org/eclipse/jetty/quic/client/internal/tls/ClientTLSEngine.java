@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.HKDFParameterSpec;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.common.GroupKeyPair;
+import org.eclipse.jetty.tls.common.HKDF;
 import org.eclipse.jetty.tls.ext.ALPNExtension;
 import org.eclipse.jetty.tls.ext.ClientPreSharedKeyExtension;
 import org.eclipse.jetty.tls.ext.EarlyDataExtension;
@@ -65,6 +67,8 @@ public class ClientTLSEngine extends TLSEngine
     private ClientTLSConfiguration configuration;
     private List<GroupKeyPair> groupKeyPairs;
     private ClientHelloMessage clientHello;
+    private ZeroRTTStore.Entry zeroRTTEntry;
+    private boolean resuming;
 
     public ClientTLSEngine(PacketProtector protector)
     {
@@ -116,7 +120,7 @@ public class ClientTLSEngine extends TLSEngine
             RetainableByteBuffer earlyDataByteBuffer = configuration.getEarlyData();
             if (earlyDataByteBuffer != null)
             {
-                ZeroRTTStore.Entry zeroRTTEntry = configuration.getZeroRTTStore().match(entry ->
+                zeroRTTEntry = configuration.getZeroRTTStore().match(entry ->
                 {
                     if (!serverName.equals(entry.handshakeData().serverName()))
                         return false;
@@ -152,13 +156,14 @@ public class ClientTLSEngine extends TLSEngine
                     ClientHelloMessage truncatedClientHello = new ClientHelloMessage(newRandomBytes(32), cipherSuites, extensions);
                     getPacketProtector().getTranscriptHash().offer(truncatedClientHello, false);
 
-                    byte[] binder = getPacketProtector().createPreSharedKeyIdentityBinder(cipherSuite, zeroRTTEntry.secretKey(), zeroRTTEntry.newSessionTicket().nonce());
-                    PreSharedKeyIdentity identity = new PreSharedKeyIdentity(zeroRTTEntry.newSessionTicket().ticket(), zeroRTTEntry.obfuscatedTicketAge(), binder);
+                    getPacketProtector().getTranscriptHash().initialize(cipherSuite);
+                    byte[] binder = getPacketProtector().createPreSharedKeyIdentityBinder(cipherSuite, zeroRTTEntry.resumptionMasterSecret(), zeroRTTEntry.newSessionTicket().nonce());
+                    PreSharedKeyIdentity identity = truncated.withBinder(binder);
 
                     getPacketProtector().getTranscriptHash().clear();
                     extensions.removeLast();
                     extensions.add(new ClientPreSharedKeyExtension(List.of(identity), true));
-                    clientHello = new ClientHelloMessage(clientHello.random(), clientHello.cipherSuites(), extensions);
+                    clientHello = new ClientHelloMessage(truncatedClientHello.random(), truncatedClientHello.cipherSuites(), extensions);
                 }
             }
 
@@ -264,6 +269,11 @@ public class ClientTLSEngine extends TLSEngine
             }
         }
 
+        // Only one PSK identity was sent to the server.
+        resuming = zeroRTTEntry != null && pskIndex == 0;
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} handshake on {}", resuming ? "resuming" : "new", this);
+
         // RFC-8446[4.1.3]: SupportedVersionsExtension must be present.
         if (serverVersions.isEmpty())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing_supported_versions_extension");
@@ -296,41 +306,44 @@ public class ClientTLSEngine extends TLSEngine
             LOG.debug("negotiated CipherSuite {} on {}", cipherSuite, this);
 
         // RFC-8446[4.1.3]: Either KeyShareExtension or PreSharedKeyExtension or both must be present.
-        if (keyShares.isEmpty() && pskIndex < 0)
+        // In this implementation, always require the KeyShareExtension to support forward secrecy.
+        if (keyShares.isEmpty())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing_key_shares");
 
-        if (pskIndex >= 0)
-        {
-        }
-        else
-        {
-            KeyShare serverKeyShare = keyShares.getFirst();
-            // RFC 8446, 4.2.8: the client must have offered the named group.
-            List<KeyShare> clientKeyShares = clientHello.extensions().stream()
-                .filter(e -> e instanceof KeyShareExtension)
-                .map(KeyShareExtension.class::cast)
-                .map(KeyShareExtension::keyShares)
-                .findFirst()
-                .orElse(List.of());
-            clientKeyShares.stream()
-                .map(KeyShare::namedGroup)
-                .filter(serverKeyShare.namedGroup()::equals)
-                .findFirst()
-                .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_named_group"));
-            // Find the corresponding GroupKeyPair whose KeyShare is in the ClientHello.
-            GroupKeyPair groupKeyPair = groupKeyPairs.stream()
-                .filter(gkp -> gkp.group() == serverKeyShare.namedGroup())
-                .findFirst()
-                .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_named_group"));
-            SecretKey sharedSecret = groupKeyPair.generateSharedSecret(serverKeyShare);
-            if (LOG.isDebugEnabled())
-                LOG.debug("negotiated KeyPair in NamedGroup {} on {}", serverKeyShare.namedGroup(), this);
+        // RFC-8446[4.2.11]: negotiated cipher and PSK cipher
+        // may be different, but must have the same hash length.
+        if (resuming && zeroRTTEntry.handshakeData().cipherSuite().hashLength() != cipherSuite.hashLength())
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "cipher_suite_hash_mismatch");
 
-            getPacketProtector().getTranscriptHash().offer(serverHello, true);
-            getPacketProtector().generateHandshakeKeys(configuration.getQuicVersion(), cipherSuite, sharedSecret);
+        KeyShare serverKeyShare = keyShares.getFirst();
+        // RFC 8446, 4.2.8: the client must have offered the named group.
+        List<KeyShare> clientKeyShares = clientHello.extensions().stream()
+            .filter(e -> e instanceof KeyShareExtension)
+            .map(KeyShareExtension.class::cast)
+            .map(KeyShareExtension::keyShares)
+            .findFirst()
+            .orElse(List.of());
+        clientKeyShares.stream()
+            .map(KeyShare::namedGroup)
+            .filter(serverKeyShare.namedGroup()::equals)
+            .findFirst()
+            .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_named_group"));
+        // Find the corresponding GroupKeyPair whose KeyShare is in the ClientHello.
+        GroupKeyPair groupKeyPair = groupKeyPairs.stream()
+            .filter(gkp -> gkp.group() == serverKeyShare.namedGroup())
+            .findFirst()
+            .orElseThrow(() -> new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "no_common_named_group"));
+        SecretKey sharedSecret = groupKeyPair.generateSharedSecret(serverKeyShare);
+        if (LOG.isDebugEnabled())
+            LOG.debug("negotiated KeyPair in NamedGroup {} on {}", serverKeyShare.namedGroup(), this);
 
-            state = State.NEED_ENCRYPTED_EXTENSIONS;
-        }
+        getPacketProtector().getTranscriptHash().offer(serverHello, true);
+        HKDFParameterSpec pskSpec = null;
+        if (resuming)
+            pskSpec = HKDF.expandLabel(zeroRTTEntry.resumptionMasterSecret(), "resumption", zeroRTTEntry.newSessionTicket().nonce(), cipherSuite.hashLength());
+        getPacketProtector().generateHandshakeKeys(configuration.getQuicVersion(), cipherSuite, sharedSecret, pskSpec);
+
+        state = State.NEED_ENCRYPTED_EXTENSIONS;
     }
 
     private void processEncryptedExtensions(EncryptedExtensionsMessage encryptedExtensions)
@@ -379,7 +392,7 @@ public class ClientTLSEngine extends TLSEngine
 
         getPacketProtector().getTranscriptHash().offer(encryptedExtensions, true);
 
-        state = State.NEED_CERTIFICATE;
+        state = resuming ? State.NEED_FINISHED : State.NEED_CERTIFICATE;
     }
 
     private void processCertificate(CertificateMessage certificate)
@@ -438,7 +451,7 @@ public class ClientTLSEngine extends TLSEngine
             LOG.debug("verified {} on {}", finished, this);
 
         getPacketProtector().getTranscriptHash().offer(finished, true);
-        getPacketProtector().generateApplicationKeys(configuration.getQuicVersion(), cipherSuite);
+        getPacketProtector().generateOneRTTKeys(configuration.getQuicVersion(), cipherSuite);
 
         FinishedMessage message = createFinishedMessage(cipherSuite);
         getPacketProtector().getTranscriptHash().offer(message, false);

@@ -193,6 +193,9 @@ public class ServerTLSEngine extends TLSEngine
             sessionTicket = getTLSConfiguration().getServerQuicConfiguration().getSessionTicketFactory().parseSessionTicket(clientIdentity.identity());
             if (sessionTicket != null)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("attempting resumption with {} on {}", sessionTicket, this);
+
                 // RFC-8446[4.2.11]: the pre-shared key extension must be the last.
                 // RFC-8446[4.2.11.2]: truncate the extension to verify the binder.
                 List<Extension> truncatedExtensions = new ArrayList<>(clientExtensions);
@@ -210,7 +213,10 @@ public class ServerTLSEngine extends TLSEngine
                 getPacketProtector().getTranscriptHash().initialize(cipherSuite);
                 byte[] binder = getPacketProtector().createPreSharedKeyIdentityBinder(cipherSuite, sessionTicket.resumptionMasterSecret(), sessionTicket.configuration().nonce());
                 getPacketProtector().getTranscriptHash().clear();
-                if (!MessageDigest.isEqual(clientIdentity.binder(), binder))
+                boolean binderValid = MessageDigest.isEqual(clientIdentity.binder(), binder);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("resumption identity {} for {} on {}", binderValid ? "valid" : "invalid" , sessionTicket, this);
+                if (!binderValid)
                     sessionTicket = null;
                 // TODO: early data?
             }
@@ -334,10 +340,10 @@ public class ServerTLSEngine extends TLSEngine
         getPacketProtector().getTranscriptHash().offer(serverHello, false);
 
         QuicVersion quicVersion = tlsConfiguration.getQuicVersion();
-        HKDFParameterSpec inputKeyMaterial = null;
+        HKDFParameterSpec pskSpec = null;
         if (sessionTicket != null)
-            inputKeyMaterial = HKDF.expandLabel(sessionTicket.resumptionMasterSecret(), "resumption", sessionTicket.configuration().nonce(), sessionTicket.handshakeData().cipherSuite().hashLength());
-        getPacketProtector().generateHandshakeKeys(quicVersion, cipherSuite, sharedSecret, inputKeyMaterial);
+            pskSpec = HKDF.expandLabel(sessionTicket.resumptionMasterSecret(), "resumption", sessionTicket.configuration().nonce(), sessionTicket.handshakeData().cipherSuite().hashLength());
+        getPacketProtector().generateHandshakeKeys(quicVersion, cipherSuite, sharedSecret, pskSpec);
 
         List<Message> handshakeMessages = new ArrayList<>();
 
@@ -401,7 +407,7 @@ public class ServerTLSEngine extends TLSEngine
             LOG.debug("produced {} on {}", finished, this);
 
         getPacketProtector().getTranscriptHash().offer(finished, false);
-        getPacketProtector().generateApplicationKeys(quicVersion, cipherSuite);
+        getPacketProtector().generateOneRTTKeys(quicVersion, cipherSuite);
 
         state = clientAuthentication ? State.NEED_CERTIFICATE : State.NEED_FINISHED;
 
