@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -28,8 +29,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.client.transport.HttpChannel;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpConnection;
 import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.SendFailure;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -668,7 +673,7 @@ public class ConnectionPoolTest
 
     @ParameterizedTest
     @MethodSource("pools")
-    public void testCountersSweepToStringThroughLifecycle(ConnectionPoolFactory factory) throws Exception
+    public void testNullSafeAndCountersSweepToStringThroughLifecycle(ConnectionPoolFactory factory) throws Exception
     {
         startClient(destination ->
         {
@@ -677,7 +682,34 @@ public class ConnectionPoolTest
             return connectionPool;
         });
 
-        AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(new HttpDestination(client, new Origin("", "", 0)));
+        HttpDestination destination = new HttpDestination(client, new Origin("", "", 0));
+        Connection connection = new HttpConnection(destination)
+        {
+            @Override
+            protected Iterator<HttpChannel> getHttpChannels()
+            {
+                return null;
+            }
+
+            @Override
+            public SendFailure send(HttpExchange exchange)
+            {
+                return null;
+            }
+
+            @Override
+            public void close()
+            {
+            }
+
+            @Override
+            public boolean isClosed()
+            {
+                return false;
+            }
+        };
+
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(destination);
         assertThat(connectionPool.getConnectionCount(), is(0));
         assertThat(connectionPool.getActiveConnectionCount(), is(0));
         assertThat(connectionPool.getIdleConnectionCount(), is(0));
@@ -685,6 +717,11 @@ public class ConnectionPoolTest
         assertThat(connectionPool.isEmpty(), is(true));
         assertThat(connectionPool.sweep(), is(false));
         assertThat(connectionPool.toString(), not(nullValue()));
+        assertThat(connectionPool.preCreateConnections(1).get(), nullValue());
+        assertThat(connectionPool.acquire(true), nullValue());
+        assertThat(connectionPool.accept(connection), is(false));
+        assertThat(connectionPool.getIdleConnections().size(), is(0));
+        assertThat(connectionPool.getActiveConnections().size(), is(0));
 
         LifeCycle.start(connectionPool);
         assertThat(connectionPool.getConnectionCount(), is(0));
@@ -703,6 +740,11 @@ public class ConnectionPoolTest
         assertThat(connectionPool.isEmpty(), is(true));
         assertThat(connectionPool.sweep(), is(false));
         assertThat(connectionPool.toString(), not(nullValue()));
+        assertThat(connectionPool.preCreateConnections(1).get(), nullValue());
+        assertThat(connectionPool.acquire(true), nullValue());
+        assertThat(connectionPool.accept(connection), is(false));
+        assertThat(connectionPool.getIdleConnections().size(), is(0));
+        assertThat(connectionPool.getActiveConnections().size(), is(0));
     }
 
     public static class ConnectionPoolFactory
