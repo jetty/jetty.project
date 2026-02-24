@@ -21,7 +21,6 @@ public record PreSharedKeyIdentity(byte[] identity, int obfuscatedTicketAge, byt
     public PreSharedKeyIdentity
     {
         Objects.requireNonNull(identity);
-        Objects.requireNonNull(binder);
     }
 
     @Override

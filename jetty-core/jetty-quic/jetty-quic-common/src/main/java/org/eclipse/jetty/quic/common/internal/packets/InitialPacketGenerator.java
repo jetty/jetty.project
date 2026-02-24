@@ -110,8 +110,9 @@ public class InitialPacketGenerator implements PacketGenerator
         headerAccumulator.put(srcConnectionId);
 
         byte[] token = packet.token();
-        VarLenInt.encode(headerAccumulator, token.length);
-        headerAccumulator.put(token);
+        VarLenInt.encode(headerAccumulator, token == null ? 0 : token.length);
+        if (token != null)
+            headerAccumulator.put(token);
 
         // AEAD encryption produces 16 additional bytes.
         long encryptedFramesLength = framesAccumulator.size() + 16;

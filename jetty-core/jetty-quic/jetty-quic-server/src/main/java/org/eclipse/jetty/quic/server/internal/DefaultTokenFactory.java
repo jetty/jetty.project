@@ -40,6 +40,25 @@ import org.eclipse.jetty.util.NanoTime;
 ///   byte[] mac
 /// }
 /// ```
+///
+// TODO:
+//  Issues:
+//   1. Port not bound: socketAddressToBytes uses only the IP address (getAddress().getAddress()), not the port. A token could be used from the same IP but a different port. Including the port is stricter, though RFC 9000 only speaks of address validation, and ports are often ephemeral.
+//   2. Address length inferred from current connection: In isTokenValid, the number of bytes to read for the address is expectedAddressBytes.length — derived from the current connection, not from what's stored in the token. If the client migrates between IPv4 (4 bytes) and IPv6 (16 bytes) between the
+//   two connections, the token is mis-parsed entirely, potentially reading the ODCID bytes as part of the address or vice versa.
+//   3. Plaintext contents: The token is plaintext || MAC — the timestamp and IP address are visible to anyone who receives the packet. AEAD encryption would hide them. Not a correctness issue, but a privacy one.
+//   4. System.nanoTime() is JVM-relative: It's a monotonic clock relative to JVM startup. This works fine within a single JVM, but NanoTime.millisSince() would give nonsense for tokens issued before a server restart (the nanoTime value would be from a previous JVM lifetime). For Retry tokens (10s) this
+//    is low risk; for NEW_TOKEN (15 min) a server restart within the validity window would silently produce wrong elapsed times rather than correctly rejecting the token.
+//   5. Ephemeral secret key: The key is generated fresh on each DefaultTokenFactory construction. This means tokens are automatically invalidated on server restart (generally fine) but also means in a cluster, different nodes can't validate each other's tokens — the client may connect to node A, get a
+//   token, then reconnect to node B which rejects it and falls back to Retry.
+//  Alternative format for confidentiality, but it is not required:
+//  nonce || AEAD_Encrypt(
+//      key       = HKDF(server_secret, "quic token"),
+//      nonce     = nonce,
+//      aad       = client_ip || client_port,   // authenticated, not encrypted
+//      plaintext = timestamp || original_dcid  // original_dcid only for Retry tokens
+//  )
+
 public class DefaultTokenFactory implements TokenFactory
 {
     private static final int RETRY_TYPE = 0;

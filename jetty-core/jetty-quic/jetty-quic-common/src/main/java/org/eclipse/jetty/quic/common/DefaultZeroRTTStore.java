@@ -31,17 +31,6 @@ public class DefaultZeroRTTStore implements ZeroRTTStore
     private final List<Entry> entries = new ArrayList<>();
 
     @Override
-    public void store(Entry entry)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("storing {} on {}", entry, this);
-        try (var _ = lock.lock())
-        {
-            entries.add(entry);
-        }
-    }
-
-    @Override
     public Entry match(Predicate<Entry> filter)
     {
         Entry result = null;
@@ -64,6 +53,17 @@ public class DefaultZeroRTTStore implements ZeroRTTStore
         if (LOG.isDebugEnabled())
             LOG.debug("matched {} on {}", result, this);
         return result;
+    }
+
+    @Override
+    public void store(Entry entry)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("storing {} on {}", entry, this);
+        try (var _ = lock.lock())
+        {
+            entries.add(entry);
+        }
     }
 
     @Override

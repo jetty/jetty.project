@@ -25,6 +25,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.client.internal.ClientQuicSession;
+import org.eclipse.jetty.quic.client.internal.DefaultTokenStore;
 import org.eclipse.jetty.quic.common.DefaultZeroRTTStore;
 import org.eclipse.jetty.quic.common.ZeroRTTStore;
 import org.eclipse.jetty.util.Promise;
@@ -44,6 +45,7 @@ public class QuicClient extends ContainerLifeCycle implements AutoCloseable
     private final QuicClientQuicConfiguration quicConfiguration;
     private final ClientConnector clientConnector;
     private ZeroRTTStore zeroRTTStore;
+    private TokenStore tokenStore;
     private List<String> protocols = List.of("http/1.1", "hq-interop");
 
     public QuicClient(QuicClientQuicConfiguration quicConfiguration)
@@ -59,6 +61,11 @@ public class QuicClient extends ContainerLifeCycle implements AutoCloseable
         installBean(clientConnector);
     }
 
+    public QuicClientQuicConfiguration getClientQuicConfiguration()
+    {
+        return quicConfiguration;
+    }
+
     public ClientConnector getClientConnector()
     {
         return clientConnector;
@@ -72,6 +79,16 @@ public class QuicClient extends ContainerLifeCycle implements AutoCloseable
     public void setZeroRTTStore(ZeroRTTStore zeroRTTStore)
     {
         this.zeroRTTStore = zeroRTTStore;
+    }
+
+    public TokenStore getTokenStore()
+    {
+        return tokenStore;
+    }
+
+    public void setTokenStore(TokenStore tokenStore)
+    {
+        this.tokenStore = tokenStore;
     }
 
     public List<String> getApplicationProtocols()
@@ -90,6 +107,11 @@ public class QuicClient extends ContainerLifeCycle implements AutoCloseable
         if (zeroRTTStore == null)
             zeroRTTStore = new DefaultZeroRTTStore();
         addBean(zeroRTTStore);
+
+        if (tokenStore == null)
+            tokenStore = new DefaultTokenStore();
+        addBean(tokenStore);
+
         super.doStart();
     }
 

@@ -23,6 +23,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
 import org.eclipse.jetty.quic.api.frames.NewTokenFrame;
@@ -167,34 +168,35 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 
     private void processInitialPacket(InitialPacket packet) throws Exception
     {
-        byte[] token = packet.token();
-        if (token.length == 0)
+        if (packet.frames().getFirst() instanceof CryptoFrame)
         {
+            byte[] token = packet.token();
+            if (token == null || token.length == 0)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("no token in {} on {}", packet, this);
+
+                // Store the odcid to be used for the next InitialPacket and for the RetryPacket.
+                originalDestinationConnectionId = packet.destinationConnectionId();
+
+                token = getQuicConfiguration().getTokenFactory().newRetryToken(getRemoteSocketAddress(), originalDestinationConnectionId);
+                RetryPacket retryPacket = new RetryPacket(packet.quicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, null);
+                RetainableByteBuffer.Mutable retryAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), false, -1, 0, 0);
+                generateRetryPacket(retryAccumulator, retryPacket);
+                byte[] integrity = getTLSEngine().getPacketProtector().createRetryIntegrity(retryAccumulator, originalDestinationConnectionId);
+                retryPacket = retryPacket.withIntegrity(integrity);
+                packet(retryPacket, Callback.NOOP);
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("dropping {} on {}", packet, this);
+                return;
+            }
+            boolean valid = getQuicConfiguration().getTokenFactory().isTokenValid(getRemoteSocketAddress(), originalDestinationConnectionId, token);
             if (LOG.isDebugEnabled())
-                LOG.debug("no token in {} on {}", packet, this);
-
-            // Store the odcid to be used for the next InitialPacket and for the RetryPacket.
-            originalDestinationConnectionId = packet.destinationConnectionId();
-
-            token = getQuicConfiguration().getTokenFactory().newRetryToken(getRemoteSocketAddress(), originalDestinationConnectionId);
-            RetryPacket retryPacket = new RetryPacket(packet.quicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, null);
-            RetainableByteBuffer.Mutable retryAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), false, -1, 0, 0);
-            generateRetryPacket(retryAccumulator, retryPacket);
-            byte[] integrity = getTLSEngine().getPacketProtector().createRetryIntegrity(retryAccumulator, originalDestinationConnectionId);
-            retryPacket = retryPacket.withIntegrity(integrity);
-            packet(retryPacket, Callback.NOOP);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("dropping {} on {}", packet, this);
-            return;
+                LOG.debug("token {} in {} on {}", valid ? "valid" : "invalid", packet, this);
+            if (!valid)
+                throw new QuicException(ErrorCode.INVALID_TOKEN_ERROR, "invalid_token");
         }
-
-        boolean valid = getQuicConfiguration().getTokenFactory().isTokenValid(getRemoteSocketAddress(), originalDestinationConnectionId, token);
-        if (LOG.isDebugEnabled())
-            LOG.debug("token {} in {} on {}", valid ? "valid" : "invalid", packet, this);
-        if (!valid)
-            throw new QuicException(ErrorCode.INVALID_TOKEN_ERROR, "invalid_token");
-        // Process the InitialPacket.
         super.processPacket(packet);
     }
 

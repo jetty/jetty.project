@@ -115,7 +115,7 @@ public class PacketProtector implements Encrypter, Decrypter
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("allocated QUIC initial keys on {}", this);
+                LOG.debug("generated {} keys on {}", EncryptionLevel.INITIAL, this);
         }
         catch (Throwable x)
         {
@@ -169,7 +169,7 @@ public class PacketProtector implements Encrypter, Decrypter
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("allocated QUIC handshake keys on {}", this);
+                LOG.debug("generated {} keys on {}", EncryptionLevel.HANDSHAKE, this);
         }
         catch (Throwable x)
         {
@@ -177,7 +177,7 @@ public class PacketProtector implements Encrypter, Decrypter
         }
     }
 
-    public void generateApplicationKeys(QuicVersion quicVersion, CipherSuite cipherSuite)
+    public void generateOneRTTKeys(QuicVersion quicVersion, CipherSuite cipherSuite)
     {
         try
         {
@@ -218,7 +218,7 @@ public class PacketProtector implements Encrypter, Decrypter
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("allocated QUIC application keys on {}", this);
+                LOG.debug("generated {} keys on {}", EncryptionLevel.ONE_RTT, this);
         }
         catch (Throwable x)
         {

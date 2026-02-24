@@ -446,7 +446,6 @@ public abstract class QuicSession extends AbstractSession
     @Override
     public void offerTask(Runnable task, boolean dispatch)
     {
-
     }
 
     public void process(SocketAddress remoteSocketAddress, RetainableByteBuffer buffer) throws Exception
@@ -573,7 +572,7 @@ public abstract class QuicSession extends AbstractSession
             {
                 flusher.offer(maxDataFrame);
             }
-            case Frame.WithStreamId withStreamId -> processWithStreamId(packet, withStreamId);
+            case Frame.WithStreamId withStreamId -> processFrameWithStreamId(packet, withStreamId);
             default ->
             {
                 // TODO: notify Session.Listener
@@ -581,7 +580,7 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    private void processWithStreamId(Packet.WithFrames packet, Frame.WithStreamId frame)
+    private void processFrameWithStreamId(Packet.WithFrames packet, Frame.WithStreamId frame)
     {
         QuicStream stream = getOrCreateRemoteStream(frame);
         stream.processFrame(frame);

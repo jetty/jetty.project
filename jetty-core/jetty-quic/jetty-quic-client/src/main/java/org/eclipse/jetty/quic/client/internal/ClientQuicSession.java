@@ -26,8 +26,10 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
+import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
+import org.eclipse.jetty.quic.api.frames.NewTokenFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.client.QuicClient;
@@ -63,8 +65,8 @@ public class ClientQuicSession extends QuicSession
 
     private final AtomicLong biStreamIds = new AtomicLong();
     private final AtomicLong uniStreamIds = new AtomicLong();
-    private final Tokens tokens = new Tokens();
     private final Map<String, Object> context;
+    private SocketAddress serverSocketAddress;
     private byte[] originalDestinationConnectionId;
     private boolean retryPacketProcessed;
     private byte[] retryToken;
@@ -115,10 +117,10 @@ public class ClientQuicSession extends QuicSession
     /// @param callback the [Callback] notified when the TLS `ClientHello` has been sent.
     void connect(Callback callback)
     {
-        SocketAddress remoteSocketAddress = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-        setRemoteSocketAddress(remoteSocketAddress);
+        serverSocketAddress = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+        setRemoteSocketAddress(serverSocketAddress);
         if (LOG.isDebugEnabled())
-            LOG.debug("connecting to {} on {}", remoteSocketAddress, this);
+            LOG.debug("connecting to {} on {}", serverSocketAddress, this);
 
         SslContextFactory.Client sslContextFactory = (SslContextFactory.Client)context.get(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
 
@@ -130,7 +132,7 @@ public class ClientQuicSession extends QuicSession
         setQuicVersion(quicVersion);
         tlsConfiguration.setQuicVersion(quicVersion);
 
-        if (remoteSocketAddress instanceof InetSocketAddress inet)
+        if (serverSocketAddress instanceof InetSocketAddress inet)
         {
             String serverName = inet.getHostString();
             tlsConfiguration.setServerName(serverName);
@@ -198,16 +200,22 @@ public class ClientQuicSession extends QuicSession
     @Override
     protected InitialPacket newInitialPacket(List<Frame> frames)
     {
-        byte[] token;
-        if (retryToken != null)
+        byte[] token = null;
+
+        if (frames.getFirst() instanceof CryptoFrame)
         {
-            token = retryToken;
-            retryToken = null;
+            if (retryToken != null)
+            {
+                token = retryToken;
+                retryToken = null;
+            }
+            else
+            {
+                QuicClient quicClient = (QuicClient)context.get(QuicClient.CONTEXT_KEY);
+                token = quicClient.getTokenStore().retrieve(getLocalSocketAddress(), getRemoteSocketAddress());
+            }
         }
-        else
-        {
-            token = tokens.get(getEndPoint().getLocalSocketAddress(), getRemoteSocketAddress());
-        }
+
         return new InitialPacket(getQuicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, getPacketNumbers().nextPacketNumber(EncryptionLevel.INITIAL), frames);
     }
 
@@ -242,6 +250,7 @@ public class ClientQuicSession extends QuicSession
         switch (frame)
         {
             case HandshakeDoneFrame handshakeDone -> processHandshakeDoneFrame(packet, handshakeDone);
+            case NewTokenFrame newTokenFrame -> processNewTokenFrame(newTokenFrame);
             default -> super.processFrame(packet, frame);
         }
     }
@@ -252,6 +261,12 @@ public class ClientQuicSession extends QuicSession
             LOG.debug("processing {} in {} on {}", frame, packet, this);
         notifyOpen();
         sessionPromise(context).succeeded(this);
+    }
+
+    private void processNewTokenFrame(NewTokenFrame frame)
+    {
+        QuicClient quicClient = (QuicClient)context.get(QuicClient.CONTEXT_KEY);
+        quicClient.getTokenStore().store(getLocalSocketAddress(), serverSocketAddress, frame.token());
     }
 
     @Override
