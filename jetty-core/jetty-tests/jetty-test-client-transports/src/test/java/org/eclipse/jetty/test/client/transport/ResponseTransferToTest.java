@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,6 +54,9 @@ public class ResponseTransferToTest extends AbstractTest
         {
             for (long contentLength : List.of(4L, 1024L, 1024 * 1024L, 3 * 1024 * 1024 * 1024L))
             {
+                // Only transfer 3 GiB for clear-text HTTP, the others are too slow.
+                if (transportType != TransportType.HTTP && contentLength > Integer.MAX_VALUE)
+                    continue;
                 for (boolean chunked : List.of(false, true))
                 {
                     arguments.add(Arguments.of(transportType, contentLength, chunked));
@@ -102,17 +107,15 @@ public class ResponseTransferToTest extends AbstractTest
                 }
             });
             client.setMaxConnectionsPerDestination(1);
+            // Large response buffer size to make the test faster.
+            client.setResponseBufferSize(256 * 1024);
 
             AtomicLong length = new AtomicLong();
             CountDownLatch latch = new CountDownLatch(1);
             client.newRequest(newURI(transportType))
                 .path("/transfer")
                 .timeout(30, TimeUnit.SECONDS)
-                .onResponseContent((r, c) ->
-                {
-//                    System.err.println("SIMON: chunk = " + c.remaining());
-                    length.addAndGet(c.remaining());
-                })
+                .onResponseContent((r, c) -> length.addAndGet(c.remaining()))
                 .send(r ->
                 {
                     if (r.isSucceeded())
@@ -142,33 +145,33 @@ public class ResponseTransferToTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testResponseContentSourceInChunks(TransportType transportType) throws Exception
+    public void testResponseContentSourceUnknownLength(TransportType transportType) throws Exception
     {
         start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                int contentLength = 1024 * 1024;
-                Path dir = Files.createDirectories(MavenPaths.targetTestDir(getClass().getSimpleName()));
-                Path file = Files.createTempFile(dir, "file-", ".bin");
-                try (var channel = Files.newByteChannel(file, StandardOpenOption.WRITE))
+                if ("/transfer".equals(Request.getPathInContext(request)))
                 {
-                    channel.write(ByteBuffer.allocateDirect(contentLength));
+                    InputStream input = new ByteArrayInputStream(new byte[1024]);
+                    Content.Source source = Content.Source.from(input);
+                    Content.Sink.write(response, true, source, callback);
                 }
-
-                // Write first chunk.
-                int length1 = contentLength / 2;
-                try (Blocker.Callback blocker = Blocker.callback())
+                else
                 {
-                    Content.Sink.write(response, false, Content.Source.from(file, 0, length1), blocker);
-                    blocker.block();
+                    callback.succeeded();
                 }
-
-                // Write last chunk.
-                Content.Sink.write(response, true, Content.Source.from(file, length1, contentLength - length1), callback);
                 return true;
             }
         });
+        client.setMaxConnectionsPerDestination(1);
+
+        ContentResponse response = client.newRequest(newURI(transportType))
+            .path("/transfer")
+            .timeout(30, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 }

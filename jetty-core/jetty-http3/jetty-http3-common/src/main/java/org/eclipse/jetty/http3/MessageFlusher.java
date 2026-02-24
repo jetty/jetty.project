@@ -55,7 +55,10 @@ public class MessageFlusher extends IteratingCallback
             closed = terminated;
             if (closed == null)
             {
-                entries.offer(new Entry(endPoint, frame, callback));
+                Entry e = new Entry(endPoint, frame, callback);
+                entries.offer(e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("offered {} on {}", e, this);
                 return true;
             }
         }
