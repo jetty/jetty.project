@@ -87,7 +87,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         List<CompletableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < connectionCount; i++)
         {
-            Pool<Connection> pool = this.pool;
             Pool.Entry<Connection> entry = pool.reserve();
             if (entry == null)
                 break;

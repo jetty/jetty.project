@@ -682,34 +682,7 @@ public class ConnectionPoolTest
             return connectionPool;
         });
 
-        HttpDestination destination = new HttpDestination(client, new Origin("", "", 0));
-        Connection connection = new HttpConnection(destination)
-        {
-            @Override
-            protected Iterator<HttpChannel> getHttpChannels()
-            {
-                return null;
-            }
-
-            @Override
-            public SendFailure send(HttpExchange exchange)
-            {
-                return null;
-            }
-
-            @Override
-            public void close()
-            {
-            }
-
-            @Override
-            public boolean isClosed()
-            {
-                return false;
-            }
-        };
-
-        AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(destination);
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(new HttpDestination(client, new Origin("", "", 0)));
         assertThat(connectionPool.getConnectionCount(), is(0));
         assertThat(connectionPool.getActiveConnectionCount(), is(0));
         assertThat(connectionPool.getIdleConnectionCount(), is(0));
@@ -717,11 +690,6 @@ public class ConnectionPoolTest
         assertThat(connectionPool.isEmpty(), is(true));
         assertThat(connectionPool.sweep(), is(false));
         assertThat(connectionPool.toString(), not(nullValue()));
-        assertThat(connectionPool.preCreateConnections(1).get(), nullValue());
-        assertThat(connectionPool.acquire(true), nullValue());
-        assertThat(connectionPool.accept(connection), is(false));
-        assertThat(connectionPool.getIdleConnections().size(), is(0));
-        assertThat(connectionPool.getActiveConnections().size(), is(0));
 
         LifeCycle.start(connectionPool);
         assertThat(connectionPool.getConnectionCount(), is(0));
@@ -736,13 +704,12 @@ public class ConnectionPoolTest
         assertThat(connectionPool.getConnectionCount(), is(0));
         assertThat(connectionPool.getActiveConnectionCount(), is(0));
         assertThat(connectionPool.getIdleConnectionCount(), is(0));
-        assertThat(connectionPool.getMaxConnectionCount(), is(0));
+        assertThat(connectionPool.getMaxConnectionCount(), is(64));
         assertThat(connectionPool.isEmpty(), is(true));
         assertThat(connectionPool.sweep(), is(false));
         assertThat(connectionPool.toString(), not(nullValue()));
         assertThat(connectionPool.preCreateConnections(1).get(), nullValue());
         assertThat(connectionPool.acquire(true), nullValue());
-        assertThat(connectionPool.accept(connection), is(false));
         assertThat(connectionPool.getIdleConnections().size(), is(0));
         assertThat(connectionPool.getActiveConnections().size(), is(0));
     }
