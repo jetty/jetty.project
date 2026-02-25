@@ -279,7 +279,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         }
 
         // Create the connection.
-        Pool<Connection> pool = this.pool;
         Pool.Entry<Connection> entry = pool.reserve();
         if (entry == null)
         {
@@ -300,9 +299,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     {
         if (!(connection instanceof Attachable attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
-        Pool<Connection> pool = this.pool;
-        if (pool == null)
-            return false;
         Pool.Entry<Connection> entry = pool.reserve();
         if (entry == null)
             return false;
@@ -323,7 +319,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     {
         while (true)
         {
-            Pool<Connection> pool = this.pool;
             Pool.Entry<Connection> entry = pool.acquire();
             if (entry != null)
             {
@@ -469,7 +464,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     Collection<Connection> getIdleConnections()
     {
-        return pool == null ? List.of() : pool.stream()
+        return pool.stream()
             .filter(Pool.Entry::isIdle)
             .filter(entry -> !entry.isTerminated())
             .map(Pool.Entry::getPooled)
@@ -478,7 +473,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     Collection<Connection> getActiveConnections()
     {
-        return pool == null ? List.of() : pool.stream()
+        return pool.stream()
             .filter(entry -> !entry.isIdle())
             .filter(entry -> !entry.isTerminated())
             .map(Pool.Entry::getPooled)
