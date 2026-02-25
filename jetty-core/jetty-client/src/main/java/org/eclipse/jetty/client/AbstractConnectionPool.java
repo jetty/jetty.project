@@ -76,7 +76,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         super.doStop();
         removeBean(pool);
         pool.terminate().forEach(this::close);
-        pool = null;
     }
 
     @Override
@@ -89,8 +88,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         for (int i = 0; i < connectionCount; i++)
         {
             Pool<Connection> pool = this.pool;
-            if (pool == null)
-                break;
             Pool.Entry<Connection> entry = pool.reserve();
             if (entry == null)
                 break;
@@ -283,8 +280,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
         // Create the connection.
         Pool<Connection> pool = this.pool;
-        if (pool == null)
-            return;
         Pool.Entry<Connection> entry = pool.reserve();
         if (entry == null)
         {
@@ -329,8 +324,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         while (true)
         {
             Pool<Connection> pool = this.pool;
-            if (pool == null)
-                return null;
             Pool.Entry<Connection> entry = pool.acquire();
             if (entry != null)
             {

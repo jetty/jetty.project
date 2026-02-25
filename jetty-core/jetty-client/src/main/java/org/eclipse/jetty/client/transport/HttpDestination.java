@@ -304,15 +304,15 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     public void send(HttpExchange exchange)
     {
         HttpRequest request = exchange.getRequest();
-        if (client.isRunning())
+        if (isRunning())
         {
             if (enqueue(exchanges, exchange))
             {
                 request.sent();
                 requestTimeouts.schedule(exchange);
-                if (!client.isRunning() && exchanges.remove(exchange))
+                if (!isRunning() && exchanges.remove(exchange))
                 {
-                    request.abort(new RejectedExecutionException(client + " is stopping"));
+                    request.abort(new RejectedExecutionException(this + " is stopping"));
                 }
                 else
                 {
@@ -332,7 +332,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         }
         else
         {
-            request.abort(new RejectedExecutionException(client + " is stopped"));
+            request.abort(new RejectedExecutionException(this + " is stopped"));
         }
     }
 
@@ -365,22 +365,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         {
             Connection connection = connectionPool.acquire(create);
             if (connection == null)
-            {
-                if (!isRunning())
-                {
-                    // This instance is being used after becoming stale: the sweeper stops the destination in such case
-                    // which itself stops the connection pool; the latter only returns null for two reasons: the pool
-                    // being empty or stopped, so we differentiate between the two by checking the running state.
-                    while (true)
-                    {
-                        HttpExchange httpExchange = exchanges.poll();
-                        if (httpExchange == null)
-                            break;
-                        httpExchange.abort(new RejectedExecutionException(this + " is stale"), Promise.noop());
-                    }
-                }
                 break;
-            }
             boolean proceed = process(connection);
             if (proceed)
                 create = false;
