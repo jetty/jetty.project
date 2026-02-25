@@ -15,7 +15,6 @@ package org.eclipse.jetty.client;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,12 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.client.transport.HttpChannel;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.transport.HttpConnection;
 import org.eclipse.jetty.client.transport.HttpDestination;
-import org.eclipse.jetty.client.transport.HttpExchange;
-import org.eclipse.jetty.client.transport.SendFailure;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
