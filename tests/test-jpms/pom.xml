@@ -34,6 +34,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <environmentVariables>
+            <MAVEN_REPO_USERNAME>${env.MAVEN_REPO_USERNAME}</MAVEN_REPO_USERNAME>
+            <MAVEN_REPO_PASSWORD>${env.MAVEN_REPO_PASSWORD}</MAVEN_REPO_PASSWORD>
+          </environmentVariables>
           <systemPropertyVariables>
             <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
             <jettyVersion>${project.version}</jettyVersion>
