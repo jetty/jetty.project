@@ -2,8 +2,8 @@
 name: Issue
 about: Reporting bugs and problems in Eclipse Jetty. DO NOT USE FOR SECURITY ISSUES!
 title: ''
+labels: ''
 assignees: ''
-labels: Bug
 
 ---
 
@@ -21,6 +21,3 @@ labels: Bug
 <!-- Do not report security issues here! See [Jetty Security Reports](https://eclipse.dev/jetty/security_reports.php) -->
 
 **How to reproduce?**
-
-
-

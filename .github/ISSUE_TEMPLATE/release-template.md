@@ -1,9 +1,9 @@
 ---
-name: 'Release Process'
+name: Release Process
 about: 'COMMITTER ONLY: Managing the Jetty release process'
-title: 'Jetty Releases 9.4.x, 10.0.y, 11.0.y'
+title: Jetty Releases 9.4.x, 10.0.y, 11.0.y
+labels: ''
 assignees: ''
-labels: Build
 
 ---
 
