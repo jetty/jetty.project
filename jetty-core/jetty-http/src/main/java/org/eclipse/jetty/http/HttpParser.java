@@ -101,7 +101,6 @@ public class HttpParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpParser.class);
     public static final int INITIAL_URI_LENGTH = 256;
-    private static final int MAX_CHUNK_LENGTH = Integer.MAX_VALUE / 16 - 16;
     private static final String UNMATCHED_VALUE = "\u0000";
 
     /**
@@ -281,6 +280,7 @@ public class HttpParser
     private boolean _hasTransferEncoding;
     private long _contentLength = -1;
     private long _contentPosition;
+    private int _chunkSizeDigits;
     private int _chunkLength;
     private int _chunkOffset;
     private boolean _headResponse;
@@ -2041,8 +2041,9 @@ public class HttpParser
                     }
                     else if (t.isHexDigit())
                     {
-                        if (_chunkLength > MAX_CHUNK_LENGTH)
-                            throw new HttpException.RuntimeException(HttpStatus.PAYLOAD_TOO_LARGE_413);
+                        // Allow at most 16 digits (8 bytes) for a max chunk size of 2^64-1.
+                        if (++_chunkSizeDigits == 16)
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400);
                         _chunkLength = _chunkLength * 16 + t.getHexDigit();
                     }
                     else if (isBWS(t))
@@ -2153,6 +2154,7 @@ public class HttpParser
         if (t == EOL_LF)
             checkViolation(LF_CHUNK_TERMINATION);
         setChunkSizeState(ChunkSizeState.SIZE);
+        _chunkSizeDigits = 0;
         if (_chunkLength == 0)
         {
             setState(State.TRAILER);
