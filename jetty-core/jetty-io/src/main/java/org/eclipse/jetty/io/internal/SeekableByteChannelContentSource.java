@@ -69,6 +69,8 @@ public class SeekableByteChannelContentSource extends ByteChannelContentSource i
     {
         try
         {
+            // Explicitly set the position, in case it
+            // was set before the channel was opened.
             position(position());
             return Content.Chunk.EMPTY;
         }
@@ -125,5 +127,13 @@ public class SeekableByteChannelContentSource extends ByteChannelContentSource i
     public Seekable slice(long position, int length)
     {
         return new SeekableByteChannelContentSource(getByteBufferPool(), getByteChannel(), position, length);
+    }
+
+    @Override
+    public boolean rewind()
+    {
+        position(getOffset());
+        reset();
+        return true;
     }
 }

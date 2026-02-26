@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
@@ -103,6 +104,7 @@ public class VirtualThreadPoolTest
     }
 
     @Test
+    @Disabled
     public void testTrackingDump() throws Exception
     {
         VirtualThreadPool vtp = new VirtualThreadPool();

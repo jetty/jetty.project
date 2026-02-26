@@ -63,7 +63,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         this.session = session;
         EndPoint endPoint = session.getEndPoint();
         boolean direct = endPoint != null && endPoint.getConnection() instanceof HTTP2Connection http2Connection && http2Connection.isUseOutputDirectByteBuffers();
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(session.getGenerator().getByteBufferPool(), direct, -1, -1, 0);
+        this.accumulator = new RetainableByteBuffer.DynamicCapacity(session.getGenerator().getByteBufferPool(), direct, -1);
     }
 
     @Override

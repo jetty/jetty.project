@@ -53,7 +53,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -75,22 +74,36 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentSourceTest
 {
-    private static ArrayByteBufferPool.Tracking byteBufferPool;
-
-    @BeforeEach
-    public void beforeEach()
+    // This test is really convoluted about testing reads from files that return an expected number of bytes
+    // that heavily depends on the ByteBuffer capacity, so the ByteBufferPool needs explicit bucket functions.
+    private static final ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking(1, 1, 64 * 1024, 1024, -1, -1, capacity ->
     {
-        byteBufferPool = new ArrayByteBufferPool.Tracking();
-    }
+        if (capacity <= 3)
+            return 0;
+        if (capacity <= 6)
+            return 1;
+        return ((capacity - 1) / 1024) + 2;
+    }, index ->
+    {
+        if (index == 0)
+            return 3;
+        if (index == 1)
+            return 6;
+        return (index - 1) * 1024;
+    });
 
     @AfterEach
     public void afterEach()
     {
-        if (!byteBufferPool.getLeaks().isEmpty())
-            byteBufferPool.dumpLeaks();
-        assertThat(byteBufferPool.getLeaks(), empty());
-        byteBufferPool.clear();
-        byteBufferPool = null;
+        try
+        {
+            assertThat(byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks(), empty());
+        }
+        finally
+        {
+            // Clear the pool after every test.
+            byteBufferPool.clear();
+        }
     }
 
     public static List<Content.Source> all() throws Exception
@@ -162,7 +175,6 @@ public class ContentSourceTest
             case "rewind" -> List.of(
                 byteBufferSource,
                 path1,
-                bccs3,
                 pcs2);
             case "multi" -> List.of(
                 asyncSource,
@@ -303,7 +315,7 @@ public class ContentSourceTest
 
         String first = Content.Source.asString(source);
         assertThat(first, is("onetwo"));
-        source.rewind();
+        assertTrue(source.rewind());
         String second = Content.Source.asString(source);
         assertThat(second, is("onetwo"));
     }

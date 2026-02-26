@@ -308,7 +308,7 @@ public class HttpSenderOverHTTP extends HttpSender
             while (true)
             {
                 ByteBuffer chunkByteBuffer = chunkBuffer == null ? null : chunkBuffer.getByteBuffer();
-                HttpGenerator.Result result = generator.generateRequest(null, null, chunkByteBuffer, content, lastContent);
+                HttpGenerator.Result result = generator.generateRequest(metaData, null, chunkByteBuffer, content, lastContent);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Generated content ({} bytes, last={}) - {}/{}",
                         content == null ? -1 : content.remaining(),

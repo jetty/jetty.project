@@ -1594,10 +1594,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
         {
-            if (_response == null)
+            if (response != null)
                 sendHeaders(request, response, last, content, callback);
             else
-                sendContent(request, response, last, content, callback);
+                sendContent(request, _response, last, content, callback);
         }
 
         private void sendHeaders(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)

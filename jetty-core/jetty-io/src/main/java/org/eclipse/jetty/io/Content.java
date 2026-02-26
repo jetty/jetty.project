@@ -48,6 +48,7 @@ import org.eclipse.jetty.io.internal.ContentSourceRange;
 import org.eclipse.jetty.io.internal.ContentSourceRetainableByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.io.internal.PathContentSource;
+import org.eclipse.jetty.io.internal.SeekableByteChannelContentSource;
 import org.eclipse.jetty.io.internal.Transferable;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
@@ -399,7 +400,7 @@ public class Content
          */
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
         {
-            return new ByteChannelContentSource(byteBufferPool, seekableByteChannel, offset, length);
+            return new SeekableByteChannelContentSource(byteBufferPool, seekableByteChannel, offset, length);
         }
 
         static Content.Source from(InputStream inputStream)

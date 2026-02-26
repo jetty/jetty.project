@@ -301,10 +301,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
     {
         content = Objects.requireNonNullElse(content, BufferUtil.EMPTY_BUFFER);
-        if (_responseMetaData == null)
+        if (response != null)
             sendHeaders(request, response, content, last, callback);
         else
-            sendContent(request, response, content, last, callback);
+            sendContent(request, _responseMetaData, content, last, callback);
     }
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)

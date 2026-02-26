@@ -24,7 +24,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -144,7 +143,6 @@ public class ByteChannelContentSource implements Content.Source
             _terminal = Objects.requireNonNull(terminal);
         else
             ExceptionUtil.addSuppressedIfNotAssociated(_terminal.getFailure(), terminal.getFailure());
-        IO.close(_byteChannel);
         if (_buffer != null)
             _buffer.release();
         _buffer = null;
@@ -266,19 +264,17 @@ public class ByteChannelContentSource implements Content.Source
         }
     }
 
-    @Override
-    public boolean rewind()
+    protected void reset()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock ignored = lock())
         {
-            IO.close(_byteChannel);
-            _byteChannel = null;
+            if (_buffer != null)
+                _buffer.release();
             _buffer = null;
             _toSkip = _offset;
             _totalRead = 0;
             _demandCallback = null;
             _terminal = null;
-            return true;
         }
     }
 }

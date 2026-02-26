@@ -252,7 +252,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
     {
         ByteBuffer content = Objects.requireNonNullElse(byteBuffer, BufferUtil.EMPTY_BUFFER);
-        if (responseMetaData == null)
+        if (response != null)
             sendHeaders(request, response, content, last, callback);
         else
             sendContent(request, responseMetaData, content, last, callback);

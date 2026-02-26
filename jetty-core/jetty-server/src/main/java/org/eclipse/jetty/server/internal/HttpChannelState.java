@@ -1342,6 +1342,7 @@ public class HttpChannelState implements HttpChannel, Components
             HttpChannelState httpChannelState;
             HttpStream stream;
             Throwable writeFailure;
+            MetaData.Response responseMetaData = null;
             try (AutoLock ignored = _request._lock.lock())
             {
                 httpChannelState = _request.lockedGetHttpChannelState();
@@ -1408,12 +1409,12 @@ public class HttpChannelState implements HttpChannel, Components
                 _contentBytesWritten = totalWritten;
                 stream = httpChannelState._stream;
                 if (_httpFields.commit())
-                    _metaData = lockedPrepareResponse(httpChannelState, last);
+                    _metaData = responseMetaData = lockedPrepareResponse(httpChannelState, last);
             }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
-            stream.send(_request._metaData, _metaData, last, content, this);
+            stream.send(_request._metaData, responseMetaData, last, content, this);
         }
 
         /**
@@ -1868,7 +1869,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             assert httpChannelState._request._lock.isHeldByCurrentThread();
             MetaData.Response httpFields = super.lockedPrepareResponse(httpChannelState, last);
-            httpChannelState._response.setStatus(getStatus());
+            httpChannelState._response._status = getStatus();
             HttpFields.Mutable originalResponseFields = httpChannelState._responseHeaders.getMutableHttpFields();
             originalResponseFields.clear();
             originalResponseFields.add(getResponseHttpFields());

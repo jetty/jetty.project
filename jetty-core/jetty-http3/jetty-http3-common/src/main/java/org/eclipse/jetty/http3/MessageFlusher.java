@@ -44,7 +44,7 @@ public class MessageFlusher extends IteratingCallback
     public MessageFlusher(ByteBufferPool bufferPool, QpackEncoder encoder, boolean useDirectByteBuffers)
     {
         this.generator = new MessageGenerator(bufferPool, encoder, useDirectByteBuffers);
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1, 0, 0);
+        this.accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1);
     }
 
     public boolean offer(StreamEndPoint endPoint, Frame frame, Callback callback)

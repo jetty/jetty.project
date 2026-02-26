@@ -1013,6 +1013,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             super(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
         }
 
+        public Tracking(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacityFor)
+        {
+            super(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, bucketIndexFor, bucketCapacityFor);
+        }
+
         @Override
         public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
         {

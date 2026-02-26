@@ -23,6 +23,7 @@ import java.nio.file.StandardOpenOption;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 
@@ -64,6 +65,15 @@ public class PathContentSource extends SeekableByteChannelContentSource implemen
     protected SeekableByteChannel open() throws IOException
     {
         return Files.newByteChannel(_path, StandardOpenOption.READ);
+    }
+
+    @Override
+    public Content.Chunk read()
+    {
+        Content.Chunk chunk = super.read();
+        if (chunk != null && chunk.isLast() && chunk.isEmpty())
+            IO.close(getByteChannel());
+        return chunk;
     }
 
     @Override
