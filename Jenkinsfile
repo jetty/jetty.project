@@ -135,31 +135,31 @@ def mavenBuild(jdk, cmdline, mvnName) {
       configFileProvider(
         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
         withCredentials([usernamePassword(credentialsId: 'nexus-cred', usernameVariable: 'MAVEN_REPO_USERNAME', passwordVariable: 'MAVEN_REPO_PASSWORD')]) {
-          def buildCache = useBuildCache()
-          if (buildCache) {
-            echo "Using build cache"
-            extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred  "
-          } else {
-            // when not using cache
-            echo "Not using build cache"
-            extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.skipCache=true -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred "
-          }
-          if (env.BRANCH_NAME ==~ /PR-\d+/) {
-            if (pullRequest.labels.contains("build-all-tests")) {
-              extraArgs = " -Dmaven.test.failure.ignore=true "
+            def buildCache = useBuildCache()
+            if (buildCache) {
+              echo "Using build cache"
+              extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred  "
+            } else {
+              // when not using cache
+              echo "Not using build cache"
+              extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.skipCache=true -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred "
+            }
+            if (env.BRANCH_NAME ==~ /PR-\d+/) {
+              if (pullRequest.labels.contains("build-all-tests")) {
+                extraArgs = " -Dmaven.test.failure.ignore=true "
+              }
+            }
+            def dashProfile = ""
+            if(useEclipseDash()) {
+              dashProfile = " -Peclipse-dash "
+            }
+            sh "mkdir ~/.mimir"
+            sh "cp jenkins-mimir-daemon.properties ~/.mimir/daemon.properties"
+            sh "mvn $extraArgs $dashProfile -s $GLOBAL_MVN_SETTINGS -Dsettings.path=$GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -Dmaven.repo.username=$MAVEN_REPO_USERNAME -Dmaven.repo.password=$MAVEN_REPO_PASSWORD -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+            if(saveHome()) {
+              archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
             }
           }
-          def dashProfile = ""
-          if(useEclipseDash()) {
-            dashProfile = " -Peclipse-dash "
-          }
-          sh "mkdir ~/.mimir"
-          sh "cp jenkins-mimir-daemon.properties ~/.mimir/daemon.properties"
-          sh "mvn $extraArgs $dashProfile -s $GLOBAL_MVN_SETTINGS -Dsettings.path=$GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
-          if(saveHome()) {
-            archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
-          }
-        }
         }
       }
     }
