@@ -2468,8 +2468,10 @@
       <id>ci</id>
       <properties>
         <home.start.timeout>120</home.start.timeout>
+        <maven.repo.password/>
         <!-- need a good default value if running this profile locally with empty repo -->
         <maven.repo.uri>https://repo.maven.apache.org/maven2/</maven.repo.uri>
+        <maven.repo.username/>
         <!-- Defines a SpotBugs effort. Use "Max" to maximize the scan depth -->
         <spotbugs.effort>Default</spotbugs.effort>
         <spotbugs.failOnError>false</spotbugs.failOnError>
@@ -2491,6 +2493,8 @@
                 <systemPropertyVariables>
                   <env>ci</env>
                   <maven.repo.uri>${maven.repo.uri}</maven.repo.uri>
+                  <maven.repo.username>${maven.repo.username}</maven.repo.username>
+                  <maven.repo.password>${maven.repo.password}</maven.repo.password>
                   <jetty.testtracker.log>true</jetty.testtracker.log>
                 </systemPropertyVariables>
               </configuration>

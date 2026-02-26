@@ -24,6 +24,7 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
@@ -31,6 +32,7 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.supplier.RepositorySystemSupplier;
 import org.eclipse.aether.transfer.AbstractTransferListener;
+import org.eclipse.aether.util.repository.AuthenticationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +76,26 @@ class MavenHelper
     private static RemoteRepository newCentralRepository()
     {
         String centralRepository = System.getProperty("maven.repo.uri", "https://repo.maven.apache.org/maven2/");
-        return new RemoteRepository.Builder("central", "default", centralRepository).build();
+        RemoteRepository.Builder builder = new RemoteRepository.Builder("central", "default", centralRepository);
+
+        String username = System.getProperty("maven.repo.username");
+        String password = System.getProperty("maven.repo.password");
+
+        if (username == null || username.isEmpty())
+            username = System.getenv("MAVEN_REPO_USERNAME");
+        if (password == null || password.isEmpty())
+            password = System.getenv("MAVEN_REPO_PASSWORD");
+
+        if (username != null && !username.isEmpty() && password != null && !password.isEmpty())
+        {
+            Authentication authentication = new AuthenticationBuilder()
+                .addUsername(username)
+                .addPassword(password)
+                .build();
+            builder.setAuthentication(authentication);
+        }
+
+        return builder.build();
     }
 
     private static class LogTransferListener extends AbstractTransferListener

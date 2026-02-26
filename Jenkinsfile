@@ -134,6 +134,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms3G -Xmx5G -Djava.awt.headless=true"]) {
       configFileProvider(
         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
+        withCredentials([usernamePassword(credentialsId: 'nexus-cred', usernameVariable: 'MAVEN_REPO_USERNAME', passwordVariable: 'MAVEN_REPO_PASSWORD')]) {
           def buildCache = useBuildCache()
           if (buildCache) {
             echo "Using build cache"
@@ -158,6 +159,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
           }
+        }
         }
       }
     }
