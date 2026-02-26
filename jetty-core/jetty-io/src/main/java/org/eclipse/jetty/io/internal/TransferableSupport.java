@@ -16,16 +16,15 @@ package org.eclipse.jetty.io.internal;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Transferable
+public class TransferableSupport
 {
-    private Transferable()
+    private TransferableSupport()
     {
     }
 
@@ -33,16 +32,6 @@ public class Transferable
     {
         Transferrer transferrer = new Transferrer(sourceChannel, offset, length, endPoint, callback);
         transferrer.iterate();
-    }
-
-    public interface From
-    {
-        boolean transferTo(Content.Sink sink, Callback callback);
-    }
-
-    public interface To
-    {
-        boolean transferFrom(FileChannel fileChannel, long offset, long length, Callback callback);
     }
 
     private static class Transferrer extends IteratingNestedCallback

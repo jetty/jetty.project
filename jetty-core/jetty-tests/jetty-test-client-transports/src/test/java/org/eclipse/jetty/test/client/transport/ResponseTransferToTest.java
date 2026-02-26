@@ -107,7 +107,7 @@ public class ResponseTransferToTest extends AbstractTest
                 }
             });
             client.setMaxConnectionsPerDestination(1);
-            // Large response buffer size to make the test faster.
+            // Large client input buffer size to make the test faster.
             client.setResponseBufferSize(256 * 1024);
 
             AtomicLong length = new AtomicLong();

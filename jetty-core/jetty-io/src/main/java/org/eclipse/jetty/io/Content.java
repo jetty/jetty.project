@@ -49,7 +49,6 @@ import org.eclipse.jetty.io.internal.ContentSourceRetainableByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.io.internal.PathContentSource;
 import org.eclipse.jetty.io.internal.SeekableByteChannelContentSource;
-import org.eclipse.jetty.io.internal.Transferable;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -1537,6 +1536,46 @@ public class Content
              *         {@code false} otherwise, in which case subsequent chunks may be processed and the passed callback ignored.
              */
             boolean process(Chunk chunk, Callback callback);
+        }
+    }
+
+    /**
+     * A marker interface for {@link RetainableByteBuffer}s that
+     * implement {@link RetainableByteBuffer#writeTo(Content.Sink, boolean, Callback)}
+     * by calling {@link Content#transfer(Content.Source.Seekable, boolean, Content.Sink, Callback)}.
+     */
+    public interface Transferable
+    {
+        /**
+         * Implementations are a source for the transfer-to optimization.
+         */
+        interface From
+        {
+            /**
+             * Attempts to initiate the transfer-to optimization.
+             *
+             * @param sink the sink to transfer to
+             * @param callback the callback to notify when the transfer is complete
+             * @return {@code true} whether the transfer-to optimization can be attempted
+             */
+            boolean transferTo(Sink sink, Callback callback);
+        }
+
+        /**
+         * Implementations are a target for the transfer-to optimization.
+         */
+        interface To
+        {
+            /**
+             * Attempts to perform the transfer-to optimization from the given {@link FileChannel}.
+             *
+             * @param fileChannel the {@link FileChannel} to transfer from
+             * @param offset the offset within the {@link FileChannel}
+             * @param length the length of the transfer
+             * @param callback the callback to notify when the transfer is complete
+             * @return {@code true} whether the transfer-to optimization was performed
+             */
+            boolean transferFrom(FileChannel fileChannel, long offset, long length, Callback callback);
         }
     }
 }

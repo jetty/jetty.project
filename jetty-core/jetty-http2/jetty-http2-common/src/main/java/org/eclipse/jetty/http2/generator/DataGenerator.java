@@ -98,7 +98,7 @@ public class DataGenerator
         return Frame.HEADER_LENGTH + length;
     }
 
-    private static class ContentSourceRetainableByteBuffer implements RetainableByteBuffer
+    private static class ContentSourceRetainableByteBuffer implements RetainableByteBuffer, Content.Transferable
     {
         private final Content.Source.Seekable source;
 

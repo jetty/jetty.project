@@ -23,7 +23,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.internal.Transferable;
+import org.eclipse.jetty.io.internal.TransferableSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>An {@link EndPoint} implementation based on {@link SocketChannel}.</p>
  */
-public class SocketChannelEndPoint extends SelectableChannelEndPoint implements Transferable.To
+public class SocketChannelEndPoint extends SelectableChannelEndPoint implements Content.Transferable.To
 {
     private static final Logger LOG = LoggerFactory.getLogger(SocketChannelEndPoint.class);
 
@@ -54,7 +54,7 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint implements 
     @Override
     public boolean transferFrom(FileChannel fileChannel, long offset, long length, Callback callback)
     {
-        Transferable.transfer(fileChannel, offset, length, this, callback);
+        TransferableSupport.transfer(fileChannel, offset, length, this, callback);
         return true;
     }
 

@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 /**
  * A {@link ByteChannelContentSource} for a {@link Path}
  */
-public class PathContentSource extends SeekableByteChannelContentSource implements Transferable.From
+public class PathContentSource extends SeekableByteChannelContentSource implements Content.Transferable.From
 {
     private final Path _path;
 
@@ -90,7 +90,7 @@ public class PathContentSource extends SeekableByteChannelContentSource implemen
             Content.Chunk terminal = lockedEnsureOpenOrTerminal();
             if (Content.Chunk.isFailure(terminal))
                 return false;
-            if (!(sink instanceof Transferable.To to))
+            if (!(sink instanceof Content.Transferable.To to))
                 return false;
             Callback cb = Callback.from(callback.getInvocationType(), () ->
             {

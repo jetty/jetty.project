@@ -20,7 +20,6 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.util.VarLenInt;
@@ -52,9 +51,7 @@ public class HeadersGenerator extends FrameGenerator
         int maxHeaderLength = frameTypeLength + VarLenInt.MAX_LENGTH;
         // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
         int maxLength = encoder.getMaxHeadersSize();
-        // Acquire buffer and immediately add to the accumulator so that it is released if a failure occurs.
         RetainableByteBuffer buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
-        accumulator.add(buffer);
         try
         {
             ByteBuffer byteBuffer = buffer.getByteBuffer();
@@ -72,10 +69,12 @@ public class HeadersGenerator extends FrameGenerator
             VarLenInt.encode(byteBuffer, FrameType.HEADERS.type());
             VarLenInt.encode(byteBuffer, dataLength);
             byteBuffer.position(position);
+            accumulator.add(buffer);
             return headerLength + dataLength;
         }
-        catch (QpackException x)
+        catch (Throwable x)
         {
+            buffer.release();
             if (fail != null)
                 fail.accept(x);
             return -1;

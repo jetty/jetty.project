@@ -52,7 +52,7 @@ public class InstructionFlusher extends IteratingCallback
     public InstructionFlusher(ByteBufferPool bufferPool, StreamEndPoint endPoint, StreamType streamType)
     {
         this.bufferPool = bufferPool;
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1, 0, 0);
+        this.accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1);
         this.endPoint = endPoint;
         this.streamType = streamType.type();
     }
