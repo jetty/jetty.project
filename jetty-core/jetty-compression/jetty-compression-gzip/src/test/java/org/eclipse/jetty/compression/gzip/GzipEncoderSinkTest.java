@@ -17,6 +17,8 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.Deflater;
 
@@ -35,6 +37,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -176,6 +179,45 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
 
         String result = new String(decompress(compressed), UTF_8);
         assertThat(result, is("Hello World!"));
+    }
+
+    @Test
+    public void testSyncFlushProducesIntermediateOutput() throws Exception
+    {
+        startGzip();
+        ((GzipEncoderConfig)gzip.getDefaultEncoderConfig()).setSyncFlush(true);
+
+        List<Integer> writeLengths = new ArrayList<>();
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink captureSink = (last, byteBuffer, callback) ->
+            {
+                writeLengths.add(byteBuffer.remaining());
+                byte[] bytes = BufferUtil.toArray(byteBuffer);
+                baos.write(bytes, 0, bytes.length);
+                callback.succeeded();
+            };
+            Content.Sink encoderSink = gzip.newEncoderSink(captureSink);
+
+            // Write content without last=true to test intermediate flushing
+            Callback.Completable callback = new Callback.Completable();
+            encoderSink.write(false, ByteBuffer.wrap("Hello World!".getBytes(UTF_8)), callback);
+            callback.get();
+
+            // With syncFlush=true, the deflater must flush pending data even on non-final writes.
+            // We expect at least two writes: the gzip header and at least one body write with content.
+            assertThat("expected writes for header and body", writeLengths.size(), greaterThan(1));
+            int bodyBytes = writeLengths.stream().skip(1).mapToInt(Integer::intValue).sum();
+            assertThat("body write must contain compressed bytes", bodyBytes, greaterThan(0));
+
+            // Finish the stream and verify round-trip
+            Callback.Completable done = new Callback.Completable();
+            encoderSink.write(true, ByteBuffer.wrap("".getBytes(UTF_8)), done);
+            done.get();
+
+            String result = new String(decompress(baos.toByteArray()), UTF_8);
+            assertThat(result, is("Hello World!"));
+        }
     }
 
     private static class WriteLoggerSink implements Content.Sink

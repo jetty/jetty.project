@@ -83,6 +83,7 @@ public class GzipEncoderSink extends EncoderSink
     private final RetainableByteBuffer inputBuffer;
     private final ByteBuffer input;
     private final int bufferSize;
+    private final boolean syncFlush;
     private final CRC32 crc = new CRC32();
     private final AtomicReference<State> state = new AtomicReference<>(State.HEADERS);
     private boolean released;
@@ -94,6 +95,7 @@ public class GzipEncoderSink extends EncoderSink
         this.deflaterEntry = compression.getDeflaterPool().acquire();
         this.deflater = deflaterEntry.get();
         this.bufferSize = config.getBufferSize();
+        this.syncFlush = config.isSyncFlush();
         this.inputBuffer = compression.acquireByteBuffer(bufferSize);
         this.input = this.inputBuffer.getByteBuffer();
         this.input.position(this.input.limit()); // set to totally consume at first
@@ -102,6 +104,11 @@ public class GzipEncoderSink extends EncoderSink
         this.deflater.setStrategy(config.getStrategy());
         this.deflater.setLevel(config.getCompressionLevel());
         this.crc.reset();
+    }
+
+    private int getFlushMode()
+    {
+        return syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH;
     }
 
     protected void addInput(ByteBuffer content)
@@ -228,7 +235,7 @@ public class GzipEncoderSink extends EncoderSink
             addInput(content);
 
         BufferUtil.clearToFill(output);
-        int len = deflater.deflate(output);
+        int len = deflater.deflate(output, getFlushMode());
         BufferUtil.flipToFlush(output, 0);
         return (len > 0);
     }
