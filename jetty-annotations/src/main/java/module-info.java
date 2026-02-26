@@ -13,7 +13,7 @@
 
 module org.eclipse.jetty.annotations
 {
-    requires java.annotation;
+    requires jakarta.annotation;
     requires java.naming;
     requires org.slf4j;
 
@@ -22,7 +22,7 @@ module org.eclipse.jetty.annotations
 
     exports org.eclipse.jetty.annotations;
 
-    uses javax.servlet.ServletContainerInitializer;
+    uses jakarta.servlet.ServletContainerInitializer;
 
     provides org.eclipse.jetty.webapp.Configuration with
         org.eclipse.jetty.annotations.AnnotationConfiguration;

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>10.0.27-SNAPSHOT</version>
+    <version>11.0.27-SNAPSHOT</version>
   </parent>
   <artifactId>test-websocket-client-provided-webapp</artifactId>
   <packaging>war</packaging>
@@ -19,12 +19,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-javax-websocket-api</artifactId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
+      <artifactId>jetty-jakarta-websocket-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

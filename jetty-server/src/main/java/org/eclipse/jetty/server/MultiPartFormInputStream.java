@@ -33,10 +33,10 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.Part;
 
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.Part;
 import org.eclipse.jetty.server.MultiParts.NonCompliance;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
@@ -367,7 +367,7 @@ public class MultiPartFormInputStream
      * @param in Request input stream
      * @param contentType Content-Type header
      * @param config MultipartConfigElement
-     * @param contextTmpDir javax.servlet.context.tempdir
+     * @param contextTmpDir {@value jakarta.servlet.ServletContext#TEMPDIR}
      */
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
@@ -378,7 +378,7 @@ public class MultiPartFormInputStream
      * @param in Request input stream
      * @param contentType Content-Type header
      * @param config MultipartConfigElement
-     * @param contextTmpDir javax.servlet.context.tempdir
+     * @param contextTmpDir {@value jakarta.servlet.ServletContext#TEMPDIR}
      * @param maxParts the maximum number of parts that can be parsed from the multipart content (0 for no parts allowed, -1 for unlimited parts).
      */
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, int maxParts)

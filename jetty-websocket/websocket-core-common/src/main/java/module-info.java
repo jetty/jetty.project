@@ -27,22 +27,22 @@ module org.eclipse.jetty.websocket.core.common
         org.eclipse.jetty.websocket.core.server,
         org.eclipse.jetty.util; // Export to DecoratedObjectFactory.
 
-    // The Jetty & Javax API Layers need to access both access some internal utilities which we don't want to expose.
+    // The Jetty & Jakarta API Layers need to access both access some internal utilities which we don't want to expose.
     exports org.eclipse.jetty.websocket.core.internal.util to
         org.eclipse.jetty.websocket.jetty.common,
         org.eclipse.jetty.websocket.jetty.client,
         org.eclipse.jetty.websocket.jetty.server,
-        org.eclipse.jetty.websocket.javax.common,
-        org.eclipse.jetty.websocket.javax.client,
-        org.eclipse.jetty.websocket.javax.server;
+        org.eclipse.jetty.websocket.jakarta.common,
+        org.eclipse.jetty.websocket.jakarta.client,
+        org.eclipse.jetty.websocket.jakarta.server;
 
     exports org.eclipse.jetty.websocket.core.internal.messages to
         org.eclipse.jetty.websocket.jetty.common,
         org.eclipse.jetty.websocket.jetty.client,
         org.eclipse.jetty.websocket.jetty.server,
-        org.eclipse.jetty.websocket.javax.common,
-        org.eclipse.jetty.websocket.javax.client,
-        org.eclipse.jetty.websocket.javax.server;
+        org.eclipse.jetty.websocket.jakarta.common,
+        org.eclipse.jetty.websocket.jakarta.client,
+        org.eclipse.jetty.websocket.jakarta.server;
 
     uses org.eclipse.jetty.websocket.core.Extension;
     

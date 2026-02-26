@@ -16,8 +16,8 @@ package org.eclipse.jetty.webapp;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import javax.servlet.ServletContext;
 
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;

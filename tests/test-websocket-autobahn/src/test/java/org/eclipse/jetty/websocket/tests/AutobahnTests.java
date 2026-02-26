@@ -23,8 +23,8 @@ import com.github.dockerjava.api.DockerClient;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.tests.core.CoreAutobahnClient;
 import org.eclipse.jetty.websocket.tests.core.CoreAutobahnServer;
-import org.eclipse.jetty.websocket.tests.javax.JavaxAutobahnClient;
-import org.eclipse.jetty.websocket.tests.javax.JavaxAutobahnServer;
+import org.eclipse.jetty.websocket.tests.jakarta.JakartaAutobahnClient;
+import org.eclipse.jetty.websocket.tests.jakarta.JakartaAutobahnServer;
 import org.eclipse.jetty.websocket.tests.jetty.JettyAutobahnClient;
 import org.eclipse.jetty.websocket.tests.jetty.JettyAutobahnServer;
 import org.junit.jupiter.api.BeforeAll;
@@ -83,9 +83,9 @@ public class AutobahnTests
                 server = new JettyAutobahnServer();
                 client = new JettyAutobahnClient();
                 break;
-            case "javax":
-                server = new JavaxAutobahnServer();
-                client = new JavaxAutobahnClient();
+            case "jakarta":
+                server = new JakartaAutobahnServer();
+                client = new JakartaAutobahnClient();
                 break;
             case "core":
                 server = new CoreAutobahnServer();
@@ -97,7 +97,7 @@ public class AutobahnTests
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"core", "jetty", "javax"})
+    @ValueSource(strings = {"core", "jetty", "jakarta"})
     public void testClient(String version) throws Exception
     {
         setup(version);
@@ -126,7 +126,7 @@ public class AutobahnTests
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"core", "jetty", "javax"})
+    @ValueSource(strings = {"core", "jetty", "jakarta"})
     public void testServer(String version) throws Exception
     {
         setup(version);

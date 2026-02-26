@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.annotations;
 
-import javax.servlet.Servlet;
-
+import jakarta.servlet.Servlet;
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.Descriptor;
@@ -40,7 +39,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
         if (!Servlet.class.isAssignableFrom(clazz))
             return;
 
-        javax.annotation.security.RunAs runAs = (javax.annotation.security.RunAs)clazz.getAnnotation(javax.annotation.security.RunAs.class);
+        jakarta.annotation.security.RunAs runAs = (jakarta.annotation.security.RunAs)clazz.getAnnotation(jakarta.annotation.security.RunAs.class);
         if (runAs != null)
         {
             String role = runAs.value();

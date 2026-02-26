@@ -131,11 +131,11 @@ public class ClassMatcherTest
     public void testMatchFundamentalExcludeSpecific()
     {
         _pattern.clear();
-        _pattern.add("javax.");
-        _pattern.add("-javax.ws.rs.", "-javax.inject.");
+        _pattern.add("jakarta.");
+        _pattern.add("-jakarta.ws.rs.", "-jakarta.inject.");
         assertFalse(_pattern.match("org.example.Anything"));
-        assertTrue(_pattern.match("javax.servlet.HttpServlet"));
-        assertFalse(_pattern.match("javax.ws.rs.ProcessingException"));
+        assertTrue(_pattern.match("jakarta.servlet.HttpServlet"));
+        assertFalse(_pattern.match("jakarta.ws.rs.ProcessingException"));
     }
 
     @SuppressWarnings("restriction")

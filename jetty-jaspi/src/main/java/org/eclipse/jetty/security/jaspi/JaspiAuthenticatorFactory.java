@@ -17,9 +17,9 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Set;
 import javax.security.auth.Subject;
-import javax.security.auth.message.config.AuthConfigFactory;
-import javax.servlet.ServletContext;
 
+import jakarta.security.auth.message.config.AuthConfigFactory;
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.DefaultAuthenticatorFactory;
@@ -31,11 +31,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Javax Authentication (JASPI) Authenticator Factory.
+ * Jakarta Authentication (JASPI) Authenticator Factory.
  * 
- * This is used to link a jetty-security {@link Authenticator.Factory} to a Javax Authentication {@link AuthConfigFactory}.
+ * This is used to link a jetty-security {@link Authenticator.Factory} to a Jakarta Authentication {@link AuthConfigFactory}.
  * <p>
- * This should be initialized with the provided {@link DefaultAuthConfigFactory} to set up Javax Authentication {@link AuthConfigFactory} before use. 
+ * This should be initialized with the provided {@link DefaultAuthConfigFactory} to set up Jakarta Authentication {@link AuthConfigFactory} before use. 
  * (A different {@link AuthConfigFactory} may also be provided using the same steps below)
  * <p>
  * To initialize either:

@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import javax.servlet.http.HttpSessionEvent;
+import jakarta.servlet.http.HttpSessionEvent;
 
 /**
  * TestHttpSessionListenerWithWebappClasses

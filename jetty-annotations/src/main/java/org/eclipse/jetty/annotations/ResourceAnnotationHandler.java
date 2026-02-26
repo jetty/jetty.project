@@ -19,11 +19,11 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import javax.annotation.Resource;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
+import jakarta.annotation.Resource;
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
@@ -363,17 +363,17 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
      */
     public boolean supportsResourceInjection(Class<?> c)
     {
-        if (javax.servlet.Servlet.class.isAssignableFrom(c) ||
-            javax.servlet.Filter.class.isAssignableFrom(c) ||
-            javax.servlet.ServletContextListener.class.isAssignableFrom(c) ||
-            javax.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
-            javax.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
-            javax.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
-            javax.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
-            javax.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
-            javax.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
-            javax.servlet.AsyncListener.class.isAssignableFrom(c) ||
-            javax.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
+        if (jakarta.servlet.Servlet.class.isAssignableFrom(c) ||
+            jakarta.servlet.Filter.class.isAssignableFrom(c) ||
+            jakarta.servlet.ServletContextListener.class.isAssignableFrom(c) ||
+            jakarta.servlet.ServletContextAttributeListener.class.isAssignableFrom(c) ||
+            jakarta.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
+            jakarta.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
+            jakarta.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
+            jakarta.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) ||
+            jakarta.servlet.http.HttpSessionIdListener.class.isAssignableFrom(c) ||
+            jakarta.servlet.AsyncListener.class.isAssignableFrom(c) ||
+            jakarta.servlet.http.HttpUpgradeHandler.class.isAssignableFrom(c))
             return true;
 
         return false;

@@ -26,29 +26,29 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterRegistration;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
-import javax.servlet.ServletSecurityElement;
-import javax.servlet.SessionCookieConfig;
-import javax.servlet.SessionTrackingMode;
-import javax.servlet.descriptor.JspConfigDescriptor;
-import javax.servlet.descriptor.JspPropertyGroupDescriptor;
-import javax.servlet.descriptor.TaglibDescriptor;
-import javax.servlet.http.HttpSessionActivationListener;
-import javax.servlet.http.HttpSessionAttributeListener;
-import javax.servlet.http.HttpSessionBindingListener;
-import javax.servlet.http.HttpSessionIdListener;
-import javax.servlet.http.HttpSessionListener;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.ServletSecurityElement;
+import jakarta.servlet.SessionCookieConfig;
+import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.descriptor.JspConfigDescriptor;
+import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
+import jakarta.servlet.descriptor.TaglibDescriptor;
+import jakarta.servlet.http.HttpSessionActivationListener;
+import jakarta.servlet.http.HttpSessionAttributeListener;
+import jakarta.servlet.http.HttpSessionBindingListener;
+import jakarta.servlet.http.HttpSessionIdListener;
+import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -507,7 +507,7 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
-     * Convenience method to programmatically add a {@link javax.servlet.ServletContainerInitializer}.
+     * Convenience method to programmatically add a {@link ServletContainerInitializer}.
      * @param sci the ServletContainerInitializer to register.
      * @return the ServletContainerInitializerHolder that was created
      */
@@ -522,7 +522,7 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
-     * Convenience method to programmatically add a {@link javax.servlet.ServletContainerInitializer}.
+     * Convenience method to programmatically add a {@link ServletContainerInitializer}.
      * @param sci the ServletContainerInitializer to register.
      * @param classes the Set of application classes.
      * @return the ServletContainerInitializerHolder that was created
@@ -538,7 +538,7 @@ public class ServletContextHandler extends ContextHandler
     }
     
     /**
-     * Convenience method to programmatically add a list of {@link javax.servlet.ServletContainerInitializer}.
+     * Convenience method to programmatically add a list of {@link ServletContainerInitializer}.
      * The initializers are guaranteed to be called in the order they are passed into this method.
      * @param sciHolders the ServletContainerInitializerHolders
      */

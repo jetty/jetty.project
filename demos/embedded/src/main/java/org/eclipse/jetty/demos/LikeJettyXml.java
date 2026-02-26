@@ -135,7 +135,7 @@ public class LikeJettyXml
         deployer.setContexts(contexts);
         deployer.setContextAttribute(
             "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-            ".*/jetty-servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$");
+            ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$");
 
         Path webappsDir = runtimeDir.resolve("webapps");
         mkdir(webappsDir);

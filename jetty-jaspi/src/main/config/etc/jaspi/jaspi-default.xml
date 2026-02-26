@@ -6,7 +6,7 @@
   <!-- ===================================================================== -->
   <!-- Configure a factory for Jaspi                                         -->
   <!-- ===================================================================== -->
-  <Call class="javax.security.auth.message.config.AuthConfigFactory" name="setFactory">
+  <Call class="jakarta.security.auth.message.config.AuthConfigFactory" name="setFactory">
     <Arg>
       <New id="jaspiAuthConfigFactory" class="org.eclipse.jetty.security.jaspi.DefaultAuthConfigFactory" />
     </Arg>

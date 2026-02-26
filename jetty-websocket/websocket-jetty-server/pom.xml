@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>websocket-parent</artifactId>
-    <version>10.0.27-SNAPSHOT</version>
+    <version>11.0.27-SNAPSHOT</version>
   </parent>
   <artifactId>websocket-jetty-server</artifactId>
   <name>Jetty :: Websocket :: org.eclipse.jetty.websocket :: Server</name>
@@ -30,7 +30,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
@@ -66,7 +66,7 @@
             <Bundle-Description>Jetty Websocket Server</Bundle-Description>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
             <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.webapp.Configuration,
-              osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer</Provide-Capability>
+              osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer</Provide-Capability>
           </instructions>
         </configuration>
       </plugin>

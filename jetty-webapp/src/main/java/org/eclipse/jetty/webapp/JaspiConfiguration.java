@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>JASPI Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * not be able to see the {@code javax.security.auth.message} package.</p>
+ * not be able to see the {@code jakarta.security.auth.message} package.</p>
  */
 public class JaspiConfiguration extends AbstractConfiguration
 {
@@ -31,7 +31,7 @@ public class JaspiConfiguration extends AbstractConfiguration
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents(WebAppConfiguration.class);
 
-        hide("javax.security.auth.message.");
+        hide("jakarta.security.auth.message.");
     }
 
     @Override

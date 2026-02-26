@@ -14,10 +14,10 @@
 package org.eclipse.jetty.security;
 
 import java.util.Set;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.Server;
@@ -125,7 +125,7 @@ public interface Authenticator
 
         /**
          * Get the interval in seconds, which if non-zero, will be set
-         * with {@link javax.servlet.http.HttpSession#setMaxInactiveInterval(int)}
+         * with {@link jakarta.servlet.http.HttpSession#setMaxInactiveInterval(int)}
          * when a session is newly authenticated
          * @return An interval in seconds; or 0 to not set the interval
          *         on authentication; or a negative number to make the

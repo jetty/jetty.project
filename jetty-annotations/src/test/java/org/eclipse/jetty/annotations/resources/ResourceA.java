@@ -14,16 +14,17 @@
 package org.eclipse.jetty.annotations.resources;
 
 import java.io.IOException;
-import javax.annotation.Resource;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+
+import jakarta.annotation.Resource;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 
 /**
  * ResourceA
  */
-public class ResourceA implements javax.servlet.Servlet
+public class ResourceA implements jakarta.servlet.Servlet
 {
     private Integer e;
     private Integer h;

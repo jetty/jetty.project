@@ -39,7 +39,7 @@ public class MavenMetadataTest
 
         assertThat("Metadata.groupId", mavenMetadata.getGroupId(), is("org.eclipse.jetty"));
         assertThat("Metadata.artifactId", mavenMetadata.getArtifactId(), is("jetty-rewrite"));
-        assertThat("Metadata.version", mavenMetadata.getVersion(), is("10.0.0-SNAPSHOT"));
+        assertThat("Metadata.version", mavenMetadata.getVersion(), is("11.0.0-SNAPSHOT"));
 
         assertThat("Metadata.versioning.lastUpdated", mavenMetadata.getLastUpdated(), is("20200918022411"));
 

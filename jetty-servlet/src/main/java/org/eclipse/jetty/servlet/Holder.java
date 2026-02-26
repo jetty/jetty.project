@@ -19,9 +19,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.Registration;
-import javax.servlet.ServletContext;
 
+import jakarta.servlet.Registration;
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -51,7 +51,7 @@ public abstract class Holder<T> extends BaseHolder<T>
         super(source);
         switch (getSource().getOrigin())
         {
-            case JAVAX_API:
+            case JAKARTA_API:
             case DESCRIPTOR:
             case ANNOTATION:
                 _asyncSupported = false;

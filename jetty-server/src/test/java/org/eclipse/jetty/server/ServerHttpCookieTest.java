@@ -16,11 +16,11 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.CookieParser;
 import org.eclipse.jetty.http.HttpHeader;
@@ -114,7 +114,6 @@ public class ServerHttpCookieTest
     {
         return Stream.of(
             Arguments.of(RFC6265_STRICT, "Cookie: name=value", 200, "Version=", List.of("[name=value]").toArray(new String[0])),
-
 
             // Attribute tests
             // TODO $name attributes are ignored because servlet 5.0 Cookie class rejects them.  They are not ignored in servlet 6.0

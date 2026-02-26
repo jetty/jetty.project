@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.27-SNAPSHOT</version>
+    <version>11.0.27-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-jndi</artifactId>
   <name>Jetty :: JNDI Naming</name>
@@ -17,6 +17,16 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>jakarta.activation</groupId>
+      <artifactId>jakarta.activation-api</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.mail</groupId>
+      <artifactId>jakarta.mail-api</artifactId>
+      <optional>true</optional>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
@@ -34,17 +44,6 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.mail.glassfish</artifactId>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.activation</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -66,14 +65,8 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>${osgi.slf4j.import.packages},javax.mail.*;resolution:=optional,*</Import-Package>
+            <Import-Package>${osgi.slf4j.import.packages},jakarta.mail.*;resolution:=optional,*</Import-Package>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>@{argLine} ${jetty.surefire.argLine} --add-modules javax.mail.glassfish</argLine>
         </configuration>
       </plugin>
     </plugins>

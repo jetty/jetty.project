@@ -88,7 +88,7 @@ public class JmxIT
         context.addConfiguration(new AnnotationConfiguration());
 
         context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-            ".*/jetty-servlet-api-[^/]*\\.jar$");
+            ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$");
         _server.setHandler(context);
 
         MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());

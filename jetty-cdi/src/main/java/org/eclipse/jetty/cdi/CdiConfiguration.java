@@ -16,8 +16,6 @@ package org.eclipse.jetty.cdi;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>CDI Configuration</p>
@@ -27,8 +25,6 @@ import org.slf4j.LoggerFactory;
  */
 public class CdiConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = LoggerFactory.getLogger(CdiConfiguration.class);
-
     public CdiConfiguration()
     {
         protectAndExpose("org.eclipse.jetty.cdi.CdiServletContainerInitializer");

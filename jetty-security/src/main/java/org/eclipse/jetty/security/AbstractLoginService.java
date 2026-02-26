@@ -16,8 +16,8 @@ package org.eclipse.jetty.security;
 import java.util.ArrayList;
 import java.util.List;
 import javax.security.auth.Subject;
-import javax.servlet.ServletRequest;
 
+import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;

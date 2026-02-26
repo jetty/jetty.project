@@ -14,10 +14,10 @@
 package org.eclipse.jetty.security.jaspi;
 
 import java.util.Map;
-import javax.security.auth.message.config.AuthConfigFactory;
-import javax.security.auth.message.config.AuthConfigProvider;
-import javax.security.auth.message.config.RegistrationListener;
 
+import jakarta.security.auth.message.config.AuthConfigFactory;
+import jakarta.security.auth.message.config.AuthConfigProvider;
+import jakarta.security.auth.message.config.RegistrationListener;
 import org.eclipse.jetty.security.jaspi.provider.JaspiAuthConfigProvider;
 import org.junit.jupiter.api.Test;
 

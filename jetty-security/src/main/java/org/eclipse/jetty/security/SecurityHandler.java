@@ -23,10 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Handler;
@@ -458,7 +458,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     /**
      * Set the interval in seconds, which if non-zero, will be set with
-     * {@link javax.servlet.http.HttpSession#setMaxInactiveInterval(int)}
+     * {@link jakarta.servlet.http.HttpSession#setMaxInactiveInterval(int)}
      * when a session is newly authenticated.
      * @param seconds An interval in seconds; or 0 to not set the interval
      *                on authentication; or a negative number to make the
@@ -471,8 +471,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     /*
      * @see org.eclipse.jetty.server.Handler#handle(java.lang.String,
-     *      javax.servlet.http.HttpServletRequest,
-     *      javax.servlet.http.HttpServletResponse, int)
+     *      jakarta.servlet.http.HttpServletRequest,
+     *      jakarta.servlet.http.HttpServletResponse, int)
      */
     @Override
     public void handle(String pathInContext, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

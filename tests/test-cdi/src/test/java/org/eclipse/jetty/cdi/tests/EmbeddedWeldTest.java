@@ -15,8 +15,8 @@ package org.eclipse.jetty.cdi.tests;
 
 import java.io.File;
 import java.util.EnumSet;
-import javax.servlet.DispatcherType;
 
+import jakarta.servlet.DispatcherType;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.cdi.CdiConfiguration;
 import org.eclipse.jetty.cdi.CdiDecoratingListener;
@@ -189,8 +189,8 @@ public class EmbeddedWeldTest
         webapp.setResourceBase("src/test/weldtest");
         server.setHandler(webapp);
 
-        webapp.setInitParameter(CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, CdiDecoratingListener.MODE);
-        webapp.addBean(new ServletContextHandler.Initializer(webapp, new CdiServletContainerInitializer()));
+        webapp.setInitParameter(org.eclipse.jetty.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.cdi.CdiDecoratingListener.MODE);
+        webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.eclipse.jetty.cdi.CdiServletContainerInitializer()));
         webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.jboss.weld.environment.servlet.EnhancedListener()));
 
         String pkg = EmbeddedWeldTest.class.getPackage().getName();

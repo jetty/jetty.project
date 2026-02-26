@@ -39,7 +39,7 @@ The following dependencies are EPL and CDDL 1.0.
 The following dependencies are CDDL + GPLv2 with classpath exception.
 https://glassfish.dev.java.net/nonav/public/CDDL+GPL.html
 
- * javax.servlet:javax.servlet-api
+ * jakarta.servlet:jakarta.servlet-api
  * javax.annotation:javax.annotation-api
  * javax.transaction:javax.transaction-api
  * javax.websocket:javax.websocket-api

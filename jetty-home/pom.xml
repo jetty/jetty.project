@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.27-SNAPSHOT</version>
+    <version>11.0.27-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-home</artifactId>
   <packaging>pom</packaging>
@@ -19,27 +19,20 @@
 
   <dependencies>
     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-      <optional>true</optional>
-    </dependency>
-
-    <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>jakarta.security.auth.message</groupId>
-      <artifactId>jakarta.security.auth.message-api</artifactId>
+      <groupId>jakarta.authentication</groupId>
+      <artifactId>jakarta.authentication-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.mail</groupId>
+      <artifactId>jakarta.mail-api</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.transaction</groupId>
       <artifactId>jakarta.transaction-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -47,7 +40,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jstl</artifactId>
+      <artifactId>glassfish-jstl</artifactId>
       <exclusions>
         <exclusion>
           <groupId>javax.el</groupId>
@@ -285,14 +278,9 @@
       <artifactId>jetty-memcached-sessions</artifactId>
       <optional>true</optional>
     </dependency>
-    <!-- Orbit Deps -->
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.mail.glassfish</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-javax-server</artifactId>
+      <artifactId>websocket-jakarta-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
@@ -487,32 +475,30 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-apache-jstl-deps</id>
+            <id>copy-glassfish-jstl-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <excludeGroupIds>org.glassfish.web</excludeGroupIds>
-              <includeArtifactIds>taglibs-standard-spec,taglibs-standard-impl</includeArtifactIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <prependGroupId>true</prependGroupId>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/apache-jstl</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/glassfish-jstl</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-apache-jstl-src-deps</id>
+            <id>copy-glassfish-jstl-src-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <excludeGroupIds>org.glassfish.web</excludeGroupIds>
-              <includeArtifactIds>taglibs-standard-spec,taglibs-standard-impl</includeArtifactIds>
+              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
               <prependGroupId>true</prependGroupId>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/apache-jstl</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/glassfish-jstl</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -522,8 +508,8 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>jakarta.security.auth.message</includeGroupIds>
-              <includeArtifactIds>jakarta.security.auth.message-api</includeArtifactIds>
+              <includeGroupIds>jakarta.authentication</includeGroupIds>
+              <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jaspi</outputDirectory>
             </configuration>
@@ -535,8 +521,8 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>jakarta.security.auth.message</includeGroupIds>
-              <includeArtifactIds>jakarta.security.auth.message-api</includeArtifactIds>
+              <includeGroupIds>jakarta.authentication</includeGroupIds>
+              <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/jaspi</outputDirectory>
@@ -551,7 +537,7 @@
             <configuration>
               <includeGroupIds>jakarta.transaction,org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.demo,org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
-              <excludeArtifactIds>apache-jsp,apache-jstl,jetty-start,jetty-slf4j-impl,javadoc</excludeArtifactIds>
+              <excludeArtifactIds>apache-jsp,glassfish-jstl,jetty-start,jetty-slf4j-impl,javadoc</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -636,27 +622,27 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-javax-websocket-deps</id>
+            <id>copy-lib-jakarta-websocket-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.toolchain</includeGroupIds>
-              <includeArtifactIds>jetty-javax-websocket-api</includeArtifactIds>
+              <includeArtifactIds>jetty-jakarta-websocket-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-javax-websocket-src-deps</id>
+            <id>copy-lib-jakarta-websocket-src-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.toolchain</includeGroupIds>
-              <includeArtifactIds>jetty-javax-websocket-api</includeArtifactIds>
+              <includeArtifactIds>jetty-jakarta-websocket-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/websocket</outputDirectory>
@@ -698,7 +684,7 @@
             <configuration>
               <includeGroupIds>jakarta.transaction,org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
-              <excludeArtifactIds>apache-jsp,apache-jstl,jetty-start</excludeArtifactIds>
+              <excludeArtifactIds>apache-jsp,glassfish-jstl,jetty-start</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
@@ -739,11 +725,11 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
-                  <artifactId>jetty-servlet-api</artifactId>
+                  <artifactId>jetty-jakarta-servlet-api</artifactId>
                   <version>${jetty.servlet.api.version}</version>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>jetty-servlet-api-${jetty.servlet.api.version}.jar</destFileName>
+                  <destFileName>jetty-jakarta-servlet-api-${jetty.servlet.api.version}.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -806,7 +792,7 @@
             <phase>generate-resources</phase>
             <configuration>
               <includeGroupIds>org.eclipse.jetty, org.eclipse.jetty.websocket, org.eclipse.jetty.demos</includeGroupIds>
-              <excludeArtifactIds>infinispan-embedded,infinispan-remote,jetty-test-helper,alpn-api,jakarta.security.auth.message-api,javax.activation</excludeArtifactIds>
+              <excludeArtifactIds>infinispan-embedded,infinispan-remote,jetty-test-helper,alpn-api,javax.security.auth.message,javax.activation</excludeArtifactIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
@@ -873,5 +859,4 @@
       </plugin>
     </plugins>
   </build>
-
 </project>

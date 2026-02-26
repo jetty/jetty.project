@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.websocket.server.internal;
 
-import javax.servlet.ServletContext;
-
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;

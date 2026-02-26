@@ -22,14 +22,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.DispatcherType;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletContext;
-import javax.servlet.SessionCookieConfig;
-import javax.servlet.SessionTrackingMode;
-import javax.servlet.descriptor.JspPropertyGroupDescriptor;
-import javax.servlet.descriptor.TaglibDescriptor;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.SessionCookieConfig;
+import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
+import jakarta.servlet.descriptor.TaglibDescriptor;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallback;
@@ -150,9 +150,11 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         Map<String, String> webappAttr = new HashMap<>();
         int major = context.getServletContext().getEffectiveMajorVersion();
         int minor = context.getServletContext().getEffectiveMinorVersion();
-        webappAttr.put("xmlns", "http://xmlns.jcp.org/xml/ns/javaee");
+        String ns = (major < 5) ? "http://xmlns.jcp.org/xml/ns/javaee" : "https://jakarta.ee/xml/ns/jakartaee";
+
+        webappAttr.put("xmlns", ns);
         webappAttr.put("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
-        webappAttr.put("xsi:schemaLocation", "http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_" + (major + "_" + minor) + ".xsd");
+        webappAttr.put("xsi:schemaLocation", String.format("%s %s/web-app_%d_%d.xsd", ns, ns, major, minor));
         webappAttr.put("metadata-complete", Boolean.toString(context.getMetaData().isMetaDataComplete()));
         webappAttr.put("version", major + "." + minor);
 

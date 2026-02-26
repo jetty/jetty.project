@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.tests.webapp.websocket;
 
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
+import jakarta.websocket.DecodeException;
+import jakarta.websocket.Decoder;
+import jakarta.websocket.EndpointConfig;
 
 public class StringSequenceDecoder implements Decoder.Text<StringSequence>
 {

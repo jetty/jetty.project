@@ -18,8 +18,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.List;
-import javax.servlet.ServletContainerInitializer;
 
+import jakarta.servlet.ServletContainerInitializer;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -387,7 +387,7 @@ public class TestAnnotationConfiguration
             context.getServletContext().setEffectiveMinorVersion(5);
             scis = config.getNonExcludedInitializers(context);
             assertNotNull(scis);
-            assertEquals(3, scis.size());
+            assertEquals(3, scis.size(), () ->  scis.toString());
             assertEquals("com.acme.ServerServletContainerInitializer", scis.get(0).getClass().getName()); //container path
             assertEquals("com.acme.webinf.WebInfClassServletContainerInitializer", scis.get(1).getClass().getName()); // web-inf
             assertEquals("com.acme.initializer.FooInitializer", scis.get(2).getClass().getName()); //web-inf jar no web-fragment

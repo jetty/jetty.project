@@ -39,17 +39,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.MappingMatch;
-import javax.servlet.http.Part;
-import javax.servlet.http.PushBuilder;
 
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.MappingMatch;
+import jakarta.servlet.http.Part;
+import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
@@ -628,7 +628,7 @@ public class RequestTest
         // Wait for the cleanup of the multipart files.
         assertTimeoutPreemptively(Duration.ofSeconds(5), () ->
         {
-            while (getFileCount(testTmpDir)  > 0)
+            while (getFileCount(testTmpDir) > 0)
             {
                 Thread.yield();
             }
@@ -1928,7 +1928,7 @@ public class RequestTest
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
     }
-    
+
     @Test
     public void testAmbiguousSegments() throws Exception
     {
@@ -2023,7 +2023,7 @@ public class RequestTest
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
     }
-    
+
     @Test
     public void testPushBuilder()
     {
@@ -2248,7 +2248,7 @@ public class RequestTest
             return true;
         }
     }
-    
+
     private static class TestRequest extends Request
     {
         public static final String TEST_SESSION_ID = "abc123";
@@ -2274,7 +2274,7 @@ public class RequestTest
         @Override
         public HttpSession getSession()
         {
-            Session session = new Session(new SessionHandler(), new SessionData(TEST_SESSION_ID,  "", "0.0.0.0", 0, 0, 0, 300));
+            Session session = new Session(new SessionHandler(), new SessionData(TEST_SESSION_ID, "", "0.0.0.0", 0, 0, 0, 300));
             session.setResident(true); //necessary for session methods to not throw ISE
             return session;
         }
@@ -2294,7 +2294,7 @@ public class RequestTest
         @Override
         public Cookie[] getCookies()
         {
-            return new Cookie[] {c1, c2};
+            return new Cookie[]{c1, c2};
         }
     }
 

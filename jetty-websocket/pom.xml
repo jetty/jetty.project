@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.27-SNAPSHOT</version>
+    <version>11.0.27-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.websocket</groupId>
   <artifactId>websocket-parent</artifactId>
@@ -17,11 +17,11 @@
     <module>websocket-core-common</module>
     <module>websocket-core-server</module>
     <module>websocket-core-tests</module>
-    <module>websocket-javax-client</module>
-    <!-- Javax WebSocket Implementation -->
-    <module>websocket-javax-common</module>
-    <module>websocket-javax-server</module>
-    <module>websocket-javax-tests</module>
+    <module>websocket-jakarta-client</module>
+    <!-- Jakarta WebSocket Implementation -->
+    <module>websocket-jakarta-common</module>
+    <module>websocket-jakarta-server</module>
+    <module>websocket-jakarta-tests</module>
     <!-- Jetty WebSocket Implementation -->
     <module>websocket-jetty-api</module>
     <module>websocket-jetty-client</module>

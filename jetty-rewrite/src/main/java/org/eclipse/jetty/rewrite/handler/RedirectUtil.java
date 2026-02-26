@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import javax.servlet.http.HttpServletRequest;
-
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.server.Response;
 
 /**
@@ -30,7 +29,7 @@ public final class RedirectUtil
      * @param location the location URL to redirect to (can be a relative path)
      * @return the full redirect "Location" URL (including scheme, host, port, path, etc...)
      */
-    public static String toRedirectURL(final HttpServletRequest request, String location)
+    public static String toRedirectURL(HttpServletRequest request, String location)
     {
         return Response.toRedirectURI(request, location);
     }

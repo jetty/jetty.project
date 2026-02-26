@@ -16,9 +16,9 @@ package org.eclipse.jetty.servlet.listener;
 import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.Map;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
 
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 import org.eclipse.jetty.util.Loader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +48,7 @@ public class ELContextCleaner implements ServletContextListener
         try
         {
             //Check that the BeanELResolver class is on the classpath
-            Class<?> beanELResolver = Loader.loadClass("javax.el.BeanELResolver");
+            Class<?> beanELResolver = Loader.loadClass("jakarta.el.BeanELResolver");
 
             //Get a reference via reflection to the properties field which is holding class references
             Field field = getField(beanELResolver);

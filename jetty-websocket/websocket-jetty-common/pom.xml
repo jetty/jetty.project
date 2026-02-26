@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>websocket-parent</artifactId>
-    <version>10.0.27-SNAPSHOT</version>
+    <version>11.0.27-SNAPSHOT</version>
   </parent>
   <artifactId>websocket-jetty-common</artifactId>
   <name>Jetty :: Websocket :: org.eclipse.jetty.websocket :: Common</name>
@@ -13,7 +13,6 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
   </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
@@ -41,6 +40,12 @@
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.websocket.api.ExtensionConfig$Parser</Provide-Capability>
           </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.websocket.jetty.common=org.eclipse.jetty.io</argLine>
         </configuration>
       </plugin>
     </plugins>

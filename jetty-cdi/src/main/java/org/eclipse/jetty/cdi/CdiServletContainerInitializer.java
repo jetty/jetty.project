@@ -15,9 +15,9 @@ package org.eclipse.jetty.cdi;
 
 import java.util.Objects;
 import java.util.Set;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
 
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Loader;
@@ -56,9 +56,9 @@ public class CdiServletContainerInitializer implements ServletContainerInitializ
             // Test if CDI is in the webapp by trying to load the CDI class.
             ClassLoader loader  = context.getClassLoader();
             if (loader == null)
-                Loader.loadClass("javax.enterprise.inject.spi.CDI");
+                Loader.loadClass("jakarta.enterprise.inject.spi.CDI");
             else
-                loader.loadClass("javax.enterprise.inject.spi.CDI");
+                loader.loadClass("jakarta.enterprise.inject.spi.CDI");
 
             String mode = ctx.getInitParameter(CDI_INTEGRATION_ATTRIBUTE);
             if (mode == null)

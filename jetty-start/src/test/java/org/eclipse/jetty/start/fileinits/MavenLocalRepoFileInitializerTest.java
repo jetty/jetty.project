@@ -102,18 +102,18 @@ public class MavenLocalRepoFileInitializerTest
     public void testGetCoordinateZip()
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
-        String ref = "maven://org.eclipse.jetty/jetty-home/10.0.0/zip";
+        String ref = "maven://org.eclipse.jetty/jetty-home/11.0.0/zip";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
 
         assertThat("coords.groupId", coords.groupId, is("org.eclipse.jetty"));
         assertThat("coords.artifactId", coords.artifactId, is("jetty-home"));
-        assertThat("coords.version", coords.version, is("10.0.0"));
+        assertThat("coords.version", coords.version, is("11.0.0"));
         assertThat("coords.type", coords.type, is("zip"));
         assertThat("coords.classifier", coords.classifier, nullValue());
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
-                   is(repo.getRemoteUri() + "org/eclipse/jetty/jetty-home/10.0.0/jetty-home-10.0.0.zip"));
+                   is(repo.getRemoteUri() + "org/eclipse/jetty/jetty-home/11.0.0/jetty-home-11.0.0.zip"));
     }
 
     @Test
@@ -208,20 +208,20 @@ public class MavenLocalRepoFileInitializerTest
 
         MavenLocalRepoFileInitializer repo =
             new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false, "https://oss.sonatype.org/content/repositories/jetty-snapshots/");
-        String ref = "maven://org.eclipse.jetty/jetty-rewrite/10.0.14-SNAPSHOT/jar";
+        String ref = "maven://org.eclipse.jetty/jetty-rewrite/11.0.14-SNAPSHOT/jar";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
 
         assertThat("coords.groupId", coords.groupId, is("org.eclipse.jetty"));
         assertThat("coords.artifactId", coords.artifactId, is("jetty-rewrite"));
-        assertThat("coords.version", coords.version, is("10.0.14-SNAPSHOT"));
+        assertThat("coords.version", coords.version, is("11.0.14-SNAPSHOT"));
         assertThat("coords.type", coords.type, is("jar"));
         assertThat("coords.classifier", coords.classifier, is(nullValue()));
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
-            is("https://oss.sonatype.org/content/repositories/jetty-snapshots/org/eclipse/jetty/jetty-rewrite/10.0.14-SNAPSHOT/jetty-rewrite-10.0.14-SNAPSHOT.jar"));
+            is("https://oss.sonatype.org/content/repositories/jetty-snapshots/org/eclipse/jetty/jetty-rewrite/11.0.14-SNAPSHOT/jetty-rewrite-11.0.14-SNAPSHOT.jar"));
 
-        Path destination = baseHome.getBasePath().resolve("jetty-rewrite-10.0.14-SNAPSHOT.jar");
+        Path destination = baseHome.getBasePath().resolve("jetty-rewrite-11.0.14-SNAPSHOT.jar");
         repo.download(coords, destination);
         assertThat(Files.exists(destination), is(true));
         assertThat("Snapshot File size", destination.toFile().length(), greaterThan(10_000L));
@@ -237,7 +237,7 @@ public class MavenLocalRepoFileInitializerTest
         MavenLocalRepoFileInitializer repo =
             new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false,
                 "https://oss.sonatype.org/content/repositories/jetty-snapshots/");
-        String ref = "maven://org.eclipse.jetty.demos/demo-simple-webapp/10.0.14-SNAPSHOT/jar/config";
+        String ref = "maven://org.eclipse.jetty.demos/demo-simple-webapp/11.0.14-SNAPSHOT/jar/config";
         Path baseDir = baseHome.getBasePath();
         repo.create(URI.create(ref), "extract:company/");
 
@@ -254,7 +254,7 @@ public class MavenLocalRepoFileInitializerTest
         MavenLocalRepoFileInitializer repo =
             new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false,
                 "https://oss.sonatype.org/content/repositories/jetty-snapshots/");
-        String ref = "maven://org.eclipse.jetty.demos/demo-simple-webapp/10.0.14-SNAPSHOT/jar/config";
+        String ref = "maven://org.eclipse.jetty.demos/demo-simple-webapp/11.0.14-SNAPSHOT/jar/config";
         Path baseDir = baseHome.getBasePath();
         repo.create(URI.create(ref), "extract:/");
 

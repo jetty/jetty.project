@@ -15,8 +15,9 @@ package org.eclipse.jetty.server.session;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
+
+import jakarta.servlet.http.HttpSessionEvent;
+import jakarta.servlet.http.HttpSessionListener;
 
 /**
  * TestSessionListener

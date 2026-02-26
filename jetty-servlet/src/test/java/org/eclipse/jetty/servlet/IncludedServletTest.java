@@ -23,14 +23,14 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import javax.servlet.DispatcherType;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -240,21 +240,21 @@ public class IncludedServletTest
             }
 
             assertThat(result, Matchers.contains(
-                "BEFORE0: javax.servlet.include.context_path='null'",
-                "BEFORE0: javax.servlet.include.servlet_path='null'",
-                "BEFORE0: javax.servlet.include.path_info='null'",
-                "BEFORE1: javax.servlet.include.context_path=''",
-                "BEFORE1: javax.servlet.include.servlet_path='/attr'",
-                "BEFORE1: javax.servlet.include.path_info='/one'",
-                "DURING: javax.servlet.include.context_path=''",
-                "DURING: javax.servlet.include.servlet_path='/attr'",
-                "DURING: javax.servlet.include.path_info='/two'",
-                "AFTER1: javax.servlet.include.context_path=''",
-                "AFTER1: javax.servlet.include.servlet_path='/attr'",
-                "AFTER1: javax.servlet.include.path_info='/one'",
-                "AFTER0: javax.servlet.include.context_path='null'",
-                "AFTER0: javax.servlet.include.servlet_path='null'",
-                "AFTER0: javax.servlet.include.path_info='null'"
+                "BEFORE0: jakarta.servlet.include.context_path='null'",
+                "BEFORE0: jakarta.servlet.include.servlet_path='null'",
+                "BEFORE0: jakarta.servlet.include.path_info='null'",
+                "BEFORE1: jakarta.servlet.include.context_path=''",
+                "BEFORE1: jakarta.servlet.include.servlet_path='/attr'",
+                "BEFORE1: jakarta.servlet.include.path_info='/one'",
+                "DURING: jakarta.servlet.include.context_path=''",
+                "DURING: jakarta.servlet.include.servlet_path='/attr'",
+                "DURING: jakarta.servlet.include.path_info='/two'",
+                "AFTER1: jakarta.servlet.include.context_path=''",
+                "AFTER1: jakarta.servlet.include.servlet_path='/attr'",
+                "AFTER1: jakarta.servlet.include.path_info='/one'",
+                "AFTER0: jakarta.servlet.include.context_path='null'",
+                "AFTER0: jakarta.servlet.include.servlet_path='null'",
+                "AFTER0: jakarta.servlet.include.path_info='null'"
             ));
         }
         finally

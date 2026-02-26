@@ -19,7 +19,7 @@ module org.eclipse.jetty.jndi
     requires transitive org.eclipse.jetty.server;
 
     // Only required if using MailSessionReference.
-    requires static javax.mail.glassfish;
+    requires static jakarta.mail;
     // Only required if using DataSourceCloser.
     requires static java.sql;
     requires static org.eclipse.jetty.security;

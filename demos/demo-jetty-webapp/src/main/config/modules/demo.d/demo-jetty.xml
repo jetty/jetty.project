@@ -27,7 +27,7 @@ Configure and deploy the test web application
   
   <!-- Enable WebSocket container -->
   <Call name="setAttribute">
-    <Arg>org.eclipse.jetty.websocket.javax</Arg>
+    <Arg>org.eclipse.jetty.websocket.jakarta</Arg>
     <Arg type="Boolean">true</Arg>
   </Call>
   

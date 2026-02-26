@@ -238,7 +238,7 @@ public class InvokerUtils
         }
 
         // Build up Arg list representing the MethodHandle parameters
-        // ParamIdentifier is used to find named parameters (like javax.websocket's @PathParam declaration)
+        // ParamIdentifier is used to find named parameters (like jakarta.websocket's @PathParam declaration)
         boolean hasNamedParamArgs = false;
         Arg[] parameterArgs = new Arg[parameterTypes.length + 1];
         parameterArgs[0] = new Arg(targetClass); // first type is always the calling object instance type

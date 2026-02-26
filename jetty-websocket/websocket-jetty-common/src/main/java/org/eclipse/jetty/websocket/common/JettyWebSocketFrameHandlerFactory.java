@@ -531,6 +531,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
      * access to the lookupClasses private methods. This is possible but requires extra configuration
      * to provide private access which is not necessary for the purpose of accessing the public methods.
      * </p>
+     *
      * @param lookupClass the desired lookup class for the new lookup object.
      * @return a lookup object to be used to find methods on the lookupClass.
      */

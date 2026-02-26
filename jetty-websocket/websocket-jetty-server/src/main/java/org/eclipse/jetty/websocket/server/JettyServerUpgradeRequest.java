@@ -20,9 +20,9 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
 
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 
 public interface JettyServerUpgradeRequest extends UpgradeRequest
@@ -37,7 +37,7 @@ public interface JettyServerUpgradeRequest extends UpgradeRequest
     Object getSession();
 
     /**
-     * @return The {@link X509Certificate} instance at request attribute "javax.servlet.request.X509Certificate" or null.
+     * @return The {@link X509Certificate} instance at request attribute "jakarta.servlet.request.X509Certificate" or null.
      */
     X509Certificate[] getCertificates();
 

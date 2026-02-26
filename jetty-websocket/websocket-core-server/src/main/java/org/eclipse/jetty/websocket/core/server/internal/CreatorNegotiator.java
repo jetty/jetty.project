@@ -15,9 +15,9 @@ package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;

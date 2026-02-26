@@ -105,7 +105,8 @@ public class PreconfigureQuickStartWar
                                 new AnnotationConfiguration());
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
         webapp.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "");
-        webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, ".*/jetty-servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard-impl-.*\\.jar$");
+        webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
+                ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/.*taglibs-standard-.*\\.jar$");
         if (xml != null)
         {
             if (xml.isDirectory() || !xml.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))

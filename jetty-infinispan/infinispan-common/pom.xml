@@ -4,14 +4,13 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>10.0.27-SNAPSHOT</version>
+    <version>11.0.27-SNAPSHOT</version>
   </parent>
   <artifactId>infinispan-common</artifactId>
   <name>Jetty :: Infinispan Session Manager Common</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.common</bundle-symbolic-name>
   </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -54,4 +53,27 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <defaultGoal>install</defaultGoal>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <descriptorRefs>
+                <descriptorRef>config</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

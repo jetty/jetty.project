@@ -2,7 +2,7 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure>
-  <Call class="javax.security.auth.message.config.AuthConfigFactory" name="getFactory">
+  <Call class="jakarta.security.auth.message.config.AuthConfigFactory" name="getFactory">
     <!-- Configure the AuthConfigFactory here. -->
   </Call>
 </Configure>

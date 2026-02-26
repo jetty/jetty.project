@@ -23,20 +23,20 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.servlet.AsyncContext;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.UnavailableException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
@@ -89,6 +89,7 @@ public class ErrorPageTest
         _context.addFilter(SingleDispatchFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
         _context.addServlet(DefaultServlet.class, "/");
         _context.addServlet(FailServlet.class, "/fail/*");
+        _context.addServlet(FailServletDoubleWrap.class, "/fail-double-wrap/*");
         _context.addServlet(FailClosedServlet.class, "/fail-closed/*");
         _context.addServlet(ErrorServlet.class, "/error/*");
         _context.addServlet(AppServlet.class, "/app/*");
@@ -303,10 +304,18 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: javax.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
-            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class javax.servlet.ServletException"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
             assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
+            response = _connector.getResponse("GET /fail-double-wrap/exception HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: jakarta.servlet.ServletException: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServletDoubleWrap-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail-double-wrap/exception"));
         }
 
         _errorPageErrorHandler.setUnwrapServletException(true);
@@ -320,6 +329,14 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
             assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
+            response = _connector.getResponse("GET /fail-double-wrap/exception HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException: Test Exception"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServletDoubleWrap-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail-double-wrap/exception"));
         }
     }
 
@@ -634,6 +651,19 @@ public class ErrorPageTest
                 response.sendError(Integer.parseInt(code));
             else
                 throw new ServletException(new IllegalStateException("Test Exception"));
+        }
+    }
+
+    public static class FailServletDoubleWrap extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            String code = request.getParameter("code");
+            if (code != null)
+                response.sendError(Integer.parseInt(code));
+            else
+                throw new ServletException(new ServletException(new IllegalStateException("Test Exception")));
         }
     }
 

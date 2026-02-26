@@ -1,7 +1,7 @@
 {
   "github_repo_owner": "jetty",
   "github_repo_name": "jetty.project",
-  "branch": "jetty-10.0.x",
+  "branch": "jetty-11.0.x",
   "label_exclusions": [
     "test",
     "build",

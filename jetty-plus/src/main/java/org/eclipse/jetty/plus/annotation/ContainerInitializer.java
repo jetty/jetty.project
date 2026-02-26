@@ -22,8 +22,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.servlet.ServletContainerInitializer;
 
+import jakarta.servlet.ServletContainerInitializer;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;

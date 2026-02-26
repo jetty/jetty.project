@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>10.0.27-SNAPSHOT</version>
+    <version>11.0.27-SNAPSHOT</version>
   </parent>
   <artifactId>infinispan-embedded</artifactId>
   <packaging>pom</packaging>
@@ -79,7 +79,7 @@
               <appendOutput>false</appendOutput>
               <outputFile>${project.build.directory}/deps.txt</outputFile>
               <sort>true</sort>
-              <excludeGroupIds>org.eclipse.jetty,javax.servlet,org.slf4j</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty,jakarta.servlet,org.slf4j</excludeGroupIds>
               <prependGroupId>true</prependGroupId>
               <includeScope>runtime</includeScope>
             </configuration>

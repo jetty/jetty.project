@@ -17,12 +17,12 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.message.config.AuthConfigFactory;
-import javax.security.auth.message.config.AuthConfigProvider;
-import javax.security.auth.message.config.ClientAuthConfig;
-import javax.security.auth.message.config.ServerAuthConfig;
-import javax.security.auth.message.module.ServerAuthModule;
 
+import jakarta.security.auth.message.config.AuthConfigFactory;
+import jakarta.security.auth.message.config.AuthConfigProvider;
+import jakarta.security.auth.message.config.ClientAuthConfig;
+import jakarta.security.auth.message.config.ServerAuthConfig;
+import jakarta.security.auth.message.module.ServerAuthModule;
 import org.eclipse.jetty.security.jaspi.JaspiAuthenticatorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

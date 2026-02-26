@@ -17,17 +17,18 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.security.auth.message.MessageInfo;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+
+import jakarta.security.auth.message.MessageInfo;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 
 /**
  * Almost an implementation of jaspi MessageInfo.
  */
 public class JaspiMessageInfo implements MessageInfo
 {
-    public static final String MANDATORY_KEY = "javax.security.auth.message.MessagePolicy.isMandatory";
-    public static final String AUTH_METHOD_KEY = "javax.servlet.http.authType";
+    public static final String MANDATORY_KEY = "jakarta.security.auth.message.MessagePolicy.isMandatory";
+    public static final String AUTH_METHOD_KEY = "jakarta.servlet.http.authType";
     private ServletRequest request;
     private ServletResponse response;
     private final MIMap map;

@@ -16,22 +16,22 @@ package org.eclipse.jetty.docs.programming.server.websocket;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.websocket.DeploymentException;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.server.ServerContainer;
+import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
@@ -68,7 +68,7 @@ public class WebSocketServerDocs
 
         // Ensure that JavaxWebSocketServletContainerInitializer is initialized,
         // to setup the ServerContainer for this web application context.
-        JavaxWebSocketServletContainerInitializer.configure(handler, null);
+        JakartaWebSocketServletContainerInitializer.configure(handler, null);
 
         // Starting the Server will start the ServletContextHandler.
         server.start();
@@ -87,7 +87,7 @@ public class WebSocketServerDocs
 
         // Ensure that JavaxWebSocketServletContainerInitializer is initialized,
         // to setup the ServerContainer for this web application context.
-        JavaxWebSocketServletContainerInitializer.configure(handler, null);
+        JakartaWebSocketServletContainerInitializer.configure(handler, null);
 
         // Add a WebSocket-initializer Servlet to register WebSocket endpoints.
         handler.addServlet(MyJavaxWebSocketInitializerServlet.class, "/*");
@@ -141,7 +141,7 @@ public class WebSocketServerDocs
         server.setHandler(handler);
 
         // Setup the ServerContainer and the WebSocket endpoints for this web application context.
-        JavaxWebSocketServletContainerInitializer.configure(handler, (servletContext, container) ->
+        JakartaWebSocketServletContainerInitializer.configure(handler, (servletContext, container) ->
         {
             // Configure the ServerContainer.
             container.setDefaultMaxTextMessageBufferSize(128 * 1024);

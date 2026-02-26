@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.security;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;

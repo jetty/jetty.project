@@ -665,3 +665,4 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         }
     }
 }
+

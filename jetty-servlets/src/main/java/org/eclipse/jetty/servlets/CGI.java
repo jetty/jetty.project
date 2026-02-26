@@ -25,12 +25,12 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import javax.servlet.AsyncContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
@@ -217,8 +217,7 @@ public class CGI extends HttpServlet
      *
      * @param command the command to execute, this command is prefixed by
      * the context parameter "commandPrefix".
-     * @param pathInfo The PATH_INFO to process,
-     * see http://docs.oracle.com/javaee/6/api/javax/servlet/http/HttpServletRequest.html#getPathInfo%28%29. Cannot be null
+     * @param pathInfo The PATH_INFO to process. Cannot be null
      * @param req the HTTP request
      * @param res the HTTP response
      * @throws IOException if the execution of the CGI process throws

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>10.0.27-SNAPSHOT</version>
+    <version>11.0.27-SNAPSHOT</version>
   </parent>
   <artifactId>test-jetty-osgi-context</artifactId>
   <name>Jetty :: OSGi :: Test Context</name>
@@ -55,8 +55,8 @@
             of the packages it uses; no need to reflect some tight dependency determined at
             compilation time. -->
             <_nouses>true</_nouses>
-            <Import-Package>javax.servlet;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
-              javax.servlet.resources;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
+            <Import-Package>jakarta.servlet;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
+              jakarta.servlet.resources;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
               org.osgi.framework,
               org.osgi.service.cm;version="${osgi-service-cm-version}",
               org.osgi.service.packageadmin,

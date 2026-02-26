@@ -5,5 +5,5 @@ Enables JSTL for all web applications deployed on the server.
 
 [depend]
 jsp
-apache-jstl
+glassfish-jstl
 

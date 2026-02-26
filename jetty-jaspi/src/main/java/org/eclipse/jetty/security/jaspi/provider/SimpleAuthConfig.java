@@ -16,16 +16,17 @@ package org.eclipse.jetty.security.jaspi.provider;
 import java.util.Map;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.message.AuthException;
-import javax.security.auth.message.MessageInfo;
-import javax.security.auth.message.config.ServerAuthConfig;
-import javax.security.auth.message.config.ServerAuthContext;
-import javax.security.auth.message.module.ServerAuthModule;
+
+import jakarta.security.auth.message.AuthException;
+import jakarta.security.auth.message.MessageInfo;
+import jakarta.security.auth.message.config.ServerAuthConfig;
+import jakarta.security.auth.message.config.ServerAuthContext;
+import jakarta.security.auth.message.module.ServerAuthModule;
 
 /**
  * Simple implementation of the {@link ServerAuthConfig} interface.
  * 
- * This implementation wires up the given {@link ServerAuthModule} to the appropriate Javax Authentication {@link ServerAuthContext} responsible 
+ * This implementation wires up the given {@link ServerAuthModule} to the appropriate Jakarta Authentication {@link ServerAuthContext} responsible 
  * for providing it.
  */
 @SuppressWarnings("rawtypes")
