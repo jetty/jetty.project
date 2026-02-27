@@ -63,6 +63,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -209,34 +210,48 @@ public class HttpConnectionTest
         assertThat(response, not(containsString("id=456")));
     }
 
-    /**
-     * Ensure that excessively large hexadecimal chunk body length is parsed properly.
-     */
-    @Test
-    public void testHttp11ChunkedBodyTruncation() throws Exception
+    @ParameterizedTest
+    @ValueSource(strings = {"8000000000000000", "FFFFFFFFFFFFFFFF", "1FFFFFFFFFFFFFFFF"})
+    public void testHttp11ChunkedSizeTooLarge(String chunkSize) throws Exception
     {
         _server.start();
+
         String request = "POST /?id=123 HTTP/1.1\r\n" +
-            "Host: local\r\n" +
-            "Transfer-Encoding: chunked\r\n" +
-            "Content-Type: text/plain\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            "1ff00000008\r\n" +
-            "abcdefgh\r\n" +
-            "\r\n" +
-            "0\r\n" +
-            "\r\n" +
-            "POST /?id=bogus HTTP/1.1\r\n" +
-            "Content-Length: 5\r\n" +
-            "Host: dummy-host.example.com\r\n" +
-            "\r\n" +
-            "12345";
+                         "Host: local\r\n" +
+                         "Transfer-Encoding: chunked\r\n" +
+                         "Content-Type: text/plain\r\n" +
+                         "Connection: close\r\n" +
+                         "\r\n" +
+                         chunkSize + "\r\n" +
+                         "abcdefgh\r\n";
 
         String response = _connector.getResponse(request);
         assertThat(response, containsString(" 400 Bad Request"));
         assertThat(response, containsString("Connection: close"));
         assertThat(response, containsString("<th>MESSAGE:</th><td>Early EOF</td>"));
+    }
+
+    @Test
+    public void testHttp11ChunkedSizeCanBeALong() throws Exception
+    {
+        _server.start();
+        _connector.setIdleTimeout(500);
+        String request = "POST /?id=123 HTTP/1.1\r\n" +
+                         "Host: local\r\n" +
+                         "Transfer-Encoding: chunked\r\n" +
+                         "Content-Type: text/plain\r\n" +
+                         "Connection: close\r\n" +
+                         "\r\n" +
+                         "1FFFFFFFF\r\n" +
+                         "abcdefgh\r\n";
+
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
+        {
+            String response = _connector.getResponse(request);
+            assertThat(response, containsString(" 500 Server Error"));
+            assertThat(response, containsString("Connection: close"));
+            assertThat(response, containsString("TimeoutException"));
+        }
     }
 
     public static Stream<int[]> contentLengths()

@@ -281,8 +281,8 @@ public class HttpParser
     private long _contentLength = -1;
     private long _contentPosition;
     private int _chunkSizeDigits;
-    private int _chunkLength;
-    private int _chunkOffset;
+    private long _chunkLength;
+    private long _chunkOffset;
     private boolean _headResponse;
     private boolean _cr;
     private ByteBuffer _contentChunk;
@@ -1973,14 +1973,14 @@ public class HttpParser
 
                 case CHUNK:
                 {
-                    int chunkLength = _chunkLength - _chunkOffset;
+                    long chunkLength = _chunkLength - _chunkOffset;
                     if (chunkLength == 0)
                     {
                         setState(State.CHUNK_END);
                     }
                     else
                     {
-                        int length = Math.min(remaining, chunkLength);
+                        int length = (int)Math.min(remaining, chunkLength);
                         _contentChunk = buffer.slice(buffer.position(), length);
 
                         _contentPosition += length;
@@ -2041,10 +2041,13 @@ public class HttpParser
                     }
                     else if (t.isHexDigit())
                     {
-                        // Allow at most 16 digits (8 bytes) for a max chunk size of 2^64-1.
+                        // Allow at most 16 digits (8 bytes).
                         if (++_chunkSizeDigits == 16)
                             throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400);
                         _chunkLength = _chunkLength * 16 + t.getHexDigit();
+                        // Check for overflow.
+                        if (_chunkLength < 0)
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400);
                     }
                     else if (isBWS(t))
                         setChunkSizeState(ChunkSizeState.EXT_BWS);
