@@ -43,8 +43,8 @@ public class HttpTokens
         COLON,   // Colon character
         DIGIT,   // Digit
         ALPHA,   // Alpha
-        TCHAR,   // token characters excluding COLON,DIGIT,ALPHA, which is equivalent to VCHAR excluding delimiters
-        VCHAR,   // Visible characters excluding COLON,DIGIT,ALPHA
+        TCHAR,   // token characters excluding DIGIT and ALPHA
+        VCHAR,   // Visible characters excluding COLON, DIGIT and ALPHA
         OTEXT    // Obsolete text
     }
 
