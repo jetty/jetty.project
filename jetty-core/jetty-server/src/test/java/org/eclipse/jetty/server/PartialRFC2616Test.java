@@ -136,9 +136,9 @@ public class PartialRFC2616Test
                 "Transfer-Encoding: chunked,identity\n" +
                 "Content-Type: text/plain\n" +
                 "\r\n" +
-                "5;\r\n" +
+                "5\r\n" +
                 "123\r\n\r\n" +
-                "0;\r\n\r\n");
+                "0\r\n\r\n");
         checkContains(response, offset, "HTTP/1.1 400 Bad", "Chunked last");
     }
 
@@ -154,22 +154,22 @@ public class PartialRFC2616Test
                 "Transfer-Encoding: chunked\n" +
                 "Content-Type: text/plain\n" +
                 "\n" +
-                "2;\n" +
+                "2\n" +
                 "12\n" +
-                "3;\n" +
+                "3\n" +
                 "345\n" +
-                "0;\n\n" +
+                "0\n\n" +
 
                 "GET /R2 HTTP/1.1\n" +
                 "Host: localhost\n" +
                 "Transfer-Encoding: chunked\n" +
                 "Content-Type: text/plain\n" +
                 "\n" +
-                "4;\n" +
+                "4\n" +
                 "6789\n" +
-                "5;\n" +
+                "5\n" +
                 "abcde\n" +
-                "0;\n\n" +
+                "0\n\n" +
 
                 "GET /R3 HTTP/1.1\n" +
                 "Host: localhost\n" +
@@ -199,22 +199,22 @@ public class PartialRFC2616Test
                 "Transfer-Encoding: chunked\n" +
                 "Content-Type: text/plain\n" +
                 "\n" +
-                "3;\n" +
+                "3\n" +
                 "fgh\n" +
-                "3;\n" +
+                "3\n" +
                 "Ijk\n" +
-                "0;\n\n" +
+                "0\n\n" +
 
                 "POST /R2 HTTP/1.1\n" +
                 "Host: localhost\n" +
                 "Transfer-Encoding: chunked\n" +
                 "Content-Type: text/plain\n" +
                 "\n" +
-                "4;\n" +
+                "4\n" +
                 "lmno\n" +
-                "5;\n" +
+                "5\n" +
                 "Pqrst\n" +
-                "0;\n\n" +
+                "0\n\n" +
 
                 "GET /R3 HTTP/1.1\n" +
                 "Host: localhost\n" +
@@ -249,11 +249,11 @@ public class PartialRFC2616Test
                 "Content-Type: text/plain\n" +
                 "Connection: keep-alive\n" +
                 "\n" +
-                "3;\n" +
+                "3\n" +
                 "123\n" +
-                "3;\n" +
+                "3\n" +
                 "456\n" +
-                "0;\n\n" +
+                "0\n\n" +
 
                 "GET /R2 HTTP/1.1\n" +
                 "Host: localhost\n" +
@@ -362,11 +362,11 @@ public class PartialRFC2616Test
                 "Content-Type: text/plain\n" +
                 "Content-Length: 100\n" +
                 "\n" +
-                "3;\n" +
+                "3\n" +
                 "123\n" +
-                "3;\n" +
+                "3\n" +
                 "456\n" +
-                "0;\n" +
+                "0\n" +
                 "\n" +
 
                 "GET /R2 HTTP/1.1\n" +

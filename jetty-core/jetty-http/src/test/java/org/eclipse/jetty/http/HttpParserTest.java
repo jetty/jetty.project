@@ -1207,7 +1207,7 @@ public class HttpParserTest
             "Header1: value1" + eoln +
             "Transfer-Encoding: chunked" + eoln +
             eoln +
-            "a;" + eoln +
+            "a;ext" + eoln +
             "0123456789" + eoln +
             "1a" + eoln +
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
@@ -1294,7 +1294,7 @@ public class HttpParserTest
                 "Header1: value1" + eoln +
                 "Transfer-Encoding: chunked" + eoln +
                 eoln +
-                "a;" + eoln +
+                "a;ext" + eoln +
                 "0123456789" + eoln +
                 "1a" + eoln +
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
@@ -1329,7 +1329,7 @@ public class HttpParserTest
             "GET /chunk HTTP/1.0" + eoln +
                 "Transfer-Encoding: chunked" + eoln +
                 eoln +
-                "a;" + eoln +
+                "a;ext" + eoln +
                 "0123456789" + eoln +
                 "1a" + eoln +
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
@@ -1369,7 +1369,7 @@ public class HttpParserTest
                 "Header1: value1" + eoln +
                 "Transfer-Encoding: chunked" + eoln +
                 eoln +
-                "a;" + eoln +
+                "a;ext" + eoln +
                 "0123456789" + eoln +
                 "1a" + eoln +
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
@@ -1402,7 +1402,7 @@ public class HttpParserTest
                 "Header1: value1" + eoln +
                 "Transfer-Encoding: chunked" + eoln +
                 eoln +
-                "a;" + eoln +
+                "a;ext" + eoln +
                 "0123456789" + eoln +
                 "1a" + eoln +
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
@@ -1468,7 +1468,7 @@ public class HttpParserTest
                 "Header1: value1" + eoln +
                 "Transfer-Encoding: chunked" + eoln +
                 eoln +
-                "a;" + eoln +
+                "a;ext" + eoln +
                 "0123456789" + eoln);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1496,7 +1496,7 @@ public class HttpParserTest
                 "Header1: value1" + eoln +
                 "Transfer-Encoding: chunked" + eoln +
                 eoln +
-                "a;" + eoln +
+                "a;ext" + eoln +
                 "0123456789" + eoln +
                 "1a" + eoln +
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
@@ -1563,7 +1563,7 @@ public class HttpParserTest
         ByteBuffer buffer1 = BufferUtil.toBuffer("Header1: value1" + eoln +
             "Transfer-Encoding: chunked" + eoln +
             eoln +
-            "a;" + eoln +
+            "a;ext" + eoln +
             "0123456789" + eoln +
             "1a" + eoln +
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
