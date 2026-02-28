@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.quic.client.internal.tls;
 
+import java.security.KeyStore;
+import java.security.cert.CertPathBuilder;
+import java.security.cert.CertPathBuilderResult;
+import java.security.cert.CertPathValidator;
+import java.security.cert.CertStore;
+import java.security.cert.CollectionCertStoreParameters;
+import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.X509CertSelector;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -54,6 +63,7 @@ import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +77,7 @@ public class ClientTLSEngine extends TLSEngine
     private ClientTLSConfiguration configuration;
     private List<GroupKeyPair> groupKeyPairs;
     private ClientHelloMessage clientHello;
+    private CertificateMessage certificate;
     private ZeroRTTStore.Entry zeroRTTEntry;
     private boolean resuming;
 
@@ -399,34 +410,68 @@ public class ClientTLSEngine extends TLSEngine
         state = resuming ? State.NEED_FINISHED : State.NEED_CERTIFICATE;
     }
 
-    private void processCertificate(CertificateMessage certificate)
+    private void processCertificate(CertificateMessage message)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processing {} on {}", certificate, this);
+            LOG.debug("processing {} on {}", message, this);
 
         if (state != State.NEED_CERTIFICATE)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
-        // RFC-8446[4.4.2.4].
-        if (certificate.entries().isEmpty())
+
+        List<X509Certificate> certificateChain = message.entries().stream()
+            .map(CertificateMessage.Entry::certificate)
+            .toList();
+
+        // RFC-8446[4.4.2.4]: an empty certificate message is not allowed.
+        if (certificateChain.isEmpty())
             throw new TLSException(TLSException.Alert.DECODE_ERROR, "missing_certificate");
 
-        // TODO: if verification required MD5/SHA1 signatures -> bad_certificate
+        // RFC-8446[4.4.2.4]: MD5 and SHA1 are forbidden.
+        for (X509Certificate x509 : certificateChain)
+        {
+            String certificateSignatureAlgorithm = x509.getSigAlgName();
+            if (certificateSignatureAlgorithm.startsWith("MD5") || certificateSignatureAlgorithm.startsWith("SHA1"))
+                throw new TLSException(TLSException.Alert.BAD_CERTIFICATE, "forbidden_certificate_signature_algorithm");
+        }
 
-        // TODO: Verify the certificate chain (JDK utility should be present).
-        //  Verify Signature chains
-        //  Verify Validity periods
-        //  Verify Key usage / extended key usage
-        //  Verify Name constraints
-        //  Verify Server identity (SNI / DNS name / IP)
-        //  Verify that The server certificate’s public key type Matches the negotiated signature_algorithms
+        verifyCertificateChain(certificateChain);
 
-        // TODO: save the certificate, as it must be verified later.
-        getPacketProtector().getTranscriptHash().offer(certificate, true);
+        // RFC-2818[3]: verify server identity.
+        String endpointIdentificationAlgorithm = configuration.getSslContextFactory().getEndpointIdentificationAlgorithm();
+        if (StringUtil.isNotBlank(endpointIdentificationAlgorithm))
+        {
+            if (!identityMatches(certificateChain.getFirst(), getServerName()))
+                throw new TLSException(TLSException.Alert.BAD_CERTIFICATE, "certificate_identity_mismatch");
+        }
 
+        getPacketProtector().getTranscriptHash().offer(message, true);
+
+        certificate = message;
         state = State.NEED_CERTIFICATE_VERIFY;
     }
 
-    private void processCertificateVerify(CertificateVerifyMessage certificateVerify)
+    private void verifyCertificateChain(List<X509Certificate> certificateChain)
+    {
+        try
+        {
+            if (configuration.getSslContextFactory().isTrustAll())
+                return;
+
+            KeyStore trustStore = configuration.getSslContextFactory().getTrustStore();
+            X509CertSelector certSelector = new X509CertSelector();
+            certSelector.setCertificate(certificateChain.getFirst());
+            PKIXBuilderParameters params = new PKIXBuilderParameters(trustStore, certSelector);
+            params.addCertStore(CertStore.getInstance("Collection", new CollectionCertStoreParameters(certificateChain)));
+            CertPathBuilderResult buildResult = CertPathBuilder.getInstance("PKIX").build(params);
+            CertPathValidator.getInstance("PKIX").validate(buildResult.getCertPath(), params);
+        }
+        catch (Throwable x)
+        {
+            throw new TLSException(TLSException.Alert.BAD_CERTIFICATE, "invalid_certificate_chain", x);
+        }
+    }
+
+    private void processCertificateVerify(CertificateVerifyMessage certificateVerify) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", certificateVerify, this);
@@ -434,7 +479,13 @@ public class ClientTLSEngine extends TLSEngine
         if (state != State.NEED_CERTIFICATE_VERIFY)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
-        // TODO: verify the signature using the public key from the Certificate
+        SignatureAlgorithm signatureAlgorithm = certificateVerify.signatureAlgorithm();
+        if (!configuration.getClientQuicConfiguration().getSignatureAlgorithms().contains(signatureAlgorithm))
+            throw new TLSException(TLSException.Alert.BAD_CERTIFICATE, "unsupported_certificate_signature_algorithm");
+
+        if (!verifyCertificateVerifyMessage(certificate.entries().getFirst().certificate(), certificateVerify, false))
+            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid_certificate_verify");
+
         getPacketProtector().getTranscriptHash().offer(certificateVerify, true);
 
         state = State.NEED_FINISHED;
@@ -449,7 +500,7 @@ public class ClientTLSEngine extends TLSEngine
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
         CipherSuite cipherSuite = getCipherSuite();
         if (!verifyFinishedMessage(cipherSuite, finished))
-            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid_verify_data");
+            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid_finished_verify_data");
 
         if (LOG.isDebugEnabled())
             LOG.debug("verified {} on {}", finished, this);

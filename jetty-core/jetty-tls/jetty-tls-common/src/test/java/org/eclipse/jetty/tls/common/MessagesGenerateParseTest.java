@@ -282,7 +282,7 @@ public class MessagesGenerateParseTest
 
         assertInstanceOf(CertificateVerifyMessage.class, message);
         CertificateVerifyMessage parsed = (CertificateVerifyMessage)message;
-        assertEquals(generated.algorithm(), parsed.algorithm());
+        assertEquals(generated.signatureAlgorithm(), parsed.signatureAlgorithm());
         assertArrayEquals(generated.signature(), parsed.signature());
 
         // Parse again one byte at a time.
@@ -297,7 +297,7 @@ public class MessagesGenerateParseTest
 
         assertInstanceOf(CertificateVerifyMessage.class, message);
         parsed = (CertificateVerifyMessage)message;
-        assertEquals(generated.algorithm(), parsed.algorithm());
+        assertEquals(generated.signatureAlgorithm(), parsed.signatureAlgorithm());
         assertArrayEquals(generated.signature(), parsed.signature());
     }
 

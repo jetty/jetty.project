@@ -42,7 +42,7 @@ public class CertificateVerifyMessageGenerator extends MessageGenerator
         int typeAndLength = (message.type().code() << 24) | length;
         accumulator.putInt(typeAndLength);
 
-        accumulator.putShort((short)message.algorithm().code());
+        accumulator.putShort((short)message.signatureAlgorithm().code());
         accumulator.putShort((short)signature.length);
         accumulator.put(signature);
 

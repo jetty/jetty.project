@@ -17,12 +17,16 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import javax.crypto.KDF;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
@@ -180,6 +184,20 @@ public abstract class TLSEngine
 
     protected CertificateVerifyMessage createCertificateVerifyMessage(SignatureAlgorithm signatureAlgorithm, PrivateKey privateKey, boolean client) throws Exception
     {
+        byte[] signature = signatureAlgorithm.sign(privateKey, createCertificateVerifyContent(client));
+        return new CertificateVerifyMessage(signatureAlgorithm, signature);
+    }
+
+    protected boolean verifyCertificateVerifyMessage(X509Certificate certificate, CertificateVerifyMessage message, boolean client) throws Exception
+    {
+        SignatureAlgorithm signatureAlgorithm = message.signatureAlgorithm();
+        if (!signatureAlgorithm.supports(certificate.getPublicKey()))
+            return false;
+        return signatureAlgorithm.verify(certificate.getPublicKey(), createCertificateVerifyContent(client), message.signature());
+    }
+
+    private byte[] createCertificateVerifyContent(boolean client) throws Exception
+    {
         // RFC-8446[4.4.3].
         String context = client ? "TLS 1.3, client CertificateVerify" : "TLS 1.3, server CertificateVerify";
         byte[] contextBytes = context.getBytes(StandardCharsets.US_ASCII);
@@ -192,9 +210,7 @@ public abstract class TLSEngine
         content[offset] = (byte)0x00;
         offset += 1;
         System.arraycopy(transcriptHash, 0, content, offset, transcriptHash.length);
-
-        byte[] signature = signatureAlgorithm.sign(privateKey, content);
-        return new CertificateVerifyMessage(signatureAlgorithm, signature);
+        return content;
     }
 
     protected FinishedMessage createFinishedMessage(CipherSuite cipherSuite) throws Exception
@@ -232,6 +248,68 @@ public abstract class TLSEngine
         // Differently from Arrays.equals(), MessageDigest.isEqual()
         // implements constant-time comparison to avoid timing attacks.
         return MessageDigest.isEqual(verifyData, expected);
+    }
+
+    protected boolean identityMatches(X509Certificate certificate, String name)
+    {
+        try
+        {
+            // First, try to match the SubjectAlternativeNames (SAN).
+            Collection<List<?>> subjectAlternativeNames = certificate.getSubjectAlternativeNames();
+            if (subjectAlternativeNames != null)
+            {
+                for (List<?> entry : subjectAlternativeNames)
+                {
+                    // See X509Certificate.getSubjectAlternativeNames() javadocs for the structure of the entry.
+                    int entryType = (int)entry.getFirst();
+                    // EntryType 2 is DNSName, 7 is IPAddress.
+                    if ((entryType == 2 && domainNameMatches((String)entry.get(1), name)) ||
+                        (entryType == 7 && name.equalsIgnoreCase((String)entry.get(1))))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            // Second, try the CommonName (CN).
+            LdapName ldapName = new LdapName(certificate.getSubjectX500Principal().getName());
+            for (Rdn rdn : ldapName.getRdns())
+            {
+                if ("CN".equalsIgnoreCase(rdn.getType()) && domainNameMatches((String)rdn.getValue(), name))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.atDebug().setCause(x).log("could not match identity of certificate {} with server name {}", certificate, name);
+            return false;
+        }
+    }
+
+    private boolean domainNameMatches(String namePattern, String name)
+    {
+        // Direct match.
+        if (namePattern.equalsIgnoreCase(name))
+            return true;
+        // Not a pattern, so no match.
+        if (!namePattern.startsWith("*."))
+            return false;
+        // Pattern match: "*.example.com" matches "www.example.com",
+        // but not "example.com" and neither "one.two.example.com".
+        // Check whether the name ends with the pattern, case-insensitive:
+        // the name must end with ".example.com".
+        String noGlobPattern = namePattern.substring(1);
+        if (!name.regionMatches(true, name.length() - noGlobPattern.length(), noGlobPattern, 0, noGlobPattern.length()))
+            return false;
+        // Get the prefix, such as "www" or "one.two".
+        String prefix = name.substring(0, name.length() - noGlobPattern.length());
+        // Match only one subdomain.
+        return prefix.indexOf('.') < 0;
     }
 
     protected final void fail(Throwable failure)
