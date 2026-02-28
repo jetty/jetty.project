@@ -112,6 +112,47 @@ public enum SignatureAlgorithm
         return signature.sign();
     }
 
+    public boolean verify(PublicKey publicKey, byte[] content, byte[] signature) throws Exception
+    {
+        return switch (this)
+        {
+            case RSA_PSS_RSAE_SHA256 -> rsaVerify(publicKey, content, signature, 256);
+            case RSA_PSS_RSAE_SHA384 -> rsaVerify(publicKey, content, signature, 384);
+            case RSA_PSS_RSAE_SHA512 -> rsaVerify(publicKey, content, signature, 512);
+            case ECDSA_SECP256R1_SHA256 -> ecVerify(publicKey, content, signature, 256);
+            case ECDSA_SECP384R1_SHA384 -> ecVerify(publicKey, content, signature, 384);
+            case ECDSA_SECP521R1_SHA512 -> ecVerify(publicKey, content, signature, 512);
+            case ED25519, ED448 -> edVerify(publicKey, content, signature, name());
+        };
+    }
+
+    private boolean rsaVerify(PublicKey publicKey, byte[] content, byte[] signatureBytes, int hashLength) throws Exception
+    {
+        Signature signature = Signature.getInstance("RSASSA-PSS");
+        String hashAlgorithm = "SHA-" + hashLength;
+        PSSParameterSpec parameterSpec = new PSSParameterSpec(hashAlgorithm, "MGF1", new MGF1ParameterSpec(hashAlgorithm), hashLength / 8, 1);
+        signature.setParameter(parameterSpec);
+        signature.initVerify(publicKey);
+        signature.update(content);
+        return signature.verify(signatureBytes);
+    }
+
+    private boolean ecVerify(PublicKey publicKey, byte[] content, byte[] signatureBytes, int hashLength) throws Exception
+    {
+        Signature signature = Signature.getInstance("SHA" + hashLength + "withECDSA");
+        signature.initVerify(publicKey);
+        signature.update(content);
+        return signature.verify(signatureBytes);
+    }
+
+    private boolean edVerify(PublicKey publicKey, byte[] content, byte[] signatureBytes, String algorithm) throws Exception
+    {
+        Signature signature = Signature.getInstance(algorithm);
+        signature.initVerify(publicKey);
+        signature.update(content);
+        return signature.verify(signatureBytes);
+    }
+
     public static SignatureAlgorithm from(int code)
     {
         return Codes.CODES.get(code);

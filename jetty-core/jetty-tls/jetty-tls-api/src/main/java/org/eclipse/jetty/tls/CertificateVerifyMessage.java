@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.tls;
 
-public record CertificateVerifyMessage(SignatureAlgorithm algorithm, byte[] signature) implements Message
+public record CertificateVerifyMessage(SignatureAlgorithm signatureAlgorithm, byte[] signature) implements Message
 {
     @Override
     public Type type()

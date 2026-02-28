@@ -21,15 +21,12 @@ import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.HKDFParameterSpec;
-import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
@@ -367,22 +364,13 @@ public class ServerTLSEngine extends TLSEngine
                 handshakeMessages.add(certificateRequest);
             }
 
-            SignatureWithKeyStorePair match = null;
-            if (serverName != null)
-                match = selectCertificate(negotiatedKeyStorePairs, serverName);
-            SignatureWithKeyStorePair candidate = serverName == null ? negotiatedKeyStorePairs.getFirst() : match;
-            if (candidate == null)
-            {
-                if (sniRequired)
-                    throw new TLSException(TLSException.Alert.UNRECOGNIZED_NAME, "no_matching_certificate");
-                else
-                    candidate = negotiatedKeyStorePairs.getFirst();
-            }
-            // TODO: also default certificates must be checked for validity: split the check out of selectCertificate().
+            SignatureWithKeyStorePair match = selectCertificate(negotiatedKeyStorePairs, serverName, sniRequired);
+            if (match == null)
+                throw new TLSException(TLSException.Alert.UNRECOGNIZED_NAME, "no_matching_certificate");
             if (LOG.isDebugEnabled())
-                LOG.debug("certificate {} at alias {} on {}", match != null ? "match" : "default", candidate.keyStorePair().alias(), this);
+                LOG.debug("certificate {} at alias {} on {}", serverName != null ? "match" : "default", match.keyStorePair().alias(), this);
 
-            List<CertificateMessage.Entry> entries = candidate.keyStorePair().certificates().stream()
+            List<CertificateMessage.Entry> entries = match.keyStorePair().certificates().stream()
                 .map(c -> new CertificateMessage.Entry(c, List.of()))
                 .toList();
             CertificateMessage certificate = new CertificateMessage(BufferUtil.EMPTY_BYTES, entries);
@@ -393,7 +381,7 @@ public class ServerTLSEngine extends TLSEngine
             // Add CertificateMessage to the TranscriptHash to
             // calculate the signature for CertificateVerifyMessage.
             getPacketProtector().getTranscriptHash().offer(certificate, false);
-            CertificateVerifyMessage certificateVerify = createCertificateVerifyMessage(candidate.signatureAlgorithm(), candidate.keyStorePair().privateKey(), false);
+            CertificateVerifyMessage certificateVerify = createCertificateVerifyMessage(match.signatureAlgorithm(), match.keyStorePair().privateKey(), false);
             handshakeMessages.add(certificateVerify);
             if (LOG.isDebugEnabled())
                 LOG.debug("produced {} on {}", certificateVerify, this);
@@ -421,46 +409,23 @@ public class ServerTLSEngine extends TLSEngine
         ));
     }
 
-    private SignatureWithKeyStorePair selectCertificate(List<SignatureWithKeyStorePair> pairs, String serverName) throws Exception
+    private SignatureWithKeyStorePair selectCertificate(List<SignatureWithKeyStorePair> pairs, String serverName, boolean sniRequired) throws Exception
     {
-        SignatureWithKeyStorePair candidate = null;
+        if (serverName == null && sniRequired)
+            return null;
+
+        SignatureWithKeyStorePair candidate;
         for (SignatureWithKeyStorePair pair : pairs)
         {
-            X509Certificate leaf = pair.keyStorePair().certificates().getFirst();
-
-            // First, try to match the SubjectAlternativeNames (SAN).
-            Collection<List<?>> subjectAlternativeNames = leaf.getSubjectAlternativeNames();
-            if (subjectAlternativeNames != null)
+            // Try to match by server name.
+            if (serverName != null)
             {
-                for (List<?> entry : subjectAlternativeNames)
-                {
-                    // See getSubjectAlternativeNames() javadocs for the structure of the entry.
-                    int entryType = (int)entry.getFirst();
-                    // EntryType is DNSName.
-                    if (entryType == 2 && matches((String)entry.get(1), serverName))
-                    {
-                        candidate = pair;
-                        break;
-                    }
-                }
+                X509Certificate leaf = pair.keyStorePair().certificates().getFirst();
+                if (!identityMatches(leaf, serverName))
+                    continue;
             }
 
-            if (candidate == null)
-            {
-                // Second, try the CommonName (CN).
-                LdapName ldapName = new LdapName(leaf.getSubjectX500Principal().getName());
-                for (Rdn rdn : ldapName.getRdns())
-                {
-                    if ("CN".equalsIgnoreCase(rdn.getType()) && matches((String)rdn.getValue(), serverName))
-                    {
-                        candidate = pair;
-                        break;
-                    }
-                }
-            }
-
-            if (candidate == null)
-                continue;
+            candidate = pair;
 
             // Verify date validity.
             for (X509Certificate certificate : candidate.keyStorePair().certificates())
@@ -491,27 +456,6 @@ public class ServerTLSEngine extends TLSEngine
         return null;
     }
 
-    private boolean matches(String namePattern, String name)
-    {
-        // Direct match.
-        if (namePattern.equalsIgnoreCase(name))
-            return true;
-        // Not a pattern, so no match.
-        if (!namePattern.startsWith("*."))
-            return false;
-        // Pattern match: "*.example.com" matches "www.example.com",
-        // but not "example.com" and neither "one.two.example.com".
-        // Check whether the name ends with the pattern, case-insensitive:
-        // the name must end with ".example.com".
-        String noGlobPattern = namePattern.substring(1);
-        if (!name.regionMatches(true, name.length() - noGlobPattern.length(), noGlobPattern, 0, noGlobPattern.length()))
-            return false;
-        // Get the prefix, such as "www" or "one.two".
-        String prefix = name.substring(0, name.length() - noGlobPattern.length());
-        // Match only one subdomain.
-        return prefix.indexOf('.') < 0;
-    }
-
     private void processCertificate(CertificateMessage certificate)
     {
         // TODO:
@@ -532,7 +476,7 @@ public class ServerTLSEngine extends TLSEngine
 
         CipherSuite cipherSuite = getCipherSuite();
         if (!verifyFinishedMessage(cipherSuite, finished))
-            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid_verify_data");
+            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid_finished_verify_data");
 
         getPacketProtector().getTranscriptHash().offer(finished, true);
         SecretKey resumptionMasterSecret = getPacketProtector().createResumptionMasterSecret(cipherSuite);

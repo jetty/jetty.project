@@ -38,13 +38,13 @@ public class AbstractQuicTest
         serverThreads.setName("server");
         server = new Server(serverThreads);
 
-        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12"));
-        sslContextFactory.setKeyStorePassword("storepwd");
+        SslContextFactory.Server sslServer = new SslContextFactory.Server();
+        sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12"));
+        sslServer.setKeyStorePassword("storepwd");
 
         QuicServerQuicConfiguration serverQuicConfiguration = new QuicServerQuicConfiguration();
 
-        connector = new QuicServerConnector(server, sslContextFactory, serverQuicConfiguration, sessionListenerFactory);
+        connector = new QuicServerConnector(server, sslServer, serverQuicConfiguration, sessionListenerFactory);
         server.addConnector(connector);
         server.start();
 
@@ -52,6 +52,7 @@ public class AbstractQuicTest
         clientThreads.setName("client");
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setExecutor(clientThreads);
+        clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
         client = new QuicClient(new QuicClientQuicConfiguration(), clientConnector);
         client.start();
     }
