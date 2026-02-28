@@ -28,9 +28,4 @@ import org.eclipse.jetty.tls.Message;
 public interface MessageParser
 {
     Message parse(int messageLength, RetainableByteBuffer buffer) throws Exception;
-
-    interface Listener
-    {
-        void onMessageParsed(Message message);
-    }
 }

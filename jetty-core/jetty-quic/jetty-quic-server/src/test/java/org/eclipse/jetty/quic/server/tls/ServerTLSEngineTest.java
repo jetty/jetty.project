@@ -21,8 +21,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
+import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.quic.server.internal.tls.ServerTLSConfiguration;
@@ -36,6 +38,7 @@ import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.tls.ext.ALPNExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConstantThrowable;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,10 +74,14 @@ public class ServerTLSEngineTest
         engine.initialize(QuicVersion.V1);
 
         outMessages = new ArrayList<>();
-        engine.addMessageListener((_, msgs, callback) ->
+        engine.addMessageListener(new TLSEngine.MessageListener()
         {
-            outMessages.addAll(msgs);
-            callback.succeeded();
+            @Override
+            public void onOutgoingMessages(EncryptionLevel encryptionLevel, List<Message> messages, Callback callback)
+            {
+                outMessages.addAll(messages);
+                callback.succeeded();
+            }
         });
 
         engine.addHandshakeListener((_, failure) -> handshake.set(failure == null ? success : failure));
@@ -84,7 +91,7 @@ public class ServerTLSEngineTest
     public void testMissingSupportedVersionsExtension()
     {
         ClientHelloMessage message = new ClientHelloMessage(new byte[32], List.of(CipherSuite.TLS_AES_128_GCM_SHA256), List.of(new ALPNExtension(List.of("http/1.1"))));
-        engine.onMessageParsed(message);
+        engine.onMessage(EncryptionLevel.INITIAL, message);
 
         assertThat(outMessages, empty());
         assertHandshakeFailed(TLSException.Alert.MISSING_EXTENSION);
@@ -94,7 +101,7 @@ public class ServerTLSEngineTest
     public void testNoCommonVersion()
     {
         ClientHelloMessage message = new ClientHelloMessage(new byte[32], List.of(CipherSuite.TLS_AES_128_GCM_SHA256), List.of(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_2))));
-        engine.onMessageParsed(message);
+        engine.onMessage(EncryptionLevel.INITIAL, message);
 
         assertThat(outMessages, empty());
         assertHandshakeFailed(TLSException.Alert.ILLEGAL_PARAMETER);
@@ -106,7 +113,7 @@ public class ServerTLSEngineTest
         engine.getTLSConfiguration().getServerQuicConfiguration().setCipherSuites(List.of(CipherSuite.TLS_CHACHA20_POLY1305_SHA256));
 
         ClientHelloMessage message = new ClientHelloMessage(new byte[32], List.of(CipherSuite.TLS_AES_128_GCM_SHA256), List.of(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3))));
-        engine.onMessageParsed(message);
+        engine.onMessage(EncryptionLevel.INITIAL, message);
 
         assertThat(outMessages, empty());
         assertHandshakeFailed(TLSException.Alert.ILLEGAL_PARAMETER);
@@ -116,7 +123,7 @@ public class ServerTLSEngineTest
     public void testMissingKeyShareExtension()
     {
         ClientHelloMessage message = new ClientHelloMessage(new byte[32], List.of(CipherSuite.TLS_AES_128_GCM_SHA256), List.of(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3))));
-        engine.onMessageParsed(message);
+        engine.onMessage(EncryptionLevel.INITIAL, message);
 
         assertThat(outMessages, empty());
         assertHandshakeFailed(TLSException.Alert.ILLEGAL_PARAMETER);

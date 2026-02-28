@@ -14,18 +14,24 @@
 package org.eclipse.jetty.quic.tests;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
+import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.tls.TLSEngine;
+import org.eclipse.jetty.tls.CertificateMessage;
+import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ZeroRTTQuicTest extends AbstractQuicTest
 {
@@ -34,40 +40,52 @@ public class ZeroRTTQuicTest extends AbstractQuicTest
     {
         start(() -> new Session.Listener() {});
 
-        // Set a transport parameter to verify it won't change later.
-        long bidiMaxStreams = 1;
-        connector.getServerQuicConfiguration().setBidirectionalMaxStreams(bidiMaxStreams);
-
         // Establish a first connection.
-        Session firstSession = Promise.Completable.<Session>with(p ->
-            client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), null, new Session.Listener() {}, p)
-        ).get(5, TimeUnit.SECONDS);
-
-        await().atMost(5, TimeUnit.SECONDS).until(client.getZeroRTTStore()::size, equalTo(1));
-
-        // Change a server transport parameter to verify that it is not used,
-        // as the one from the previous connection should be used instead.
-        connector.getServerQuicConfiguration().setBidirectionalMaxStreams(bidiMaxStreams + 1);
-
-        Thread.sleep(1000);
-
-        // Establish a second connection, it should be resumed (zero-RTT with no early data).
-        AtomicReference<TransportParameters> serverTransportParametersRef = new AtomicReference<>();
-        Session secondSession = Promise.Completable.<Session>with(p ->
-            client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), BufferUtil.EMPTY_BUFFER, new Session.Listener()
+        List<Message> incomingTLSMessages = new ArrayList<>();
+        Promise.Completable.<Session>with(p ->
+            client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), null, new Session.Listener()
             {
                 @Override
-                public void onTransportParameters(Session session, TransportParameters parameters)
+                public void onPrepare(Session session, TransportParameters transportParameters)
                 {
-                    serverTransportParametersRef.set(parameters);
+                    ((QuicSession)session).getTLSEngine().addMessageListener(new TLSEngine.MessageListener()
+                    {
+                        @Override
+                        public void onIncomingMessage(EncryptionLevel encryptionLevel, Message message)
+                        {
+                            incomingTLSMessages.add(message);
+                        }
+                    });
                 }
             }, p)
         ).get(5, TimeUnit.SECONDS);
 
-        // TODO: the test is broken because the server always sends the updated transport parameters.
-        //  It uses the initial transport parameters stored in the session ticket only for the early data (e.g. bi_stream_max_data)
+        // Full TLS handshake, must have received the certificate.
+        assertTrue(incomingTLSMessages.stream().anyMatch(m -> m instanceof CertificateMessage));
+        incomingTLSMessages.clear();
 
-        TransportParameters serverTransportParameters = serverTransportParametersRef.get();
-        assertThat(serverTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL), equalTo(bidiMaxStreams));
+        // Make sure there is a zero-rtt entry to resume the second connection.
+        await().atMost(5, TimeUnit.SECONDS).until(client.getZeroRTTStore()::size, equalTo(1));
+
+        // Establish a second connection, it should be resumed (zero-RTT with no early data).
+        Promise.Completable.<Session>with(p ->
+            client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), BufferUtil.EMPTY_BUFFER, new Session.Listener()
+            {
+                @Override
+                public void onPrepare(Session session, TransportParameters transportParameters)
+                {
+                    ((QuicSession)session).getTLSEngine().addMessageListener(new TLSEngine.MessageListener()
+                    {
+                        @Override
+                        public void onIncomingMessage(EncryptionLevel encryptionLevel, Message message)
+                        {
+                            incomingTLSMessages.add(message);
+                        }
+                    });
+                }
+            }, p)
+        ).get(5, TimeUnit.SECONDS);
+
+        assertTrue(incomingTLSMessages.stream().noneMatch(m -> m instanceof CertificateMessage));
     }
 }
