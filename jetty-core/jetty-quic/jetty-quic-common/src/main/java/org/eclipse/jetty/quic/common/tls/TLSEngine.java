@@ -38,9 +38,9 @@ import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.common.HKDF;
 import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
-import org.eclipse.jetty.tls.common.parser.MessageParser;
 import org.eclipse.jetty.tls.common.parser.MessagesParser;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,11 +48,11 @@ import org.slf4j.LoggerFactory;
 /// Implements the TLS machinery for QUIC, as per
 /// [RFC 8446](https://datatracker.ietf.org/doc/html/rfc8446) and
 /// [RFC 9001](https://datatracker.ietf.org/doc/html/rfc9001).
-public abstract class TLSEngine implements MessageParser.Listener
+public abstract class TLSEngine
 {
     private static final Logger LOG = LoggerFactory.getLogger(TLSEngine.class);
 
-    private final List<MessageListener> messageListeners = new ArrayList<>();
+    private final MessageNotifier messageNotifier = new MessageNotifier();
     private final List<HandshakeListener> handshakeListeners = new ArrayList<>();
     private final SecureRandom random = new SecureRandom();
     private final PacketProtector protector;
@@ -88,22 +88,17 @@ public abstract class TLSEngine implements MessageParser.Listener
 
     public void addMessageListener(MessageListener listener)
     {
-        messageListeners.add(listener);
+        messageNotifier.listeners.add(listener);
     }
 
-    protected void notifyMessages(EncryptionLevel encryptionLevel, List<Message> messages, Callback callback)
+    protected void notifyOutgoingMessages(EncryptionLevel encryptionLevel, List<Message> messages, Callback callback)
     {
-        for (MessageListener listener : messageListeners)
-        {
-            try
-            {
-                listener.onMessages(encryptionLevel, messages, callback);
-            }
-            catch (Throwable x)
-            {
-                LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
-            }
-        }
+        messageNotifier.notifyOutgoing(encryptionLevel, messages, callback);
+    }
+
+    public void onMessage(EncryptionLevel encryptionLevel, Message message)
+    {
+        messageNotifier.notifyIncoming(encryptionLevel, message);
     }
 
     public void addHandshakeListener(HandshakeListener listener)
@@ -273,13 +268,85 @@ public abstract class TLSEngine implements MessageParser.Listener
         return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
     }
 
+    /// Listener for incoming and outgoing TLS messages.
     public interface MessageListener
     {
-        void onMessages(EncryptionLevel encryptionLevel, List<Message> messages, Callback callback);
+        /// Invoked when the [TLSEngine] receives a TLS [Message].
+        ///
+        /// @param encryptionLevel the encryption level
+        /// @param message the TLS message
+        default void onIncomingMessage(EncryptionLevel encryptionLevel, Message message)
+        {
+        }
+
+        /// Invoked when the [TLSEngine] emits a TLS [Message].
+        ///
+        /// Listeners are called sequentially when the previous listener succeeded the callback.
+        /// If a listener fails the callback or throws an exception, the remaining listeners are not called.
+        ///
+        /// @param encryptionLevel the encryption level
+        /// @param messages the TLS messages
+        /// @param callback the [Callback] to notify when the messages have been processed
+        default void onOutgoingMessages(EncryptionLevel encryptionLevel, List<Message> messages, Callback callback)
+        {
+            callback.succeeded();
+        }
     }
 
     public interface HandshakeListener
     {
         void handshakeCompleted(HandshakeData data, Throwable failure);
+    }
+
+    private static class MessageNotifier extends IteratingCallback
+    {
+        private final List<MessageListener> listeners = new ArrayList<>();
+        private EncryptionLevel encryptionLevel;
+        private List<Message> messages;
+        private Callback callback;
+        private int index;
+
+        public void notifyIncoming(EncryptionLevel encryptionLevel, Message message)
+        {
+            for (MessageListener listener : listeners)
+            {
+                listener.onIncomingMessage(encryptionLevel, message);
+            }
+        }
+
+        public void notifyOutgoing(EncryptionLevel encryptionLevel, List<Message> messages, Callback callback)
+        {
+            if (reset())
+            {
+                this.encryptionLevel = encryptionLevel;
+                this.messages = messages;
+                this.callback = callback;
+                this.index = 0;
+                iterate();
+            }
+            else
+            {
+                callback.failed(new IllegalStateException());
+            }
+        }
+
+        @Override
+        protected Action process()
+        {
+            if (index == listeners.size())
+                return Action.SUCCEEDED;
+            MessageListener listener = listeners.get(index++);
+            listener.onOutgoingMessages(encryptionLevel, messages, this);
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        protected void onCompleted(Throwable causeOrNull)
+        {
+            if (causeOrNull == null)
+                callback.succeeded();
+            else
+                callback.failed(causeOrNull);
+        }
     }
 }

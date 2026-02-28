@@ -179,7 +179,7 @@ public class ClientTLSEngine extends TLSEngine
             packetProtector.generateInitialKeys(configuration.getQuicVersion(), inputKeyMaterial);
 
             // Notifies back the QuicSession to send this message in a CRYPTO frame.
-            notifyMessages(EncryptionLevel.INITIAL, List.of(clientHello), Callback.from(callback, this::fail));
+            notifyOutgoingMessages(EncryptionLevel.INITIAL, List.of(clientHello), Callback.from(callback, this::fail));
         }
         catch (Throwable x)
         {
@@ -203,7 +203,7 @@ public class ClientTLSEngine extends TLSEngine
             // must be discarded from the TranscriptHash.
             getPacketProtector().getTranscriptHash().clear();
             getPacketProtector().getTranscriptHash().offer(clientHello, false);
-            notifyMessages(EncryptionLevel.INITIAL, List.of(clientHello), Callback.from(Callback.NOOP, this::fail));
+            notifyOutgoingMessages(EncryptionLevel.INITIAL, List.of(clientHello), Callback.from(Callback.NOOP, this::fail));
         }
         catch (Throwable x)
         {
@@ -211,11 +211,15 @@ public class ClientTLSEngine extends TLSEngine
         }
     }
 
+    /// Entry point to receive and process TLS messages.
+    ///
+    /// @param message the TLS message to process
     @Override
-    public void onMessageParsed(Message message)
+    public void onMessage(EncryptionLevel encryptionLevel, Message message)
     {
         try
         {
+            super.onMessage(encryptionLevel, message);
             switch (message)
             {
                 case ServerHelloMessage serverHello -> processServerHello(serverHello);
@@ -464,7 +468,7 @@ public class ClientTLSEngine extends TLSEngine
         // RFC-9001[4.1.1]: handshake is complete when the Finished message
         // is sent, and the peer's Finished message has been verified.
         Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, this::handshakeSuccessful, this::handshakeFailed);
-        notifyMessages(EncryptionLevel.HANDSHAKE, List.of(message), callback);
+        notifyOutgoingMessages(EncryptionLevel.HANDSHAKE, List.of(message), callback);
     }
 
     private void handshakeSuccessful()

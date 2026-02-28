@@ -131,7 +131,7 @@ public interface Session
     /// @see Session
     interface Listener
     {
-        /// Callback method invoked to customize the QUIC transport parameters.
+        /// Callback method invoked to customize the local QUIC transport parameters.
         ///
         /// This event may not be emitted for all QUIC implementations.
         ///
@@ -140,7 +140,7 @@ public interface Session
         {
         }
 
-        /// Callback method invoked when the QUIC transport parameters are received.
+        /// Callback method invoked when the remote QUIC transport parameters are received.
         ///
         /// This event may not be emitted for all QUIC implementations.
         ///

@@ -128,10 +128,11 @@ public class ServerTLSEngine extends TLSEngine
     }
 
     @Override
-    public void onMessageParsed(Message message)
+    public void onMessage(EncryptionLevel encryptionLevel, Message message)
     {
         try
         {
+            super.onMessage(encryptionLevel, message);
             switch (message)
             {
                 case ClientHelloMessage chm -> processClientHello(chm);
@@ -414,8 +415,8 @@ public class ServerTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("handshake completed on {}", this);
 
-        notifyMessages(EncryptionLevel.INITIAL, List.of(serverHello), Callback.from(Invocable.InvocationType.NON_BLOCKING,
-            () -> notifyMessages(EncryptionLevel.HANDSHAKE, handshakeMessages, Callback.from(Callback.NOOP, this::fail)),
+        notifyOutgoingMessages(EncryptionLevel.INITIAL, List.of(serverHello), Callback.from(Invocable.InvocationType.NON_BLOCKING,
+            () -> notifyOutgoingMessages(EncryptionLevel.HANDSHAKE, handshakeMessages, Callback.from(Callback.NOOP, this::fail)),
             this::fail
         ));
     }
@@ -558,7 +559,7 @@ public class ServerTLSEngine extends TLSEngine
         {
             List<Extension> extensions = List.of(new EarlyDataExtension(serverQuicConfiguration.getEarlyMaxData()));
             NewSessionTicketMessage newSessionTicket = new NewSessionTicketMessage(lifetime, ageAdd, configuration.nonce(), ticket, extensions);
-            notifyMessages(EncryptionLevel.ONE_RTT, List.of(newSessionTicket), Callback.from(Callback.NOOP, this::fail));
+            notifyOutgoingMessages(EncryptionLevel.ONE_RTT, List.of(newSessionTicket), Callback.from(Callback.NOOP, this::fail));
         }
     }
 

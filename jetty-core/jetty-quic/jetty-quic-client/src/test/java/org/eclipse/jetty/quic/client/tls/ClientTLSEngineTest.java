@@ -25,8 +25,10 @@ import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.DefaultZeroRTTStore;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
+import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.tls.ClientHelloMessage;
 import org.eclipse.jetty.tls.Message;
@@ -69,10 +71,14 @@ public class ClientTLSEngineTest
         engine = new ClientTLSEngine(packetProtector);
 
         outMessages = new ArrayList<>();
-        engine.addMessageListener((_, msgs, callback) ->
+        engine.addMessageListener(new TLSEngine.MessageListener()
         {
-            outMessages.addAll(msgs);
-            callback.succeeded();
+            @Override
+            public void onOutgoingMessages(EncryptionLevel encryptionLevel, List<Message> messages, Callback callback)
+            {
+                outMessages.addAll(messages);
+                callback.succeeded();
+            }
         });
 
         engine.addHandshakeListener((_, failure) -> handshake.set(failure == null ? success : failure));
