@@ -136,4 +136,20 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     {
         factory.setInitializeConnections(initialize);
     }
+
+    /**
+     * @return the transfer-encoding content chunk max length
+     */
+    public int getTransferEncodingChunkMaxLength()
+    {
+        return factory.getTransferEncodingChunkMaxLength();
+    }
+
+    /**
+     * @param chunkMaxLength the transfer-encoding content chunk max length
+     */
+    public void setTransferEncodingChunkMaxLength(int chunkMaxLength)
+    {
+        factory.setTransferEncodingChunkMaxLength(chunkMaxLength);
+    }
 }

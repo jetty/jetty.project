@@ -4,10 +4,11 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.7-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-http-spi</artifactId>
   <name>Core :: HTTP SPI</name>
+  <description>Jetty OpenJDK HTTP SPI Artifact</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.http.spi</bundle-symbolic-name>
     <jacoco.skip>true</jacoco.skip>

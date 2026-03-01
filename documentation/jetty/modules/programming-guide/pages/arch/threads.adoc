@@ -397,12 +397,20 @@ Defaulting the number of reserved threads to zero ensures that the <<execution-s
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ArchitectureDocs.java[tags=virtualVirtual]
 ----
 
-Despite the name, `VirtualThreadPool` does not pool virtual threads, but allows you to impose a limit on the maximum number of current virtual threads, using a `Semaphore`.
+Despite the name, `VirtualThreadPool` does not pool virtual threads, but allows you to impose a limit on the maximum number of concurrent tasks run by virtual threads, using a `Semaphore`.
 
-Limiting the number of current virtual threads helps to limit resource usage in applications, especially in case of load spikes.
-When an unlimited number of virtual threads is allowed, the server might be brought down due to resource (typically memory) exhaustion.
+Limiting the number of concurrent tasks run by virtual threads helps to limit resource usage in applications, especially in the case of load spikes.
+When an unlimited number of tasks run by virtual threads is allowed, the server might be brought down due to resource (typically memory) exhaustion.
 
-Furthermore, you can configure it to track virtual threads so that a xref:troubleshooting/component-dump.adoc[Jetty component dump] will show all virtual threads currently in use, including those that are unmounted.
+Furthermore, you can configure `VirtualThreadPool` to track virtual threads so that a xref:troubleshooting/component-dump.adoc[Jetty component dump] will show all virtual threads currently in use, including those that are unmounted.
+
+[NOTE]
+====
+`VirtualThreadPool` does not queue the tasks submitted to it but rather spawns a virtual thread to run the task.
+When the virtual thread runs, it attempts to acquire a permit from the `Semaphore`, and only if it succeeds to acquire the permit then the task is run.
+
+This means that there may be more virtual threads than permits, but it is guaranteed that the number of concurrent tasks run by virtual threads is limited by the `Semaphore`.
+====
 
 [[thread-pool-virtual-threads-pinning]]
 ==== Virtual Threads Pinning

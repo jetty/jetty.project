@@ -4,11 +4,11 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.7-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-jmx</artifactId>
   <name>Core :: JMX</name>
-  <description>JMX management artifact for jetty.</description>
+  <description>Jetty JMX Artifact</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jmx</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.jmx.*</spotbugs.onlyAnalyze>

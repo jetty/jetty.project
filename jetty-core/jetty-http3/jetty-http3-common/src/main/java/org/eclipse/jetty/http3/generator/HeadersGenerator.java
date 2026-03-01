@@ -39,23 +39,22 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public long generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(RetainableByteBuffer.Mutable accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
         return generateHeadersFrame(accumulator, streamId, headersFrame, fail);
     }
 
-    private long generateHeadersFrame(ByteBufferPool.Accumulator accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
+    private long generateHeadersFrame(RetainableByteBuffer.Mutable accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
     {
-        RetainableByteBuffer buffer;
         // Reserve initial bytes for the frame header bytes.
         int frameTypeLength = VarLenInt.length(FrameType.HEADERS.type());
         int maxHeaderLength = frameTypeLength + VarLenInt.MAX_LENGTH;
         // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
         int maxLength = encoder.getMaxHeadersSize();
-        // Acquire buffer and immediately append to the accumulator so that it is released if a failure occurs.
-        buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
-        accumulator.append(buffer);
+        // Acquire buffer and immediately add to the accumulator so that it is released if a failure occurs.
+        RetainableByteBuffer buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
+        accumulator.add(buffer);
         try
         {
             ByteBuffer byteBuffer = buffer.getByteBuffer();

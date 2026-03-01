@@ -5,10 +5,11 @@
   <parent>
     <groupId>org.eclipse.jetty.http2</groupId>
     <artifactId>jetty-http2</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.7-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-http2-tests</artifactId>
   <name>Core :: HTTP2 :: Tests</name>
+  <description>Jetty HTTP/2 Tests Artifact</description>
 
   <properties>
     <h2spec.skip>${skipTests}</h2spec.skip>

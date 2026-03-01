@@ -154,6 +154,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     {
         this.connectionPool = newConnectionPool(client);
         addBean(connectionPool, true);
+        this.activeNanoTime = NanoTime.now();
         super.doStart();
         Sweeper connectionPoolSweeper = client.getBean(Sweeper.class);
         if (connectionPoolSweeper != null && connectionPool instanceof Sweeper.Sweepable)
@@ -303,15 +304,15 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     public void send(HttpExchange exchange)
     {
         HttpRequest request = exchange.getRequest();
-        if (client.isRunning())
+        if (isRunning())
         {
             if (enqueue(exchanges, exchange))
             {
                 request.sent();
                 requestTimeouts.schedule(exchange);
-                if (!client.isRunning() && exchanges.remove(exchange))
+                if (!isRunning() && exchanges.remove(exchange))
                 {
-                    request.abort(new RejectedExecutionException(client + " is stopping"));
+                    request.abort(new RejectedExecutionException(this + " is stopping"));
                 }
                 else
                 {
@@ -331,7 +332,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         }
         else
         {
-            request.abort(new RejectedExecutionException(client + " is stopped"));
+            request.abort(new RejectedExecutionException(this + " is stopped"));
         }
     }
 

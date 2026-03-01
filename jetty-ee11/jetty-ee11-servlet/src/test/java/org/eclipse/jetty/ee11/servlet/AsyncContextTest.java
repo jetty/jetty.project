@@ -31,7 +31,7 @@ import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -752,7 +752,7 @@ public class AsyncContextTest
                         AsyncContext asyncContext = request.startAsync();
                         try
                         {
-                            ((ServletApiResponse)response).getServletChannel().abort(new BadMessageException(488));
+                            ((ServletApiResponse)response).getServletChannel().abort(new HttpException.IllegalStateException(488));
                         }
                         finally
                         {

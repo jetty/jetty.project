@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-= I/O Architecture
+= Client I/O Architecture
 
 The Jetty client libraries provide the basic components and APIs to implement a client application.
 

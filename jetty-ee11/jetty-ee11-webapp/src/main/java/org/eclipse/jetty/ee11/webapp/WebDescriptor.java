@@ -41,6 +41,10 @@ public class WebDescriptor extends Descriptor
         """;
     private static final Logger LOG = LoggerFactory.getLogger(WebDescriptor.class);
 
+    /**
+     * @deprecated no direct replacement, use of {@link MetaData#getXmlParser()} is encouraged.
+     */
+    @Deprecated(since = "12.1.6", forRemoval = true)
     public static XmlParser __nonValidatingStaticParser = newParser(false);
     protected Boolean _metaDataComplete;
     protected int _majorVersion = 4; //default to container version
@@ -68,13 +72,12 @@ public class WebDescriptor extends Descriptor
      *
      * @param validating true if the parser should validate syntax, false otherwise
      * @return an XmlParser for web descriptors
+     * @deprecated use {@link MetaData#getXmlParser()} to control parser behavior.
      */
+    @Deprecated(since = "12.1.6", forRemoval = true)
     public static XmlParser getParser(boolean validating)
     {
-        if (!validating)
-            return __nonValidatingStaticParser;
-        else
-            return newParser(true);
+        return newParser(validating);
     }
 
     /**
@@ -82,29 +85,29 @@ public class WebDescriptor extends Descriptor
      *
      * @param validating if true, the parser will validate syntax
      * @return an XmlParser
+     * @deprecated use {@link MetaData#getXmlParser()} to control parser behavior.
      */
+    @Deprecated(since = "12.1.6", forRemoval = true)
     public static XmlParser newParser(boolean validating)
     {
+        XmlParser xmlParser = new XmlParser(validating);
+        addDescriptorCatalog(xmlParser);
+        return xmlParser;
+    }
+
+    protected static void addDescriptorCatalog(XmlParser xmlParser) throws IllegalStateException
+    {
+        String catalogName = "catalog-%s.xml".formatted(ServletContextHandler.ENVIRONMENT.getName());
+        URL url = WebDescriptor.class.getResource(catalogName);
+        if (url == null)
+            throw new IllegalStateException("Catalog not found: %s/%s".formatted(WebDescriptor.class.getPackageName(), catalogName));
         try
         {
-            return new WebDescriptorParser(validating);
+            xmlParser.addCatalog(URI.create(url.toExternalForm()), Servlet.class);
         }
         catch (IOException e)
         {
-            throw new IllegalStateException("Unable to instantiate WebDescriptorParser", e);
-        }
-    }
-
-    private static class WebDescriptorParser extends XmlParser
-    {
-        public WebDescriptorParser(boolean validating) throws IOException
-        {
-            super(validating);
-            String catalogName = "catalog-%s.xml".formatted(ServletContextHandler.ENVIRONMENT.getName());
-            URL url = WebDescriptor.class.getResource(catalogName);
-            if (url == null)
-                throw new IllegalStateException("Catalog not found: %s/%s".formatted(WebDescriptor.class.getPackageName(), catalogName));
-            addCatalog(URI.create(url.toExternalForm()), Servlet.class);
+            throw new IllegalStateException("Unable to add catalog: " + url, e);
         }
     }
 

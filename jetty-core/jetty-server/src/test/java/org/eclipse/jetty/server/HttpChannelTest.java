@@ -14,7 +14,9 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +43,7 @@ import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -76,13 +79,13 @@ public class HttpChannelTest
     Server _server;
 
     @BeforeEach
-    public void beforeEach() throws Exception
+    public void beforeEach()
     {
         _server = new Server();
     }
 
     @AfterEach
-    public void afterEach() throws Exception
+    public void afterEach()
     {
         LifeCycle.stop(_server);
     }
@@ -390,8 +393,6 @@ public class HttpChannelTest
 
         assertTrue(stream.waitForComplete(5, TimeUnit.SECONDS));
         assertThat(stream.isComplete(), is(true));
-        if (stream.getFailure() != null)
-            stream.getFailure().printStackTrace();
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
@@ -458,7 +459,7 @@ public class HttpChannelTest
         }
 
         assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), notNullValue());
+        assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(500));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), containsString("text/html"));
@@ -577,6 +578,7 @@ public class HttpChannelTest
     @Test
     public void testInsufficientContentWritten1() throws Exception
     {
+        AtomicReference<Throwable> writeFailureRef = new AtomicReference<>();
         Handler handler = new Handler.Abstract.NonBlocking()
         {
             @Override
@@ -586,7 +588,7 @@ public class HttpChannelTest
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 try (StacklessLogging ignore = new StacklessLogging(Response.class))
                 {
-                    response.write(true, BufferUtil.toBuffer("12345"), callback);
+                    response.write(true, BufferUtil.toBuffer("12345"), Callback.from(callback, writeFailureRef::set));
                 }
                 return true;
             }
@@ -600,19 +602,76 @@ public class HttpChannelTest
         String rawRequest = """
             GET / HTTP/1.1
             Host: local
-            Connection: close
             
             """;
 
         HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponse(rawRequest));
         assertEquals(500, response.getStatus());
+        assertFalse(response.contains(HttpHeader.CONNECTION, "close"));
         assertThat(response.getContent(), containsString("5 &lt; 10"));
 
+        Throwable x = writeFailureRef.get();
+        assertThat(x, notNullValue());
+
         HttpStreamCaptureFailure capture = HttpStreamCaptureFailure.captureRef.get();
-        assertTrue(capture.failLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(capture.failLatch.await(1, TimeUnit.SECONDS));
         Throwable failure = capture.failRef.get();
-        assertThat(failure, notNullValue());
-        assertThat(failure.getMessage(), containsString("5 < 10"));
+        assertThat(failure, nullValue());
+    }
+
+    @Test
+    public void testInsufficientContentWritten1Committed() throws Exception
+    {
+        AtomicReference<Throwable> writeFailureRef = new AtomicReference<>();
+        Handler handler = new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                request.addHttpStreamWrapper(HttpStreamCaptureFailure::asWrapper);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
+
+                try (Blocker.Callback cb = Blocker.callback())
+                {
+                    response.write(false, BufferUtil.toBuffer("0"), cb);
+                    cb.block();
+                }
+
+                try (StacklessLogging ignore = new StacklessLogging(Response.class))
+                {
+                    response.write(true, BufferUtil.toBuffer("12345"), Callback.from(callback, writeFailureRef::set));
+                }
+                return true;
+            }
+        };
+        _server.setHandler(handler);
+
+        ServerConnector serverConnector = new ServerConnector(_server);
+        _server.addConnector(serverConnector);
+        _server.start();
+
+        String rawRequest = """
+            GET / HTTP/1.1
+            Host: local
+            
+            """;
+
+        try (Socket socket = new Socket("localhost", serverConnector.getLocalPort()))
+        {
+            socket.getOutputStream().write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            socket.getOutputStream().flush();
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket.getInputStream()));
+            assertThat(response, nullValue());
+
+            Throwable x = writeFailureRef.get();
+            assertThat(x, notNullValue());
+
+            HttpStreamCaptureFailure capture = HttpStreamCaptureFailure.captureRef.get();
+            assertTrue(capture.failLatch.await(5, TimeUnit.SECONDS));
+            Throwable failure = capture.failRef.get();
+            assertThat(failure, notNullValue());
+        }
     }
 
     @Test
@@ -678,8 +737,9 @@ public class HttpChannelTest
         }
 
         assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), notNullValue());
-        assertThat(stream.getFailure().getMessage(), containsString("10 > 5"));
+        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), is(500));
         assertThat(stream.getResponseContentAsString(), containsString("10 &gt; 5"));
@@ -714,7 +774,6 @@ public class HttpChannelTest
         String rawRequest = """
             GET / HTTP/1.1
             Host: local
-            Connection: close
             
             """;
 
@@ -760,7 +819,7 @@ public class HttpChannelTest
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
 
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), nullValue());
+        assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
         assertThat(stream.read(), sameInstance(Content.Chunk.EOF));
     }
 
@@ -790,19 +849,19 @@ public class HttpChannelTest
             .add(HttpHeader.HOST, "localhost")
             .put(HttpHeader.CONTENT_LENGTH, 10)
             .asImmutable();
-        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 10);
 
         Runnable task = channel.onRequest(request);
         task.run();
 
         assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getFailure(), notNullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
 
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), nullValue());
+        assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
         assertThat(stream.read(), nullValue());
     }
 
@@ -833,19 +892,19 @@ public class HttpChannelTest
             .add(HttpHeader.HOST, "localhost")
             .put(HttpHeader.CONTENT_LENGTH, 10)
             .asImmutable();
-        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 10);
 
         Runnable task = channel.onRequest(request);
         task.run();
 
         assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getFailure(), notNullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
 
-        assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), equalTo(HttpHeaderValue.CLOSE.asString()));
+        assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(true));
         assertThat(stream.read(), nullValue());
     }
 
@@ -893,6 +952,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), nullValue());
         assertThat(stream.getResponseHeaders().getLongField(HttpHeader.CONTENT_LENGTH), equalTo(0L));
+        assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(""));
     }
 
@@ -1006,6 +1066,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
 
         Iterator<String> timeline = history.iterator();
@@ -1082,6 +1143,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
 
         HttpFields trailersRcv = stream.getResponseTrailers();
@@ -1165,6 +1227,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
+        assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("contentSize=" + (chunks * data.remaining())));
     }
 
@@ -1383,7 +1446,7 @@ public class HttpChannelTest
         assertFalse(stream.isDemanding());
     }
 
-    enum CompletionTestEvent
+    public enum CompletionTestEvent
     {
         PROCESSED,
         WRITE,
@@ -1534,15 +1597,17 @@ public class HttpChannelTest
         boolean failed = events.contains(CompletionTestEvent.FAIL);
 
         assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), failed ? notNullValue() : nullValue());
         if (!failed || expectErrorResponse)
         {
+            assertThat(stream.getFailure(), nullValue());
             assertThat(stream.getResponse(), notNullValue());
             assertThat(stream.getResponse().getStatus(), equalTo(failed ? 500 : 200));
             assertThat(stream.getResponseHeaders().get("Test"), failed ? nullValue() : equalTo("Value"));
+            assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
         }
         else
         {
+            assertThat(stream.getFailure(), notNullValue());
             assertThat(stream.getResponse(), nullValue());
         }
     }

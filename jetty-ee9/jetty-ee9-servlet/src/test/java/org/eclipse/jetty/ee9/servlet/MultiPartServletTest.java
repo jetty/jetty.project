@@ -514,7 +514,7 @@ public class MultiPartServletTest
             .body(form)
             .send();
 
-        assertEquals(200, response.getStatus());
+        assertEquals(200, response.getStatus(), response.getContentAsString());
         assertThat(response.getContentAsString(), containsString("Part: name=quote, size=76, content=IkJvb2tzIGFyZSB0aGUgbGliZXJhdGVkIHNwaXJpdHMgb2YgbWVuLiIgLS0gTWFyayBUd2Fpbg=="));
     }
 

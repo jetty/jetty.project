@@ -17,7 +17,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -146,7 +147,7 @@ public class CompactPathRule extends Rule
         }
         catch (IllegalArgumentException e)
         {
-            throw new BadMessageException("Bad Path");
+            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad Path");
         }
     }
 

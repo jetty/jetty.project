@@ -104,21 +104,6 @@ public class InstructionFlusher extends IteratingCallback
     }
 
     @Override
-    protected void onSuccess()
-    {
-        accumulator.clear();
-    }
-
-    @Override
-    protected void onCompleteSuccess()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("succeeded to write buffers on {}", this);
-
-        accumulator.release();
-    }
-
-    @Override
     protected void onFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())

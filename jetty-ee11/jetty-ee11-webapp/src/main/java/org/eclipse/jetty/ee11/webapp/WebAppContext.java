@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee11.webapp;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -494,7 +493,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
             Boolean validate = (Boolean)getAttribute(MetaData.VALIDATE_XML);
-            _metadata.setValidateXml((validate != null && validate));
+            // Don't set validate unless it is declared.
+            if (validate != null)
+                _metadata.setValidateXml(validate);
             preConfigure();
             super.doStart();
             postConfigure();
@@ -581,7 +582,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      *
      * @return Returns the defaultsDescriptor.
      */
-    @ManagedAttribute(value = "default web.xml deascriptor applied before standard web.xml", readonly = true)
+    @ManagedAttribute(value = "default web.xml descriptor applied before standard web.xml", readonly = true)
     public String getDefaultsDescriptor()
     {
         return _defaultsDescriptor;
@@ -604,7 +605,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      *
      * @return Returns the Override Descriptor list
      */
-    @ManagedAttribute(value = "web.xml deascriptors applied after standard web.xml", readonly = true)
+    @ManagedAttribute(value = "web.xml descriptors applied after standard web.xml", readonly = true)
     public List<String> getOverrideDescriptors()
     {
         return Collections.unmodifiableList(_overrideDescriptors);
@@ -1286,8 +1287,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 _configurations.get(i).deconfigure(this);
             }
 
-            if (_metadata != null)
-                _metadata.clear();
+            _metadata.clear();
             _metadata = new MetaData();
         }
         finally

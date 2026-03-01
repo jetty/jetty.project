@@ -598,7 +598,9 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         if (inflatable && tryInflate || etagMatches)
         {
             // Wrap the request to update the fields and do any inflation
-            request = new GzipRequest(request, inflatable && tryInflate ? getInflateBufferSize() : -1);
+            GzipRequest gzipRequest = new GzipRequest(request, _inflaterPool, inflatable && tryInflate ? getInflateBufferSize() : -1);
+            request = gzipRequest;
+            callback = Callback.from(callback, gzipRequest::destroy);
         }
 
         if (tryDeflate && _vary != null)
@@ -619,9 +621,10 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         if (next.handle(request, response, callback))
             return true;
 
-        // If the request was not accepted, destroy any gzipRequest wrapper
+        // If the request was not handled, destroy GzipRequest.
         if (request instanceof GzipRequest gzipRequest)
             gzipRequest.destroy();
+
         return false;
     }
 

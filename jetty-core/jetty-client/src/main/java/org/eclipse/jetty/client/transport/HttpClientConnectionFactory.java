@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
+import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.TypeUtil;
@@ -29,6 +30,7 @@ public class HttpClientConnectionFactory implements ClientConnectionFactory
     public static final Info HTTP11 = new HTTP11();
 
     private boolean initializeConnections;
+    private int transferEncodingChunkMaxLength = HttpGenerator.DEFAULT_CHUNK_MAX_LENGTH;
 
     /**
      * @return whether newly created connections should be initialized with an {@code OPTIONS * HTTP/1.1} request
@@ -46,11 +48,30 @@ public class HttpClientConnectionFactory implements ClientConnectionFactory
         this.initializeConnections = initialize;
     }
 
+    /**
+     * @return the transfer-encoding content chunk max length
+     */
+    public int getTransferEncodingChunkMaxLength()
+    {
+        return transferEncodingChunkMaxLength;
+    }
+
+    /**
+     * @param chunkMaxLength the transfer-encoding content chunk max length
+     */
+    public void setTransferEncodingChunkMaxLength(int chunkMaxLength)
+    {
+        if (transferEncodingChunkMaxLength <= 0)
+            throw new IllegalArgumentException("invalid transfer-encoding chunk max length");
+        transferEncodingChunkMaxLength = chunkMaxLength;
+    }
+
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, context);
         connection.setInitialize(isInitializeConnections());
+        connection.setTransferEncodingChunkMaxLength(getTransferEncodingChunkMaxLength());
         return customize(connection, context);
     }
 

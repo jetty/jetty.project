@@ -4,10 +4,11 @@
   <parent>
     <groupId>org.eclipse.jetty.quic</groupId>
     <artifactId>jetty-quic</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.7-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-quic-server</artifactId>
   <name>Core :: QUIC :: Server</name>
+  <description>Jetty QUIC Server Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>

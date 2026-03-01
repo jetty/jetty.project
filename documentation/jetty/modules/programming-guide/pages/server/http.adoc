@@ -533,9 +533,21 @@ Alt-Svc: h3=":843"
 ----
 
 The presence of this header indicates that protocol `h3` is available on the same host (since no host is defined before the port), but on port `843` (although it may be the same port `443`).
+The `ma` (max-age) attribute specifies how long (in seconds) the client should cache this information.
 The HTTP/3 client may now initiate a QUIC connection on port `843` and make HTTP/3 requests.
 
 NOTE: It is nowadays common to use the same port `443` for both HTTP/2 and HTTP/3. This does not cause problems because HTTP/2 listens on the TCP port `443`, while QUIC listens on the UDP port `443`.
+
+NOTE: The `Alt-Svc` header is automatically added to HTTP/2 responses if an HTTP/3 connector is present, advertising the HTTP/3 connector's port.
+By default, only the port is advertised without additional attributes.
+The `ma` (max-age) attribute can be configured via `AltSvcCustomizer.setMaxAge(Duration)` and the `persist` attribute via `AltSvcCustomizer.setPersist(boolean)`.
+
+To configure the `AltSvcCustomizer`, retrieve it from the `HttpConfiguration` after creating the `HTTP2ServerConnectionFactory`:
+
+[,java,indent=0,options=nowrap]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=h2altsvc]
+----
 
 It is therefore common for HTTP/3 clients to initiate connections using the HTTP/2 protocol over TCP, and if the server supports HTTP/3 switch to HTTP/3 as indicated by the server.
 
@@ -1590,6 +1602,144 @@ For example, a `LoginHandler` that extends `ConditionalHandler` may be configure
 ==== SecurityHandler
 
 `SecurityHandler` allows to configure authentication and authorization for your web applications, and it is discussed in details in xref:security/index.adoc[this section].
+
+[[handler-use-connect]]
+==== ConnectHandler
+
+`ConnectHandler` provides support for the HTTP `CONNECT` method, and it is used in forward proxies, as detailed in <<handler-use-proxy-forward,this section>>.
+
+[[handler-use-proxy]]
+==== ProxyHandler
+
+`ProxyHandler` provides proxying capabilities for two use cases:
+
+* _Forward_ proxying, implemented by <<handler-use-proxy-forward,`ProxyHandler.Forward`>>.
+A forward proxy is chosen by clients (for example, it is configured in browsers or in `HttpClient`), and it is typically used intercept an organization's HTTP requests for sake of providing security or selective access to domains or resources.
+Some forward proxies apply transformations to HTTP messages or their content as they are forwarded (for example, rewriting of URIs in HTML documents).
+* _Reverse_ proxying, implemented by <<handler-use-proxy-reverse,`ProxyHandler.Reverse`>>.
+A reverse proxy, or _gateway_, is an intermediary that acts as an origin server.
+Clients cannot tell whether they are connecting to a reverse proxy or directly to the origin server: from the client point of view, the reverse proxy _is_ the origin server.
+Reverse proxies receive requests and forward them to another server, and are typically used for TLS offloading, caching, and load balancing.
+
+`ProxyHandler.Forward` and `ProxyHandler.Reverse` are typically subclassed to implement the custom logic that you want to apply in either case, and to configure the xref:client/http.adoc[`HttpClient`] instance, for example by specifying different `HttpClient` xref:client/http.adoc#transport[transports].
+
+The most common methods to override are the following (consult the link:{javadoc-url}/org/eclipse/jetty/proxy/ProxyHandler.html[javadocs] for the full list):
+
+* `newHttpClient()` to customize the `HttpClient` transport.
+* `configureHttpClient(\...)` to customize the `HttpClient` configuration.
+* `handle(\...)` to customize the proxy-to-server request and proxy-to-client response, for example to deny certain requests.
+* `newProxyToServerRequest(\...)` to customize the proxy-to-server request.
+* `newProxyToServerRequestContent(\...)` to customize the proxy-to-server request content.
+* `newServerToProxyResponseListener(\...)` to customize the server-to-proxy response.
+
+You may want to override `newHttpClient()` to customize the `HttpClient` transport, which is by default only HTTP/1.1, to also support HTTP/2, as shown below for `ProxyHandler.Forward` (but the same could be done for `ProxyHandler.Reverse`):
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=proxyNewHttpClient]
+----
+
+[[handler-use-proxy-forward]]
+===== ProxyHandler.Forward
+
+HTTP clients, such as browsers or `HttpClient`, interact with forward proxies in two ways:
+
+* When the request is plain-text, using the `http` scheme, the request is sent to the forward proxy with little modifications.
+The forward proxy typically just forwards the request to the origin server.
+* When the request is secure, using the `https` scheme, the client first sends an HTTP `CONNECT` request to the forward proxy to establish a tunnel to the origin server.
+Then the client sends the original request through the tunnel, and the forward proxy only acts as a pass-through for the encrypted bytes and cannot decrypt them.
+
+The Jetty component that manages HTTP `CONNECT` requests and establishes tunnels to origin server is `ConnectHandler`.
+
+A forward proxy that only supports plain-text requests has the following simple `Handler` tree structure:
+
+[,screen]
+----
+Server
+└── ProxyHandler.Forward
+----
+
+You can override `ProxyHandler.Forward.handle(\...)` to deny requests to certain URIs, or to certain domains:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=proxyForwardForbidden]
+----
+
+On the other hand, a forward proxy that supports both plain-text and secure requests has the following `Handler` tree structure:
+
+[,screen]
+----
+Server
+└── ConnectHandler
+    └── ProxyHandler.Forward
+----
+
+If your forward proxy only accepts secure requests (see also <<handler-use-secured,`SecuredRedirectHandler`>>), you can also configure it with just `ConnectHandler`:
+
+[,screen]
+----
+Server
+└── ConnectHandler
+----
+
+You can configure `ConnectHandler` with a white list of origin servers the forward proxy is allowed to connect to.
+Similarly, you can configure `ConnectHandler` with a black list of origin servers the forward proxy is forbidden to connect to.
+
+You may need to add authentication to the forward proxy.
+
+For simpler setups, authentication can be implemented by overriding `ConnectionHandler.handleAuthentication(\...)` for `CONNECT` requests, and by overriding `ProxyHandler.Forward.handle(\...)` for plain-text requests.
+
+Full-blown authentication support can be achieved using <<handler-use-security,`SecurityHandler`>>:
+
+[,screen]
+----
+Server
+└── SecurityHandler
+    └── ConnectHandler
+        └── ProxyHandler.Forward
+----
+
+Forward proxies are configured in `HttpClient` as described in xref:client/http.adoc#proxy[this section].
+
+[[handler-use-proxy-reverse]]
+===== ProxyHandler.Reverse
+
+Reverse proxy acts as origin servers (from the client point of view) and process incoming requests typically by forwarding them to a backend server, although they can also directly return cached responses.
+
+A simple reverse proxy server has the following `Handler` tree structure:
+
+[,screen]
+----
+Server
+└── ProxyHandler.Reverse
+----
+
+A reverse proxy that forwards requests to a backend server, for example, may be configured to accept requests at `+https://domain.com/path+` and forward them to the backend server at `+http://backend1/proxy/path+`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=proxyReverse]
+----
+
+You can implement a very simple stateless load balancer in this way:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=proxyReverseLoadBalancer]
+----
+
+[NOTE]
+====
+Reverse proxies do not typically need to be set up with a `ConnectHandler`.
+
+Clients typically only send HTTP `CONNECT` requests to forward proxies, not to reverse proxies.
+====
+
+Reverse proxies can be set up to communicate with the backend using a protocol different from the one used on the frontend.
+
+For example, it is possible to set up a reverse proxy that accepts on the frontend both HTTP/1.1 and HTTP/2 over network, both plain-text and secure, and communicates with the backend using FastCGI over Unix-Domain sockets.
+This allows you to use WordPress to serve your website through Jetty: see xref:operations-guide:protocols/index.adoc#fcgi[this section] for more information.
 
 [[handler-use-servlet]]
 === Servlet API Handlers

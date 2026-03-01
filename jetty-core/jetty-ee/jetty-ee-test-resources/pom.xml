@@ -4,10 +4,12 @@
   <parent>
     <groupId>org.eclipse.jetty.ee</groupId>
     <artifactId>jetty-ee</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.7-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-test-resources</artifactId>
-  <name>Core :: EE Common :: Test Resources</name>
+  <name>Core :: EE :: Test Resources</name>
+  <description>Jetty EE Test Resources Artifact</description>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

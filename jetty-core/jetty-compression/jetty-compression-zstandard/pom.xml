@@ -5,16 +5,16 @@
   <parent>
     <groupId>org.eclipse.jetty.compression</groupId>
     <artifactId>jetty-compression</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.7-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-compression-zstandard</artifactId>
   <packaging>jar</packaging>
   <name>Core :: Compression :: Zstandard Support</name>
-  <description>Jetty Core Compression :: Zstandard Support</description>
+  <description>Jetty Compression Zstandard Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.zstandard</bundle-symbolic-name>
-    <zstd-jni.version>1.5.7-6</zstd-jni.version>
+    <zstd-jni.version>1.5.7-7</zstd-jni.version>
   </properties>
 
   <dependencies>

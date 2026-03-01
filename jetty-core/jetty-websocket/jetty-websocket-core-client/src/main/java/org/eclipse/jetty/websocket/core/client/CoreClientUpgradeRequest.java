@@ -134,6 +134,26 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         request.version(httpVersion);
     }
 
+    /**
+     * @return the metadata this request has been tagged with
+     * @see Request#getTag()
+     */
+    public Object getTag()
+    {
+        return request.getTag();
+    }
+
+    /**
+     * <p>Tags this request with the given metadata tag.</p>
+
+     * @param tag the metadata to tag the request with
+     * @see Request#tag(Object)
+     */
+    public void tag(Object tag)
+    {
+        request.tag(tag);
+    }
+
     public void listener(Request.Listener listener)
     {
         request.onRequestListener(listener);

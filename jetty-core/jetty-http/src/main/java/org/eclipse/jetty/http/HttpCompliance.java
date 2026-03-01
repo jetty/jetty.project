@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -401,61 +400,13 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         return EnumSet.copyOf(violations);
     }
 
-    public static void checkHttpCompliance(MetaData.Request request, HttpCompliance mode,
-                             ComplianceViolation.Listener listener)
+    /**
+     * @deprecated use {@link ComplianceUtils#verify(HttpCompliance, MetaData.Request, ComplianceViolation.Listener)} instead.
+     */
+    @Deprecated(forRemoval = true, since = "12.1.6")
+    public static void checkHttpCompliance(MetaData.Request request, HttpCompliance httpCompliance,
+                                           ComplianceViolation.Listener listener)
     {
-        boolean seenContentLength = false;
-        boolean seenTransferEncoding = false;
-        boolean seenHostHeader = false;
-
-        HttpFields fields = request.getHttpFields();
-        for (HttpField httpField: fields)
-        {
-            if (httpField.getHeader() == null)
-                continue;
-
-            switch (httpField.getHeader())
-            {
-                case CONTENT_LENGTH ->
-                {
-                    if (seenContentLength)
-                        assertAllowed(Violation.MULTIPLE_CONTENT_LENGTHS, mode, listener);
-                    String[] lengths = httpField.getValues();
-                    if (lengths.length > 1)
-                        assertAllowed(Violation.MULTIPLE_CONTENT_LENGTHS, mode, listener);
-                    if (seenTransferEncoding)
-                        assertAllowed(Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, mode, listener);
-                    seenContentLength = true;
-                }
-                case TRANSFER_ENCODING ->
-                {
-                    if (seenContentLength)
-                        assertAllowed(Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH, mode, listener);
-                    seenTransferEncoding = true;
-                }
-                case HOST ->
-                {
-                    if (seenHostHeader)
-                        assertAllowed(Violation.DUPLICATE_HOST_HEADERS, mode, listener);
-                    String[] hostValues = httpField.getValues();
-                    if (hostValues.length > 1)
-                        assertAllowed(Violation.DUPLICATE_HOST_HEADERS, mode, listener);
-                    for (String hostValue: hostValues)
-                        if (StringUtil.isBlank(hostValue))
-                            assertAllowed(Violation.UNSAFE_HOST_HEADER, mode, listener);
-                    seenHostHeader = true;
-                }
-            }
-        }
-    }
-
-    private static void assertAllowed(Violation violation, HttpCompliance mode, ComplianceViolation.Listener listener)
-    {
-        if (mode.allows(violation))
-            listener.onComplianceViolation(new ComplianceViolation.Event(
-                mode, violation, violation.getDescription()
-            ));
-        else
-            throw new BadMessageException(violation.getDescription());
+        ComplianceUtils.verify(httpCompliance, request, listener);
     }
 }

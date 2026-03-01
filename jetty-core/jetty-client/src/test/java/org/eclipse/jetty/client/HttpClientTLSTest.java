@@ -19,7 +19,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -64,7 +63,6 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -72,7 +70,6 @@ import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
@@ -84,7 +81,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -374,142 +370,6 @@ public class HttpClientTLSTest
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
-    }
-
-    // Excluded in JDK 11+ because resumed sessions cannot be compared
-    // using their session IDs even though they are resumed correctly.
-    @EnabledForJreRange(max = JRE.JAVA_10)
-    @Test
-    public void testHandshakeSucceededWithSessionResumption() throws Exception
-    {
-        SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
-        startServer(serverTLSFactory, new EmptyServerHandler());
-
-        AtomicReference<byte[]> serverSession = new AtomicReference<>();
-        connector.addBean(new SslHandshakeListener()
-        {
-            @Override
-            public void handshakeSucceeded(Event event)
-            {
-                serverSession.set(event.getSSLEngine().getSession().getId());
-            }
-        });
-
-        SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
-        startClient(clientTLSFactory);
-
-        AtomicReference<byte[]> clientSession = new AtomicReference<>();
-        client.addBean(new SslHandshakeListener()
-        {
-            @Override
-            public void handshakeSucceeded(Event event)
-            {
-                clientSession.set(event.getSSLEngine().getSession().getId());
-            }
-        });
-
-        // First request primes the TLS session.
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-            .scheme(HttpScheme.HTTPS.asString())
-            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-
-        assertNotNull(serverSession.get());
-        assertNotNull(clientSession.get());
-
-        connector.removeBean(connector.getBean(SslHandshakeListener.class));
-        client.removeBean(client.getBean(SslHandshakeListener.class));
-
-        CountDownLatch serverLatch = new CountDownLatch(1);
-        connector.addBean(new SslHandshakeListener()
-        {
-            @Override
-            public void handshakeSucceeded(Event event)
-            {
-                if (Arrays.equals(serverSession.get(), event.getSSLEngine().getSession().getId()))
-                    serverLatch.countDown();
-            }
-        });
-
-        CountDownLatch clientLatch = new CountDownLatch(1);
-        client.addBean(new SslHandshakeListener()
-        {
-            @Override
-            public void handshakeSucceeded(Event event)
-            {
-                if (Arrays.equals(clientSession.get(), event.getSSLEngine().getSession().getId()))
-                    clientLatch.countDown();
-            }
-        });
-
-        // Second request should have the same session ID.
-        response = client.newRequest("localhost", connector.getLocalPort())
-            .scheme(HttpScheme.HTTPS.asString())
-            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-
-        assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
-        assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
-    }
-
-    // Excluded in JDK 11+ because resumed sessions cannot be compared
-    // using their session IDs even though they are resumed correctly.
-    @EnabledForJreRange(max = JRE.JAVA_10)
-    @Test
-    public void testClientRawCloseDoesNotInvalidateSession() throws Exception
-    {
-        SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
-        startServer(serverTLSFactory, new EmptyServerHandler());
-
-        SslContextFactory clientTLSFactory = createClientSslContextFactory();
-        clientTLSFactory.start();
-
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        Socket socket1 = new Socket(host, port);
-        SSLSocket sslSocket1 = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket1, host, port, true);
-        CountDownLatch handshakeLatch1 = new CountDownLatch(1);
-        AtomicReference<byte[]> session1 = new AtomicReference<>();
-        sslSocket1.addHandshakeCompletedListener(event ->
-        {
-            session1.set(event.getSession().getId());
-            handshakeLatch1.countDown();
-        });
-        sslSocket1.startHandshake();
-        assertTrue(handshakeLatch1.await(5, TimeUnit.SECONDS));
-
-        // In TLS 1.3 the server sends a NewSessionTicket post-handshake message
-        // to enable session resumption and without a read, the message is not processed.
-
-        assertThrows(SocketTimeoutException.class, () ->
-        {
-            sslSocket1.setSoTimeout(1000);
-            sslSocket1.getInputStream().read();
-        });
-
-        // The client closes abruptly.
-        socket1.close();
-
-        // Try again and compare the session ids.
-        Socket socket2 = new Socket(host, port);
-        SSLSocket sslSocket2 = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket2, host, port, true);
-        CountDownLatch handshakeLatch2 = new CountDownLatch(1);
-        AtomicReference<byte[]> session2 = new AtomicReference<>();
-        sslSocket2.addHandshakeCompletedListener(event ->
-        {
-            session2.set(event.getSession().getId());
-            handshakeLatch2.countDown();
-        });
-        sslSocket2.startHandshake();
-        assertTrue(handshakeLatch2.await(5, TimeUnit.SECONDS));
-
-        assertArrayEquals(session1.get(), session2.get());
-
-        sslSocket2.close();
     }
 
     @Test
@@ -1317,40 +1177,6 @@ public class HttpClientTLSTest
             .scheme(HttpScheme.HTTPS.asString())
             .send();
         assertEquals(HttpStatus.OK_200, response2.getStatus());
-    }
-
-    @Test
-    @EnabledForJreRange(max = JRE.JAVA_16, disabledReason = "Since Java 17, SNI host names can only have letter|digit|hyphen characters.")
-    public void testForcedNonDomainSNIWithIPv6() throws Exception
-    {
-        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
-
-        SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-        serverTLS.setKeyStorePath("src/test/resources/keystore_sni_non_domain.p12");
-        serverTLS.setKeyStorePassword("storepwd");
-        serverTLS.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
-        {
-            // We have forced the client to send the non-domain SNI.
-            assertNotNull(sniHost);
-            return serverTLS.sniSelect(keyType, issuers, session, sniHost, certificates);
-        });
-        startServer(serverTLS, new EmptyServerHandler());
-
-        SslContextFactory.Client clientTLS = new SslContextFactory.Client();
-        // Trust any certificate received by the server.
-        clientTLS.setTrustStorePath("src/test/resources/keystore_sni_non_domain.p12");
-        clientTLS.setTrustStorePassword("storepwd");
-        // Force TLS-level hostName verification, as we want to receive the correspondent certificate.
-        clientTLS.setEndpointIdentificationAlgorithm("HTTPS");
-        startClient(clientTLS);
-        clientTLS.setSNIProvider(SslContextFactory.Client.SniProvider.NON_DOMAIN_SNI_PROVIDER);
-
-        // Send a request with SNI "[::1]", we should get the certificate at alias=ip.
-        ContentResponse response3 = client.newRequest("[::1]", connector.getLocalPort())
-            .scheme(HttpScheme.HTTPS.asString())
-            .send();
-
-        assertEquals(HttpStatus.OK_200, response3.getStatus());
     }
 
     @Test

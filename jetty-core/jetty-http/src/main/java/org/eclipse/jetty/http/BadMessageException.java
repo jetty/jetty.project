@@ -15,9 +15,11 @@ package org.eclipse.jetty.http;
 
 /**
  * <p>Exception thrown to indicate a Bad HTTP Message has either been received
- * or attempted to be generated.  Typically these are handled with either 400
+ * or attempted to be generated.  Typically, these are handled with {@code 4xx} or {@code 5xx}
  * responses.</p>
+ * @deprecated use {@link HttpException}
  */
+@Deprecated(since = "12.1.6", forRemoval = true)
 public class BadMessageException extends HttpException.RuntimeException
 {
     public BadMessageException()

@@ -23,11 +23,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Request;
@@ -291,7 +292,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             HttpField settingsField = request.getHttpFields().getField(HttpHeader.HTTP2_SETTINGS);
             if (settingsField == null)
-                throw new BadMessageException("Missing " + HttpHeader.HTTP2_SETTINGS + " header");
+                throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, "Missing " + HttpHeader.HTTP2_SETTINGS + " header");
             String value = settingsField.getValue();
             final byte[] settings = Base64.getUrlDecoder().decode(value == null ? "" : value);
 
@@ -302,7 +303,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             if (settingsFrame == null)
             {
                 LOG.warn("Invalid {} header value: {}", HttpHeader.HTTP2_SETTINGS, value);
-                throw new BadMessageException();
+                throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400);
             }
 
             responseFields.put(HttpHeader.UPGRADE, "h2c");

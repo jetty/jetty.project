@@ -316,7 +316,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         {
             content[i] = (byte)digits.charAt(random.nextInt(digits.length()));
         }
-        start(scenario, new EmptyServerHandler()
+        startServer(scenario, new EmptyServerHandler()
         {
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
@@ -328,6 +328,8 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 gzip.finish();
             }
         });
+        // Set a tracking pool with the same values as the HttpClient's default ArrayByteBufferPool.
+        startClient(scenario, httpClient -> httpClient.setByteBufferPool(new ArrayByteBufferPool.Tracking(0, 2048, 65536, 100)));
 
         ByteBufferPool pool = client.getByteBufferPool();
         assumeTrue(pool instanceof ArrayByteBufferPool);

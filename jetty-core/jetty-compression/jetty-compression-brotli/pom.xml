@@ -5,12 +5,12 @@
   <parent>
     <groupId>org.eclipse.jetty.compression</groupId>
     <artifactId>jetty-compression</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.7-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-compression-brotli</artifactId>
   <packaging>jar</packaging>
   <name>Core :: Compression :: Brotli Support</name>
-  <description>Jetty Core Compression :: Brotli Support</description>
+  <description>Jetty Compression Brotli Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.brotli</bundle-symbolic-name>

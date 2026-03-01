@@ -6,13 +6,13 @@
   <parent>
     <groupId>org.eclipse.jetty.compression</groupId>
     <artifactId>jetty-compression</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.7-SNAPSHOT</version>
   </parent>
 
   <artifactId>jetty-compression-common</artifactId>
   <packaging>jar</packaging>
   <name>Core :: Compression :: Common</name>
-  <description>Jetty Core Compression Common</description>
+  <description>Jetty Compression Common Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>

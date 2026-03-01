@@ -42,7 +42,7 @@ public class HttpSenderOverHTTP extends HttpSender
     private final IteratingCallback contentCallback = new ContentCallback();
     private final HttpGenerator generator = new HttpGenerator();
     private MetaData.Request metaData;
-    private ByteBuffer contentByteBuffer;
+    private ByteBuffer content;
     private boolean lastContent;
     private Callback callback;
     private boolean shutdown;
@@ -58,12 +58,17 @@ public class HttpSenderOverHTTP extends HttpSender
         return (HttpChannelOverHTTP)super.getHttpChannel();
     }
 
+    public HttpGenerator getHttpGenerator()
+    {
+        return generator;
+    }
+
     @Override
     protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         try
         {
-            this.contentByteBuffer = contentBuffer;
+            this.content = contentBuffer;
             this.lastContent = lastContent;
             this.callback = callback;
             HttpRequest request = exchange.getRequest();
@@ -89,7 +94,7 @@ public class HttpSenderOverHTTP extends HttpSender
     {
         try
         {
-            this.contentByteBuffer = contentBuffer;
+            this.content = contentBuffer;
             this.lastContent = lastContent;
             this.callback = callback;
             if (LOG.isDebugEnabled())
@@ -159,16 +164,17 @@ public class HttpSenderOverHTTP extends HttpSender
             int requestHeadersSize = httpClient.getRequestBufferSize();
             int maxRequestHeadersSize = httpClient.getMaxRequestHeadersSize();
             boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
+            int chunkMaxLength = generator.getChunkMaxLength();
             while (true)
             {
                 ByteBuffer headerByteBuffer = headerBuffer == null ? null : headerBuffer.getByteBuffer();
                 ByteBuffer chunkByteBuffer = chunkBuffer == null ? null : chunkBuffer.getByteBuffer();
-                HttpGenerator.Result result = generator.generateRequest(metaData, headerByteBuffer, chunkByteBuffer, contentByteBuffer, lastContent);
+                HttpGenerator.Result result = generator.generateRequest(metaData, headerByteBuffer, chunkByteBuffer, content, lastContent);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Generated headers ({} bytes), chunk ({} bytes), content ({} bytes) - {}/{} for {}",
                         headerByteBuffer == null ? -1 : headerByteBuffer.remaining(),
                         chunkByteBuffer == null ? -1 : chunkByteBuffer.remaining(),
-                        contentByteBuffer == null ? -1 : contentByteBuffer.remaining(),
+                        content == null ? -1 : content.remaining(),
                         result, generator, exchange.getRequest());
                 switch (result)
                 {
@@ -213,8 +219,15 @@ public class HttpSenderOverHTTP extends HttpSender
                             headerByteBuffer = BufferUtil.EMPTY_BUFFER;
                         if (chunkByteBuffer == null)
                             chunkByteBuffer = BufferUtil.EMPTY_BUFFER;
+                        ByteBuffer contentByteBuffer = content;
                         if (contentByteBuffer == null)
                             contentByteBuffer = BufferUtil.EMPTY_BUFFER;
+                        if (generator.isChunking() && contentByteBuffer.remaining() > chunkMaxLength)
+                        {
+                            ByteBuffer slice = contentByteBuffer.slice(contentByteBuffer.position(), chunkMaxLength);
+                            contentByteBuffer.position(contentByteBuffer.position() + chunkMaxLength);
+                            contentByteBuffer = slice;
+                        }
                         long bytes = headerByteBuffer.remaining() + chunkByteBuffer.remaining() + contentByteBuffer.remaining();
                         getHttpChannel().getHttpConnection().addBytesOut(bytes);
                         endPoint.write(this, headerByteBuffer, chunkByteBuffer, contentByteBuffer);
@@ -253,7 +266,6 @@ public class HttpSenderOverHTTP extends HttpSender
         {
             headerBuffer = Retainable.release(headerBuffer);
             chunkBuffer = Retainable.release(chunkBuffer);
-            contentByteBuffer = null;
         }
 
         @Override
@@ -274,7 +286,6 @@ public class HttpSenderOverHTTP extends HttpSender
         {
             headerBuffer = Retainable.release(headerBuffer);
             chunkBuffer = Retainable.release(chunkBuffer);
-            contentByteBuffer = null;
         }
     }
 
@@ -293,13 +304,14 @@ public class HttpSenderOverHTTP extends HttpSender
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
+            int chunkMaxLength = generator.getChunkMaxLength();
             while (true)
             {
                 ByteBuffer chunkByteBuffer = chunkBuffer == null ? null : chunkBuffer.getByteBuffer();
-                HttpGenerator.Result result = generator.generateRequest(null, null, chunkByteBuffer, contentByteBuffer, lastContent);
+                HttpGenerator.Result result = generator.generateRequest(null, null, chunkByteBuffer, content, lastContent);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Generated content ({} bytes, last={}) - {}/{}",
-                        contentByteBuffer == null ? -1 : contentByteBuffer.remaining(),
+                        content == null ? -1 : content.remaining(),
                         lastContent, result, generator);
                 switch (result)
                 {
@@ -316,10 +328,20 @@ public class HttpSenderOverHTTP extends HttpSender
                     case FLUSH:
                     {
                         EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
-                        if (chunkByteBuffer != null)
-                            endPoint.write(this, chunkByteBuffer, contentByteBuffer);
-                        else
-                            endPoint.write(this, contentByteBuffer);
+                        if (chunkByteBuffer == null)
+                            chunkByteBuffer = BufferUtil.EMPTY_BUFFER;
+                        ByteBuffer contentByteBuffer = content;
+                        if (contentByteBuffer == null)
+                            contentByteBuffer = BufferUtil.EMPTY_BUFFER;
+                        if (generator.isChunking() && contentByteBuffer.remaining() > chunkMaxLength)
+                        {
+                            ByteBuffer slice = contentByteBuffer.slice(contentByteBuffer.position(), chunkMaxLength);
+                            contentByteBuffer.position(contentByteBuffer.position() + chunkMaxLength);
+                            contentByteBuffer = slice;
+                        }
+                        long bytes = chunkByteBuffer.remaining() + contentByteBuffer.remaining();
+                        getHttpChannel().getHttpConnection().addBytesOut(bytes);
+                        endPoint.write(this, chunkByteBuffer, contentByteBuffer);
                         return Action.SCHEDULED;
                     }
                     case SHUTDOWN_OUT:
@@ -359,10 +381,7 @@ public class HttpSenderOverHTTP extends HttpSender
 
         private void release()
         {
-            if (chunkBuffer != null)
-                chunkBuffer.release();
-            chunkBuffer = null;
-            contentByteBuffer = null;
+            chunkBuffer = Retainable.release(chunkBuffer);
         }
     }
 }

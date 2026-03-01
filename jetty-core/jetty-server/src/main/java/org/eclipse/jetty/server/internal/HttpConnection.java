@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
@@ -46,14 +46,12 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
-import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -144,7 +142,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         _requestHandler = newRequestHandler();
         _parser = newHttpParser(configuration.getHttpCompliance());
         _minBufferSpace = configuration.getMinInputBufferSpace() < 0 ? Math.min(1500, configuration.getInputBufferSize()) : configuration.getMinInputBufferSpace();
-        _headerBuilder = HttpFields.build(configuration.getHttpCompliance(), configuration::notifyViolation);
+        _headerBuilder = HttpFields.build(configuration.getHttpCompliance(), _httpChannel::getComplianceViolationListener);
 
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
@@ -295,6 +293,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
         getHttpConfiguration().setUseOutputDirectByteBuffers(useOutputDirectByteBuffers);
+    }
+
+    public int getTransferEncodingChunkMaxLength()
+    {
+        return _generator.getChunkMaxLength();
+    }
+
+    public void setTransferEncodingChunkMaxLength(int transferEncodingChunkMaxLength)
+    {
+        _generator.setChunkMaxLength(transferEncodingChunkMaxLength);
     }
 
     @Override
@@ -813,7 +821,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _content = content;
                 _lastContent = last;
                 _callback = callback;
-                _header = null;
+                // Cannot call reset unless we are
+                // finished with the previous send.
+                assert _header == null;
+                assert _chunk == null;
+                _shutdownOut = false;
                 if (getConnector().isShutdown())
                     _generator.setPersistent(false);
                 return true;
@@ -837,6 +849,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             int responseHeadersSize = getHttpConfiguration().getResponseHeaderSize();
             int maxResponseHeadersSize = getHttpConfiguration().getMaxResponseHeaderSize();
             boolean useDirectByteBuffers = isUseOutputDirectByteBuffers();
+            int chunkMaxLength = getTransferEncodingChunkMaxLength();
             while (true)
             {
                 ByteBuffer headerByteBuffer = _header == null ? null : _header.getByteBuffer();
@@ -914,37 +927,29 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                             gatherWrite += 2;
                             bytes += _chunk.remaining();
                         }
-                        if (BufferUtil.hasContent(_content))
+                        ByteBuffer contentByteBuffer = _content;
+                        if (BufferUtil.hasContent(contentByteBuffer))
                         {
                             gatherWrite += 1;
-                            bytes += _content.remaining();
+                            if (_generator.isChunking() && contentByteBuffer.remaining() > chunkMaxLength)
+                            {
+                                ByteBuffer slice = contentByteBuffer.slice(contentByteBuffer.position(), chunkMaxLength);
+                                contentByteBuffer.position(contentByteBuffer.position() + chunkMaxLength);
+                                contentByteBuffer = slice;
+                            }
+                            bytes += contentByteBuffer.remaining();
                         }
                         _bytesOut.addAndGet(bytes);
                         switch (gatherWrite)
                         {
-                            case 7:
-                                getEndPoint().write(this, headerByteBuffer, chunkByteBuffer, _content);
-                                break;
-                            case 6:
-                                getEndPoint().write(this, headerByteBuffer, chunkByteBuffer);
-                                break;
-                            case 5:
-                                getEndPoint().write(this, headerByteBuffer, _content);
-                                break;
-                            case 4:
-                                getEndPoint().write(this, headerByteBuffer);
-                                break;
-                            case 3:
-                                getEndPoint().write(this, chunkByteBuffer, _content);
-                                break;
-                            case 2:
-                                getEndPoint().write(this, chunkByteBuffer);
-                                break;
-                            case 1:
-                                getEndPoint().write(this, _content);
-                                break;
-                            default:
-                                succeeded();
+                            case 7 -> getEndPoint().write(this, headerByteBuffer, chunkByteBuffer, contentByteBuffer);
+                            case 6 -> getEndPoint().write(this, headerByteBuffer, chunkByteBuffer);
+                            case 5 -> getEndPoint().write(this, headerByteBuffer, contentByteBuffer);
+                            case 4 -> getEndPoint().write(this, headerByteBuffer);
+                            case 3 -> getEndPoint().write(this, chunkByteBuffer, contentByteBuffer);
+                            case 2 -> getEndPoint().write(this, chunkByteBuffer);
+                            case 1 -> getEndPoint().write(this, contentByteBuffer);
+                            default -> succeeded();
                         }
 
                         return Action.SCHEDULED;
@@ -1024,17 +1029,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
-        public void onFailure(final Throwable x)
-        {
-            Callback callback = takeCallbackAndReset();
-            if (callback != null)
-                callback.failed(x);
-        }
-
-        @Override
         protected void onCompleteFailure(Throwable cause)
         {
+            // Failing the callback may re-enter SendCallback to write the error
+            // response, release the buffers used previously in the failed response.
+            Callback callback = takeCallbackAndReset();
             release();
+            if (callback != null)
+                callback.failed(cause);
         }
 
         @Override
@@ -1141,9 +1143,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
+        public ComplianceViolation.Listener getComplianceViolationListener()
+        {
+            return getHttpChannel().getComplianceViolationListener();
+        }
+
+        @Override
         public void onViolation(ComplianceViolation.Event event)
         {
-            getHttpChannel().getComplianceViolationListener().onComplianceViolation(event);
+            ComplianceUtils.notify(getComplianceViolationListener(), event);
         }
 
         @Override
@@ -1165,7 +1173,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             else
                 stream._chunk = Content.Chunk.EOF;
 
-            getHttpChannel().getComplianceViolationListener().onRequestBegin(getHttpChannel().getRequest());
             return false;
         }
 
@@ -1331,15 +1338,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         public Runnable headerComplete()
         {
-            UriCompliance compliance;
-            if (_uri.hasViolations())
-            {
-                compliance = getHttpConfiguration().getUriCompliance();
-                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, getHttpChannel().getComplianceViolationListener());
-                if (badMessage != null)
-                    throw new BadMessageException(badMessage);
-            }
-
             // Check host field matches the authority in the absolute URI or is not blank
             if (_hostField != null)
             {
@@ -1347,23 +1345,24 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 {
                     if (!_hostField.getValue().equals(_uri.getAuthority()))
                     {
-                        HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
-                        if (httpCompliance.allows(MISMATCHED_AUTHORITY))
-                            getHttpChannel().getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
-                        else
-                            throw new BadMessageException("Authority!=Host");
+                        HttpCompliance httpCompliance = getHttpChannel().getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
+                        ComplianceViolation.Listener complianceListener = getHttpChannel().getComplianceViolationListener();
+                        if (!ComplianceUtils.allows(httpCompliance, MISMATCHED_AUTHORITY, "Authority!=Host", complianceListener))
+                        {
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
+                        }
                     }
                 }
                 else
                 {
                     if (StringUtil.isBlank(_hostField.getHostPort().getHost()))
-                        throw new BadMessageException("Blank Host");
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Blank Host");
                 }
             }
 
             // Set the scheme in the URI
             if (!_uri.isAbsolute())
-                _uri.scheme(getEndPoint() instanceof SslConnection.SslEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
+                _uri.scheme(getEndPoint().getSslSessionData() != null ? HttpScheme.HTTPS : HttpScheme.HTTP);
 
             // Set the authority (if not already set) in the URI
             if (_uri.getAuthority() == null && !HttpMethod.CONNECT.is(_method))
@@ -1392,7 +1391,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             _requests.incrementAndGet();
 
             Request request = _httpChannel.getRequest();
-            getHttpChannel().getComplianceViolationListener().onRequestBegin(request);
+            _httpChannel.getComplianceViolationListener().onRequestBegin(request);
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {
@@ -1424,7 +1423,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 case HTTP_1_1:
                 {
                     if (_unknownExpectation)
-                        throw new BadMessageException(HttpStatus.EXPECTATION_FAILED_417);
+                        throw new HttpException.RuntimeException(HttpStatus.EXPECTATION_FAILED_417);
 
                     persistent = getHttpConfiguration().isPersistentConnectionsEnabled() &&
                         !_connectionClose ||
@@ -1456,7 +1455,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
                     // TODO is this sufficient?
                     _parser.close();
-                    throw new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426, "Upgrade Required");
+                    throw new HttpException.RuntimeException(HttpStatus.UPGRADE_REQUIRED_426, "Upgrade Required");
                 }
                 default:
                 {
@@ -1609,7 +1608,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             @SuppressWarnings("ReferenceEquality")
             boolean isPriorKnowledgeH2C = _upgrade == PREAMBLE_UPGRADE_H2C;
             if (!isPriorKnowledgeH2C  && !_connectionUpgrade)
-                throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400);
 
             // Find the upgrade factory.
             ConnectionFactory.Upgrading factory = getConnector().getConnectionFactories().stream()

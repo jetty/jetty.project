@@ -140,7 +140,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             return null;
         }
 
-        return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), () ->
+        return Invocable.from(getHttpConnection().getInvocationType(), () ->
         {
             MetaData.Response response = (MetaData.Response)frame.getMetaData();
             HttpResponse httpResponse = exchange.getResponse();
@@ -241,7 +241,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         if (exchange == null)
             return null;
         // Retrieve the InvocationType from the Content.Source, rather than from the Connection.
-        return new Invocable.ReadyTask(getInvocationType(), () -> responseContentAvailable(exchange));
+        return Invocable.from(getInvocationType(), () -> responseContentAvailable(exchange));
     }
 
     @Override
@@ -257,7 +257,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         int error = frame.getError();
         IOException failure = new IOException(ErrorCode.toString(error, "reset_code_" + error));
         Runnable task = () -> callback.completeWith(exchange.getRequest().abort(failure));
-        return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);
+        return Invocable.from(getHttpConnection().getInvocationType(), task);
     }
 
     @Override
@@ -270,7 +270,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             return null;
         }
         Runnable task = () -> Promise.completeWith(promise, exchange.getRequest().abort(failure));
-        return new Invocable.ReadyTask(getHttpConnection().getInvocationType(), task);
+        return Invocable.from(getHttpConnection().getInvocationType(), task);
     }
 
     @Override

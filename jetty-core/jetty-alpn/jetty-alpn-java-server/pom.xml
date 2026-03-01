@@ -5,10 +5,11 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-alpn</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.7-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-alpn-java-server</artifactId>
   <name>Core :: ALPN :: Java Server</name>
+  <description>Jetty ALPN Server OpenJDK Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.java.server</bundle-symbolic-name>

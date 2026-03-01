@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -36,6 +37,8 @@ import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.compression.server.CompressionConfig;
 import org.eclipse.jetty.compression.server.CompressionHandler;
 import org.eclipse.jetty.ee11.servlet.DefaultServlet;
@@ -54,12 +57,17 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPartConfig;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
+import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
+import org.eclipse.jetty.proxy.ProxyHandler;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
@@ -604,6 +612,22 @@ public class HTTPServerDocs
 
         server.start();
         // end::h3[]
+    }
+
+    public void h2altsvc()
+    {
+        // tag::h2altsvc[]
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
+
+        // Configure AltSvcCustomizer after connection factory creation.
+        HTTP2ServerConnectionFactory.AltSvcCustomizer h2AltSvc = httpConfig.getCustomizer(HTTP2ServerConnectionFactory.AltSvcCustomizer.class);
+        if (h2AltSvc != null)
+        {
+            h2AltSvc.setMaxAge(Duration.ofHours(24));
+            h2AltSvc.setPersist(true);
+        }
+        // end::h2altsvc[]
     }
 
     public void conscrypt()
@@ -2051,5 +2075,107 @@ public class HTTPServerDocs
 
         server.start();
         // end::dosHandler[]
+    }
+
+    public void proxyNewHttpClient() throws Exception
+    {
+        // tag::proxyNewHttpClient[]
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Customize the forward proxy's HttpClient transports.
+        ProxyHandler.Forward forwardProxy = new ProxyHandler.Forward()
+        {
+            @Override
+            protected HttpClient newHttpClient()
+            {
+                ClientConnector clientConnector = new ClientConnector();
+                ClientConnectionFactory.Info http11 = HttpClientConnectionFactory.HTTP11;
+                ClientConnectionFactory.Info http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector));
+                return new HttpClient(new HttpClientTransportDynamic(clientConnector, http11, http2));
+            }
+        };
+
+        server.setHandler(forwardProxy);
+        server.start();
+        // end::proxyNewHttpClient[]
+    }
+
+    public void proxyForwardForbidden() throws Exception
+    {
+        // tag::proxyForwardForbidden[]
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Customize the forward proxy's HttpClient transports.
+        ProxyHandler.Forward forwardProxy = new ProxyHandler.Forward()
+        {
+            @Override
+            public boolean handle(Request clientToProxyRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+            {
+                String domain = Request.getServerName(clientToProxyRequest);
+
+                // Allow requests to non-bad domains.
+                if (!domain.contains(".bad.com"))
+                    return super.handle(clientToProxyRequest, proxyToClientResponse, proxyToClientCallback);
+
+                // Deny requests to bad domains.
+                Response.writeError(clientToProxyRequest, proxyToClientResponse, proxyToClientCallback, HttpStatus.FORBIDDEN_403);
+                return true;
+            }
+        };
+
+        server.setHandler(forwardProxy);
+        server.start();
+        // end::proxyForwardForbidden[]
+    }
+
+    public void proxyReverse() throws Exception
+    {
+        // tag::proxyReverse[]
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Rewrite the client URI to the backend server.
+        ProxyHandler.Reverse reverseProxy = new ProxyHandler.Reverse(
+            clientToProxyRequest -> HttpURI.build("http://backend1/proxy/" + clientToProxyRequest.getHttpURI().getPathQuery())
+        );
+
+        server.setHandler(reverseProxy);
+        server.start();
+        // end::proxyReverse[]
+    }
+
+    public void proxyReverseLoadBalancer() throws Exception
+    {
+        // tag::proxyReverseLoadBalancer[]
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Rewrite the client URI to the backend server.
+        AtomicLong counter = new AtomicLong();
+        ProxyHandler.Reverse reverseProxy = new ProxyHandler.Reverse(
+            clientToProxyRequest ->
+            {
+                // Even goes to backend1, odd goes to backend2.
+                long index = counter.getAndIncrement();
+                int turn = (index & 1) == 0 ? 1 : 2;
+                String backendHost = "backend" + turn;
+
+                // Rewrite the URI to the chosen backend.
+                return HttpURI.build()
+                    .scheme("http")
+                    .host(backendHost)
+                    .path("/proxy/" + clientToProxyRequest.getHttpURI().getPathQuery());
+            }
+        );
+
+        server.setHandler(reverseProxy);
+        server.start();
+        // end::proxyReverseLoadBalancer[]
     }
 }

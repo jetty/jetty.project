@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class AdaptiveExecutionStrategyTest
@@ -43,10 +44,7 @@ public class AdaptiveExecutionStrategyTest
         executor.tryExecute(() ->
         {
         });
-        while (tryExecutor.getAvailable() == 0)
-        {
-            Thread.sleep(10);
-        }
+        await().atMost(5, TimeUnit.SECONDS).until(() -> tryExecutor.getAvailable() != 0);
     }
 
     @AfterEach
@@ -59,11 +57,11 @@ public class AdaptiveExecutionStrategyTest
     @Test
     public void testExceptionThrownByTask() throws Exception
     {
-        try (StacklessLogging ignored = new StacklessLogging(AdaptiveExecutionStrategy.class))
+        try (StacklessLogging ignored = new StacklessLogging(QueuedThreadPool.class))
         {
             AtomicReference<Throwable> detector = new AtomicReference<>();
             CountDownLatch latch = new CountDownLatch(2);
-            BlockingQueue<Invocable.ReadyTask> tasks = new LinkedBlockingQueue<>();
+            BlockingQueue<Invocable.Task> tasks = new LinkedBlockingQueue<>();
             startAES(() ->
             {
                 boolean proceed = detector.compareAndSet(null, new Throwable());
@@ -92,7 +90,7 @@ public class AdaptiveExecutionStrategyTest
             // Start production in another thread.
             aes.dispatch();
 
-            tasks.offer(new Invocable.ReadyTask(Invocable.InvocationType.BLOCKING, () ->
+            tasks.offer(Invocable.from(Invocable.InvocationType.BLOCKING, () ->
             {
                 try
                 {
@@ -111,10 +109,7 @@ public class AdaptiveExecutionStrategyTest
             }));
 
             // Wait until AES is idle.
-            while (!aes.isIdle())
-            {
-                Thread.sleep(10);
-            }
+            await().atMost(5, TimeUnit.SECONDS).until(() -> aes.isIdle());
 
             assertNull(detector.get());
         }

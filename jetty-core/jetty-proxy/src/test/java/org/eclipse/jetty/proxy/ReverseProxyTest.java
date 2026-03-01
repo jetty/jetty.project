@@ -41,6 +41,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -169,14 +170,11 @@ public class ReverseProxyTest extends AbstractProxyTest
                 // Use "+" because in HTTP/2 is Huffman encoded in more than 8 bits.
                 response.getHeaders().put("X-Large", "+".repeat(maxResponseHeadersSize));
 
-                // With HTTP/1.1, calling response.write() would fail the Handler callback
-                // which would trigger ErrorHandler and result in a 500 to the proxy.
-//                response.write(true, null, callback);
-
-                // With HTTP/1.1, succeeding the callback before the actual last write
-                // results in skipping the ErrorHandler and aborting the response and
-                // the connection, which the proxy interprets as a 502.
-                // HTTP/2 always behaves by aborting the connection.
+                // With HTTP/1.1, calling response.write() or callback.succeeded()
+                // would trigger ErrorHandler and result in a 500 to the proxy.
+                // With HTTP/2, the HpackContext cannot be rolled back, so the
+                // connection is aborted, which the proxy interprets as a 502.
+                // The same for HTTP/3 and QpackContext.
                 callback.succeeded();
                 return true;
             }
@@ -215,8 +213,16 @@ public class ReverseProxyTest extends AbstractProxyTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertTrue(serverToProxyFailureLatch.await(5, TimeUnit.SECONDS));
-        assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
+        if (httpVersion.compareTo(HttpVersion.HTTP_2) < 0)
+        {
+            assertFalse(serverToProxyFailureLatch.await(1, TimeUnit.SECONDS));
+            assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
+        }
+        else
+        {
+            assertTrue(serverToProxyFailureLatch.await(5, TimeUnit.SECONDS));
+            assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
+        }
     }
 
     @ParameterizedTest

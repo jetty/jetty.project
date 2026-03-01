@@ -52,6 +52,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -307,7 +308,7 @@ public class ErrorHandler implements Request.Handler
     protected int computeBufferSize(Request request)
     {
         int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-        bufferSize = Math.min(8192, bufferSize);
+        bufferSize = Math.min(IO.DEFAULT_BUFFER_SIZE, bufferSize);
         return bufferSize;
     }
 

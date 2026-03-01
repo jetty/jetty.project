@@ -36,7 +36,7 @@ import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.MultiPartRequestContent;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.StringRequestContent;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -144,7 +144,7 @@ public class CoreMultiPartTest
         }
         catch (Throwable t)
         {
-            throw new BadMessageException("bad multipart", t.getCause());
+            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "bad multipart", t.getCause());
         }
     }
 

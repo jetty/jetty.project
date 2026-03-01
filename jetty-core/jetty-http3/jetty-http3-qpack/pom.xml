@@ -5,10 +5,11 @@
   <parent>
     <groupId>org.eclipse.jetty.http3</groupId>
     <artifactId>jetty-http3</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.7-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-http3-qpack</artifactId>
   <name>Core :: HTTP3 :: QPACK</name>
+  <description>Jetty HTTP/3 QPACK Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.qpack</bundle-symbolic-name>

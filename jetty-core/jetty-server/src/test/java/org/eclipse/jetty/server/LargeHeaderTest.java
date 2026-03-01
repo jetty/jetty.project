@@ -13,15 +13,16 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Writer;
 import java.net.Socket;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,10 +30,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -124,32 +127,21 @@ public class LargeHeaderTest
         LifeCycle.stop(server);
     }
 
-    private static String readResponse(Socket socket, int xCount, InputStream input) throws IOException
-    {
-        ByteArrayOutputStream readBytes = new ByteArrayOutputStream();
-        int bufferSize = 65535;
-        byte[] buffer = new byte[bufferSize];
-        int lenRead;
-        int lenTotal = 0;
-
-        LOG.debug("X-Count: {} - Reading Response from {}->{}", xCount, socket.getLocalSocketAddress(), socket.getRemoteSocketAddress());
-
-        while (true)
-        {
-            lenRead = input.read(buffer, 0, bufferSize);
-            if (lenRead < 0)
-                break;
-            readBytes.write(buffer, 0, lenRead);
-            lenTotal += lenRead;
-        }
-
-        LOG.debug("X-Count: {} - Read {} bytes of Response from {}->{}", xCount, lenTotal, socket.getLocalAddress(), socket.getRemoteSocketAddress());
-        return readBytes.toString(UTF_8);
-    }
-
     @Test
     public void testLargeHeader() throws Throwable
     {
+        server.setErrorHandler(new ErrorHandler()
+        {
+            @Override
+            protected void htmlRow(Writer writer, String tag, Object value) throws IOException
+            {
+                writer.write(tag);
+                writer.write(": ");
+                writer.write(Objects.toString(value));
+                writer.write("\n");
+            }
+        });
+
         URI serverURI = server.getURI();
         String rawRequest = "GET / HTTP/1.1\r\n" +
             "Host: " + serverURI.getAuthority() + "\r\n" +
@@ -162,8 +154,11 @@ public class LargeHeaderTest
             output.write(rawRequest.getBytes(UTF_8));
             output.flush();
 
-            String rawResponse = readResponse(client, 1, input);
-            assertThat(rawResponse, containsString(" 500 "));
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(input));
+            assertThat(response.getStatus(), is(500));
+            assertThat(response.contains(HttpFields.CONNECTION_CLOSE), is(false));
+            assertThat(response.getContent(), containsString("STATUS: 500"));
+            assertThat(response.getContent(), containsString("MESSAGE: Response Header Fields Too Large"));
         }
     }
 
@@ -235,10 +230,17 @@ public class LargeHeaderTest
                             countOther.incrementAndGet();
                         }
                     }
-                    catch (BadMessageException bme)
+                    catch (Throwable throwable)
                     {
-                        System.err.printf("%n---[Response:%d]----%n%s%n----%n", rawResponse.length(), rawResponse);
-                        LOG.warn("Failed Response Parse", bme);
+                        if (throwable instanceof HttpException)
+                        {
+                            System.err.printf("%n---[Response:%d]----%n%s%n----%n", rawResponse.length(), rawResponse);
+                            LOG.warn("Failed Response Parse", throwable);
+                        }
+                        else
+                        {
+                            throw throwable;
+                        }
                     }
                 }
                 catch (Throwable t)
@@ -276,7 +278,7 @@ public class LargeHeaderTest
     }
 
     @Test
-    public void testLargeHeaderNewConnectionsSequential() throws Throwable
+    public void testLargeHeaderNewConnectionsSequential()
     {
         URI serverURI = server.getURI();
         String rawRequest = "GET / HTTP/1.1\r\n" +
@@ -300,22 +302,22 @@ public class LargeHeaderTest
                 output.flush();
 
                 long start = NanoTime.now();
-                String rawResponse = readResponse(client, count, input);
+                HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(input));
                 if (NanoTime.secondsSince(start) >= 1)
                     LOG.warn("X-Count: {} - Slow Response", count);
 
-                if (rawResponse.isEmpty())
+                if (response == null)
                 {
                     LOG.warn("X-Count: {} - Empty Raw Response", count);
                     countEmpty.incrementAndGet();
                     break;
                 }
-                HttpTester.Response response = HttpTester.parseResponse(rawResponse);
                 int status = response.getStatus();
                 if (status == 500)
                 {
                     long contentLength = response.getLongField(HttpHeader.CONTENT_LENGTH);
                     String responseBody = response.getContent();
+                    assertThat(response.contains(HttpFields.CONNECTION_CLOSE), is(false));
                     assertThat((long)responseBody.length(), is(contentLength));
                     assertThat(responseBody, containsString(EXPECTED_ERROR_TEXT));
                     count500.incrementAndGet();
