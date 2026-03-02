@@ -230,7 +230,7 @@ public class GzipEncoderSink extends EncoderSink
             addInput(content);
 
         BufferUtil.clearToFill(output);
-        int len = deflater.deflate(output, Deflater.SYNC_FLUSH);
+        int len = deflater.deflate(output, flushMode);
         BufferUtil.flipToFlush(output, 0);
         return (len > 0);
     }
@@ -247,7 +247,7 @@ public class GzipEncoderSink extends EncoderSink
         BufferUtil.flipToFill(output);
         while (!deflater.finished())
         {
-            int len = deflater.deflate(output, Deflater.FULL_FLUSH);
+            int len = deflater.deflate(output, flushMode);
             if (len > 0)
             {
                 BufferUtil.flipToFlush(output, pos);
