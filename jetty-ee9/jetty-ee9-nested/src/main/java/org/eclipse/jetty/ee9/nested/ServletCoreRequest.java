@@ -30,7 +30,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
@@ -46,15 +45,7 @@ import static org.eclipse.jetty.util.URIUtil.addEncodedPaths;
 import static org.eclipse.jetty.util.URIUtil.encodePath;
 
 /**
- * Wrap a {@link jakarta.servlet.ServletRequest} as a core {@link Request}.
- * <p>
- * Whilst similar to a {@link Wrapper}, this class is not a {@code Wrapper}
- * as callers should not be able to access {@link Wrapper#getWrapped()} and bypass
- * the {@link jakarta.servlet.ServletRequest}.
- * </p>
- * <p>
- * The current implementation does not support any read operations.
- * </p>
+ * Wraps a {@link jakarta.servlet.ServletRequest} as a core {@link Request}.
  */
 public class ServletCoreRequest implements Request
 {
@@ -121,7 +112,7 @@ public class ServletCoreRequest implements Request
     private Content.Source source() throws IOException
     {
         if (_source == null)
-            _source = _wrapped ? new InputStreamContentSource(getServletRequest().getInputStream()) : _coreContextRequest;
+            _source = _wrapped ? Content.Source.from(getServletRequest().getInputStream()) : _coreContextRequest;
         return _source;
     }
 
