@@ -16,19 +16,21 @@ package org.eclipse.jetty.session;
 import java.util.Collections;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -446,24 +448,28 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     @Test
     public void testRaceOnEviction() throws Exception
     {
-        //Evict if session has not been accessed for 2 seconds or more
+        // Evict if session has not been accessed for 2 seconds or more.
         int evictionSeconds = 2;
 
-        //Use EVICT_ON_INACTIVITY and saveOnInactiveEviction to force a save during eviction
+        // Use EVICT_ON_INACTIVITY and saveOnInactiveEviction to force a save during eviction.
         Server server = new Server();
         TestableSessionManager sessionManager = new TestableSessionManager();
         sessionManager.setServer(server);
         SessionCacheFactory cacheFactory = newSessionCacheFactory(evictionSeconds, false, true, false, false);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionManager);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CyclicBarrier storeBarrier = new CyclicBarrier(2);
         TestableSessionDataStore store = new TestableSessionDataStore()
         {
             @Override
             public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
             {
-                //wait on a latch before proceeding with save to ensure request is inbound
-                latch.await();
+                // Wait on a barrier before proceeding with save to ensure request is inbound,
+                // this happens under the session's lock; only await on the barrier when the
+                // server is started as the latter stores the sessions during shutdown while
+                // its state is STOPPING.
+                if (server.getState().equals(STARTED))
+                    storeBarrier.await(5, TimeUnit.SECONDS);
                 super.doStore(id, data, lastSaveTime);
             }
         };
@@ -474,7 +480,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         sessionManager.setServer(server);
         server.start();
 
-        //Make a session that is inactive
+        // Make a session that is inactive.
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234",
             now - TimeUnit.MINUTES.toMillis(60),
@@ -489,51 +495,59 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertTrue(session.isValid());
         assertTrue(session.isIdleLongerThan(evictionSeconds));
 
-        final CountDownLatch evictorRunning = new CountDownLatch(1);
-        //Make a thread to run the checkInactiveSession on it to evict it
-        Thread evictorThread = new Thread(() ->
-        {
-            evictorRunning.countDown();
-            cache.checkInactiveSession(session);
-        });
-        evictorThread.start(); //start thread, will block on the latch
+        // Make a thread to run the checkInactiveSession on it to evict it.
+        Thread evictorThread = new Thread(() -> cache.checkInactiveSession(session));
+        evictorThread.start(); //start thread, will block on the barrier
 
-        //Make another thread to call getAndEnter for the same session id
-        AtomicReference<Exception> requestorException = new AtomicReference<Exception>();
+        // Make another thread to call getAndEnter for the same session id.
+        AtomicReference<Throwable> requestorExceptionRef = new AtomicReference<>();
         Thread requestorThread = new Thread(() ->
         {
             try
             {
-                //only proceed if the evictor has started
-                evictorRunning.await();
-                Thread.sleep(500); //small sleep to ensure evictor has begun eviction
+                // Only proceed when the evictor has taken the session lock.
+                await().atMost(5, TimeUnit.SECONDS).until(() -> storeBarrier.getNumberWaiting() == 1);
 
-                //verify we can get an evicted session back and it is in the cache
+                // Verify we can get an evicted session back and it is in the cache.
                 ManagedSession requestedSession = cache.getAndEnter("1234", true);
                 assertNotNull(requestedSession);
                 assertTrue(requestedSession.isResident());
-                //check original session object is now not resident
+                // Check original session object is now not resident.
                 assertFalse(session.isResident());
             }
-            catch (Exception e)
+            catch (Throwable x)
             {
-                requestorException.set(e);
+                requestorExceptionRef.set(x);
             }
         });
         requestorThread.start();
 
-        //wait a little to ensure requestorThread will be waiting to lock the session
-        //that is being evicted
-        Thread.sleep(1000);
+        // Wait until requestorThread is waiting to lock the session that is being evicted;
+        // the requestorThread's state can be:
+        //  - TIMED_WAITING (waiting in awaitility loop)
+        //  - RUNNABLE (before or after the awaitility loop)
+        //  - WAITING (waiting on the session lock in getAndEnter)
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+            requestorThread.getState() == Thread.State.WAITING);
 
-        //Release the latch so the session datastore completes, releases the lock on the
-        //session and the requestorThread can check it isn't resident, then do a reload
-        //of the session data to create a new object
-        latch.countDown();
+        // Await on the barrier so the session datastore completes, releases the lock on the
+        // session and the requestorThread can check it isn't resident, then do a reload
+        // of the session data to create a new object.
+        storeBarrier.await();
 
-        //Double check that the cache contains the session, although the pertinent check is
-        //done in the rquestorThread
+        // Wait for requestorThread to be done.
+        requestorThread.join(5000);
+        assertFalse(requestorThread.isAlive());
+        assertNull(requestorExceptionRef.get());
+
+        // Double check that the cache contains the session, although the pertinent check is
+        // done in the requestorThread.
         assertTrue(cache.contains("1234"));
+
+        // Cleanup.
+        evictorThread.join(5000);
+        assertFalse(evictorThread.isAlive());
+        LifeCycle.stop(server);
     }
 
     /**
