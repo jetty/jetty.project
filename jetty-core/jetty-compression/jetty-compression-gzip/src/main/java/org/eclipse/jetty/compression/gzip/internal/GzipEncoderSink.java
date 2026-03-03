@@ -83,6 +83,7 @@ public class GzipEncoderSink extends EncoderSink
     private final RetainableByteBuffer inputBuffer;
     private final ByteBuffer input;
     private final int bufferSize;
+    private final int flushMode;
     private final CRC32 crc = new CRC32();
     private final AtomicReference<State> state = new AtomicReference<>(State.HEADERS);
     private boolean released;
@@ -101,6 +102,7 @@ public class GzipEncoderSink extends EncoderSink
         this.deflater.setInput(input);
         this.deflater.setStrategy(config.getStrategy());
         this.deflater.setLevel(config.getCompressionLevel());
+        this.flushMode = config.isSyncFlush() ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH;
         this.crc.reset();
     }
 
@@ -123,7 +125,7 @@ public class GzipEncoderSink extends EncoderSink
     protected WriteRecord encode(boolean last, ByteBuffer content)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("encode() last={}, content={}", last, BufferUtil.toDetailString(content));
+            LOG.debug("encode() state={}, last={}, content={}", state, last, BufferUtil.toDetailString(content));
 
         if (released)
             throw new IllegalStateException("Already released");
@@ -228,7 +230,7 @@ public class GzipEncoderSink extends EncoderSink
             addInput(content);
 
         BufferUtil.clearToFill(output);
-        int len = deflater.deflate(output);
+        int len = deflater.deflate(output, flushMode);
         BufferUtil.flipToFlush(output, 0);
         return (len > 0);
     }
@@ -245,7 +247,7 @@ public class GzipEncoderSink extends EncoderSink
         BufferUtil.flipToFill(output);
         while (!deflater.finished())
         {
-            int len = deflater.deflate(output, Deflater.FULL_FLUSH);
+            int len = deflater.deflate(output, flushMode);
             if (len > 0)
             {
                 BufferUtil.flipToFlush(output, pos);
