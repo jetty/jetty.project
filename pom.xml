@@ -327,7 +327,7 @@
     <osgi-util-version>3.7.400</osgi-util-version>
     <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
     <osgi-version>3.24.0</osgi-version>
-    <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
+    <osgi.slf4j.import.packages>org.slf4j;version="[2.0,3.0)", org.slf4j.event;version="[2.0,3.0)", org.slf4j.helpers;version="[2.0,3.0)", org.slf4j.spi;version="[2.0,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.14.0</pax.exam.version>
     <pax.url.version>3.0.2</pax.url.version>
     <plexus-classworlds.version>2.9.0</plexus-classworlds.version>
