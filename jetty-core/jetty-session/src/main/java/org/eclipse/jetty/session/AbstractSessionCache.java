@@ -315,9 +315,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     protected ManagedSession getAndEnter(String id, boolean enter) throws Exception
     {
         //As a session may be in the process of being evicted we might need to retry to get it afresh
-        int retries = 10;
-
-        while (retries-- > 0)
+        while (true)
         {
             ManagedSession session = computeIfAbsent(id);
 
@@ -325,7 +323,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 return null;
 
             //we have a session, check it
-            try (AutoLock lock = session.lock())
+            try (AutoLock ignore = session.lock())
             {
                 if (session.isResident()) //session is currently in the cache, we can use it
                 {
@@ -333,15 +331,13 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                         session.use();
                     return session;
                 }
-
-                //session is not resident, it might have just been evicted, we should try again
             }
-        }
 
-        //if we got here we never got a useable session
-        if (LOG.isDebugEnabled())
-            LOG.debug("Retries to get resident session {} exhausted", id);
-        return null;
+            //session is not resident, it might have just been evicted, we should try again
+            if (LOG.isDebugEnabled())
+                LOG.debug("session {} is not resident, retrying", id);
+            Thread.onSpinWait();
+        }
     }
 
     /** Get an existing session object from the cache or load from the session store.
