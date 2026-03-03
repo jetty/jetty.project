@@ -53,7 +53,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -75,22 +74,36 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentSourceTest
 {
-    private static ArrayByteBufferPool.Tracking byteBufferPool;
-
-    @BeforeEach
-    public void beforeEach()
+    // This test is really convoluted about testing reads from files that return an expected number of bytes
+    // that heavily depends on the ByteBuffer capacity, so the ByteBufferPool needs explicit bucket functions.
+    private static final ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking(1, 1, 64 * 1024, 1024, -1, -1, capacity ->
     {
-        byteBufferPool = new ArrayByteBufferPool.Tracking();
-    }
+        if (capacity <= 3)
+            return 0;
+        if (capacity <= 6)
+            return 1;
+        return ((capacity - 1) / 1024) + 2;
+    }, index ->
+    {
+        if (index == 0)
+            return 3;
+        if (index == 1)
+            return 6;
+        return (index - 1) * 1024;
+    });
 
     @AfterEach
     public void afterEach()
     {
-        if (!byteBufferPool.getLeaks().isEmpty())
-            byteBufferPool.dumpLeaks();
-        assertThat(byteBufferPool.getLeaks(), empty());
-        byteBufferPool.clear();
-        byteBufferPool = null;
+        try
+        {
+            assertThat(byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks(), empty());
+        }
+        finally
+        {
+            // Clear the pool after every test.
+            byteBufferPool.clear();
+        }
     }
 
     public static List<Content.Source> all() throws Exception
@@ -153,16 +166,15 @@ public class ContentSourceTest
         ByteChannelContentSource bccs2 = new ByteChannelContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 8192), Files.newByteChannel(path0123, StandardOpenOption.READ), 4, 6);
         ByteChannelContentSource bccs3 = new ByteChannelContentSource(new ByteBufferPool.Sized(null, false, 3), Files.newByteChannel(path0123, StandardOpenOption.READ), 4, 6);
 
-        ByteChannelContentSource.PathContentSource pcs0 = new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 1024), path12);
-        ByteChannelContentSource.PathContentSource pcs1 = new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 1024), path0123, 4, 6);
-        ByteChannelContentSource.PathContentSource pcs2 = new ByteChannelContentSource.PathContentSource(new ByteBufferPool.Sized(null, false, 3), path12);
+        org.eclipse.jetty.io.internal.PathContentSource pcs0 = new org.eclipse.jetty.io.internal.PathContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 1024), path12);
+        org.eclipse.jetty.io.internal.PathContentSource pcs1 = new org.eclipse.jetty.io.internal.PathContentSource(new ByteBufferPool.Sized(byteBufferPool, false, 1024), path0123, 4, 6);
+        org.eclipse.jetty.io.internal.PathContentSource pcs2 = new org.eclipse.jetty.io.internal.PathContentSource(new ByteBufferPool.Sized(null, false, 3), path12);
 
         return switch (mode)
         {
             case "rewind" -> List.of(
                 byteBufferSource,
                 path1,
-                bccs3,
                 pcs2);
             case "multi" -> List.of(
                 asyncSource,
@@ -299,11 +311,11 @@ public class ContentSourceTest
     public void testReadAllRewindReadAll(Content.Source source) throws Exception
     {
         // A raw BCCS cannot be rewound if fully consumed, as it is not able to re-open a passed in channel
-        Assumptions.assumeTrue(!(source instanceof ByteChannelContentSource) || source instanceof ByteChannelContentSource.PathContentSource);
+        Assumptions.assumeTrue(!(source instanceof ByteChannelContentSource) || source instanceof org.eclipse.jetty.io.internal.PathContentSource);
 
         String first = Content.Source.asString(source);
         assertThat(first, is("onetwo"));
-        source.rewind();
+        assertTrue(source.rewind());
         String second = Content.Source.asString(source);
         assertThat(second, is("onetwo"));
     }

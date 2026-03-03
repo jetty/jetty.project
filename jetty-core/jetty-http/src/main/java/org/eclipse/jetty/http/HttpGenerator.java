@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -264,7 +265,7 @@ public class HttpGenerator
 
             case COMMITTED:
             {
-                return committed(chunk, content, last);
+                return committed(info, chunk, content, last);
             }
 
             case COMPLETING:
@@ -286,10 +287,15 @@ public class HttpGenerator
         }
     }
 
-    private Result committed(ByteBuffer chunk, ByteBuffer content, boolean last)
+    private Result committed(MetaData info, ByteBuffer chunk, ByteBuffer content, boolean last)
     {
-        int contentLength = BufferUtil.length(content);
-        int committedLength = contentLength;
+        long contentLength = BufferUtil.length(content);
+
+        Content.Source.Seekable source = info.getContentSource();
+        if (contentLength == 0 && source != null)
+            contentLength = source.remaining();
+
+        long committedLength = contentLength;
         if (committedLength > 0)
         {
             if (isChunking())
@@ -303,13 +309,13 @@ public class HttpGenerator
             _contentPrepared += committedLength;
         }
 
-        if (last)
-        {
-            if (committedLength == contentLength)
-                _state = State.COMPLETING;
-            return committedLength > 0 ? Result.FLUSH : Result.CONTINUE;
-        }
-        return committedLength > 0 ? Result.FLUSH : Result.DONE;
+        if (!last)
+            return committedLength > 0 ? Result.FLUSH : Result.DONE;
+
+        if (committedLength == contentLength)
+            _state = State.COMPLETING;
+
+        return committedLength > 0 ? Result.FLUSH : Result.CONTINUE;
     }
 
     private Result completing(ByteBuffer chunk, ByteBuffer content)
@@ -419,8 +425,13 @@ public class HttpGenerator
 
                     generateHeaders(header, content, last);
 
-                    int contentLength = BufferUtil.length(content);
-                    int committedLength = contentLength;
+                    long contentLength = BufferUtil.length(content);
+
+                    Content.Source.Seekable source = info.getContentSource();
+                    if (contentLength == 0 && source != null)
+                        contentLength = source.remaining();
+
+                    long committedLength = contentLength;
                     if (committedLength > 0)
                     {
                         if (isChunking() && !head)
@@ -430,6 +441,8 @@ public class HttpGenerator
                     _state = State.COMMITTED;
                     if (last && committedLength == contentLength)
                         _state = State.COMPLETING;
+
+                    return Result.FLUSH;
                 }
                 catch (BufferOverflowException e)
                 {
@@ -446,13 +459,11 @@ public class HttpGenerator
                 {
                     BufferUtil.flipToFlush(header, pos);
                 }
-
-                return Result.FLUSH;
             }
 
             case COMMITTED:
             {
-                return committed(chunk, content, last);
+                return committed(info, chunk, content, last);
             }
 
             case COMPLETING_1XX:

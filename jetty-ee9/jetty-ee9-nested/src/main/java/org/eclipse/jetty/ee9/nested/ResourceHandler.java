@@ -131,7 +131,7 @@ public class ResourceHandler extends HandlerWrapper implements WelcomeFactory
     protected HttpContent.Factory newHttpContentFactory()
     {
         Resource baseResource = getBaseResource();
-        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(baseResource, _mimeTypes, _byteBufferPool);
+        HttpContent.Factory contentFactory = new ResourceHttpContentFactory(baseResource, _mimeTypes, _byteBufferPool, false);
         contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css", _byteBufferPool);
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());

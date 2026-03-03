@@ -52,7 +52,7 @@ public class ControlFlusher extends IteratingCallback
     {
         this.endPoint = endPoint;
         this.generator = new ControlGenerator(byteBufferPool, useDirectByteBuffers);
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
+        this.accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1);
     }
 
     public boolean offer(Frame frame, Callback callback)

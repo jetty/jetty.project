@@ -15,9 +15,12 @@ package org.eclipse.jetty.http2.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.Content;
+
 public class DataFrame extends StreamFrame
 {
     private final ByteBuffer data;
+    private final Content.Source.Seekable source;
     private final boolean endStream;
     private final int length;
     private final int padding;
@@ -29,21 +32,37 @@ public class DataFrame extends StreamFrame
 
     public DataFrame(int streamId, ByteBuffer data, boolean endStream)
     {
-        this(streamId, data, endStream, 0);
+        this(streamId, data, null, endStream, 0);
+    }
+
+    public DataFrame(int streamId, Content.Source.Seekable source, boolean endStream)
+    {
+        this(streamId, Content.Sink.CONTENT_SOURCE, source, endStream, 0);
     }
 
     public DataFrame(int streamId, ByteBuffer data, boolean endStream, int padding)
     {
+        this(streamId, data, null, endStream, padding);
+    }
+
+    private DataFrame(int streamId, ByteBuffer data, Content.Source.Seekable source, boolean endStream, int padding)
+    {
         super(FrameType.DATA, streamId);
         this.data = data;
+        this.source = source;
         this.endStream = endStream;
-        this.length = data.remaining();
+        this.length = remaining();
         this.padding = padding;
     }
 
     public ByteBuffer getByteBuffer()
     {
         return data;
+    }
+
+    public Content.Source.Seekable getContentSource()
+    {
+        return source;
     }
 
     public boolean isEndStream()
@@ -56,7 +75,15 @@ public class DataFrame extends StreamFrame
      */
     public int remaining()
     {
-        return data.remaining();
+        return Math.toIntExact(bytesLeft());
+    }
+
+    /**
+     * @return the number of data bytes remaining, as a {@code long}
+     */
+    public long bytesLeft()
+    {
+        return data == Content.Sink.CONTENT_SOURCE ? source.remaining() : data.remaining();
     }
 
     /**

@@ -44,7 +44,7 @@ public class MessageFlusher extends IteratingCallback
     public MessageFlusher(ByteBufferPool bufferPool, QpackEncoder encoder, boolean useDirectByteBuffers)
     {
         this.generator = new MessageGenerator(bufferPool, encoder, useDirectByteBuffers);
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1, 0, 0);
+        this.accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1);
     }
 
     public boolean offer(StreamEndPoint endPoint, Frame frame, Callback callback)
@@ -55,7 +55,10 @@ public class MessageFlusher extends IteratingCallback
             closed = terminated;
             if (closed == null)
             {
-                entries.offer(new Entry(endPoint, frame, callback));
+                Entry e = new Entry(endPoint, frame, callback);
+                entries.offer(e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("offered {} on {}", e, this);
                 return true;
             }
         }

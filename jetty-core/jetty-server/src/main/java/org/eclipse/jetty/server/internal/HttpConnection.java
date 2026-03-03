@@ -907,7 +907,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     }
                     case FLUSH:
                     {
-                        // Don't write the chunk or the content if this is a HEAD response, or any other type of response that should have no content
+                        // Don't write the chunk or the content if this is a HEAD response,
+                        // or any other type of response that should have no content.
                         if (_head || _generator.isNoContent())
                         {
                             if (_chunk != null)
@@ -931,25 +932,27 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         if (BufferUtil.hasContent(contentByteBuffer))
                         {
                             gatherWrite += 1;
-                            if (_generator.isChunking() && contentByteBuffer.remaining() > chunkMaxLength)
+                            int remaining = contentByteBuffer.remaining();
+                            if (_generator.isChunking() && remaining > chunkMaxLength)
                             {
                                 ByteBuffer slice = contentByteBuffer.slice(contentByteBuffer.position(), chunkMaxLength);
                                 contentByteBuffer.position(contentByteBuffer.position() + chunkMaxLength);
                                 contentByteBuffer = slice;
+                                remaining = contentByteBuffer.remaining();
                             }
-                            bytes += contentByteBuffer.remaining();
+                            bytes += remaining;
                         }
                         _bytesOut.addAndGet(bytes);
                         switch (gatherWrite)
                         {
-                            case 7 -> getEndPoint().write(this, headerByteBuffer, chunkByteBuffer, contentByteBuffer);
-                            case 6 -> getEndPoint().write(this, headerByteBuffer, chunkByteBuffer);
-                            case 5 -> getEndPoint().write(this, headerByteBuffer, contentByteBuffer);
-                            case 4 -> getEndPoint().write(this, headerByteBuffer);
-                            case 3 -> getEndPoint().write(this, chunkByteBuffer, contentByteBuffer);
-                            case 2 -> getEndPoint().write(this, chunkByteBuffer);
-                            case 1 -> getEndPoint().write(this, contentByteBuffer);
-                            default -> succeeded();
+                            case 7 -> writeByteBuffers(this, headerByteBuffer, chunkByteBuffer, contentByteBuffer);
+                            case 6 -> write(this, headerByteBuffer, chunkByteBuffer);
+                            case 5 -> writeByteBuffers(this, headerByteBuffer, contentByteBuffer);
+                            case 4 -> write(this, headerByteBuffer);
+                            case 3 -> writeByteBuffers(this, chunkByteBuffer, contentByteBuffer);
+                            case 2 -> write(this, chunkByteBuffer);
+                            case 1 -> writeByteBuffers(this, contentByteBuffer);
+                            default -> write(this);
                         }
 
                         return Action.SCHEDULED;
@@ -978,6 +981,63 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         throw new IllegalStateException("generateResponse=" + result);
                     }
                 }
+            }
+        }
+
+        private void writeByteBuffers(Callback callback, ByteBuffer... byteBuffers)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("flushing {} bytes {} for {}", BufferUtil.remaining(byteBuffers), BufferUtil.toDetailString(byteBuffers), this);
+            getEndPoint().write(callback, byteBuffers);
+        }
+
+        private void write(Callback callback, ByteBuffer... byteBuffers)
+        {
+            if (_content == Content.Sink.CONTENT_SOURCE)
+            {
+                Content.Source.Seekable source = _info.getContentSource();
+                long remaining = source.remaining();
+                if (byteBuffers.length == 0)
+                {
+                    if (remaining > 0)
+                    {
+                        if (_generator.isChunking())
+                        {
+                            int length = (int)Math.min(remaining, getTransferEncodingChunkMaxLength());
+                            Content.Source.Seekable slice = source.slice(source.position(), length);
+                            source.position(source.position() + length);
+                            source = slice;
+                            remaining = length;
+                        }
+                        _bytesOut.addAndGet(remaining);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("transferring {} bytes for {}", remaining, this);
+                        Content.transfer(source, false, getEndPoint(), callback);
+                    }
+                    else
+                    {
+                        callback.succeeded();
+                    }
+                }
+                else
+                {
+                    if (remaining > 0)
+                    {
+                        Callback cb = Callback.from(callback.getInvocationType(), () -> write(callback), callback::failed);
+                        writeByteBuffers(cb, byteBuffers);
+                    }
+                    else
+                    {
+                        writeByteBuffers(callback, byteBuffers);
+                    }
+                }
+            }
+            else
+            {
+                if (byteBuffers.length == 0)
+                    callback.succeeded();
+                else
+                    writeByteBuffers(callback, byteBuffers);
             }
         }
 
@@ -1245,6 +1305,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         private long _contentLength = -1;
         private HostPortHttpField _hostField;
         private MetaData.Request _request;
+        private MetaData.Response _response;
         private HttpField _upgrade = null;
         private Content.Chunk _chunk;
         private boolean _connectionClose = false;
@@ -1533,39 +1594,52 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
         {
-            if (response == null)
-            {
-                if (!last && BufferUtil.isEmpty(content))
-                {
-                    callback.succeeded();
-                    return;
-                }
-            }
-            else if (_generator.isCommitted())
+            if (response != null)
+                sendHeaders(request, response, last, content, callback);
+            else
+                sendContent(request, _response, last, content, callback);
+        }
+
+        private void sendHeaders(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+        {
+            _response = response;
+
+            if (_generator.isCommitted())
             {
                 callback.failed(new IllegalStateException("Committed"));
                 return;
             }
-            else
+
+            _responses.incrementAndGet();
+            if (_expects100Continue)
             {
-                _responses.incrementAndGet();
-                if (_expects100Continue)
+                if (response.getStatus() == HttpStatus.CONTINUE_100)
                 {
-                    if (response.getStatus() == HttpStatus.CONTINUE_100)
-                    {
-                        _expects100Continue = false;
-                    }
-                    else
-                    {
-                        // Expecting to send a 100 Continue response, but it's a different response,
-                        // then cannot be persistent because likely the client did not send the content.
-                        _generator.setPersistent(false);
-                    }
+                    _expects100Continue = false;
+                }
+                else
+                {
+                    // Expecting to send a 100 Continue response, but it's a different response,
+                    // then cannot be persistent because likely the client did not send the content.
+                    _generator.setPersistent(false);
                 }
             }
 
-            if (_sendCallback.reset(_request, response, content, last, callback))
+            if (_sendCallback.reset(request, response, content, last, callback))
                 _sendCallback.iterate();
+        }
+
+        private void sendContent(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+        {
+            if (!last && BufferUtil.isEmpty(content))
+            {
+                callback.succeeded();
+            }
+            else
+            {
+                if (_sendCallback.reset(request, response, content, last, callback))
+                    _sendCallback.iterate();
+            }
         }
 
         @Override

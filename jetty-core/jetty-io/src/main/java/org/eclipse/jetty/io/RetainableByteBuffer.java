@@ -2124,23 +2124,25 @@ public interface RetainableByteBuffer extends Retainable
 
         private boolean shouldAggregate(RetainableByteBuffer buffer, long size)
         {
+            if (buffer instanceof Content.Transferable)
+                return false;
+
             if (_minRetainSize > 0)
                 return size < _minRetainSize;
 
-            if (_minRetainSize == -1)
-            {
-                // If we are already aggregating and the size is small
-                if (_aggregate != null && size < 128)
-                    return true;
+            if (_minRetainSize == 0)
+                return false;
 
-                // else if there is a lot of wasted space in the buffer
-                if (buffer instanceof FixedCapacity)
-                    return size < buffer.capacity() / 64;
+            // If we are already aggregating and the size is small
+            if (_aggregate != null && size < 128)
+                return true;
 
-                // else if it is small
-                return size < 128;
-            }
-            return false;
+            // else if there is a lot of wasted space in the buffer
+            if (buffer instanceof FixedCapacity)
+                return size < buffer.capacity() / 64;
+
+            // else if it is small
+            return size < 128;
         }
 
         @Override
@@ -2411,16 +2413,30 @@ public interface RetainableByteBuffer extends Retainable
                     // Can we do a gather write?
                     if (!last && sink instanceof EndPoint endPoint)
                     {
+                        boolean canGather = true;
                         ByteBuffer[] buffers = new ByteBuffer[_buffers.size()];
-                        int i = 0;
-                        for (RetainableByteBuffer rbb : _buffers)
-                            buffers[i++] = rbb.getByteBuffer();
-                        endPoint.write(Callback.from(this::clear, callback), buffers);
-                        return;
+                        for (int i = 0; i < _buffers.size(); ++i)
+                        {
+                            RetainableByteBuffer rbb = _buffers.get(i);
+                            if (rbb instanceof Content.Transferable)
+                            {
+                                canGather = false;
+                                break;
+                            }
+                            else
+                            {
+                                buffers[i] = rbb.getByteBuffer();
+                            }
+                        }
+                        if (canGather)
+                        {
+                            endPoint.write(Callback.from(this::clear, callback), buffers);
+                            return;
+                        }
                     }
 
                     // Write buffer by buffer.
-                    new IteratingNestedCallback(callback)
+                    IteratingNestedCallback flusher = new IteratingNestedCallback(callback)
                     {
                         private int _index;
 
@@ -2441,7 +2457,8 @@ public interface RetainableByteBuffer extends Retainable
                             clear();
                             super.onCompleted(causeOrNull);
                         }
-                    }.iterate();
+                    };
+                    flusher.iterate();
                 }
             }
         }

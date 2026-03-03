@@ -753,20 +753,23 @@ public interface Response extends Content.Sink
         return Content.Sink.asBuffered(response, bufferPool, useOutputDirectByteBuffers, outputAggregationSize, bufferSize);
     }
 
-    class Wrapper implements Response
+    /**
+     * A {@link Response} wrapper.
+     */
+    class Wrapper extends Content.Sink.Wrapper implements Response
     {
         private final Request _request;
-        private final Response _wrapped;
 
         public Wrapper(Request request, Response wrapped)
         {
+            super(wrapped);
             _request = request;
-            _wrapped = wrapped;
         }
 
+        @Override
         public Response getWrapped()
         {
-            return _wrapped;
+            return (Response)super.getWrapped();
         }
 
         @Override
@@ -833,12 +836,6 @@ public interface Response extends Content.Sink
         public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
         {
             return getWrapped().writeInterim(status, headers);
-        }
-
-        @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-        {
-            getWrapped().write(last, byteBuffer, callback);
         }
     }
 }

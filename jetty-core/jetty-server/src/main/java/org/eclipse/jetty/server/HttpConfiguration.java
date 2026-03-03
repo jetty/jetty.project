@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -29,6 +30,8 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.MultiPartCompliance;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Jetty;
@@ -94,6 +97,7 @@ public class HttpConfiguration implements Dumpable
     private int _maxUnconsumedRequestContentReads = 16;
     private int _minInputBufferSpace = 1500;
     private boolean _notifyForbiddenComplianceViolations = false;
+    private boolean _tryTransferTo;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -175,6 +179,7 @@ public class HttpConfiguration implements Dumpable
         _maxUnconsumedRequestContentReads = config._maxUnconsumedRequestContentReads;
         _minInputBufferSpace = config._minInputBufferSpace;
         _notifyForbiddenComplianceViolations = config._notifyForbiddenComplianceViolations;
+        _tryTransferTo = config._tryTransferTo;
     }
 
     /**
@@ -829,6 +834,31 @@ public class HttpConfiguration implements Dumpable
     public List<ComplianceViolation.Listener> getComplianceViolationListeners()
     {
         return this._complianceViolationListeners;
+    }
+
+    /**
+     * @return whether to try to send static content from the filesystem using the
+     * transfer-to optimization.
+     */
+    public boolean isTryTransferTo()
+    {
+        return _tryTransferTo;
+    }
+
+    /**
+     * <p>Sets whether to try to send static content from the filesystem using the
+     * transfer-to optimization.</p>
+     * <p>NOTE: the transfer-to optimization may break {@code Handler}s that process
+     * response content by wrapping the {@code Response} and intercepting
+     * {@link Response#write(boolean, ByteBuffer, Callback)}.</p>
+     *
+     * @param tryTransferTo whether to try to send static content from the filesystem
+     * using the transfer-to optimization.
+     * @see Content.Sink#write(Content.Sink, boolean, Content.Source, Callback)
+     */
+    public void setTryTransferTo(boolean tryTransferTo)
+    {
+        _tryTransferTo = tryTransferTo;
     }
 
     /**

@@ -369,7 +369,7 @@ public class HttpGeneratorServerTest
         out += BufferUtil.toString(content0);
         BufferUtil.clear(content0);
 
-        result = gen.generateResponse(null, false, null, chunk, content1, false);
+        result = gen.generateResponse(info, false, null, chunk, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
         out += BufferUtil.toString(chunk);
@@ -377,17 +377,17 @@ public class HttpGeneratorServerTest
         out += BufferUtil.toString(content1);
         BufferUtil.clear(content1);
 
-        result = gen.generateResponse(null, false, null, chunk, null, true);
+        result = gen.generateResponse(info, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
 
-        result = gen.generateResponse(null, false, null, chunk, null, true);
+        result = gen.generateResponse(info, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         out += BufferUtil.toString(chunk);
         BufferUtil.clear(chunk);
 
-        result = gen.generateResponse(null, false, null, chunk, null, true);
+        result = gen.generateResponse(info, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
 
@@ -436,10 +436,10 @@ public class HttpGeneratorServerTest
         out += BufferUtil.toString(content0);
         BufferUtil.clear(content0);
 
-        result = gen.generateResponse(null, false, null, null, content1, false);
+        result = gen.generateResponse(info, false, null, null, content1, false);
         assertEquals(HttpGenerator.Result.NEED_CHUNK, result);
 
-        result = gen.generateResponse(null, false, null, chunk, content1, false);
+        result = gen.generateResponse(info, false, null, chunk, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
         out += BufferUtil.toString(chunk);
@@ -447,17 +447,17 @@ public class HttpGeneratorServerTest
         out += BufferUtil.toString(content1);
         BufferUtil.clear(content1);
 
-        result = gen.generateResponse(null, false, null, chunk, null, true);
+        result = gen.generateResponse(info, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
 
-        result = gen.generateResponse(null, false, null, chunk, null, true);
+        result = gen.generateResponse(info, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         out += BufferUtil.toString(chunk);
         BufferUtil.clear(chunk);
 
-        result = gen.generateResponse(null, false, null, chunk, null, true);
+        result = gen.generateResponse(info, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.SHUTDOWN_OUT, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
 
@@ -516,10 +516,10 @@ public class HttpGeneratorServerTest
         out += BufferUtil.toString(content0);
         BufferUtil.clear(content0);
 
-        result = gen.generateResponse(null, false, null, null, content1, false);
+        result = gen.generateResponse(info, false, null, null, content1, false);
         assertEquals(HttpGenerator.Result.NEED_CHUNK, result);
 
-        result = gen.generateResponse(null, false, null, chunk, content1, false);
+        result = gen.generateResponse(info, false, null, chunk, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
         out += BufferUtil.toString(chunk);
@@ -527,23 +527,23 @@ public class HttpGeneratorServerTest
         out += BufferUtil.toString(content1);
         BufferUtil.clear(content1);
 
-        result = gen.generateResponse(null, false, null, chunk, null, true);
+        result = gen.generateResponse(info, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
 
-        result = gen.generateResponse(null, false, null, chunk, null, true);
+        result = gen.generateResponse(info, false, null, chunk, null, true);
 
         assertEquals(HttpGenerator.Result.NEED_CHUNK_TRAILER, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
 
-        result = gen.generateResponse(null, false, null, trailer, null, true);
+        result = gen.generateResponse(info, false, null, trailer, null, true);
 
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         out += BufferUtil.toString(trailer);
         BufferUtil.clear(trailer);
 
-        result = gen.generateResponse(null, false, null, trailer, null, true);
+        result = gen.generateResponse(info, false, null, trailer, null, true);
         assertEquals(HttpGenerator.Result.SHUTDOWN_OUT, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
 
@@ -662,17 +662,17 @@ public class HttpGeneratorServerTest
         out += BufferUtil.toString(content0);
         BufferUtil.clear(content0);
 
-        result = gen.generateResponse(null, false, null, null, content1, false);
+        result = gen.generateResponse(info, false, null, null, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
         out += BufferUtil.toString(content1);
         BufferUtil.clear(content1);
 
-        result = gen.generateResponse(null, false, null, null, null, true);
+        result = gen.generateResponse(info, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
 
-        result = gen.generateResponse(null, false, null, null, null, true);
+        result = gen.generateResponse(info, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
 
@@ -712,17 +712,17 @@ public class HttpGeneratorServerTest
         out += BufferUtil.toString(content0);
         BufferUtil.clear(content0);
 
-        result = gen.generateResponse(null, false, null, null, content1, false);
+        result = gen.generateResponse(info, false, null, null, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
         out += BufferUtil.toString(content1);
         BufferUtil.clear(content1);
 
-        result = gen.generateResponse(null, false, null, null, null, true);
+        result = gen.generateResponse(info, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
 
-        result = gen.generateResponse(null, false, null, null, null, true);
+        result = gen.generateResponse(info, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
 
@@ -776,17 +776,17 @@ public class HttpGeneratorServerTest
         out += BufferUtil.toString(content0);
         BufferUtil.clear(content0);
 
-        result = gen.generateResponse(null, false, null, null, content1, false);
+        result = gen.generateResponse(info, false, null, null, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
         out += BufferUtil.toString(content1);
         BufferUtil.clear(content1);
 
-        result = gen.generateResponse(null, false, null, null, null, true);
+        result = gen.generateResponse(info, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
 
-        result = gen.generateResponse(null, false, null, null, null, true);
+        result = gen.generateResponse(info, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
 

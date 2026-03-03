@@ -1325,11 +1325,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (prepareSendContent(0, callback))
             {
+                boolean tryTransferTo = getHttpChannel().getHttpConfiguration().isTryTransferTo();
                 IOResources.copy(resource, (last, byteBuffer, cb) ->
                 {
                     _written += byteBuffer.remaining();
                     channelWrite(byteBuffer, last, cb);
-                }, getSizedByteBufferPool(), 0L, -1L, new Callback.Nested(callback)
+                }, getSizedByteBufferPool(), 0L, -1L, tryTransferTo, new Callback.Nested(callback)
                 {
                     @Override
                     public void succeeded()

@@ -16,10 +16,17 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.io.internal.TransferableSupport;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +34,11 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>An {@link EndPoint} implementation based on {@link SocketChannel}.</p>
  */
-public class SocketChannelEndPoint extends SelectableChannelEndPoint
+public class SocketChannelEndPoint extends SelectableChannelEndPoint implements Content.Transferable.To
 {
     private static final Logger LOG = LoggerFactory.getLogger(SocketChannelEndPoint.class);
+
+    private final AtomicReference<Callback> transferCallback = new AtomicReference<>();
 
     public SocketChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
@@ -41,6 +50,54 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
     {
         return (SocketChannel)super.getChannel();
     }
+
+    @Override
+    public boolean transferFrom(FileChannel fileChannel, long offset, long length, Callback callback)
+    {
+        TransferableSupport.transfer(fileChannel, offset, length, this, callback);
+        return true;
+    }
+
+    public void onIncompleteTransfer(Callback callback)
+    {
+        if (transferCallback.compareAndSet(null, callback))
+            onIncompleteFlush();
+        else
+            throw new IllegalStateException("Transfer callback already present");
+    }
+
+    @Override
+    protected Runnable taskForSelected(boolean fillable, boolean flushable)
+    {
+        Callback callback = transferCallback.getAndSet(null);
+        if (callback == null)
+            return super.taskForSelected(fillable, flushable);
+
+        // For the transfer case, only flushable must be true.
+        assert !fillable && flushable;
+
+        return new Invocable.ReadyTask(callback.getInvocationType(), callback::succeeded);
+    }
+
+    @Override
+    public void onClose(Throwable cause)
+    {
+        Callback callback = transferCallback.getAndSet(null);
+        if (callback != null)
+            callback.failed(cause == null ? new ClosedChannelException() : cause);
+        super.onClose(cause);
+    }
+
+    @Override
+    protected void onIdleExpired(TimeoutException timeout)
+    {
+        Callback callback = transferCallback.getAndSet(null);
+        if (callback != null)
+            callback.failed(timeout);
+        super.onIdleExpired(timeout);
+    }
+
+    // TODO: override onFail()
 
     @Override
     public SocketAddress getRemoteSocketAddress()

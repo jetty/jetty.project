@@ -834,21 +834,25 @@ It is possible to split the handling of HTTP requests _within_ the same web appl
 [[handler-use-resource]]
 ==== ResourceHandler -- Static Content
 
-Static content such as images or files (HTML, JavaScript, CSS) can be sent by Jetty very efficiently because Jetty can write the content asynchronously, using direct ``ByteBuffer``s to minimize data copy, and using a memory cache for faster access to the data to send.
+Jetty can send static content such as images or files (HTML, JavaScript, CSS) very efficiently.
+
+Jetty can write the static content asynchronously so that even large files use minimal resources.
+Furthermore, Jetty can leverage the <<handler-use-resource-transfer,transfer-to optimization>>, using zero-copy primitives such as the `FileChannel.transferTo(\...)` API: files content is directly written to the socket.
+When the transfer-to optimization is not possible, Jetty uses  direct ``ByteBuffer``s to minimize data copy; and it is possible to use a memory cache for faster access to the data to send.
 
 Being able to write content asynchronously means that if the network gets congested (for example, the client reads the content very slowly) and the server stalls the send of the requested data, then Jetty will wait to resume the send _without_ blocking a thread to finish the send.
 
 `ResourceHandler` supports the following features:
 
-* Welcome files, for example serving `/index.html` for request URI `/`
-* Precompressed resources, serving a precompressed `/document.txt.gz` for request URI `/document.txt`
-* https://tools.ietf.org/html/rfc7233[Range requests], for requests containing the `Range` header, which allows clients to pause and resume downloads of large files
-* Directory listing, serving a HTML page with the file list of the requested directory
+* Welcome files, for example serving `/index.html` for request URI `/`.
+* Precompressed resources, serving a precompressed `/document.txt.gz` for request URI `/document.txt`.
+* https://tools.ietf.org/html/rfc7233[Range requests], for requests containing the `Range` header, which allows clients to pause and resume downloads of large files.
+* Directory listing, serving a HTML page with the file list of the requested directory.
 * Conditional headers, for requests containing the `If-Match`, `If-None-Match`, `If-Modified-Since`, `If-Unmodified-Since` headers.
 
 The number of features supported and the efficiency in sending static content are on the same level as those of common front-end servers used to serve static content such as Nginx or Apache.
-Therefore, the traditional architecture where Nginx/Apache was the front-end server used only to send static content and Jetty was the back-end server used only to send dynamic content is somehow obsolete as Jetty can perform efficiently both tasks.
-This leads to simpler systems (less components to configure and manage) and more performance (no need to proxy dynamic requests from front-end servers to back-end servers).
+Therefore, the traditional architecture where Nginx/Apache was the front-end server used only to send static content and Jetty was the back-end server used only to send dynamic content is somehow obsolete as Jetty can efficiently perform both tasks.
+This leads to simpler systems (fewer components to configure and manage), and higher performance (no need to proxy dynamic requests from front-end servers to back-end servers).
 
 NOTE: It is common to use Nginx/Apache as load balancers, or as rewrite/redirect servers.
 We typically recommend https://haproxy.org[HAProxy] as load balancer, and Jetty has <<handler-use-rewrite,rewrite/redirect features>> as well.
@@ -869,6 +873,29 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 
 If the resource is not found, `ResourceHandler` will not return `true` from the `handle(\...)` method, so what happens next depends on the `Handler` tree structure.
 See also <<handler-use-default,how to use>> `DefaultHandler`.
+
+[[handler-use-resource-transfer]]
+===== Transfer-To Optimization
+
+Jetty can leverage zero-copy primitives such as `FileChannel.transferTo(\...)` to efficiently send static content to clients.
+
+The transfer-to optimization is possible only when the following conditions are met:
+
+* The communication is in clear-text (this rules out secure HTTP/1 and secure HTTP/2, unless using specific setups such as link:https://docs.kernel.org/networking/tls.html[Kernel TLS]).
+* The content to send can be accessed using `FileChannel`.
+* The endpoint to write the content to is a `SocketChannel` (this rules out QUIC and therefore HTTP/3).
+
+The most common case where the transfer-to optimization is possible and worthwhile is clear-text HTTP/1.1, where Jetty can send even moderately large files (hundreds of KiB or larger) with zero-copy of data.
+
+Jetty supports the transfer-to optimization also for clear-text HTTP/2, but the benefits are somehow reduced since the HTTP/2 maximum frame size is by default only 16 KiB.
+This means that the static content is sent in many 16 KiB chunks, each one using zero-copy, but this is less efficient than HTTP/1.1 where possibly the static content is sent in just one chunk.
+
+[IMPORTANT]
+====
+Enabling the transfer-to optimization may break your ``Handler`` implementations that wrap the `Response` object to intercept the calls to `Response.write(\...)`.
+
+Refer to the javadocs  of the link:{javadoc-url}/org/eclipse/jetty/io/Content.Sink.html#write(org.eclipse.jetty.io.Content.Sink,boolean,org.eclipse.jetty.io.Content.Sink,org.eclipse.jetty.util.Callback)[Content.Sink.write(\...)] method for further details.
+====
 
 [[handler-use-conditional]]
 ==== ConditionalHandler

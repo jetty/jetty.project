@@ -141,7 +141,7 @@ public abstract class EventsHandler extends Handler.Wrapper
         {
             if (!response.notifiedOnResponseBegin)
             {
-                onResponseBegin(request, response.getStatus(), response.getHeaders().asImmutable());
+                onResponseBegin(request, response);
                 response.notifiedOnResponseBegin = true;
             }
         }
@@ -151,11 +151,11 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void notifyOnResponseWrite(Request request, boolean last, ByteBuffer content)
+    private void notifyOnResponseWrite(Request request, EventsResponse response, boolean last, ByteBuffer content)
     {
         try
         {
-            onResponseWrite(request, last, content == null ? null : content.asReadOnlyBuffer());
+            onResponseWrite(request, response, last, content == null ? null : content.asReadOnlyBuffer());
         }
         catch (Throwable x)
         {
@@ -163,11 +163,11 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void notifyOnResponseWriteComplete(Request request, Throwable failure)
+    private void notifyOnResponseWriteComplete(Request request, EventsResponse response, Throwable failure)
     {
         try
         {
-            onResponseWriteComplete(request, failure);
+            onResponseWriteComplete(request, response, failure);
         }
         catch (Throwable x)
         {
@@ -180,7 +180,7 @@ public abstract class EventsHandler extends Handler.Wrapper
         try
         {
             if (response.suppliedTrailers != null)
-                onResponseTrailersComplete(request, response.suppliedTrailers);
+                onResponseTrailersComplete(request, response);
         }
         catch (Throwable x)
         {
@@ -209,7 +209,8 @@ public abstract class EventsHandler extends Handler.Wrapper
      * This includes any request customization.
      * </p>
      *
-     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)}
+     * methods must not be called by the listener.
      * @see org.eclipse.jetty.server.HttpChannel#onRequest(MetaData.Request)
      */
     protected void onBeforeHandling(Request request)
@@ -223,7 +224,8 @@ public abstract class EventsHandler extends Handler.Wrapper
      * making it available to the application (i.e. from within a call to
      * {@link Request#read()}).
      *
-     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)}
+     * methods must not be called by the listener.
      * @param chunk a potentially null request content chunk, including {@link org.eclipse.jetty.io.Content.Chunk#isFailure(Content.Chunk) error}
      *              and {@link org.eclipse.jetty.http.Trailers} chunks.
      *              If a reference to the chunk (or its {@link ByteBuffer}) is kept,
@@ -240,7 +242,8 @@ public abstract class EventsHandler extends Handler.Wrapper
      * Invoked after application handling (i.e. just after the call to the {@link Runnable} returned from
      * {@link org.eclipse.jetty.server.HttpChannel#onRequest(MetaData.Request)} returns).
      *
-     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)}
+     * methods must not be called by the listener.
      * @param handled if the server handlers handled the request
      * @param failure the exception thrown by the application
      * @see org.eclipse.jetty.server.HttpChannel#onRequest(MetaData.Request)
@@ -255,7 +258,22 @@ public abstract class EventsHandler extends Handler.Wrapper
      * Invoked just before the response is line written to the network (i.e. from
      * within the first call to {@link Response#write(boolean, ByteBuffer, Callback)}).
      *
-     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)}
+     * methods must not be called by the listener.
+     * @param response the response object. The {@code write(boolean, ByteBuffer, Callback)} method must not be
+     * called by the listener.
+     */
+    protected void onResponseBegin(Request request, Response response)
+    {
+        onResponseBegin(request, response.getStatus(), response.getHeaders().asImmutable());
+    }
+
+    /**
+     * Invoked just before the response is line written to the network (i.e. from
+     * within the first call to {@link Response#write(boolean, ByteBuffer, Callback)}).
+     *
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)}
+     * methods must not be called by the listener.
      * @param status the response status
      * @param headers the immutable fields of the response object
      * @see Response#write(boolean, ByteBuffer, Callback)
@@ -268,9 +286,26 @@ public abstract class EventsHandler extends Handler.Wrapper
 
     /**
      * Invoked before each response content chunk has been written (i.e. from
-     * within the any call to {@link Response#write(boolean, ByteBuffer, Callback)}).
+     * within the call to {@link Response#write(boolean, ByteBuffer, Callback)}).
      *
-     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)}
+     * methods must not be called by the listener.
+     * @param response the response object. The {@code write(boolean, ByteBuffer, Callback)} method must not be
+     * called by the listener.
+     * @param last indicating last write
+     * @param content The {@link ByteBuffer} of the response content chunk (readonly).
+     */
+    protected void onResponseWrite(Request request, Response response, boolean last, ByteBuffer content)
+    {
+        onResponseWrite(request, last, content);
+    }
+
+    /**
+     * Invoked before each response content chunk has been written (i.e. from
+     * within the call to {@link Response#write(boolean, ByteBuffer, Callback)}).
+     *
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)}
+     * methods must not be called by the listener.
      * @param last indicating last write
      * @param content The {@link ByteBuffer} of the response content chunk (readonly).
      * @see Response#write(boolean, ByteBuffer, Callback)
@@ -279,6 +314,23 @@ public abstract class EventsHandler extends Handler.Wrapper
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onResponseWrite of {} last={} content={}", request, last, BufferUtil.toDetailString(content));
+    }
+
+    /**
+     * Invoked after each response content chunk has been written
+     * (i.e. immediately before calling the {@link Callback} passed to
+     * {@link Response#write(boolean, ByteBuffer, Callback)}).
+     * This will always fire <em>before</em> {@link #onResponseTrailersComplete(Request, HttpFields)} is fired.
+     *
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)}
+     * methods must not be called by the listener.
+     * @param response the response object. The {@code write(boolean, ByteBuffer, Callback)} method must not be
+     * called by the listener.
+     * @param failure if there was a failure to write the given content
+     */
+    protected void onResponseWriteComplete(Request request, Response response, Throwable failure)
+    {
+        onResponseWriteComplete(request, failure);
     }
 
     /**
@@ -300,7 +352,21 @@ public abstract class EventsHandler extends Handler.Wrapper
     /**
      * Invoked after the response trailers have been written <em>and</em> the final {@link #onResponseWriteComplete(Request, Throwable)} event was fired.
      *
-     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)}
+     * methods must not be called by the listener.
+     * @param response the response object. The {@code write(boolean, ByteBuffer, Callback)} method must not be
+     * called by the listener.
+     */
+    protected void onResponseTrailersComplete(Request request, Response response)
+    {
+        onResponseTrailersComplete(request, response.getTrailersSupplier().get());
+    }
+
+    /**
+     * Invoked after the response trailers have been written <em>and</em> the final {@link #onResponseWriteComplete(Request, Throwable)} event was fired.
+     *
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)}
+     * methods must not be called by the listener.
      * @param trailers the written trailers.
      */
     protected void onResponseTrailersComplete(Request request, HttpFields trailers)
@@ -316,13 +382,32 @@ public abstract class EventsHandler extends Handler.Wrapper
      * has returned and the {@link Callback} passed to {@link Handler#handle(Request, Response, Callback)}
      * has been completed).
      *
-     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)}
+     * methods must not be called by the listener.
      * @param failure if there was a failure to complete.
      * @deprecated Override {@link #onComplete(Request, int, HttpFields, Throwable)} instead.
      */
     @Deprecated
     protected void onComplete(Request request, Throwable failure)
     {
+    }
+
+    /**
+     * Invoked when the request <em>and</em> response processing are complete,
+     * just before the request and response will be recycled (i.e. after the
+     * {@link Runnable} return from {@link org.eclipse.jetty.server.HttpChannel#onRequest(MetaData.Request)}
+     * has returned and the {@link Callback} passed to {@link Handler#handle(Request, Response, Callback)}
+     * has been completed).
+     *
+     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)}
+     * methods must not be called by the listener.
+     * @param response the response object. The {@code write(boolean, ByteBuffer, Callback)} method must not be
+     * called by the listener.
+     * @param failure if there was a failure to complete.
+     */
+    protected void onComplete(Request request, Response response, Throwable failure)
+    {
+        onComplete(request, response.getStatus(), response.getHeaders().asImmutable(), failure);
     }
 
     /**
@@ -358,14 +443,14 @@ public abstract class EventsHandler extends Handler.Wrapper
         public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
             notifyOnResponseBegin(getRequest(), this);
-            notifyOnResponseWrite(getRequest(), last, byteBuffer);
+            notifyOnResponseWrite(getRequest(), this, last, byteBuffer);
             super.write(last, byteBuffer, Callback.from(callback.getInvocationType(), () ->
             {
-                notifyOnResponseWriteComplete(getRequest(), null);
+                notifyOnResponseWriteComplete(getRequest(), this, null);
                 callback.succeeded();
             }, x ->
             {
-                notifyOnResponseWriteComplete(getRequest(), x);
+                notifyOnResponseWriteComplete(getRequest(), this, x);
                 callback.failed(x);
             }));
         }

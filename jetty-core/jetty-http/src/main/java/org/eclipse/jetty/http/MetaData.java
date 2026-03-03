@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.NanoTime;
 
 /**
@@ -25,7 +26,7 @@ import org.eclipse.jetty.util.NanoTime;
  * <p>Specific HTTP response information is captured by {@link Response}.</p>
  * <p>HTTP trailers information is captured by {@link MetaData}.</p>
  */
-public class MetaData implements Iterable<HttpField>
+public class MetaData implements Iterable<HttpField>, Content.Source.Seekable.Aware
 {
     /**
      * <p>Returns whether the given HTTP request method and HTTP response status code
@@ -44,6 +45,7 @@ public class MetaData implements Iterable<HttpField>
     private final HttpFields _httpFields;
     private final long _contentLength;
     private final Supplier<HttpFields> _trailers;
+    private Content.Source.Seekable _source;
 
     public MetaData(HttpVersion version, HttpFields fields)
     {
@@ -103,6 +105,18 @@ public class MetaData implements Iterable<HttpField>
     public Supplier<HttpFields> getTrailersSupplier()
     {
         return _trailers;
+    }
+
+    @Override
+    public Content.Source.Seekable getContentSource()
+    {
+        return _source;
+    }
+
+    @Override
+    public void setContentSource(Content.Source.Seekable source)
+    {
+        _source = source;
     }
 
     /**

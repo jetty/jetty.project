@@ -1378,6 +1378,8 @@ public class HTTPServerDocs
         handler.setWelcomeFiles(List.of("index.html"));
         // Configure whether to accept range requests.
         handler.setAcceptRanges(true);
+        // Configure whether to try the transfer-to optimization.
+        handler.setTryTransferTo(true);
 
         // Link the context to the server.
         server.setHandler(handler);

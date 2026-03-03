@@ -28,9 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpGeneratorClientTest
 {
-    public static final String[] connect = {null, "keep-alive", "close"};
-
-    class RequestInfo extends MetaData.Request
+    static class RequestInfo extends MetaData.Request
     {
         RequestInfo(String method, String uri, HttpFields fields)
         {
@@ -281,11 +279,11 @@ public class HttpGeneratorClientTest
         out += BufferUtil.toString(content0);
         BufferUtil.clear(content0);
 
-        result = gen.generateRequest(null, header, null, content1, false);
+        result = gen.generateRequest(info, header, null, content1, false);
         assertEquals(HttpGenerator.Result.NEED_CHUNK, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
 
-        result = gen.generateRequest(null, null, chunk, content1, false);
+        result = gen.generateRequest(info, null, chunk, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
         assertTrue(gen.isChunking());
@@ -294,19 +292,21 @@ public class HttpGeneratorClientTest
         out += BufferUtil.toString(content1);
         BufferUtil.clear(content1);
 
-        result = gen.generateResponse(null, false, null, chunk, null, true);
+        MetaData.Response responseInfo = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_1_1, HttpFields.EMPTY);
+
+        result = gen.generateResponse(responseInfo, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         assertTrue(gen.isChunking());
 
-        result = gen.generateResponse(null, false, null, chunk, null, true);
+        result = gen.generateResponse(responseInfo, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         out += BufferUtil.toString(chunk);
         BufferUtil.clear(chunk);
         assertTrue(!gen.isChunking());
 
-        result = gen.generateResponse(null, false, null, chunk, null, true);
+        result = gen.generateResponse(responseInfo, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
 
@@ -353,19 +353,21 @@ public class HttpGeneratorClientTest
         out += BufferUtil.toString(content0);
         BufferUtil.clear(content0);
 
-        result = gen.generateRequest(null, null, null, content1, false);
+        result = gen.generateRequest(info, null, null, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
         assertTrue(!gen.isChunking());
         out += BufferUtil.toString(content1);
         BufferUtil.clear(content1);
 
-        result = gen.generateResponse(null, false, null, null, null, true);
+        MetaData.Response responseInfo = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_1_1, HttpFields.EMPTY);
+
+        result = gen.generateResponse(responseInfo, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         assertTrue(!gen.isChunking());
 
-        result = gen.generateResponse(null, false, null, null, null, true);
+        result = gen.generateResponse(responseInfo, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
         out += BufferUtil.toString(chunk);

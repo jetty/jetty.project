@@ -298,13 +298,13 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
     {
-        ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
+        content = Objects.requireNonNullElse(content, BufferUtil.EMPTY_BUFFER);
         if (response != null)
             sendHeaders(request, response, content, last, callback);
         else
-            sendContent(request, content, last, callback);
+            sendContent(request, _responseMetaData, content, last, callback);
     }
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
@@ -316,18 +316,19 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         HeadersFrame trailersFrame = null;
 
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
+        Content.Source.Seekable contentSource = response.getContentSource();
+        boolean contentAsSource = content == Content.Sink.CONTENT_SOURCE;
+        long contentLength = contentAsSource ? contentSource.getLength() : BufferUtil.length(content);
+        boolean hasContent = (contentLength > 0 || contentAsSource) && !isHeadRequest;
         int streamId = _stream.getId();
         if (HttpStatus.isInterim(response.getStatus()))
         {
             // Must not commit interim responses.
-
             if (hasContent)
             {
                 callback.failed(new IllegalStateException("Interim response cannot have content"));
                 return;
             }
-
             headersFrame = new HeadersFrame(streamId, response, null, false);
         }
         else
@@ -335,20 +336,19 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             _committed = true;
             if (last)
             {
-                long realContentLength = BufferUtil.length(content);
-                long contentLength = response.getContentLength();
-                if (contentLength < 0)
+                long responseContentLength = response.getContentLength();
+                if (responseContentLength < 0)
                 {
                     _responseMetaData = new MetaData.Response(
                         response.getStatus(), response.getReason(), response.getHttpVersion(),
                         response.getHttpFields(),
-                        realContentLength,
+                        contentLength,
                         response.getTrailersSupplier()
                     );
                 }
-                else if (hasContent && contentLength != realContentLength)
+                else if (hasContent && responseContentLength != contentLength)
                 {
-                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
+                    callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", responseContentLength, contentLength)));
                     return;
                 }
             }
@@ -361,17 +361,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                     HttpFields trailers = retrieveTrailers();
                     if (trailers == null)
                     {
-                        dataFrame = new DataFrame(streamId, content, true);
+                        dataFrame = contentAsSource ? new DataFrame(streamId, contentSource, true) : new DataFrame(streamId, content, true);
                     }
                     else
                     {
-                        dataFrame = new DataFrame(streamId, content, false);
+                        dataFrame = contentAsSource ? new DataFrame(streamId, contentSource, false) : new DataFrame(streamId, content, false);
                         trailersFrame = new HeadersFrame(streamId, new MetaData(HttpVersion.HTTP_2, trailers), null, true);
                     }
                 }
                 else
                 {
-                    dataFrame = new DataFrame(streamId, content, false);
+                    dataFrame = contentAsSource ? new DataFrame(streamId, contentSource, false) : new DataFrame(streamId, content, false);
                 }
             }
             else
@@ -414,11 +414,14 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         _stream.send(new HTTP2Stream.FrameList(headersFrame, dataFrame, trailersFrame), callback);
     }
 
-    private void sendContent(MetaData.Request request, ByteBuffer content, boolean last, Callback callback)
+    private void sendContent(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        if (hasContent || (last && !isTunnel(request, _responseMetaData)))
+        boolean contentAsSource = content == Content.Sink.CONTENT_SOURCE;
+        Content.Source.Seekable contentSource = response.getContentSource();
+        long contentLength = contentAsSource ? contentSource.getLength() : BufferUtil.length(content);
+        boolean hasContent = (contentLength > 0 || contentAsSource) && !isHeadRequest;
+        if (hasContent || (last && !isTunnel(request, response)))
         {
             if (!hasContent)
                 content = BufferUtil.EMPTY_BUFFER;
@@ -427,14 +430,14 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 HttpFields trailers = retrieveTrailers();
                 if (trailers == null)
                 {
-                    sendDataFrame(content, true, true, callback);
+                    sendDataFrame(content, contentSource, true, true, callback);
                 }
                 else
                 {
                     if (hasContent)
                     {
                         SendTrailers sendTrailers = new SendTrailers(callback, trailers);
-                        sendDataFrame(content, true, false, sendTrailers);
+                        sendDataFrame(content, contentSource, true, false, sendTrailers);
                     }
                     else
                     {
@@ -444,7 +447,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             }
             else
             {
-                sendDataFrame(content, false, false, callback);
+                sendDataFrame(content, contentSource, false, false, callback);
             }
         }
         else
@@ -554,15 +557,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
     }
 
-    private void sendDataFrame(ByteBuffer content, boolean lastContent, boolean endStream, Callback callback)
+    private void sendDataFrame(ByteBuffer content, Content.Source.Seekable contentSource, boolean lastContent, boolean endStream, Callback callback)
     {
+        boolean contentAsSource = content == Content.Sink.CONTENT_SOURCE;
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Response #{}/{}: {} content bytes{}",
                 _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
-                content.remaining(), lastContent ? " (last chunk)" : "");
+                contentAsSource ? contentSource.remaining() : content.remaining(),
+                lastContent ? " (last chunk)" : "");
         }
-        DataFrame frame = new DataFrame(_stream.getId(), content, endStream);
+        DataFrame frame = contentAsSource ? new DataFrame(_stream.getId(), contentSource, endStream) : new DataFrame(_stream.getId(), content, endStream);
         _stream.data(frame, callback);
     }
 

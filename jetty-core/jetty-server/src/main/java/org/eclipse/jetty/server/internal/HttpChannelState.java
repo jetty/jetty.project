@@ -1235,11 +1235,13 @@ public class HttpChannelState implements HttpChannel, Components
      * method when calling
      * {@link HttpStream#send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
      */
-    public static class ChannelResponse implements Response, Callback
+    public static class ChannelResponse implements Response, Content.Source.Seekable.Aware, Callback
     {
         private final ChannelRequest _request;
         private final ResponseHttpFields _httpFields;
-        protected int _status;
+        private MetaData.Response _metaData;
+        private int _status;
+        private Content.Source.Seekable _source;
         private long _contentBytesWritten;
         private Supplier<HttpFields> _trailers;
         private Callback _writeCallback;
@@ -1335,7 +1337,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             Callback writeCallback = Objects.requireNonNullElse(callback, NOOP);
 
-            long length = BufferUtil.length(content);
+            long length = content == Content.Sink.CONTENT_SOURCE ? getContentSource().remaining() : BufferUtil.length(content);
 
             HttpChannelState httpChannelState;
             HttpStream stream;
@@ -1407,7 +1409,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _contentBytesWritten = totalWritten;
                 stream = httpChannelState._stream;
                 if (_httpFields.commit())
-                    responseMetaData = lockedPrepareResponse(httpChannelState, last);
+                    _metaData = responseMetaData = lockedPrepareResponse(httpChannelState, last);
             }
 
             if (LOG.isDebugEnabled())
@@ -1514,6 +1516,24 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
+        public Content.Source.Seekable getContentSource()
+        {
+            if (_metaData != null)
+                return _metaData.getContentSource();
+            else
+                return _source;
+        }
+
+        @Override
+        public void setContentSource(Content.Source.Seekable source)
+        {
+            if (_metaData != null)
+                _metaData.setContentSource(source);
+            else
+                _source = source;
+        }
+
+        @Override
         public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
         {
             if (!HttpStatus.isInterim(status))
@@ -1569,12 +1589,14 @@ public class HttpChannelState implements HttpChannel, Components
 
             httpChannel._stream.prepareResponse(mutableHeaders);
 
-            return new MetaData.Response(
+            MetaData.Response response = new MetaData.Response(
                 _status, null, httpChannel.getConnectionMetaData().getHttpVersion(),
                 _httpFields,
                 httpChannel._committedContentLength,
                 getTrailersSupplier()
             );
+            response.setContentSource(getContentSource());
+            return response;
         }
 
         @Override
@@ -1823,7 +1845,7 @@ public class HttpChannelState implements HttpChannel, Components
         public ErrorResponse(ChannelRequest request)
         {
             super(request);
-            _status = HttpStatus.INTERNAL_SERVER_ERROR_500;
+            setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
         }
 
         @Override
@@ -1847,7 +1869,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             assert httpChannelState._request._lock.isHeldByCurrentThread();
             MetaData.Response httpFields = super.lockedPrepareResponse(httpChannelState, last);
-            httpChannelState._response._status = _status;
+            httpChannelState._response._status = getStatus();
             HttpFields.Mutable originalResponseFields = httpChannelState._responseHeaders.getMutableHttpFields();
             originalResponseFields.clear();
             originalResponseFields.add(getResponseHttpFields());
@@ -1918,7 +1940,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 failure = _failure;
                 httpChannelState = _request.lockedGetHttpChannelState();
-                httpChannelState._response._status = _errorResponse._status;
+                httpChannelState._response.setStatus(_errorResponse.getStatus());
             }
             ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
             HttpChannelState.failed(httpChannelState._lastWriteCallback, failure);

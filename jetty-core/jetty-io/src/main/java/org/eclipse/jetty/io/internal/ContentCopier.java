@@ -26,6 +26,7 @@ public class ContentCopier extends IteratingNestedCallback
     private static final Logger LOG = LoggerFactory.getLogger(ContentCopier.class);
 
     private final Content.Source source;
+    private final boolean last;
     private final Content.Sink sink;
     private final Content.Chunk.Processor chunkProcessor;
     private Content.Chunk chunk;
@@ -33,8 +34,14 @@ public class ContentCopier extends IteratingNestedCallback
 
     public ContentCopier(Content.Source source, Content.Sink sink, Content.Chunk.Processor chunkProcessor, Callback callback)
     {
+        this(source, true, sink, chunkProcessor, callback);
+    }
+
+    public ContentCopier(Content.Source source, boolean last, Content.Sink sink, Content.Chunk.Processor chunkProcessor, Callback callback)
+    {
         super(callback);
         this.source = source;
+        this.last = last;
         this.sink = sink;
         this.chunkProcessor = chunkProcessor;
     }
@@ -64,7 +71,7 @@ public class ContentCopier extends IteratingNestedCallback
             return Action.SCHEDULED;
         }
 
-        sink.write(chunk.isLast(), chunk.getByteBuffer(), this);
+        sink.write(chunk.isLast() && last, chunk.getByteBuffer(), this);
         return Action.SCHEDULED;
     }
 
