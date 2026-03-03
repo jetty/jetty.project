@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.server.tls;
+package org.eclipse.jetty.quic.tests;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -14,13 +14,22 @@
 package org.eclipse.jetty.quic.common.tls;
 
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
+import java.security.cert.CertPathBuilder;
+import java.security.cert.CertPathBuilderResult;
+import java.security.cert.CertPathValidator;
+import java.security.cert.CertStore;
+import java.security.cert.CollectionCertStoreParameters;
+import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.List;
 import javax.crypto.KDF;
 import javax.crypto.Mac;
@@ -33,6 +42,7 @@ import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.quic.common.tls.parser.QuicMessagesParser;
+import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.FinishedMessage;
@@ -46,6 +56,7 @@ import org.eclipse.jetty.tls.common.parser.MessagesParser;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +78,7 @@ public abstract class TLSEngine
     private CipherSuite cipherSuite;
     private String applicationProtocol;
     private TransportParameters transportParameters;
+    private CertificateMessage peerCertificate;
 
     protected TLSEngine(PacketProtector protector, boolean client)
     {
@@ -175,11 +187,85 @@ public abstract class TLSEngine
         this.transportParameters = transportParameters;
     }
 
+    public CertificateMessage getPeerCertificate()
+    {
+        return peerCertificate;
+    }
+
+    public void setPeerCertificate(CertificateMessage peerCertificate)
+    {
+        this.peerCertificate = peerCertificate;
+    }
+
     public byte[] newRandomBytes(int length)
     {
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return bytes;
+    }
+
+    protected List<X509KeyStorePair> loadKeyStore(KeyStore keyStore, String password) throws Exception
+    {
+        if (keyStore == null)
+            return List.of();
+        List<X509KeyStorePair> keyStorePairs = new ArrayList<>();
+        char[] chars = password == null ? new char[0] : password.toCharArray();
+        KeyStore.PasswordProtection ksPassword = new KeyStore.PasswordProtection(chars);
+        Arrays.fill(chars, '*');
+        Enumeration<String> aliases = keyStore.aliases();
+        while (aliases.hasMoreElements())
+        {
+            String alias = aliases.nextElement();
+            if (keyStore.isKeyEntry(alias))
+            {
+                KeyStore.Entry entry = keyStore.getEntry(alias, ksPassword);
+                if (entry instanceof KeyStore.PrivateKeyEntry pke)
+                {
+                    PrivateKey privateKey = pke.getPrivateKey();
+                    X509KeyStorePair keyStorePair = new X509KeyStorePair(alias, privateKey, Arrays.stream(pke.getCertificateChain())
+                        .map(X509Certificate.class::cast)
+                        .toList());
+                    keyStorePairs.add(keyStorePair);
+                }
+            }
+        }
+        ksPassword.destroy();
+        return keyStorePairs;
+    }
+
+    protected void processCertificateVerifyMessage(List<SignatureAlgorithm> signatureAlgorithms, CertificateVerifyMessage certificateVerify, boolean client) throws Exception
+    {
+        SignatureAlgorithm signatureAlgorithm = certificateVerify.signatureAlgorithm();
+        if (!signatureAlgorithms.contains(signatureAlgorithm))
+            throw new TLSException(TLSException.Alert.BAD_CERTIFICATE, "unsupported_certificate_signature_algorithm");
+
+        if (!verifyCertificateVerifyMessage(getPeerCertificate().entries().getFirst().certificate(), certificateVerify, client))
+            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid_certificate_verify");
+
+        getPacketProtector().getTranscriptHash().offer(certificateVerify, true);
+    }
+
+    protected void verifyCertificateChain(SslContextFactory sslContextFactory, List<X509Certificate> certificateChain)
+    {
+        try
+        {
+            if (sslContextFactory.isTrustAll())
+                return;
+
+            KeyStore trustStore = sslContextFactory.getTrustStore();
+            X509CertSelector certSelector = new X509CertSelector();
+            certSelector.setCertificate(certificateChain.getFirst());
+            PKIXBuilderParameters params = new PKIXBuilderParameters(trustStore, certSelector);
+            // TODO: support revocation via PKIXRevocationChecker.
+            params.setRevocationEnabled(false);
+            params.addCertStore(CertStore.getInstance("Collection", new CollectionCertStoreParameters(certificateChain)));
+            CertPathBuilderResult buildResult = CertPathBuilder.getInstance("PKIX").build(params);
+            CertPathValidator.getInstance("PKIX").validate(buildResult.getCertPath(), params);
+        }
+        catch (Throwable x)
+        {
+            throw new TLSException(TLSException.Alert.BAD_CERTIFICATE, "invalid_certificate_chain", x);
+        }
     }
 
     protected CertificateVerifyMessage createCertificateVerifyMessage(SignatureAlgorithm signatureAlgorithm, PrivateKey privateKey, boolean client) throws Exception

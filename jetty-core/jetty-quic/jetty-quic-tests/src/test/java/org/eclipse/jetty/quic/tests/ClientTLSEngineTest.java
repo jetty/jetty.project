@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.client.tls;
+package org.eclipse.jetty.quic.tests;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,8 +63,8 @@ public class ClientTLSEngineTest
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers packetNumbers = new PacketNumbers();
-        TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, true), new QuicMessagesGenerator(byteBufferPool, false));
-        PacketProtector packetProtector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
+        TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, false), new QuicMessagesGenerator(byteBufferPool, true));
+        PacketProtector packetProtector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         configuration = new ClientTLSConfiguration(new QuicClientQuicConfiguration(), sslContextFactory, new DefaultZeroRTTStore());
         configuration.setInputKeyMaterial(new byte[12]);
