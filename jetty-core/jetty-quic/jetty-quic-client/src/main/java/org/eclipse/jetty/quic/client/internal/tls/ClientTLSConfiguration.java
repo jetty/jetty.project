@@ -22,8 +22,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public final class ClientTLSConfiguration extends TLSConfiguration
 {
-    private final QuicClientQuicConfiguration quicConfiguration;
-    private final SslContextFactory.Client sslContextFactory;
     private final ZeroRTTStore zeroRTTStore;
     private String serverName;
     private TransportParameters transportParameters;
@@ -32,19 +30,18 @@ public final class ClientTLSConfiguration extends TLSConfiguration
 
     public ClientTLSConfiguration(QuicClientQuicConfiguration quicConfiguration, SslContextFactory.Client sslContextFactory, ZeroRTTStore zeroRTTStore)
     {
-        this.quicConfiguration = quicConfiguration;
-        this.sslContextFactory = sslContextFactory;
+        super(quicConfiguration, sslContextFactory);
         this.zeroRTTStore = zeroRTTStore;
     }
 
     public QuicClientQuicConfiguration getClientQuicConfiguration()
     {
-        return quicConfiguration;
+        return (QuicClientQuicConfiguration)super.getQuicConfiguration();
     }
 
     public SslContextFactory.Client getSslContextFactory()
     {
-        return sslContextFactory;
+        return (SslContextFactory.Client)super.getSslContextFactory();
     }
 
     public ZeroRTTStore getZeroRTTStore()

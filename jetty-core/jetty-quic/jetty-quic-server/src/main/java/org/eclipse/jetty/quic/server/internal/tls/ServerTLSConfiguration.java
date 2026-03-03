@@ -20,26 +20,23 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public final class ServerTLSConfiguration extends TLSConfiguration
 {
-    private final QuicServerQuicConfiguration quicConfiguration;
-    private final SslContextFactory.Server sslContextFactory;
     private final TransportParameters transportParameters;
 
     public ServerTLSConfiguration(QuicServerQuicConfiguration quicConfiguration, SslContextFactory.Server sslContextFactory)
     {
-        this.quicConfiguration = quicConfiguration;
-        this.sslContextFactory = sslContextFactory;
+        super(quicConfiguration, sslContextFactory);
         this.transportParameters = new TransportParameters();
         quicConfiguration.configure(transportParameters);
     }
 
     public QuicServerQuicConfiguration getServerQuicConfiguration()
     {
-        return quicConfiguration;
+        return (QuicServerQuicConfiguration)super.getQuicConfiguration();
     }
 
     public SslContextFactory.Server getSslContextFactory()
     {
-        return sslContextFactory;
+        return (SslContextFactory.Server)super.getSslContextFactory();
     }
 
     public TransportParameters getTransportParameters()

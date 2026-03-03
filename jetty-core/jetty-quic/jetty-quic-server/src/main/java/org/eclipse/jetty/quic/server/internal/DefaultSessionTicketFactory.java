@@ -38,6 +38,7 @@ import org.eclipse.jetty.quic.server.SessionTicket;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.TLSVersion;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
 
@@ -136,7 +137,8 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
             SessionTicket.Configuration configuration = ticket.configuration();
             HandshakeData handshake = ticket.handshakeData();
             byte[] serverName = handshake.serverName().getBytes(StandardCharsets.UTF_8);
-            byte[] protocol = handshake.applicationProtocol().getBytes(StandardCharsets.US_ASCII);
+            String appProtocol = handshake.applicationProtocol();
+            byte[] protocol = appProtocol == null ? BufferUtil.EMPTY_BYTES : appProtocol.getBytes(StandardCharsets.US_ASCII);
             RetainableByteBuffer.DynamicCapacity accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
             int length = generator.generate(accumulator, handshake.transportParameters());
             byte[] transportParameters = new byte[length];

@@ -16,12 +16,32 @@ package org.eclipse.jetty.quic.common.tls;
 import java.util.List;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class TLSConfiguration
 {
+    private final QuicConfiguration quicConfiguration;
+    private final SslContextFactory sslContextFactory;
     private QuicVersion quicVersion;
     private List<String> applicationProtocols;
+
+    public TLSConfiguration(QuicConfiguration quicConfiguration, SslContextFactory sslContextFactory)
+    {
+        this.quicConfiguration = quicConfiguration;
+        this.sslContextFactory = sslContextFactory;
+    }
+
+    public QuicConfiguration getQuicConfiguration()
+    {
+        return quicConfiguration;
+    }
+
+    public SslContextFactory getSslContextFactory()
+    {
+        return sslContextFactory;
+    }
 
     public QuicVersion getQuicVersion()
     {

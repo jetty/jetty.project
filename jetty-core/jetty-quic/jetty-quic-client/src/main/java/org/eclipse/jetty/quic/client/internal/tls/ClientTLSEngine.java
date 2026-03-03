@@ -13,14 +13,6 @@
 
 package org.eclipse.jetty.quic.client.internal.tls;
 
-import java.security.KeyStore;
-import java.security.cert.CertPathBuilder;
-import java.security.cert.CertPathBuilderResult;
-import java.security.cert.CertPathValidator;
-import java.security.cert.CertStore;
-import java.security.cert.CollectionCertStoreParameters;
-import java.security.cert.PKIXBuilderParameters;
-import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +27,9 @@ import org.eclipse.jetty.quic.common.ZeroRTTStore;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.HandshakeData;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
+import org.eclipse.jetty.quic.common.tls.X509KeyStorePair;
 import org.eclipse.jetty.tls.CertificateMessage;
+import org.eclipse.jetty.tls.CertificateRequestMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.ClientHelloMessage;
@@ -62,8 +56,10 @@ import org.eclipse.jetty.tls.ext.ServerPreSharedKeyExtension;
 import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,12 +70,13 @@ public class ClientTLSEngine extends TLSEngine
     private static final Logger LOG = LoggerFactory.getLogger(ClientTLSEngine.class);
 
     private State state = State.INITIAL;
-    private ClientTLSConfiguration configuration;
+    private ClientTLSConfiguration tlsConfiguration;
     private List<GroupKeyPair> groupKeyPairs;
     private ClientHelloMessage clientHello;
-    private CertificateMessage certificate;
+    private CertificateRequestMessage certificateRequest;
     private ZeroRTTStore.Entry zeroRTTEntry;
     private boolean resuming;
+    private List<X509KeyStorePair> keyStorePairs;
 
     public ClientTLSEngine(PacketProtector protector)
     {
@@ -97,13 +94,15 @@ public class ClientTLSEngine extends TLSEngine
                 throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
             state = State.NEED_SERVER_HELLO;
 
-            this.configuration = configuration;
+            tlsConfiguration = configuration;
 
             List<Extension> extensions = new ArrayList<>();
             String serverName = configuration.getServerName();
             extensions.add(new ServerNameExtension(serverName));
             setServerName(serverName);
-            extensions.add(new ALPNExtension(configuration.getApplicationProtocols()));
+            List<String> applicationProtocols = configuration.getApplicationProtocols();
+            if (applicationProtocols != null && !applicationProtocols.isEmpty())
+                extensions.add(new ALPNExtension(applicationProtocols));
             extensions.add(new QuicTransportParametersExtension(configuration.getTransportParameters()));
 
             List<CipherSuite> cipherSuites = configuration.getClientQuicConfiguration().getCipherSuites();
@@ -233,12 +232,13 @@ public class ClientTLSEngine extends TLSEngine
             super.onMessage(encryptionLevel, message);
             switch (message)
             {
-                case ServerHelloMessage serverHello -> processServerHello(serverHello);
-                case EncryptedExtensionsMessage encryptedExtensions -> processEncryptedExtensions(encryptedExtensions);
-                case CertificateMessage certificate -> processCertificate(certificate);
-                case CertificateVerifyMessage certificateVerify -> processCertificateVerify(certificateVerify);
-                case FinishedMessage finished -> processFinished(finished);
-                case NewSessionTicketMessage newSessionTicket -> processNewSessionTicket(newSessionTicket);
+                case ServerHelloMessage serverHello -> processServerHelloMessage(serverHello);
+                case EncryptedExtensionsMessage encryptedExtensions -> processEncryptedExtensionsMessage(encryptedExtensions);
+                case CertificateRequestMessage certificateRequest -> processCertificateRequestMessage(certificateRequest);
+                case CertificateMessage certificate -> processCertificateMessage(certificate);
+                case CertificateVerifyMessage certificateVerify -> processCertificateVerifyMessage(certificateVerify);
+                case FinishedMessage finished -> processFinishedMessage(finished);
+                case NewSessionTicketMessage newSessionTicket -> processNewSessionTicketMessage(newSessionTicket);
                 default -> throw new IllegalStateException("unexpected_tls_message_" + message.type().name().toLowerCase(Locale.ROOT));
             }
         }
@@ -250,14 +250,14 @@ public class ClientTLSEngine extends TLSEngine
         }
     }
 
-    private void processServerHello(ServerHelloMessage serverHello)
+    private void processServerHelloMessage(ServerHelloMessage message)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processing {} on {}", serverHello, this);
+            LOG.debug("processing {} on {}", message, this);
 
         if (state != State.NEED_SERVER_HELLO)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
-        if (serverHello.sessionId().length != 0)
+        if (message.sessionId().length != 0)
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "invalid_legacy_session_id");
 
         // TODO
@@ -267,7 +267,7 @@ public class ClientTLSEngine extends TLSEngine
 //            return;
 //        }
 
-        List<Extension> extensions = serverHello.extensions();
+        List<Extension> extensions = message.extensions();
         List<TLSVersion> serverVersions = List.of();
         List<KeyShare> keyShares = List.of();
         int pskIndex = -1;
@@ -310,7 +310,7 @@ public class ClientTLSEngine extends TLSEngine
             LOG.debug("negotiated TLS version {} on {}", tlsVersion, this);
 
         // RFC-8446[4.1.3]: the client must have offered the CipherSuite.
-        CipherSuite cipherSuite = serverHello.cipherSuite();
+        CipherSuite cipherSuite = message.cipherSuite();
         clientHello.cipherSuites().stream()
             .filter(cipherSuite::equals)
             .findFirst()
@@ -352,24 +352,24 @@ public class ClientTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated KeyPair in NamedGroup {} on {}", serverKeyShare.namedGroup(), this);
 
-        getPacketProtector().getTranscriptHash().offer(serverHello, true);
+        getPacketProtector().getTranscriptHash().offer(message, true);
         HKDFParameterSpec pskSpec = null;
         if (resuming)
             pskSpec = HKDF.expandLabel(zeroRTTEntry.resumptionMasterSecret(), "resumption", zeroRTTEntry.newSessionTicket().nonce(), cipherSuite.hashLength());
-        getPacketProtector().generateHandshakeKeys(configuration.getQuicVersion(), cipherSuite, sharedSecret, pskSpec);
+        getPacketProtector().generateHandshakeKeys(tlsConfiguration.getQuicVersion(), cipherSuite, sharedSecret, pskSpec);
 
         state = State.NEED_ENCRYPTED_EXTENSIONS;
     }
 
-    private void processEncryptedExtensions(EncryptedExtensionsMessage encryptedExtensions)
+    private void processEncryptedExtensionsMessage(EncryptedExtensionsMessage message)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processing {} on {}", encryptedExtensions, this);
+            LOG.debug("processing {} on {}", message, this);
 
         if (state != State.NEED_ENCRYPTED_EXTENSIONS)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
-        List<Extension> extensions = encryptedExtensions.extensions();
+        List<Extension> extensions = message.extensions();
         List<String> serverProtocols = List.of();
         for (Extension extension : extensions)
         {
@@ -405,12 +405,30 @@ public class ClientTLSEngine extends TLSEngine
             setApplicationProtocol(negotiatedProtocols.getFirst());
         }
 
-        getPacketProtector().getTranscriptHash().offer(encryptedExtensions, true);
+        getPacketProtector().getTranscriptHash().offer(message, true);
 
         state = resuming ? State.NEED_FINISHED : State.NEED_CERTIFICATE;
     }
 
-    private void processCertificate(CertificateMessage message)
+    private void processCertificateRequestMessage(CertificateRequestMessage message) throws Exception
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} on {}", message, this);
+
+        if (state != State.NEED_CERTIFICATE)
+            throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
+
+        if (message.context().length != 0)
+            throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "unexpected_certificate_request_context");
+
+        // Process the CertificateRequestMessage after receiving the FinishedMessage
+        // from the server, to keep the TranscriptHash of client and server in sync.
+        certificateRequest = message;
+
+        getPacketProtector().getTranscriptHash().offer(message, true);
+    }
+
+    private void processCertificateMessage(CertificateMessage message)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", message, this);
@@ -422,7 +440,7 @@ public class ClientTLSEngine extends TLSEngine
             .map(CertificateMessage.Entry::certificate)
             .toList();
 
-        // RFC-8446[4.4.2.4]: an empty certificate message is not allowed.
+        // RFC-8446[4.4.2.4]: the server cannot send an empty certificate message.
         if (certificateChain.isEmpty())
             throw new TLSException(TLSException.Alert.DECODE_ERROR, "missing_certificate");
 
@@ -434,10 +452,10 @@ public class ClientTLSEngine extends TLSEngine
                 throw new TLSException(TLSException.Alert.BAD_CERTIFICATE, "forbidden_certificate_signature_algorithm");
         }
 
-        verifyCertificateChain(certificateChain);
-
         // RFC-2818[3]: verify server identity.
-        String endpointIdentificationAlgorithm = configuration.getSslContextFactory().getEndpointIdentificationAlgorithm();
+        SslContextFactory sslContextFactory = tlsConfiguration.getSslContextFactory();
+        verifyCertificateChain(sslContextFactory, certificateChain);
+        String endpointIdentificationAlgorithm = sslContextFactory.getEndpointIdentificationAlgorithm();
         if (StringUtil.isNotBlank(endpointIdentificationAlgorithm))
         {
             if (!identityMatches(certificateChain.getFirst(), getServerName()))
@@ -445,71 +463,48 @@ public class ClientTLSEngine extends TLSEngine
         }
 
         getPacketProtector().getTranscriptHash().offer(message, true);
-
-        certificate = message;
+        setPeerCertificate(message);
         state = State.NEED_CERTIFICATE_VERIFY;
     }
 
-    private void verifyCertificateChain(List<X509Certificate> certificateChain)
-    {
-        try
-        {
-            if (configuration.getSslContextFactory().isTrustAll())
-                return;
-
-            KeyStore trustStore = configuration.getSslContextFactory().getTrustStore();
-            X509CertSelector certSelector = new X509CertSelector();
-            certSelector.setCertificate(certificateChain.getFirst());
-            PKIXBuilderParameters params = new PKIXBuilderParameters(trustStore, certSelector);
-            params.addCertStore(CertStore.getInstance("Collection", new CollectionCertStoreParameters(certificateChain)));
-            CertPathBuilderResult buildResult = CertPathBuilder.getInstance("PKIX").build(params);
-            CertPathValidator.getInstance("PKIX").validate(buildResult.getCertPath(), params);
-        }
-        catch (Throwable x)
-        {
-            throw new TLSException(TLSException.Alert.BAD_CERTIFICATE, "invalid_certificate_chain", x);
-        }
-    }
-
-    private void processCertificateVerify(CertificateVerifyMessage certificateVerify) throws Exception
+    private void processCertificateVerifyMessage(CertificateVerifyMessage message) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processing {} on {}", certificateVerify, this);
+            LOG.debug("processing {} on {}", message, this);
 
         if (state != State.NEED_CERTIFICATE_VERIFY)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
-        SignatureAlgorithm signatureAlgorithm = certificateVerify.signatureAlgorithm();
-        if (!configuration.getClientQuicConfiguration().getSignatureAlgorithms().contains(signatureAlgorithm))
-            throw new TLSException(TLSException.Alert.BAD_CERTIFICATE, "unsupported_certificate_signature_algorithm");
-
-        if (!verifyCertificateVerifyMessage(certificate.entries().getFirst().certificate(), certificateVerify, false))
-            throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid_certificate_verify");
-
-        getPacketProtector().getTranscriptHash().offer(certificateVerify, true);
+        processCertificateVerifyMessage(tlsConfiguration.getClientQuicConfiguration().getSignatureAlgorithms(), message, false);
 
         state = State.NEED_FINISHED;
     }
 
-    private void processFinished(FinishedMessage finished) throws Exception
+    private void processFinishedMessage(FinishedMessage message) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processing {} on {}", finished, this);
+            LOG.debug("processing {} on {}", message, this);
 
         if (state != State.NEED_FINISHED)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
         CipherSuite cipherSuite = getCipherSuite();
-        if (!verifyFinishedMessage(cipherSuite, finished))
+        if (!verifyFinishedMessage(cipherSuite, message))
             throw new TLSException(TLSException.Alert.DECRYPT_ERROR, "invalid_finished_verify_data");
 
         if (LOG.isDebugEnabled())
-            LOG.debug("verified {} on {}", finished, this);
+            LOG.debug("verified {} on {}", message, this);
 
-        getPacketProtector().getTranscriptHash().offer(finished, true);
-        getPacketProtector().generateOneRTTKeys(configuration.getQuicVersion(), cipherSuite);
+        getPacketProtector().getTranscriptHash().offer(message, true);
+        getPacketProtector().generateOneRTTKeys(tlsConfiguration.getQuicVersion(), cipherSuite);
 
-        FinishedMessage message = createFinishedMessage(cipherSuite);
-        getPacketProtector().getTranscriptHash().offer(message, false);
+        List<Message> messages = new ArrayList<>();
+
+        if (certificateRequest != null)
+            messages.addAll(postProcessCertificateRequestMessage(certificateRequest));
+
+        FinishedMessage finished = createFinishedMessage(cipherSuite);
+        messages.add(finished);
+        getPacketProtector().getTranscriptHash().offer(finished, false);
 
         state = State.HANDSHAKE_SUCCESSFUL;
 
@@ -519,12 +514,78 @@ public class ClientTLSEngine extends TLSEngine
         // RFC-9001[4.1.1]: handshake is complete when the Finished message
         // is sent, and the peer's Finished message has been verified.
         Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, this::handshakeSuccessful, this::handshakeFailed);
-        notifyOutgoingMessages(EncryptionLevel.HANDSHAKE, List.of(message), callback);
+        notifyOutgoingMessages(EncryptionLevel.HANDSHAKE, messages, callback);
+    }
+
+    private List<Message> postProcessCertificateRequestMessage(CertificateRequestMessage message) throws Exception
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("post-processing {} on {}", certificateRequest, this);
+
+        List<SignatureAlgorithm> signatureAlgorithms = message.extensions().stream()
+            .filter(e -> e instanceof SignatureAlgorithmsExtension)
+            .map(SignatureAlgorithmsExtension.class::cast)
+            .findFirst()
+            .map(SignatureAlgorithmsExtension::signatureAlgorithms)
+            .orElse(List.of());
+        if (signatureAlgorithms.isEmpty())
+            throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_signature_algorithms_extension");
+
+        SslContextFactory.Client sslContextFactory = tlsConfiguration.getSslContextFactory();
+
+        if (keyStorePairs == null)
+            keyStorePairs = loadKeyStore(sslContextFactory.getKeyStore(), sslContextFactory.getKeyStorePassword());
+
+        SignatureAlgorithm algorithmMatch = null;
+        X509KeyStorePair match = null;
+        if (!keyStorePairs.isEmpty())
+        {
+            String alias = sslContextFactory.getCertAlias();
+            for (SignatureAlgorithm signatureAlgorithm : signatureAlgorithms)
+            {
+                for (X509KeyStorePair keyStorePair : keyStorePairs)
+                {
+                    if (signatureAlgorithm.supports(keyStorePair.certificates().getFirst().getPublicKey()))
+                    {
+                        if (alias != null && !alias.equals(keyStorePair.alias()))
+                            continue;
+                        algorithmMatch = signatureAlgorithm;
+                        match = keyStorePair;
+                        break;
+                    }
+                }
+                if (match != null)
+                    break;
+            }
+        }
+
+        List<Message> messages = new ArrayList<>();
+
+        // RFC-8446[4.4.2]: if no match, send an empty Certificate message.
+        List<CertificateMessage.Entry> entries = match == null ? List.of() : match.certificates().stream()
+            .map(c -> new CertificateMessage.Entry(c, List.of()))
+            .toList();
+        CertificateMessage certificate = new CertificateMessage(BufferUtil.EMPTY_BYTES, entries);
+        messages.add(certificate);
+        getPacketProtector().getTranscriptHash().offer(certificate, false);
+        if (LOG.isDebugEnabled())
+            LOG.debug("produced {} on {}", certificate, this);
+
+        if (match != null)
+        {
+            CertificateVerifyMessage certificateVerify = createCertificateVerifyMessage(algorithmMatch, match.privateKey(), true);
+            messages.add(certificateVerify);
+            getPacketProtector().getTranscriptHash().offer(certificateVerify, false);
+            if (LOG.isDebugEnabled())
+                LOG.debug("produced {} on {}", certificateVerify, this);
+        }
+
+        return messages;
     }
 
     private void handshakeSuccessful()
     {
-        HandshakeData handshakeData = new HandshakeData(configuration.getQuicVersion(), getTLSVersion(), getServerName(), getCipherSuite(), getApplicationProtocol(), getTransportParameters());
+        HandshakeData handshakeData = new HandshakeData(tlsConfiguration.getQuicVersion(), getTLSVersion(), getServerName(), getCipherSuite(), getApplicationProtocol(), getTransportParameters());
         notifyHandshakeCompleted(handshakeData, null);
     }
 
@@ -533,10 +594,10 @@ public class ClientTLSEngine extends TLSEngine
         notifyHandshakeCompleted(null, failure);
     }
 
-    private void processNewSessionTicket(NewSessionTicketMessage newSessionTicket) throws Exception
+    private void processNewSessionTicketMessage(NewSessionTicketMessage newSessionTicket) throws Exception
     {
-        HandshakeData handshakeData = new HandshakeData(configuration.getQuicVersion(), getTLSVersion(), getServerName(), getCipherSuite(), getApplicationProtocol(), getTransportParameters());
-        configuration.getZeroRTTStore().store(new ZeroRTTStore.Entry(handshakeData, newSessionTicket, getPacketProtector().createResumptionMasterSecret(getCipherSuite())));
+        HandshakeData handshakeData = new HandshakeData(tlsConfiguration.getQuicVersion(), getTLSVersion(), getServerName(), getCipherSuite(), getApplicationProtocol(), getTransportParameters());
+        tlsConfiguration.getZeroRTTStore().store(new ZeroRTTStore.Entry(handshakeData, newSessionTicket, getPacketProtector().createResumptionMasterSecret(getCipherSuite())));
     }
 
     @Override
