@@ -204,7 +204,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     fi
 
     # here we need to add something to publish to our staging repo
-    # mvn njord:publish -Ddrop=false -Dpublisher=deploy -DaltDeploymentRepository=jetty-staging::http://localhost:8081/repository/release-staging
+    # mvn njord:publish -Ddrop=false -Dpublisher=deploy -DaltDeploymentRepository=jetty-staging::https://repository.webtide.net/repository/release-staging/
     # need an entry in settings.xml for id jetty-staging
 
 else
