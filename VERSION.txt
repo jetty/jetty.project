@@ -1,4 +1,14 @@
-jetty-12.1.7-SNAPSHOT
+12.1.7 - 04 March 2026
+ + 14165 Integrating Eclipse Soteria with Jetty EE10+
+ + 14366 Clarify Deprecation Policy
+ + 14373 Response listener that avoids any data copies
+ + 14408 Redundant database index created by JDBCSessionDataStore
+ + 14435 NoSuchMethodError error raised by HttpStateChannel  with Jetty 12.1.6 run with maven plugin
+ + 14436 Jetty 12.1.6 HttpFields from(HttpField...) does not provide opportunity to set compliance listener (@afarber)
+ + 14442 Allow splitting of Transfer-Encoding chunks
+ + 14485 Illegal header value on UTF-8 encoding when using HTTP/2
+ + 14495 Support Transfer-Encoding chunk extensions
+ + 14566 CompressionHandler/GzipEncoderSink not respect setSyncFlush(true)
 
 12.1.6 - 27 January 2026
  + 9019 Server cannot be closed gracefully when ServerConnector's IdleTimeout is 0
