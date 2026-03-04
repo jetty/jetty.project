@@ -29,7 +29,6 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -2408,40 +2407,11 @@ public interface RetainableByteBuffer extends Retainable
                 }
                 default ->
                 {
-                    // Can we do a gather write?
-                    if (!last && sink instanceof EndPoint endPoint)
-                    {
-                        ByteBuffer[] buffers = new ByteBuffer[_buffers.size()];
-                        int i = 0;
-                        for (RetainableByteBuffer rbb : _buffers)
-                            buffers[i++] = rbb.getByteBuffer();
-                        endPoint.write(Callback.from(this::clear, callback), buffers);
-                        return;
-                    }
-
-                    // Write buffer by buffer.
-                    new IteratingNestedCallback(callback)
-                    {
-                        private int _index;
-
-                        @Override
-                        protected Action process()
-                        {
-                            if (_index == _buffers.size())
-                                return Action.SUCCEEDED;
-                            RetainableByteBuffer buffer = _buffers.get(_index++);
-                            boolean lastWritten = last && (_index == _buffers.size());
-                            buffer.writeTo(sink, lastWritten, this);
-                            return Action.SCHEDULED;
-                        }
-
-                        @Override
-                        protected void onCompleted(Throwable causeOrNull)
-                        {
-                            clear();
-                            super.onCompleted(causeOrNull);
-                        }
-                    }.iterate();
+                    ByteBuffer[] buffers = new ByteBuffer[_buffers.size()];
+                    int i = 0;
+                    for (RetainableByteBuffer rbb : _buffers)
+                        buffers[i++] = rbb.getByteBuffer();
+                    sink.write(last, buffers, Callback.from(this::clear, callback));
                 }
             }
         }

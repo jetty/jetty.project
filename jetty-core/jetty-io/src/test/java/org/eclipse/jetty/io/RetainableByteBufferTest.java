@@ -1609,4 +1609,129 @@ public class RetainableByteBufferTest
         assertThat(mutable2.release(), is(true));
         assertThat(pool.getLeaks().size(), is(0));
     }
+
+    @Test
+    public void testDynamicCapacityWriteToEndPointLastGatherWrite() throws Exception
+    {
+        RetainableByteBuffer.Mutable dc = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello")));
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" World")));
+
+        StringBuilder out = new StringBuilder();
+        try (EndPoint endPoint = new AbstractEndPoint(new TimerScheduler())
+        {
+            @Override
+            public SocketAddress getLocalSocketAddress()
+            {
+                return null;
+            }
+
+            @Override
+            public SocketAddress getRemoteSocketAddress()
+            {
+                return null;
+            }
+
+            @Override
+            public Object getTransport()
+            {
+                return null;
+            }
+
+            @Override
+            public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+            {
+                for (ByteBuffer buffer : buffers)
+                {
+                    out.append(BufferUtil.toString(buffer));
+                    buffer.position(buffer.limit());
+                }
+                callback.succeeded();
+            }
+
+            @Override
+            protected void needsFillInterest()
+            {
+            }
+
+            @Override
+            protected void onIncompleteFlush()
+            {
+            }
+        })
+        {
+            Callback.Completable callback = new Callback.Completable();
+            dc.writeTo(endPoint, true, callback);
+            callback.get(5, TimeUnit.SECONDS);
+            assertFalse(endPoint.isOpen(), "Expected endPoint to be closed after last=true gather write");
+        }
+
+        assertThat(out.toString(), is("Hello World"));
+    }
+
+    @Test
+    public void testDynamicCapacityWriteToSequentialFallback() throws Exception
+    {
+        RetainableByteBuffer.Mutable dc = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Foo")));
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Bar")));
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Baz")));
+
+        List<Boolean> lastFlags = new ArrayList<>();
+        StringBuilder out = new StringBuilder();
+        Content.Sink sink = (last, byteBuffer, callback) ->
+        {
+            lastFlags.add(last);
+            out.append(BufferUtil.toString(byteBuffer));
+            BufferUtil.clear(byteBuffer);
+            callback.succeeded();
+        };
+
+        Callback.Completable callback = new Callback.Completable();
+        dc.writeTo(sink, true, callback);
+        callback.get(5, TimeUnit.SECONDS);
+
+        assertThat(out.toString(), is("FooBarBaz"));
+        assertThat(lastFlags, is(List.of(false, false, true)));
+    }
+
+    @Test
+    public void testDynamicCapacityWriteToUsesGatherWrite() throws Exception
+    {
+        RetainableByteBuffer.Mutable dc = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello")));
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" World")));
+
+        boolean[] gatherWriteCalled = {false};
+        StringBuilder out = new StringBuilder();
+        Content.Sink sink = new Content.Sink()
+        {
+            @Override
+            public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+            {
+                out.append(BufferUtil.toString(byteBuffer));
+                BufferUtil.clear(byteBuffer);
+                callback.succeeded();
+            }
+
+            @Override
+            public void write(boolean last, ByteBuffer[] buffers, Callback callback)
+            {
+                gatherWriteCalled[0] = true;
+                for (ByteBuffer buffer : buffers)
+                {
+                    out.append(BufferUtil.toString(buffer));
+                    BufferUtil.clear(buffer);
+                }
+                callback.succeeded();
+            }
+        };
+
+        Callback.Completable callback = new Callback.Completable();
+        dc.writeTo(sink, true, callback);
+        callback.get(5, TimeUnit.SECONDS);
+
+        assertTrue(gatherWriteCalled[0], "Expected gather write to be called for multi-buffer DynamicCapacity");
+        assertThat(out.toString(), is("Hello World"));
+    }
 }

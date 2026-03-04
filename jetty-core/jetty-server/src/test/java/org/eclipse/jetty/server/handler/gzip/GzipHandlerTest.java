@@ -2085,7 +2085,7 @@ public class GzipHandlerTest
             }
 
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
-            response.write(false, byteBuffer.slice(), Callback.from(() -> response.write(true, null, callback)));
+            response.write(false, byteBuffer.slice(), Callback.from(() -> response.flush(true, callback)));
             return true;
         }
     }

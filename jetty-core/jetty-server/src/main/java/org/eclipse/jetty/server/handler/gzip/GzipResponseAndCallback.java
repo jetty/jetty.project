@@ -92,7 +92,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         if (_last)
             _callback.succeeded();
         else
-            write(true, null, _callback);
+            flush(true, _callback);
     }
 
     @Override

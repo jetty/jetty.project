@@ -451,7 +451,7 @@ public class StateTrackingHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, null, callback);
+                response.flush(true, callback);
                 return true;
             }
         });
@@ -505,7 +505,7 @@ public class StateTrackingHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, null, callback);
+                response.flush(true, callback);
                 return true;
             }
         });
@@ -537,7 +537,7 @@ public class StateTrackingHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(false, null, Callback.from(() ->
+                response.flush(false, Callback.from(() ->
                 {
                     try
                     {

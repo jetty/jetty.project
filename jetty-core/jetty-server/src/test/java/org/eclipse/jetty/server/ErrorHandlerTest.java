@@ -566,7 +566,7 @@ public class ErrorHandlerTest
             response.getHeaders().put("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
             response.getHeaders().put("X-Error-Status", Integer.toString(response.getStatus()));
             response.setStatus(302);
-            response.write(true, null, callback);
+            response.flush(true, callback);
             return true;
         });
         String rawResponse = connector.getResponse("""

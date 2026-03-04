@@ -331,7 +331,7 @@ public class RequestLogTest
                         assertThat(response.getHeaders().get("X-Name"), is("actual"));
 
                         // finish response
-                        response.write(true, null, callback);
+                        response.flush(true, callback);
                     });
                     Content.Sink.write(response, false, msg, testCallback);
                     return true;

@@ -687,7 +687,7 @@ public interface Response extends Content.Sink
 
         // Fall back to a very empty error page.
         response.getHeaders().put(ErrorHandler.ERROR_CACHE_CONTROL);
-        response.write(true, null, callback);
+        response.write(true, (ByteBuffer)null, callback);
     }
 
     /**

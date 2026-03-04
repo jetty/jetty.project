@@ -210,7 +210,7 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
         public void succeeded()
         {
             if (_bufferedContentSink != null && !_lastWritten)
-                _bufferedContentSink.write(true, null, _callback);
+                _bufferedContentSink.write(true, (ByteBuffer)null, _callback);
             else
                 _callback.succeeded();
         }
@@ -219,7 +219,7 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
         public void failed(Throwable x)
         {
             if (_bufferedContentSink != null && !_lastWritten)
-                _bufferedContentSink.write(true, null, Callback.from(_callback, x));
+                _bufferedContentSink.flush(true, Callback.from(_callback, x));
             else
                 _callback.failed(x);
         }

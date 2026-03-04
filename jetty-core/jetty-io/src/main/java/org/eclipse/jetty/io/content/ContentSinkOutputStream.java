@@ -98,7 +98,7 @@ public class ContentSinkOutputStream extends OutputStream
         }
 
         closed = true;
-        sink.write(true, null, callback);
+        sink.flush(true, callback);
     }
 
     private void handleException(Throwable x) throws IOException

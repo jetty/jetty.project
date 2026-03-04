@@ -135,7 +135,7 @@ public abstract class AbstractHandshaker implements Handshaker
 
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade connection={} session={} framehandler={}", connection, coreSession, handler);
-        response.write(true, null, callback);
+        response.flush(true, callback);
         return true;
     }
 

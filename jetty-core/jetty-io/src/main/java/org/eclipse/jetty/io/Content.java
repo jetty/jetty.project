@@ -49,6 +49,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -934,6 +935,66 @@ public class Content
          * @param callback the callback to notify when the write operation is complete
          */
         void write(boolean last, ByteBuffer byteBuffer, Callback callback);
+
+        /**
+         * <p>Flushes any buffered content to this sink without writing any new data,
+         * and notifies the {@link Callback} when complete.</p>
+         *
+         * @param last whether this is the last write to this sink
+         * @param callback the callback to notify when the flush is complete
+         */
+        default void flush(boolean last, Callback callback)
+        {
+            write(last, (ByteBuffer)null, callback);
+        }
+
+        /**
+         * <p>Gather-writes multiple {@link ByteBuffer}s to this sink.</p>
+         * <p>Implementations that support native gather writes should override this method.
+         * The default implementation writes the buffers sequentially.</p>
+         *
+         * @param last whether these are the last buffers to write
+         * @param buffers the buffers to write
+         * @param callback the callback to notify on completion
+         */
+        default void write(boolean last, ByteBuffer[] buffers, Callback callback)
+        {
+            switch (buffers.length)
+            {
+                case 0 -> write(last, BufferUtil.EMPTY_BUFFER, callback);
+                case 1 -> write(last, buffers[0], callback);
+                default -> new IteratingNestedCallback(callback)
+                {
+                    private int _index;
+
+                    @Override
+                    protected Action process()
+                    {
+                        if (_index == buffers.length)
+                            return Action.SUCCEEDED;
+                        ByteBuffer buffer = buffers[_index++];
+                        boolean isLast = last && (_index == buffers.length);
+                        write(isLast, buffer, this);
+                        return Action.SCHEDULED;
+                    }
+                }.iterate();
+            }
+        }
+
+        /**
+         * <p>Writes the contents of a {@link RetainableByteBuffer} to this sink.</p>
+         * <p>This is the preferred way to write an RBB to a Sink, as it allows
+         * implementations like {@link RetainableByteBuffer.DynamicCapacity} to
+         * use gather writes rather than coalescing.</p>
+         *
+         * @param last whether these are the last bytes to write
+         * @param rbb the {@link RetainableByteBuffer} to write
+         * @param callback the callback to notify on completion
+         */
+        default void write(boolean last, RetainableByteBuffer rbb, Callback callback)
+        {
+            rbb.writeTo(this, last, callback);
+        }
     }
 
     /**

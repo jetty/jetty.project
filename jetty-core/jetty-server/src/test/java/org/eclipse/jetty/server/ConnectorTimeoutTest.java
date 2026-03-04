@@ -543,7 +543,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                     e.printStackTrace();
                 }
             }
-            response.write(true, null, callback);
+            response.flush(true, callback);
             return true;
         }
     }

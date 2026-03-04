@@ -188,7 +188,7 @@ public class BufferedContentSinkTest
             chunk = async.read();
             assertThat(chunk, nullValue());
 
-            buffered.write(true, null, Callback.NOOP);
+            buffered.flush(true, Callback.NOOP);
             chunk = async.read();
             assertThat(chunk.isLast(), is(true));
             assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("one two"));

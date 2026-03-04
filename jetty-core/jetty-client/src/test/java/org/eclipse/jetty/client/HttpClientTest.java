@@ -2215,7 +2215,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Do not consume the request content.
-                response.write(true, null, callback);
+                response.flush(true, callback);
                 return true;
             }
         });
@@ -2253,7 +2253,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             {
                 try (Blocker.Callback cb = Blocker.callback())
                 {
-                    response.write(false, null, cb);
+                    response.flush(false,cb);
                     cb.block();
                 }
                 // Throwing will fail the Handler callback.

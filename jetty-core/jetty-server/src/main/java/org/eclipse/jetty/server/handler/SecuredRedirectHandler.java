@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
@@ -103,7 +105,7 @@ public class SecuredRedirectHandler extends Handler.Wrapper
             // TODO need a utility for this
             response.getHeaders().put(HttpHeader.LOCATION, url);
             response.setStatus(_redirectCode);
-            response.write(true, null, callback);
+            response.flush(true, callback);
         }
         else
         {
