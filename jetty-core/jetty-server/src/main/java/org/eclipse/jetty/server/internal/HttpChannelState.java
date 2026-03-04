@@ -710,6 +710,7 @@ public class HttpChannelState implements HttpChannel, Components
             if (parts != null)
                 parts.close();
 
+            // TODO: why is this needed?
             long idleTO = getHttpConfiguration().getIdleTimeout();
             if (idleTO > 0 && _oldIdleTimeout != idleTO)
                 stream.setIdleTimeout(_oldIdleTimeout);
