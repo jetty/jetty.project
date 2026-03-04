@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>jetty-servlet5-demos</artifactId>
-    <version>12.1.7</version>
+    <version>12.1.8-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>jetty-servlet5-demo-container-initializer</artifactId>

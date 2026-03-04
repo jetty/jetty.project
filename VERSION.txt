@@ -1,3 +1,5 @@
+jetty-12.1.8-SNAPSHOT
+
 12.1.7 - 04 March 2026
  + 14165 Integrating Eclipse Soteria with Jetty EE10+
  + 14366 Clarify Deprecation Policy
