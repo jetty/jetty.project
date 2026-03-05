@@ -1670,7 +1670,7 @@ public class RetainableByteBufferTest
     }
 
     @Test
-    public void testDynamicCapacityWriteToSequentialFallback() throws Exception
+    public void testDynamicCapacityWriteToGatherWrite() throws Exception
     {
         RetainableByteBuffer.Mutable dc = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
         dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Foo")));
@@ -1679,11 +1679,14 @@ public class RetainableByteBufferTest
 
         List<Boolean> lastFlags = new ArrayList<>();
         StringBuilder out = new StringBuilder();
-        Content.Sink sink = (last, byteBuffer, callback) ->
+        Content.Sink sink = (last, callback, buffers) ->
         {
             lastFlags.add(last);
-            out.append(BufferUtil.toString(byteBuffer));
-            BufferUtil.clear(byteBuffer);
+            for (ByteBuffer byteBuffer : buffers)
+            {
+                out.append(BufferUtil.toString(byteBuffer));
+                BufferUtil.clear(byteBuffer);
+            }
             callback.succeeded();
         };
 
@@ -1692,7 +1695,8 @@ public class RetainableByteBufferTest
         callback.get(5, TimeUnit.SECONDS);
 
         assertThat(out.toString(), is("FooBarBaz"));
-        assertThat(lastFlags, is(List.of(false, false, true)));
+        // With the varargs API, DynamicCapacity does a single gather write with all 3 buffers.
+        assertThat(lastFlags, is(List.of(true)));
     }
 
     @Test
@@ -1707,17 +1711,10 @@ public class RetainableByteBufferTest
         Content.Sink sink = new Content.Sink()
         {
             @Override
-            public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+            public void write(boolean last, Callback callback, ByteBuffer... buffers)
             {
-                out.append(BufferUtil.toString(byteBuffer));
-                BufferUtil.clear(byteBuffer);
-                callback.succeeded();
-            }
-
-            @Override
-            public void write(boolean last, ByteBuffer[] buffers, Callback callback)
-            {
-                gatherWriteCalled[0] = true;
+                if (buffers.length > 1)
+                    gatherWriteCalled[0] = true;
                 for (ByteBuffer buffer : buffers)
                 {
                     out.append(BufferUtil.toString(buffer));

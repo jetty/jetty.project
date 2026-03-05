@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -87,13 +88,17 @@ public class HeadersTooLargeParseTest
         int len = generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
         Callback.Completable callback = new Callback.Completable();
-        accumulator.writeTo((l, b, c) ->
+        accumulator.writeTo((l, c, b) ->
         {
-            parser.parse(b);
-            if (failure.get() != 0)
-                c.failed(new Throwable("Expected"));
-            else
-                c.succeeded();
+            for (ByteBuffer bb : b)
+            {            parser.parse(bb);
+                if (failure.get() != 0)
+                {
+                    c.failed(new Throwable("Expected"));
+                    return;
+                }
+            }
+            c.succeeded();
         }, false, callback);
 
         try

@@ -980,7 +980,7 @@ public class HTTPServerDocs
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 
                 // Commit the response with a "flush" write.
-                Callback.Completable.with(flush -> response.flush(false, flush))
+                Callback.Completable.with(flush -> response.write(false, flush))
                     // When the flush is finished, send the content and complete the callback.
                     .whenComplete((ignored, failure) ->
                     {

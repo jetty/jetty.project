@@ -803,7 +803,7 @@ public class ContextHandlerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.flush(true, callback);
+                response.write(true, callback);
                 return true;
             }
         };

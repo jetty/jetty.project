@@ -77,7 +77,7 @@ public class TrailersTest extends AbstractTest
                     public void succeeded()
                     {
                         responseTrailers.put(trailerName, trailerValue);
-                        response.flush(true, getCallback());
+                        response.write(true, getCallback());
                     }
                 });
                 return true;

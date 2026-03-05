@@ -413,9 +413,9 @@ public class StreamEndPoint implements EndPoint
     }
 
     @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
-        write(last, List.of(byteBuffer), callback);
+        write(last, List.of(buffers), callback);
     }
 
     @Override

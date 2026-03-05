@@ -131,8 +131,24 @@ public class ServletCoreResponse implements Response
     }
 
     @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
+        ByteBuffer byteBuffer = switch (buffers.length)
+        {
+            case 0 -> null;
+            case 1 -> buffers[0];
+            default ->
+            {
+                int total = 0;
+                for (ByteBuffer b : buffers)
+                    total += b.remaining();
+                ByteBuffer coalesced = ByteBuffer.allocate(total);
+                for (ByteBuffer b : buffers)
+                    coalesced.put(b);
+                coalesced.flip();
+                yield coalesced;
+            }
+        };
         if (_included)
             last = false;
         try
@@ -141,7 +157,7 @@ public class ServletCoreResponse implements Response
             {
                 // We can bypass the HttpOutput stream, but we need to update its bytes written
                 _servletContextResponse.getHttpOutput().addBytesWritten(BufferUtil.length(byteBuffer));
-                _servletContextResponse.write(last, byteBuffer, callback);
+                _servletContextResponse.write(last, callback, byteBuffer == null ? new ByteBuffer[0] : new ByteBuffer[]{byteBuffer});
             }
             else
             {

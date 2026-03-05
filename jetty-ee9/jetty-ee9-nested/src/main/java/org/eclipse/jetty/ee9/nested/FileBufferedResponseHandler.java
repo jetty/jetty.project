@@ -206,7 +206,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             // Create an iterating callback to do the writing
             ByteBufferPool.Sized sizedPool = new ByteBufferPool.Sized(getServer().getByteBufferPool(), true, getBufferSize());
             Content.Source source = Content.Source.from(sizedPool, _filePath);
-            Content.Sink sink = (last, bytebuffer, cb) -> getNextInterceptor().write(last, bytebuffer, cb);
+            Content.Sink sink = (last, cb, buffers) -> getNextInterceptor().write(last, cb, buffers);
             Callback disposer = Callback.from(callback, this::dispose);
             Content.copy(source, sink, disposer);
         }

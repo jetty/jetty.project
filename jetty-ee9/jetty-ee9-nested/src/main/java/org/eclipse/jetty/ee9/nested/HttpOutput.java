@@ -160,9 +160,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         void write(ByteBuffer content, boolean last, Callback callback);
 
         @Override
-        default void write(boolean last, ByteBuffer content, Callback callback)
+        default void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
-            write(content, last, callback);
+            write(buffers.length == 0 ? null : buffers[0], last, callback);
         }
 
         /**
@@ -1325,9 +1325,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (prepareSendContent(0, callback))
             {
-                IOResources.copy(resource, (last, byteBuffer, cb) ->
+                IOResources.copy(resource, (last, cb, buffers) ->
                 {
-                    _written += byteBuffer.remaining();
+                    ByteBuffer byteBuffer = buffers.length > 0 ? buffers[0] : null;
+                    _written += byteBuffer == null ? 0 : byteBuffer.remaining();
                     channelWrite(byteBuffer, last, cb);
                 }, getSizedByteBufferPool(), 0L, -1L, new Callback.Nested(callback)
                 {
@@ -1369,9 +1370,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (prepareSendContent(0, callback))
             {
-                Content.Sink sink = (last, byteBuffer, cb) ->
+                Content.Sink sink = (last, cb, buffers) ->
                 {
-                    _written += byteBuffer.remaining();
+                    ByteBuffer byteBuffer = buffers.length > 0 ? buffers[0] : null;
+                    _written += byteBuffer == null ? 0 : byteBuffer.remaining();
                     channelWrite(byteBuffer, last, cb);
                 };
                 httpContent.writeTo(sink, 0L, -1L, new Callback.Nested(callback)

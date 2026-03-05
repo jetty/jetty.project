@@ -495,24 +495,24 @@ public interface RetainableByteBuffer extends Retainable
      * @param sink the destination sink.
      * @param last true if this is the last write.
      * @param callback the callback to call upon the write completion.
-     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)
+     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, Callback, ByteBuffer...)
      */
     default void writeTo(Content.Sink sink, boolean last, Callback callback)
     {
-        sink.write(last, getByteBuffer(), callback);
+        sink.write(last, callback, getByteBuffer());
     }
 
     /**
      * Writes and consumes the contents of this retainable byte buffer into the given sink.
      * @param sink the destination sink.
      * @param last true if this is the last write.
-     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)
+     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, Callback, ByteBuffer...)
      */
     default void writeTo(Content.Sink sink, boolean last) throws IOException
     {
         try (Blocker.Callback callback = Blocker.callback())
         {
-            sink.write(last, getByteBuffer(), callback);
+            sink.write(last, callback, getByteBuffer());
             callback.block();
         }
     }
@@ -2411,7 +2411,7 @@ public interface RetainableByteBuffer extends Retainable
                     int i = 0;
                     for (RetainableByteBuffer rbb : _buffers)
                         buffers[i++] = rbb.getByteBuffer();
-                    sink.write(last, buffers, Callback.from(this::clear, callback));
+                    sink.write(last, Callback.from(this::clear, callback), buffers);
                 }
             }
         }

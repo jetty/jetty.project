@@ -93,7 +93,7 @@ public class DumpHandler extends Handler.Abstract
             {
                 try (Blocker.Callback blocker = _blocker.callback())
                 {
-                    response.flush(false, blocker);
+                    response.write(false, blocker);
                     blocker.block();
                 }
             }
@@ -220,7 +220,7 @@ public class DumpHandler extends Handler.Abstract
 
             try (Blocker.Callback blocker = _blocker.callback())
             {
-                response.write(false, BufferUtil.toBuffer(buf.toByteArray()), blocker);
+                response.write(false, blocker, BufferUtil.toBuffer(buf.toByteArray()));
                 blocker.block();
             }
             response.getHeaders().add("After-Flush", "These headers should not be seen in the response!!!");
@@ -232,7 +232,7 @@ public class DumpHandler extends Handler.Abstract
 
             try (Blocker.Callback blocker = _blocker.callback())
             {
-                response.write(true, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)), blocker);
+                response.write(true, blocker, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)));
                 blocker.block();
             }
 

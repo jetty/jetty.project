@@ -790,13 +790,13 @@ public class StateTrackingHandler extends Handler.Wrapper
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
             WriteCallback writeCallback = new WriteCallback(callback);
             stateInfo.writeCallbacks.offer(writeCallback);
             try
             {
-                super.write(last, byteBuffer, writeCallback);
+                super.write(last, writeCallback, buffers);
                 writeCallback.writeComplete(null);
             }
             catch (Throwable x)

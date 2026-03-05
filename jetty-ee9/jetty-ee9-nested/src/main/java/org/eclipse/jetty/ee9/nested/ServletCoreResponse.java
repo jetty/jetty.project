@@ -132,8 +132,24 @@ public class ServletCoreResponse implements org.eclipse.jetty.server.Response
     }
 
     @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
+        ByteBuffer byteBuffer = switch (buffers.length)
+        {
+            case 0 -> null;
+            case 1 -> buffers[0];
+            default ->
+            {
+                int total = 0;
+                for (ByteBuffer b : buffers)
+                    total += b.remaining();
+                ByteBuffer coalesced = ByteBuffer.allocate(total);
+                for (ByteBuffer b : buffers)
+                    coalesced.put(b);
+                coalesced.flip();
+                yield coalesced;
+            }
+        };
         if (_included)
             last = false;
         try
@@ -141,8 +157,8 @@ public class ServletCoreResponse implements org.eclipse.jetty.server.Response
             if (!_wrapped && !_baseResponse.isWritingOrStreaming())
             {
                 // We can bypass the HttpOutput stream, but we need to update its bytes written
-                _baseResponse.getHttpOutput().addBytesWritten(byteBuffer.remaining());
-                _coreResponse.write(last, byteBuffer, callback);
+                _baseResponse.getHttpOutput().addBytesWritten(byteBuffer == null ? 0 : byteBuffer.remaining());
+                _coreResponse.write(last, callback, byteBuffer == null ? new ByteBuffer[0] : new ByteBuffer[]{byteBuffer});
             }
             else
             {

@@ -30,7 +30,7 @@ public class EncoderSinkTest
     @Test
     public void testDelegateSinkWriteFailureReleaseCount()
     {
-        Content.Sink sink = (last, byteBuffer, callback) -> callback.failed(new ArithmeticException());
+        Content.Sink sink = (last, callback, buffers) -> callback.failed(new ArithmeticException());
         var encoderSink = new EncoderSink(sink)
         {
             final AtomicInteger releaseCounter = new AtomicInteger();

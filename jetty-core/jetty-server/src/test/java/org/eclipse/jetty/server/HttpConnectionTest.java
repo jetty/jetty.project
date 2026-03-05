@@ -918,7 +918,7 @@ public class HttpConnectionTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.flush(false, callback);
+                response.write(false, callback);
                 return true;
             }
         });

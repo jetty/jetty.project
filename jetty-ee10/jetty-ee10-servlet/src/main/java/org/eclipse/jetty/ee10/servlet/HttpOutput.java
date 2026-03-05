@@ -252,7 +252,7 @@ public class HttpOutput extends ServletOutputStream
             else
                 _firstByteNanoTime = Long.MAX_VALUE;
         }
-        _servletChannel.getResponse().write(last, content, callback);
+        _servletChannel.getResponse().write(last, callback, content);
     }
 
     private void channelWrite(RetainableByteBuffer content, boolean last, Callback callback)

@@ -713,7 +713,7 @@ public class HttpConfigurationAuthorityOverrideTest
             if (scheme == null)
                 scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
             response.getHeaders().put(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
-            response.flush(true, callback);
+            response.write(true, callback);
             return true;
         }
     }

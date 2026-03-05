@@ -22,6 +22,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,8 +68,31 @@ public class BufferedContentSink implements Content.Sink
     }
 
     @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
+        // Write multiple buffers sequentially via this write method
+        if (buffers.length > 1)
+        {
+            new IteratingNestedCallback(callback)
+            {
+                private int _index;
+
+                @Override
+                protected Action process()
+                {
+                    if (_index == buffers.length)
+                        return Action.SUCCEEDED;
+                    ByteBuffer buffer = buffers[_index++];
+                    boolean isLast = last && (_index == buffers.length);
+                    write(isLast, this, buffer);
+                    return Action.SCHEDULED;
+                }
+            }.iterate();
+            return;
+        }
+
+        ByteBuffer byteBuffer = buffers.length == 0 ? null : buffers[0];
+
         if (LOG.isDebugEnabled())
             LOG.debug("writing last={} {}", last, BufferUtil.toDetailString(byteBuffer));
 
@@ -84,7 +108,10 @@ public class BufferedContentSink implements Content.Sink
             if (last)
             {
                 // No need to buffer if this is both the first and the last write.
-                _delegate.write(true, byteBuffer, callback);
+                if (byteBuffer == null)
+                    _delegate.write(true, callback);
+                else
+                    _delegate.write(true, callback, byteBuffer);
                 return;
             }
         }
@@ -124,7 +151,7 @@ public class BufferedContentSink implements Content.Sink
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("nothing aggregated, flushing current buffer {}", currentBuffer);
-            _delegate.write(last, currentBuffer, callback);
+            _delegate.write(last, callback, currentBuffer);
         }
         else if (!currentBuffer.hasRemaining())
         {
@@ -148,7 +175,7 @@ public class BufferedContentSink implements Content.Sink
                 @Override
                 public void succeeded()
                 {
-                    _delegate.write(last, currentBuffer, callback);
+                    _delegate.write(last, callback, currentBuffer);
                 }
 
                 @Override

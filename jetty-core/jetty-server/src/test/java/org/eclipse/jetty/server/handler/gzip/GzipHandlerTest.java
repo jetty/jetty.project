@@ -226,7 +226,7 @@ public class GzipHandlerTest
                 return super.handle(request, new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    public void write(boolean last, Callback callback, ByteBuffer... buffers)
                     {
                         throw new ArithmeticException("expected");
                     }
@@ -2085,7 +2085,7 @@ public class GzipHandlerTest
             }
 
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
-            response.write(false, byteBuffer.slice(), Callback.from(() -> response.flush(true, callback)));
+            response.write(false, Callback.from(() -> response.write(true, callback)), byteBuffer.slice());
             return true;
         }
     }

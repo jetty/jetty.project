@@ -102,7 +102,7 @@ public class VirtualThreadsTest extends AbstractTest
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Send only the headers.
-                response.flush(false, Callback.NOOP);
+                response.write(false, Callback.NOOP);
                 // Wait to force the client to invoke the content
                 // callback separately from the headers callback.
                 Thread.sleep(500);

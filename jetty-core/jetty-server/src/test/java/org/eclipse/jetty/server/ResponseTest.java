@@ -140,9 +140,9 @@ public class ResponseTest
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
-
+            callback.succeeded();
         }
     }
 

@@ -64,7 +64,7 @@ public class ContentCopier extends IteratingNestedCallback
             return Action.SCHEDULED;
         }
 
-        sink.write(chunk.isLast(), chunk.getByteBuffer(), this);
+        sink.write(chunk.isLast(), this, chunk.getByteBuffer());
         return Action.SCHEDULED;
     }
 

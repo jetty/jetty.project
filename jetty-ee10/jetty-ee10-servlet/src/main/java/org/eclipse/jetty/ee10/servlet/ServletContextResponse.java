@@ -219,9 +219,9 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     }
 
     @Override
-    public void write(boolean last, ByteBuffer content, Callback callback)
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
-        super.write(last, content, callback);
+        super.write(last, callback, buffers);
     }
 
     public void closeOutput() throws IOException

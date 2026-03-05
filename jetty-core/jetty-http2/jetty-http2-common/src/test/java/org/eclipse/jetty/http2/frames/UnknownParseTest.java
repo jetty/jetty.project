@@ -102,17 +102,21 @@ public class UnknownParseTest
     static void parse(Parser parser, RetainableByteBuffer buffer)
     {
         Callback.Completable callback = new Callback.Completable();
-        buffer.writeTo((l, b, c) ->
+        buffer.writeTo((l, c, b) ->
         {
-            try
+            for (ByteBuffer bb : b)
             {
-                parser.parse(b);
-                c.succeeded();
+                try
+                {
+                    parser.parse(bb);
+                }
+                catch (Throwable t)
+                {
+                    c.failed(t);
+                    return;
+                }
             }
-            catch (Throwable t)
-            {
-                c.failed(t);
-            }
+            c.succeeded();
         }, false, callback);
 
         try

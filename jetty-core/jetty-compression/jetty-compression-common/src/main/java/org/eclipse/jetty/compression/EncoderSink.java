@@ -33,8 +33,23 @@ public abstract class EncoderSink implements Content.Sink
     }
 
     @Override
-    public void write(boolean last, ByteBuffer content, Callback callback)
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
+        ByteBuffer content;
+        if (buffers.length == 0)
+            content = null;
+        else if (buffers.length == 1)
+            content = buffers[0];
+        else
+        {
+            int total = 0;
+            for (ByteBuffer b : buffers)
+                total += b.remaining();
+            content = ByteBuffer.allocate(total);
+            for (ByteBuffer b : buffers)
+                content.put(b);
+            content.flip();
+        }
         if (content != null || last)
             new EncodeBufferCallback(last, content, last ? Callback.from(callback, this::release) : callback).iterate();
         else
@@ -120,7 +135,7 @@ public abstract class EncoderSink implements Content.Sink
             }
             if (writeRecord.callback != null)
                 callback = Callback.combine(callback, writeRecord.callback);
-            sink.write(writeRecord.last, writeRecord.output, callback);
+            sink.write(writeRecord.last, callback, writeRecord.output);
         }
 
         protected void finished()

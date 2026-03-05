@@ -179,7 +179,7 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
             if (_firstWrite)
             {
@@ -189,7 +189,7 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
             }
             _lastWritten |= last;
             Content.Sink destSink = _bufferedContentSink != null ? _bufferedContentSink : getWrapped();
-            destSink.write(last, byteBuffer, callback);
+            destSink.write(last, callback, buffers);
         }
 
         private Content.Sink createBufferedSink()
@@ -210,7 +210,7 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
         public void succeeded()
         {
             if (_bufferedContentSink != null && !_lastWritten)
-                _bufferedContentSink.write(true, (ByteBuffer)null, _callback);
+                _bufferedContentSink.write(true, _callback);
             else
                 _callback.succeeded();
         }
@@ -219,7 +219,7 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
         public void failed(Throwable x)
         {
             if (_bufferedContentSink != null && !_lastWritten)
-                _bufferedContentSink.flush(true, Callback.from(_callback, x));
+                _bufferedContentSink.write(true, Callback.from(_callback, x));
             else
                 _callback.failed(x);
         }

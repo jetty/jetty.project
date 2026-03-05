@@ -161,12 +161,12 @@ public interface Response extends Content.Sink
      * <p>Thus a {@code Callback} should not block waiting for a callback
      * of a future call to this method.</p>
      *
-     * @param last whether the ByteBuffer is the last to write
-     * @param byteBuffer the ByteBuffer to write
+     * @param last whether this is the last write to this response
      * @param callback the callback to notify when the write operation is complete
+     * @param buffers zero or more ByteBuffers to write
      */
     @Override
-    void write(boolean last, ByteBuffer byteBuffer, Callback callback);
+    void write(boolean last, Callback callback, ByteBuffer... buffers);
 
     /**
      * <p>Returns a chunk processor suitable to be passed to the
@@ -393,7 +393,7 @@ public interface Response extends Content.Sink
 
             response.getHeaders().put(HttpHeader.LOCATION, location);
             response.setStatus(code);
-            response.write(true, content, callback);
+            response.write(true, callback, content);
         }
         catch (Throwable failure)
         {
@@ -687,7 +687,7 @@ public interface Response extends Content.Sink
 
         // Fall back to a very empty error page.
         response.getHeaders().put(ErrorHandler.ERROR_CACHE_CONTROL);
-        response.write(true, (ByteBuffer)null, callback);
+        response.write(true, callback);
     }
 
     /**
@@ -836,9 +836,9 @@ public interface Response extends Content.Sink
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
-            getWrapped().write(last, byteBuffer, callback);
+            getWrapped().write(last, callback, buffers);
         }
     }
 }

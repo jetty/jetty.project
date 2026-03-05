@@ -39,7 +39,7 @@ public class ContentSinkOutputStreamTest
     public void testNoDuplicateExceptionThrown()
     {
         EofException eofException = new EofException();
-        Content.Sink sink = (last, byteBuffer, callback) -> callback.failed(eofException);
+        Content.Sink sink = (last, callback, buffers) -> callback.failed(eofException);
         IOException failure = assertThrows(IOException.class, () ->
         {
             try (OutputStream body = new ContentSinkOutputStream(sink))
@@ -59,9 +59,9 @@ public class ContentSinkOutputStreamTest
     public void testIdempotentClose() throws Exception
     {
         Queue<String> events = new ArrayDeque<>();
-        Content.Sink sink = (last, byteBuffer, callback) ->
+        Content.Sink sink = (last, callback, buffers) ->
         {
-            events.add("last=%s, buffer=%s".formatted(last, BufferUtil.toString(byteBuffer)));
+            events.add("last=%s, buffer=%s".formatted(last, buffers.length == 0 ? null : BufferUtil.toString(buffers[0])));
             callback.succeeded();
         };
 

@@ -54,7 +54,8 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
     {
         // Retain the chunk because the write may not complete immediately.
         chunk.retain();
-        sink.write(chunk.isLast(), chunk.getByteBuffer(), new Callback()
+        ByteBuffer content = chunk.getByteBuffer();
+        sink.write(chunk.isLast(), new Callback()
         {
             public void succeeded()
             {
@@ -77,7 +78,7 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
             {
                 return Invocable.getInvocationType(callback);
             }
-        });
+        }, content);
     }
 
     @Override

@@ -324,7 +324,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
 
                 // This header should reference the named header already in the dynamic table.
                 headers.add("header5", "value6");
-                response.flush(true, callback);
+                response.write(true, callback);
                 return true;
             }
         });

@@ -80,10 +80,13 @@ public class ContinuationParseTest
             generator.generateHeaders(accumulator, streamId, metaData, null, true);
 
             List<ByteBuffer> byteBuffers = new ArrayList<>();
-            accumulator.writeTo((l, b, c) ->
+            accumulator.writeTo((l, c, b) ->
             {
-                byteBuffers.add(BufferUtil.copy(b));
-                BufferUtil.clear(b);
+                for (ByteBuffer bb: b)
+                {
+                    byteBuffers.add(BufferUtil.copy(bb));
+                    BufferUtil.clear(bb);
+                }
                 c.succeeded();
             }, false, Callback.NOOP);
             assertTrue(accumulator.release());

@@ -49,7 +49,6 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -726,7 +725,7 @@ public class Content
                 boolean closed;
 
                 @Override
-                public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                public void write(boolean last, Callback callback, ByteBuffer... buffers)
                 {
                     if (closed)
                     {
@@ -735,7 +734,8 @@ public class Content
                     }
                     try
                     {
-                        BufferUtil.writeTo(byteBuffer, out);
+                        for (ByteBuffer byteBuffer : buffers)
+                            BufferUtil.writeTo(byteBuffer, out);
                         if (last)
                         {
                             closed = true;
@@ -763,7 +763,7 @@ public class Content
                 boolean closed;
 
                 @Override
-                public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                public void write(boolean last, Callback callback, ByteBuffer... buffers)
                 {
                     if (closed)
                     {
@@ -772,17 +772,19 @@ public class Content
                     }
                     try
                     {
-                        int remaining = byteBuffer.remaining();
-                        int tries = 0;
-                        while (remaining > 0)
+                        for (ByteBuffer byteBuffer : buffers)
                         {
-                            int written = channel.write(byteBuffer);
-                            if (written > 0)
-                                remaining -= written;
-                            else if (tries++ > 2)
-                                throw new IllegalStateException("ByteChannel in async mode");
+                            int remaining = byteBuffer.remaining();
+                            int tries = 0;
+                            while (remaining > 0)
+                            {
+                                int written = channel.write(byteBuffer);
+                                if (written > 0)
+                                    remaining -= written;
+                                else if (tries++ > 2)
+                                    throw new IllegalStateException("ByteChannel in async mode");
+                            }
                         }
-
                         if (last)
                         {
                             closed = true;
@@ -810,35 +812,48 @@ public class Content
                 boolean closed;
 
                 @Override
-                public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                public void write(boolean last, Callback callback, ByteBuffer... buffers)
                 {
                     if (closed)
                     {
                         callback.failed(new EOFException());
                         return;
                     }
+                    writeNext(last, callback, buffers, 0);
+                }
+
+                private void writeNext(boolean last, Callback callback, ByteBuffer[] buffers, int index)
+                {
+                    // Skip to the next non-empty buffer
+                    while (index < buffers.length && !buffers[index].hasRemaining())
+                        index++;
+                    if (index >= buffers.length)
+                    {
+                        if (last)
+                        {
+                            closed = true;
+                            IO.close(channel);
+                        }
+                        callback.succeeded();
+                        return;
+                    }
+                    final int idx = index;
+                    ByteBuffer buffer = buffers[idx];
                     try
                     {
-                        channel.write(byteBuffer, byteBuffer, new CompletionHandler<>()
+                        channel.write(buffer, buffer, new CompletionHandler<>()
                         {
                             @Override
-                            public void completed(Integer written, ByteBuffer buffer)
+                            public void completed(Integer written, ByteBuffer buf)
                             {
-                                if (buffer.hasRemaining())
-                                    channel.write(buffer, buffer, this);
+                                if (buf.hasRemaining())
+                                    channel.write(buf, buf, this);
                                 else
-                                {
-                                    if (last)
-                                    {
-                                        closed = true;
-                                        IO.close(channel);
-                                    }
-                                    callback.succeeded();
-                                }
+                                    writeNext(last, callback, buffers, idx + 1);
                             }
 
                             @Override
-                            public void failed(Throwable x, ByteBuffer buffer)
+                            public void failed(Throwable x, ByteBuffer buf)
                             {
                                 callback.failed(x);
                             }
@@ -892,18 +907,18 @@ public class Content
         }
 
         /**
-         * <p>Blocking version of {@link #write(boolean, ByteBuffer, Callback)}.</p>
+         * <p>Blocking version of {@link #write(boolean, Callback, ByteBuffer...)}.</p>
          *
          * @param sink the sink to write to
-         * @param last whether the ByteBuffers are the last to write
-         * @param byteBuffer the ByteBuffers to write
+         * @param last whether the ByteBuffer is the last to write
+         * @param byteBuffer the ByteBuffer to write
          * @throws IOException if the write operation fails
          */
         static void write(Sink sink, boolean last, ByteBuffer byteBuffer) throws IOException
         {
             try (Blocker.Callback callback = Blocker.callback())
             {
-                sink.write(last, byteBuffer, callback);
+                sink.write(last, callback, byteBuffer);
                 callback.block();
             }
         }
@@ -916,69 +931,37 @@ public class Content
          * @param utf8Content the String to write
          * @param callback the callback to notify when the write operation is complete.
          *                 Implementations have the same guarantees for invocation of this
-         *                 callback as for {@link #write(boolean, ByteBuffer, Callback)}.
+         *                 callback as for {@link #write(boolean, Callback, ByteBuffer...)}.
          */
         static void write(Sink sink, boolean last, String utf8Content, Callback callback)
         {
-            sink.write(last, ByteBuffer.wrap(utf8Content.getBytes(StandardCharsets.UTF_8)), callback);
+            sink.write(last, callback, ByteBuffer.wrap(utf8Content.getBytes(StandardCharsets.UTF_8)));
         }
 
         /**
-         * <p>Writes the given {@link ByteBuffer}, notifying the {@link Callback}
-         * when the write is complete.</p>
+         * <p>Writes the given {@link ByteBuffer}s to this sink, notifying the {@link Callback} when complete.</p>
+         * <p>If no buffers are provided, flushes any buffered content without writing new data.</p>
+         * <p>If multiple buffers are provided, implementations should perform a gather write.</p>
          * <p>Implementations guarantee that calls to this method are safely reentrant so that
          * stack overflows are avoided in the case of mutual recursion between the execution of
          * the {@code Callback} and a call to this method.</p>
          *
-         * @param last whether the ByteBuffer is the last to write
-         * @param byteBuffer the ByteBuffer to write
-         * @param callback the callback to notify when the write operation is complete
-         */
-        void write(boolean last, ByteBuffer byteBuffer, Callback callback);
-
-        /**
-         * <p>Flushes any buffered content to this sink without writing any new data,
-         * and notifies the {@link Callback} when complete.</p>
-         *
          * @param last whether this is the last write to this sink
-         * @param callback the callback to notify when the flush is complete
+         * @param callback the callback to notify when the write operation is complete
+         * @param buffers zero or more ByteBuffers to write
          */
-        default void flush(boolean last, Callback callback)
-        {
-            write(last, (ByteBuffer)null, callback);
-        }
+        void write(boolean last, Callback callback, ByteBuffer... buffers);
 
         /**
-         * <p>Gather-writes multiple {@link ByteBuffer}s to this sink.</p>
-         * <p>Implementations that support native gather writes should override this method.
-         * The default implementation writes the buffers sequentially.</p>
-         *
-         * @param last whether these are the last buffers to write
-         * @param buffers the buffers to write
-         * @param callback the callback to notify on completion
+         * @deprecated Use {@link #write(boolean, Callback, ByteBuffer...)} instead
          */
-        default void write(boolean last, ByteBuffer[] buffers, Callback callback)
+        @Deprecated (since = "13.0.0", forRemoval = true)
+        default void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
-            switch (buffers.length)
-            {
-                case 0 -> write(last, BufferUtil.EMPTY_BUFFER, callback);
-                case 1 -> write(last, buffers[0], callback);
-                default -> new IteratingNestedCallback(callback)
-                {
-                    private int _index;
-
-                    @Override
-                    protected Action process()
-                    {
-                        if (_index == buffers.length)
-                            return Action.SUCCEEDED;
-                        ByteBuffer buffer = buffers[_index++];
-                        boolean isLast = last && (_index == buffers.length);
-                        write(isLast, buffer, this);
-                        return Action.SCHEDULED;
-                    }
-                }.iterate();
-            }
+            if (byteBuffer == null)
+                write(last, callback);
+            else
+                write(last, callback, byteBuffer);
         }
 
         /**
@@ -988,10 +971,10 @@ public class Content
          * use gather writes rather than coalescing.</p>
          *
          * @param last whether these are the last bytes to write
-         * @param rbb the {@link RetainableByteBuffer} to write
          * @param callback the callback to notify on completion
+         * @param rbb the {@link RetainableByteBuffer} to write
          */
-        default void write(boolean last, RetainableByteBuffer rbb, Callback callback)
+        default void write(boolean last, Callback callback, RetainableByteBuffer rbb)
         {
             rbb.writeTo(this, last, callback);
         }

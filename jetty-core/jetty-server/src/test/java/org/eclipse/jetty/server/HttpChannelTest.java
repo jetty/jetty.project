@@ -515,7 +515,7 @@ public class HttpChannelTest
 
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
-                response.flush(false, Callback.from(() ->
+                response.write(false, Callback.from(() ->
                 {
                     throw new Error("testing");
                 }));
@@ -685,7 +685,7 @@ public class HttpChannelTest
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false,
                     BufferUtil.toBuffer("12345"), Callback.from(() ->
-                        response.flush(true, callback)));
+                        response.write(true, callback)));
                 return true;
             }
         };
@@ -834,7 +834,7 @@ public class HttpChannelTest
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
-                response.flush(false, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
+                response.write(false, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
                 return true;
             }
         };
@@ -877,7 +877,7 @@ public class HttpChannelTest
                 response.getHeaders().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
-                response.flush(false, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
+                response.write(false, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
                 return true;
             }
         };
@@ -1362,7 +1362,7 @@ public class HttpChannelTest
         Callback.Completable callback = new Callback.Completable();
 
         // Writes are possible, unless a pending write is failed.
-        handling.get().flush(false, callback);
+        handling.get().write(false, callback);
         assertTrue(callback.isDone());
         assertFalse(callback.isCompletedExceptionally());
 
@@ -1567,7 +1567,7 @@ public class HttpChannelTest
                     if (written != null)
                         throw new IllegalStateException();
                     written = new FutureCallback();
-                    response.flush(true, written);
+                    response.write(true, written);
                 }
 
                 case SUCCEED -> callback.succeeded();

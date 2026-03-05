@@ -189,11 +189,11 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(".write() last={}, byteBuffer={}, callback={}", last, BufferUtil.toDetailString(byteBuffer), callback);
-            sink.write(last, byteBuffer, callback);
+                LOG.debug(".write() last={}, buffers={}, callback={}", last, buffers.length, callback);
+            sink.write(last, callback, buffers);
         }
     }
 }

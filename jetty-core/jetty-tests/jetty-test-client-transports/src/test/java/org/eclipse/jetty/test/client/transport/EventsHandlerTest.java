@@ -171,8 +171,8 @@ public class EventsHandlerTest extends AbstractTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.write(false, ByteBuffer.wrap("ABCDEF".getBytes(StandardCharsets.US_ASCII)),
-                    Callback.from(() -> response.flush(false,
-                        Callback.from(() -> response.flush(true, callback), callback::failed))));
+                    Callback.from(() -> response.write(false,
+                        Callback.from(() -> response.write(true, callback), callback::failed))));
                 return true;
             }
         })

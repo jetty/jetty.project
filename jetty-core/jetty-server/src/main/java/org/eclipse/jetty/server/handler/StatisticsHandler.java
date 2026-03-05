@@ -406,7 +406,7 @@ public class StatisticsHandler extends EventsHandler
             }
 
             @Override
-            public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+            public void write(boolean last, Callback callback, ByteBuffer... buffers)
             {
                 if (_minimumWriteRate > 0)
                 {
@@ -423,7 +423,7 @@ public class StatisticsHandler extends EventsHandler
                         }
                     }
                 }
-                super.write(last, byteBuffer, callback);
+                super.write(last, callback, buffers);
             }
         }
     }

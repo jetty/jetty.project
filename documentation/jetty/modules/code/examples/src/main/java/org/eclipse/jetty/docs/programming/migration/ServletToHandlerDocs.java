@@ -588,7 +588,7 @@ public class ServletToHandlerDocs
             // It is also the last write (as specified by the first parameter)
             // and writes an empty content (the second parameter, a null ByteBuffer).
             // When this write completes, the Handler callback is completed.
-            response.flush(true, callback);
+            response.write(true, callback);
 
             return true;
         }
@@ -630,7 +630,7 @@ public class ServletToHandlerDocs
             // Flush the response status code and the headers (no content).
             // This is the fist but non-last write.
             Callback.Completable completable = new Callback.Completable();
-            response.flush(false, completable);
+            response.write(false, completable);
 
             // When the first write completes, perform the second (and last) write.
             completable.whenComplete((ignored, failure) ->
@@ -717,7 +717,7 @@ public class ServletToHandlerDocs
 
                     // Explicit last write to write the trailers
                     // and complete the Handler callback.
-                    response.flush(true, callback);
+                    response.write(true, callback);
                 }
                 else
                 {

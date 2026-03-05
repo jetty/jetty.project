@@ -70,11 +70,31 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
      * </ul>
      */
     @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
-        ByteBuffer slice = byteBuffer.slice();
-        BufferUtil.clear(byteBuffer);
-        offer(new AsyncChunk(last, slice, callback));
+        switch (buffers.length)
+        {
+            case 0 -> offer(new AsyncChunk(last, BufferUtil.EMPTY_BUFFER, callback));
+            case 1 ->
+            {
+                ByteBuffer byteBuffer = buffers[0];
+                ByteBuffer slice = byteBuffer.slice();
+                BufferUtil.clear(byteBuffer);
+                offer(new AsyncChunk(last, slice, callback));
+            }
+            default ->
+            {
+                // Offer each buffer as a separate chunk; last flag only on the final one.
+                for (int i = 0; i < buffers.length; i++)
+                {
+                    boolean isLast = last && (i == buffers.length - 1);
+                    Callback chunkCallback = (i == buffers.length - 1) ? callback : Callback.NOOP;
+                    ByteBuffer slice = buffers[i].slice();
+                    BufferUtil.clear(buffers[i]);
+                    offer(new AsyncChunk(isLast, slice, chunkCallback));
+                }
+            }
+        }
     }
 
     /**

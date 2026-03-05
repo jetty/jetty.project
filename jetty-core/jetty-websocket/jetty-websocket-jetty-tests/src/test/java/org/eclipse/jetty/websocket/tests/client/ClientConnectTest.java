@@ -157,7 +157,7 @@ public class ClientConnectTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.flush(true, callback);
+                response.write(true, callback);
                 return true;
             }
         });

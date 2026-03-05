@@ -739,13 +739,13 @@ public abstract class ProxyHandler extends Handler.Abstract
                 }
             };
 
-            proxyToClientResponse.write(false, serverToProxyContent, callback);
+            proxyToClientResponse.write(false, callback, serverToProxyContent);
         }
 
         @Override
         public void onSuccess(org.eclipse.jetty.client.Response serverToProxyResponse)
         {
-            proxyToClientResponse.write(true, BufferUtil.EMPTY_BUFFER, this);
+            proxyToClientResponse.write(true, this);
         }
 
         @Override

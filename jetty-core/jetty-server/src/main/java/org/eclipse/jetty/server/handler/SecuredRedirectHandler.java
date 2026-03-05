@@ -105,7 +105,7 @@ public class SecuredRedirectHandler extends Handler.Wrapper
             // TODO need a utility for this
             response.getHeaders().put(HttpHeader.LOCATION, url);
             response.setStatus(_redirectCode);
-            response.flush(true, callback);
+            response.write(true, callback);
         }
         else
         {

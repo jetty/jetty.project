@@ -304,13 +304,7 @@ public interface EndPoint extends Closeable, Content.Sink
     }
 
     @Override
-    default void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-    {
-        write(last ? closeWriteCallback(callback) : callback, byteBuffer);
-    }
-
-    @Override
-    default void write(boolean last, ByteBuffer[] buffers, Callback callback)
+    default void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
         write(last ? closeWriteCallback(callback) : callback, buffers);
     }
