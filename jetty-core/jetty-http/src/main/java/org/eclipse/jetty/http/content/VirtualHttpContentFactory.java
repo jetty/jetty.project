@@ -43,7 +43,7 @@ public class VirtualHttpContentFactory extends ContainerLifeCycle implements Htt
     public VirtualHttpContentFactory(HttpContent.Factory factory, Resource resource, String contentType, ByteBufferPool.Sized sizedBufferPool)
     {
         _factory = factory;
-        addBean(factory, true);
+        installBean(factory, true);
         _resource = resource;
         _matchSuffix = "/" + _resource.getFileName();
         _contentType = contentType;

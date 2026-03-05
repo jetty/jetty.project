@@ -46,7 +46,7 @@ public class PreCompressedHttpContentFactory extends ContainerLifeCycle implemen
     public PreCompressedHttpContentFactory(HttpContent.Factory factory, List<CompressedContentFormat> preCompressedFormats)
     {
         _factory = factory;
-        addBean(factory, true);
+        installBean(factory, true);
         _preCompressedFormats = preCompressedFormats;
     }
 

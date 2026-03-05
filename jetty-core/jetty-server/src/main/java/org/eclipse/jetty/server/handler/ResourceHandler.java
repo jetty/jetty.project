@@ -81,7 +81,7 @@ public class ResourceHandler extends Handler.Wrapper
         super(handler);
         _byteBufferPool = byteBufferPool;
         _resourceService = newResourceService();
-        addBean(_resourceService);
+        installBean(_resourceService);
     }
 
     protected ResourceService newResourceService()

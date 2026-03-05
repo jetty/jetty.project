@@ -84,7 +84,7 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
     public CachingHttpContentFactory(HttpContent.Factory authority, ByteBufferPool.Sized bufferPool)
     {
         _authority = authority;
-        addBean(_authority, true);
+        installBean(_authority, true);
         _bufferPool = bufferPool != null ? bufferPool : ByteBufferPool.SIZED_NON_POOLING;
     }
 

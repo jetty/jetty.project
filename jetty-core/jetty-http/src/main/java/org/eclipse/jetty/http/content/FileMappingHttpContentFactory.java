@@ -66,7 +66,7 @@ public class FileMappingHttpContentFactory extends ContainerLifeCycle implements
     public FileMappingHttpContentFactory(HttpContent.Factory factory, int minFileSize, int maxBufferSize)
     {
         _factory = Objects.requireNonNull(factory);
-        addBean(factory, true);
+        installBean(factory, true);
         _minFileSize = minFileSize == -1 ? DEFAULT_MIN_FILE_SIZE : minFileSize;
         _maxBufferSize = maxBufferSize == -1 ? DEFAULT_MAX_BUFFER_SIZE : maxBufferSize;
     }
