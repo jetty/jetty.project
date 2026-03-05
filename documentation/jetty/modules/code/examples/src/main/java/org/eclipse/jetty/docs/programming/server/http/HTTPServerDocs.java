@@ -614,6 +614,22 @@ public class HTTPServerDocs
         // end::h3[]
     }
 
+    public void h2altsvc()
+    {
+        // tag::h2altsvc[]
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
+
+        // Configure AltSvcCustomizer after connection factory creation.
+        HTTP2ServerConnectionFactory.AltSvcCustomizer h2AltSvc = httpConfig.getCustomizer(HTTP2ServerConnectionFactory.AltSvcCustomizer.class);
+        if (h2AltSvc != null)
+        {
+            h2AltSvc.setMaxAge(Duration.ofHours(24));
+            h2AltSvc.setPersist(true);
+        }
+        // end::h2altsvc[]
+    }
+
     public void conscrypt()
     {
         // tag::conscrypt[]

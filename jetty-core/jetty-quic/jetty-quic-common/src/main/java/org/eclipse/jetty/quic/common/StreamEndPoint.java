@@ -428,12 +428,8 @@ public class StreamEndPoint implements EndPoint
     public void write(boolean last, List<ByteBuffer> buffers, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} on {}", BufferUtil.toDetailString(buffers.toArray(ByteBuffer[]::new)), this);
-        if (buffers == null || buffers.isEmpty() || remaining(buffers) == 0)
-        {
-            callback.succeeded();
-        }
-        else
+            LOG.debug("writing last={} {} on {}", last, BufferUtil.toDetailString(buffers.toArray(ByteBuffer[]::new)), this);
+        if (last || remaining(buffers) > 0)
         {
             while (true)
             {
@@ -466,6 +462,10 @@ public class StreamEndPoint implements EndPoint
                 }
                 return;
             }
+        }
+        else
+        {
+            callback.succeeded();
         }
     }
 

@@ -32,10 +32,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpException;
@@ -589,16 +591,35 @@ public interface Request extends Attributes, Content.Source
 
             if (charset == null || StandardCharsets.UTF_8.equals(charset))
             {
+                HttpChannel httpChannel = HttpChannel.from(request);
                 uriCompliance = request.getConnectionMetaData().getHttpConfiguration().getUriCompliance();
+                ComplianceViolation.Listener complianceViolationListener = httpChannel.getComplianceViolationListener();
                 boolean allowBadPercent = uriCompliance.allows(UriCompliance.Violation.BAD_PERCENT_ENCODING);
                 boolean allowBadUtf8 = uriCompliance.allows(UriCompliance.Violation.BAD_UTF8_ENCODING);
                 boolean allowTruncatedUtf8 = uriCompliance.allows(UriCompliance.Violation.TRUNCATED_UTF8_ENCODING);
-                if (!UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add, allowBadPercent, allowBadUtf8, allowTruncatedUtf8))
+
+                BiConsumer<String, Boolean> onBadEncodingConsumer = (cause, allowed) ->
                 {
-                    HttpChannel httpChannel = HttpChannel.from(request);
-                    if (httpChannel != null && httpChannel.getComplianceViolationListener() != null)
-                        httpChannel.getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, "query=" + query));
-                }
+                    ComplianceUtils.notify(complianceViolationListener, new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_UTF8_ENCODING, cause, allowed));
+                    if (!allowed)
+                        throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
+                };
+                BiConsumer<String, Boolean> onBadPercentConsumer = (cause, allowed) ->
+                {
+                    ComplianceUtils.notify(complianceViolationListener, new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.BAD_PERCENT_ENCODING, cause, allowed));
+                    if (!allowed)
+                        throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
+                };
+                BiConsumer<String, Boolean> onTruncatedEncodingConsumer = (cause, allowed) ->
+                {
+                    ComplianceUtils.notify(complianceViolationListener, new ComplianceViolation.Event(uriCompliance, UriCompliance.Violation.TRUNCATED_UTF8_ENCODING, cause, allowed));
+                    if (!allowed)
+                        throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Bad query");
+                };
+
+                UrlEncoded.decodeUtf8To(query, 0, query.length(), fields::add,
+                    allowBadPercent, allowBadUtf8, allowTruncatedUtf8,
+                    onBadEncodingConsumer, onBadPercentConsumer, onTruncatedEncodingConsumer);
             }
             else
             {

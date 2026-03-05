@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-= Security
+= Jetty Security
 
 Web application security restricts access to resources within the web application, or imposes security requirements on the transport with which these resources are delivered to clients.
 

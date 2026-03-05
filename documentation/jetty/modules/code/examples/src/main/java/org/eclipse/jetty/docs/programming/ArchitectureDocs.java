@@ -82,7 +82,7 @@ public class ArchitectureDocs
 
         // Configurable, bounded, virtual thread executor (preferred).
         VirtualThreadPool virtualExecutor = new VirtualThreadPool();
-        virtualExecutor.setMaxThreads(128);
+        virtualExecutor.setMaxConcurrentTasks(128);
         threadPool.setVirtualThreadsExecutor(virtualExecutor);
 
         // For server-side usage.
@@ -103,8 +103,8 @@ public class ArchitectureDocs
     {
         // tag::virtualVirtual[]
         VirtualThreadPool threadPool = new VirtualThreadPool();
-        // Limit the max number of current virtual threads.
-        threadPool.setMaxThreads(200);
+        // Limit the max number of concurrent tasks run by virtual threads.
+        threadPool.setMaxConcurrentTasks(200);
         // Track, with details, virtual threads usage.
         threadPool.setTracking(true);
         threadPool.setDetailedDump(true);

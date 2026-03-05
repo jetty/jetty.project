@@ -166,9 +166,9 @@ public class RequestTest
             Arguments.of(UriCompliance.UNSAFE, "https://user@local:8080/", 200, "local:8080"),
             Arguments.of(UriCompliance.DEFAULT, "https://user:password@local/", 400, "Deprecated User Info"),
             Arguments.of(UriCompliance.LEGACY, "https://user:password@local/", 200, "local"),
-            Arguments.of(UriCompliance.DEFAULT, "https://user@other/", 400, "Deprecated User Info"),
+            Arguments.of(UriCompliance.DEFAULT, "https://user@other/", 400, "Authority!=Host"),
             Arguments.of(UriCompliance.LEGACY, "https://user@other/", 400, "Authority!=Host"),
-            Arguments.of(UriCompliance.DEFAULT, "https://user:password@other/", 400, "Deprecated User Info"),
+            Arguments.of(UriCompliance.DEFAULT, "https://user:password@other/", 400, "Authority!=Host"),
             Arguments.of(UriCompliance.LEGACY, "https://user:password@other/", 400, "Authority!=Host"),
             Arguments.of(UriCompliance.UNSAFE, "https://user:password@other/", 200, "other"),
             Arguments.of(UriCompliance.DEFAULT, "/%2F/", 400, "Ambiguous URI path separator"),
@@ -553,6 +553,8 @@ public class RequestTest
             Arguments.of(";", List.of(Locale.getDefault().toLanguageTag()).toString()),
             Arguments.of(",", List.of(Locale.getDefault().toLanguageTag()).toString()),
             Arguments.of("\"", List.of(Locale.getDefault().toLanguageTag()).toString()),
+            Arguments.of("\"';--", List.of(Locale.getDefault().toLanguageTag()).toString()),
+            Arguments.of("foo\"", List.of(Locale.getDefault().toLanguageTag()).toString()),
             Arguments.of("bogus", List.of("bogus").toString()),
             Arguments.of("bogus, en-US", List.of(Locale.getDefault().toLanguageTag(), "bogus").toString()),
             Arguments.of("en-en", List.of("en-EN").toString()),
@@ -578,6 +580,7 @@ public class RequestTest
                 Host: tester
                 Connection: close
                 %s
+                
                 """.formatted(acceptLanguage);
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
@@ -1031,7 +1034,7 @@ public class RequestTest
 
         String rawResponse = connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(expectedStatus));
+        assertThat(rawResponse, response.getStatus(), is(expectedStatus));
     }
 
     static Stream<Arguments> suspiciousCharactersLegacy()

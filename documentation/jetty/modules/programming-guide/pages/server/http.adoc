@@ -533,9 +533,21 @@ Alt-Svc: h3=":843"
 ----
 
 The presence of this header indicates that protocol `h3` is available on the same host (since no host is defined before the port), but on port `843` (although it may be the same port `443`).
+The `ma` (max-age) attribute specifies how long (in seconds) the client should cache this information.
 The HTTP/3 client may now initiate a QUIC connection on port `843` and make HTTP/3 requests.
 
 NOTE: It is nowadays common to use the same port `443` for both HTTP/2 and HTTP/3. This does not cause problems because HTTP/2 listens on the TCP port `443`, while QUIC listens on the UDP port `443`.
+
+NOTE: The `Alt-Svc` header is automatically added to HTTP/2 responses if an HTTP/3 connector is present, advertising the HTTP/3 connector's port.
+By default, only the port is advertised without additional attributes.
+The `ma` (max-age) attribute can be configured via `AltSvcCustomizer.setMaxAge(Duration)` and the `persist` attribute via `AltSvcCustomizer.setPersist(boolean)`.
+
+To configure the `AltSvcCustomizer`, retrieve it from the `HttpConfiguration` after creating the `HTTP2ServerConnectionFactory`:
+
+[,java,indent=0,options=nowrap]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=h2altsvc]
+----
 
 It is therefore common for HTTP/3 clients to initiate connections using the HTTP/2 protocol over TCP, and if the server supports HTTP/3 switch to HTTP/3 as indicated by the server.
 

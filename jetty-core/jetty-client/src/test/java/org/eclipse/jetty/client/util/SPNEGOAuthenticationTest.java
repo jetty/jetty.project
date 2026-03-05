@@ -33,6 +33,7 @@ import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.SPNEGOAuthentication;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.HashLoginService;
@@ -124,7 +125,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
 
     private void startSPNEGO(Scenario scenario, Handler handler) throws Exception
     {
-        server = new Server();
+        server = new Server(null, null, new ArrayByteBufferPool.Tracking());
         HashLoginService hashLoginService = new HashLoginService(realm, ResourceFactory.of(server).newResource(realmPropsPath));
         SPNEGOLoginService spnegoLoginService = new SPNEGOLoginService(realm, hashLoginService);
         spnegoLoginService.setKeyTabPath(serviceKeyTabPath);

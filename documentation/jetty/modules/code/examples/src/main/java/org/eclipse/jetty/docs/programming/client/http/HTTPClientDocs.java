@@ -499,8 +499,9 @@ public class HTTPClientDocs
                 {
                     if (!result.isFailed())
                     {
-                        byte[] responseContent = getContent();
-                        // Your logic here
+                        // The Content.Source must be fully consumed.
+                        Content.Source source = takeContentAsContentSource();
+                        // Your logic here.
                     }
                 }
             });

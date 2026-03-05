@@ -37,8 +37,8 @@ etc/jetty-threadpool-virtual.xml
 ## Virtual threads name prefix.
 #jetty.threadPool.virtual.namePrefix=qtp<hashCode>-virtual-
 
-## Max number of current virtual threads.
-#jetty.threadPool.virtual.maxThreads=200
+## Max number of concurrent tasks run by virtual threads.
+#jetty.threadPool.virtual.maxConcurrentTasks=200
 
 ## Whether to track virtual threads so they appear
 ## in the dump even if they are unmounted.

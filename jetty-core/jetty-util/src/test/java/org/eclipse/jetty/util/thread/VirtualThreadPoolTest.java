@@ -150,10 +150,10 @@ public class VirtualThreadPoolTest
     }
 
     @Test
-    public void testMaxThreads() throws Exception
+    public void testMaxConcurrentTasks() throws Exception
     {
         VirtualThreadPool vtp = new VirtualThreadPool();
-        vtp.setMaxThreads(1);
+        vtp.setMaxConcurrentTasks(1);
         vtp.start();
 
         AtomicBoolean run1 = new AtomicBoolean();

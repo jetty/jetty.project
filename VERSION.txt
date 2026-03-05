@@ -1,4 +1,27 @@
-jetty-12.1.6-SNAPSHOT
+jetty-12.1.7-SNAPSHOT
+
+12.1.6 - 27 January 2026
+ + 9019 Server cannot be closed gracefully when ServerConnector's IdleTimeout is 0
+ + 10281 pom.xml description tags need updated
+ + 10355 Http3Fields efficiency
+ + 10905 Support cookie name prefixes (@afarber)
+ + 11505 Document HttpURI methods (@afarber)
+ + 12660 Tagging the ClientUpgradeRequest to be able to support per-reqiest client ssl auth
+ + 12806 ComplianceViolation.Listener isn't very useful for helping identify clients that need to migrate to standards
+ + 13328 Add option to share thread pool in ProxyHandler (@afarber)
+ + 13353 Create a glossary in the documentation (@afarber)
+ + 13670 jetty-ee11-servlet getParameter does not throw IllegalStateException
+ + 13686 Improve grow algorithms
+ + 14061 Jetty 12.1.4 demo HTTP/3 wrong port in alt-svc response header (@afarber)
+ + 14068 Jetty tmpdir processing doesn't match Java on Windows
+ + 14137 304 Not Modified produces incorrect ETag from CompressionHandler.
+ + 14209 Unable to use custom XmlParser for WebAppContext / MetaData descriptor parsing
+ + 14260 Improve GZIP performance
+ + 14264 org.eclipse.jetty.server.Response.sendRedirect doesn't allow a location containing a fragment (/#fragment)
+ + 14280 `jetty-ee11-servlets` mistakenly depends on `jetty-client`
+ + 14319 ZSTD CompressionHandler may duplicate bytes in response (@afarber)
+ + 14330 VirtualThreadPool can create unlimited threads while doc mentions otherwise
+ + 14360 jetty-ee8-cdi missing from jetty-ee8-bom
 
 12.1.5 - 03 December 2025
  + 13960 Ensure demand is called after MessageInputStream.close()

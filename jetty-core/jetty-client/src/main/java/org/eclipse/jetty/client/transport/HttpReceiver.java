@@ -681,7 +681,7 @@ public abstract class HttpReceiver implements Invocable
         @Override
         public void demand(Runnable demandCallback)
         {
-            Runnable demand = new Invocable.ReadyTask(Invocable.getInvocationType(demandCallback), () -> invoker.run(demandCallback));
+            Runnable demand = Invocable.from(Invocable.getInvocationType(demandCallback), () -> invoker.run(demandCallback));
             source.demand(demand);
         }
 
