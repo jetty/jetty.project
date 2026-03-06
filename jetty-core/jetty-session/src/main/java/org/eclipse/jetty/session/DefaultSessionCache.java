@@ -54,7 +54,9 @@ public class DefaultSessionCache extends AbstractSessionCache
     /**
      * @param manager The SessionHandler related to this SessionCache
      * @param sessions The session map implementation to use
+     * @deprecated use {@link #DefaultSessionCache(SessionManager)} instead as the sessions must always be a {@link ConcurrentHashMap} instance
      */
+    @Deprecated(forRemoval = true, since = "12.1.7")
     public DefaultSessionCache(SessionManager manager, ConcurrentMap<String, ManagedSession> sessions)
     {
         super(manager);
