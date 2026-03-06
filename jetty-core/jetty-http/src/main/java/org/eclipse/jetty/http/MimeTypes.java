@@ -878,6 +878,14 @@ public class MimeTypes
         if (semicolon >= 0)
             contentType = contentType.substring(0, semicolon).trim();
 
+        String charset = getCharsetFromContentType(field.getValue());
+        if (charset != null)
+        {
+            Type type = MimeTypes.CACHE.get(contentType + "; charset=" + charset);
+            if (type != null)
+                return type;
+        }
+
         return MimeTypes.CACHE.get(contentType);
     }
 
