@@ -440,6 +440,7 @@ public class ManagedSession implements Session
      */
     protected void checkValidForWrite() throws IllegalStateException
     {
+        assert _lock.isHeldByCurrentThread();
         if (_state == State.INVALID)
             throw new IllegalStateException("Not valid for write: id=" + _sessionData.getId() +
                 " created=" + _sessionData.getCreated() +
@@ -452,11 +453,8 @@ public class ManagedSession implements Session
             return; // in the process of being invalidated, listeners may try to
         // remove attributes
 
-        try (AutoLock ignored = _lock.lock())
-        {
-            if (!isResident())
-                throw new IllegalStateException("Not valid for write: id=" + _sessionData.getId() + " not resident");
-        }
+        if (!isResident())
+            throw new IllegalStateException("Not valid for write: id=" + _sessionData.getId() + " not resident");
     }
 
     /**
@@ -466,6 +464,7 @@ public class ManagedSession implements Session
      */
     protected void checkValidForRead() throws IllegalStateException
     {
+        assert _lock.isHeldByCurrentThread();
         if (_state == State.INVALID)
             throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId() +
                 " created=" + _sessionData.getCreated() +
@@ -477,11 +476,8 @@ public class ManagedSession implements Session
         if (_state == State.INVALIDATING)
             return;
 
-        try (AutoLock ignored = _lock.lock())
-        {
-            if (!isResident())
-                throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId() + " not resident");
-        }
+        if (!isResident())
+            throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId() + " not resident");
     }
 
     @Override
