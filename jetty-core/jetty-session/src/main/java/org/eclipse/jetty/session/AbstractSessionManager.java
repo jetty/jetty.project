@@ -49,7 +49,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -1167,29 +1166,26 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         if (session == null)
             return;
 
-        try (AutoLock ignored = session.lock()) // TODO checkInactiveSession cannot happen under session lock
+        if (session.isExpiredAt(now))
         {
-            if (session.isExpiredAt(now))
+            //instead of expiring the session directly here, accumulate a list of
+            //session ids that need to be expired. This is an efficiency measure: as
+            //the expiration involves the SessionDataStore doing a delete, it is
+            //most efficient if it can be done as a bulk operation to eg reduce
+            //roundtrips to the persistent store. Only do this if the HouseKeeper that
+            //does the scavenging is configured to actually scavenge
+            if (_sessionIdManager.getSessionHouseKeeper() != null &&
+                _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
             {
-                //instead of expiring the session directly here, accumulate a list of
-                //session ids that need to be expired. This is an efficiency measure: as
-                //the expiration involves the SessionDataStore doing a delete, it is
-                //most efficient if it can be done as a bulk operation to eg reduce
-                //roundtrips to the persistent store. Only do this if the HouseKeeper that
-                //does the scavenging is configured to actually scavenge
-                if (_sessionIdManager.getSessionHouseKeeper() != null &&
-                    _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
-                {
-                    _candidateSessionIdsForExpiry.add(session.getId());
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Session {} is candidate for expiry", session.getId());
-                }
+                _candidateSessionIdsForExpiry.add(session.getId());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Session {} is candidate for expiry", session.getId());
             }
-            else
-            {
-                //possibly evict the session
-                _sessionCache.checkInactiveSession(session);
-            }
+        }
+        else
+        {
+            //possibly evict the session
+            _sessionCache.checkInactiveSession(session);
         }
     }
 
