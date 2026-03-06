@@ -325,7 +325,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * 
      * @param id The session to retrieve
      * @param enter if true, the usage count of the session will be incremented
-     * @return the session if it exists either in the cache or the store,, null otherwise
+     * @return the session if it exists either in the cache or the store, null otherwise
      * @throws Exception if the session cannot be loaded
      */
     protected ManagedSession getAndEnter(String id, boolean enter) throws Exception
@@ -335,28 +335,27 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         {
             try
             {
-                ManagedSession s = v;
-                if (s == null)
+                if (v == null)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session {} not found locally in {}, attempting to load", id, this);
-                    s = loadSession(k);
+                    v = loadSession(k);
                 }
-                if (s != null)
+                if (v != null)
                 {
-                    try (AutoLock ignore = s.lock())
+                    try (AutoLock ignore = v.lock())
                     {
-                        s.setResident(true); //ensure freshly loaded session is resident
+                        v.setResident(true); //ensure freshly loaded session is resident
                     }
                     if (enter)
-                        s.use();
+                        v.use();
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session {} not loaded by store", id);
                 }
-                return s;
+                return v;
             }
             catch (Exception e)
             {
@@ -452,7 +451,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         if (session == null)
             return;
 
-        try (AutoLock lock = session.lock()) // this one looks okay
+        try (AutoLock ignore = session.lock())
         {
             //only write the session out at this point if the attributes changed. If only
             //the lastAccess/expiry time changed defer the write until the last request exits
@@ -503,7 +502,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         AtomicReference<Exception> exception = new AtomicReference<>();
         doCompute(id, (k, v) ->
         {
-            try (AutoLock lock = session.lock())
+            try (AutoLock ignore = session.lock())
             {
                 if (session.isInvalidOrInvalidating())
                     return v;
@@ -524,7 +523,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Eviction on request exit id={}", id);
                             session.setResident(false);
-                            return null;
+                            return null; // remove from map
                         }
                         else
                         {
@@ -548,7 +547,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                             session.setResident(false);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Evicted on request exit id={}", id);
-                            return null;
+                            return null; // remove from map
                         }
                         else
                         {
@@ -561,12 +560,19 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                         }
                     }
                 }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Req count={} for id={}", session.getRequests(), id);
+                    session.setResident(true);
+                    return session; //ensure it is the map, but don't save it to the backing store until the last request exists
+                }
             }
             catch (Exception e)
             {
                 exception.set(e);
+                return v;
             }
-            return v;
         });
 
         Exception ex = exception.get();
@@ -624,15 +630,14 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         {
             try
             {
-                ManagedSession s = v;
-                if (s == null)
+                if (v == null)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session {} not found locally in {}, attempting to load", id, this);
-                    s = loadSession(k);
+                    v = loadSession(k);
                 }
-                session.set(s);
-                if (s == null)
+                session.set(v);
+                if (v == null)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Session {} not loaded by store", id);
@@ -647,11 +652,11 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 }
 
                 //delete it from the session object store
-                if (s != null)
+                if (v != null)
                 {
-                    try (AutoLock ignore = s.lock())
+                    try (AutoLock ignore = v.lock())
                     {
-                        s.setResident(false);
+                        v.setResident(false);
                     }
                 }
                 return null;
@@ -662,6 +667,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             }
             return v;
         });
+
         Exception ex = exception.get();
         if (ex != null)
             throw ex;
