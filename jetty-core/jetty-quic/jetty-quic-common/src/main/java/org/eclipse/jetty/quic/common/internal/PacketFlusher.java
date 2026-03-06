@@ -69,7 +69,7 @@ class PacketFlusher implements Callback
 
         Packet packet = processingPacketEntry.packet();
         packetGenerator.generate(packetAccumulator, packet, null);
-        session.notifyOutgoingPacket(packet);
+        session.notifyOutgoingPacket(packet, packetAccumulator.remaining());
         if (LOG.isDebugEnabled())
             LOG.debug("writing packet {} {} to {} on {}", packet, packetAccumulator, endPoint, this);
         endPoint.write(flusher, session.getRemoteSocketAddress(), packetAccumulator.getByteBuffer());

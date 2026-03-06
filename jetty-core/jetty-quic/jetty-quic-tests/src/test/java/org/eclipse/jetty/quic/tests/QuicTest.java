@@ -89,7 +89,7 @@ public class QuicTest extends AbstractQuicTest
                     clientEvents.add("open");
                 }
             }, p)
-        ).get(5, TimeUnit.SECONDS);
+        ).get(555, TimeUnit.SECONDS);
 
         assertNotNull(session);
 

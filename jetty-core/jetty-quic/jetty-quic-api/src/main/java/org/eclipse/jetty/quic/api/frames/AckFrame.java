@@ -34,6 +34,7 @@ import java.util.List;
 /// * `(AckRange(6,2), AckRange(13,5))`
 ///
 /// The ack ranges are calculated backwards:
+/// * Acknowledged packets are 100-110; it's 11 packets, but encoded as length=10.
 /// * Unacknowledged packets are 93-99; it's 7 packets, but encoded as gap=6.
 /// * Acknowledged packets are 90-92; it's 3 packets, but encoded as length=2.
 /// * Unacknowledged packets are 76-89; it's 14 packets, but encoded as gap=13.
@@ -72,6 +73,45 @@ public final class AckFrame extends Frame.Abstract
     public List<AckRange> ackRanges()
     {
         return ranges;
+    }
+
+    /// Returns an array of packet numbers acknowledged by this frame,
+    /// from the largest acknowledged to the smallest acknowledged.
+    ///
+    /// From the example above, this method returns:
+    /// ```
+    /// [110, 109, 108, 107, 106, 105, 104, 103, 102, 101, 100,
+    /// 92, 91, 90,
+    /// 75, 74, 73, 72, 71, 70]
+    /// ```
+    public long[] allAcknowledged()
+    {
+        long length = firstRangeLength() + 1;
+        for (AckRange ackRange : ackRanges())
+        {
+            length += ackRange.length() + 1;
+        }
+
+        long[] result = new long[Math.toIntExact(length)];
+
+        int offset = 0;
+        long acknowledged = largestAcknowledged();
+
+        for (long l = 0; l <= firstRangeLength(); ++l)
+        {
+            result[offset++] = acknowledged--;
+        }
+
+        for (AckRange ackRange : ackRanges())
+        {
+            acknowledged -= (ackRange.gap() + 1);
+            for (long l = 0; l <= ackRange.length(); ++l)
+            {
+                result[offset++] = acknowledged--;
+            }
+        }
+
+        return result;
     }
 
     @Override
