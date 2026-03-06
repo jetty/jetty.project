@@ -784,44 +784,60 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         if (session == null)
             return;
 
+        String oldId = session.getId();
         AtomicReference<Exception> exception = new AtomicReference<>();
-        AtomicReference<String> oldId = new AtomicReference<>();
         AtomicReference<AutoLock> lock = new AtomicReference<>();
-        doCompute(newId, (k, v) ->
+        try
         {
-            oldId.set(session.getId());
-            session.checkValidForWrite(); //can't change id on invalid session
-            session.getSessionData().setId(newId);
-            session.getSessionData().setLastSaved(0); //pretend that the session has never been saved before to get a full save
-            session.getSessionData().setDirty(true);  //ensure we will try to write the session out
-            session.setExtendedId(newExtendedId); //remember the new extended id
-            session.onIdChanged(); //session id changed
+            doCompute(newId, (k, v) ->
+            {
+                lock.set(session.lock());
 
-            lock.set(session.lock());
-            return session;
-        });
-        doCompute(oldId.get(), (s, v) ->
-        {
-            try
-            {
-                if (_sessionDataStore != null)
+                session.checkValidForWrite(); //can't change id on invalid session
+                session.getSessionData().setId(newId);
+                session.getSessionData().setLastSaved(0); //pretend that the session has never been saved before to get a full save
+                session.getSessionData().setDirty(true);  //ensure we will try to write the session out
+                session.setExtendedId(newExtendedId); //remember the new extended id
+                session.onIdChanged(); //session id changed
+
+                try
                 {
-                    _sessionDataStore.delete(oldId.get());  //delete the session data with the old id
-                    _sessionDataStore.store(newId, session.getSessionData()); //save the session data with the new id
+                    if (_sessionDataStore != null)
+                        _sessionDataStore.store(newId, session.getSessionData()); //save the session data with the new id
                 }
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Session id={} swapped for new id={}", oldId, newId);
-            }
-            catch (Exception e)
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
+                return session;
+            });
+
+            Exception ex = exception.get();
+            if (ex != null)
+                throw ex;
+
+            doCompute(oldId, (k, v) ->
             {
-                exception.set(e);
-            }
-            finally
-            {
-                lock.get().close();
-            }
-            return null;
-        });
+                try
+                {
+                    if (_sessionDataStore != null)
+                        _sessionDataStore.delete(k); //delete the session data with the old id
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Session id={} swapped for new id={}", k, newId);
+                }
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
+                return null;
+            });
+        }
+        finally
+        {
+            AutoLock autoLock = lock.get();
+            if (autoLock != null)
+                autoLock.close();
+        }
 
         Exception ex = exception.get();
         if (ex != null)
