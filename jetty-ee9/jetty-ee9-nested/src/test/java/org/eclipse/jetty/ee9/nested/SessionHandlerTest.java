@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import jakarta.servlet.SessionCookieConfig;
@@ -639,6 +640,12 @@ public class SessionHandlerTest
         protected ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction)
         {
             return mappingFunction.apply(id);
+        }
+
+        @Override
+        protected ManagedSession doCompute(String id, BiFunction<String, ManagedSession, ManagedSession> mappingFunction)
+        {
+            return mappingFunction.apply(id, null);
         }
     }
 

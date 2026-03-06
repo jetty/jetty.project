@@ -1167,7 +1167,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         if (session == null)
             return;
 
-        try (AutoLock ignored = session.lock())
+        try (AutoLock ignored = session.lock()) // TODO checkInactiveSession cannot happen under session lock
         {
             if (session.isExpiredAt(now))
             {

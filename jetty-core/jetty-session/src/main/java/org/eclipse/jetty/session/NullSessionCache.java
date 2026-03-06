@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.session;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.eclipse.jetty.server.Session;
@@ -84,5 +85,11 @@ public class NullSessionCache extends AbstractSessionCache
     protected ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction)
     {
         return mappingFunction.apply(id);
+    }
+
+    @Override
+    protected ManagedSession doCompute(String id, BiFunction<String, ManagedSession, ManagedSession> mappingFunction)
+    {
+        return mappingFunction.apply(id, null);
     }
 }

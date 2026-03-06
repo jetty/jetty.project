@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -634,6 +635,12 @@ public class SessionHandlerTest
         protected ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction)
         {
             return mappingFunction.apply(id);
+        }
+
+        @Override
+        protected ManagedSession doCompute(String id, BiFunction<String, ManagedSession, ManagedSession> mappingFunction)
+        {
+            return mappingFunction.apply(id, null);
         }
     }
 

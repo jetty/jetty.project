@@ -15,11 +15,13 @@ package org.eclipse.jetty.session;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,7 +42,10 @@ public class AbstractSessionManagerTest
         ManagedSession session = new ManagedSession(sessionManager, sessionData);
         session.setExtendedId("1234.foo");
         session.getSessionData().setLastNode("foo");
-        session.setResident(true); //pretend its in a cache
+        try (AutoLock lock = session.lock())
+        {
+            session.setResident(true); //pretend its in a cache
+        }
 
         //not using cookies
         sessionManager.setUsingCookies(false);
@@ -88,6 +93,12 @@ public class AbstractSessionManagerTest
 
             @Override
             protected ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction)
+            {
+                return null;
+            }
+
+            @Override
+            protected ManagedSession doCompute(String id, BiFunction<String, ManagedSession, ManagedSession> mappingFunction)
             {
                 return null;
             }

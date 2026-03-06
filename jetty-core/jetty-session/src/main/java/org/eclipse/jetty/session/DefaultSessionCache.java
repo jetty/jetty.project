@@ -16,6 +16,7 @@ package org.eclipse.jetty.session;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.eclipse.jetty.server.Session;
@@ -23,6 +24,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,6 +124,18 @@ public class DefaultSessionCache extends AbstractSessionCache
     }
 
     @Override
+    protected ManagedSession doCompute(String id, BiFunction<String, ManagedSession, ManagedSession> mappingFunction)
+    {
+        return _sessions.compute(id, (k, v) ->
+        {
+            ManagedSession s = mappingFunction.apply(k, v);
+            if (s != null)
+                _stats.increment();
+            return s;
+        });
+    }
+
+    @Override
     public ManagedSession doDelete(String id)
     {
         ManagedSession s = _sessions.remove(id);
@@ -169,8 +183,14 @@ public class DefaultSessionCache extends AbstractSessionCache
                     {
                         LOG.warn("Unable to store {}", session, e);
                     }
-                    doDelete(session.getId()); //remove from memory
-                    session.setResident(false);
+                    doCompute(session.getId(), (s, managedSession) ->
+                    {
+                        try (AutoLock ignore = session.lock())
+                        {
+                            session.setResident(false);
+                        }
+                        return null; //remove from memory
+                    });
                 }
             }
         }

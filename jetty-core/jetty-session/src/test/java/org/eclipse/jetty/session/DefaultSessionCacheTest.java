@@ -14,6 +14,7 @@
 package org.eclipse.jetty.session;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CyclicBarrier;
@@ -24,6 +25,8 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -387,7 +390,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         cache.add("1234", session);
 
         assertEquals(1, session.getRequests());
-        assertTrue(session.isResident());
+        try (AutoLock ignored = session.lock())
+        {
+            assertTrue(session.isResident());
+        }
         assertTrue(cache.contains("1234"));
         assertFalse(store.exists("1234"));
     }
@@ -428,7 +434,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         cache.release(session);
 
         assertEquals(0, session.getRequests());
-        assertTrue(session.isResident());
+        try (AutoLock ignored = session.lock())
+        {
+            assertTrue(session.isResident());
+        }
         assertTrue(cache.contains("1234"));
         assertTrue(store.exists("1234"));
         
@@ -440,7 +449,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         //decrement request count
         cache.release(session);
         assertEquals(0, session.getRequests());
-        assertFalse(session.isResident());
+        try (AutoLock ignored = session.lock())
+        {
+            assertFalse(session.isResident());
+        }
         assertFalse(cache.contains("1234"));
         assertTrue(store.exists("1234"));
     }
@@ -491,12 +503,15 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         cache.add("1234", session); //increments usage count
         session.release(); //decrements the usage count
 
-        assertTrue(session.isResident());
+        try (AutoLock ignored = session.lock())
+        {
+            assertTrue(session.isResident());
+        }
         assertTrue(session.isValid());
         assertTrue(session.isIdleLongerThan(evictionSeconds));
 
         // Make a thread to run the checkInactiveSession on it to evict it.
-        Thread evictorThread = new Thread(() -> cache.checkInactiveSession(session));
+        Thread evictorThread = new Thread(() -> cache.checkInactiveSession(session), "evictorThread");
         evictorThread.start(); //start thread, will block on the barrier
 
         // Make another thread to call getAndEnter for the same session id.
@@ -511,15 +526,21 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
                 // Verify we can get an evicted session back and it is in the cache.
                 ManagedSession requestedSession = cache.getAndEnter("1234", true);
                 assertNotNull(requestedSession);
-                assertTrue(requestedSession.isResident());
+                try (AutoLock ignored = requestedSession.lock())
+                {
+                    assertTrue(requestedSession.isResident());
+                }
                 // Check original session object is now not resident.
-                assertFalse(session.isResident());
+                try (AutoLock ignored = session.lock())
+                {
+                    assertFalse(session.isResident());
+                }
             }
             catch (Throwable x)
             {
                 requestorExceptionRef.set(x);
             }
-        });
+        }, "requestorThread");
         requestorThread.start();
 
         // Wait until requestorThread is waiting to lock the session that is being evicted;
@@ -528,7 +549,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         //  - RUNNABLE (before or after the awaitility loop)
         //  - WAITING (waiting on the session lock in getAndEnter)
         await().atMost(5, TimeUnit.SECONDS).until(() ->
-            requestorThread.getState() == Thread.State.WAITING);
+        {
+            Thread.State state = requestorThread.getState();
+            return state == Thread.State.BLOCKED;
+        });
 
         // Await on the barrier so the session datastore completes, releases the lock on the
         // session and the requestorThread can check it isn't resident, then do a reload
@@ -537,6 +561,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
 
         // Wait for requestorThread to be done.
         requestorThread.join(5000);
+        List.of(requestorThread.getStackTrace()).forEach(System.out::println);
         assertFalse(requestorThread.isAlive());
         assertNull(requestorExceptionRef.get());
 
@@ -613,7 +638,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         cache.checkInactiveSession(session);
         assertFalse(store.exists("1234"));
         assertFalse(cache.contains("1234"));
-        assertFalse(session.isResident());
+        try (AutoLock ignored = session.lock())
+        {
+            assertFalse(session.isResident());
+        }
         //ie nothing happens to the session
 
         //test session that is resident but not valid
@@ -623,7 +651,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         cache.checkInactiveSession(session);
         assertTrue(store.exists("1234"));
         assertTrue(cache.contains("1234"));
-        assertTrue(session.isResident());
+        try (AutoLock ignored = session.lock())
+        {
+            assertTrue(session.isResident());
+        }
         assertFalse(session.isValid());
         //ie nothing happens to the session
 
@@ -632,7 +663,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         cache.checkInactiveSession(session);
         assertTrue(store.exists("1234"));
         assertTrue(cache.contains("1234"));
-        assertTrue(session.isResident());
+        try (AutoLock ignored = session.lock())
+        {
+            assertTrue(session.isResident());
+        }
         assertTrue(session.isValid());
         //ie nothing happens to the session
 
@@ -641,7 +675,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         data.setAccessed(now - TimeUnit.SECONDS.toMillis(30));
         cache.checkInactiveSession(session);
         assertFalse(cache.contains("1234"));
-        assertFalse(session.isResident());
+        try (AutoLock ignored = session.lock())
+        {
+            assertFalse(session.isResident());
+        }
 
         //test  EVICT_ON_SESSION_EXIT with requests still active.
         //this should not affect the session because it this is an idle test only
@@ -699,10 +736,16 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         data.setAccessed(accessed);
         cache.release(session);
         assertTrue(cache.contains("1234"));
-        assertTrue(session.isResident());
+        try (AutoLock ignored = session.lock())
+        {
+            assertTrue(session.isResident());
+        }
         cache.checkInactiveSession(session);
         assertFalse(cache.contains("1234"));
-        assertFalse(session.isResident());
+        try (AutoLock ignored = session.lock())
+        {
+            assertFalse(session.isResident());
+        }
         SessionData retrieved = store.load("1234");
         assertEquals(accessed, retrieved.getAccessed()); //check that we persisted the session before we evicted
     }
