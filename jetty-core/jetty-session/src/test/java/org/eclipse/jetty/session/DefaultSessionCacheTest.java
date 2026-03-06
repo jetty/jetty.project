@@ -547,7 +547,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         // the requestorThread's state can be:
         //  - TIMED_WAITING (waiting in awaitility loop)
         //  - RUNNABLE (before or after the awaitility loop)
-        //  - WAITING (waiting on the session lock in getAndEnter)
+        //  - BLOCKED (waiting on the session compute lock in getAndEnter)
         await().atMost(5, TimeUnit.SECONDS).until(() ->
         {
             Thread.State state = requestorThread.getState();
