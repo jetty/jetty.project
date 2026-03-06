@@ -65,7 +65,7 @@ public sealed interface Packet permits LongHeaderPacket, Packet.WithFrames, Shor
         {
         }
 
-        default void onOutgoingPacket(Session session, Packet packet)
+        default void onOutgoingPacket(Session session, Packet packet, long length)
         {
         }
 

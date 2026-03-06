@@ -41,9 +41,9 @@ class CryptoFlusher implements Callback
     private static final Logger LOG = LoggerFactory.getLogger(CryptoFlusher.class);
 
     private final AutoLock lock = new AutoLock();
-    private final Deque<QuicFlusher.FramesEntry> entries = new ArrayDeque<>();
-    private final List<QuicFlusher.FramesEntry> candidates = new ArrayList<>();
-    private final List<QuicFlusher.FramesEntry> processing = new ArrayList<>();
+    private final Deque<FramesEntry> entries = new ArrayDeque<>();
+    private final List<FramesEntry> candidates = new ArrayList<>();
+    private final List<FramesEntry> processing = new ArrayList<>();
     private final QuicFlusher flusher;
     private final EncryptionLevel encryptionLevel;
     private long cryptoOffset;
@@ -74,7 +74,7 @@ class CryptoFlusher implements Callback
         try (var _ = lock.lock())
         {
             // TODO: check if closed/failed, etc.
-            QuicFlusher.FramesEntry entry = new QuicFlusher.FramesEntry(stream, frames, callback);
+            FramesEntry entry = new FramesEntry(stream, frames, callback);
             boolean result = entries.add(entry);
             if (LOG.isDebugEnabled())
                 LOG.debug("offered={} {} on {}", result, entry, this);
@@ -95,10 +95,10 @@ class CryptoFlusher implements Callback
         int packetHeaderLength = session.estimatePacketHeaderLength(encryptionLevel);
         long maxBytes = session.getUDPPayloadLength() - packetHeaderLength;
 
-        ListIterator<QuicFlusher.FramesEntry> iterator = candidates.listIterator();
+        ListIterator<FramesEntry> iterator = candidates.listIterator();
         while (iterator.hasNext())
         {
-            QuicFlusher.FramesEntry entry = iterator.next();
+            FramesEntry entry = iterator.next();
             boolean progress = false;
             boolean processed = true;
             List<Frame> frames = entry.frames();
@@ -120,11 +120,11 @@ class CryptoFlusher implements Callback
                     // The first half does not notify successful completion
                     // until all frames are processed but does notify failures.
                     Callback splitCallback = Callback.from(callback.getInvocationType(), () -> {}, callback::failed);
-                    var splitEntry = new QuicFlusher.FramesEntry(entry.stream(), frames.subList(0, i), splitCallback);
+                    var splitEntry = new FramesEntry(entry.stream(), frames.subList(0, i), splitCallback);
                     processing.add(splitEntry);
 
                     // Update the current entry with the second half.
-                    QuicFlusher.FramesEntry remainingEntry = new QuicFlusher.FramesEntry(entry.stream(), frames.subList(i, frames.size()), callback);
+                    FramesEntry remainingEntry = new FramesEntry(entry.stream(), frames.subList(i, frames.size()), callback);
                     iterator.set(remainingEntry);
 
                     // Cannot generate more, so not fully processed.
@@ -165,7 +165,7 @@ class CryptoFlusher implements Callback
                 .toList();
         Packet packet = session.newPacket(encryptionLevel, frames);
         packetGenerator.generate(packetAccumulator, packet, framesAccumulator);
-        session.notifyOutgoingPacket(packet);
+        session.notifyOutgoingPacket(packet, packetAccumulator.remaining());
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} {} to {} on {}", packet, packetAccumulator, endPoint, this);
         endPoint.write(flusher, session.getRemoteSocketAddress(), packetAccumulator.getByteBuffer());
@@ -193,7 +193,7 @@ class CryptoFlusher implements Callback
     {
         if (LOG.isDebugEnabled())
             LOG.debug("write succeeded to {} on {}", flusher.getQuicSession().getEndPoint(), this);
-        processing.forEach(QuicFlusher.FramesEntry::succeeded);
+        processing.forEach(FramesEntry::succeeded);
         processing.clear();
     }
 
@@ -210,5 +210,9 @@ class CryptoFlusher implements Callback
     void resetCrypto()
     {
         cryptoOffset = 0;
+    }
+
+    record FramesEntry(QuicStream stream, List<Frame> frames, Callback callback) implements QuicFlusher.Entry
+    {
     }
 }

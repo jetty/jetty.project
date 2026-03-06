@@ -127,7 +127,7 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         try
         {
-            KeyManager keyManager = new KeyManager(EncryptionLevel.INITIAL);
+            KeyManager keyManager = new KeyManager(EncryptionLevel.HANDSHAKE);
             if (keyManagers.put(EncryptionLevel.HANDSHAKE, keyManager) != null)
                 throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.HANDSHAKE);
 

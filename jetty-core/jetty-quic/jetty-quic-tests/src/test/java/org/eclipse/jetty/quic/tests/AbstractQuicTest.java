@@ -39,7 +39,7 @@ public class AbstractQuicTest
         server = new Server(serverThreads);
 
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
-        sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12"));
+        sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("server_keystore.p12"));
         sslServer.setKeyStorePassword("storepwd");
 
         QuicServerQuicConfiguration serverQuicConfiguration = new QuicServerQuicConfiguration();

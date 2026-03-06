@@ -46,7 +46,7 @@ public class OneRTTPacketGenerator
         int spin = packet.spin() ? 0b00100000 : 0b00000000;
         int keyPhase = packet.keyPhase() ? 0b00000100 : 0b00000000;
         long packetNumber = packet.packetNumber();
-        EncodedPacketNumber encodedPacketNumber = packetNumbers.encode(EncryptionLevel.INITIAL, packetNumber);
+        EncodedPacketNumber encodedPacketNumber = packetNumbers.encode(EncryptionLevel.ONE_RTT, packetNumber);
         int msb = form | spin | keyPhase | (encodedPacketNumber.length() - 1);
         headerAccumulator.put((byte)msb);
 

@@ -16,6 +16,8 @@ package org.eclipse.jetty.quic.client;
 import java.util.List;
 
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
+import org.eclipse.jetty.quic.common.CongestionController;
+import org.eclipse.jetty.quic.common.NewRenoCongestionControllerFactory;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.NamedGroup;
 import org.eclipse.jetty.tls.SignatureAlgorithm;
@@ -26,17 +28,7 @@ public class QuicClientQuicConfiguration extends ClientQuicConfiguration
     private List<SignatureAlgorithm> signatureAlgorithms = List.of(SignatureAlgorithm.ECDSA_SECP256R1_SHA256, SignatureAlgorithm.RSA_PSS_RSAE_SHA256);
     private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519/*, NamedGroup.secp256r1, NamedGroup.ffdhe2048*/);
     private List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256);
-    // A value that does not exceed the usual MTU of 1500 and allows for encapsulation (VPN).
-    private int udpPayloadSize = 1344;
-    // RFC-9000[18.2].
-    private long udpPayloadMaxSize = 65527;
-    // RFC-9000[18.2].
-    private long ackDelayExponent = 3;
-    // RFC-9000[18.2].
-    private long ackMaxDelay = 25;
-    private boolean enableConnectionMigration;
-    // RFC-9000[18.2].
-    private long connectionIdMaxCount = 2;
+    private CongestionController.Factory congestionControllerFactory = new NewRenoCongestionControllerFactory();
 
     public List<SignatureAlgorithm> getSignatureAlgorithms()
     {
@@ -68,74 +60,14 @@ public class QuicClientQuicConfiguration extends ClientQuicConfiguration
         this.cipherSuites = cipherSuites;
     }
 
-    public int getUDPPayloadLength()
+    public CongestionController.Factory getCongestionControllerFactory()
     {
-        return udpPayloadSize;
+        return congestionControllerFactory;
     }
 
-    public void setUDPPayloadSize(int udpPayloadSize)
+    public void setCongestionControllerFactory(CongestionController.Factory congestionControllerFactory)
     {
-        if (udpPayloadSize < 1200)
-            throw new IllegalArgumentException("invalid UDPPayloadSize: " + udpPayloadSize);
-        this.udpPayloadSize = udpPayloadSize;
-    }
-
-    public long getUDPPayloadMaxSize()
-    {
-        return udpPayloadMaxSize;
-    }
-
-    public void setUDPPayloadMaxSize(long udpPayloadMaxSize)
-    {
-        if (udpPayloadMaxSize < 1200)
-            throw new IllegalArgumentException("invalid UDPPayloadMaxSize: " + udpPayloadMaxSize);
-        this.udpPayloadMaxSize = udpPayloadMaxSize;
-    }
-
-    public long getAcknowledgmentDelayExponent()
-    {
-        return ackDelayExponent;
-    }
-
-    public void setAcknowledgmentDelayExponent(long ackDelayExponent)
-    {
-        if (ackMaxDelay < 0 || ackDelayExponent > 20)
-            throw new IllegalArgumentException("invalid AcknowledgmentDelayExponent: " + ackDelayExponent);
-        this.ackDelayExponent = ackDelayExponent;
-    }
-
-    public long getAcknowledgmentMaxDelay()
-    {
-        return ackMaxDelay;
-    }
-
-    public void setAcknowledgmentMaxDelay(long ackMaxDelay)
-    {
-        if (ackMaxDelay < 0 || ackMaxDelay >= (1 << 14))
-            throw new IllegalArgumentException("invalid AcknowledgmentMaxDelay: " + ackMaxDelay);
-        this.ackMaxDelay = ackMaxDelay;
-    }
-
-    public boolean isEnableConnectionMigration()
-    {
-        return enableConnectionMigration;
-    }
-
-    public void setEnableConnectionMigration(boolean enableConnectionMigration)
-    {
-        this.enableConnectionMigration = enableConnectionMigration;
-    }
-
-    public long getConnectionIdMaxCount()
-    {
-        return connectionIdMaxCount;
-    }
-
-    public void setConnectionIdMaxCount(long connectionIdMaxCount)
-    {
-        if (connectionIdMaxCount < 2)
-            throw new IllegalArgumentException("invalid ConnectionIdMaxCount: " + connectionIdMaxCount);
-        this.connectionIdMaxCount = connectionIdMaxCount;
+        this.congestionControllerFactory = congestionControllerFactory;
     }
 
     @Override

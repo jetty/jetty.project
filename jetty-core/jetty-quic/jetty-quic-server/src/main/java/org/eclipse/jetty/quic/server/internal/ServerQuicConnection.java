@@ -35,6 +35,8 @@ import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
+import org.eclipse.jetty.quic.common.CongestionController;
+import org.eclipse.jetty.quic.common.PacketTracker;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.packets.ConnectionId;
@@ -312,6 +314,10 @@ public class ServerQuicConnection extends QuicConnection
 
     private ServerQuicSession newSession()
     {
+        CongestionController congestionController = getServerQuicConfiguration().getCongestionControllerFactory().newCongestionController();
+        PacketTracker packetTracker = new PacketTracker(congestionController);
+        packetTracker.setAcknowledgmentMaxDelay(quicConfiguration.getAcknowledgmentMaxDelay());
+        packetTracker.setAcknowledgmentDelayExponent(quicConfiguration.getAcknowledgmentDelayExponent());
         PacketNumbers packetNumbers = new PacketNumbers();
         ByteBufferPool byteBufferPool = getByteBufferPool();
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, true), new QuicMessagesGenerator(byteBufferPool, false));
@@ -319,7 +325,7 @@ public class ServerQuicConnection extends QuicConnection
         ServerTLSConfiguration tlsConfiguration = new ServerTLSConfiguration(getServerQuicConfiguration(), getSslContextFactory());
         ServerTLSEngine tlsEngine = new ServerTLSEngine(protector, tlsConfiguration);
         Session.Listener listener = getSessionListenerFactory().newListener();
-        return new ServerQuicSession(connector, getServerQuicConfiguration(), this, packetNumbers, tlsEngine, listener, getEndPoint());
+        return new ServerQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, listener, getEndPoint());
     }
 
     public void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers)

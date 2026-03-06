@@ -181,26 +181,36 @@ public class FramesGenerator
 
     public long generateCryptoFrame(RetainableByteBuffer.Mutable accumulator, CryptoFrame frame, long offset, final long maxBytes)
     {
-        // TODO: same logic as StreamFrame regarding
-        //  the length field that may be overestimated.
-        long limit = accumulator.size();
-        int generated = VarLenInt.encode(accumulator, frame.type());
-        if (maxBytes - generated < 0)
-            return rollback(accumulator, limit);
-        generated += VarLenInt.encode(accumulator, offset);
-        if (maxBytes - generated < 0)
-            return rollback(accumulator, limit);
+        int capacity = VarLenInt.length(frame.type());
+        capacity += VarLenInt.length(offset);
+
+        // Same logic as generateStreamFrame().
         RetainableByteBuffer data = frame.data();
-        long remaining = data.size();
-        long length = Math.min(remaining, maxBytes);
-        generated += VarLenInt.encode(accumulator, length);
-        if (maxBytes - generated < 0)
-            return rollback(accumulator, limit);
-        if (length == remaining)
-            accumulator.append(data);
+        long estimatedDataLength = Math.min(data.size(), maxBytes - capacity);
+        if (estimatedDataLength <= 0)
+            return 0;
+        capacity += VarLenInt.length(estimatedDataLength);
+        long dataLength = Math.min(data.size(), maxBytes - capacity);
+        if (dataLength <= 0)
+            return 0;
+        boolean excessData = data.size() > dataLength;
+
+        long generated = VarLenInt.encode(accumulator, frame.type());
+        generated += VarLenInt.encode(accumulator, offset);
+        generated += VarLenInt.encode(accumulator, dataLength);
+        if (excessData)
+        {
+            RetainableByteBuffer slice = data.slice(dataLength);
+            data.skip(dataLength);
+            generated += dataLength;
+            accumulator.add(slice);
+        }
         else
-            accumulator.add(data.slice(length));
-        return generated + length;
+        {
+            generated += data.size();
+            accumulator.add(data);
+        }
+        return generated;
     }
 
     private long generateNewTokenFrame(RetainableByteBuffer.Mutable accumulator, NewTokenFrame frame, long maxBytes)

@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
+import org.eclipse.jetty.quic.common.CongestionController;
+import org.eclipse.jetty.quic.common.NewRenoCongestionControllerFactory;
 import org.eclipse.jetty.quic.server.internal.DefaultSessionTicketFactory;
 import org.eclipse.jetty.quic.server.internal.DefaultTokenFactory;
 import org.eclipse.jetty.tls.CipherSuite;
@@ -31,18 +33,8 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
     private List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256);
     private TokenFactory tokenFactory = new DefaultTokenFactory();
     private SessionTicket.Factory sessionTicketFactory = new DefaultSessionTicketFactory();
+    private CongestionController.Factory congestionControllerFactory = new NewRenoCongestionControllerFactory();
     private int destinationConnectionIdLength = 8;
-    // A value that does not exceed the usual MTU of 1500 and allows for encapsulation (VPN).
-    private int udpPayloadSize = 1344;
-    // RFC-9000[18.2].
-    private long udpPayloadMaxSize = 65527;
-    // RFC-9000[18.2].
-    private long ackDelayExponent = 3;
-    // RFC-9000[18.2].
-    private long ackMaxDelay = 25;
-    private boolean enableConnectionMigration;
-    // RFC-9000[18.2].
-    private long connectionIdMaxCount = 2;
     private int earlyMaxData;
 
     public List<SignatureAlgorithm> getSignatureAlgorithms()
@@ -95,6 +87,16 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
         this.sessionTicketFactory = Objects.requireNonNull(sessionTicketFactory);
     }
 
+    public CongestionController.Factory getCongestionControllerFactory()
+    {
+        return congestionControllerFactory;
+    }
+
+    public void setCongestionControllerFactory(CongestionController.Factory congestionControllerFactory)
+    {
+        this.congestionControllerFactory = congestionControllerFactory;
+    }
+
     public int getDestinationConnectionIdLength()
     {
         return destinationConnectionIdLength;
@@ -105,76 +107,6 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
         if (destinationConnectionIdLength < 0 || destinationConnectionIdLength > 20)
             throw new IllegalArgumentException("invalid destinationConnectionId length: " + destinationConnectionIdLength);
         this.destinationConnectionIdLength = destinationConnectionIdLength;
-    }
-
-    public int getUDPPayloadLength()
-    {
-        return udpPayloadSize;
-    }
-
-    public void setUDPPayloadSize(int udpPayloadSize)
-    {
-        if (udpPayloadSize < 1200)
-            throw new IllegalArgumentException("invalid UDPPayloadSize: " + udpPayloadSize);
-        this.udpPayloadSize = udpPayloadSize;
-    }
-
-    public Long getUDPPayloadMaxSize()
-    {
-        return udpPayloadMaxSize;
-    }
-
-    public void setUdpPayloadMaxSize(long udpPayloadMaxSize)
-    {
-        if (udpPayloadMaxSize < 1200)
-            throw new IllegalArgumentException("invalid UDPPayloadMaxSize: " + udpPayloadMaxSize);
-        this.udpPayloadMaxSize = udpPayloadMaxSize;
-    }
-
-    public long getAcknowledgmentDelayExponent()
-    {
-        return ackDelayExponent;
-    }
-
-    public void setAcknowledgmentDelayExponent(long ackDelayExponent)
-    {
-        if (ackMaxDelay < 0 || ackDelayExponent > 20)
-            throw new IllegalArgumentException("invalid AcknowledgmentDelayExponent: " + ackDelayExponent);
-        this.ackDelayExponent = ackDelayExponent;
-    }
-
-    public long getAcknowledgmentMaxDelay()
-    {
-        return ackMaxDelay;
-    }
-
-    public void setAcknowledgmentMaxDelay(long ackMaxDelay)
-    {
-        if (ackMaxDelay < 0 || ackMaxDelay >= (1 << 14))
-            throw new IllegalArgumentException("invalid AcknowledgmentMaxDelay: " + ackMaxDelay);
-        this.ackMaxDelay = ackMaxDelay;
-    }
-
-    public boolean isEnableConnectionMigration()
-    {
-        return enableConnectionMigration;
-    }
-
-    public void setEnableConnectionMigration(boolean enableConnectionMigration)
-    {
-        this.enableConnectionMigration = enableConnectionMigration;
-    }
-
-    public long getConnectionIdMaxCount()
-    {
-        return connectionIdMaxCount;
-    }
-
-    public void setConnectionIdMaxCount(long connectionIdMaxCount)
-    {
-        if (connectionIdMaxCount < 2)
-            throw new IllegalArgumentException("invalid ConnectionIdMaxCount: " + connectionIdMaxCount);
-        this.connectionIdMaxCount = connectionIdMaxCount;
     }
 
     public int getEarlyMaxData()

@@ -13,10 +13,15 @@
 
 package org.eclipse.jetty.quic.common.internal;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
@@ -30,6 +35,7 @@ import org.eclipse.jetty.quic.common.packets.RetryPacket;
 import org.eclipse.jetty.quic.common.packets.VersionNegotiationPacket;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,10 +43,12 @@ public class QuicFlusher extends IteratingCallback
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicFlusher.class);
 
+    private final AutoLock lock = new AutoLock();
     private final PacketFlusher packetFlusher = new PacketFlusher(this);
     private final CryptoFlusher initialFlusher = new CryptoFlusher(this, EncryptionLevel.INITIAL);
     private final CryptoFlusher handshakeFlusher = new CryptoFlusher(this, EncryptionLevel.HANDSHAKE);
     private final OneRTTFlusher oneRTTFlusher = new OneRTTFlusher(this);
+    private final Deque<AckEntry> ackEntries = new ArrayDeque<>();
     private final QuicSession session;
     private final FramesGenerator framesGenerator;
     private final PacketsGenerator packetsGenerator;
@@ -86,7 +94,8 @@ public class QuicFlusher extends IteratingCallback
 
     /// Sends the given packet.
     ///
-    /// This method should be called for [RetryPacket] and [VersionNegotiationPacket].
+    /// This method should be called only for [RetryPacket] and [VersionNegotiationPacket],
+    /// since packets that carry frames should call [#offer(EncryptionLevel, List, Callback)].
     ///
     /// @param packet the [Packet] to send
     /// @param callback the [Callback] to notify when the send is complete
@@ -95,7 +104,7 @@ public class QuicFlusher extends IteratingCallback
         return packetFlusher.offer(packet, callback);
     }
 
-    /// Offers the given list of session frames to send at the given [EncryptionLevel].
+    /// Sends the given list of session frames at the given [EncryptionLevel].
     ///
     /// @param encryptionLevel the encryption level to use for the send
     /// @param frames the list of frames to send
@@ -111,33 +120,7 @@ public class QuicFlusher extends IteratingCallback
         };
     }
 
-    /// Offers the [MaxDataFrame] to update the session send max data.
-    ///
-    /// @param frame the [MaxDataFrame] with the session send max data update
-    public boolean offer(MaxDataFrame frame)
-    {
-        return oneRTTFlusher.offer(null, frame.maxData());
-    }
-
-    /// Offers the [StreamMaxDataFrame] for the given stream to update the stream send max data.
-    ///
-    /// @param stream the stream
-    /// @param frame the [StreamMaxDataFrame] with the stream send max data update
-    public boolean offer(QuicStream stream, StreamMaxDataFrame frame)
-    {
-        return oneRTTFlusher.offer(stream, frame.maxData());
-    }
-
-    /// Offers the given list of session frames to send at [EncryptionLevel#ONE_RTT].
-    ///
-    /// @param frames the list of frames to send
-    /// @param callback the [Callback] to notify when the send is complete
-    public boolean offer(List<Frame> frames, Callback callback)
-    {
-        return oneRTTFlusher.offer(null, frames, callback);
-    }
-
-    /// Offers the given list of stream frames to send at [EncryptionLevel#ONE_RTT].
+    /// Sends the given list of stream frames at [EncryptionLevel#ONE_RTT].
     ///
     /// @param stream the stream
     /// @param frames the list of frames to send
@@ -147,9 +130,53 @@ public class QuicFlusher extends IteratingCallback
         return oneRTTFlusher.offer(stream, frames, callback);
     }
 
+    /// Processes the [MaxDataFrame] to update the session send max data.
+    ///
+    /// @param frame the [MaxDataFrame] with the session send max data update
+    public boolean offer(MaxDataFrame frame)
+    {
+        return oneRTTFlusher.offer(null, frame.maxData());
+    }
+
+    /// Processes the [StreamMaxDataFrame] for the given stream to update the stream send max data.
+    ///
+    /// @param stream the stream
+    /// @param frame the [StreamMaxDataFrame] with the stream send max data update
+    public boolean offer(QuicStream stream, StreamMaxDataFrame frame)
+    {
+        return oneRTTFlusher.offer(stream, frame.maxData());
+    }
+
+    // TODO: Processes the [AckFrame] to update
+    //  congestion-control, pacing, reliability data structures.
+    public boolean offer(EncryptionLevel encryptionLevel, AckFrame frame)
+    {
+        try (var _ = lock.lock())
+        {
+            ackEntries.offer(new AckEntry(encryptionLevel, frame));
+            return true;
+        }
+    }
+
     @Override
     protected Action process() throws Throwable
     {
+        List<AckEntry> acks;
+        try (var _ = lock.lock())
+        {
+            acks = new ArrayList<>(ackEntries);
+            ackEntries.clear();
+        }
+        acks.forEach(e -> getQuicSession().processAck(e.encryptionLevel(), e.frame()));
+
+        long pacingDelay = getQuicSession().getCongestionController().getPacingDelay();
+        // TODO: configure pacing timer threshold.
+        if (TimeUnit.NANOSECONDS.toMillis(pacingDelay) > 1)
+        {
+            // TODO: schedule wakeup.
+            return Action.IDLE;
+        }
+
         if (oneRTTFlusher.process())
         {
             flusher = oneRTTFlusher;
@@ -201,7 +228,7 @@ public class QuicFlusher extends IteratingCallback
         initialFlusher.resetCrypto();
     }
 
-    sealed interface Entry extends Callback permits PacketFlusher.PacketEntry, OneRTTFlusher.MaxDataEntry, FramesEntry
+    sealed interface Entry extends Callback permits PacketFlusher.PacketEntry, OneRTTFlusher.MaxDataEntry, CryptoFlusher.FramesEntry
     {
         Callback callback();
 
@@ -224,7 +251,7 @@ public class QuicFlusher extends IteratingCallback
         }
     }
 
-    record FramesEntry(QuicStream stream, List<Frame> frames, Callback callback) implements Entry
+    private record AckEntry(EncryptionLevel encryptionLevel, AckFrame frame)
     {
     }
 }

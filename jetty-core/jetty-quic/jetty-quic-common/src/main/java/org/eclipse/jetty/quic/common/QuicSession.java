@@ -89,6 +89,7 @@ public abstract class QuicSession extends AbstractSession
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private final QuicConnection connection;
+    private final PacketTracker packetTracker;
     private final PacketNumbers packetNumbers;
     private final TLSEngine tlsEngine;
     private final EndPoint endPoint;
@@ -103,12 +104,13 @@ public abstract class QuicSession extends AbstractSession
     private TransportParameters transportParameters;
     private boolean writeStalled;
 
-    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint)
+    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint)
     {
         super(executor, quicConfiguration, listener);
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
         this.connection = connection;
+        this.packetTracker = packetTracker;
         this.packetNumbers = packetNumbers;
         this.tlsEngine = tlsEngine;
         this.endPoint = endPoint;
@@ -132,6 +134,11 @@ public abstract class QuicSession extends AbstractSession
     public QuicConnection getQuicConnection()
     {
         return connection;
+    }
+
+    public CongestionController getCongestionController()
+    {
+        return packetTracker.getCongestionController();
     }
 
     public PacketNumbers getPacketNumbers()
@@ -254,7 +261,7 @@ public abstract class QuicSession extends AbstractSession
 
     protected void frames(List<Frame> frames, Callback callback)
     {
-        if (flusher.offer(frames, callback))
+        if (flusher.offer(EncryptionLevel.ONE_RTT, frames, callback))
             flusher.iterate();
     }
 
@@ -360,21 +367,24 @@ public abstract class QuicSession extends AbstractSession
     @Override
     public void maxStreams(MaxStreamsFrame frame, Promise.Invocable<Session> promise)
     {
-        if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, this)))
+        Callback callback = Promise.Invocable.toCallback(promise, this);
+        if (flusher.offer(EncryptionLevel.ONE_RTT, List.of(frame), callback))
             flusher.iterate();
     }
 
     @Override
     public void ping(Promise.Invocable<Session> promise)
     {
-        if (flusher.offer(List.of(new PingFrame()), Promise.Invocable.toCallback(promise, this)))
+        List<Frame> frames = List.of(new PingFrame());
+        if (flusher.offer(EncryptionLevel.ONE_RTT, frames, Promise.Invocable.toCallback(promise, this)))
             flusher.iterate();
     }
 
     @Override
     public void maxData(MaxDataFrame frame, Promise.Invocable<Session> promise)
     {
-        if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, this)))
+        Callback callback = Promise.Invocable.toCallback(promise, this);
+        if (flusher.offer(EncryptionLevel.ONE_RTT, List.of(frame), callback))
             flusher.iterate();
     }
 
@@ -386,25 +396,29 @@ public abstract class QuicSession extends AbstractSession
 
     void maxData(QuicStream stream, StreamMaxDataFrame frame, Promise.Invocable<Stream> promise)
     {
-        if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, stream)))
+        Callback callback = Promise.Invocable.toCallback(promise, stream);
+        if (flusher.offer(EncryptionLevel.ONE_RTT, List.of(frame), callback))
             flusher.iterate();
     }
 
     void reset(QuicStream stream, ResetFrame frame, Promise.Invocable<Stream> promise)
     {
-        if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, stream)))
+        Callback callback = Promise.Invocable.toCallback(promise, stream);
+        if (flusher.offer(EncryptionLevel.ONE_RTT, List.of(frame), callback))
             flusher.iterate();
     }
 
     void stopSending(QuicStream stream, StopSendingFrame frame, Promise.Invocable<Stream> promise)
     {
-        if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, stream)))
+        Callback callback = Promise.Invocable.toCallback(promise, stream);
+        if (flusher.offer(EncryptionLevel.ONE_RTT, List.of(frame), callback))
             flusher.iterate();
     }
 
     void dataBlocked(QuicStream stream, StreamDataBlockedFrame frame, Promise.Invocable<Stream> promise)
     {
-        if (flusher.offer(List.of(frame), Promise.Invocable.toCallback(promise, stream)))
+        Callback callback = Promise.Invocable.toCallback(promise, stream);
+        if (flusher.offer(EncryptionLevel.ONE_RTT, List.of(frame), callback))
             flusher.iterate();
     }
 
@@ -561,7 +575,8 @@ public abstract class QuicSession extends AbstractSession
         {
             case AckFrame ackFrame ->
             {
-                // TODO: notify reliability data structure.
+                // Serialize processing of ack frames through the flusher.
+                flusher.offer(EncryptionLevel.from(packet), ackFrame);
             }
             case CryptoFrame cryptoFrame ->
             {
@@ -570,6 +585,7 @@ public abstract class QuicSession extends AbstractSession
             }
             case MaxDataFrame maxDataFrame ->
             {
+                // Serialize processing of maxData frames through the flusher.
                 flusher.offer(maxDataFrame);
             }
             case Frame.WithStreamId withStreamId -> processFrameWithStreamId(packet, withStreamId);
@@ -578,6 +594,12 @@ public abstract class QuicSession extends AbstractSession
                 // TODO: notify Session.Listener
             }
         }
+    }
+
+    public void processAck(EncryptionLevel encryptionLevel, AckFrame frame)
+    {
+        packetNumbers.onAckFrameReceived(encryptionLevel, frame);
+        packetTracker.onAckFrameReceived(encryptionLevel, frame);
     }
 
     private void processFrameWithStreamId(Packet.WithFrames packet, Frame.WithStreamId frame)
@@ -663,9 +685,17 @@ public abstract class QuicSession extends AbstractSession
         //  Apply Quic transport params to the various components.
 
         this.transportParameters = transportParameters;
+
         Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_DATA);
         if (maxData != null)
             updateSendMaxData(null, maxData);
+
+        Long ackMaxDelay = transportParameters.get(TransportParameters.Ids.MAX_ACK_DELAY);
+        if (ackMaxDelay != null)
+            packetTracker.setAcknowledgmentMaxDelay(ackMaxDelay);
+        Long ackDelayExponent = transportParameters.get(TransportParameters.Ids.ACK_DELAY_EXPONENT);
+        if (ackDelayExponent != null)
+            packetTracker.setAcknowledgmentDelayExponent(ackDelayExponent);
 
         // TODO: other parameters.
 
@@ -740,11 +770,11 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    public void notifyOutgoingPacket(Packet packet)
+    public void notifyOutgoingPacket(Packet packet, int length)
     {
         try
         {
-            packetListener.onOutgoingPacket(this, packet);
+            packetListener.onOutgoingPacket(this, packet, length);
         }
         catch (Throwable x)
         {
@@ -774,7 +804,7 @@ public abstract class QuicSession extends AbstractSession
 
     public void dispose()
     {
-        // TODO: dipose all components, that may have allocated a buffer or such
+        // TODO: dispose all components, that may have allocated a buffer or such
         //  For example TranscriptHash.dispose()
     }
 
@@ -790,6 +820,12 @@ public abstract class QuicSession extends AbstractSession
         public void onIncomingPacket(Session session, Packet packet)
         {
             processPacket(packet);
+        }
+
+        @Override
+        public void onOutgoingPacket(Session session, Packet packet, long length)
+        {
+            packetTracker.onPacketSent(packet, length);
         }
     }
 }
