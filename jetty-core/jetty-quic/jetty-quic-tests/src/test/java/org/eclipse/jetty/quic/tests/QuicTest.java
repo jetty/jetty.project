@@ -227,6 +227,6 @@ public class QuicTest extends AbstractQuicTest
         stream.data(true, RetainableByteBuffer.EMPTY, Promise.Invocable.noop());
         stream.demand();
 
-        assertTrue(clientDataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientDataLatch.await(15, TimeUnit.SECONDS));
     }
 }

@@ -38,7 +38,6 @@ import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.common.HKDF;
 import org.eclipse.jetty.tls.common.TranscriptHash;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -318,9 +317,7 @@ public class PacketProtector implements Encrypter, Decrypter
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         cipher.init(Cipher.ENCRYPT_MODE, integrityKey, new GCMParameterSpec(128, integrityNonce.getEncoded()));
         cipher.updateAAD(pseudoPacket);
-        byte[] bytes = cipher.doFinal();
-        LOG.info("generated retry integrity {}", StringUtil.toHexString(bytes));
-        return bytes;
+        return cipher.doFinal();
     }
 
     public boolean verifyRetryIntegrity(RetainableByteBuffer.Mutable retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
