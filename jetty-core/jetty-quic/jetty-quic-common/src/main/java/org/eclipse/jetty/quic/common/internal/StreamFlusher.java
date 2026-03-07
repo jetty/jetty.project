@@ -29,15 +29,15 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class OneRTTFlusher extends CryptoFlusher
+class StreamFlusher extends CryptoFlusher
 {
-    private static final Logger LOG = LoggerFactory.getLogger(OneRTTFlusher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StreamFlusher.class);
 
     private final AutoLock lock = new AutoLock();
     private final List<MaxDataEntry> maxDataEntries = new ArrayList<>();
     private final List<MaxDataEntry> maxDataProcessing = new ArrayList<>();
 
-    OneRTTFlusher(QuicFlusher flusher)
+    StreamFlusher(QuicFlusher flusher)
     {
         super(flusher, EncryptionLevel.ONE_RTT);
     }
@@ -82,7 +82,7 @@ class OneRTTFlusher extends CryptoFlusher
             case StreamFrame streamFrame ->
             {
                 QuicSession session = getQuicSession();
-                long sessionWindow = session.getSendMaxData(null);
+                long sessionWindow = session.getSendWindow(null);
                 if (sessionWindow == 0)
                 {
                     if (session.stall())
@@ -93,7 +93,7 @@ class OneRTTFlusher extends CryptoFlusher
                     yield 0;
                 }
 
-                long streamWindow = session.getSendMaxData(stream);
+                long streamWindow = session.getSendWindow(stream);
                 if (streamWindow == 0)
                 {
                     if (stream.stall())
@@ -107,11 +107,13 @@ class OneRTTFlusher extends CryptoFlusher
                 long sendWindow = Math.min(sessionWindow, streamWindow);
                 maxBytes = Math.min(sendWindow, maxBytes);
 
+                long offset = session.getSendData(stream);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("generating offset={} {} for stream {} on {}", offset, frame, stream, this);
                 long initial = streamFrame.data().size();
-                long frameBytesGenerated = getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, session.getSendData(stream), maxBytes);
+                long frameBytesGenerated = getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, maxBytes);
                 long dataBytes = initial - streamFrame.data().size();
                 session.updateSendData(stream, dataBytes);
-
                 yield frameBytesGenerated;
             }
             default -> super.generateFrame(framesAccumulator, stream, frame, maxBytes);

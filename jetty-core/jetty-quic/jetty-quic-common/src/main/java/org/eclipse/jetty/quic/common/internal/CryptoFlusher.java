@@ -94,6 +94,8 @@ class CryptoFlusher implements Callback
 
         try (var _ = lock.lock())
         {
+            if (entries.isEmpty())
+                return false;
             candidates.addAll(entries);
             entries.clear();
         }
@@ -227,6 +229,8 @@ class CryptoFlusher implements Callback
         {
             case CryptoFrame cryptoFrame ->
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("generating offset={} {} for stream {} on {}", cryptoOffset, frame, stream, this);
                 long initialDataBytes = cryptoFrame.data().size();
                 long frameBytesGenerated = framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, cryptoOffset, maxBytes);
                 cryptoOffset += initialDataBytes - cryptoFrame.data().size();
