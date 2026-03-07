@@ -181,7 +181,7 @@ public class PacketTracker
     @Override
     public String toString()
     {
-        return "%s@%x%s".formatted(TypeUtil.toShortName(getClass()), hashCode(), trackers.entrySet());
+        return "%s@%x%s".formatted(TypeUtil.toShortName(getClass()), hashCode(), List.copyOf(trackers.entrySet()).reversed());
     }
 
     private static class Tracker

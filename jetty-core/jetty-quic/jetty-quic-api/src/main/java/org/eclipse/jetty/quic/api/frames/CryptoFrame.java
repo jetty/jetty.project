@@ -15,7 +15,7 @@ package org.eclipse.jetty.quic.api.frames;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
-public final class CryptoFrame extends Frame.Abstract implements Frame.WithOffset
+public final class CryptoFrame extends Frame.Abstract implements Frame.WithData
 {
     private final long offset;
     private final long length;
@@ -41,6 +41,7 @@ public final class CryptoFrame extends Frame.Abstract implements Frame.WithOffse
         return length;
     }
 
+    @Override
     public RetainableByteBuffer data()
     {
         return data;

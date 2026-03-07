@@ -596,7 +596,7 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    public void processAck(EncryptionLevel encryptionLevel, AckFrame frame)
+    public void processAckFrame(EncryptionLevel encryptionLevel, AckFrame frame)
     {
         packetNumbers.onAckFrameReceived(encryptionLevel, frame);
         packetTracker.onAckFrameReceived(encryptionLevel, frame);
@@ -621,12 +621,12 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    public long getSendWindow(QuicStream stream)
+    public long getSendMaxData(QuicStream stream)
     {
         if (stream == null)
             return sendMaxData.get() - sendData.get();
         else
-            return stream.getSendWindow();
+            return stream.getSendMaxData();
     }
 
     public long getSendData(QuicStream stream)

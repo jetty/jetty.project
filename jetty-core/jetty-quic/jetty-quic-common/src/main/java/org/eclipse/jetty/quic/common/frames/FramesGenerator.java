@@ -259,7 +259,7 @@ public class FramesGenerator
             dataLengthLength = VarLenInt.length(estimatedDataLength);
         capacity += dataLengthLength;
         long dataLength = Math.min(data.size(), maxBytes - capacity);
-        if (dataLength <= 0)
+        if (dataLength < 0 || (dataLength == 0 && !frame.isEndStream()))
             return 0;
 
         boolean endStream = (frameType & StreamFrame.END_STREAM_MASK) == StreamFrame.END_STREAM_MASK;
@@ -283,7 +283,7 @@ public class FramesGenerator
         }
         else
         {
-            generated += data.size();
+            generated += dataLength;
             accumulator.add(data);
         }
         return generated;
