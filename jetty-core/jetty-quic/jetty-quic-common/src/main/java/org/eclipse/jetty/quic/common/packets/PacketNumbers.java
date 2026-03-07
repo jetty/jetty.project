@@ -75,9 +75,9 @@ public class PacketNumbers
     public long decode(EncryptionLevel encryptionLevel, byte[] encoded)
     {
         int number = 0;
-        for (int i = 0; i < encoded.length; ++i)
+        for (byte b : encoded)
         {
-            number = (number << (i * 8)) | (encoded[i] & 0xFF);
+            number = (number << 8) | (b & 0xFF);
         }
         return decode(encryptionLevel, new EncodedPacketNumber(number, encoded.length));
     }
