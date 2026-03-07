@@ -660,8 +660,9 @@ public class PacketProtector implements Encrypter, Decrypter
                 encryptedPayload.flip();
 
                 // RFC 9001, 5.4.2: header protection sample.
-                EncodedPacketNumber encodedPacketNumber = packetNumbers.encode(encryptionLevel, packetNumber);
-                int pktNumLen = encodedPacketNumber.length();
+                int firstByte = headerByteBuffer.get(headerByteBuffer.position()) & 0xFF;
+                // The packet number length is encoded in the last 2 bits.
+                int pktNumLen = (firstByte & 0x03) + 1;
                 int sampleOffset = 4 - pktNumLen;
                 byte[] sample = new byte[16];
                 encryptedPayload.get(sampleOffset, sample);
@@ -670,13 +671,11 @@ public class PacketProtector implements Encrypter, Decrypter
                 ecbCipher.init(Cipher.ENCRYPT_MODE, protection);
                 byte[] mask = ecbCipher.doFinal(sample);
 
-                int position = headerByteBuffer.position();
                 RetainableByteBuffer.Mutable encryptedHeaderBuffer = byteBufferPool.acquire(headerByteBuffer.remaining(), true);
                 ByteBuffer encryptedHeader = encryptedHeaderBuffer.getByteBuffer();
                 encryptedHeader.clear();
                 encryptedHeader.put(headerByteBuffer).flip();
                 // Long header packets mask 4 bits, short header packets mask 5 bits.
-                int firstByte = headerByteBuffer.get(position) & 0xFF;
                 int bits = (firstByte & 0x80) == 0x80 ? 0x0F : 0x1F;
                 encryptedHeader.put(0, (byte)(firstByte ^ (mask[0] & bits)));
 
@@ -685,7 +684,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 for (int i = 0; i < pktNumLen; ++i)
                 {
                     int pktNumByte = headerByteBuffer.get(start + i) & 0xFF;
-                    encryptedHeader.put(start + i, (byte)(pktNumByte ^ mask[i + 1]));
+                    encryptedHeader.put(start + i, (byte)(pktNumByte ^ (mask[i + 1] & 0xFF)));
                 }
 
                 return new PacketBuffers(encryptedHeaderBuffer, encryptedPayloadBuffer);
