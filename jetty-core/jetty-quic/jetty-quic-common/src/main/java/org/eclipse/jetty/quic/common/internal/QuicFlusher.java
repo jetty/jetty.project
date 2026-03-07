@@ -47,7 +47,7 @@ public class QuicFlusher extends IteratingCallback
     private final PacketFlusher packetFlusher = new PacketFlusher(this);
     private final CryptoFlusher initialFlusher = new CryptoFlusher(this, EncryptionLevel.INITIAL);
     private final CryptoFlusher handshakeFlusher = new CryptoFlusher(this, EncryptionLevel.HANDSHAKE);
-    private final OneRTTFlusher oneRTTFlusher = new OneRTTFlusher(this);
+    private final StreamFlusher oneRTTFlusher = new StreamFlusher(this);
     private final Deque<AckEntry> ackEntries = new ArrayDeque<>();
     private final QuicSession session;
     private final FramesGenerator framesGenerator;
@@ -254,7 +254,7 @@ public class QuicFlusher extends IteratingCallback
         initialFlusher.resetCrypto();
     }
 
-    sealed interface Entry extends Callback permits PacketFlusher.PacketEntry, OneRTTFlusher.MaxDataEntry, CryptoFlusher.FramesEntry
+    sealed interface Entry extends Callback permits PacketFlusher.PacketEntry, StreamFlusher.MaxDataEntry, CryptoFlusher.FramesEntry
     {
         Callback callback();
 

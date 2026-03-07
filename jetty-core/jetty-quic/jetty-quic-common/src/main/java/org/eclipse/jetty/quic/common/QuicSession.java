@@ -618,12 +618,12 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    public long getSendMaxData(QuicStream stream)
+    public long getSendWindow(QuicStream stream)
     {
         if (stream == null)
             return sendMaxData.get() - sendData.get();
         else
-            return stream.getSendMaxData();
+            return stream.getSendWindow();
     }
 
     public long getSendData(QuicStream stream)
