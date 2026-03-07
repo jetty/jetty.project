@@ -91,7 +91,8 @@ public class HeadersTooLargeParseTest
         accumulator.writeTo((l, c, b) ->
         {
             for (ByteBuffer bb : b)
-            {            parser.parse(bb);
+            {
+                parser.parse(bb);
                 if (failure.get() != 0)
                 {
                     c.failed(new Throwable("Expected"));

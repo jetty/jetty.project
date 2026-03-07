@@ -1325,6 +1325,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (prepareSendContent(0, callback))
             {
+                // IOResources.copy() always calls the sink with 0 or 1 buffer (never a gather write).
                 IOResources.copy(resource, (last, cb, buffers) ->
                 {
                     ByteBuffer byteBuffer = buffers.length > 0 ? buffers[0] : null;
@@ -1370,6 +1371,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (prepareSendContent(0, callback))
             {
+                // All HttpContent.writeTo() implementations call the sink with 0 or 1 buffer (never a gather write).
                 Content.Sink sink = (last, cb, buffers) ->
                 {
                     ByteBuffer byteBuffer = buffers.length > 0 ? buffers[0] : null;
