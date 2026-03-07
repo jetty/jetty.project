@@ -455,9 +455,9 @@ public class PacketProtector implements Encrypter, Decrypter
                 int type = (byteBuffer.get() & 0b00110000) >>> 4;
                 QuicVersion version = QuicVersion.from(byteBuffer.getInt());
                 LongHeaderPacket.PacketType packetType = LongHeaderPacket.PacketType.from(type, version);
-                int dstConnectionIdLength = byteBuffer.get();
+                int dstConnectionIdLength = byteBuffer.get() & 0xFF;
                 byteBuffer.position(byteBuffer.position() + dstConnectionIdLength);
-                int srcConnectionIdLength = byteBuffer.get();
+                int srcConnectionIdLength = byteBuffer.get() & 0xFF;
                 byteBuffer.position(byteBuffer.position() + srcConnectionIdLength);
                 if (packetType == LongHeaderPacket.PacketType.INITIAL)
                 {
@@ -498,9 +498,9 @@ public class PacketProtector implements Encrypter, Decrypter
                 int encodedPacketNumber = 0;
                 for (int i = 0; i < encodedPacketNumberLength; ++i)
                 {
-                    int unmasked = byteBuffer.get() ^ mask[i + 1];
+                    int unmasked = (byteBuffer.get() & 0xFF) ^ (mask[i + 1] & 0xFF);
                     decryptedHeader.put((byte)unmasked);
-                    encodedPacketNumber = (encodedPacketNumber << (i * 8)) | unmasked;
+                    encodedPacketNumber = (encodedPacketNumber << 8) | unmasked;
                 }
                 decryptedHeader.position(0);
 
@@ -568,9 +568,9 @@ public class PacketProtector implements Encrypter, Decrypter
                 int encodedPacketNumber = 0;
                 for (int i = 0; i < encodedPacketNumberLength; ++i)
                 {
-                    int unmasked = byteBuffer.get() ^ mask[i + 1];
+                    int unmasked = (byteBuffer.get() & 0xFF) ^ (mask[i + 1] & 0xFF);
                     decryptedHeader.put((byte)unmasked);
-                    encodedPacketNumber = (encodedPacketNumber << (i * 8)) | unmasked;
+                    encodedPacketNumber = (encodedPacketNumber << 8) | unmasked;
                 }
                 decryptedHeader.position(0);
 
