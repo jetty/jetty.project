@@ -428,12 +428,21 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * @deprecated use {@link #takeTail(long)}
+     */
+    @Deprecated(since = "13.0.0", forRemoval = true)
+    default RetainableByteBuffer takeFrom(long skip)
+    {
+        return takeTail(skip);
+    }
+    
+    /**
      * Take the contents of this buffer, from the tail, leaving remaining bytes in this buffer.
      * @param skip The number of bytes to skip before taking the tail.
      * @return A buffer with the contents of this buffer after skipping bytes, avoiding copies if possible,
      * but with no shared internal buffers.
      */
-    default RetainableByteBuffer takeFrom(long skip)
+    default RetainableByteBuffer takeTail(long skip)
     {
         if (isEmpty() || skip > size())
             return EMPTY;
@@ -454,7 +463,7 @@ public interface RetainableByteBuffer extends Retainable
      * Take the contents of this buffer, leaving it clear.
      * @return A buffer with the contents of this buffer, avoiding copies if possible.
      * @see #take(long)
-     * @see #takeFrom(long)
+     * @see #takeTail(long)
      */
     default RetainableByteBuffer take()
     {
@@ -481,13 +490,13 @@ public interface RetainableByteBuffer extends Retainable
 
     /**
      * Consumes and puts the contents of this retainable byte buffer at the end of the given byte buffer.
-     * @param toInfillMode the destination buffer, whose position is updated.
+     * @param destination the destination buffer, which must be in fill mode and whose position is updated.
      * @throws BufferOverflowException – If there is insufficient space in this buffer for the remaining bytes in the source buffer
      * @see ByteBuffer#put(ByteBuffer)
      */
-    default void putTo(ByteBuffer toInfillMode) throws BufferOverflowException
+    default void putTo(ByteBuffer destination) throws BufferOverflowException
     {
-        toInfillMode.put(getByteBuffer());
+        destination.put(getByteBuffer());
     }
 
     /**
@@ -768,9 +777,9 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public void putTo(ByteBuffer toInfillMode) throws BufferOverflowException
+        public void putTo(ByteBuffer destination) throws BufferOverflowException
         {
-            getWrapped().putTo(toInfillMode);
+            getWrapped().putTo(destination);
         }
 
         @Override
@@ -1631,7 +1640,7 @@ public interface RetainableByteBuffer extends Retainable
                 if (length > (buffer.size() / 2)  && !buffer.isRetained())
                 {
                     // slice off the tail and take the buffer itself
-                    RetainableByteBuffer tail = buffer.takeFrom(length);
+                    RetainableByteBuffer tail = buffer.takeTail(length);
                     _buffers.set(0, tail);
                     return buffer;
                 }
@@ -1662,7 +1671,7 @@ public interface RetainableByteBuffer extends Retainable
                     if (length > (buffer.size() / 2) && !buffer.isRetained())
                     {
                         // slice off the tail and take the buffer itself
-                        RetainableByteBuffer tail = buffer.takeFrom(length);
+                        RetainableByteBuffer tail = buffer.takeTail(length);
                         buffers.add(buffer);
                         i.set(tail);
                     }
@@ -1678,7 +1687,7 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public RetainableByteBuffer takeFrom(long skip)
+        public RetainableByteBuffer takeTail(long skip)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("take {} {}", this, skip);
@@ -1696,7 +1705,7 @@ public interface RetainableByteBuffer extends Retainable
                 if (skip > (buffer.size() / 2) || buffer.isRetained())
                 {
                     // take from the tail of the buffer and leave the buffer itself
-                    return buffer.takeFrom(skip);
+                    return buffer.takeTail(skip);
                 }
                 // leave the head taken from the buffer and take the buffer itself
                 _buffers.set(0, buffer.take(skip));
@@ -1725,7 +1734,7 @@ public interface RetainableByteBuffer extends Retainable
                     if (skip > (buffer.size() / 2) || buffer.isRetained())
                     {
                         // take from the tail of the buffer and leave the buffer itself
-                        buffers.add(buffer.takeFrom(skip));
+                        buffers.add(buffer.takeTail(skip));
                     }
                     else
                     {
@@ -2375,16 +2384,16 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public void putTo(ByteBuffer toInfillMode)
+        public void putTo(ByteBuffer destination)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("putTo BB {} -> {}", this, toInfillMode);
+                LOG.debug("putTo BB {} -> {}", this, destination);
             checkNotReleased();
             _aggregate = null;
             for (Iterator<RetainableByteBuffer> i = _buffers.listIterator(); i.hasNext();)
             {
                 RetainableByteBuffer buffer = i.next();
-                buffer.putTo(toInfillMode);
+                buffer.putTo(destination);
                 buffer.release();
                 i.remove();
             }

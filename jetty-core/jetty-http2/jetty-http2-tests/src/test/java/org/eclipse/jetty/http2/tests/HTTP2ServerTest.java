@@ -475,7 +475,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             accumulator.put(offset + 2, (byte)0x00);
 
             // Take the body of the headers frame and all following frames
-            RetainableByteBuffer remainder = accumulator.takeFrom(offset + 9);
+            RetainableByteBuffer remainder = accumulator.takeTail(offset + 9);
 
             // Copy the continuation frame after the first payload.
             for (int i = 0; i < 9; i++)
@@ -510,7 +510,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 .put(offset + 2, (byte)PriorityFrame.PRIORITY_LENGTH);
 
             // take the body of the headers frame and all following frames
-            RetainableByteBuffer remainder = accumulator.takeFrom(offset + 9 + PriorityFrame.PRIORITY_LENGTH);
+            RetainableByteBuffer remainder = accumulator.takeTail(offset + 9 + PriorityFrame.PRIORITY_LENGTH);
 
             // Copy the continuation frame after the first payload.
             for (int i = 0; i < 9; i++)
@@ -574,7 +574,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 if (flag == 0x04)
                 {
                     // this is the last continuation frame
-                    RetainableByteBuffer last = headers.takeFrom(offset);
+                    RetainableByteBuffer last = headers.takeTail(offset);
                     accumulator.add(headers);
                     last.asMutable().put(4, (byte)0);
                     accumulator.add(last);

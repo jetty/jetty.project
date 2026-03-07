@@ -1428,7 +1428,7 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("mutables")
-    public void testTakeFrom(Supplier<Mutable> supplier)
+    public void testTakeTail(Supplier<Mutable> supplier)
     {
         Mutable buffer = supplier.get();
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
@@ -1436,16 +1436,16 @@ public class RetainableByteBufferTest
         buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown));
         buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
 
-        RetainableByteBuffer none = buffer.takeFrom(Long.MAX_VALUE);
+        RetainableByteBuffer none = buffer.takeTail(Long.MAX_VALUE);
         assertTrue(none.isEmpty());
         none.release();
 
-        RetainableByteBuffer hello = buffer.takeFrom(0);
+        RetainableByteBuffer hello = buffer.takeTail(0);
         buffer.release();
 
-        RetainableByteBuffer space = hello.takeFrom(5);
-        RetainableByteBuffer bang = space.takeFrom(space.size() - 1);
-        RetainableByteBuffer cruelWorld = space.takeFrom(1);
+        RetainableByteBuffer space = hello.takeTail(5);
+        RetainableByteBuffer bang = space.takeTail(space.size() - 1);
+        RetainableByteBuffer cruelWorld = space.takeTail(1);
 
         assertThat(BufferUtil.toString(hello.getByteBuffer()), is("Hello"));
         assertThat(BufferUtil.toString(space.getByteBuffer()), is(" "));
@@ -1462,7 +1462,7 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("mutables")
-    public void testTakeFromRetained(Supplier<Mutable> supplier)
+    public void testTakeTailRetained(Supplier<Mutable> supplier)
     {
         Mutable buffer = supplier.get();
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
@@ -1473,10 +1473,10 @@ public class RetainableByteBufferTest
         RetainableByteBuffer world = RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown);
         world.retain();
         buffer.add(world);
-        RetainableByteBuffer space = buffer.takeFrom(5);
+        RetainableByteBuffer space = buffer.takeTail(5);
 
-        RetainableByteBuffer bang = space.takeFrom(space.size() - 1);
-        RetainableByteBuffer cruelWorld = space.takeFrom(1);
+        RetainableByteBuffer bang = space.takeTail(space.size() - 1);
+        RetainableByteBuffer cruelWorld = space.takeTail(1);
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("Hello"));
         assertThat(BufferUtil.toString(space.getByteBuffer()), is(" "));
