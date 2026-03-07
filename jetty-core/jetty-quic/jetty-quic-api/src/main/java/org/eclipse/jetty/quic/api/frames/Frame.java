@@ -90,7 +90,7 @@ public sealed interface Frame
             @Override
             public String toString()
             {
-                return "%s[#%d]".formatted(super.toString(), streamId());
+                return "%s#%d".formatted(super.toString(), streamId());
             }
         }
     }
