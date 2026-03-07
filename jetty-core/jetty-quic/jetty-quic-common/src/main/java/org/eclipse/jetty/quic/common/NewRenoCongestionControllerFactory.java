@@ -45,7 +45,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         @Override
         public long getCongestionWindow()
         {
-            return 0;
+            return Integer.MAX_VALUE;
         }
 
         @Override

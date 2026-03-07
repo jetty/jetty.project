@@ -89,7 +89,7 @@ public class QuicTest extends AbstractQuicTest
                     clientEvents.add("open");
                 }
             }, p)
-        ).get(555, TimeUnit.SECONDS);
+        ).get(5, TimeUnit.SECONDS);
 
         assertNotNull(session);
 
@@ -176,5 +176,57 @@ public class QuicTest extends AbstractQuicTest
         Session serverSession = serverSessionRef.get();
         await().atMost(5, TimeUnit.SECONDS).until(serverSession::getStreams, empty());
         await().atMost(5, TimeUnit.SECONDS).until(clientSession::getStreams, empty());
+    }
+
+    @Test
+    public void testLargeDownload() throws Exception
+    {
+        start(() -> new Session.Listener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
+            {
+                return new Stream.Listener()
+                {
+                    @Override
+                    public void onNewStream(Stream stream, Frame.WithStreamId frame)
+                    {
+                        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.allocate(1024 * 1024)), Promise.Invocable.noop());
+                    }
+                };
+            }
+        });
+
+        CountDownLatch clientDataLatch = new CountDownLatch(1);
+        Session clientSession = Promise.Completable.<Session>with(p ->
+            client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, p)
+        ).get(5, TimeUnit.SECONDS);
+        long streamId = clientSession.newStreamId(true);
+        Stream stream = clientSession.newStream(streamId, new Stream.Listener()
+        {
+            @Override
+            public void onDataAvailable(Stream stream)
+            {
+                while (true)
+                {
+                    Content.Chunk chunk = stream.read();
+                    if (chunk == null)
+                    {
+                        stream.demand();
+                        return;
+                    }
+                    chunk.release();
+                    if (chunk.isLast())
+                    {
+                        clientDataLatch.countDown();
+                        return;
+                    }
+                }
+            }
+        });
+        stream.data(true, RetainableByteBuffer.EMPTY, Promise.Invocable.noop());
+        stream.demand();
+
+        assertTrue(clientDataLatch.await(5, TimeUnit.SECONDS));
     }
 }

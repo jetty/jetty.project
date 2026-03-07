@@ -21,7 +21,7 @@ import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.util.Promise;
 
 /// A QUIC frame carrying stream data bytes.
-public final class StreamFrame extends Frame.WithStreamId.Abstract implements Frame.WithOffset
+public final class StreamFrame extends Frame.WithStreamId.Abstract implements Frame.WithData
 {
     public static final long END_STREAM_MASK = 0x01;
     public static final long LENGTH_MASK = 0x02;
@@ -41,7 +41,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
 
     private final long offset;
     private final RetainableByteBuffer data;
-    private final int length;
+    private final long length;
     private final boolean endStream;
     private final boolean endData;
 
@@ -104,7 +104,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
         super(frameType, streamId);
         this.offset = offset < 0 ? 0 : offset;
         this.data = data;
-        this.length = data.remaining();
+        this.length = data.size();
         this.endStream = (frameType & END_STREAM_MASK) == END_STREAM_MASK;
         this.endData = endData;
     }
@@ -117,6 +117,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     }
 
     /// @return the data bytes
+    @Override
     public RetainableByteBuffer data()
     {
         return data;
@@ -151,7 +152,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
         return "%s[offset=%d,length=%d/%d,last=%b]".formatted(
             super.toString(),
             offset(),
-            data().remaining(),
+            data().size(),
             length(),
             isEndStream()
         );

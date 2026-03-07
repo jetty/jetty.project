@@ -82,7 +82,7 @@ class OneRTTFlusher extends CryptoFlusher
             case StreamFrame streamFrame ->
             {
                 QuicSession session = getQuicSession();
-                long sessionWindow = session.getSendWindow(null);
+                long sessionWindow = session.getSendMaxData(null);
                 if (sessionWindow == 0)
                 {
                     if (session.stall())
@@ -93,7 +93,7 @@ class OneRTTFlusher extends CryptoFlusher
                     yield 0;
                 }
 
-                long streamWindow = session.getSendWindow(stream);
+                long streamWindow = session.getSendMaxData(stream);
                 if (streamWindow == 0)
                 {
                     if (stream.stall())
@@ -109,7 +109,7 @@ class OneRTTFlusher extends CryptoFlusher
 
                 long initial = streamFrame.data().size();
                 long frameBytesGenerated = getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, session.getSendData(stream), maxBytes);
-                long dataBytes = streamFrame.data().size() - initial;
+                long dataBytes = initial - streamFrame.data().size();
                 session.updateSendData(stream, dataBytes);
 
                 yield frameBytesGenerated;

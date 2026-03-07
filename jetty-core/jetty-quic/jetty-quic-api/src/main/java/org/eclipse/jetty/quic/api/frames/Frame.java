@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.TypeUtil;
 
 /// A generic QUIC frame carrying a frame type.
@@ -95,7 +96,7 @@ public sealed interface Frame
     }
 
     /// A QUIC frame carrying an offset and a length.
-    sealed interface WithOffset extends Frame, Comparable<WithOffset> permits CryptoFrame, ResetFrame, StreamFrame
+    sealed interface WithOffset extends Frame, Comparable<WithOffset> permits ResetFrame, WithData
     {
         long offset();
 
@@ -106,6 +107,12 @@ public sealed interface Frame
         {
             return Long.compare(offset(), that.offset());
         }
+    }
+
+    // TODO: this is necessary to know if a frame has been fully generated, see CryptoFlusher.
+    sealed interface WithData extends WithOffset permits CryptoFrame, StreamFrame
+    {
+        RetainableByteBuffer data();
     }
 
     interface Listener

@@ -178,7 +178,7 @@ public class QuicStream extends AbstractStream
         Atomics.updateMax(sendMaxData, maxData);
     }
 
-    long getSendWindow()
+    long getSendMaxData()
     {
         return sendMaxData.get() - getSendData();
     }

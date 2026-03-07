@@ -54,6 +54,7 @@ public class QuicFlusher extends IteratingCallback
     private final PacketsGenerator packetsGenerator;
     private final RetainableByteBuffer.Mutable plaintextBuffer;
     private final RetainableByteBuffer.Mutable encryptedBuffer;
+    private long pacingDelayThreshold = TimeUnit.MILLISECONDS.toNanos(1);
     private Callback flusher;
 
     public QuicFlusher(QuicSession session)
@@ -90,6 +91,16 @@ public class QuicFlusher extends IteratingCallback
     RetainableByteBuffer.Mutable getEncryptedBuffer()
     {
         return encryptedBuffer;
+    }
+
+    public long getPacingDelayThreshold()
+    {
+        return pacingDelayThreshold;
+    }
+
+    public void setPacingDelayThreshold(long pacingDelayThreshold)
+    {
+        this.pacingDelayThreshold = pacingDelayThreshold;
     }
 
     /// Sends the given packet.
@@ -167,11 +178,21 @@ public class QuicFlusher extends IteratingCallback
             acks = new ArrayList<>(ackEntries);
             ackEntries.clear();
         }
-        acks.forEach(e -> getQuicSession().processAck(e.encryptionLevel(), e.frame()));
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} ack frames on {}", acks.size(), this);
+
+        for (AckEntry entry : acks)
+        {
+            getQuicSession().processAckFrame(entry.encryptionLevel(), entry.frame());
+        }
 
         long pacingDelay = getQuicSession().getCongestionController().getPacingDelay();
-        // TODO: configure pacing timer threshold.
-        if (TimeUnit.NANOSECONDS.toMillis(pacingDelay) > 1)
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("pacing delay {} micros on {}", TimeUnit.NANOSECONDS.toMicros(pacingDelay), this);
+
+        if (pacingDelay > getPacingDelayThreshold())
         {
             // TODO: schedule wakeup.
             return Action.IDLE;
@@ -201,6 +222,9 @@ public class QuicFlusher extends IteratingCallback
             return Action.SCHEDULED;
         }
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("no entries to flush on {}", this);
+
         return Action.IDLE;
     }
 
@@ -217,9 +241,11 @@ public class QuicFlusher extends IteratingCallback
     protected void onCompleteFailure(Throwable cause)
     {
         // TODO: release the buffers here, this instance is thrown away.
+        //  Also, notify the session to disconnect()?
         encryptedBuffer.clear();
         plaintextBuffer.clear();
-        flusher.failed(cause);
+        if (flusher != null)
+            flusher.failed(cause);
         flusher = null;
     }
 
