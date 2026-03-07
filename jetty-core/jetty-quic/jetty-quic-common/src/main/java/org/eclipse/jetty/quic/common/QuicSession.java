@@ -51,7 +51,6 @@ import org.eclipse.jetty.quic.common.internal.packets.PacketsParser;
 import org.eclipse.jetty.quic.common.internal.packets.RetryPacketGenerator;
 import org.eclipse.jetty.quic.common.packets.HandshakePacket;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
-import org.eclipse.jetty.quic.common.packets.LongHeaderPacket;
 import org.eclipse.jetty.quic.common.packets.OneRTTPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
@@ -484,12 +483,10 @@ public abstract class QuicSession extends AbstractSession
                 return;
             }
 
-            if (packet instanceof LongHeaderPacket longHeaderPacket)
-            {
-                // RFC-9000[6.3]: packets with reserved versions are discarded.
-                if (longHeaderPacket.quicVersion().reserved())
-                    continue;
-            }
+            if (packet == Packet.DISCARD)
+                continue;
+
+            packetNumbers.onPacketReceived(packet);
 
             // Minimally process first packets to set
             // the dcid be used by acknowledgments.

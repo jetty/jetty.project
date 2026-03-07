@@ -21,8 +21,10 @@ import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.PaddingFrame;
 
-public sealed interface Packet permits LongHeaderPacket, Packet.WithFrames, ShortHeaderPacket
+public sealed interface Packet permits DiscardPacket, LongHeaderPacket, Packet.WithFrames, ShortHeaderPacket
 {
+    Packet DISCARD = new DiscardPacket();
+
     static boolean isLongHeader(byte form)
     {
         // RFC 9000, 17.2: long header packets have msb == 1.
