@@ -46,7 +46,7 @@ function gitFindRemoteByUrl() {
     return 0
 }
 
-GIT_REMOTE_URL="github.com:jetty/jetty.project.git"
+GIT_REMOTE_URL="jetty/jetty.project"
 GIT_REMOTE_ID=$(gitFindRemoteByUrl "$GIT_REMOTE_URL")
 GIT_BRANCH_ID=$(git symbolic-ref -q --short HEAD || git describe --tags --exact-match)
 
@@ -202,7 +202,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     fi
 
     # here we need to add something to publish to our staging repo
-    # mvn njord:publish -Ddrop=false -Dpublisher=deploy -DaltDeploymentRepository=jetty-staging::http://localhost:8081/repository/release-staging
+    # mvn njord:publish -Dnjord.drop=false -Dnjord.publisher=deploy -DaltDeploymentRepository=jetty-staging::https://repository.webtide.net/repository/release-staging/
     # need an entry in settings.xml for id jetty-staging
         
 else
