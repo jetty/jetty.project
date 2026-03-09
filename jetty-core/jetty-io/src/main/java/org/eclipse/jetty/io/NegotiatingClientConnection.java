@@ -110,7 +110,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
 
         if (failure != null)
         {
-            LOG.atDebug().setCause(failure).log("Unable to fill from endpoint");
+            LOG.debug("Unable to fill from endpoint", failure);
             close();
             failConnectionPromise(failure);
         }
