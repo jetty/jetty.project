@@ -239,7 +239,7 @@ public class MimeTypes
         .withAll(() ->
         {
             Map<String, Type> result = new HashMap<>();
-            
+
             for (Type type : Type.values())
             {
                 String key1 = type.toString();
@@ -479,10 +479,10 @@ public class MimeTypes
     /**
      * @param contentType The content type to obtain a charset for.
      * @return A Charset is returned if it can be inferred from content-type.  This is essentially a default charset
-     *         determined for the contentType.  For example, the content-type "text/html" may be configured to have 
+     *         determined for the contentType.  For example, the content-type "text/html" may be configured to have
      *         an inferred charset of "utf-8", in which case setting that content-type should result in a value
      *         of "text/html;charset=utf8".
-     * @see #getAssumedCharset(String) 
+     * @see #getAssumedCharset(String)
      */
     public Charset getInferredCharset(String contentType)
     {
@@ -497,11 +497,11 @@ public class MimeTypes
     /**
      * @param contentType The content type to obtain a charset for.
      * @return A Charset is returned if it can be assumed from content-type.  This is essentially a known charset
-     *         for the specific contentType.  For example, the content-type "application/json" is specified to use utf-8, 
-     *         so it has an assumed charset of "utf-8". As this is universally known, there is no need to modify the 
+     *         for the specific contentType.  For example, the content-type "application/json" is specified to use utf-8,
+     *         so it has an assumed charset of "utf-8". As this is universally known, there is no need to modify the
      *         the content-type which will just have a value of "application/json".   Note that some content-types may be
      *         assumed to have no charset, in which case {@link #isCharsetAssumed(String)} must be used.
-     * @see #isCharsetAssumed(String) 
+     * @see #isCharsetAssumed(String)
      * @see #getAssumedCharset(String)
      */
     public Charset getAssumedCharset(String contentType)
@@ -516,7 +516,7 @@ public class MimeTypes
 
     /**
      * @param contentType The content-type to obtain a charset for
-     * @return {@code True} if the content-type is assumed to have a specific charset (include assumed to 
+     * @return {@code True} if the content-type is assumed to have a specific charset (include assumed to
      *         have no charset.  For example "application/json" is assumed as it has a specified charset of "utf-8".
      *         Another example is "image/jpeg", which is assumed to have no charset, so it would also return true.
      */
@@ -591,15 +591,15 @@ public class MimeTypes
          * <p>
          * Clear the MimeTypes references.
          * </p>
-         * 
+         *
          * <p>
          * Once you have cleared out the MimeTypes object, make sure to properly
          * set it up with extension to mime-type maps, along with inferred and
          * assumed charsets for the relevant mime-types (eg: html, text, json, etc).
          * </p>
          *
-         * @see #addMimeMapping(String, String) 
-         * @see #addAssumed(String, String) 
+         * @see #addMimeMapping(String, String)
+         * @see #addAssumed(String, String)
          * @see #addInferred(String, String)
          */
         public void clear()
