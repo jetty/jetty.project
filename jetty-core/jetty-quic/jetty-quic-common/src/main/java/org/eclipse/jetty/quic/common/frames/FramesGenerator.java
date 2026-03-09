@@ -124,24 +124,26 @@ public class FramesGenerator
         generated += VarLenInt.encode(accumulator, frame.largestAcknowledged());
         if (maxBytes - generated < 0)
             return rollback(accumulator, limit);
-        generated += VarLenInt.encode(accumulator, frame.ackDelay());
-        if (maxBytes - generated < 0)
-            return rollback(accumulator, limit);
-        generated += VarLenInt.encode(accumulator, frame.firstRangeLength());
+        generated += VarLenInt.encode(accumulator, frame.encodedAckDelay());
         if (maxBytes - generated < 0)
             return rollback(accumulator, limit);
         List<AckFrame.AckRange> ranges = frame.ackRanges();
         generated += VarLenInt.encode(accumulator, ranges.size());
         if (maxBytes - generated < 0)
             return rollback(accumulator, limit);
+        generated += VarLenInt.encode(accumulator, frame.firstRangeLength());
+        if (maxBytes - generated < 0)
+            return rollback(accumulator, limit);
+        long rangeLimit = accumulator.size();
         for (AckFrame.AckRange range : ranges)
         {
             generated += VarLenInt.encode(accumulator, range.gap());
             if (maxBytes - generated < 0)
-                return rollback(accumulator, limit);
+                return rollback(accumulator, rangeLimit);
             generated += VarLenInt.encode(accumulator, range.length());
             if (maxBytes - generated < 0)
-                return rollback(accumulator, limit);
+                return rollback(accumulator, rangeLimit);
+            rangeLimit = accumulator.size();
         }
         return generated;
     }

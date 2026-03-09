@@ -41,16 +41,36 @@ import java.util.List;
 /// * Acknowledged packets are 70-75; it's 6 packets, but encoded as length=5.
 public final class AckFrame extends Frame.Abstract
 {
+    /// Encodes the acknowledgment delay as specified in RFC-9000\[19.3].
+    ///
+    /// @param ackDelay the acknowledgment delay in microseconds
+    /// @param ackDelayExponent the local acknowledgment delay exponent
+    /// @return the encoded acknowledgment delay carried by an [AckFrame]
+    public static long encodeAckDelay(long ackDelay, long ackDelayExponent)
+    {
+        return ackDelay / (1L << ackDelayExponent);
+    }
+
+    /// Decodes the acknowledgment delay as specified in RFC-9000\[19.3].
+    ///
+    /// @param encodedAckDelay the encoded acknowledgment delay
+    /// @param ackDelayExponent the remote acknowledgment delay exponent
+    /// @return the acknowledgment delay in microseconds
+    public static long decodeAckDelay(long encodedAckDelay, long ackDelayExponent)
+    {
+        return encodedAckDelay * (1L << ackDelayExponent);
+    }
+
     private final long largestAcknowledged;
-    private final long ackDelay;
+    private final long encodedAckDelay;
     private final long firstRangeLength;
     private final List<AckRange> ranges;
 
-    public AckFrame(long largestAcknowledged, long ackDelay, long firstRangeLength, List<AckRange> ranges)
+    public AckFrame(long largestAcknowledged, long encodedAckDelay, long firstRangeLength, List<AckRange> ranges)
     {
         super(0x02);
         this.largestAcknowledged = largestAcknowledged;
-        this.ackDelay = ackDelay;
+        this.encodedAckDelay = encodedAckDelay;
         this.firstRangeLength = firstRangeLength;
         this.ranges = ranges;
     }
@@ -60,9 +80,9 @@ public final class AckFrame extends Frame.Abstract
         return largestAcknowledged;
     }
 
-    public long ackDelay()
+    public long encodedAckDelay()
     {
-        return ackDelay;
+        return encodedAckDelay;
     }
 
     public long firstRangeLength()
@@ -120,7 +140,7 @@ public final class AckFrame extends Frame.Abstract
         return "%s[%d-%d,%s]".formatted(
             super.toString(),
             largestAcknowledged(),
-            largestAcknowledged() - firstRangeLength(),
+            firstRangeLength(),
             ackRanges()
         );
     }

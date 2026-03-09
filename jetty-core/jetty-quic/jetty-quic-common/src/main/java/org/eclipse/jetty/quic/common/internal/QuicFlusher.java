@@ -48,7 +48,7 @@ public class QuicFlusher extends IteratingCallback
     private final CryptoFlusher initialFlusher = new CryptoFlusher(this, EncryptionLevel.INITIAL);
     private final CryptoFlusher handshakeFlusher = new CryptoFlusher(this, EncryptionLevel.HANDSHAKE);
     private final StreamFlusher oneRTTFlusher = new StreamFlusher(this);
-    private final Deque<AckEntry> ackEntries = new ArrayDeque<>();
+    private final Deque<AckEntry> receivedAckEntries = new ArrayDeque<>();
     private final QuicSession session;
     private final FramesGenerator framesGenerator;
     private final PacketsGenerator packetsGenerator;
@@ -103,6 +103,25 @@ public class QuicFlusher extends IteratingCallback
         this.pacingDelayThreshold = pacingDelayThreshold;
     }
 
+    public void sendAcknowledgment(Packet.WithFrames packet, Callback callback)
+    {
+        EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
+        switch (encryptionLevel)
+        {
+            case INITIAL, HANDSHAKE ->
+            {
+                // RFC-9000[13.2.1]: initial and handshake packets must be acknowledged immediately.
+                AckFrame frame = new AckFrame(packet.packetNumber(), 0, 0, List.of());
+                sendFrames(encryptionLevel, List.of(frame), callback);
+            }
+            case ONE_RTT ->
+            {
+                oneRTTFlusher.sendAcknowledgment(packet, callback);
+            }
+            default -> throw new UnsupportedOperationException();
+        }
+    }
+
     /// Sends the given packet.
     ///
     /// This method should be called only for [RetryPacket] and [VersionNegotiationPacket],
@@ -110,9 +129,10 @@ public class QuicFlusher extends IteratingCallback
     ///
     /// @param packet the [Packet] to send
     /// @param callback the [Callback] to notify when the send is complete
-    public boolean offer(Packet packet, Callback callback)
+    public void sendPacket(Packet packet, Callback callback)
     {
-        return packetFlusher.offer(packet, callback);
+        if (packetFlusher.offer(packet, callback))
+            iterate();
     }
 
     /// Sends the given list of session frames at the given [EncryptionLevel].
@@ -120,15 +140,17 @@ public class QuicFlusher extends IteratingCallback
     /// @param encryptionLevel the encryption level to use for the send
     /// @param frames the list of frames to send
     /// @param callback the [Callback] to notify when the send is complete
-    public boolean offer(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback)
+    public void sendFrames(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback)
     {
-        return switch (encryptionLevel)
+        boolean flush = switch (encryptionLevel)
         {
-            case INITIAL -> initialFlusher.offer(frames, callback);
-            case HANDSHAKE -> handshakeFlusher.offer(frames, callback);
-            case ONE_RTT -> oneRTTFlusher.offer(null, frames, callback);
+            case INITIAL -> initialFlusher.sendFrames(frames, callback);
+            case HANDSHAKE -> handshakeFlusher.sendFrames(frames, callback);
+            case ONE_RTT -> oneRTTFlusher.sendFrames(null, frames, callback);
             default -> throw new UnsupportedOperationException();
         };
+        if (flush)
+            iterate();
     }
 
     /// Sends the given list of stream frames at [EncryptionLevel#ONE_RTT].
@@ -136,37 +158,52 @@ public class QuicFlusher extends IteratingCallback
     /// @param stream the stream
     /// @param frames the list of frames to send
     /// @param callback the [Callback] to notify when the send is complete
-    public boolean offer(QuicStream stream, List<Frame> frames, Callback callback)
+    public void sendFrames(QuicStream stream, List<Frame> frames, Callback callback)
     {
-        return oneRTTFlusher.offer(stream, frames, callback);
+        if (oneRTTFlusher.sendFrames(stream, frames, callback))
+            iterate();
     }
 
     /// Processes the [MaxDataFrame] to update the session send max data.
     ///
     /// @param frame the [MaxDataFrame] with the session send max data update
-    public boolean offer(MaxDataFrame frame)
+    public void processMaxData(MaxDataFrame frame)
     {
-        return oneRTTFlusher.offer(null, frame.maxData());
+        if (oneRTTFlusher.processMaxData(null, frame.maxData()))
+            iterate();
     }
 
     /// Processes the [StreamMaxDataFrame] for the given stream to update the stream send max data.
     ///
     /// @param stream the stream
     /// @param frame the [StreamMaxDataFrame] with the stream send max data update
-    public boolean offer(QuicStream stream, StreamMaxDataFrame frame)
+    public void processMaxData(QuicStream stream, StreamMaxDataFrame frame)
     {
-        return oneRTTFlusher.offer(stream, frame.maxData());
+        if (oneRTTFlusher.processMaxData(stream, frame.maxData()))
+            iterate();
     }
 
-    // TODO: Processes the [AckFrame] to update
-    //  congestion-control, pacing, reliability data structures.
-    public boolean offer(EncryptionLevel encryptionLevel, AckFrame frame)
+    /// Processes the [AckFrame] to update components that require
+    /// knowledge that an acknowledgment has been received.
+    ///
+    /// [AckFrame]s are received by a reader thread but processed by a writer
+    /// thread so that write-critical components such as congestion control
+    /// and flow control are updated by a single thread.
+    ///
+    /// This flusher can then query these components reading stable values
+    /// that the flusher can use to decide whether _if_ flushing should be
+    /// performed, _when_ flushing should be performed, and _how much_ data
+    /// should be flushed.
+    ///
+    /// @param encryptionLevel the encryption level
+    /// @param frame the [AckFrame] to process
+    public void processAcknowledgment(EncryptionLevel encryptionLevel, AckFrame frame)
     {
         try (var _ = lock.lock())
         {
-            ackEntries.offer(new AckEntry(encryptionLevel, frame));
-            return true;
+            receivedAckEntries.offer(new AckEntry(encryptionLevel, frame));
         }
+        iterate();
     }
 
     @Override
@@ -175,8 +212,8 @@ public class QuicFlusher extends IteratingCallback
         List<AckEntry> acks;
         try (var _ = lock.lock())
         {
-            acks = new ArrayList<>(ackEntries);
-            ackEntries.clear();
+            acks = new ArrayList<>(receivedAckEntries);
+            receivedAckEntries.clear();
         }
 
         if (LOG.isDebugEnabled())
