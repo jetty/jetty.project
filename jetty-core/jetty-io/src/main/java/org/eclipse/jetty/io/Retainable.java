@@ -86,6 +86,12 @@ public interface Retainable
 
     /**
      * <p>Releases this resource, potentially decrementing a reference count (if any).</p>
+     * <p>{@code release()} is the <b>terminal action</b> for a caller that holds a reference: after calling
+     * it, the caller must not access this object again in any way, regardless of the return value.
+     * When {@code release()} returns {@code true}, the reference count has reached zero and the resource
+     * may be immediately returned to a pool, reused, or otherwise invalidated — including overwriting
+     * any backing data.  When {@code release()} returns {@code false}, other callers still hold references,
+     * but the current caller has still surrendered its own reference and must not use the object further.</p>
      *
      * @return {@code true} when the reference count goes to zero or if there was no reference count,
      *         {@code false} otherwise.

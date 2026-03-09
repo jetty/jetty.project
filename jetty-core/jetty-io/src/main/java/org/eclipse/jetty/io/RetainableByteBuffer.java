@@ -66,8 +66,28 @@ import org.slf4j.LoggerFactory;
  * {@link ByteBuffer#position() position} and {@link ByteBuffer#limit() limit}.  The {@link ByteBuffer} returned from
  * {@link #getByteBuffer()} may used directly and switched to "fill" mode, but it is the callers responsibility to
  * {@link ByteBuffer#flip() flip} back to "flush" mode, before any {@code RetainableByteBuffer} APIs are used.</p>
- * <p>The {@code RetainableByteBuffer} APIs hide any notion of unused space before or after valid data. All indexing is relative
- * to the first byte of data in the buffer and no manipulation of data pointers is directly supported.</p>
+ * <p>The {@code RetainableByteBuffer} APIs hide any notion of unused space before or after valid data. All indexing is
+ * relative to the first byte of data in the buffer.</p>
+ * <h2>Pointer mutation vs. content mutation</h2>
+ * <p>The base {@code RetainableByteBuffer} interface distinguishes two fundamentally different kinds of state change:</p>
+ * <ul>
+ *     <li><b>Pointer mutation</b>: advancing or adjusting the internal read position or limit (e.g. {@link #get()},
+ *         {@link #skip(long)}, {@link #limit(long)}, {@link #clear()}).  These methods do not alter the underlying
+ *         byte content — they only change <em>which bytes are considered valid/unread</em>.  They are available on the
+ *         base interface because consuming data is a fundamental operation regardless of whether the content is
+ *         logically read-only.</li>
+ *     <li><b>Content mutation</b>: writing new bytes into the buffer (e.g. {@link Mutable#put(byte)},
+ *         {@link Mutable#append(ByteBuffer)}, {@link Mutable#add(RetainableByteBuffer)}).  These methods change the
+ *         actual stored bytes and are only available via the {@link Mutable} sub-interface.</li>
+ * </ul>
+ * <p>Consequently, a buffer may be described as "immutable" (not {@link #isMutable()}) meaning its <em>content</em>
+ * cannot be overwritten, while still permitting pointer mutations that consume or limit the view of that content.
+ * Use {@link #isMutable()} and {@link #asMutable()} to test for and obtain content-mutation access.</p>
+ * <h2>Lifecycle: {@code release()} is a terminal action</h2>
+ * <p>{@link #release()} is the <em>terminal action</em> on a {@code RetainableByteBuffer}.  After calling it, the
+ * caller must not access the buffer again in any way — neither via pointer-mutation methods nor via the
+ * {@link Mutable} API.  When {@link #release()} returns {@code true}, the reference count has reached zero
+ * and the backing {@link ByteBuffer} may be itself be release and references to it nulled, after which it may be mutated.</p>
  * <p>The buffer may be large and the {@link #size()} is represented as a {@code long} in new APIs.  However, APIs that
  * are tied to a single backing {@link ByteBuffer} may use integer representations of size and indexes.</p>
  */
@@ -137,10 +157,15 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Check if the underlying implementation is mutable.
-     * Note that the immutable {@link RetainableByteBuffer} API may be backed by a mutable {@link ByteBuffer} or
-     * the {@link Mutable} API may be backed by an immutable {@link ByteBuffer}.
-     * @return whether this buffers implementation is mutable
+     * Check whether the <em>content</em> of this buffer can be mutated (i.e. new bytes can be written into it).
+     * <p>Note: "mutable" here refers strictly to <em>content mutation</em> — the ability to overwrite or append
+     * byte values via the {@link Mutable} API.  It does not indicate whether the buffer's internal read pointers
+     * (position, limit) may be advanced; pointer mutations such as {@link #skip(long)}, {@link #limit(long)} and
+     * {@link #clear()} are available on the base interface regardless of this flag.</p>
+     * <p>Note also that the Java type hierarchy and the mutability of the backing {@link ByteBuffer} may not
+     * be aligned: a buffer that implements {@link Mutable} may still be backed by a read-only {@link ByteBuffer},
+     * in which case this method returns {@code false}.</p>
+     * @return {@code true} if the content of this buffer can be written via the {@link Mutable} API.
      * @see #asMutable()
      */
     default boolean isMutable()
@@ -149,11 +174,12 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Access this buffer via the {@link Mutable} API.
-     * Note that the {@link Mutable} API may be backed by an immutable {@link ByteBuffer}.
-     * @return An {@link Mutable} representation of this buffer with same data and pointers.
-     * @throws ReadOnlyBufferException If the buffer is not {@link Mutable} or the backing {@link ByteBuffer} is
-     * {@link ByteBuffer#isReadOnly() read-only}.
+     * Obtain a {@link Mutable} view of this buffer for <em>content mutation</em> (writing new bytes).
+     * <p>Pointer-mutation methods ({@link #skip(long)}, {@link #limit(long)}, {@link #clear()}, etc.) are already
+     * available on the base interface; this method is only needed when byte values must be written or appended.</p>
+     * @return A {@link Mutable} representation of this buffer with the same data and pointers.
+     * @throws ReadOnlyBufferException if the buffer does not implement {@link Mutable} or the backing
+     * {@link ByteBuffer} is {@link ByteBuffer#isReadOnly() read-only}.
      * @see #isMutable()
      */
     default Mutable asMutable() throws ReadOnlyBufferException
@@ -199,7 +225,8 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Consumes and returns a byte from this RetainableByteBuffer
+     * Consumes and returns the next byte from this buffer, advancing the read position (pointer mutation).
+     * The byte content at that position is unchanged; only the internal read pointer is advanced.
      *
      * @return the byte
      * @throws BufferUnderflowException if the buffer is empty.
@@ -225,7 +252,9 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Consumes and copies the bytes from this RetainableByteBuffer to the given byte array.
+     * Consumes and copies bytes from this buffer into the given byte array, advancing the read position
+     * (pointer mutation) by the number of bytes copied.
+     * The byte content in the backing buffer is unchanged; only the internal read pointer is advanced.
      *
      * @param bytes the byte array to copy the bytes into
      * @param offset the offset within the byte array
@@ -313,6 +342,9 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
+     * Clears this buffer by resetting its read position and limit so that it appears empty (pointer mutation).
+     * The byte content in the backing buffer is not erased; only the internal pointers are reset.
+     * For a {@link Mutable} buffer being reused for writing, this effectively makes all capacity available again.
      * @see BufferUtil#clear(ByteBuffer)
      */
     default void clear()
@@ -339,7 +371,11 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * <p>Skips, advancing the ByteBuffer position, the given number of bytes.</p>
+     * <p>Skips over the given number of bytes by advancing the read position (pointer mutation).
+     * The skipped bytes are not read or copied; the byte content in the backing buffer is unchanged, although
+     * it may itself be released.
+     * This is available on the base interface because discarding already-read data is a fundamental
+     * consumer operation that does not require content-mutation access.</p>
      *
      * @param length the maximum number of bytes to skip
      * @return the number of bytes actually skipped
@@ -355,7 +391,11 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * <p>Limit this buffer's contents to the size.</p>
+     * <p>Limits the view of this buffer to {@code size} bytes by adjusting the end-of-data pointer
+     * (pointer mutation). Bytes beyond {@code size} from the current read position are hidden but not
+     * removed; the byte content in the backing buffer is unchanged.
+     * This is available on the base interface because trimming the visible extent of a buffer is a
+     * fundamental consumer operation that does not require content-mutation access.</p>
      *
      * @param size the new size of the buffer
      */
@@ -535,18 +575,22 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * Extended {@link RetainableByteBuffer} API with mutator methods.
-     * The mutator methods come in the following styles:
+     * Extended {@link RetainableByteBuffer} API that adds <em>content mutation</em> — the ability to write
+     * new bytes into the buffer.
+     * <p>The base {@link RetainableByteBuffer} interface already permits <em>pointer mutation</em>
+     * (advancing or adjusting the read position and limit via {@link #get()}, {@link #skip(long)},
+     * {@link #limit(long)}, {@link #clear()}, etc.) because consuming data is a fundamental operation.
+     * This {@code Mutable} sub-interface additionally allows the actual byte values to be written or overwritten.</p>
+     * <p>Content-mutation methods come in the following styles:</p>
      * <ul>
-     *     <li>{@code put} methods are used for putting raw bytes into the buffer and are
-     *     similar to {@link ByteBuffer#put(byte)} etc. {@code Put} methods may be used in fluent style.</li>
-     *     <li>{@code add} methods are used for handing over an external buffer to be managed by
-     *     this buffer. External buffers are passed by reference and the caller will not longer manage the added buffer.
-     *     {@code Add} methods may be used in fluent style.</li>
-     *     <li>{@code append} methods are used for handing over the content of a buffer to be included in this buffer.
-     *     The caller may still use the passed buffer and is responsible for eventually releasing it.</li>
+     *     <li>{@code put} methods write raw bytes into the buffer, analogous to {@link ByteBuffer#put(byte)} etc.
+     *     {@code put} methods may be used in fluent style.</li>
+     *     <li>{@code add} methods transfer ownership of an external buffer to this buffer.
+     *     The caller gives up management of the added buffer; implementations may avoid copies by holding
+     *     a reference to it.  {@code add} methods may be used in fluent style.</li>
+     *     <li>{@code append} methods copy the content of an external buffer into this buffer.
+     *     The caller retains ownership of the passed buffer and is responsible for eventually releasing it.</li>
      * </ul>
-     *
      */
     interface Mutable extends RetainableByteBuffer
     {
