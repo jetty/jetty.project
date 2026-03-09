@@ -53,6 +53,16 @@ class CryptoFlusher implements Callback
         this.encryptionLevel = encryptionLevel;
     }
 
+    QuicFlusher getQuicFlusher()
+    {
+        return flusher;
+    }
+
+    EncryptionLevel getEncryptionLevel()
+    {
+        return encryptionLevel;
+    }
+
     QuicSession getQuicSession()
     {
         return flusher.getQuicSession();
@@ -63,14 +73,19 @@ class CryptoFlusher implements Callback
         return flusher.getFramesGenerator();
     }
 
-    boolean offer(List<Frame> frames, Callback callback)
+    AutoLock lock()
     {
-        return offer(null, frames, callback);
+        return lock.lock();
     }
 
-    boolean offer(QuicStream stream, List<Frame> frames, Callback callback)
+    boolean sendFrames(List<Frame> frames, Callback callback)
     {
-        try (var _ = lock.lock())
+        return sendFrames(null, frames, callback);
+    }
+
+    boolean sendFrames(QuicStream stream, List<Frame> frames, Callback callback)
+    {
+        try (var _ = lock())
         {
             // TODO: check if closed/failed, etc.
             FramesEntry entry = new FramesEntry(stream, frames, callback);
@@ -92,12 +107,9 @@ class CryptoFlusher implements Callback
             return false;
         }
 
-        try (var _ = lock.lock())
+        try (var _ = lock())
         {
-            if (entries.isEmpty())
-                return false;
-            candidates.addAll(entries);
-            entries.clear();
+            lockedDrainTo(candidates);
         }
 
         int packetHeaderLength = session.estimatePacketHeaderLength(encryptionLevel);
@@ -188,7 +200,7 @@ class CryptoFlusher implements Callback
         if (!candidates.isEmpty())
         {
             // Put back unprocessed candidates.
-            try (var _ = lock.lock())
+            try (var _ = lock())
             {
                 candidates.addAll(entries);
                 entries.clear();
@@ -222,6 +234,14 @@ class CryptoFlusher implements Callback
         return true;
     }
 
+    void lockedDrainTo(List<FramesEntry> output)
+    {
+        if (entries.isEmpty())
+            return;
+        output.addAll(entries);
+        entries.clear();
+    }
+
     long generateFrame(RetainableByteBuffer.Mutable framesAccumulator, QuicStream stream, Frame frame, long maxBytes)
     {
         FramesGenerator framesGenerator = getFramesGenerator();
@@ -244,7 +264,7 @@ class CryptoFlusher implements Callback
     public void succeeded()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("write succeeded to {} on {}", flusher.getQuicSession().getEndPoint(), this);
+            LOG.debug("write succeeded to {} on {}", getQuicSession().getEndPoint(), this);
         processing.forEach(FramesEntry::succeeded);
         processing.clear();
     }
@@ -253,7 +273,7 @@ class CryptoFlusher implements Callback
     public void failed(Throwable x)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(x).log("write failed to {} on {}", flusher.getQuicSession().getEndPoint(), this);
+            LOG.atDebug().setCause(x).log("write failed to {} on {}", getQuicSession().getEndPoint(), this);
         processing.forEach(e -> e.failed(x));
         processing.clear();
         // TODO: fail the queued entries.
@@ -267,7 +287,7 @@ class CryptoFlusher implements Callback
     @Override
     public String toString()
     {
-        return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), encryptionLevel);
+        return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getEncryptionLevel());
     }
 
     record FramesEntry(QuicStream stream, List<Frame> frames, Callback callback) implements QuicFlusher.Entry

@@ -160,7 +160,7 @@ public class PacketTracker
             long ackDelay = -1;
             if (encryptionLevel == EncryptionLevel.ONE_RTT)
             {
-                ackDelay = frame.ackDelay() * (2 ^ getAcknowledgmentDelayExponent());
+                ackDelay = AckFrame.decodeAckDelay(frame.encodedAckDelay(), getAcknowledgmentDelayExponent());
                 ackDelay = Math.min(ackDelay, getAcknowledgmentMaxDelay());
                 if (ackDelay < minimumRTT)
                     ackDelay = 0;

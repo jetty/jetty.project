@@ -249,8 +249,7 @@ public abstract class QuicSession extends AbstractSession
     /// @param callback the [Callback] that gets notified when the frame has been sent
     protected void crypto(EncryptionLevel encryptionLevel, CryptoFrame frame, Callback callback)
     {
-        if (flusher.offer(encryptionLevel, List.of(frame), callback))
-            flusher.iterate();
+        flusher.sendFrames(encryptionLevel, List.of(frame), callback);
     }
 
     protected void resetCrypto()
@@ -260,8 +259,7 @@ public abstract class QuicSession extends AbstractSession
 
     protected void frames(List<Frame> frames, Callback callback)
     {
-        if (flusher.offer(EncryptionLevel.ONE_RTT, frames, callback))
-            flusher.iterate();
+        flusher.sendFrames(EncryptionLevel.ONE_RTT, frames, callback);
     }
 
     @Override
@@ -367,58 +365,50 @@ public abstract class QuicSession extends AbstractSession
     public void maxStreams(MaxStreamsFrame frame, Promise.Invocable<Session> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, this);
-        if (flusher.offer(EncryptionLevel.ONE_RTT, List.of(frame), callback))
-            flusher.iterate();
+        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
     @Override
     public void ping(Promise.Invocable<Session> promise)
     {
         List<Frame> frames = List.of(new PingFrame());
-        if (flusher.offer(EncryptionLevel.ONE_RTT, frames, Promise.Invocable.toCallback(promise, this)))
-            flusher.iterate();
+        flusher.sendFrames(EncryptionLevel.ONE_RTT, frames, Promise.Invocable.toCallback(promise, this));
     }
 
     @Override
     public void maxData(MaxDataFrame frame, Promise.Invocable<Session> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, this);
-        if (flusher.offer(EncryptionLevel.ONE_RTT, List.of(frame), callback))
-            flusher.iterate();
+        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
     void data(QuicStream stream, StreamFrame frame, Promise.Invocable<Stream> promise)
     {
-        if (flusher.offer(stream, List.of(frame), Promise.Invocable.toCallback(promise, stream)))
-            flusher.iterate();
+        flusher.sendFrames(stream, List.of(frame), Promise.Invocable.toCallback(promise, stream));
     }
 
     void maxData(QuicStream stream, StreamMaxDataFrame frame, Promise.Invocable<Stream> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, stream);
-        if (flusher.offer(EncryptionLevel.ONE_RTT, List.of(frame), callback))
-            flusher.iterate();
+        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
     void reset(QuicStream stream, ResetFrame frame, Promise.Invocable<Stream> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, stream);
-        if (flusher.offer(EncryptionLevel.ONE_RTT, List.of(frame), callback))
-            flusher.iterate();
+        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
     void stopSending(QuicStream stream, StopSendingFrame frame, Promise.Invocable<Stream> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, stream);
-        if (flusher.offer(EncryptionLevel.ONE_RTT, List.of(frame), callback))
-            flusher.iterate();
+        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
     void dataBlocked(QuicStream stream, StreamDataBlockedFrame frame, Promise.Invocable<Stream> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, stream);
-        if (flusher.offer(EncryptionLevel.ONE_RTT, List.of(frame), callback))
-            flusher.iterate();
+        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
     @Override
@@ -573,7 +563,7 @@ public abstract class QuicSession extends AbstractSession
             case AckFrame ackFrame ->
             {
                 // Serialize processing of ack frames through the flusher.
-                flusher.offer(EncryptionLevel.from(packet), ackFrame);
+                flusher.processAcknowledgment(EncryptionLevel.from(packet), ackFrame);
             }
             case CryptoFrame cryptoFrame ->
             {
@@ -583,7 +573,7 @@ public abstract class QuicSession extends AbstractSession
             case MaxDataFrame maxDataFrame ->
             {
                 // Serialize processing of maxData frames through the flusher.
-                flusher.offer(maxDataFrame);
+                flusher.processMaxData(maxDataFrame);
             }
             case Frame.WithStreamId withStreamId -> processFrameWithStreamId(packet, withStreamId);
             default ->
@@ -702,20 +692,12 @@ public abstract class QuicSession extends AbstractSession
     private void ack(Packet packet)
     {
         if (packet instanceof Packet.WithFrames p && p.requiresAcknowledgement())
-        {
-            // TODO: notify reliability data structure?
-            //  Or leave that only for sent packets and received acks?
-            AckFrame ackFrame = new AckFrame(p.packetNumber(), 0, 0, List.of());
-            EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
-            if (flusher.offer(encryptionLevel, List.of(ackFrame), Callback.NOOP/*TODO*/))
-                flusher.iterate();
-        }
+            flusher.sendAcknowledgment(p, Callback.NOOP/*TODO*/);
     }
 
     public void packet(Packet packet, Callback callback)
     {
-        if (flusher.offer(packet, callback))
-            flusher.iterate();
+        flusher.sendPacket(packet, callback);
     }
 
     public Packet.Listener getPacketListener()
