@@ -38,6 +38,7 @@ public class PacketsGenerator
         {
             case LongHeaderPacket longHeader -> longHeaderPacketsGenerator.generate(packetAccumulator, longHeader, framesAccumulator);
             case ShortHeaderPacket shortHeader -> shortHeaderPacketsGenerator.generate(packetAccumulator, shortHeader, framesAccumulator);
+            default -> throw new IllegalStateException("unsupported packet type " + packet.getClass());
         }
     }
 }

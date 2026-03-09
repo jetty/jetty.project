@@ -191,7 +191,7 @@ public class ServerTLSEngine extends TLSEngine
                 getPacketProtector().getTranscriptHash().clear();
                 boolean binderValid = MessageDigest.isEqual(clientIdentity.binder(), binder);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("resumption identity {} for {} on {}", binderValid ? "valid" : "invalid" , sessionTicket, this);
+                    LOG.debug("resumption identity {} for {} on {}", binderValid ? "valid" : "invalid", sessionTicket, this);
                 if (!binderValid)
                     sessionTicket = null;
                 // TODO: early data?
