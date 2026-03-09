@@ -187,7 +187,7 @@ class StreamFlusher extends CryptoFlusher
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("sending acks {} for {} on {}", drain ? "immediately" : "delayed" , packet, this);
+                LOG.debug("sending acks {} for {} on {}", drain ? "immediately" : "delayed", packet, this);
 
             if (drain)
                 getQuicFlusher().iterate();
