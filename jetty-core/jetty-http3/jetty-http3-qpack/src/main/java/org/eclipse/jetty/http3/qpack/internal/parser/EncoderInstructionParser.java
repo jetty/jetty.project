@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
+import org.eclipse.jetty.util.BufferUtil;
 
 /**
  * Parses a stream of unframed instructions for the Encoder. These instructions are sent from the remote Decoder.
@@ -54,50 +55,56 @@ public class EncoderInstructionParser
         _integerDecoder = new NBitIntegerDecoder();
     }
 
+    /**
+     * This will parse and fully consume the given {@link ByteBuffer} and notifies
+     * the {@link Handler} supplied in the constructor for any resulting events.
+     * @param buffer the buffer to parse.
+     * @throws QpackException if there was an error parsing the instructions.
+     */
     public void parse(ByteBuffer buffer) throws QpackException
     {
-        if (buffer == null || !buffer.hasRemaining())
-            return;
-
-        switch (_state)
+        while (BufferUtil.hasContent(buffer))
         {
-            case IDLE:
-                // Get first byte without incrementing the buffers position.
-                byte firstByte = buffer.get(buffer.position());
-                if ((firstByte & 0x80) != 0)
-                {
-                    _state = State.SECTION_ACKNOWLEDGEMENT;
-                    _integerDecoder.setPrefix(SECTION_ACKNOWLEDGEMENT_PREFIX);
+            switch (_state)
+            {
+                case IDLE:
+                    // Get first byte without incrementing the buffers position.
+                    byte firstByte = buffer.get(buffer.position());
+                    if ((firstByte & 0x80) != 0)
+                    {
+                        _state = State.SECTION_ACKNOWLEDGEMENT;
+                        _integerDecoder.setPrefix(SECTION_ACKNOWLEDGEMENT_PREFIX);
+                        parseSectionAcknowledgment(buffer);
+                    }
+                    else if ((firstByte & 0x40) != 0)
+                    {
+                        _state = State.STREAM_CANCELLATION;
+                        _integerDecoder.setPrefix(STREAM_CANCELLATION_PREFIX);
+                        parseStreamCancellation(buffer);
+                    }
+                    else
+                    {
+                        _state = State.INSERT_COUNT_INCREMENT;
+                        _integerDecoder.setPrefix(INSERT_COUNT_INCREMENT_PREFIX);
+                        parseInsertCountIncrement(buffer);
+                    }
+                    break;
+
+                case SECTION_ACKNOWLEDGEMENT:
                     parseSectionAcknowledgment(buffer);
-                }
-                else if ((firstByte & 0x40) != 0)
-                {
-                    _state = State.STREAM_CANCELLATION;
-                    _integerDecoder.setPrefix(STREAM_CANCELLATION_PREFIX);
+                    break;
+
+                case STREAM_CANCELLATION:
                     parseStreamCancellation(buffer);
-                }
-                else
-                {
-                    _state = State.INSERT_COUNT_INCREMENT;
-                    _integerDecoder.setPrefix(INSERT_COUNT_INCREMENT_PREFIX);
+                    break;
+
+                case INSERT_COUNT_INCREMENT:
                     parseInsertCountIncrement(buffer);
-                }
-                break;
+                    break;
 
-            case SECTION_ACKNOWLEDGEMENT:
-                parseSectionAcknowledgment(buffer);
-                break;
-
-            case STREAM_CANCELLATION:
-                parseStreamCancellation(buffer);
-                break;
-
-            case INSERT_COUNT_INCREMENT:
-                parseInsertCountIncrement(buffer);
-                break;
-
-            default:
-                throw new IllegalStateException(_state.name());
+                default:
+                    throw new IllegalStateException(_state.name());
+            }
         }
     }
 

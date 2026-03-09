@@ -19,6 +19,7 @@ import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http.compression.NBitStringDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
+import org.eclipse.jetty.util.BufferUtil;
 
 /**
  * Parses a stream of unframed instructions for the Decoder. These instructions are sent from the remote Encoder.
@@ -70,63 +71,70 @@ public class DecoderInstructionParser
         _integerDecoder = new NBitIntegerDecoder();
     }
 
+    /**
+     * This will parse and fully consume the given {@link ByteBuffer} and notifies
+     * the {@link Handler} supplied in the constructor for any resulting events.
+     * @param buffer the buffer to parse.
+     * @throws QpackException if there was an error parsing the instructions.
+     * @throws EncodingException if the string encoding is invalid.
+     */
     public void parse(ByteBuffer buffer) throws QpackException, EncodingException
     {
-        if (buffer == null || !buffer.hasRemaining())
-            return;
-
-        switch (_state)
+        while (BufferUtil.hasContent(buffer))
         {
-            case PARSING:
-                byte firstByte = buffer.get(buffer.position());
-                if ((firstByte & 0x80) != 0)
-                {
-                    _state = State.REFERENCED_NAME;
-                    parseInsertNameWithReference(buffer);
-                }
-                else if ((firstByte & 0x40) != 0)
-                {
-                    _state = State.LITERAL_NAME;
-                    parseInsertWithLiteralName(buffer);
-                }
-                else if ((firstByte & 0x20) != 0)
-                {
-                    _state = State.SET_CAPACITY;
-                    _integerDecoder.setPrefix(5);
+            switch (_state)
+            {
+                case PARSING:
+                    byte firstByte = buffer.get(buffer.position());
+                    if ((firstByte & 0x80) != 0)
+                    {
+                        _state = State.REFERENCED_NAME;
+                        parseInsertNameWithReference(buffer);
+                    }
+                    else if ((firstByte & 0x40) != 0)
+                    {
+                        _state = State.LITERAL_NAME;
+                        parseInsertWithLiteralName(buffer);
+                    }
+                    else if ((firstByte & 0x20) != 0)
+                    {
+                        _state = State.SET_CAPACITY;
+                        _integerDecoder.setPrefix(5);
+                        parseSetDynamicTableCapacity(buffer);
+                    }
+                    else
+                    {
+                        _state = State.DUPLICATE;
+                        _integerDecoder.setPrefix(5);
+                        parseDuplicate(buffer);
+                    }
+                    break;
+
+                case SET_CAPACITY:
                     parseSetDynamicTableCapacity(buffer);
-                }
-                else
-                {
-                    _state = State.DUPLICATE;
-                    _integerDecoder.setPrefix(5);
+                    break;
+
+                case DUPLICATE:
                     parseDuplicate(buffer);
-                }
-                break;
+                    break;
 
-            case SET_CAPACITY:
-                parseSetDynamicTableCapacity(buffer);
-                break;
+                case LITERAL_NAME:
+                    parseInsertWithLiteralName(buffer);
+                    break;
 
-            case DUPLICATE:
-                parseDuplicate(buffer);
-                break;
+                case REFERENCED_NAME:
+                    parseInsertNameWithReference(buffer);
+                    break;
 
-            case LITERAL_NAME:
-                parseInsertWithLiteralName(buffer);
-                break;
-
-            case REFERENCED_NAME:
-                parseInsertNameWithReference(buffer);
-                break;
-
-            default:
-                throw new IllegalStateException(_state.name());
+                default:
+                    throw new IllegalStateException(_state.name());
+            }
         }
     }
 
     private void parseInsertNameWithReference(ByteBuffer buffer) throws QpackException, EncodingException
     {
-        while (true)
+        while (BufferUtil.hasContent(buffer))
         {
             switch (_operation)
             {
@@ -165,7 +173,7 @@ public class DecoderInstructionParser
 
     private void parseInsertWithLiteralName(ByteBuffer buffer) throws QpackException, EncodingException
     {
-        while (true)
+        while (BufferUtil.hasContent(buffer))
         {
             switch (_operation)
             {

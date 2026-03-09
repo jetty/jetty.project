@@ -77,17 +77,17 @@ public class EncoderInstructionParserTest
 
         // Test with continuation.
         encoded = "FFBA09";
-        byte[] bytes = StringUtil.fromHexString(encoded);
-        for (int i = 0; i < 10; i++)
+        buffer = BufferUtil.toBuffer(StringUtil.fromHexString(encoded));
+        while (buffer.hasRemaining())
         {
-            ByteBuffer buffer1 = BufferUtil.toBuffer(bytes, 0, 2);
-            ByteBuffer buffer2 = BufferUtil.toBuffer(bytes, 2, 1);
-            _instructionParser.parse(buffer1);
-            assertTrue(_handler.isEmpty());
-            _instructionParser.parse(buffer2);
-            assertThat(_handler.sectionAcknowledgements.poll(), is(1337L));
-            assertTrue(_handler.isEmpty());
+            ByteBuffer oneByte = buffer.slice();
+            oneByte.limit(1);
+            _instructionParser.parse(oneByte);
+            buffer.position(buffer.position() + 1);
         }
+
+        assertThat(_handler.sectionAcknowledgements.poll(), is(1337L));
+        assertTrue(_handler.isEmpty());
     }
 
     @Test
