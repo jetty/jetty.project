@@ -31,21 +31,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * <p>
  * A base implementation of the {@link SessionCache} interface for managing a set of
  * Session objects pertaining to a context in memory.
+ * </p>
  * <p>
  * This implementation ensures that multiple requests for the same session id
  * always return the same Session object.
+ * </p>
  * <p>
  * It will delay writing out a session to the SessionDataStore until the
  * last request exits the session. If the SessionDataStore supports passivation
  * then the session passivation and activation listeners are called appropriately as
  * the session is written.
+ * </p>
  * <p>
  * This implementation also supports evicting idle Session objects. An idle Session
  * is one that is still valid, has not expired, but has not been accessed by a
  * request for a configurable amount of time.  An idle session will be first
  * passivated before it is evicted from the cache.
+ * </p>
+ * <p>
+ * Important note: Never {@link ManagedSession#lock() hold the lock} of any {@link ManagedSession}
+ * while adding to/removing from/querying an instance of this class or else this might result in
+ * a deadlock.
+ * </p>
  */
 @ManagedObject
 public abstract class AbstractSessionCache extends ContainerLifeCycle implements SessionCache
@@ -132,7 +142,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * Compute the mappingFunction to create a Session object iff the session 
      * with the given id isn't already in the map, otherwise return the existing Session.
      * This method is expected to have precisely the same behaviour as 
-     * {@link java.util.concurrent.ConcurrentHashMap#computeIfAbsent}
+     * {@link java.util.concurrent.ConcurrentHashMap#computeIfAbsent} so that state changes
+     * to both the session and cache can be effectively atomic to any thread using the cache.
      * 
      * @param id the session id
      * @param mappingFunction the function to load the data for the session
@@ -346,9 +357,9 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                     try (AutoLock ignore = v.lock())
                     {
                         v.setResident(true); //ensure freshly loaded session is resident
+                        if (enter)
+                            v.use();
                     }
-                    if (enter)
-                        v.use();
                 }
                 else
                 {
