@@ -77,7 +77,7 @@ public class PreCompressedHttpContentFactory extends ContainerLifeCycle implemen
     @Override
     public String toString()
     {
-        return "%s@%x[%s,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), _factory, _preCompressedFormats);
+        return "%s@%x[%s,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getPreCompressedFormats(), _factory);
     }
 
     private static class CompressedFormatsHttpContent extends HttpContent.Wrapper

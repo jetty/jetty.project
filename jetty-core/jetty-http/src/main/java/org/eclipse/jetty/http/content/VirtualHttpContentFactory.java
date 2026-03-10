@@ -55,19 +55,19 @@ public class VirtualHttpContentFactory extends ContainerLifeCycle implements Htt
     /**
      * @return Returns the stylesheet as a Resource.
      */
-    @ManagedAttribute("Resource served when the requested path matches the suffix and the delegate factory has no content.")
+    @ManagedAttribute(value = "Resource served when the requested path matches the suffix and the delegate factory has no content.", readonly = true)
     public Resource getResource()
     {
         return _resource;
     }
 
-    @ManagedAttribute("Content-Type used for the virtual Resource when served.")
+    @ManagedAttribute(value = "Content-Type used for the virtual Resource when served.", readonly = true)
     public String getContentType()
     {
         return _contentType;
     }
 
-    @ManagedAttribute("Suffix used to match paths that should be served the virtual Resource.")
+    @ManagedAttribute(value = "Suffix used to match paths that should be served the virtual Resource.", readonly = true)
     public String getMatchSuffix()
     {
         return _matchSuffix;
