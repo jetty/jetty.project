@@ -131,8 +131,10 @@ public class DefaultSessionCache extends AbstractSessionCache
         return _sessions.compute(id, (k, v) ->
         {
             ManagedSession s = mappingFunction.apply(k, v);
-            if (s != null)
+            if (v == null && s != null)
                 _stats.increment();
+            if (v != null && s == null)
+                _stats.decrement();
             return s;
         });
     }
