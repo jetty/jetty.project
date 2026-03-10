@@ -202,6 +202,9 @@ public interface ResourceFactory
      */
     default Resource newClassLoaderResource(String resource, boolean searchSystemClassLoader)
     {
+        if (resource != null)
+            // Facilitates XML configurations.
+            resource = resource.replaceAll("[\\r\\n]+", "");
         if (StringUtil.isBlank(resource))
             throw new IllegalArgumentException("Resource String is invalid: " + resource);
 
@@ -332,6 +335,9 @@ public interface ResourceFactory
      */
     default Resource newResource(String resource)
     {
+        if (resource != null)
+            // Facilitates XML configurations.
+            resource = resource.replaceAll("[\\r\\n]+", "");
         if (StringUtil.isBlank(resource))
             throw new IllegalArgumentException("Resource String is invalid: " + resource);
 
