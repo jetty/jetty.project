@@ -154,7 +154,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     /**
      * Compute the mappingFunction to create a Session object.
      * This method is expected to have precisely the same behaviour as
-     * {@link java.util.concurrent.ConcurrentHashMap#compute}
+     * {@link java.util.concurrent.ConcurrentHashMap#compute} so that state changes
+     * to both the session and cache can be effectively atomic to any thread using the cache.
      *
      * @param id the session id
      * @param mappingFunction the bi-function to compute the session
