@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -204,7 +205,7 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         store.store("1234", data);
         session = cache.delete("1234");
-        assertNull(session); //NullSessionCache never returns the session that was removed from the cache because it was never in the cache!
+        assertNotNull(session);
         assertFalse(store.exists("1234"));
         assertFalse(cache.contains("1234"));
     }
