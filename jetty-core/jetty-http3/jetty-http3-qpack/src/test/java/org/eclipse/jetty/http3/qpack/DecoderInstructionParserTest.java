@@ -129,8 +129,7 @@ public class DecoderInstructionParserTest
         // Parse the buffer 1 byte at a time.
         while (buffer.hasRemaining())
         {
-            ByteBuffer oneByte = buffer.slice();
-            oneByte.limit(1);
+            ByteBuffer oneByte = buffer.slice(buffer.position(), 1);
             _instructionParser.parse(oneByte);
             buffer.position(buffer.position() + 1);
         }

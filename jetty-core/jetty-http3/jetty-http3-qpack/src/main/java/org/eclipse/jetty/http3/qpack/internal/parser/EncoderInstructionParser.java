@@ -67,43 +67,30 @@ public class EncoderInstructionParser
         {
             switch (_state)
             {
-                case IDLE:
+                case IDLE ->
+                {
                     // Get first byte without incrementing the buffers position.
                     byte firstByte = buffer.get(buffer.position());
                     if ((firstByte & 0x80) != 0)
                     {
                         _state = State.SECTION_ACKNOWLEDGEMENT;
                         _integerDecoder.setPrefix(SECTION_ACKNOWLEDGEMENT_PREFIX);
-                        parseSectionAcknowledgment(buffer);
                     }
                     else if ((firstByte & 0x40) != 0)
                     {
                         _state = State.STREAM_CANCELLATION;
                         _integerDecoder.setPrefix(STREAM_CANCELLATION_PREFIX);
-                        parseStreamCancellation(buffer);
                     }
                     else
                     {
                         _state = State.INSERT_COUNT_INCREMENT;
                         _integerDecoder.setPrefix(INSERT_COUNT_INCREMENT_PREFIX);
-                        parseInsertCountIncrement(buffer);
                     }
-                    break;
-
-                case SECTION_ACKNOWLEDGEMENT:
-                    parseSectionAcknowledgment(buffer);
-                    break;
-
-                case STREAM_CANCELLATION:
-                    parseStreamCancellation(buffer);
-                    break;
-
-                case INSERT_COUNT_INCREMENT:
-                    parseInsertCountIncrement(buffer);
-                    break;
-
-                default:
-                    throw new IllegalStateException(_state.name());
+                }
+                case SECTION_ACKNOWLEDGEMENT -> parseSectionAcknowledgment(buffer);
+                case STREAM_CANCELLATION -> parseStreamCancellation(buffer);
+                case INSERT_COUNT_INCREMENT -> parseInsertCountIncrement(buffer);
+                default -> throw new IllegalStateException(_state.name());
             }
         }
     }

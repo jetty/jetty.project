@@ -84,50 +84,34 @@ public class DecoderInstructionParser
         {
             switch (_state)
             {
-                case PARSING:
+                case PARSING ->
+                {
                     byte firstByte = buffer.get(buffer.position());
                     if ((firstByte & 0x80) != 0)
                     {
                         _state = State.REFERENCED_NAME;
-                        parseInsertNameWithReference(buffer);
                     }
                     else if ((firstByte & 0x40) != 0)
                     {
                         _state = State.LITERAL_NAME;
-                        parseInsertWithLiteralName(buffer);
                     }
                     else if ((firstByte & 0x20) != 0)
                     {
                         _state = State.SET_CAPACITY;
                         _integerDecoder.setPrefix(5);
-                        parseSetDynamicTableCapacity(buffer);
                     }
                     else
                     {
                         _state = State.DUPLICATE;
                         _integerDecoder.setPrefix(5);
-                        parseDuplicate(buffer);
                     }
-                    break;
+                }
 
-                case SET_CAPACITY:
-                    parseSetDynamicTableCapacity(buffer);
-                    break;
-
-                case DUPLICATE:
-                    parseDuplicate(buffer);
-                    break;
-
-                case LITERAL_NAME:
-                    parseInsertWithLiteralName(buffer);
-                    break;
-
-                case REFERENCED_NAME:
-                    parseInsertNameWithReference(buffer);
-                    break;
-
-                default:
-                    throw new IllegalStateException(_state.name());
+                case SET_CAPACITY -> parseSetDynamicTableCapacity(buffer);
+                case DUPLICATE -> parseDuplicate(buffer);
+                case LITERAL_NAME -> parseInsertWithLiteralName(buffer);
+                case REFERENCED_NAME -> parseInsertNameWithReference(buffer);
+                default -> throw new IllegalStateException(_state.name());
             }
         }
     }
@@ -138,23 +122,24 @@ public class DecoderInstructionParser
         {
             switch (_operation)
             {
-                case NONE:
+                case NONE ->
+                {
                     byte firstByte = buffer.get(buffer.position());
                     _referenceDynamicTable = (firstByte & 0x40) == 0;
                     _operation = Operation.INDEX;
                     _integerDecoder.setPrefix(6);
-                    continue;
-
-                case INDEX:
+                }
+                case INDEX ->
+                {
                     _index = _integerDecoder.decodeInt(buffer);
                     if (_index < 0)
                         return;
 
                     _operation = Operation.VALUE;
                     _stringDecoder.setPrefix(8);
-                    continue;
-
-                case VALUE:
+                }
+                case VALUE ->
+                {
                     String value = _stringDecoder.decode(buffer);
                     if (value == null)
                         return;
@@ -164,9 +149,9 @@ public class DecoderInstructionParser
                     reset();
                     _handler.onInsertNameWithReference(index, dynamic, value);
                     return;
+                }
 
-                default:
-                    throw new IllegalStateException(_operation.name());
+                default -> throw new IllegalStateException(_operation.name());
             }
         }
     }
@@ -177,21 +162,22 @@ public class DecoderInstructionParser
         {
             switch (_operation)
             {
-                case NONE:
+                case NONE ->
+                {
                     _operation = Operation.NAME;
                     _stringDecoder.setPrefix(6);
-                    continue;
-
-                case NAME:
+                }
+                case NAME ->
+                {
                     _name = _stringDecoder.decode(buffer);
                     if (_name == null)
                         return;
 
                     _operation = Operation.VALUE;
                     _stringDecoder.setPrefix(8);
-                    continue;
-
-                case VALUE:
+                }
+                case VALUE ->
+                {
                     String value = _stringDecoder.decode(buffer);
                     if (value == null)
                         return;
@@ -200,9 +186,8 @@ public class DecoderInstructionParser
                     reset();
                     _handler.onInsertWithLiteralName(name, value);
                     return;
-
-                default:
-                    throw new IllegalStateException(_operation.name());
+                }
+                default -> throw new IllegalStateException(_operation.name());
             }
         }
     }
