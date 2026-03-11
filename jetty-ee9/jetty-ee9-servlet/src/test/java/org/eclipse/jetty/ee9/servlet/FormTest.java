@@ -327,4 +327,35 @@ public class FormTest
         for (String expectedParam: expectedParams)
             assertThat(responseContent, containsString(expectedParam));
     }
+
+    @Test
+    public void testContentTypeWithIso8859Charset() throws Exception
+    {
+        String contentType = MimeTypes.Type.FORM_ENCODED_8859_1.asString();
+        String paramName = "n";
+        String paramValue = "%e9";
+        start(handler -> new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                assertEquals(contentType, request.getContentType());
+                Map<String, String[]> params = request.getParameterMap();
+                assertEquals(1, params.size());
+                assertEquals(paramValue, params.get(paramName)[0]);
+            }
+        });
+
+        Fields formParams = new Fields();
+        formParams.add(paramName, paramValue);
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .method(HttpMethod.POST)
+            .path(contextPath + servletPath)
+            .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, contentType))
+            .body(new FormRequestContent(formParams))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
 }
