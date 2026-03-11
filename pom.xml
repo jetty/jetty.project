@@ -2067,19 +2067,16 @@
             <configuration>
               <rules>
                 <requireMavenVersion>
-                  <version>[3.9.2,)</version>
-                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.9.2 or newer</message>
+                  <version>[3.9.10,)</version>
+                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.9.10 or newer</message>
                 </requireMavenVersion>
                 <requireJavaVersion>
-                  <version>[17,)</version>
-                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 17 or newer</message>
+                  <version>[25,)</version>
+                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 25 or newer</message>
                 </requireJavaVersion>
-                <!-- do not support alphax as a version number -->
-
                 <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule"/>
                 <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule"/>
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule"/>
-
                 <requireUpperBoundDeps/>
               </rules>
             </configuration>
