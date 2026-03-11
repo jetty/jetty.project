@@ -124,11 +124,11 @@ public interface HttpCookieStore
      * {@code Max-Age} attribute should be treated like `0`, which
      * indicates that the cookie is expired.
      * However, the de-facto standard for implementations (browsers
-     * and {@link java.net.http.HttpClient}) is that negative values
+     * and {@code java.net.http.HttpClient}) is that negative values
      * are treated as "session cookie": a cookie that is not expired,
      * but won't be persisted and will be removed when the browser
      * or client is closed or stopped.
-     * This is in line with the javadocs of {@link java.net.HttpCookie}
+     * This is in line with the javadocs of {@code java.net.HttpCookie}
      * as well as {@code jakarta.servlet.http.Cookie}.
      */
     class Default implements HttpCookieStore
