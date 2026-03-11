@@ -187,9 +187,9 @@
     <commons-lang3.version>3.20.0</commons-lang3.version>
     <commons.compress.version>1.28.0</commons.compress.version>
     <commons.io.version>2.16.1</commons.io.version>
-    <compiler.release>17</compiler.release>
-    <compiler.source>17</compiler.source>
-    <compiler.target>17</compiler.target>
+    <compiler.release>25</compiler.release>
+    <compiler.source>25</compiler.source>
+    <compiler.target>25</compiler.target>
     <conscrypt.version>2.5.2</conscrypt.version>
     <cyclonedx.maven.plugin.version>2.9.1</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
