@@ -317,28 +317,25 @@ public class CompressionHandler extends Handler.Wrapper
         }
 
         String originalEtag = null;
-        // wrap request if etags need to be adjusted
+        // Wrap request if etags need to be adjusted.
         if (ifMatch != null || ifNoneMatch != null)
         {
             request = new StripEtagRequest(request, ifMatch, ifNoneMatch);
             originalEtag = (ifMatch != null) ? ifMatch : ifNoneMatch;
         }
 
-        // wrap the request if we can decompress.
+        // Wrap the request if we can decompress.
         if (decompressEncoding != null)
             request = newDecompressionRequest(request, decompressEncoding);
 
-        // Add Vary header if compression is possible for this method.
+        // Add the Vary header only if compression is possible for this method and path.
+        // Compression for the path is possible because it was matched above.
         if (config.isCompressMethodSupported(request.getMethod()))
-        {
             response.getHeaders().ensureField(varyAcceptEncoding);
-        }
 
-        // wrap the response if we can deflate.
+        // Wrap the response if we can compress.
         if (compressEncoding != null)
-        {
             response = newCompressionResponse(request, response, compressEncoding, config, originalEtag);
-        }
 
         if (LOG.isDebugEnabled())
             LOG.debug("handle {} {} {}", request, response, this);
