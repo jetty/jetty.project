@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.test;
+package org.eclipse.jetty.ee11.test;
 
 import java.net.URI;
 import java.nio.file.Files;
@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -53,7 +53,7 @@ public class ServletContainerInitializerTest
         server.addConnector(connector);
 
         WebAppContext context = new WebAppContext();
-        Path war = MavenPaths.targetDir().resolve("webapps").resolve("jetty-ee9-test-sci-webapp.war");
+        Path war = MavenPaths.targetDir().resolve("webapps").resolve("jetty-ee11-test-sci-webapp.war");
         assertTrue(Files.isRegularFile(war), "Missing war file: " + war);
         context.setWar(war.toString());
 

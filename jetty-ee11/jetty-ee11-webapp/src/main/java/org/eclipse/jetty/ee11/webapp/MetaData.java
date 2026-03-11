@@ -54,6 +54,7 @@ public class MetaData
     protected final List<Resource> _webInfJars = new ArrayList<>();
     protected final List<Resource> _orderedContainerResources = new ArrayList<>();
     protected final List<Resource> _orderedWebInfResources = new ArrayList<>();
+    protected boolean _webInfResourcesNeedsOrdering = true;
     protected Ordering _ordering; //can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
     protected boolean _validateXml = false;
@@ -173,6 +174,7 @@ public class MetaData
         _annotations.clear();
         _webInfJars.clear();
         _orderedWebInfResources.clear();
+        _webInfResourcesNeedsOrdering = true;
         _orderedContainerResources.clear();
         _ordering = null;
         _allowDuplicateFragmentNames = false;
@@ -315,6 +317,7 @@ public class MetaData
         }
 
         //recompute the ordering with the new fragment name
+        _webInfResourcesNeedsOrdering = true;
         orderFragments();
     }
 
@@ -398,9 +401,12 @@ public class MetaData
 
     public void orderFragments()
     {
-        _orderedWebInfResources.clear();
-        if (getOrdering() != null)
+        if (_webInfResourcesNeedsOrdering && getOrdering() != null)
+        {
+            _orderedWebInfResources.clear();
             _orderedWebInfResources.addAll(getOrdering().order(_webInfJars));
+            _webInfResourcesNeedsOrdering = false;
+        }
     }
 
     /**
@@ -414,7 +420,7 @@ public class MetaData
     {
         boolean distributable = (
             (_webDefaultsRoot != null && _webDefaultsRoot.isDistributable()) ||
-                (_webXmlRoot != null && _webXmlRoot.isDistributable()));
+            (_webXmlRoot != null && _webXmlRoot.isDistributable()));
 
         for (WebDescriptor d : _webOverrideRoots)
         {
@@ -462,7 +468,7 @@ public class MetaData
     public void setOrdering(Ordering o)
     {
         _ordering = o;
-        orderFragments();
+        _webInfResourcesNeedsOrdering = true;
     }
 
     /**
@@ -580,6 +586,7 @@ public class MetaData
     public void addWebInfResource(Resource newResource)
     {
         _webInfJars.add(newResource);
+        _webInfResourcesNeedsOrdering = true;
     }
 
     public List<Resource> getWebInfResources(boolean withOrdering)
@@ -587,7 +594,10 @@ public class MetaData
         if (!withOrdering)
             return Collections.unmodifiableList(_webInfJars);
         else
+        {
+            orderFragments();
             return Collections.unmodifiableList(_orderedWebInfResources);
+        }
     }
 
     public List<Resource> getContainerResources()
