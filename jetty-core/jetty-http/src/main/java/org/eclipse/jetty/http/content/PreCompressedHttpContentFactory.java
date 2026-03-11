@@ -68,8 +68,8 @@ public class PreCompressedHttpContentFactory extends ContainerLifeCycle implemen
         return new CompressedFormatsHttpContent(content, compressedFormats);
     }
 
-    @ManagedAttribute(value = "Configured pre-compressed format extensions that will be probed.", readonly = true)
-    public List<String> getPreCompressedFormats()
+    @ManagedAttribute(value = "Configured pre-compressed format extensions that will be probed", readonly = true)
+    public List<String> getPreCompressedContentFormats()
     {
         return _preCompressedFormats.stream().map(CompressedContentFormat::toString).collect(toList());
     }
@@ -77,7 +77,7 @@ public class PreCompressedHttpContentFactory extends ContainerLifeCycle implemen
     @Override
     public String toString()
     {
-        return "%s@%x[%s,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getPreCompressedFormats(), _factory);
+        return "%s@%x[%s,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getPreCompressedContentFormats(), _factory);
     }
 
     private static class CompressedFormatsHttpContent extends HttpContent.Wrapper

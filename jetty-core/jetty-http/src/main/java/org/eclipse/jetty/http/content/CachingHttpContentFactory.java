@@ -93,19 +93,19 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
         return _cache;
     }
 
-    @ManagedAttribute(value = "Current total size in bytes of cached content.", readonly = true)
+    @ManagedAttribute(value = "Current total size in bytes of cached content", readonly = true)
     public long getCachedSize()
     {
         return _cachedSize.get();
     }
 
-    @ManagedAttribute(value = "Current number of cached HttpContent entries.", readonly = true)
+    @ManagedAttribute(value = "Current number of cached files", readonly = true)
     public int getCachedFiles()
     {
         return _cache.size();
     }
 
-    @ManagedAttribute("Maximum size in bytes of an HttpContent to be eligible for caching.")
+    @ManagedAttribute("Maximum size in bytes of an file to be eligible for caching")
     public int getMaxCachedFileSize()
     {
         return _maxCachedFileSize;
@@ -117,7 +117,7 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
         shrinkCache();
     }
 
-    @ManagedAttribute("Maximum total size in bytes allowed for the cache.")
+    @ManagedAttribute("Maximum total size in bytes allowed for the cache")
     public long getMaxCacheSize()
     {
         return _maxCacheSize;
@@ -133,7 +133,7 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
      * Get the max number of cached files.
      * @return the max number of cached files.
      */
-    @ManagedAttribute("Maximum number of entries allowed in the cache.")
+    @ManagedAttribute("Maximum number of entries allowed in the cache")
     public int getMaxCachedFiles()
     {
         return _maxCachedFiles;

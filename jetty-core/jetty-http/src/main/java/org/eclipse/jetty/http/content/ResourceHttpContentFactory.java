@@ -71,7 +71,7 @@ public class ResourceHttpContentFactory implements HttpContent.Factory
         }
     }
 
-    @ManagedAttribute(value = "Base Resource used as the root for resolving requested paths.", readonly = true)
+    @ManagedAttribute(value = "The Resource used as the root for resolving requested paths", readonly = true)
     public Resource getBaseResource()
     {
         return _baseResource;

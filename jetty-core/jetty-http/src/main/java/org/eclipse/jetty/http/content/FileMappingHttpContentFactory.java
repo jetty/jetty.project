@@ -94,13 +94,13 @@ public class FileMappingHttpContentFactory extends ContainerLifeCycle implements
         return content;
     }
 
-    @ManagedAttribute(value = "The minimum size of an HttpContent before trying to use a file mapped buffer.", readonly = true)
+    @ManagedAttribute(value = "The minimum size of an file before trying to use a file mapped buffer", readonly = true)
     public int getMinFileSize()
     {
         return _minFileSize;
     }
 
-    @ManagedAttribute(value = "The maximum size of the memory mapped buffers.", readonly = true)
+    @ManagedAttribute(value = "The maximum size of the memory mapped buffers", readonly = true)
     public int getMaxBufferSize()
     {
         return _maxBufferSize;
