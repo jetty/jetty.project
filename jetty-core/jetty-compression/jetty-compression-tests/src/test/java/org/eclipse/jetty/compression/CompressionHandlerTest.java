@@ -13,20 +13,29 @@
 
 package org.eclipse.jetty.compression;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
+import java.net.Socket;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.GZIPInputStream;
 
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.compression.brotli.BrotliCompression;
 import org.eclipse.jetty.compression.gzip.GzipCompression;
+import org.eclipse.jetty.compression.gzip.GzipEncoderConfig;
 import org.eclipse.jetty.compression.server.CompressionConfig;
 import org.eclipse.jetty.compression.server.CompressionHandler;
 import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
@@ -34,6 +43,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -42,7 +52,9 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -57,8 +69,10 @@ import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1082,6 +1096,181 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         etagField = response.getHeaders().getField(HttpHeader.ETAG);
         assertNotNull(etagField);
         assertEquals(etag, etagField.getValue());
+    }
+
+    @Test
+    public void testSyncFlush() throws Exception
+    {
+        pool = new ArrayByteBufferPool.Tracking();
+        GzipCompression gzipCompression = new GzipCompression();
+        GzipEncoderConfig gzipEncoderConfig = new GzipEncoderConfig();
+        gzipEncoderConfig.setSyncFlush(true);
+        gzipCompression.setDefaultEncoderConfig(gzipEncoderConfig);
+        gzipCompression.setByteBufferPool(pool);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(gzipCompression);
+
+        CompressionConfig config = CompressionConfig.builder()
+            .build();
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        compressionHandler.putConfiguration("/", config);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws IOException
+            {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                try (OutputStream outputStream = Content.Sink.asOutputStream(response);
+                    PrintStream writer = new PrintStream(outputStream))
+                {
+                    writer.print("This line should be flushed\n");
+                    assertTrue(latch.await(5, TimeUnit.SECONDS), "Post-Flush Latch timed out");
+                    writer.print("This line should be seen afterwards\n");
+                    // trigger "last" write to allow Gzip to finish and write its trailers.
+                    response.write(true, BufferUtil.EMPTY_BUFFER, callback);
+                }
+                catch (InterruptedException e)
+                {
+                    callback.failed(e);
+                }
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        client.getContentDecoderFactories().clear();
+
+        URI serverURI = server.getURI();
+        try (Socket socket = new Socket(serverURI.getHost(), serverURI.getPort());
+              OutputStream out = socket.getOutputStream();
+              InputStream in = socket.getInputStream())
+        {
+            String rawRequest = """
+                GET /test HTTP/1.1\r
+                Accept-Encoding: gzip\r
+                Host: %s\r
+                Connection: close\r
+                \r
+                """.formatted(serverURI.getAuthority());
+            out.write(rawRequest.getBytes(UTF_8));
+            out.flush();
+            HttpTester.Response response;
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+            {
+                byte[] rawRespBytes = new byte[20];
+                int readCount = in.read(rawRespBytes, 0, 17); // we should see the response headers at least, indicating a flush occurred.
+                assertThat(readCount, is(17)); // oops we didn't get the whole line (did the network split it?)
+                String respLine = new String(rawRespBytes, 0, 17, UTF_8);
+                // proof that flush occurred.
+                assertThat(respLine, is("HTTP/1.1 200 OK\r\n"));
+                baos.write(rawRespBytes, 0, 17);
+                // let servlet write again
+                latch.countDown();
+                // collect the rest of the body
+                IO.copy(in, baos);
+                response = HttpTester.parseResponse(ByteBuffer.wrap(baos.toByteArray()));
+            }
+
+            byte[] rawResponseBodyBytes = response.getContentBytes();
+
+            try (
+                InputStream encodedIn = new ByteArrayInputStream(rawResponseBodyBytes);
+                GZIPInputStream gzipIn = new GZIPInputStream(encodedIn))
+            {
+                String decoded = IO.toString(gzipIn, UTF_8);
+                assertThat(decoded, is("This line should be flushed\nThis line should be seen afterwards\n"));
+            }
+        }
+    }
+
+    /**
+     * Test that Vary: Accept-Encoding header is present even when client does not
+     * send Accept-Encoding header, as long as compression is possible for the path/method.
+     * This is important for caching proxies.
+     */
+    @ParameterizedTest
+    @MethodSource("compressions")
+    public void testVaryHeaderWithoutAcceptEncoding(Class<Compression> compressionClass) throws Exception
+    {
+        newCompression(compressionClass);
+        String message = "Hello Jetty!\n".repeat(10);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(compression);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                Content.Sink.write(response, true, message, callback);
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        // Request WITHOUT Accept-Encoding header
+        ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
+            .method(HttpMethod.GET)
+            // Intentionally NOT setting Accept-Encoding header
+            .path("/hello")
+            .send();
+
+        assertThat(response.getStatus(), is(200));
+        // Response should NOT be compressed (no Accept-Encoding sent)
+        assertFalse(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING));
+        // But Vary header SHOULD be present (compression was possible)
+        assertThat(response.getHeaders().get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        // Content should be uncompressed
+        assertThat(response.getContentAsString(), is(message));
+    }
+
+    /**
+     * Test that Vary header is NOT present when method does not support compression.
+     */
+    @Test
+    public void testNoVaryHeaderForExcludedMethod() throws Exception
+    {
+        pool = new ArrayByteBufferPool.Tracking();
+        GzipCompression gzipCompression = new GzipCompression();
+        gzipCompression.setByteBufferPool(pool);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(gzipCompression);
+        // Default config only includes GET and POST for compression
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                Content.Sink.write(response, true, "OK", callback);
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        // OPTIONS request - not included in default compress methods
+        ContentResponse response = client.newRequest(server.getURI())
+            .method(HttpMethod.OPTIONS)
+            .headers(h -> h.put(HttpHeader.ACCEPT_ENCODING, "gzip"))
+            .path("/hello")
+            .send();
+
+        assertThat(response.getStatus(), is(200));
+        // Vary header should NOT be present because OPTIONS is not a compress method
+        assertThat(response.getHeaders().get(HttpHeader.VARY), nullValue());
     }
 
     private void dumpResponse(org.eclipse.jetty.client.Response response)
