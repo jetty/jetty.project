@@ -18,6 +18,7 @@ import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpHeader;
@@ -31,6 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -40,6 +42,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DuplexHttpDestinationTest extends AbstractHttpClientServerTest
 {
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testUseDestinationAfterSweep(Scenario scenario) throws Exception
+    {
+        startClient(scenario, client -> client.setDestinationIdleTimeout(1));
+
+        // The port does not matter as the request should fail before leaving the client.
+        Request request = client.newRequest("localhost", 0)
+            .scheme(scenario.getScheme());
+        Destination destination = client.resolveDestination(request);
+        assertFalse(((HttpDestination)destination).stale());
+
+        // Wait for the sweeper to mark the destination as stale.
+        Thread.sleep(1500);
+        assertTrue(((HttpDestination)destination).stale());
+
+        AtomicReference<Result> resultRef = new AtomicReference<>();
+        destination.send(request, resultRef::set);
+
+        Result result = await().atMost(5, TimeUnit.SECONDS).until(resultRef::get, notNullValue());
+        assertInstanceOf(RejectedExecutionException.class, result.getResponseFailure());
+    }
+
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAcquireWithEmptyQueue(Scenario scenario) throws Exception

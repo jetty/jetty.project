@@ -380,13 +380,13 @@ public class EagerContentHandlerTest
                 Host: localhost\r
                 Transfer-Encoding: chunked\r
                 \r
-                3;\r
+                3\r
                 123\r
-                4;\r
+                4\r
                 4567\r
-                3;\r
+                3\r
                 890\r
-                0;\r
+                0\r
                 \r
                 """;
             OutputStream output = socket.getOutputStream();

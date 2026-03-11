@@ -76,7 +76,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         super.doStop();
         removeBean(pool);
         pool.terminate().forEach(this::close);
-        pool = null;
     }
 
     @Override

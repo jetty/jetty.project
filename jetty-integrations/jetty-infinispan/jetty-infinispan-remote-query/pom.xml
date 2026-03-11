@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-infinispan</artifactId>
-    <version>12.1.7-SNAPSHOT</version>
+    <version>12.1.8-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-infinispan-remote-query</artifactId>
   <name>Integrations :: Infinispan :: Remote with Querying</name>
@@ -66,12 +66,12 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
+      <artifactId>testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

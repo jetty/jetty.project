@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.1.7-SNAPSHOT</version>
+    <version>12.1.8-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.ee10</groupId>
   <artifactId>jetty-ee10</artifactId>
@@ -45,7 +45,7 @@
     <ee10.jakarta.servlet.jsp.jstl.impl.version>3.0.1</ee10.jakarta.servlet.jsp.jstl.impl.version>
     <ee10.jakarta.transaction-api.version>2.0.1</ee10.jakarta.transaction-api.version>
     <ee10.jakarta.websocket.api.version>2.1.1</ee10.jakarta.websocket.api.version>
-    <ee10.jakarta.xml.bind.api.version>4.0.4</ee10.jakarta.xml.bind.api.version>
+    <ee10.jakarta.xml.bind.api.version>4.0.5</ee10.jakarta.xml.bind.api.version>
     <ee10.jakarta.xml.bind.impl.version>4.0.6</ee10.jakarta.xml.bind.impl.version>
     <ee10.jakarta.xml.jaxws.impl.version>4.0.3</ee10.jakarta.xml.jaxws.impl.version>
     <ee10.jersey.version>3.1.11</ee10.jersey.version>

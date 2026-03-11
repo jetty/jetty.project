@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9-test-sessions</artifactId>
-    <version>12.1.7-SNAPSHOT</version>
+    <version>12.1.8-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-test-sessions-memcached</artifactId>
   <name>EE9 :: Tests :: Sessions :: Memcached</name>
@@ -54,12 +54,12 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
+      <artifactId>testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

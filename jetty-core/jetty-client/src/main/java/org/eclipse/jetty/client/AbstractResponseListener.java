@@ -26,7 +26,18 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 
+/**
+ * <p>Instances of this class are not reusable, so one must be allocated for each request.</p>
+ * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
+ * via one of the {@code getContent*()} or {@code takeContent*()} methods.</p>
+ * <p>IMPORTANT: The content MUST be consumed by calling one of the {@code getContent*()} or
+ * {@code takeContent*()} methods otherwise the backing buffers may be leaked. If either of
+ * {@link #takeContentAsInputStream()} or {@link #takeContentAsContentSource()} is called, the content
+ * MUST be read until the end (or closed/failed appropriately) otherwise the backing buffers of the unread
+ * content may also be leaked.</p>
+ */
 public abstract class AbstractResponseListener implements Response.Listener
 {
     private final RetainableByteBuffer.Mutable accumulator;
@@ -126,13 +137,6 @@ public abstract class AbstractResponseListener implements Response.Listener
     }
 
     @Override
-    public void onSuccess(Response response)
-    {
-        // Always take here to be sure the accumulator is released.
-        content = take();
-    }
-
-    @Override
     public void onFailure(Response response, Throwable failure)
     {
         accumulator.clear();
@@ -185,11 +189,48 @@ public abstract class AbstractResponseListener implements Response.Listener
     }
 
     /**
+     * Return the content as {@link InputStream}. A copy of the content is kept in memory to
+     * allow the following {@code getContent*()} and {@code takeContent*()} calls to read the
+     * content again.
      * @return the content as {@link InputStream}
      */
     public InputStream getContentAsInputStream()
     {
         return new ByteArrayInputStream(getContent());
+    }
+
+    /**
+     * Take the content and return it as {@link InputStream}.
+     * Following {@code getContent*()} and {@code takeContent*()} calls will see an empty
+     * content.
+     * @return the content as {@link InputStream}
+     */
+    public InputStream takeContentAsInputStream()
+    {
+        return Content.Source.asInputStream(takeContentAsContentSource());
+    }
+
+    /**
+     * Take the content and return it as {@link Content.Source}.
+     * Following {@code getContent*()} and {@code takeContent*()} calls will see an empty content.
+     * @return the content as {@link Content.Source}
+     */
+    public Content.Source takeContentAsContentSource()
+    {
+        Content.Source result;
+        // Take the DynamicCapacity's content source only if the content hasn't been already taken.
+        if (content == null && accumulator instanceof RetainableByteBuffer.DynamicCapacity dynamic)
+            result = dynamic.takeContentSource();
+        else
+            result = Content.Source.from(ByteBuffer.wrap(takeContent()));
+        return result;
+    }
+
+    private byte[] takeContent()
+    {
+        byte[] result = getContent();
+        content = BufferUtil.EMPTY_BYTES;
+        return result;
     }
 
     private byte[] take()

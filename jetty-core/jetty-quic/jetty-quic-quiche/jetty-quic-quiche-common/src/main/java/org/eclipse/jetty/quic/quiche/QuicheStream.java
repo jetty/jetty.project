@@ -137,14 +137,23 @@ public class QuicheStream extends AbstractStream
             ByteBuffer byteBuffer = inputBuffer.getByteBuffer();
             int position = byteBuffer.position();
             byteBuffer.limit(byteBuffer.capacity());
+
+            boolean finished = session.isFinished(this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("finished={} on {}", finished, this);
+            if (finished)
+            {
+                updateCloseState(CloseState.REMOTELY_CLOSED);
+                tryReleaseInputBuffer(inputBuffer);
+                return Content.Chunk.EOF;
+            }
+
             boolean[] outLast = new boolean[1];
             int filled = session.read(this, byteBuffer, outLast);
             BufferUtil.flipToFlush(byteBuffer, position);
             boolean last = outLast[0];
-
             if (LOG.isDebugEnabled())
                 LOG.debug("read {} bytes last={} on {}", filled, last, this);
-
             if (last)
                 updateCloseState(CloseState.REMOTELY_CLOSED);
 
@@ -152,9 +161,9 @@ public class QuicheStream extends AbstractStream
             {
                 ByteBuffer slice = byteBuffer.slice();
                 byteBuffer.position(byteBuffer.limit());
+                // Retain because multiple chunks can be read from the same inputBuffer.
+                inputBuffer.retain();
                 Content.Chunk chunk = Content.Chunk.asChunk(slice, last, inputBuffer);
-                // Retain because multiple data can be read with the same inputBuffer.
-                chunk.retain();
                 if (last)
                     tryReleaseInputBuffer(inputBuffer);
                 else
@@ -173,7 +182,6 @@ public class QuicheStream extends AbstractStream
             }
 
             tryReleaseInputBuffer(inputBuffer);
-
             return Content.Chunk.EOF;
         }
         catch (Throwable x)
@@ -205,13 +213,12 @@ public class QuicheStream extends AbstractStream
                 buffer = null;
             }
         }
-        if (buffer == null)
-        {
-            buffer = getSession().getByteBufferPool().acquire(quicConfiguration.getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
-            if (LOG.isDebugEnabled())
-                LOG.debug("acquired {} on {}", buffer, this);
-        }
-        return buffer;
+        RetainableByteBuffer candidate = buffer;
+        if (candidate == null)
+            candidate = getSession().getByteBufferPool().acquire(quicConfiguration.getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
+        if (LOG.isDebugEnabled())
+            LOG.debug("acquired {} {} on {}", buffer == null ? "fresh" : "stored", candidate, this);
+        return candidate;
     }
 
     private void tryStoreInputBuffer(RetainableByteBuffer buffer)

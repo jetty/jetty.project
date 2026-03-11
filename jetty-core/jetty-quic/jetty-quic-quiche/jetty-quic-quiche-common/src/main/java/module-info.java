@@ -14,9 +14,9 @@
 module org.eclipse.jetty.quic.quiche.common
 {
     requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.quic.common;
+    requires transitive org.eclipse.jetty.quic.common;
     requires org.eclipse.jetty.quic.util;
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.util;
     requires org.slf4j;
 
     exports org.eclipse.jetty.quic.quiche;

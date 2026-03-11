@@ -178,6 +178,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     /**
      * <p>Returns an immutable {@link HttpFields} instance containing the given
      * {@link HttpField}s.</p>
+     * <p>The returned instance uses default HTTP compliance behavior (no explicit
+     * compliance mode and no-op compliance violation listener supplier).</p>
      *
      * @param fields the {@link HttpField}s to be contained in the returned instance
      * @return a new immutable {@link HttpFields} instance with the given {@link HttpField}s

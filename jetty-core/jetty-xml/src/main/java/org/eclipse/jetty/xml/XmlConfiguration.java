@@ -530,7 +530,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchMethodException x)
                 {
-                    throw new IllegalStateException("No matching constructor " + oClass);
+                    throw new IllegalStateException("No matching constructor " + oClass, x);
                 }
             }
             else

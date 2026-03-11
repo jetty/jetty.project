@@ -13,15 +13,11 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.Response.Listener;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
 /**
- * <p>Implementation of {@link Listener} that buffers the response content
+ * <p>Implementation of {@link AbstractResponseListener} that buffers the response content
  * by copying it up to a maximum length specified to the constructors.</p>
- * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
- * via {@link #getContent()} or {@link #getContentAsString()}.</p>
- * <p>Instances of this class are not reusable, so one must be allocated for each request.</p>
  * <p>Use {@link RetainingResponseListener} for a more efficient
  * implementation that does not copy the content bytes.</p>
  */

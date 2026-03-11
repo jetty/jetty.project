@@ -35,13 +35,13 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public long generate(ByteBufferPool.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(RetainableByteBuffer.Mutable accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(accumulator, settingsFrame);
     }
 
-    private long generateSettings(ByteBufferPool.Accumulator accumulator, SettingsFrame frame)
+    private long generateSettings(RetainableByteBuffer.Mutable accumulator, SettingsFrame frame)
     {
         int length = 0;
         Map<Long, Long> settings = frame.getSettings();
@@ -61,7 +61,7 @@ public class SettingsGenerator extends FrameGenerator
             VarLenInt.encode(byteBuffer, e.getValue());
         }
         BufferUtil.flipToFlush(byteBuffer, 0);
-        accumulator.append(buffer);
+        accumulator.add(buffer);
         return capacity;
     }
 }

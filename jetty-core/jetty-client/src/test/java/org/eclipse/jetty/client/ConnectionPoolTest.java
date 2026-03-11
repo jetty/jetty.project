@@ -668,7 +668,7 @@ public class ConnectionPoolTest
 
     @ParameterizedTest
     @MethodSource("pools")
-    public void testCountersSweepToStringThroughLifecycle(ConnectionPoolFactory factory) throws Exception
+    public void testNullSafeAndCountersSweepToStringThroughLifecycle(ConnectionPoolFactory factory) throws Exception
     {
         startClient(destination ->
         {
@@ -699,10 +699,14 @@ public class ConnectionPoolTest
         assertThat(connectionPool.getConnectionCount(), is(0));
         assertThat(connectionPool.getActiveConnectionCount(), is(0));
         assertThat(connectionPool.getIdleConnectionCount(), is(0));
-        assertThat(connectionPool.getMaxConnectionCount(), is(0));
+        assertThat(connectionPool.getMaxConnectionCount(), is(64));
         assertThat(connectionPool.isEmpty(), is(true));
         assertThat(connectionPool.sweep(), is(false));
         assertThat(connectionPool.toString(), not(nullValue()));
+        assertThat(connectionPool.preCreateConnections(1).get(), nullValue());
+        assertThat(connectionPool.acquire(true), nullValue());
+        assertThat(connectionPool.getIdleConnections().size(), is(0));
+        assertThat(connectionPool.getActiveConnections().size(), is(0));
     }
 
     public static class ConnectionPoolFactory

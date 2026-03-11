@@ -57,6 +57,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -1563,6 +1564,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 };
             }
         });
+        client.setByteBufferPool(new ArrayByteBufferPool.Tracking());
         client.start();
 
         CountDownLatch latch = new CountDownLatch(2);
@@ -2166,7 +2168,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
             {
                 int capacity = (int)request.getHeaders().getLongField("X-Capacity");
-                // Overflow the max request headers size, should generate a 500.
+                // Overflow the max response headers size, should generate a 500.
                 response.getHeaders().put("X-Large", "A".repeat(3 * capacity));
             }
         });
