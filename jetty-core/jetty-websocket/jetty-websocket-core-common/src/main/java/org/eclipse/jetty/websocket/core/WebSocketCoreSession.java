@@ -132,15 +132,20 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     @Override
     public Duration getIdleTimeout()
     {
-        return idleTimeout != null ? idleTimeout : WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
+        if (idleTimeout != null)
+            return idleTimeout;
+        else if (connection != null)
+            return Duration.ofMillis(connection.getEndPoint().getIdleTimeout());
+        else
+            return WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     }
 
     @Override
     public void setIdleTimeout(Duration timeout)
     {
         idleTimeout = Objects.requireNonNull(timeout);
-        if (connection != null)
-            connection.getEndPoint().setIdleTimeout(timeout.toMillis());
+        if (!sessionState.isConnecting())
+            connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
     }
 
     public SocketAddress getLocalAddress()
@@ -176,13 +181,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
      */
     public void setWebSocketConnection(WebSocketConnection connection)
     {
-        // If the idle timeout is not initialized by a WebSocket
-        // configurator, then inherit that of the EndPoint; otherwise
-        // force the EndPoint to use the WebSocket configured idle timeout.
-        if (idleTimeout == null)
-            idleTimeout = Duration.ofMillis(connection.getEndPoint().getIdleTimeout());
-        else
-            connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
         extensionStack.setLastDemand(connection::demand);
         this.connection = connection;
     }
@@ -355,6 +353,10 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onOpen() {}", this);
+
+        // Delay setting the idleTimeout until the session is opened.
+        if (idleTimeout != null)
+            connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
 
         // Upgrade success
         sessionState.onConnected();

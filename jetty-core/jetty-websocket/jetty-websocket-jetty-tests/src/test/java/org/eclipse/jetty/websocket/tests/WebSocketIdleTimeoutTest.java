@@ -175,7 +175,7 @@ public class WebSocketIdleTimeoutTest
             _httpConfig.setIdleTimeout(IDLE_TIMEOUT_HTTP_CONFIG);
         });
 
-        assertIdleTimeoutAndClose(IDLE_TIMEOUT_HTTP_CONFIG);
+        assertIdleTimeoutAndClose(IDLE_TIMEOUT_CONNECTOR);
     }
 
     @Test

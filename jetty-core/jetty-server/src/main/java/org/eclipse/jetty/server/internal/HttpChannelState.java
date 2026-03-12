@@ -119,6 +119,7 @@ public class HttpChannelState implements HttpChannel, Components
     private boolean _callbackCompleted = false;
     private ChannelRequest _request;
     private ChannelResponse _response;
+    private long _oldIdleTimeout;
     private HttpStream _stream;
     private long _committedContentLength = -1;
     private Runnable _onContentAvailable;
@@ -220,6 +221,7 @@ public class HttpChannelState implements HttpChannel, Components
             _callbackCompleted = false;
             _request = null;
             _response = null;
+            _oldIdleTimeout = 0;
             // Break the link between channel and stream.
             _stream = null;
             _committedContentLength = -1;
@@ -340,7 +342,8 @@ public class HttpChannelState implements HttpChannel, Components
                 responseHeaders.add(getConnectionMetaData().getConnector().getServer().getDateField());
 
             long idleTO = httpConfiguration.getIdleTimeout();
-            if (idleTO >= 0 && _stream.getIdleTimeout() != idleTO)
+            _oldIdleTimeout = _stream.getIdleTimeout();
+            if (idleTO >= 0 && _oldIdleTimeout != idleTO)
                 _stream.setIdleTimeout(idleTO);
 
             // This is deliberately not serialized to allow a handler to block.
@@ -706,6 +709,10 @@ public class HttpChannelState implements HttpChannel, Components
             MultiPartFormData.Parts parts = MultiPartFormData.getParts(_request);
             if (parts != null)
                 parts.close();
+
+            long idleTO = getHttpConfiguration().getIdleTimeout();
+            if (idleTO > 0 && _oldIdleTimeout != idleTO)
+                stream.setIdleTimeout(_oldIdleTimeout);
         }
         finally
         {

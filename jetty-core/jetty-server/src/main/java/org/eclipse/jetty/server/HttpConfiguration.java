@@ -282,10 +282,8 @@ public class HttpConfiguration implements Dumpable
      *
      * @return the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
      * implies no HTTP channel timeout and the connection timeout is used instead.
-     * @deprecated Use {@link AbstractConnector#getIdleTimeout()} instead.
      */
     @ManagedAttribute("The idle timeout in ms for I/O operations during the handling of an HTTP request")
-    @Deprecated(since = "12.1.8", forRemoval = true)
     public long getIdleTimeout()
     {
         return _idleTimeout;
@@ -297,9 +295,7 @@ public class HttpConfiguration implements Dumpable
      *
      * @param timeoutMs the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
      * implies no HTTP channel timeout and the connection timeout is used instead.
-     * @deprecated Use {@link AbstractConnector#setIdleTimeout(long)} instead.
      */
-    @Deprecated(since = "12.1.8", forRemoval = true)
     public void setIdleTimeout(long timeoutMs)
     {
         _idleTimeout = timeoutMs;
