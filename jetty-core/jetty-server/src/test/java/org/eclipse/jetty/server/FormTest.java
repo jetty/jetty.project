@@ -248,9 +248,8 @@ public class FormTest
             {
                 Fields fields = Request.getParameters(request);
                 out.printf("fields.size=%d\n", fields.getSize());
-                fields.forEach((field) -> {
-                    out.printf("field.%s=%s\n", field.getName(), field.getValue());
-                });
+                fields.forEach((field) ->
+                    out.printf("field.%s=%s\n", field.getName(), field.getValue()));
                 out.flush();
                 Content.Sink.write(response, true, writer.toString(), callback);
             }
