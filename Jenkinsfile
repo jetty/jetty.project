@@ -13,40 +13,14 @@ pipeline {
   stages {
     stage("Parallel Stage") {
       parallel {
-        stage("Build / Test - JDK21") {
-          agent { node { label 'linux' } }
-          steps {
-            timeout( time: 210, unit: 'MINUTES' ) {
-              script{
-                properties([buildDiscarder(logRotator(artifactNumToKeepStr: '5', numToKeepStr: env.BRANCH_NAME=='jetty-12.1.x'?'60':'5'))])
-              }
-              checkout scm
-              mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
-                            tools: [mavenConsole(), java(), javaDoc()],
-                            skipPublishingChecks: true, skipBlames: true
-            }
-          }
-        }
 
-        stage("Build / Test - JDK25") {
-          agent { node { label 'linux' } }
-          steps {
-            timeout( time: 210, unit: 'MINUTES' ) {
-              checkout scm
-              mavenBuild( "jdk25", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk25", name: "Static Analysis jdk25", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
-            }
-          }
-        }
-
-        stage("Build / Test - JDK22 Javadoc") {
+        stage("Build / Test - JDK25 Javadoc") {
           agent { node { label 'linux-light' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              withEnv(["JAVA_HOME=${ tool 'jdk22' }",
-                       "PATH+MAVEN=${ tool 'jdk22' }/bin:${tool 'maven3'}/bin",
+              withEnv(["JAVA_HOME=${ tool 'jdk25' }",
+                       "PATH+MAVEN=${ tool 'jdk25' }/bin:${tool 'maven3'}/bin",
                        "MAVEN_OPTS=-Xms3G -Xmx5G -Djava.awt.headless=true"]) {
                 configFileProvider(
                         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
@@ -59,18 +33,18 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK17") {
+        stage("Build / Test - JDK25") {
           agent { node { label 'linux' } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk17", "clean install -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
-              recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
+              mavenBuild( "jdk25", "clean install -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
+              recordIssues id: "analysis-jdk25", name: "Static Analysis jdk25", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
               script {
                 if (isMainBranch()) {
-                  recordCoverage id: "coverage-jdk17", name: "Coverage jdk17",
+                  recordCoverage id: "coverage-jdk25", name: "Coverage jdk25",
                       tools: [[parser: 'JACOCO'], [parser: 'JUNIT', pattern: '**/target/surefire-reports/**/TEST*.xml,**/target/invoker-reports/TEST*.xml']],
                       sourceCodeRetention: 'MODIFIED',
                       sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']]
@@ -176,7 +150,7 @@ def useBuildCache() {
   if (env.BRANCH_NAME ==~ /PR-\d+/) {
     labelNoBuildCache = pullRequest.labels.contains("build-no-cache")
   }
-  def noBuildCache = (env.BRANCH_NAME == 'jetty-12.1.x') || labelNoBuildCache;
+  def noBuildCache = (env.BRANCH_NAME == 'jetty-13.x') || labelNoBuildCache;
   return !noBuildCache;
   // want to skip build cache
   // return false
@@ -197,7 +171,7 @@ def saveHome() {
 }
 
 def isMainBranch() {
-  return (env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x' || env.BRANCH_NAME == 'jetty-12.1.x')
+  return (env.BRANCH_NAME == 'jetty-12.1.x')
 }
 
 def websiteBuild() {
