@@ -350,7 +350,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 if (v == null)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Session {} not found locally in {}, attempting to load", id, this);
+                        LOG.debug("Session {} not found locally in {}, attempting to load", k, this);
                     v = loadSession(k);
                 }
                 if (v != null)
@@ -365,7 +365,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Session {} not loaded by store", id);
+                        LOG.debug("Session {} not loaded by store", k);
                 }
                 return v;
             }
@@ -528,12 +528,12 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                     if (!_sessionDataStore.isPassivating())
                     {
                         //if our backing datastore isn't the passivating kind, just save the session
-                        _sessionDataStore.store(id, session.getSessionData());
+                        _sessionDataStore.store(k, session.getSessionData());
                         //if we evict on session exit, boot it from the cache
                         if (getEvictionPolicy() == EVICT_ON_SESSION_EXIT)
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Eviction on request exit id={}", id);
+                                LOG.debug("Eviction on request exit id={}", k);
                             session.setResident(false);
                             return null; // remove from map
                         }
@@ -541,7 +541,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                         {
                             session.setResident(true);
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Non passivating SessionDataStore, session in SessionCache only id={}", id);
+                                LOG.debug("Non passivating SessionDataStore, session in SessionCache only id={}", k);
                             return session; //ensure it is in our map
                         }
                     }
@@ -550,15 +550,15 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                         //backing store supports passivation, call the listeners
                         session.onSessionPassivation();
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Session passivating id={}", id);
-                        _sessionDataStore.store(id, session.getSessionData());
+                            LOG.debug("Session passivating id={}", k);
+                        _sessionDataStore.store(k, session.getSessionData());
 
                         if (getEvictionPolicy() == EVICT_ON_SESSION_EXIT)
                         {
                             //throw out the passivated session object from the map
                             session.setResident(false);
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Evicted on request exit id={}", id);
+                                LOG.debug("Evicted on request exit id={}", k);
                             return null; // remove from map
                         }
                         else
@@ -567,7 +567,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                             session.onSessionActivation();
                             session.setResident(true);
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Session reactivated id={}", id);
+                                LOG.debug("Session reactivated id={}", k);
                             return session; //ensure it is in our map
                         }
                     }
@@ -575,7 +575,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Req count={} for id={}", session.getRequests(), id);
+                        LOG.debug("Req count={} for id={}", session.getRequests(), k);
                     session.setResident(true);
                     return session; //ensure it is the map, but don't save it to the backing store until the last request exists
                 }
@@ -645,22 +645,22 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 if (v == null)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Session {} not found locally in {}, attempting to load", id, this);
+                        LOG.debug("Session {} not found locally in {}, attempting to load", k, this);
                     v = loadSession(k);
                 }
                 session.set(v);
                 if (v == null)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Session {} not loaded by store", id);
+                        LOG.debug("Session {} not loaded by store", k);
                 }
 
                 //Always delete it from the backing data store
                 if (_sessionDataStore != null)
                 {
-                    boolean dsdel = _sessionDataStore.delete(id);
+                    boolean dsdel = _sessionDataStore.delete(k);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Session id={} deleted in session data store {}", id, dsdel);
+                        LOG.debug("Session id={} deleted in session data store {}", k, dsdel);
                 }
 
                 //delete it from the session object store
@@ -782,7 +782,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         if (StringUtil.isBlank(newId))
             throw new IllegalArgumentException("New session id is null");
 
-        AtomicReference<ManagedSession> sessionRef = new AtomicReference<>();
+        AtomicReference<ManagedSession> loadedSessionRef = new AtomicReference<>();
         AtomicReference<Exception> exception = new AtomicReference<>();
         // Find the old session and remove it from both the store and the cache.
         doCompute(oldId, (k, v) ->
@@ -815,7 +815,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
                     if (_sessionDataStore != null)
                         _sessionDataStore.delete(k); //delete the session data with the old id
-                    sessionRef.set(v);
+                    loadedSessionRef.set(v);
                 }
                 return null;
             }
@@ -831,19 +831,19 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             throw ex;
 
         // Install the new session both in the store and the cache.
-        doCompute(newId, (k, v) ->
+        ManagedSession session = doCompute(newId, (k, v) ->
         {
             if (v != null)
                 throw new IllegalStateException("Duplicate session id: " + k);
 
-            ManagedSession session = sessionRef.get();
-            try (AutoLock ignore = session.lock())
+            ManagedSession loadedSession = loadedSessionRef.get();
+            try (AutoLock ignore = loadedSession.lock())
             {
                 if (_sessionDataStore != null)
-                    _sessionDataStore.store(k, session.getSessionData()); //save the session data with the new id
+                    _sessionDataStore.store(k, loadedSession.getSessionData()); //save the session data with the new id
                 if (LOG.isDebugEnabled())
                     LOG.debug("Session id={} swapped for new id={}", oldId, k);
-                return session;
+                return loadedSession;
             }
             catch (Exception e)
             {
@@ -856,7 +856,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         if (ex != null)
             throw ex;
 
-        return sessionRef.get();
+        return session;
     }
 
     /**
@@ -919,9 +919,9 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             {
                 session.setResident(true);
                 if (_sessionDataStore != null)
-                    _sessionDataStore.store(newId, v.getSessionData()); //save the session data with the new id
+                    _sessionDataStore.store(k, session.getSessionData()); //save the session data with the new id
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Session id={} swapped for new id={}", k, newId);
+                    LOG.debug("Session id={} swapped for new id={}", oldId, k);
             }
             catch (Exception e)
             {

@@ -805,17 +805,21 @@ public class ManagedSession implements Session
 
     public void setResident(boolean resident)
     {
-        assert _lock.isHeldByCurrentThread();
-        _resident = resident;
+        try (AutoLock ignored = _lock.lock())
+        {
+            _resident = resident;
 
-        if (!_resident)
-            _sessionInactivityTimer.destroy();
+            if (!_resident)
+                _sessionInactivityTimer.destroy();
+        }
     }
 
     public boolean isResident()
     {
-        assert _lock.isHeldByCurrentThread();
-        return _resident;
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _resident;
+        }
     }
 
     @Override
