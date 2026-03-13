@@ -782,10 +782,81 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         if (StringUtil.isBlank(newId))
             throw new IllegalArgumentException("New session id is null");
 
-        ManagedSession session = getAndEnter(oldId, true);
-        renewSessionId(session, newId, newExtendedId);
+        AtomicReference<ManagedSession> sessionRef = new AtomicReference<>();
+        AtomicReference<Exception> exception = new AtomicReference<>();
+        // Find the old session and remove it from both the store and the cache.
+        doCompute(oldId, (k, v) ->
+        {
+            try
+            {
+                if (v == null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Session {} not found locally in {}, attempting to load", k, this);
+                    v = loadSession(k);
+                }
+                if (v == null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Session {} not loaded by store", k);
+                    return null;
+                }
 
-        return session;
+                try (AutoLock ignore = v.lock())
+                {
+                    v.setResident(true); //ensure freshly loaded session is resident
+                    v.use();
+                    v.checkValidForWrite(); //can't change id on invalid session
+                    v.getSessionData().setId(newId);
+                    v.getSessionData().setLastSaved(0); //pretend that the session has never been saved before to get a full save
+                    v.getSessionData().setDirty(true);  //ensure we will try to write the session out
+                    v.setExtendedId(newExtendedId); //remember the new extended id
+                    v.onIdChanged(); //session id changed
+
+                    if (_sessionDataStore != null)
+                        _sessionDataStore.delete(k); //delete the session data with the old id
+                    sessionRef.set(v);
+                }
+                return null;
+            }
+            catch (Exception e)
+            {
+                exception.set(e);
+                return null;
+            }
+        });
+
+        Exception ex = exception.get();
+        if (ex != null)
+            throw ex;
+
+        // Install the new session both in the store and the cache.
+        doCompute(newId, (k, v) ->
+        {
+            if (v != null)
+                throw new IllegalStateException("Duplicate session id: " + k);
+
+            ManagedSession session = sessionRef.get();
+            try (AutoLock ignore = session.lock())
+            {
+                if (_sessionDataStore != null)
+                    _sessionDataStore.store(k, session.getSessionData()); //save the session data with the new id
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Session id={} swapped for new id={}", oldId, k);
+                return session;
+            }
+            catch (Exception e)
+            {
+                exception.set(e);
+                return null;
+            }
+        });
+
+        ex = exception.get();
+        if (ex != null)
+            throw ex;
+
+        return sessionRef.get();
     }
 
     /**
@@ -795,7 +866,10 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @param newId the new id
      * @param newExtendedId the full id plus node id
      * @throws Exception if there was a failure saving the change
+     * @deprecated Use {@link #renewSessionId(String, String, String, String)} instead as the session retrieval must
+     * happen atomically with its renewal.
      */
+    @Deprecated(since = "12.1.8", forRemoval = true)
     protected void renewSessionId(ManagedSession session, String newId, String newExtendedId)
         throws Exception
     {
@@ -804,12 +878,12 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
         String oldId = session.getId();
         AtomicReference<Exception> exception = new AtomicReference<>();
-        AtomicReference<AutoLock> lock = new AtomicReference<>();
-        try
+        doCompute(oldId, (k, v) ->
         {
-            doCompute(newId, (k, v) ->
+            try (AutoLock ignore = session.lock())
             {
-                lock.set(session.lock());
+                if (!session.isResident())
+                    return null; // session has been removed between is retrieval and this renewSessionId call
 
                 session.checkValidForWrite(); //can't change id on invalid session
                 session.getSessionData().setId(newId);
@@ -817,47 +891,46 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 session.getSessionData().setDirty(true);  //ensure we will try to write the session out
                 session.setExtendedId(newExtendedId); //remember the new extended id
                 session.onIdChanged(); //session id changed
+                session.setResident(false);
 
-                try
-                {
-                    if (_sessionDataStore != null)
-                        _sessionDataStore.store(newId, session.getSessionData()); //save the session data with the new id
-                }
-                catch (Exception e)
-                {
-                    exception.set(e);
-                }
-                return session;
-            });
-
-            Exception ex = exception.get();
-            if (ex != null)
-                throw ex;
-
-            doCompute(oldId, (k, v) ->
-            {
                 try
                 {
                     if (_sessionDataStore != null)
                         _sessionDataStore.delete(k); //delete the session data with the old id
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Session id={} swapped for new id={}", k, newId);
                 }
                 catch (Exception e)
                 {
                     exception.set(e);
                 }
                 return null;
-            });
-        }
-        finally
-        {
-            AutoLock autoLock = lock.get();
-            if (autoLock != null)
-                autoLock.close();
-        }
+            }
+        });
 
         Exception ex = exception.get();
+        if (ex != null)
+            throw ex;
+
+        doCompute(newId, (k, v) ->
+        {
+            if (v != null)
+                throw new IllegalStateException("Duplicate session id: " + k);
+
+            try (AutoLock ignore = session.lock())
+            {
+                session.setResident(true);
+                if (_sessionDataStore != null)
+                    _sessionDataStore.store(newId, v.getSessionData()); //save the session data with the new id
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Session id={} swapped for new id={}", k, newId);
+            }
+            catch (Exception e)
+            {
+                exception.set(e);
+            }
+            return session;
+        });
+
+        ex = exception.get();
         if (ex != null)
             throw ex;
     }
