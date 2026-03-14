@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * A {@link Map} implementation that manages its values as beans in a {@link ContainerLifeCycle}.
@@ -36,13 +35,16 @@ import org.eclipse.jetty.util.thread.AutoLock;
  * The lifecycle of the values is tied to this container: when the container starts,
  * all managed values are started; when it stops, they are stopped.
  * </p>
+ * <p>
+ * Like {@link ContainerLifeCycle}, this class is not thread-safe for concurrent mutation or access.
+ * Applications must provide external synchronization if instances are shared between threads.
+ * </p>
  *
  * @param <K> the type of keys maintained by this map
  * @param <V> the type of mapped values, must extend {@link LifeCycle}
  */
 public class ContainerLifeCycleMap<K, V extends LifeCycle> extends ContainerLifeCycle implements Map<K, V>
 {
-    private final AutoLock _lock = new AutoLock();
     private final Map<K, V> _map;
 
     /**
@@ -70,92 +72,65 @@ public class ContainerLifeCycleMap<K, V extends LifeCycle> extends ContainerLife
     @Override
     public int size()
     {
-        try (AutoLock l = _lock.lock())
-        {
-            return _map.size();
-        }
+        return _map.size();
     }
 
     @Override
     public boolean isEmpty()
     {
-        try (AutoLock l = _lock.lock())
-        {
-            return _map.isEmpty();
-        }
+        return _map.isEmpty();
     }
 
     @Override
     public boolean containsKey(Object key)
     {
-        try (AutoLock l = _lock.lock())
-        {
-            return _map.containsKey(key);
-        }
+        return _map.containsKey(key);
     }
 
     @Override
     public boolean containsValue(Object value)
     {
-        try (AutoLock l = _lock.lock())
-        {
-            return _map.containsValue(value);
-        }
+        return _map.containsValue(value);
     }
 
     @Override
     public V get(Object key)
     {
-        try (AutoLock l = _lock.lock())
-        {
-            return _map.get(key);
-        }
+        return _map.get(key);
     }
 
     @Override
     public V put(K key, V value)
     {
-        try (AutoLock l = _lock.lock())
-        {
-            V old = _map.put(key, value);
-            updateBean(old, value);
-            return old;
-        }
+        V old = _map.put(key, value);
+        updateBean(old, value);
+        return old;
     }
 
     @Override
     public V remove(Object key)
     {
-        try (AutoLock l = _lock.lock())
-        {
-            V removed = _map.remove(key);
-            if (removed != null)
-                removeBean(removed);
-            return removed;
-        }
+        V removed = _map.remove(key);
+        if (removed != null)
+            removeBean(removed);
+        return removed;
     }
 
     @Override
     public void putAll(Map<? extends K, ? extends V> m)
     {
-        try (AutoLock l = _lock.lock())
+        for (Entry<? extends K, ? extends V> entry : m.entrySet())
         {
-            for (Entry<? extends K, ? extends V> entry : m.entrySet())
-            {
-                V old = _map.put(entry.getKey(), entry.getValue());
-                updateBean(old, entry.getValue());
-            }
+            V old = _map.put(entry.getKey(), entry.getValue());
+            updateBean(old, entry.getValue());
         }
     }
 
     @Override
     public void clear()
     {
-        try (AutoLock l = _lock.lock())
-        {
-            _map.clear();
-            removeBeans();
-        }
+        _map.clear();
+        removeBeans();
     }
 
     @Override
@@ -180,19 +155,13 @@ public class ContainerLifeCycleMap<K, V extends LifeCycle> extends ContainerLife
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObject(out, this);
-        try (AutoLock l = _lock.lock())
-        {
-            Dumpable.dumpMapEntries(out, indent, _map, true);
-        }
+        Dumpable.dumpMapEntries(out, indent, _map, true);
     }
 
     @Override
     public String toString()
     {
-        try (AutoLock l = _lock.lock())
-        {
-            return String.format("%s@%x{size=%d}", TypeUtil.toShortName(this.getClass()), hashCode(), _map.size());
-        }
+        return String.format("%s@%x{size=%d}", TypeUtil.toShortName(this.getClass()), hashCode(), _map.size());
     }
 
     /**
@@ -283,11 +252,8 @@ public class ContainerLifeCycleMap<K, V extends LifeCycle> extends ContainerLife
         {
             if (!(o instanceof Entry<?, ?> e))
                 return false;
-            try (AutoLock l = _lock.lock())
-            {
-                V value = _map.get(e.getKey());
-                return value != null && value.equals(e.getValue());
-            }
+            V value = _map.get(e.getKey());
+            return value != null && value.equals(e.getValue());
         }
 
         @Override
@@ -295,17 +261,14 @@ public class ContainerLifeCycleMap<K, V extends LifeCycle> extends ContainerLife
         {
             if (!(o instanceof Entry<?, ?> e))
                 return false;
-            try (AutoLock l = _lock.lock())
+            V value = _map.get(e.getKey());
+            if (value != null && value.equals(e.getValue()))
             {
-                V value = _map.get(e.getKey());
-                if (value != null && value.equals(e.getValue()))
-                {
-                    _map.remove(e.getKey());
-                    removeBean(value);
-                    return true;
-                }
-                return false;
+                _map.remove(e.getKey());
+                removeBean(value);
+                return true;
             }
+            return false;
         }
 
         @Override
@@ -325,11 +288,8 @@ public class ContainerLifeCycleMap<K, V extends LifeCycle> extends ContainerLife
 
         KeyIterator()
         {
-            try (AutoLock l = _lock.lock())
-            {
-                // Create a copy to avoid ConcurrentModificationException
-                _iterator = new HashMap<>(_map).entrySet().iterator();
-            }
+            // Create a copy to avoid ConcurrentModificationException
+            _iterator = new HashMap<>(_map).entrySet().iterator();
         }
 
         @Override
@@ -365,11 +325,8 @@ public class ContainerLifeCycleMap<K, V extends LifeCycle> extends ContainerLife
 
         ValueIterator()
         {
-            try (AutoLock l = _lock.lock())
-            {
-                // Create a copy to avoid ConcurrentModificationException
-                _iterator = new HashMap<>(_map).entrySet().iterator();
-            }
+            // Create a copy to avoid ConcurrentModificationException
+            _iterator = new HashMap<>(_map).entrySet().iterator();
         }
 
         @Override
@@ -405,11 +362,8 @@ public class ContainerLifeCycleMap<K, V extends LifeCycle> extends ContainerLife
 
         EntryIterator()
         {
-            try (AutoLock l = _lock.lock())
-            {
-                // Create a copy to avoid ConcurrentModificationException
-                _iterator = new HashMap<>(_map).entrySet().iterator();
-            }
+            // Create a copy to avoid ConcurrentModificationException
+            _iterator = new HashMap<>(_map).entrySet().iterator();
         }
 
         @Override

@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -234,33 +235,51 @@ public class ContainerLifeCycleMapTest
         assertEquals(1, map.size());
     }
 
-    @Test
-    public void testKeySetIteratorRemove() throws Exception
+    public static Stream<Arguments> iteratorRemoveSource()
     {
-        ContainerLifeCycleMap<String, TestLifeCycle> map = new ContainerLifeCycleMap<>();
-        TestLifeCycle bean1 = new TestLifeCycle("bean1");
-        TestLifeCycle bean2 = new TestLifeCycle("bean2");
-
-        map.put("key1", bean1);
-        map.put("key2", bean2);
-
-        Iterator<String> iter = map.keySet().iterator();
-        while (iter.hasNext())
-        {
-            String key = iter.next();
-            if (key.equals("key1"))
+        return Stream.of(
+            Arguments.of("keySet", (BiConsumer<ContainerLifeCycleMap<String, TestLifeCycle>, TestLifeCycle>)(map, bean) ->
             {
-                iter.remove();
-            }
-        }
-
-        assertNull(map.get("key1"));
-        assertFalse(map.contains(bean1));
-        assertEquals(1, map.size());
+                Iterator<String> iter = map.keySet().iterator();
+                while (iter.hasNext())
+                {
+                    if (iter.next().equals("key1"))
+                    {
+                        iter.remove();
+                        break;
+                    }
+                }
+            }),
+            Arguments.of("values", (BiConsumer<ContainerLifeCycleMap<String, TestLifeCycle>, TestLifeCycle>)(map, bean) ->
+            {
+                Iterator<TestLifeCycle> iter = map.values().iterator();
+                while (iter.hasNext())
+                {
+                    if (iter.next() == bean)
+                    {
+                        iter.remove();
+                        break;
+                    }
+                }
+            }),
+            Arguments.of("entrySet", (BiConsumer<ContainerLifeCycleMap<String, TestLifeCycle>, TestLifeCycle>)(map, bean) ->
+            {
+                Iterator<Map.Entry<String, TestLifeCycle>> iter = map.entrySet().iterator();
+                while (iter.hasNext())
+                {
+                    if (iter.next().getKey().equals("key1"))
+                    {
+                        iter.remove();
+                        break;
+                    }
+                }
+            })
+        );
     }
 
-    @Test
-    public void testValuesIteratorRemove() throws Exception
+    @ParameterizedTest
+    @MethodSource("iteratorRemoveSource")
+    public void testIteratorRemoveViaView(String viewName, BiConsumer<ContainerLifeCycleMap<String, TestLifeCycle>, TestLifeCycle> removeOp) throws Exception
     {
         ContainerLifeCycleMap<String, TestLifeCycle> map = new ContainerLifeCycleMap<>();
         TestLifeCycle bean1 = new TestLifeCycle("bean1");
@@ -269,15 +288,7 @@ public class ContainerLifeCycleMapTest
         map.put("key1", bean1);
         map.put("key2", bean2);
 
-        Iterator<TestLifeCycle> iter = map.values().iterator();
-        while (iter.hasNext())
-        {
-            TestLifeCycle value = iter.next();
-            if (value == bean1)
-            {
-                iter.remove();
-            }
-        }
+        removeOp.accept(map, bean1);
 
         assertNull(map.get("key1"));
         assertFalse(map.contains(bean1));
@@ -296,31 +307,6 @@ public class ContainerLifeCycleMapTest
 
         Set<Map.Entry<String, TestLifeCycle>> entries = map.entrySet();
         assertEquals(2, entries.size());
-    }
-
-    @Test
-    public void testEntrySetIteratorRemove() throws Exception
-    {
-        ContainerLifeCycleMap<String, TestLifeCycle> map = new ContainerLifeCycleMap<>();
-        TestLifeCycle bean1 = new TestLifeCycle("bean1");
-        TestLifeCycle bean2 = new TestLifeCycle("bean2");
-
-        map.put("key1", bean1);
-        map.put("key2", bean2);
-
-        Iterator<Map.Entry<String, TestLifeCycle>> iter = map.entrySet().iterator();
-        while (iter.hasNext())
-        {
-            Map.Entry<String, TestLifeCycle> entry = iter.next();
-            if (entry.getKey().equals("key1"))
-            {
-                iter.remove();
-            }
-        }
-
-        assertNull(map.get("key1"));
-        assertFalse(map.contains(bean1));
-        assertEquals(1, map.size());
     }
 
     @Test

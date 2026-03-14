@@ -52,6 +52,13 @@ Jetty components that contain other components implement the `org.eclipse.jetty.
 When a `ContainerLifeCycle` is started, it also starts recursively all its managed beans (if they implement `LifeCycle`); unmanaged beans are not started during the `ContainerLifeCycle` start cycle.
 Likewise, stopping a `ContainerLifeCycle` stops recursively and in reverse order all its managed beans; unmanaged beans are not stopped during the `ContainerLifeCycle` stop cycle.
 
+[NOTE]
+====
+Unless explicitly documented otherwise, `Container` and `ContainerLifeCycle` implementations are not thread-safe for concurrent mutation/traversal of the component tree.
+Applications should generally compose the tree during setup, then start it.
+If concurrent access or mutation is required, applications must provide external synchronization.
+====
+
 Components can also be started and stopped individually, therefore activating or deactivating the functionalities that they offer.
 
 Applications should first compose components in the desired structure, and then start the root component:
@@ -140,6 +147,7 @@ attributes.removeAttribute("myService");
 
 `ContainerLifeCycleMap<K, V extends LifeCycle>` implements the `Map` interface while managing map values as beans.
 This is useful when you need to maintain a keyed collection of lifecycle-managed components.
+`ContainerLifeCycleMap` follows the same thread-safety semantics as `ContainerLifeCycle` (external synchronization is required for concurrent access/mutation).
 
 [,java,indent=0]
 ----
