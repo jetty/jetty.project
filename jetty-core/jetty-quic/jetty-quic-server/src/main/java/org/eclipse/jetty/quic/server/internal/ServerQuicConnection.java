@@ -315,7 +315,7 @@ public class ServerQuicConnection extends QuicConnection
     private ServerQuicSession newSession()
     {
         CongestionController congestionController = getServerQuicConfiguration().getCongestionControllerFactory().newCongestionController();
-        PacketTracker packetTracker = new PacketTracker(congestionController);
+        PacketTracker packetTracker = new PacketTracker(getScheduler(), congestionController);
         packetTracker.setAcknowledgmentMaxDelay(quicConfiguration.getAcknowledgmentMaxDelay());
         packetTracker.setAcknowledgmentDelayExponent(quicConfiguration.getAcknowledgmentDelayExponent());
         PacketNumbers packetNumbers = new PacketNumbers();

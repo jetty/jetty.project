@@ -13,12 +13,23 @@
 
 package org.eclipse.jetty.quic.common;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 /// Captures RTT data calculated by [PacketTracker].
 ///
-/// @param latestRTT the latest RTT
-/// @param minimumRTT the minimum RTT
-/// @param smoothedRTT the smoothed RTT
-/// @param variationRTT the variation RTT
+/// @param latestRTT the latest RTT in nanoseconds
+/// @param minimumRTT the minimum RTT in nanoseconds
+/// @param smoothedRTT the smoothed RTT in nanoseconds
+/// @param variationRTT the variation RTT in nanoseconds
 public record RTTData(long latestRTT, long minimumRTT, long smoothedRTT, long variationRTT)
 {
+    @Override
+    public String toString()
+    {
+        return "%s@%x[l=%d,m=%d,s=%d,v=%d]".formatted(
+            TypeUtil.toShortName(getClass()),
+            hashCode(),
+            latestRTT, minimumRTT, smoothedRTT, variationRTT
+        );
+    }
 }
