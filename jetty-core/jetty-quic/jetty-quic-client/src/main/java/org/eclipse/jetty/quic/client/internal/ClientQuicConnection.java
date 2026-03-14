@@ -76,7 +76,7 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     public void onOpen()
     {
         CongestionController congestionController = getClientQuicConfiguration().getCongestionControllerFactory().newCongestionController();
-        PacketTracker packetTracker = new PacketTracker(congestionController);
+        PacketTracker packetTracker = new PacketTracker(getScheduler(), congestionController);
         packetTracker.setAcknowledgmentMaxDelay(quicConfiguration.getAcknowledgmentMaxDelay());
         packetTracker.setAcknowledgmentDelayExponent(quicConfiguration.getAcknowledgmentDelayExponent());
         PacketNumbers packetNumbers = new PacketNumbers();

@@ -224,6 +224,10 @@ public class QuicFlusher extends IteratingCallback
             getQuicSession().processAckFrame(entry.encryptionLevel(), entry.frame());
         }
 
+        // TODO: this assumes that we actually have something to send, while perhaps
+        //  the flusher is iterating because an ack has been _received_.
+        //  We must defer the pacing delay check until we actually know we have
+        //  something to send, so perhaps inside the children flushers?
         long pacingDelay = getQuicSession().getCongestionController().getPacingDelay();
 
         if (LOG.isDebugEnabled())

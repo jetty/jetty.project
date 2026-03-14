@@ -362,9 +362,7 @@ public abstract class TLSEngine
             for (Rdn rdn : ldapName.getRdns())
             {
                 if ("CN".equalsIgnoreCase(rdn.getType()) && domainNameMatches((String)rdn.getValue(), name))
-                {
                     return true;
-                }
             }
 
             return false;
