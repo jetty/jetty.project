@@ -199,7 +199,7 @@
     <dist-management-snapshot-id>sonatype-cp</dist-management-snapshot-id>
     <dist-management-snapshot-url>https://central.sonatype.com/repository/maven-snapshots</dist-management-snapshot-url>
     <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
-    <eclipse.jdt.ecj.version>3.44.0</eclipse.jdt.ecj.version>
+    <eclipse.jdt.ecj.version>3.45.0</eclipse.jdt.ecj.version>
 
     <ee10.jakarta.bom.version>10.0.0</ee10.jakarta.bom.version>
     <ee11.jakarta.bom.version>11.0.0</ee11.jakarta.bom.version>
@@ -483,12 +483,12 @@
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-annotation</artifactId>
-        <version>2.16.0</version>
+        <version>2.17.0</version>
       </dependency>
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-cpu</artifactId>
-        <version>2.16.0</version>
+        <version>2.17.0</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
@@ -2283,7 +2283,7 @@
               <dependency>
                 <groupId>org.apache.maven.shared</groupId>
                 <artifactId>maven-filtering</artifactId>
-                <version>3.4.0</version>
+                <version>3.5.0</version>
               </dependency>
               <dependency>
                 <groupId>org.eclipse.jetty.toolchain</groupId>
