@@ -51,6 +51,11 @@ public class QpackTestUtil
         return org.hamcrest.text.IsEqualIgnoringCase.equalToIgnoringCase(expectedString);
     }
 
+    public static ByteBuffer toBuffer(Instruction instruction)
+    {
+        return toBuffer(List.of(instruction));
+    }
+
     public static ByteBuffer toBuffer(List<Instruction> instructions)
     {
         ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;

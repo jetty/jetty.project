@@ -238,10 +238,7 @@ public class QpackDecoder implements Dumpable
         List<MetaDataNotification> metaDataNotifications;
         try (AutoLock ignored = lock.lock())
         {
-            while (BufferUtil.hasContent(buffer))
-            {
-                _parser.parse(buffer);
-            }
+            _parser.parse(buffer);
             instructions = takeInstructions();
             metaDataNotifications = takeMetaDataNotifications();
         }
