@@ -218,6 +218,10 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         if (httpContent.getResource().isDirectory())
             return false;
 
+        // Content with unknown length is not cacheable.
+        if (httpContent.getContentLengthValue() < 0L)
+            return false;
+
         if (_maxCachedFiles <= 0)
             return false;
 
@@ -243,21 +247,12 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         if (!isCacheable(httpContent))
             return httpContent;
 
-        AtomicBoolean added = new AtomicBoolean();
         cachingHttpContent = _cache.computeIfAbsent(path, key ->
         {
             try
             {
                 CachingHttpContent cachingContent = (httpContent == null) ? newNotFoundContent(key) : newCachedContent(key, httpContent);
-                long contentLengthValue = cachingContent.getContentLengthValue();
-                if (contentLengthValue < 0L)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Content at path '{}' with unknown length is not cacheable: {}", path, httpContent);
-                    return null;
-                }
-                added.set(true);
-                _cachedSize.addAndGet(contentLengthValue);
+                _cachedSize.addAndGet(cachingContent.getContentLengthValue());
                 return cachingContent;
             }
             catch (Throwable x)
@@ -268,13 +263,16 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             }
         });
 
-        if (added.get())
+        if (cachingHttpContent != null)
         {
             // We want to shrink cache only if we have just added an entry.
             shrinkCache();
+            return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
         }
-
-        return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
+        else
+        {
+            return httpContent;
+        }
     }
 
     protected CachingHttpContent newCachedContent(String p, HttpContent httpContent)
