@@ -328,10 +328,7 @@ public class QpackEncoder implements Dumpable
         List<Instruction> instructions;
         try (AutoLock ignored = lock.lock())
         {
-            while (BufferUtil.hasContent(buffer))
-            {
-                _parser.parse(buffer);
-            }
+            _parser.parse(buffer);
             instructions = takeInstructions();
         }
         catch (QpackException.SessionException e)
