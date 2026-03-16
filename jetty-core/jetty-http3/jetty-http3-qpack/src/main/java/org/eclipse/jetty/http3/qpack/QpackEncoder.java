@@ -309,10 +309,7 @@ public class QpackEncoder implements Dumpable
     {
         try (AutoLock ignored = lock.lock())
         {
-            while (BufferUtil.hasContent(buffer))
-            {
-                _parser.parse(buffer);
-            }
+            _parser.parse(buffer);
             notifyInstructionHandler();
         }
         catch (QpackException.SessionException e)

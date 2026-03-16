@@ -232,10 +232,7 @@ public class QpackDecoder implements Dumpable
 
         try
         {
-            while (BufferUtil.hasContent(buffer))
-            {
-                _parser.parse(buffer);
-            }
+            _parser.parse(buffer);
             notifyInstructionHandler();
             notifyMetaDataHandler(true);
         }
