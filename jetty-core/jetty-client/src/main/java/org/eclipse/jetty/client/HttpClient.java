@@ -143,7 +143,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
     private Sweeper destinationSweeper;
-    private PermanentRedirectCache permanentRedirectCache;
+    private RedirectCache redirectCache;
 
     /**
      * Creates a HttpClient instance that can perform HTTP/1.1 requests to non-TLS and TLS destinations.
@@ -234,15 +234,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         handlers.put(new ContinueProtocolHandler());
         handlers.put(new ProcessingProtocolHandler());
         handlers.put(new EarlyHintsProtocolHandler());
-        if (permanentRedirectCache != null)
-        {
-            handlers.put(new CachingRedirectProtocolHandler(this, permanentRedirectCache));
-            requestListeners.addQueuedListener(this::applyCachedRedirect);
-        }
-        else
-        {
-            handlers.put(new RedirectProtocolHandler(this));
-        }
+        handlers.put(new RedirectProtocolHandler(this));
         handlers.put(new WWWAuthenticationProtocolHandler(this));
         handlers.put(new ProxyAuthenticationProtocolHandler(this));
         handlers.put(new UpgradeProtocolHandler());
@@ -268,33 +260,6 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         }
     }
 
-    private void applyCachedRedirect(Request request)
-    {
-        if (permanentRedirectCache == null)
-            return;
-
-        String key = PermanentRedirectCache.normalizeURI(request);
-        PermanentRedirectCache.CachedRedirect cached = permanentRedirectCache.get(key);
-        if (cached == null)
-            return;
-
-        URI targetURI = cached.targetURI();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Applying cached redirect: {} -> {}", key, targetURI);
-
-        request.scheme(targetURI.getScheme());
-        request.host(targetURI.getHost());
-        int port = targetURI.getPort();
-        if (port > 0)
-            request.port(port);
-        String path = targetURI.getRawPath();
-        String query = targetURI.getRawQuery();
-        if (query != null)
-            path = path + "?" + query;
-        request.path(path);
-        request.method(cached.targetMethod());
-    }
-
     @Override
     protected void doStop() throws Exception
     {
@@ -310,8 +275,8 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         requestListeners.clear();
         authenticationStore.clearAuthentications();
         authenticationStore.clearAuthenticationResults();
-        if (permanentRedirectCache != null)
-            permanentRedirectCache.clear();
+        if (redirectCache != null)
+            redirectCache.clear();
 
         super.doStop();
     }
@@ -375,25 +340,22 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     }
 
     /**
-     * Get the permanent redirect cache associated with this instance.
-     * @return the permanent redirect cache, or null if caching is disabled
+     * @return the redirect cache, or {@code null} if redirect caching is disabled
      */
-    public PermanentRedirectCache getPermanentRedirectCache()
+    public RedirectCache getRedirectCache()
     {
-        return permanentRedirectCache;
+        return redirectCache;
     }
 
     /**
-     * Set the permanent redirect cache associated with this instance.
-     * When set, permanent redirects (301, 308) will be cached and subsequent
-     * requests to the same URI will skip the redirect round-trip.
-     * @param cache the permanent redirect cache, or null to disable caching
+     * @param cache the redirect cache, or {@code null} to disable redirect caching
      */
-    public void setPermanentRedirectCache(PermanentRedirectCache cache)
+    public void setRedirectCache(RedirectCache cache)
     {
         if (isStarted())
             throw new IllegalStateException();
-        this.permanentRedirectCache = cache;
+        updateBean(redirectCache, cache);
+        redirectCache = cache;
     }
 
     /**

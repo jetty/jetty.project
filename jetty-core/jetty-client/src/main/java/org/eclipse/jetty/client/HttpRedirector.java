@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.client.internal.HttpContentResponse;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -35,10 +36,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Utility class that handles HTTP redirects.
- * <p>
- * Applications can disable redirection via {@link Request#followRedirects(boolean)}
- * and then rely on this class to perform the redirect in a simpler way, for example:
+ * <p>Utility class that handles HTTP redirects.</p>
+ * <p>Applications can disable redirection via {@link Request#followRedirects(boolean)}
+ * and then rely on this class to perform the redirect in a simpler way, for example:</p>
  * <pre>{@code
  * HttpRedirector redirector = new HttpRedirector(httpClient);
  *
@@ -61,7 +61,7 @@ public class HttpRedirector
     private static final Logger LOG = LoggerFactory.getLogger(HttpRedirector.class);
     private static final String SCHEME_REGEXP = "(^https?)";
     private static final String AUTHORITY_REGEXP = "([^/?#]+)";
-    // The location may be relative so the scheme://authority part may be missing
+    // The location may be relative, so the scheme://authority part may be missing
     private static final String DESTINATION_REGEXP = "(" + SCHEME_REGEXP + "://" + AUTHORITY_REGEXP + ")?";
     private static final String PATH_REGEXP = "([^?#]*)";
     private static final String QUERY_REGEXP = "([^#]*)";
@@ -152,103 +152,90 @@ public class HttpRedirector
             URI newURI = extractRedirectURI(response);
             if (newURI != null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Redirecting to {} (Location: {})", newURI, location);
+                URI origin = ((HttpRequest)request).getOrigin();
+                URI redirectOrigin = newURI.isAbsolute()
+                    ? URI.create(newURI.getScheme() + "://" + newURI.getRawAuthority())
+                    : origin;
 
-                Response.CompleteListener wrapper = result ->
+                if (!newURI.isAbsolute())
+                    newURI = origin.resolve(newURI);
+
+                String method = request.getMethod();
+                String newPathQuery = formatPathQuery(newURI.getRawPath(), newURI.getRawQuery());
+                if (HttpMethod.OPTIONS.is(method) && newPathQuery.isEmpty())
+                    newPathQuery = request.getPath();
+                else if (HttpMethod.CONNECT.is(method))
+                    newPathQuery = request.getPath();
+                String redirectPathQuery = newPathQuery;
+
+                String redirectMethod = computeRedirectMethod(request, response);
+                if (redirectMethod != null)
                 {
-                    if (listener != null)
-                        listener.onComplete(result);
-                    if (result.isFailed())
-                    {
-                        // If the redirect request has already been added to the conversation,
-                        // failures will be notified to the original request by HttpClient, and
-                        // we must not do it, otherwise recursion happens and then StackOverflowError.
-                        // If the redirect request has not been added to the conversation yet,
-                        // we must notify the failure by calling fail(), like we do when we
-                        // cannot redirect (see the else branch below where we cannot redirect
-                        // because the Location header is missing).
-                        Request redirectRequest = result.getRequest();
-                        if (!((HttpRequest)request).getConversation().contains(redirectRequest))
-                            fail(result);
-                    }
-                };
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Redirecting to {} (Location: {})", newURI, location);
 
-                return redirect(request, response, wrapper, newURI);
+                    Response.CompleteListener wrapper = result ->
+                    {
+                        if (listener != null)
+                            listener.onComplete(result);
+
+                        if (result.isSucceeded())
+                        {
+                            RedirectCache redirectCache = client.getRedirectCache();
+                            if (redirectCache != null)
+                            {
+                                HttpFields responseHeaders = result.getResponse().getHeaders();
+                                if (!responseHeaders.contains(HttpHeader.CACHE_CONTROL, "no-cache") &&
+                                    !responseHeaders.contains(HttpHeader.CACHE_CONTROL, "no-store"))
+                                {
+                                    String pathQuery = formatPathQuery(request.getPath(), request.getQuery());
+                                    RedirectCache.MethodOriginTarget original = new RedirectCache.MethodOriginTarget(method, origin, pathQuery);
+                                    RedirectCache.MethodOriginTarget redirect = new RedirectCache.MethodOriginTarget(redirectMethod, redirectOrigin, redirectPathQuery);
+                                    redirectCache.put(original, response.getStatus(), redirect);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // If the redirect request has already been added to the conversation,
+                            // failures will be notified to the original request by HttpClient, and
+                            // we must not do it, otherwise recursion happens and then StackOverflowError.
+                            // If the redirect request has not been added to the conversation yet,
+                            // we must notify the failure by calling fail(), like we do when we
+                            // cannot redirect (see the else branch below where we cannot redirect
+                            // because the Location header is missing).
+                            Request redirectRequest = result.getRequest();
+                            if (!((HttpRequest)request).getConversation().contains(redirectRequest))
+                                fail(result);
+                        }
+                    };
+
+                    return redirect(request, response, wrapper, redirectMethod, redirectOrigin, redirectPathQuery);
+                }
+                else
+                {
+                    String message = "Could not compute redirect method for status %d and method %s".formatted(response.getStatus(), method);
+                    fail(request, response, new HttpResponseException(message, response));
+                }
             }
             else
             {
                 fail(request, response, new HttpResponseException("Invalid 'Location' header: " + location, response));
-                return null;
             }
         }
         else
         {
             fail(request, response, new HttpResponseException("Cannot redirect: " + response, response));
-            return null;
         }
+        return null;
     }
 
-    private Request redirect(Request request, Response response, Response.CompleteListener listener, URI newURI)
+    public static String formatPathQuery(String path, String query)
     {
-        if (!newURI.isAbsolute())
-        {
-            URI requestURI = request.getURI();
-            if (requestURI == null)
-            {
-                String uri = request.getScheme() + "://" + request.getHost();
-                int port = request.getPort();
-                if (port > 0)
-                    uri += ":" + port;
-                requestURI = URI.create(uri);
-            }
-            newURI = requestURI.resolve(newURI);
-        }
-
-        int status = response.getStatus();
-        switch (status)
-        {
-            case HttpStatus.MOVED_PERMANENTLY_301:
-            {
-                String method = request.getMethod();
-                if (HttpMethod.GET.is(method) || HttpMethod.HEAD.is(method) || HttpMethod.PUT.is(method))
-                    return redirect(request, response, listener, newURI, method);
-                else if (HttpMethod.POST.is(method))
-                    return redirect(request, response, listener, newURI, HttpMethod.GET.asString());
-                fail(request, response, new HttpResponseException("HTTP protocol violation: received 301 for non GET/HEAD/POST/PUT request", response));
-                return null;
-            }
-            case HttpStatus.MOVED_TEMPORARILY_302:
-            {
-                String method = request.getMethod();
-                if (HttpMethod.HEAD.is(method) || HttpMethod.PUT.is(method))
-                    return redirect(request, response, listener, newURI, method);
-                else
-                    return redirect(request, response, listener, newURI, HttpMethod.GET.asString());
-            }
-            case HttpStatus.SEE_OTHER_303:
-            {
-                String method = request.getMethod();
-                if (HttpMethod.HEAD.is(method))
-                    return redirect(request, response, listener, newURI, method);
-                else
-                    return redirect(request, response, listener, newURI, HttpMethod.GET.asString());
-            }
-            case HttpStatus.TEMPORARY_REDIRECT_307:
-            case HttpStatus.PERMANENT_REDIRECT_308:
-            {
-                // Keep same method
-                return redirect(request, response, listener, newURI, request.getMethod());
-            }
-            default:
-            {
-                fail(request, response, new HttpResponseException("Unhandled HTTP status code " + status, response));
-                return null;
-            }
-        }
+        return (path != null ? path : "/") + (query != null ? "?" + query : "");
     }
 
-    private Request redirect(Request request, Response response, Response.CompleteListener listener, URI location, String method)
+    private Request redirect(Request request, Response response, Response.CompleteListener listener, String redirectMethod, URI redirectOrigin, String redirectPathQuery)
     {
         HttpRequest httpRequest = (HttpRequest)request;
         HttpConversation conversation = httpRequest.getConversation();
@@ -260,7 +247,7 @@ public class HttpRedirector
         {
             ++redirects;
             conversation.setAttribute(ATTRIBUTE, redirects);
-            return sendRedirect(httpRequest, response, listener, location, method);
+            return sendRedirect(httpRequest, response, listener, redirectMethod, redirectOrigin, redirectPathQuery);
         }
         else
         {
@@ -269,18 +256,10 @@ public class HttpRedirector
         }
     }
 
-    /**
-     * Computes the HTTP method to use for a redirect request.
-     *
-     * @param request the original request
-     * @param response the redirect response
-     * @return the HTTP method to use for the redirect, or null if the redirect is not valid
-     */
-    public String computeRedirectMethod(Request request, Response response)
+    private String computeRedirectMethod(Request request, Response response)
     {
-        int status = response.getStatus();
         String method = request.getMethod();
-        return switch (status)
+        return switch (response.getStatus())
         {
             case HttpStatus.MOVED_PERMANENTLY_301 ->
             {
@@ -288,7 +267,7 @@ public class HttpRedirector
                     yield method;
                 else if (HttpMethod.POST.is(method))
                     yield HttpMethod.GET.asString();
-                yield null;
+                yield method;
             }
             case HttpStatus.MOVED_TEMPORARILY_302 ->
             {
@@ -326,8 +305,9 @@ public class HttpRedirector
 
     private URI sanitize(String location)
     {
-        // Redirects should be valid, absolute, URIs, with properly escaped paths and encoded
-        // query parameters. However, shit happens, and here we try our best to recover.
+        // Redirects should be valid, absolute, URIs, with properly encoded
+        // host name (with IDN), URL-encoded paths and query parameters.
+        // However, shit happens, and here we try our best to recover.
 
         try
         {
@@ -361,16 +341,17 @@ public class HttpRedirector
         }
     }
 
-    private Request sendRedirect(HttpRequest httpRequest, Response response, Response.CompleteListener listener, URI location, String method)
+    private Request sendRedirect(HttpRequest httpRequest, Response response, Response.CompleteListener listener, String redirectMethod, URI redirectOrigin, String redirectPathQuery)
     {
         try
         {
-            Request redirect = client.copyRequest(httpRequest, location);
+            Request redirect = client.copyRequest(httpRequest, redirectOrigin);
 
-            // Use the given method.
-            redirect.method(method);
+            // Use the given method and path.
+            redirect.method(redirectMethod);
+            redirect.path(redirectPathQuery);
 
-            if (HttpMethod.GET.is(method))
+            if (HttpMethod.GET.is(redirectMethod))
             {
                 redirect.body(null);
                 redirect.headers(headers ->
@@ -379,16 +360,12 @@ public class HttpRedirector
                     headers.remove(HttpHeader.CONTENT_TYPE);
                 });
             }
-            else if (HttpMethod.CONNECT.is(method))
-            {
-                redirect.path(httpRequest.getPath());
-            }
 
             Request.Content body = redirect.getBody();
             if (body != null && !body.rewind())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not redirect to {}, request body is not reproducible", location);
+                    LOG.debug("Could not redirect to {}, request body is not reproducible", redirect.getURI());
                 HttpConversation conversation = httpRequest.getConversation();
                 conversation.updateResponseListeners(null);
                 conversation.getResponseListeners().emitSuccessComplete(new Result(httpRequest, response));

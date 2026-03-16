@@ -852,24 +852,26 @@ Jetty validates all cookie names and values being added to the `HttpServletRespo
 If an illegal value is discovered Jetty will throw an `IllegalArgumentException` with the details.
 
 [[redirect-cache]]
-== Permanent Redirect Caching
+== Redirect Caching
 
 By default, `HttpClient` follows redirects but does not cache them.
-This means that repeated requests to a URL that returns a permanent redirect (301 or 308) will each incur the redirect round-trip.
+This means that repeated requests to a URL that returns a redirect will each incur the redirect round-trip.
 
-You can enable permanent redirect caching to optimize this:
+You can enable redirect caching to avoid the redirect round-trip:
 
 [,java,indent=0]
 ----
-include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=permanentRedirectCache]
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=redirectCache]
 ----
 
-The cache stores permanent redirects (status codes 301 and 308) and applies them to subsequent requests, including any method transformations (for example, POST to GET for 301).
+`RedirectCache.Default` caches _permanent_ redirects (status codes 301 and 308).
+Subsequent requests with the same HTTP method and the same URI result in requests using the redirect HTTP method and the redirect HTTP URI.
 
-The `PermanentRedirectCache.Default` implementation accepts a maximum size parameter to limit memory usage.
-When the limit is reached, least-recently-used entries are evicted.
+NOTE: `POST` requests replied with `301` will have the redirect method changed to `GET`.
+Requests replied with `308` preserve the original HTTP method.
 
-To disable caching (the default), do not set a cache or set it to `null`.
+The `RedirectCache.Default` implementation accepts a maximum size parameter to limit memory usage.
+When the limit is reached, least recently used entries are evicted.
 
 [[authentication]]
 == HttpClient Authentication Support
