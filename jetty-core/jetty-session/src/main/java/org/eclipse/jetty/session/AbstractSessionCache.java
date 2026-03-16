@@ -130,28 +130,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     protected abstract ManagedSession doGet(String id);
 
     /**
-     * Put the session into the map if it wasn't already there
-     *
-     * @param id the identity of the session
-     * @param session the session object
-     * @return null if the session wasn't already in the map, or the existing entry otherwise
-     */
-    protected abstract Session doPutIfAbsent(String id, ManagedSession session);
-    
-    /**
-     * Compute the mappingFunction to create a Session object iff the session 
-     * with the given id isn't already in the map, otherwise return the existing Session.
-     * This method is expected to have precisely the same behaviour as 
-     * {@link java.util.concurrent.ConcurrentHashMap#computeIfAbsent} so that state changes
-     * to both the session and cache can be effectively atomic to any thread using the cache.
-     * 
-     * @param id the session id
-     * @param mappingFunction the function to load the data for the session
-     * @return an existing Session from the cache
-     */
-    protected abstract ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction);
-
-    /**
      * Compute the mappingFunction to create a Session object.
      * This method is expected to have precisely the same behaviour as
      * {@link java.util.concurrent.ConcurrentHashMap#compute} so that state changes
@@ -168,13 +146,41 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     }
 
     /**
+     * Put the session into the map if it wasn't already there
+     *
+     * @param id the identity of the session
+     * @param session the session object
+     * @return null if the session wasn't already in the map, or the existing entry otherwise
+     * @deprecated Replaced with {@link #doCompute(String, BiFunction)}
+     */
+    @Deprecated(forRemoval = true, since = "12.1.8")
+    protected abstract Session doPutIfAbsent(String id, ManagedSession session);
+    
+    /**
+     * Compute the mappingFunction to create a Session object iff the session 
+     * with the given id isn't already in the map, otherwise return the existing Session.
+     * This method is expected to have precisely the same behaviour as 
+     * {@link java.util.concurrent.ConcurrentHashMap#computeIfAbsent} so that state changes
+     * to both the session and cache can be effectively atomic to any thread using the cache.
+     * 
+     * @param id the session id
+     * @param mappingFunction the function to load the data for the session
+     * @return an existing Session from the cache
+     * @deprecated Replaced with {@link #doCompute(String, BiFunction)}
+     */
+    @Deprecated(forRemoval = true, since = "12.1.8")
+    protected abstract ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction);
+
+    /**
      * Replace the mapping from id to oldValue with newValue
      *
      * @param id the id
      * @param oldValue the old value
      * @param newValue the new value
      * @return true if replacement was done
+     * @deprecated Replaced with {@link #doCompute(String, BiFunction)}
      */
+    @Deprecated(forRemoval = true, since = "12.1.8")
     protected abstract boolean doReplace(String id, ManagedSession oldValue, ManagedSession newValue);
 
     /**
@@ -182,7 +188,9 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      *
      * @param id the id
      * @return Session that was removed or null
+     * @deprecated Replaced with {@link #doCompute(String, BiFunction)}
      */
+    @Deprecated(forRemoval = true, since = "12.1.8")
     public abstract ManagedSession doDelete(String id);
 
     /**
