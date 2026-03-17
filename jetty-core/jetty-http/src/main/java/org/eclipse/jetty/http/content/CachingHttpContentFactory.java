@@ -247,11 +247,13 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         if (!isCacheable(httpContent))
             return httpContent;
 
+        AtomicBoolean added = new AtomicBoolean();
         cachingHttpContent = _cache.computeIfAbsent(path, key ->
         {
             try
             {
                 CachingHttpContent cachingContent = (httpContent == null) ? newNotFoundContent(key) : newCachedContent(key, httpContent);
+                added.set(true);
                 _cachedSize.addAndGet(cachingContent.getContentLengthValue());
                 return cachingContent;
             }
@@ -263,16 +265,15 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             }
         });
 
-        if (cachingHttpContent != null)
+        if (added.get())
         {
             // We want to shrink cache only if we have just added an entry.
             shrinkCache();
-            return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
         }
-        else
-        {
-            return httpContent;
-        }
+
+        if (cachingHttpContent instanceof NotFoundHttpContent)
+            return null;
+        return cachingHttpContent != null ? cachingHttpContent : httpContent;
     }
 
     protected CachingHttpContent newCachedContent(String p, HttpContent httpContent)
