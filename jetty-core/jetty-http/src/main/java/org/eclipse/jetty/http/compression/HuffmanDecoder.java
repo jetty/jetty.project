@@ -45,7 +45,7 @@ public class HuffmanDecoder
 
     /**
      * @param buffer the buffer containing the Huffman encoded bytes.
-     * @return the decoded String.
+     * @return the decoded String or null if more data is needed.
      * @throws EncodingException if the huffman encoding is invalid.
      */
     public String decode(ByteBuffer buffer) throws EncodingException

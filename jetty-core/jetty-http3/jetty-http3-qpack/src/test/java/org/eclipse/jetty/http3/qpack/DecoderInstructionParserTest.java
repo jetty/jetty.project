@@ -16,8 +16,10 @@ package org.eclipse.jetty.http3.qpack;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http3.qpack.internal.instruction.DuplicateInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
+import org.eclipse.jetty.http3.qpack.internal.instruction.LiteralNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.util.QpackTestUtil;
@@ -25,6 +27,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.eclipse.jetty.http3.qpack.util.QpackTestUtil.toBuffer;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -107,6 +110,30 @@ public class DecoderInstructionParserTest
         // Insert With Literal Name (custom-key=custom-value).
         ByteBuffer buffer = QpackTestUtil.hexToBuffer("4a63 7573 746f 6d2d 6b65 790c 6375 7374 6f6d 2d76 616c 7565");
         _instructionParser.parse(buffer);
+
+        // We received the instruction correctly.
+        DecoderParserDebugHandler.LiteralEntry entry = _handler.literalNameEntries.poll();
+        assertNotNull(entry);
+        assertThat(entry.name, is("custom-key"));
+        assertThat(entry.value, is("custom-value"));
+
+        // There are no other instructions received.
+        assertTrue(_handler.isEmpty());
+    }
+
+    @Test
+    public void testOneByteAtATime() throws Exception
+    {
+        HttpField httpField = new HttpField("custom-key", "custom-value");
+        ByteBuffer buffer = toBuffer(new LiteralNameEntryInstruction(httpField, true));
+
+        // Parse the buffer 1 byte at a time.
+        while (buffer.hasRemaining())
+        {
+            ByteBuffer oneByte = buffer.slice(buffer.position(), 1);
+            _instructionParser.parse(oneByte);
+            buffer.position(buffer.position() + 1);
+        }
 
         // We received the instruction correctly.
         DecoderParserDebugHandler.LiteralEntry entry = _handler.literalNameEntries.poll();
