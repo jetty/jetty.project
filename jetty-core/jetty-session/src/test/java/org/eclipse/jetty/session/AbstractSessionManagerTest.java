@@ -42,10 +42,7 @@ public class AbstractSessionManagerTest
         ManagedSession session = new ManagedSession(sessionManager, sessionData);
         session.setExtendedId("1234.foo");
         session.getSessionData().setLastNode("foo");
-        try (AutoLock lock = session.lock())
-        {
-            session.setResident(true); //pretend its in a cache
-        }
+        session.setResident(true); //pretend its in a cache
 
         //not using cookies
         sessionManager.setUsingCookies(false);

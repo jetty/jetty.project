@@ -57,7 +57,7 @@ public class SessionInactivityTimer
                     LOG.debug("Timer expired for session {}", _session.getId());
                 long now = System.currentTimeMillis();
                 
-                try (AutoLock lock = _session.lock())
+                try (AutoLock ignore = _session.lock())
                 {
                     if (_session.getRequests() > 0)
                         return; //session can't expire or be idle if there is a request in it

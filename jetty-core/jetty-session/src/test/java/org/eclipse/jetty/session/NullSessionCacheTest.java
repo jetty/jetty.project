@@ -17,7 +17,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -105,10 +104,7 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         session.access(now); //simulate a request
         cache.release(session); //finish with the session
         assertFalse(cache.contains("1234"));
-        try (AutoLock ignored = session.lock())
-        {
-            assertFalse(session.isResident());
-        }
+        assertFalse(session.isResident());
     }
     
     /**

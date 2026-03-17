@@ -673,12 +673,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
                 //delete it from the session object store
                 if (v != null)
-                {
-                    try (AutoLock ignore = v.lock())
-                    {
-                        v.setResident(false);
-                    }
-                }
+                    v.setResident(false);
                 return null;
             }
             catch (Exception e)

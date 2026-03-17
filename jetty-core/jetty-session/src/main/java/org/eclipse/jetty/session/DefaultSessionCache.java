@@ -189,10 +189,7 @@ public class DefaultSessionCache extends AbstractSessionCache
                     }
                     doCompute(session.getId(), (s, managedSession) ->
                     {
-                        try (AutoLock ignore = session.lock())
-                        {
-                            session.setResident(false);
-                        }
+                        session.setResident(false);
                         return null; //remove from memory
                     });
                 }
