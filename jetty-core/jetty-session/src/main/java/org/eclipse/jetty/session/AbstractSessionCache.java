@@ -16,6 +16,7 @@ package org.eclipse.jetty.session;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -111,6 +112,11 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      */
     protected boolean _invalidateOnShutdown;
 
+    // Used to provide a default doCompute implementation for backward compatibility with implementations that
+    // only implement the deprecated do* methods.
+    private final ConcurrentHashMap<String, ManagedSession> _computeDefaultImplementationMap = new ConcurrentHashMap<>();
+
+
     /**
      * Create a new Session object from pre-existing session data
      *
@@ -135,6 +141,10 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * {@link java.util.concurrent.ConcurrentHashMap#compute} so that state changes
      * to both the session and cache can be effectively atomic to any thread using the cache.
      *
+     * When this method is not overridden, its default implementation uses the deprecated do*
+     * methods as a stop-gap solution. But this method should always be implemented meaning
+     * the other do* ones would then be unused.
+     *
      * @param id the session id
      * @param mappingFunction the bi-function to compute the session
      * @return an existing Session from the cache, or null if the session was removed by the mapping function
@@ -142,7 +152,21 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     protected ManagedSession doCompute(String id, BiFunction<String, ManagedSession, ManagedSession> mappingFunction)
     {
         // TODO Make this method abstract in next major release.
-        throw new UnsupportedOperationException();
+        // This default implementation provides a compute implementation using only doGet/doReplace/doDelete/doPutIfAbsent
+        // and a CHM that is used to provide per-key locking.
+        return _computeDefaultImplementationMap.compute(id, (k, v) ->
+        {
+            ManagedSession existing = doGet(id);
+            ManagedSession computed = mappingFunction.apply(id, existing);
+            if (existing != null && computed != null)
+                doReplace(id, existing, computed);
+            if (existing != null && computed == null)
+                doDelete(id);
+            if (existing == null && computed != null)
+                doPutIfAbsent(id, computed);
+            // if (existing == null && computed == null) do nothing
+            return computed;
+        });
     }
 
     /**
