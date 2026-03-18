@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Sweeper;
@@ -315,12 +317,8 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Failure {}", this, failure);
-        try (AutoLock ignored = lock.lock())
-        {
-            if (closed)
-                return;
-            closed = true;
-        }
+        if (ensureClosedOrAbortActiveChannels(() -> failure))
+            return;
         destroy();
         callback.succeeded();
     }
@@ -330,17 +328,37 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Close {}", this);
-        try (AutoLock ignored = lock.lock())
-        {
-            if (closed)
-                return;
-            closed = true;
-        }
+        if (ensureClosedOrAbortActiveChannels(ClosedChannelException::new))
+            return;
         session.close(ErrorCode.NO_ERROR.code, "close", Callback.from(() ->
         {
             remove();
             destroy();
         }));
+    }
+
+    /**
+     * @return true if already closed, false if not already closed and active channels were aborted.
+     */
+    private boolean ensureClosedOrAbortActiveChannels(Supplier<Throwable> failureSupplier)
+    {
+        Set<HttpChannelOverHTTP2> activeChannels;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (closed)
+                return true;
+            closed = true;
+            activeChannels = Set.copyOf(this.activeChannels);
+            this.activeChannels.clear();
+        }
+        Throwable failure = failureSupplier.get();
+        for (HttpChannel channel : activeChannels)
+        {
+            HttpExchange exchange = channel.getHttpExchange();
+            if (exchange != null)
+                exchange.abort(failure, Promise.noop());
+        }
+        return false;
     }
 
     @Override
