@@ -14,6 +14,8 @@
 package org.eclipse.jetty.http.content;
 
 import java.io.ByteArrayOutputStream;
+import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,9 +24,12 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.IOResources;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +60,38 @@ public class CachingHttpContentFactoryTest
     }
 
     @Test
+    public void testUnknownLengthIsNotCached() throws Exception
+    {
+        HttpContent.Factory authority = path -> new HttpContent.Wrapper(new ResourceHttpContent(new MemoryResource(URI.create("file://test"), new byte[] {'a', 'b', 'c'}), "text/html", sizedPool))
+        {
+            @Override
+            public long getContentLengthValue()
+            {
+                return -1;
+            }
+        };
+
+        CachingHttpContentFactory cachingHttpContentFactory = new CachingHttpContentFactory(authority, sizedPool);
+
+        HttpContent httpContent = cachingHttpContentFactory.getContent("path");
+        assertThat(cachingHttpContentFactory.getCachedFiles(), is(0));
+        assertThat(httpContent.getResource().getURI(), is(URI.create("file://test")));
+        RetainableByteBuffer rbb = IOResources.toRetainableByteBuffer(httpContent.getResource(), sizedPool);
+        try
+        {
+            ByteBuffer byteBuffer = rbb.getByteBuffer();
+            assertThat(byteBuffer.remaining(), is(3));
+            assertThat(byteBuffer.get(), is((byte)'a'));
+            assertThat(byteBuffer.get(), is((byte)'b'));
+            assertThat(byteBuffer.get(), is((byte)'c'));
+        }
+        finally
+        {
+            rbb.release();
+        }
+    }
+
+    @Test
     public void testWriteEvictedContent() throws Exception
     {
         Path file = Files.writeString(workDir.getEmptyPathDir().resolve("file.txt"), "0123456789abcdefghijABCDEFGHIJ");
@@ -62,9 +99,11 @@ public class CachingHttpContentFactoryTest
         CachingHttpContentFactory cachingHttpContentFactory = new CachingHttpContentFactory(resourceHttpContentFactory, sizedPool);
 
         HttpContent content = cachingHttpContentFactory.getContent("file.txt");
+        assertThat(cachingHttpContentFactory.getCachedFiles(), is(1));
 
         // Empty the cache so 'content' gets released.
         cachingHttpContentFactory.flushCache();
+        assertThat(cachingHttpContentFactory.getCachedFiles(), is(0));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (Blocker.Callback cb = Blocker.callback())
