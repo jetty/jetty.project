@@ -77,11 +77,9 @@ public class MessageHandlerTest
             Stream<Arguments> argumentsStream = Stream.concat(getBinaryHandlers(), getTextHandlers());
             for (Class<?> c : getClassListFromArguments(argumentsStream))
             {
-                // System.err.println("deploying " + "/" + c.getSimpleName());
                 container.addEndpoint(ServerEndpointConfig.Builder.create(c, "/" + c.getSimpleName()).build());
             }
 
-            // System.err.println("deploying " + "/" + LongMessageHandler.class.getSimpleName());
             container.addEndpoint(ServerEndpointConfig.Builder.create(LongMessageHandler.class,
                 "/" + LongMessageHandler.class.getSimpleName()).build());
         });

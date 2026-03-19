@@ -1925,6 +1925,7 @@ public class ErrorPageTest
             @Override
             protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
+                assertThat(req.getDispatcherType(), is(DispatcherType.ERROR));
                 AsyncContext asyncContext = req.startAsync();
                 asyncContext.start(() ->
                 {

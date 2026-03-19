@@ -190,6 +190,7 @@ public class PermessageDeflateBufferTest
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/incomingFail");
         ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest(uri);
         clientUpgradeRequest.addExtensions("permessage-deflate");
+
         EventSocket socket = new EventSocket();
         Session session = client.connect(socket, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 

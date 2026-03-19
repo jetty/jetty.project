@@ -63,10 +63,10 @@ public class Dispatcher implements RequestDispatcher
      * Dispatch include attribute names
      */
     public static final String __FORWARD_PREFIX = "jakarta.servlet.forward.";
-    
+
     /**
      * Name of original request attribute
-     */ 
+     */
     public static final String __ORIGINAL_REQUEST = "org.eclipse.jetty.originalRequest";
 
     public static final String JETTY_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
@@ -326,7 +326,7 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public StringBuffer getRequestURL()
         {
-            return _uri == null ? super.getRequestURL() :  new StringBuffer(HttpURI.build(_uri).query(null).scheme(super.getScheme()).host(super.getServerName()).port(super.getServerPort()).asString());
+            return _uri == null ? super.getRequestURL() : new StringBuffer(HttpURI.build(_uri).query(null).scheme(super.getScheme()).host(super.getServerName()).port(super.getServerPort()).asString());
         }
 
         @Override
@@ -334,7 +334,7 @@ public class Dispatcher implements RequestDispatcher
         {
             if (name == null)
                 return null;
-            
+
             //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
             if (_named != null && name.startsWith(__FORWARD_PREFIX))
                 return null;
@@ -366,7 +366,9 @@ public class Dispatcher implements RequestDispatcher
                     return originalRequest == null ? _httpServletRequest : originalRequest;
                 }
                 // Forward should hide include.
-                case RequestDispatcher.INCLUDE_MAPPING, RequestDispatcher.INCLUDE_SERVLET_PATH, RequestDispatcher.INCLUDE_PATH_INFO, RequestDispatcher.INCLUDE_REQUEST_URI, RequestDispatcher.INCLUDE_CONTEXT_PATH, RequestDispatcher.INCLUDE_QUERY_STRING ->
+                case RequestDispatcher.INCLUDE_MAPPING, RequestDispatcher.INCLUDE_SERVLET_PATH,
+                     RequestDispatcher.INCLUDE_PATH_INFO, RequestDispatcher.INCLUDE_REQUEST_URI,
+                     RequestDispatcher.INCLUDE_CONTEXT_PATH, RequestDispatcher.INCLUDE_QUERY_STRING ->
                 {
                     return null;
                 }
@@ -398,7 +400,7 @@ public class Dispatcher implements RequestDispatcher
             //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
             if (_named != null)
                 return Collections.enumeration(names);
-            
+
             names.add(RequestDispatcher.FORWARD_REQUEST_URI);
             names.add(RequestDispatcher.FORWARD_SERVLET_PATH);
             names.add(RequestDispatcher.FORWARD_PATH_INFO);
@@ -458,7 +460,7 @@ public class Dispatcher implements RequestDispatcher
         {
             if (name == null)
                 return null;
-            
+
             //Servlet Spec 9.3.1 no include attributes if a named dispatcher
             if (_named != null && name.startsWith(__INCLUDE_PREFIX))
                 return null;
@@ -488,14 +490,13 @@ public class Dispatcher implements RequestDispatcher
         {
             //Servlet Spec 9.3.1 no include attributes if a named dispatcher
             ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
+            if (_named != null)
+                return Collections.enumeration(names);
 
             //only return the multipart attribute name if this servlet mapping has multipart config
             if (names.contains(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) && _mappedServlet.getServletHolder().getMultipartConfigElement() == null)
                 names.remove(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
 
-            if (_named != null)
-                return Collections.enumeration(names);
-            
             names.add(RequestDispatcher.INCLUDE_MAPPING);
             names.add(RequestDispatcher.INCLUDE_SERVLET_PATH);
             names.add(RequestDispatcher.INCLUDE_PATH_INFO);
@@ -545,7 +546,7 @@ public class Dispatcher implements RequestDispatcher
         ServletOutputStream _servletOutputStream;
         PrintWriter _printWriter;
         PrintWriter _mustFlush;
-        
+
         public IncludeResponse(HttpServletResponse response)
         {
             super(response);

@@ -258,7 +258,7 @@ public class EnvConfiguration extends AbstractConfiguration
             if (webInf == null || !webInf.isDirectory())
                 return null;
 
-            //try to find jetty-eeXX-env.xml
+            //try to find jetty-ee11-env.xml
             Resource xmlResource = webInf.resolve(JETTY_EE11_ENV_XML_FILENAME);
             if (!Resources.missing(xmlResource))
                 return xmlResource;

@@ -191,12 +191,14 @@ public class AbstractTest
     {
         return switch (transportType)
         {
-            case HTTP, HTTPS, H2C, H2, FCGI:
-                yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transportType));
-            case H3_QUICHE:
+            case HTTP, HTTPS, H2C, H2, FCGI ->
+                new ServerConnector(server, 1, 1, newServerConnectionFactory(transportType));
+            case H3_QUICHE ->
+            {
                 Path serverPemDirectory = Files.createDirectories(pemDir.resolve("server"));
                 QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(serverPemDirectory));
                 yield new QuicheServerConnector(server, sslContextFactoryServer, serverQuicConfig, newServerConnectionFactory(transportType));
+            }
         };
     }
 

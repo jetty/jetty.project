@@ -33,11 +33,11 @@ import org.slf4j.LoggerFactory;
 public class WebDescriptor extends Descriptor
 {
     public static final String WEB_APP_ELEMENT = """
-        <?xml version=\"1.0\" encoding=\"UTF-8\"?>
-        <web-app xmlns=\"https://jakarta.ee/xml/ns/jakartaee\"
-                 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
-                 xsi:schemaLocation=\"https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd\"
-                 version=\"6.1\">
+        <?xml version="1.0" encoding="UTF-8"?>
+        <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd"
+                 version="6.1">
         """;
     private static final Logger LOG = LoggerFactory.getLogger(WebDescriptor.class);
 
@@ -150,9 +150,7 @@ public class WebDescriptor extends Descriptor
             _minorVersion = 3;
 
             if (_dtd != null && _dtd.contains("web-app_2_2"))
-            {
                 _minorVersion = 2;
-            }
         }
         else
         {

@@ -76,9 +76,9 @@ public class ReloadedSessionMissingClassTest
         File webXml = new File(webInfDir, "web.xml");
         String xml = WebDescriptor.WEB_APP_ELEMENT +
                 "\n" +
-                "<session-config>\n" +
-                " <session-timeout>1</session-timeout>\n" +
-                "</session-config>\n" +
+                "  <session-config>\n" +
+                "    <session-timeout>1</session-timeout>\n" +
+                "  </session-config>\n" +
                 "</web-app>";
         FileWriter w = new FileWriter(webXml);
         w.write(xml);

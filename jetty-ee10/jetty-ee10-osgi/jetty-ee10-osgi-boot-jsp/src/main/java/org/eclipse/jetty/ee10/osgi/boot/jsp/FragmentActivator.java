@@ -33,7 +33,7 @@ import org.osgi.framework.BundleContext;
 public class FragmentActivator implements BundleActivator, ServerClasspathContributor.Source
 {
     ServerClasspathContributor _tldClasspathContributor;
-    
+
     @Override
     public void start(BundleContext context) throws Exception
     {
@@ -48,11 +48,13 @@ public class FragmentActivator implements BundleActivator, ServerClasspathContri
         _tldClasspathContributor = null;
     }
 
+    @Override
     public void registerServerClasspathContributors(ServerClasspathContributor.Registry registry)
     {
         registry.registerServerClasspathContributor(_tldClasspathContributor);
     }
 
+    @Override
     public void unregisterServerClasspathContributors(ServerClasspathContributor.Registry registry)
     {
         registry.unregisterServerClasspathContributor(_tldClasspathContributor);

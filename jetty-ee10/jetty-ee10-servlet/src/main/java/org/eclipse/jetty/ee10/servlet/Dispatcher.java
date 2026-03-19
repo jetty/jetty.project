@@ -395,7 +395,7 @@ public class Dispatcher implements RequestDispatcher
             //only return the multipart attribute name if this servlet mapping has multipart config
             if (names.contains(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) && _mappedServlet.getServletHolder().getMultipartConfigElement() == null)
                 names.remove(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
-            
+
             //Servlet Spec 9.4.2 no forward attributes if a named dispatcher
             if (_named != null)
                 return Collections.enumeration(names);
@@ -802,7 +802,7 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public StringBuffer getRequestURL()
         {
-            return _uri == null ? super.getRequestURL() :  new StringBuffer(HttpURI.build(_uri).query(null).scheme(super.getScheme()).host(super.getServerName()).port(super.getServerPort()).asString());
+            return _uri == null ? super.getRequestURL() : new StringBuffer(HttpURI.build(_uri).query(null).scheme(super.getScheme()).host(super.getServerName()).port(super.getServerPort()).asString());
         }
 
         @Override

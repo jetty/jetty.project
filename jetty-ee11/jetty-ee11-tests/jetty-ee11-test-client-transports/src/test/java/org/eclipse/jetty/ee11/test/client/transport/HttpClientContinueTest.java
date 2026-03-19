@@ -166,7 +166,6 @@ public class HttpClientContinueTest extends AbstractTest
                 .body(content)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
-
         }
 
         assertNotNull(response);
@@ -236,14 +235,14 @@ public class HttpClientContinueTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testExpect100ContinueWithContentRespond417ExpectationFailed(TransportType transportType) throws Exception
     {
-        testExpect100ContinueWithContentRespondError(transportType, 417);
+        testExpect100ContinueWithContentRespondError(transportType, HttpStatus.EXPECTATION_FAILED_417);
     }
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
     public void testExpect100ContinueWithContentRespond413RequestEntityTooLarge(TransportType transportType) throws Exception
     {
-        testExpect100ContinueWithContentRespondError(transportType, 413);
+        testExpect100ContinueWithContentRespondError(transportType, HttpStatus.PAYLOAD_TOO_LARGE_413);
     }
 
     private void testExpect100ContinueWithContentRespondError(TransportType transportType, int error) throws Exception

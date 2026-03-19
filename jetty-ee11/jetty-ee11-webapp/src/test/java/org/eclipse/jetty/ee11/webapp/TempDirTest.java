@@ -184,8 +184,12 @@ public class TempDirTest
         assertThat(tempDirectory.toPath(), PathMatchers.isSame(configuredTmpDir));
         webAppContext.stop();
         assertNotNull(webAppContext.getTempDirectory());
+        assertNotNull(webAppContext.getAttribute(ServletContext.TEMPDIR));
+        assertThat(tempDirectory.toPath(), PathMatchers.isSame(((File)webAppContext.getAttribute(ServletContext.TEMPDIR)).toPath()));
         webAppContext.start();
+        assertNotNull(webAppContext.getAttribute(ServletContext.TEMPDIR));
         assertThat(tempDirectory.toPath(), PathMatchers.isSame(webAppContext.getTempDirectory().toPath()));
+        assertThat(tempDirectory.toPath(), PathMatchers.isSame(((File)webAppContext.getAttribute(ServletContext.TEMPDIR)).toPath()));
         _server.stop();
     }
 
