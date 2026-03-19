@@ -419,7 +419,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         {
             assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
-            LOG.atInfo().setMessage(run1.logs().get()).log();
+            LOG.info(run1.logs().get());
             assertTrue(Files.exists(distribution.getJettyBase().resolve("resources/log4j2.xml")));
 
             Path war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-jsp-webapp:war:" + jettyVersion);

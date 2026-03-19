@@ -1585,7 +1585,7 @@ public class HttpChannelState implements HttpChannel, Components
                     else if (failure != null && unconsumed != null)
                         ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(failure).log("consumeAvailable: {} {}", unconsumed == null, httpChannelState);
+                        LOG.debug("consumeAvailable: {} {}", unconsumed == null, httpChannelState, failure);
                 }
 
                 // Pending writes are also failures
