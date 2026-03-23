@@ -67,9 +67,14 @@ public class SessionInactivityTimer
 
                     if (!_session.isValid())
                         return; //do nothing, session is no longer valid
+                }
 
-                    SessionInactivityTimer.this._sessionManager.sessionTimerExpired(_session, now);
+                // Do not call the sessionManager with the lock held as it may call AbstractSessionCache
+                // which explicitly prevents holding the lock before calling it.
+                SessionInactivityTimer.this._sessionManager.sessionTimerExpired(_session, now);
 
+                try (AutoLock ignore = _session.lock())
+                {
                     //TODO is this still needed? If we cancel the timer when a Request arrives
                     //check what happened to the session: if it didn't get evicted and
                     //it hasn't expired, we need to reset the timer
