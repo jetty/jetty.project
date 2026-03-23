@@ -469,6 +469,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         if (!session.isValid())
             throw new IllegalStateException("Session " + id + " is not valid");
 
+        assert !session._lock.isLocked();
+
         doCompute(id, (k, v) ->
         {
             if (v != null)
@@ -542,6 +544,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         
         if (session.getSessionManager() == null)
             throw new IllegalStateException("Session " + id + " is not managed");
+
+        assert !session._lock.isLocked();
 
         AtomicReference<Exception> exception = new AtomicReference<>();
         doCompute(id, (k, v) ->
@@ -762,6 +766,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         if (LOG.isDebugEnabled())
             LOG.debug("Checking for idle {}", session.getId());
 
+        assert !session._lock.isLocked();
+
         doCompute(session.getId(), (k, v) ->
         {
             try (AutoLock ignore = session.lock())
@@ -902,6 +908,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     {
         if (session == null)
             return;
+
+        assert !session._lock.isLocked();
 
         String oldId = session.getId();
         AtomicReference<Exception> exception = new AtomicReference<>();

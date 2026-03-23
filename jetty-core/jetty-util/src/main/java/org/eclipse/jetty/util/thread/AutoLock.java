@@ -94,8 +94,11 @@ public class AutoLock implements AutoCloseable, Serializable
         return _lock.newCondition();
     }
 
-    // Package-private for testing only.
-    boolean isLocked()
+    /**
+     * @return whether this lock is held by any thread
+     * @see ReentrantLock#isLocked()
+     */
+    public boolean isLocked()
     {
         return _lock.isLocked();
     }
