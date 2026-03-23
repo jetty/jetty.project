@@ -114,7 +114,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
     // Used to provide a default doCompute implementation for backward compatibility with implementations that
     // only implement the deprecated do* methods.
-    private final ConcurrentHashMap<String, ManagedSession> _computeDefaultImplementationMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ManagedSession> _defaultSessions = new ConcurrentHashMap<>();
 
 
     /**
@@ -154,7 +154,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         // TODO Make this method abstract in next major release.
         // This default implementation provides a compute implementation using only doGet/doReplace/doDelete/doPutIfAbsent
         // and a CHM that is used to provide per-key locking.
-        return _computeDefaultImplementationMap.compute(id, (k, v) ->
+        return _defaultSessions.compute(id, (k, v) ->
         {
             ManagedSession existing = doGet(id);
             ManagedSession computed = mappingFunction.apply(id, existing);
