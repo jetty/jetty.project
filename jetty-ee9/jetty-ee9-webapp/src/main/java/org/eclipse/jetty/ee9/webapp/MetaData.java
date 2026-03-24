@@ -57,7 +57,6 @@ public class MetaData
     protected final List<Resource> _webInfJars = new ArrayList<>();
     protected final List<Resource> _orderedContainerResources = new ArrayList<>();
     protected final List<Resource> _orderedWebInfResources = new ArrayList<>();
-    protected boolean _webInfResourcesNeedsOrdering = true;
     protected Ordering _ordering; //can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
     protected boolean _validateXml = false;
@@ -182,7 +181,6 @@ public class MetaData
         _annotations.clear();
         _webInfJars.clear();
         _orderedWebInfResources.clear();
-        _webInfResourcesNeedsOrdering = true;
         _orderedContainerResources.clear();
         _ordering = null;
         _allowDuplicateFragmentNames = false;
@@ -333,7 +331,7 @@ public class MetaData
         }
 
         //recompute the ordering with the new fragment name
-        _webInfResourcesNeedsOrdering = true;
+        _orderedWebInfResources.clear();
         orderFragments();
     }
 
@@ -433,12 +431,8 @@ public class MetaData
 
     public void orderFragments()
     {
-        if (_webInfResourcesNeedsOrdering && getOrdering() != null)
-        {
-            _orderedWebInfResources.clear();
+        if (_orderedWebInfResources.isEmpty() && getOrdering() != null && !_webInfJars.isEmpty())
             _orderedWebInfResources.addAll(getOrdering().order(_webInfJars));
-            _webInfResourcesNeedsOrdering = false;
-        }
     }
 
     /**
@@ -583,7 +577,7 @@ public class MetaData
     public void setOrdering(Ordering o)
     {
         _ordering = o;
-        _webInfResourcesNeedsOrdering = true;
+        _orderedWebInfResources.clear();
     }
 
     /**
@@ -705,7 +699,7 @@ public class MetaData
     public void addWebInfResource(Resource newResource)
     {
         _webInfJars.add(newResource);
-        _webInfResourcesNeedsOrdering = true;
+        _orderedWebInfResources.clear();
     }
 
     public List<Resource> getWebInfResources(boolean withOrdering)
