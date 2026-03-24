@@ -1,0 +1,19 @@
+<configuration>
+  <property name="logging.dir" value="${jetty.logging.dir:-logs}" />
+
+  <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logging.dir}/jetty.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <fileNamePattern>${logging.dir}/jetty-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+      <maxFileSize>10MB</maxFileSize>
+      <maxHistory>30</maxHistory>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d [%t] %-5p %c %x - %m%n</pattern>
+    </encoder>
+  </appender>
+
+  <root level="info">
+    <appender-ref ref="file" />
+  </root>
+</configuration>
