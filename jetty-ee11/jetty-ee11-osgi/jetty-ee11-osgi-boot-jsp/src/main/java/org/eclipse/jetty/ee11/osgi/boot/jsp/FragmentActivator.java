@@ -43,7 +43,7 @@ public class FragmentActivator implements BundleActivator, ServerClasspathContri
     }
 
     @Override
-    public void stop(BundleContext context)
+    public void stop(BundleContext context) throws Exception
     {
         _tldClasspathContributor = null;
     }

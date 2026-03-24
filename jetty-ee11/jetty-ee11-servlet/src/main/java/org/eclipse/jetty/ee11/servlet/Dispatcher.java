@@ -488,14 +488,15 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            //Servlet Spec 9.3.1 no include attributes if a named dispatcher
             ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
-            if (_named != null)
-                return Collections.enumeration(names);
 
             //only return the multipart attribute name if this servlet mapping has multipart config
             if (names.contains(ServletContextRequest.MULTIPART_CONFIG_ELEMENT) && _mappedServlet.getServletHolder().getMultipartConfigElement() == null)
                 names.remove(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
+
+            //Servlet Spec 9.3.1 no include attributes if a named dispatcher
+            if (_named != null)
+                return Collections.enumeration(names);
 
             names.add(RequestDispatcher.INCLUDE_MAPPING);
             names.add(RequestDispatcher.INCLUDE_SERVLET_PATH);
