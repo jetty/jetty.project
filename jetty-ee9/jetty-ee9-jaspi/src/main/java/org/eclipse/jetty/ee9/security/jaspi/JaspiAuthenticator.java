@@ -183,6 +183,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
             ServerAuthContext authContext = authConfig.getAuthContext(authContextId, _serviceSubject, _authProperties);
             Subject clientSubject = new Subject();
 
+            _callbackHandler.clear();
             AuthStatus authStatus = authContext.validateRequest(messageInfo, clientSubject, _serviceSubject);
 
             if (authStatus == AuthStatus.SEND_CONTINUE)
@@ -254,6 +255,10 @@ public class JaspiAuthenticator extends LoginAuthenticator
         catch (IOException | AuthException e)
         {
             throw new ServerAuthException(e);
+        }
+        finally
+        {
+            _callbackHandler.clear();
         }
     }
 

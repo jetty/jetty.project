@@ -154,10 +154,13 @@ public class JaspiAuthenticator extends LoginAuthenticator
     @Override
     public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
     {
-        JaspiMessageInfo info = new JaspiMessageInfo(request, response, callback);
-        request.setAttribute("org.eclipse.jetty.ee11.security.jaspi.info", info);
-
-        return validateRequest(info);
+        boolean isDeferred = AuthenticationState.getAuthenticationState(request) instanceof AuthenticationState.Deferred;
+        boolean isAuthenticationRequest = isDeferred && !AuthenticationState.Deferred.isDeferred(response);
+        boolean isMandatory = !isDeferred || isAuthenticationRequest;
+        JaspiMessageInfo messageInfo = new JaspiMessageInfo(request, response, callback);
+        messageInfo.setMandatory(isMandatory);
+        messageInfo.setAuthenticationRequest(isMandatory);
+        return validateRequest(messageInfo);
     }
 
     public AuthenticationState validateRequest(JaspiMessageInfo messageInfo) throws ServerAuthException
@@ -172,6 +175,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
             ServerAuthContext authContext = authConfig.getAuthContext(authContextId, _serviceSubject, _authProperties);
             Subject clientSubject = new Subject();
 
+            _callbackHandler.clear();
             AuthStatus authStatus = authContext.validateRequest(messageInfo, clientSubject, _serviceSubject);
 
             if (authStatus == AuthStatus.SEND_CONTINUE)
@@ -224,7 +228,10 @@ public class JaspiAuthenticator extends LoginAuthenticator
                 if (cached != null)
                     return cached;
 
-                return new UserAuthenticationSucceeded(getAuthenticationType(), userIdentity);
+                String authType = messageInfo.getAuthenticationType();
+                if (authType == null)
+                    authType = getAuthenticationType();
+                return new UserAuthenticationSucceeded(authType, userIdentity);
             }
             if (authStatus == AuthStatus.SEND_SUCCESS)
             {
@@ -241,6 +248,10 @@ public class JaspiAuthenticator extends LoginAuthenticator
         catch (AuthException e)
         {
             throw new ServerAuthException(e);
+        }
+        finally
+        {
+            _callbackHandler.clear();
         }
     }
 
