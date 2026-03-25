@@ -259,7 +259,8 @@ public class FormAuthenticator extends LoginAuthenticator
                 final String password = request.getParameter(__J_PASSWORD);
 
                 UserIdentity user = login(username, password, request);
-                LOG.debug("jsecuritycheck {} {}", username, user);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("jsecuritycheck {} {}", username, user);
                 HttpSession session = request.getSession(false);
                 if (user != null)
                 {
@@ -278,7 +279,8 @@ public class FormAuthenticator extends LoginAuthenticator
                         }
                         formAuth = new FormAuthentication(getAuthMethod(), user);
                     }
-                    LOG.debug("authenticated {}->{}", formAuth, nuri);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("authenticated {}->{}", formAuth, nuri);
 
                     response.setContentLength(0);
                     baseResponse.sendRedirect(response.encodeRedirectURL(nuri), true);
@@ -290,13 +292,15 @@ public class FormAuthenticator extends LoginAuthenticator
                     LOG.debug("Form authentication FAILED for {}", StringUtil.printable(username));
                 if (_formErrorPage == null)
                 {
-                    LOG.debug("auth failed {}->403", username);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("auth failed {}->403", username);
                     if (response != null)
                         response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 }
                 else if (_dispatch)
                 {
-                    LOG.debug("auth failed {}=={}", username, _formErrorPage);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("auth failed {}=={}", username, _formErrorPage);
                     RequestDispatcher dispatcher = request.getRequestDispatcher(_formErrorPage);
                     response.setHeader(HttpHeader.CACHE_CONTROL.asString(), HttpHeaderValue.NO_CACHE.asString());
                     response.setDateHeader(HttpHeader.EXPIRES.asString(), 1);
@@ -304,7 +308,8 @@ public class FormAuthenticator extends LoginAuthenticator
                 }
                 else
                 {
-                    LOG.debug("auth failed {}->{}", username, _formErrorPage);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("auth failed {}->{}", username, _formErrorPage);
                     baseResponse.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formErrorPage)), true);
                 }
 
@@ -321,7 +326,8 @@ public class FormAuthenticator extends LoginAuthenticator
                     _loginService != null &&
                     !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
                 {
-                    LOG.debug("auth revoked {}", authentication);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("auth revoked {}", authentication);
                     session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
                 }
                 else
@@ -333,7 +339,8 @@ public class FormAuthenticator extends LoginAuthenticator
                         {
                             //check if the request is for the same url as the original and restore
                             //params if it was a post
-                            LOG.debug("auth retry {}->{}", authentication, jUri);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("auth retry {}->{}", authentication, jUri);
                             StringBuffer buf = request.getRequestURL();
                             if (request.getQueryString() != null)
                                 buf.append("?").append(request.getQueryString());
@@ -343,7 +350,8 @@ public class FormAuthenticator extends LoginAuthenticator
                                 Fields jPost = (Fields)session.getAttribute(__J_POST);
                                 if (jPost != null)
                                 {
-                                    LOG.debug("auth rePOST {}->{}", authentication, jUri);
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("auth rePOST {}->{}", authentication, jUri);
                                     baseRequest.setContentFields(jPost);
                                 }
                                 session.removeAttribute(__J_URI);
@@ -352,7 +360,8 @@ public class FormAuthenticator extends LoginAuthenticator
                             }
                         }
                     }
-                    LOG.debug("auth {}", authentication);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("auth {}", authentication);
                     return authentication;
                 }
             }
@@ -360,7 +369,8 @@ public class FormAuthenticator extends LoginAuthenticator
             // if we can't send challenge
             if (DeferredAuthentication.isDeferred(response))
             {
-                LOG.debug("auth deferred {}", session == null ? null : session.getId());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("auth deferred {}", session == null ? null : session.getId());
                 return Authentication.UNAUTHENTICATED;
             }
 
@@ -389,7 +399,8 @@ public class FormAuthenticator extends LoginAuthenticator
             // send the the challenge
             if (_dispatch)
             {
-                LOG.debug("challenge {}=={}", session.getId(), _formLoginPage);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("challenge {}=={}", session.getId(), _formLoginPage);
                 RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
                 response.setHeader(HttpHeader.CACHE_CONTROL.asString(), HttpHeaderValue.NO_CACHE.asString());
                 response.setDateHeader(HttpHeader.EXPIRES.asString(), 1);
@@ -397,7 +408,8 @@ public class FormAuthenticator extends LoginAuthenticator
             }
             else
             {
-                LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
                 baseResponse.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formLoginPage)), true);
             }
             return Authentication.SEND_CONTINUE;

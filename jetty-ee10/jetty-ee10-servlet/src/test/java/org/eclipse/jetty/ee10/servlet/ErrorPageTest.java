@@ -516,7 +516,8 @@ public class ErrorPageTest
                 }
                 catch (Throwable ignore)
                 {
-                    LOG.trace("IGNORED", ignore);
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", ignore);
                 }
             }
         };
@@ -1479,7 +1480,8 @@ public class ErrorPageTest
                             }
                             catch (IllegalStateException e)
                             {
-                                LOG.trace("IGNORED", e);
+                                if (LOG.isTraceEnabled())
+                                    LOG.trace("IGNORED", e);
                             }
                             finally
                             {

@@ -215,14 +215,16 @@ public class AsyncServletIOTest
 
             // response line
             String line = in.readLine();
-            LOG.debug("response-line: " + line);
+            if (LOG.isDebugEnabled())
+                LOG.debug("response-line: " + line);
             assertThat(line, startsWith("HTTP/1.1 200 OK"));
 
             // Skip headers
             while (line != null)
             {
                 line = in.readLine();
-                LOG.debug("header-line: " + line);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("header-line: " + line);
                 if (line.length() == 0)
                     break;
             }
@@ -231,7 +233,8 @@ public class AsyncServletIOTest
             while (true)
             {
                 line = in.readLine();
-                LOG.debug("body: " + line);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("body: " + line);
                 if (line == null)
                     break;
                 list.add(line);
@@ -291,21 +294,24 @@ public class AsyncServletIOTest
 
             // response line
             String line = in.readLine();
-            LOG.debug("response-line: " + line);
+            if (LOG.isDebugEnabled())
+                LOG.debug("response-line: " + line);
             assertThat(line, startsWith("HTTP/1.1 200 OK"));
 
             // Skip headers
             while (line != null)
             {
                 line = in.readLine();
-                LOG.debug("header-line: " + line);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("header-line: " + line);
                 if (line.length() == 0)
                     break;
             }
 
             // Get body
             line = in.readLine();
-            LOG.debug("body: " + line);
+            if (LOG.isDebugEnabled())
+                LOG.debug("body: " + line);
             assertEquals("DONE", line);
 
             // The connection should be aborted
@@ -334,7 +340,8 @@ public class AsyncServletIOTest
             request.append(s).append("w=").append(w);
             s = '&';
         }
-        LOG.debug("process {} {}", request.toString(), BufferUtil.toDetailString(BufferUtil.toBuffer(content)));
+        if (LOG.isDebugEnabled())
+            LOG.debug("process {} {}", request.toString(), BufferUtil.toDetailString(BufferUtil.toBuffer(content)));
 
         request.append(" HTTP/1.1\r\n")
             .append("Host: localhost\r\n")
@@ -369,14 +376,16 @@ public class AsyncServletIOTest
 
             // response line
             String line = in.readLine();
-            LOG.debug("response-line: " + line);
+            if (LOG.isDebugEnabled())
+                LOG.debug("response-line: " + line);
             assertThat(line, startsWith("HTTP/1.1 200 OK"));
 
             // Skip headers
             while (line != null)
             {
                 line = in.readLine();
-                LOG.debug("header-line:  " + line);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("header-line:  " + line);
                 if (line.length() == 0)
                     break;
             }
@@ -387,7 +396,8 @@ public class AsyncServletIOTest
                 line = in.readLine();
                 if (line == null)
                     break;
-                LOG.debug("body:  " + brief(line));
+                if (LOG.isDebugEnabled())
+                    LOG.debug("body:  " + brief(line));
                 list.add(line);
                 Thread.sleep(50);
             }
@@ -397,7 +407,8 @@ public class AsyncServletIOTest
         int w = 0;
         for (String line : list)
         {
-            LOG.debug("line:  " + brief(line));
+            if (LOG.isDebugEnabled())
+                LOG.debug("line:  " + brief(line));
             if ("-".equals(line))
                 continue;
             assertEquals(writes[w], line.length(), "Line Length");
@@ -500,7 +511,8 @@ public class AsyncServletIOTest
                 @Override
                 public void onWritePossible() throws IOException
                 {
-                    LOG.debug("OWP");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("OWP");
                     _owp.incrementAndGet();
 
                     while (writes != null && _w < writes.length)
@@ -676,7 +688,8 @@ public class AsyncServletIOTest
 
             // response line
             String line = in.readLine();
-            LOG.debug("response-line: " + line);
+            if (LOG.isDebugEnabled())
+                LOG.debug("response-line: " + line);
             assertThat(line, startsWith("HTTP/1.1 200 OK"));
 
             boolean chunked = false;
@@ -684,7 +697,8 @@ public class AsyncServletIOTest
             while (line != null)
             {
                 line = in.readLine();
-                LOG.debug("header-line: " + line);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("header-line: " + line);
                 chunked |= "Transfer-Encoding: chunked".equals(line);
                 if (line.length() == 0)
                     break;
@@ -701,7 +715,8 @@ public class AsyncServletIOTest
                     last = line;
                     //Thread.sleep(1000);
                     line = in.readLine();
-                    LOG.debug("body: " + line);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("body: " + line);
                     if (line == null)
                         break;
                     list.add(line);
@@ -711,8 +726,8 @@ public class AsyncServletIOTest
             {
                 // ignored
             }
-
-            LOG.debug("last: " + last);
+            if (LOG.isDebugEnabled())
+                LOG.debug("last: " + last);
 
             // last non empty line should not contain end chunk
             assertThat(last, notNullValue());

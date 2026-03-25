@@ -444,7 +444,8 @@ public class MetaData
     public void resolve(WebAppContext context)
         throws Exception
     {
-        LOG.debug("metadata resolve {}", context);
+        if (LOG.isDebugEnabled())
+            LOG.debug("metadata resolve {}", context);
 
         //Ensure origins is fresh
         _origins.clear();
@@ -477,7 +478,8 @@ public class MetaData
             p.process(context, getWebDescriptor());
             for (WebDescriptor wd : getOverrideDescriptors())
             {
-                LOG.debug("process {} {} {}", context, p, wd);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("process {} {} {}", context, p, wd);
                 p.process(context, wd);
             }
         }
@@ -498,7 +500,8 @@ public class MetaData
             {
                 for (DescriptorProcessor p : _descriptorProcessors)
                 {
-                    LOG.debug("process {} {}", context, fd);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("process {} {}", context, fd);
                     p.process(context, fd);
                 }
             }
@@ -511,7 +514,8 @@ public class MetaData
             {
                 for (DiscoveredAnnotation a : annotations)
                 {
-                    LOG.debug("apply {}", a);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("apply {}", a);
                     a.apply();
                 }
             }

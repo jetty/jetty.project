@@ -65,7 +65,8 @@ public class QuotesDecoderTest
         public void onOpenResource(String filename)
         {
             super.onWsText(filename);
-            QuotesDecoderTest.LOG.debug("onOpenResource({})", filename);
+            if (LOG.isDebugEnabled())
+                LOG.debug("onOpenResource({})", filename);
             try
             {
                 RemoteEndpoint.Basic remote = session.getBasicRemote();

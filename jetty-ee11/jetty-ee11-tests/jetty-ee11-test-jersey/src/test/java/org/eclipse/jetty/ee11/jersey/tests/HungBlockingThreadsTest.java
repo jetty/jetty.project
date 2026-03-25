@@ -159,15 +159,15 @@ public class HungBlockingThreadsTest
                     .send(result -> {});
             });
         }
-
-        LOG.debug("Awaiting for client to block on all threads");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Awaiting for client to block on all threads");
         assertTrue(latch.await(15, TimeUnit.SECONDS));
-
-        LOG.debug("Shutting down client");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Shutting down client");
         // While the server is hanging in InputStream read, close the client's connections.
         httpClient.stop();
-
-        LOG.debug("Waiting for hung threads");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Waiting for hung threads");
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(threadDump(), not(containsString(Blocker.Shared.class.getName()))));
     }
 

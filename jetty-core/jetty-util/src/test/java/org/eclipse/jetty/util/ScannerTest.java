@@ -772,21 +772,24 @@ public class ScannerTest
         @Override
         public void fileRemoved(String filename)
         {
-            LOG.debug("fileRemoved: {}", filename);
+            if (LOG.isDebugEnabled())
+                LOG.debug("fileRemoved: {}", filename);
             this.add(new Event(filename, Notification.REMOVED));
         }
 
         @Override
         public void fileChanged(String filename)
         {
-            LOG.debug("fileChanged: {}", filename);
+            if (LOG.isDebugEnabled())
+                LOG.debug("fileChanged: {}", filename);
             this.add(new Event(filename, Notification.CHANGED));
         }
 
         @Override
         public void fileAdded(String filename)
         {
-            LOG.debug("fileAdded: {}", filename);
+            if (LOG.isDebugEnabled())
+                LOG.debug("fileAdded: {}", filename);
             this.add(new Event(filename, Notification.ADDED));
         }
     }
@@ -800,7 +803,8 @@ public class ScannerTest
         @Override
         public void pathsChanged(Set<Path> paths)
         {
-            LOG.debug("pathsChanged: {}", paths);
+            if (LOG.isDebugEnabled())
+                LOG.debug("pathsChanged: {}", paths);
             add(paths);
         }
 
@@ -820,7 +824,8 @@ public class ScannerTest
         @Override
         public void filesChanged(Set<String> filenames)
         {
-            LOG.debug("filesChanged: {}", filenames);
+            if (LOG.isDebugEnabled())
+                LOG.debug("filesChanged: {}", filenames);
             add(filenames);
         }
     }
@@ -832,7 +837,8 @@ public class ScannerTest
         @Override
         public void pathsChanged(Map<Path, Notification> pathsChanged)
         {
-            LOG.atDebug().addArgument(pathsChanged).log("pathsChanged: {}");
+            if (LOG.isDebugEnabled())
+                LOG.atDebug().addArgument(pathsChanged).log("pathsChanged: {}");
             add(pathsChanged);
         }
 

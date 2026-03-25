@@ -452,8 +452,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                         if (cause instanceof EOFException ||
                             cause instanceof AsynchronousCloseException)
                         {
-                            LoggerFactory.getLogger(DemoModulesTests.class).atInfo()
-                                .setCause(e).log("EOF During request to {}{}", baseURI, ambiguous);
+                            LoggerFactory.getLogger(DemoModulesTests.class)
+                                .info("EOF During request to {}{}", baseURI, ambiguous, e);
                             Assumptions.assumeTrue(false, "Jetty Client should not have failed with %s: %s".formatted(cause.getClass().getName(), cause.getMessage()));
                         }
                         else

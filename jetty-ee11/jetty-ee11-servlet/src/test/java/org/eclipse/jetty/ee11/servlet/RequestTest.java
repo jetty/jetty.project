@@ -575,7 +575,8 @@ public class RequestTest
         }
         catch (UnknownHostException e)
         {
-            LOG.debug("Unable to obtain InetAddress.LocalHost", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to obtain InetAddress.LocalHost", e);
         }
         return hostHeader.stream().map(Arguments::of);
     }

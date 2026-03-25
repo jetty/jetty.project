@@ -46,7 +46,8 @@ public class BundleClassLoaderHelperFactory
         }
         catch (Throwable t)
         {
-            LOG.trace("IGNORED", t);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", t);
         }
 
         return helper;

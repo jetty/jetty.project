@@ -354,7 +354,8 @@ public class ShutdownService
                                 stopComponents(exitVm);
 
                                 // Reply to client
-                                LOG.debug("Informing client that we are stopped");
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Informing client that we are stopped");
                                 flush(out, "Stopped\r\n");
 
                                 processCommands = false;
@@ -371,7 +372,8 @@ public class ShutdownService
                                 stopComponents(true);
 
                                 // Reply to client
-                                LOG.debug("Informing client that we are stopped");
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Informing client that we are stopped");
                                 flush(out, "Stopped\r\n");
 
                                 processCommands = false;
@@ -406,7 +408,8 @@ public class ShutdownService
             }
             catch (Throwable x)
             {
-                LOG.atDebug().setCause(x).log("Failed ServerSocket");
+                if (LOG.isDebugEnabled())
+                    LOG.atDebug().setCause(x).log("Failed ServerSocket");
             }
             finally
             {
@@ -448,7 +451,8 @@ public class ShutdownService
                 }
                 catch (Throwable x)
                 {
-                    LOG.atDebug().setCause(x).log("Unable to stop component: {}", component);
+                    if (LOG.isDebugEnabled())
+                        LOG.atDebug().setCause(x).log("Unable to stop component: {}", component);
                 }
             }
         }

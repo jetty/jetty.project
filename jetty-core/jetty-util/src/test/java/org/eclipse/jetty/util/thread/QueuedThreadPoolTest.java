@@ -188,7 +188,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             }
             catch (Exception e)
             {
-                LOG.debug("RunningJob failed", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("RunningJob failed", e);
             }
             finally
             {

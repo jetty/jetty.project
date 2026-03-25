@@ -785,7 +785,8 @@ public class ServletContextHandler extends ContextHandler
         }
         catch (Exception e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
 
         return null;
@@ -847,7 +848,8 @@ public class ServletContextHandler extends ContextHandler
         }
         catch (Exception e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
         return Collections.emptySet();
     }
@@ -2824,7 +2826,8 @@ public class ServletContextHandler extends ContextHandler
             }
             catch (Exception e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
             }
             return null;
         }
@@ -2870,7 +2873,8 @@ public class ServletContextHandler extends ContextHandler
             }
             catch (Exception e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
             }
 
             return null;
@@ -2934,7 +2938,8 @@ public class ServletContextHandler extends ContextHandler
             catch (Throwable e)
             {
                 // catch RuntimeException and things like java.nio.fileInvalidPathException here.
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
                 return null;
             }
         }

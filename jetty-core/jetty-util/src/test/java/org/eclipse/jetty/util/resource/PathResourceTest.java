@@ -431,7 +431,8 @@ public class PathResourceTest
             }
             catch (InvalidPathException e)
             {
-                LOG.debug("IGNORE", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("IGNORE", e);
             }
         }
 
@@ -517,7 +518,8 @@ public class PathResourceTest
         }
         catch (InvalidPathException e)
         {
-            LOG.debug("IGNORE", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("IGNORE", e);
             assumeTrue(false, "FileSystem does not support null character");
         }
 
@@ -567,7 +569,8 @@ public class PathResourceTest
         catch (InvalidPathException e)
         {
             // this file system does allow null char ending filenames
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
     }
 
@@ -625,7 +628,8 @@ public class PathResourceTest
         }
         catch (InvalidPathException e)
         {
-            LOG.debug("IGNORE", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("IGNORE", e);
             assumeTrue(false, "FileSystem does not support null character");
         }
 
@@ -658,7 +662,8 @@ public class PathResourceTest
         catch (InvalidPathException e)
         {
             // this file system does allow null char ending filenames
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
     }
 
