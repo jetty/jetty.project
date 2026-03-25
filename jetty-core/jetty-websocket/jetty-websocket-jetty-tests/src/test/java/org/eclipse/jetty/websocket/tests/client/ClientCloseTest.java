@@ -441,9 +441,11 @@ public class ClientCloseTest
                 }
                 else if (message.equals("block"))
                 {
-                    LOG.debug("blocking");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("blocking");
                     assertTrue(block.await(5, TimeUnit.MINUTES));
-                    LOG.debug("unblocked");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("unblocked");
                 }
                 else
                 {
@@ -453,7 +455,8 @@ public class ClientCloseTest
             }
             catch (Throwable t)
             {
-                LOG.atDebug().setCause(t).log("send text failure");
+                if (LOG.isDebugEnabled())
+                    LOG.atDebug().setCause(t).log("send text failure");
                 throw new RuntimeException(t);
             }
         }
@@ -482,7 +485,8 @@ public class ClientCloseTest
                     }
                     catch (Throwable x)
                     {
-                        LOG.atDebug().setCause(x).log("OOPS");
+                        if (LOG.isDebugEnabled())
+                            LOG.atDebug().setCause(x).log("OOPS");
                     }
                 }
                 else if (reason.equals("abort"))

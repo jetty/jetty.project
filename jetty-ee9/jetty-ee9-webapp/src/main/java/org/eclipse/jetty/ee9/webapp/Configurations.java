@@ -201,7 +201,8 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
             else
             {
                 Object attr = server.getAttribute(Configuration.ATTR);
-                LOG.debug("{} attr({})= {}", server, Configuration.ATTR, attr);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} attr({})= {}", server, Configuration.ATTR, attr);
                 if (attr instanceof Configurations)
                     configurations = new Configurations((Configurations)attr);
                 else if (attr instanceof String[])
@@ -492,7 +493,8 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         for (int i = 0; i < _configurations.size(); i++)
         {
             Configuration configuration = _configurations.get(i);
-            LOG.debug("preConfigure with {}", configuration);
+            if (LOG.isDebugEnabled())
+                LOG.debug("preConfigure with {}", configuration);
             configuration.preConfigure(webapp);
 
             if (_configurations.get(i) != configuration)
@@ -510,7 +512,8 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         // Configure webapp
         for (Configuration configuration : _configurations)
         {
-            LOG.debug("configure {}", configuration);
+            if (LOG.isDebugEnabled())
+                LOG.debug("configure {}", configuration);
             configuration.configure(webapp);
             if (configuration.abort(webapp))
                 return false;
@@ -523,7 +526,8 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         // Configure webapp
         for (Configuration configuration : _configurations)
         {
-            LOG.debug("postConfigure {}", configuration);
+            if (LOG.isDebugEnabled())
+                LOG.debug("postConfigure {}", configuration);
             configuration.postConfigure(webapp);
         }
     }

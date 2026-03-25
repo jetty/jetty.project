@@ -748,7 +748,10 @@ public class ResourceService
                         {
                             String msg = "Failed to send content";
                             if (x instanceof IOException)
-                                LOG.atDebug().setCause(x).log(msg);
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.atDebug().setCause(x).log(msg);
+                            }
                             else
                                 LOG.warn(msg, x);
                             context.complete();

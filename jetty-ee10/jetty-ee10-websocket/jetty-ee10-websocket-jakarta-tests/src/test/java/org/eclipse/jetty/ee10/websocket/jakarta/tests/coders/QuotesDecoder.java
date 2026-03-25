@@ -33,7 +33,8 @@ public class QuotesDecoder implements Decoder.TextStream<Quotes>
         Quotes quotes = new Quotes();
         try (BufferedReader buf = new BufferedReader(reader))
         {
-            LOG.debug("decode() begin");
+            if (LOG.isDebugEnabled())
+                LOG.debug("decode() begin");
             String line;
             while ((line = buf.readLine()) != null)
             {
