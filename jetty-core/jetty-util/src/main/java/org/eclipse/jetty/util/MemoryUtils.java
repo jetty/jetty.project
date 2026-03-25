@@ -13,12 +13,18 @@
 
 package org.eclipse.jetty.util;
 
+import java.lang.management.ManagementFactory;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.management.openmbean.CompositeData;
+
 /**
  * MemoryUtils provides an abstraction over memory properties and operations.
  */
 public class MemoryUtils
 {
-    private static final int cacheLineBytes;
+    private static final int CACHE_LINE_BYTES;
+    private static final int REFERENCE_PER_CACHE_LINE;
 
     static
     {
@@ -31,7 +37,25 @@ public class MemoryUtils
         catch (Exception ignored)
         {
         }
-        cacheLineBytes = value;
+        CACHE_LINE_BYTES = value;
+
+        // Use pessimistic default: assume oops are compressed.
+        int referencePerCacheLine = getIntegersPerCacheLine();
+        try
+        {
+            MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+            ObjectName beanName = ObjectName.getInstance("com.sun.management:type=HotSpotDiagnostic");
+            Object vmOption = server.invoke(beanName, "getVMOption",
+                new Object[]{"UseCompressedOops"},
+                new String[]{"java.lang.String"});
+            String v = (String)((CompositeData)vmOption).get("value");
+            if (!Boolean.parseBoolean(v))
+                referencePerCacheLine = getLongsPerCacheLine();
+        }
+        catch (Exception ignored)
+        {
+        }
+        REFERENCE_PER_CACHE_LINE = referencePerCacheLine;
     }
 
     private MemoryUtils()
@@ -40,7 +64,7 @@ public class MemoryUtils
 
     public static int getCacheLineBytes()
     {
-        return cacheLineBytes;
+        return CACHE_LINE_BYTES;
     }
 
     public static int getIntegersPerCacheLine()
@@ -55,8 +79,6 @@ public class MemoryUtils
 
     public static int getReferencesPerCacheLine()
     {
-        // Use getIntegersPerCacheLine() instead of getLongsPerCacheLine() b/c refs (oops) could be
-        // compressed down to 32-bit; maybe this could be detected?
-        return getIntegersPerCacheLine();
+        return REFERENCE_PER_CACHE_LINE;
     }
 }
