@@ -200,8 +200,11 @@ public class UriTemplatePathSpec extends AbstractPathSpec
 
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
+            {
             LOG.debug("Creating UriTemplatePathSpec[{}] (regex: \"{}\", signature: [{}], group: {}, variables: [{}])",
                 _declaration, regex, sig, _group, String.join(", ", _variables));
+            }
         }
     }
 

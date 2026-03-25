@@ -411,6 +411,7 @@ public class ServerConnector extends AbstractNetworkConnector
         }
         catch (SocketException e)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", e);
         }
     }

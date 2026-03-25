@@ -639,6 +639,7 @@ public class MultiPartFormInputStream implements MultiPart.Parser
 
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
                 LOG.debug("Parsing Complete {} err={}", parser, _err);
             }
         }
@@ -713,6 +714,7 @@ public class MultiPartFormInputStream implements MultiPart.Parser
         {
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
                 LOG.debug("headerComplete {}", this);
             }
 

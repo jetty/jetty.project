@@ -313,10 +313,15 @@ public class ForeignQuicheConnection extends QuicheConnection
 
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
                 LOG.debug("version: {}", version.get(NativeHelper.C_INT, 0L));
+                if (LOG.isDebugEnabled())
                 LOG.debug("type: {}", type.get(NativeHelper.C_CHAR, 0L));
+                if (LOG.isDebugEnabled())
                 LOG.debug("scid len: {}", scid_len.get(NativeHelper.C_LONG, 0L));
+                if (LOG.isDebugEnabled())
                 LOG.debug("dcid len: {}", dcid_len.get(NativeHelper.C_LONG, 0L));
+                if (LOG.isDebugEnabled())
                 LOG.debug("token len: {}", token_len.get(NativeHelper.C_LONG, 0L));
             }
 
@@ -452,10 +457,15 @@ public class ForeignQuicheConnection extends QuicheConnection
 
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
                 LOG.debug("version: {}", version.get(NativeHelper.C_INT, 0L));
+                if (LOG.isDebugEnabled())
                 LOG.debug("type: {}", type.get(NativeHelper.C_CHAR, 0L));
+                if (LOG.isDebugEnabled())
                 LOG.debug("scid len: {}", scid_len.get(NativeHelper.C_LONG, 0L));
+                if (LOG.isDebugEnabled())
                 LOG.debug("dcid len: {}", dcid_len.get(NativeHelper.C_LONG, 0L));
+                if (LOG.isDebugEnabled())
                 LOG.debug("token len: {}", token_len.get(NativeHelper.C_LONG, 0L));
             }
 

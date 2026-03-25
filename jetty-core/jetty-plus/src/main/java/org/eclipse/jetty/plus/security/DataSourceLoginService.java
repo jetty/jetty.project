@@ -443,6 +443,7 @@ public class DataSourceLoginService extends AbstractLoginService
         }
         else if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("createTables false");
         }
     }

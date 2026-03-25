@@ -415,6 +415,8 @@ public abstract class ProxyHandler extends Handler.Abstract
     {
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
+            {
             LOG.debug("""
                     {} P2S sending request
                     {}
@@ -422,6 +424,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                 requestId(clientToProxyRequest),
                 proxyToServerRequest,
                 proxyToServerRequest.getHeaders());
+            }
         }
         proxyToServerRequest.send(newServerToProxyResponseListener(clientToProxyRequest, proxyToServerRequest, proxyToClientResponse, proxyToClientCallback));
     }
@@ -629,6 +632,8 @@ public abstract class ProxyHandler extends Handler.Abstract
         {
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
+                {
                 LOG.debug("""
                         {} S2P received response
                         {}
@@ -636,6 +641,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                     requestId(clientToProxyRequest),
                     serverToProxyResponse,
                     serverToProxyResponse.getHeaders());
+                }
             }
             for (HttpField serverToProxyResponseField : serverToProxyResponse.getHeaders())
             {
@@ -648,6 +654,8 @@ public abstract class ProxyHandler extends Handler.Abstract
             }
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
+                {
                 LOG.debug("""
                         {} P2C sending response
                         {}
@@ -655,6 +663,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                     requestId(clientToProxyRequest),
                     proxyToClientResponse,
                     proxyToClientResponse.getHeaders());
+                }
             }
         }
 

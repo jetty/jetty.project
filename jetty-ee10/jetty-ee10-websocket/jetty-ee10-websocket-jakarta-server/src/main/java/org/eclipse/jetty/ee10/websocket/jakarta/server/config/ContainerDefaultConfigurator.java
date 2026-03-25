@@ -56,6 +56,7 @@ public final class ContainerDefaultConfigurator extends Configurator
     {
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug(".getEndpointInstance({})", endpointClass);
         }
 

@@ -563,11 +563,13 @@ public class ServletHandler extends Handler.Wrapper
             if (_maxFilterChainsCacheSize > 0 && cache.size() >= _maxFilterChainsCacheSize)
             {
                 // flush the cache
+                if (LOG.isDebugEnabled())
                 LOG.debug("{} flushed filter chain cache for {}", this, dispatcherType);
                 cache.clear();
             }
             chain = chain == null ? new ChainEnd(servletHolder) : chain;
             // flush the cache
+            if (LOG.isDebugEnabled())
             LOG.debug("{} cached filter chain for {}: {}", this, dispatcherType, chain);
             cache.put(key, chain);
         }
@@ -1348,8 +1350,11 @@ public class ServletHandler extends Handler.Wrapper
 
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
+                {
                 LOG.debug("filterNameMap={} pathFilters={} servletFilterMap={} servletPathMap={} servletNameMap={}",
                     _filterNameMap, _filterPathMappings, _filterNameMappings, _servletPathMap, _servletNameMap);
+                }
             }
         }
     }

@@ -227,6 +227,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
             }
             catch (IOException e)
             {
+                if (LOG.isTraceEnabled())
                 LOG.trace("IGNORED", e);
             }
             if (_out != null && _closeOut)
@@ -237,6 +238,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
                 }
                 catch (IOException e)
                 {
+                    if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
                 }
             }

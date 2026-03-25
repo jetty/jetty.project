@@ -74,6 +74,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         }
         catch (ClassNotFoundException e)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", e);
         }
 
@@ -85,6 +86,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         }
         catch (ClassNotFoundException e)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", e);
         }
 
@@ -106,6 +108,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         }
         catch (ClassNotFoundException e)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", e);
         }
 
@@ -117,6 +120,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         }
         catch (ClassNotFoundException e)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", e);
         }
 

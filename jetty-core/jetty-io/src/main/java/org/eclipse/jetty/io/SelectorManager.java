@@ -344,6 +344,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             if (isRunning())
                 LOG.warn("Exception while notifying connection {}", connection, x);
             else
+                if (LOG.isDebugEnabled())
                 LOG.debug("Exception while notifying connection {}", connection, x);
             throw x;
         }

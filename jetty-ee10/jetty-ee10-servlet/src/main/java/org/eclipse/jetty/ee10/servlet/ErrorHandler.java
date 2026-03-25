@@ -214,6 +214,7 @@ public class ErrorHandler implements Request.Handler
             }
             catch (Exception e)
             {
+                if (LOG.isTraceEnabled())
                 LOG.trace("IGNORED", e);
             }
         }
@@ -260,6 +261,7 @@ public class ErrorHandler implements Request.Handler
                 }
                 catch (Exception e)
                 {
+                    if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
                 }
             }

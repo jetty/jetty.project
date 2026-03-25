@@ -217,6 +217,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
 
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
                 LOG.debug("addEndpoint({})", endpointClass);
             }
 

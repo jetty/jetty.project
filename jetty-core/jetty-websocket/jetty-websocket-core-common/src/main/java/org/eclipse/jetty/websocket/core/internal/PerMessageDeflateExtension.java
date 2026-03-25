@@ -144,6 +144,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         }
 
         configNegotiated = new ExtensionConfig(config.getName(), paramsNegotiated);
+        if (LOG.isDebugEnabled())
         LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
         super.init(configNegotiated, components);
@@ -233,6 +234,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     {
         if (frame.isFin() && !incomingContextTakeover)
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("Incoming Context Reset");
             releaseInflater();
         }
@@ -244,6 +246,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     {
         if (frame.isFin() && !outgoingContextTakeover)
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("Outgoing Context Reset");
             releaseDeflater();
         }

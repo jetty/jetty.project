@@ -186,6 +186,7 @@ class AsyncContentProducer implements ContentProducer
         if (LOG.isTraceEnabled())
         {
             x = new StaticException("Unconsumed content", true);
+            if (LOG.isTraceEnabled())
             LOG.trace("consumeAll {}", this, x);
         }
         failCurrentContent(x);

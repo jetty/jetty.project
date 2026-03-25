@@ -430,6 +430,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
         catch (Throwable x)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", x);
             return -1;
         }
@@ -443,6 +444,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
         catch (Throwable x)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", x);
             return -1;
         }
@@ -779,6 +781,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (InterruptedException x)
             {
+                if (LOG.isTraceEnabled())
                 LOG.trace("IGNORED", x);
             }
             return keys;

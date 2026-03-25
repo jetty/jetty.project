@@ -1026,6 +1026,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         {
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
                 LOG.debug("Resource has no URI reference: {}", resource);
             }
             return "";

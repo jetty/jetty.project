@@ -144,7 +144,8 @@ public class MongoTestHelper
         if (sessionDocument == null)
             return false; //doesn't exist
 
-        LOG.debug("{}", sessionDocument);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}", sessionDocument);
 
         boolean valid = (Boolean)sessionDocument.get(MongoSessionDataStore.__VALID);
 

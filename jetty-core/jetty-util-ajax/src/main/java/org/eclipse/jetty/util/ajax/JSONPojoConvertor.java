@@ -339,6 +339,7 @@ public class JSONPojoConvertor implements JSON.Convertor
                     catch (Exception e)
                     {
                         // Unusual array with multiple types.
+                        if (LOG.isTraceEnabled())
                         LOG.trace("IGNORED", e);
                         _setter.invoke(obj, value);
                     }
@@ -358,6 +359,7 @@ public class JSONPojoConvertor implements JSON.Convertor
                     catch (Exception e)
                     {
                         // unusual array with multiple types
+                        if (LOG.isTraceEnabled())
                         LOG.trace("IGNORED", e);
                         _setter.invoke(obj, value);
                     }

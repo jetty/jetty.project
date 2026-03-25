@@ -155,6 +155,7 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
             assertMessageNotNull(data);
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
                 LOG.debug("sendObject({}, {})", data, callback);
             }
 

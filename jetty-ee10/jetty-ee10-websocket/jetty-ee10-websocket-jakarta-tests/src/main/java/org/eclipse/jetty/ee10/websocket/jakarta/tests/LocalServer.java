@@ -239,6 +239,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         // Some debugging
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug(server.dump());
         }
     }

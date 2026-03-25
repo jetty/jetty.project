@@ -352,6 +352,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 catch (Exception e)
                 {
                     LOG.warn("Cannot parse load-on-startup {}. Please use integer", s);
+                    if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
                 }
             }

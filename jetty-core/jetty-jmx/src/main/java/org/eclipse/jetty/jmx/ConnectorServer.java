@@ -245,6 +245,7 @@ public class ConnectorServer extends AbstractLifeCycle
         }
         catch (Throwable ex)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", ex);
         }
 
@@ -270,6 +271,7 @@ public class ConnectorServer extends AbstractLifeCycle
             }
             catch (Exception ex)
             {
+                if (LOG.isTraceEnabled())
                 LOG.trace("IGNORED", ex);
             }
             finally

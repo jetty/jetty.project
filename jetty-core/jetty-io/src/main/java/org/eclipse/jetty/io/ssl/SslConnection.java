@@ -1030,6 +1030,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
+                if (LOG.isTraceEnabled())
                 LOG.trace("IGNORED", x);
             }
         }
@@ -1046,11 +1047,13 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 if (handshakeStatus == HandshakeStatus.NOT_HANDSHAKING && isRequireCloseMessage())
                     throw x;
+                if (LOG.isTraceEnabled())
                 LOG.trace("IGNORED", x);
                 return x;
             }
             catch (Throwable x)
             {
+                if (LOG.isTraceEnabled())
                 LOG.trace("IGNORED", x);
                 return x;
             }
@@ -1065,10 +1068,12 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 {
                     if (LOG.isDebugEnabled())
                     {
+                        if (LOG.isDebugEnabled())
                         LOG.debug(">flush {}", SslConnection.this);
                         int i = 0;
                         for (ByteBuffer b : appOuts)
                         {
+                            if (LOG.isDebugEnabled())
                             LOG.debug("flush b[{}]={}", i++, BufferUtil.toDetailString(b));
                         }
                     }
@@ -1317,6 +1322,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 }
                                 catch (IOException e)
                                 {
+                                    if (LOG.isDebugEnabled())
                                     LOG.debug("Incomplete flush?", e);
                                     close(e);
                                     write = BufferUtil.EMPTY_BUFFER;
@@ -1471,6 +1477,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
+                if (LOG.isTraceEnabled())
                 LOG.trace("IGNORED", x);
                 return true;
             }
@@ -1515,6 +1522,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
+                if (LOG.isTraceEnabled())
                 LOG.trace("IGNORED", x);
                 return true;
             }

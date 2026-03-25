@@ -229,8 +229,11 @@ public class RegexPathSpec extends AbstractPathSpec
 
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
+            {
             LOG.debug("Creating RegexPathSpec[{}] (signature: [{}], group: {})",
                 _declaration, sig, _group);
+            }
         }
     }
 

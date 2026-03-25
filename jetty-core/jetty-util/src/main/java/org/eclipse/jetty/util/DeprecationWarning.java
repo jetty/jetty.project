@@ -40,6 +40,7 @@ public class DeprecationWarning implements Decorator
         }
         catch (Throwable t)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", t);
         }
 
@@ -70,6 +71,7 @@ public class DeprecationWarning implements Decorator
         }
         catch (Throwable t)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", t);
         }
     }

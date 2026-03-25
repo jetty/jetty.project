@@ -165,6 +165,7 @@ public class XmlParser
                 if (validating)
                     LOG.warn("Schema validation may not be supported: ", e);
                 else
+                    if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
             }
 
@@ -360,6 +361,7 @@ public class XmlParser
             }
             catch (IOException | SAXException e)
             {
+                if (LOG.isTraceEnabled())
                 LOG.trace("IGNORE EntityResolver exception for (pid=%s, sid=%s)".formatted(pid, sid), e);
             }
         }

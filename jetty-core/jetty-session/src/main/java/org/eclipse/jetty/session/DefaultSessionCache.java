@@ -155,6 +155,7 @@ public class DefaultSessionCache extends AbstractSessionCache
                     }
                     catch (Exception e)
                     {
+                        if (LOG.isTraceEnabled())
                         LOG.trace("IGNORED", e);
                     }
                 }

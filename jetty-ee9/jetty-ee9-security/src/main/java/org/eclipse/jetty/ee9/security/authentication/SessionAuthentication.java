@@ -92,6 +92,7 @@ public class SessionAuthentication extends AbstractUserAuthentication
         }
 
         _userIdentity = loginService.login(_name, _credentials, null, null);
+        if (LOG.isDebugEnabled())
         LOG.debug("Deserialized and relogged in {}", this);
     }
 

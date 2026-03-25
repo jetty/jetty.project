@@ -67,7 +67,8 @@ public class HttpSpiContextHandler extends ContextHandler
                 }
                 catch (Exception ex)
                 {
-                    LOG.debug("Failed to handle", ex);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Failed to handle", ex);
                     Response.writeError(request, response, callback, 500, null, ex);
                 }
                 return true;

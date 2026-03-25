@@ -116,10 +116,13 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
+                {
                 LOG.debug("HTTP2 request #{}/{}, {} {} {}{}{}",
                     _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
                     _requestMetaData.getMethod(), _requestMetaData.getHttpURI(), _requestMetaData.getHttpVersion(),
                     System.lineSeparator(), fields);
+                }
             }
 
             HttpField expectField = fields.getField(HttpHeader.EXPECT);
@@ -249,9 +252,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
+            {
             LOG.debug("HTTP2 Request #{}/{}: data available",
                 _stream.getId(),
                 Integer.toHexString(_stream.getSession().hashCode()));
+            }
         }
 
         return _httpChannel.onContentAvailable();
@@ -268,9 +274,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
+            {
             LOG.debug("HTTP2 Request #{}/{}, trailer:{}{}",
                 _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
                 System.lineSeparator(), trailers);
+            }
         }
 
         return _httpChannel.onContentAvailable();
@@ -401,10 +410,13 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
+            {
             LOG.debug("HTTP2 Response #{}/{}:{}{} {}{}{}",
                 _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
                 System.lineSeparator(), HttpVersion.HTTP_2, response.getStatus(),
                 System.lineSeparator(), response.getHttpFields());
+            }
         }
 
         _stream.send(new HTTP2Stream.FrameList(headersFrame, dataFrame, trailersFrame), callback);
@@ -517,10 +529,13 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
+                {
                 LOG.debug("HTTP/2 push request #{}/{}:{}{} {} {}{}{}",
                     _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), System.lineSeparator(),
                     request.getMethod(), request.getHttpURI(), request.getHttpVersion(),
                     System.lineSeparator(), request.getHttpFields());
+                }
             }
 
             return task;
@@ -536,9 +551,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
+            {
             LOG.debug("HTTP2 Response #{}/{}: {} content bytes{}",
                 _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
                 content.remaining(), lastContent ? " (last chunk)" : "");
+            }
         }
         DataFrame frame = new DataFrame(_stream.getId(), content, endStream);
         _stream.data(frame, callback);
@@ -548,8 +566,11 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
+            {
             LOG.debug("HTTP2 Response #{}/{}: trailers",
                 _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
+            }
         }
 
         HeadersFrame frame = new HeadersFrame(_stream.getId(), metaData, null, true);

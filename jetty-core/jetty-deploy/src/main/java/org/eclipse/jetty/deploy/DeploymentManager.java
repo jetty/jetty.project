@@ -250,7 +250,8 @@ public class DeploymentManager extends ContainerLifeCycle
 
         if (_useStandardBindings)
         {
-            LOG.debug("DeploymentManager using standard bindings");
+            if (LOG.isDebugEnabled())
+                LOG.debug("DeploymentManager using standard bindings");
             addLifeCycleBinding(new StandardDeployer());
             addLifeCycleBinding(new StandardStarter());
             addLifeCycleBinding(new StandardStopper());
@@ -518,7 +519,8 @@ public class DeploymentManager extends ContainerLifeCycle
                 while (it.hasNext())
                 {
                     Node node = it.next();
-                    LOG.debug("Executing Node {}", node);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Executing Node {}", node);
                     _lifecycle.runBindings(node, appentry.app, this);
                     appentry.setLifeCycleNode(node);
                 }
@@ -538,6 +540,7 @@ public class DeploymentManager extends ContainerLifeCycle
             catch (Throwable ignore)
             {
                 // The runBindings failed for 'failed' node
+                if (LOG.isTraceEnabled())
                 LOG.trace("IGNORED", ignore);
             }
 
@@ -599,7 +602,8 @@ public class DeploymentManager extends ContainerLifeCycle
 
     public void undeployAll()
     {
-        LOG.debug("Undeploy All");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Undeploy All");
         for (AppEntry appentry : _apps)
         {
             requestAppGoal(appentry, "undeployed");

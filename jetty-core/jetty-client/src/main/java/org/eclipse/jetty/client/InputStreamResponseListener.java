@@ -184,8 +184,10 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
         if (LOG.isDebugEnabled())
         {
             if (failure == null)
+                if (LOG.isDebugEnabled())
                 LOG.debug("Result success");
             else
+                if (LOG.isDebugEnabled())
                 LOG.debug("Result failure", failure);
         }
 

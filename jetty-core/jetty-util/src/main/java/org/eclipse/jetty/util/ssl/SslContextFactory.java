@@ -377,7 +377,9 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         _factory = new Factory(keyStore, trustStore, context);
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("Selected Protocols {} of {}", Arrays.asList(_selectedProtocols), Arrays.asList(supported.getProtocols()));
+            if (LOG.isDebugEnabled())
             LOG.debug("Selected Ciphers   {} of {}", Arrays.asList(_selectedCipherSuites), Arrays.asList(supported.getCipherSuites()));
         }
     }
@@ -408,6 +410,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
         catch (NoSuchAlgorithmException x)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", x);
         }
     }

@@ -272,11 +272,14 @@ public class HpackDecoder
 
                 if (LOG.isDebugEnabled())
                 {
+                    if (LOG.isDebugEnabled())
+                    {
                     LOG.debug("decoded '{}' by {}/{}/{}",
                         field,
                         nameIndex > 0 ? "IdxName" : (huffmanName ? "HuffName" : "LitName"),
                         huffmanValue ? "HuffVal" : "LitVal",
                         indexed ? "Idx" : "");
+                    }
                 }
 
                 // emit the field

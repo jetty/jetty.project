@@ -172,16 +172,19 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             ((ObjectMBean)mbean).setMBeanContainer(container);
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("MBean for {} is {}", o, mbean);
             if (mbean instanceof ObjectMBean)
             {
                 MBeanInfo info = ((ObjectMBean)mbean).getMBeanInfo();
                 for (Object a : info.getAttributes())
                 {
+                    if (LOG.isDebugEnabled())
                     LOG.debug("  {}", a);
                 }
                 for (Object a : info.getOperations())
                 {
+                    if (LOG.isDebugEnabled())
                     LOG.debug("  {}", a);
                 }
             }
@@ -478,6 +481,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         }
         catch (MBeanRegistrationException | InstanceNotFoundException x)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", x);
         }
         catch (Throwable x)

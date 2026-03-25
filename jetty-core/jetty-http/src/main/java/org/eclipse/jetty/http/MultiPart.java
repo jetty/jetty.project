@@ -1020,6 +1020,7 @@ public class MultiPart
                 ).forEach(violation ->
                 {
                     if (compliance.allows(violation))
+                        if (LOG.isDebugEnabled())
                         LOG.debug("{} ignoring violation {}: unable to allow it", getClass().getName(), violation.name());
                 });
             }

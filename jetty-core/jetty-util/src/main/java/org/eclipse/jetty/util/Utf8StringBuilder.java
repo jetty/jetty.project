@@ -359,6 +359,8 @@ public class Utf8StringBuilder implements CharsetStringBuilder
 
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
+                {
                 LOG.debug("decode(state={}, b={}: {}) _codep={}, i={}, type={}, s={}",
                     String.format("%2d", _state),
                     String.format("0x%02X", (b & 0xFF)),
@@ -366,6 +368,7 @@ public class Utf8StringBuilder implements CharsetStringBuilder
                     _codep,
                     i, type, (next == UTF8_REJECT) ? "REJECT" : (next == UTF8_ACCEPT) ? "ACCEPT" : next
                 );
+                }
             }
 
             switch (next)

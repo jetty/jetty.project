@@ -541,6 +541,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
         }
         catch (IOException e)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", e);
         }
 

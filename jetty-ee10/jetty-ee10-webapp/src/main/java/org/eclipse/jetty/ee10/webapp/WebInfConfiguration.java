@@ -407,6 +407,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
                 LOG.debug("Resource has no URI reference: {}", resource);
             }
             return "";

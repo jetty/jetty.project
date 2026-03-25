@@ -47,6 +47,7 @@ public class Jetty
         }
         catch (Exception e)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", e);
         }
 
@@ -88,6 +89,7 @@ public class Jetty
         }
         catch (NumberFormatException e)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", e);
             return "unknown";
         }

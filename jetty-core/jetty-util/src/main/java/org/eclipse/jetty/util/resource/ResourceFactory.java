@@ -350,6 +350,7 @@ public interface ResourceFactory
             {
                 // We have an input string that has what looks like a scheme, but isn't a URI.
                 // Eg: "C:\path\to\resource.txt"
+                if (LOG.isTraceEnabled())
                 LOG.trace("ignored", x);
             }
         }
@@ -364,6 +365,7 @@ public interface ResourceFactory
         }
         catch (InvalidPathException | URISyntaxException x)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("ignored", x);
         }
 

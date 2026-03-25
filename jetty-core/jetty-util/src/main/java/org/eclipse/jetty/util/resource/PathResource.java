@@ -240,11 +240,13 @@ public class PathResource extends Resource
         }
         catch (DirectoryIteratorException e)
         {
-            LOG.debug("Directory list failure", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Directory list failure", e);
         }
         catch (IOException e)
         {
-            LOG.debug("Directory list access failure", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Directory list access failure", e);
         }
         return List.of(); // empty
     }
@@ -333,6 +335,7 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", e);
             return Instant.EPOCH;
         }
@@ -455,6 +458,7 @@ public class PathResource extends Resource
             catch (Exception e)
             {
                 if (e instanceof IOException)
+                    if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
                 else
                     LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);

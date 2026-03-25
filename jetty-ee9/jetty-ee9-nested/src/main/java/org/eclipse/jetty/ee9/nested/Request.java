@@ -1665,6 +1665,7 @@ public class Request implements HttpServletRequest
             }
             catch (Exception e)
             {
+                if (LOG.isTraceEnabled())
                 LOG.trace("IGNORED", e);
                 _reader = null;
                 _readerEncoding = null;

@@ -179,8 +179,11 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
 
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
                 LOG.debug("Discovered {} extends Endpoint classes", discoveredExtendedEndpoints.size());
+                if (LOG.isDebugEnabled())
                 LOG.debug("Discovered {} @ServerEndpoint classes", discoveredAnnotatedEndpoints.size());
+                if (LOG.isDebugEnabled())
                 LOG.debug("Discovered {} ServerApplicationConfig classes", serverAppConfigs.size());
             }
 
@@ -228,6 +231,7 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
 
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
                 LOG.debug("Deploying {} ServerEndpointConfig(s)", deployableExtendedEndpointConfigs.size());
             }
             // Deploy what should be deployed.
@@ -245,6 +249,7 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
 
             if (LOG.isDebugEnabled())
             {
+                if (LOG.isDebugEnabled())
                 LOG.debug("Deploying {} @ServerEndpoint(s)", deployableAnnotatedEndpoints.size());
             }
             for (Class<?> annotatedClass : deployableAnnotatedEndpoints)

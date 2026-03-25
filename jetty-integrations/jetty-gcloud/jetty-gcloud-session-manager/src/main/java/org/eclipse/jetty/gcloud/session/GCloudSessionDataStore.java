@@ -736,6 +736,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         {
             long start = System.currentTimeMillis();
             results = _datastore.run(query);
+            if (LOG.isDebugEnabled())
             LOG.debug("Expiry query no index in {}ms", System.currentTimeMillis() - start);
         }
         else
@@ -791,6 +792,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         {
             long start = System.currentTimeMillis();
             presults = _datastore.run(query);
+            if (LOG.isDebugEnabled())
             LOG.debug("Expiry query by index in {}ms", System.currentTimeMillis() - start);
         }
         else
@@ -829,6 +831,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             {
                 long start = System.currentTimeMillis();
                 presults = _datastore.run(query);
+                if (LOG.isDebugEnabled())
                 LOG.debug("Exists query by index in {}ms", System.currentTimeMillis() - start);
             }
             else
@@ -857,6 +860,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             {
                 long start = System.currentTimeMillis();
                 results = _datastore.run(query);
+                if (LOG.isDebugEnabled())
                 LOG.debug("Exists query no index in {}ms", System.currentTimeMillis() - start);
             }
             else
@@ -1053,6 +1057,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         }
         catch (DatastoreException e)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", e);
         }
         long expiry = entity.getLong(_model.getExpiry());

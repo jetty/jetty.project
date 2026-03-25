@@ -66,6 +66,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
                 {
                     try
                     {
+                        if (LOG.isDebugEnabled())
                         LOG.debug(" add  resource to resources to examine {}", file);
                         list.add(context.getResourceFactory().newResource(file.toURI()));
                     }

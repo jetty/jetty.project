@@ -642,6 +642,7 @@ public class XmlConfiguration
                 }
                 catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
                 {
+                    if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
                     errors.add(e);
                 }
@@ -657,6 +658,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
                 {
+                    if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
                     errors.add(e);
                 }
@@ -694,6 +696,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchFieldException e)
                 {
+                    if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
                     errors.add(e);
                 }
@@ -718,6 +721,7 @@ public class XmlConfiguration
                         }
                         catch (IllegalArgumentException | IllegalAccessException e)
                         {
+                            if (LOG.isTraceEnabled())
                             LOG.trace("IGNORED", e);
                             errors.add(e);
                         }
@@ -736,6 +740,7 @@ public class XmlConfiguration
                         }
                         catch (IllegalAccessException e)
                         {
+                            if (LOG.isTraceEnabled())
                             LOG.trace("IGNORED", e);
                             errors.add(e);
                         }
@@ -768,6 +773,7 @@ public class XmlConfiguration
                     }
                     catch (NoSuchMethodException | IllegalAccessException | InstantiationException e)
                     {
+                        if (LOG.isTraceEnabled())
                         LOG.trace("IGNORED", e);
                         errors.add(e);
                     }
@@ -1011,6 +1017,7 @@ public class XmlConfiguration
                 }
                 catch (IllegalAccessException | IllegalArgumentException e)
                 {
+                    if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
                 }
             }
@@ -1071,6 +1078,7 @@ public class XmlConfiguration
                 }
                 catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
                 {
+                    if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
                 }
             }

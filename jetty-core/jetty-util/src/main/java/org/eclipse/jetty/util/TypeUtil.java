@@ -314,12 +314,14 @@ public class TypeUtil
         }
         catch (NoSuchMethodException | IllegalAccessException | InstantiationException x)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", x);
         }
         catch (InvocationTargetException x)
         {
             if (x.getTargetException() instanceof Error)
                 throw (Error)x.getTargetException();
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED", x);
         }
         return null;

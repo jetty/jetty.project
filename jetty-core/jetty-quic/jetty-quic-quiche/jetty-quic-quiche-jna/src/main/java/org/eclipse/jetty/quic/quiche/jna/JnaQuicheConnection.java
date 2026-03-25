@@ -67,6 +67,7 @@ public class JnaQuicheConnection extends QuicheConnection
         byte[] token = new byte[QuicheConnection.TokenMinter.MAX_TOKEN_LENGTH];
         size_t_pointer tokenLen = new size_t_pointer(token.length);
 
+        if (LOG.isDebugEnabled())
         LOG.debug("getting header info (fromPacket)...");
         int rc = LibQuiche.INSTANCE.quiche_header_info(packet, new size_t(packet.remaining()), new size_t(QUICHE_MAX_CONN_ID_LEN),
             version, type,
@@ -235,6 +236,7 @@ public class JnaQuicheConnection extends QuicheConnection
         byte[] token = new byte[TokenMinter.MAX_TOKEN_LENGTH];
         size_t_pointer token_len = new size_t_pointer(token.length);
 
+        if (LOG.isDebugEnabled())
         LOG.debug("getting header info (packetType)...");
         int rc = LibQuiche.INSTANCE.quiche_header_info(packet, new size_t(packet.remaining()), new size_t(QUICHE_MAX_CONN_ID_LEN),
             version, type,
@@ -268,6 +270,7 @@ public class JnaQuicheConnection extends QuicheConnection
         byte[] token = new byte[TokenMinter.MAX_TOKEN_LENGTH];
         size_t_pointer token_len = new size_t_pointer(token.length);
 
+        if (LOG.isDebugEnabled())
         LOG.debug("getting header info (negotiate)...");
         int rc = LibQuiche.INSTANCE.quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(QUICHE_MAX_CONN_ID_LEN),
             version, type,
@@ -278,14 +281,20 @@ public class JnaQuicheConnection extends QuicheConnection
             throw new IOException("failed to parse header: " + quiche_error.errToString(rc));
         packetRead.position(packetRead.limit());
 
+        if (LOG.isDebugEnabled())
         LOG.debug("version: {}", version);
+        if (LOG.isDebugEnabled())
         LOG.debug("type: {}", type);
+        if (LOG.isDebugEnabled())
         LOG.debug("scid len: {}", scid_len);
+        if (LOG.isDebugEnabled())
         LOG.debug("dcid len: {}", dcid_len);
+        if (LOG.isDebugEnabled())
         LOG.debug("token len: {}", token_len);
 
         if (LibQuiche.INSTANCE.quiche_version_is_supported(version.getPointee()).isFalse())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("version negotiation");
 
             ssize_t generated = LibQuiche.INSTANCE.quiche_negotiate_version(scid, scid_len.getPointee(), dcid, dcid_len.getPointee(), packetToSend, new size_t(packetToSend.remaining()));
@@ -297,6 +306,7 @@ public class JnaQuicheConnection extends QuicheConnection
 
         if (token_len.getValue() == 0)
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("stateless retry");
 
             token = tokenMinter.mint(dcid, (int)dcid_len.getValue());
@@ -340,6 +350,7 @@ public class JnaQuicheConnection extends QuicheConnection
         byte[] token = new byte[TokenMinter.MAX_TOKEN_LENGTH];
         size_t_pointer token_len = new size_t_pointer(token.length);
 
+        if (LOG.isDebugEnabled())
         LOG.debug("getting header info (tryAccept)...");
         int rc = LibQuiche.INSTANCE.quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(QUICHE_MAX_CONN_ID_LEN),
             version, type,
@@ -349,31 +360,41 @@ public class JnaQuicheConnection extends QuicheConnection
         if (rc < 0)
             throw new IOException("failed to parse header: " + quiche_error.errToString(rc));
 
+        if (LOG.isDebugEnabled())
         LOG.debug("version: {}", version);
+        if (LOG.isDebugEnabled())
         LOG.debug("type: {}", type);
+        if (LOG.isDebugEnabled())
         LOG.debug("scid len: {}", scid_len);
+        if (LOG.isDebugEnabled())
         LOG.debug("dcid len: {}", dcid_len);
+        if (LOG.isDebugEnabled())
         LOG.debug("token len: {}", token_len);
 
         if (LibQuiche.INSTANCE.quiche_version_is_supported(version.getPointee()).isFalse())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("need version negotiation");
             return null;
         }
 
         if (token_len.getValue() == 0)
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("need stateless retry");
             return null;
         }
 
+        if (LOG.isDebugEnabled())
         LOG.debug("token validation...");
         // Original Destination Connection ID
         byte[] odcid = tokenValidator.validate(token, (int)token_len.getValue());
         if (odcid == null)
             throw new TokenValidationException("invalid address validation token");
+        if (LOG.isDebugEnabled())
         LOG.debug("validated token");
 
+        if (LOG.isDebugEnabled())
         LOG.debug("connection creation...");
         LibQuiche.quiche_config libQuicheConfig = buildConfig(quicheConfig);
 
@@ -387,8 +408,10 @@ public class JnaQuicheConnection extends QuicheConnection
             throw new IOException("failed to create connection");
         }
 
+        if (LOG.isDebugEnabled())
         LOG.debug("connection created");
         JnaQuicheConnection quicheConnection = new JnaQuicheConnection(quicheConn, libQuicheConfig);
+        if (LOG.isDebugEnabled())
         LOG.debug("accepted, immediately receiving the same packet - remaining in buffer: {}", packetRead.remaining());
         while (packetRead.hasRemaining())
         {

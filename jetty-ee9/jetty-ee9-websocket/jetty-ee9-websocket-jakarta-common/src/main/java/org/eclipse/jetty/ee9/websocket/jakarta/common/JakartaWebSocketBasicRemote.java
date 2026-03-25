@@ -58,6 +58,7 @@ public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint 
         assertMessageNotNull(data);
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("sendBinary({})", BufferUtil.toDetailString(data));
         }
 
@@ -72,6 +73,7 @@ public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint 
         assertMessageNotNull(partialByte);
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("sendBinary({},{})", BufferUtil.toDetailString(partialByte), isLast);
         }
 
@@ -112,6 +114,7 @@ public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint 
         assertMessageNotNull(text);
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("sendText({})", TextUtils.hint(text));
         }
 
@@ -126,6 +129,7 @@ public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint 
         assertMessageNotNull(partialMessage);
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("sendText({},{})", TextUtils.hint(partialMessage), isLast);
         }
 

@@ -78,7 +78,9 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
 
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("protocols: {}", Arrays.asList(protocols));
+            if (LOG.isDebugEnabled())
             LOG.debug("processors: {}", processors);
         }
 

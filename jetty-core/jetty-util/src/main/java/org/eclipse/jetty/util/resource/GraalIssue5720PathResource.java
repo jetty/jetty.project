@@ -84,7 +84,8 @@ final class GraalIssue5720PathResource extends PathResource
                 }
                 catch (FileSystemAlreadyExistsException e2)
                 {
-                    LOG.debug("Race condition upon calling FileSystems.newFileSystem for: {}", uri, e);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Race condition upon calling FileSystems.newFileSystem for: {}", uri, e);
                 }
                 uri = Path.of(uri).toUri();
             }

@@ -185,7 +185,8 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     //Check there is a JNDI entry for this annotation
                     if (bound)
                     {
-                        LOG.debug("Bound {} as {}", (mappedName == null ? name : mappedName), name);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Bound {} as {}", (mappedName == null ? name : mappedName), name);
                         //   Make the Injection for it if the binding succeeded
                         injection = new Injection(clazz, field, type, name, mappedName);
                         injections.add(injection);
@@ -342,7 +343,8 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 
                     if (bound)
                     {
-                        LOG.debug("Bound {} as {}", (mappedName == null ? name : mappedName), name);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Bound {} as {}", (mappedName == null ? name : mappedName), name);
                         //   Make the Injection for it
                         injection = new Injection(clazz, method, paramType, resourceType, name, mappedName);
                         injections.add(injection);

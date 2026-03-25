@@ -59,6 +59,7 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         assertMessageNotNull(data);
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("sendBinary({})", BufferUtil.toDetailString(data));
         }
         FutureCallback future = new FutureCallback();
@@ -73,6 +74,7 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         assertSendHandlerNotNull(handler);
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("sendBinary({},{})", BufferUtil.toDetailString(data), handler);
         }
         sendFrame(new Frame(OpCode.BINARY).setPayload(data), new SendHandlerCallback(handler), batch);
@@ -102,6 +104,7 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         assertSendHandlerNotNull(handler);
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("sendObject({},{})", data, handler);
         }
 
@@ -179,6 +182,7 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         assertMessageNotNull(text);
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("sendText({})", TextUtils.hint(text));
         }
         FutureCallback future = new FutureCallback();
@@ -193,6 +197,7 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         assertSendHandlerNotNull(handler);
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
             LOG.debug("sendText({},{})", TextUtils.hint(text), handler);
         }
         sendFrame(new Frame(OpCode.TEXT).setPayload(text), new SendHandlerCallback(handler), batch);

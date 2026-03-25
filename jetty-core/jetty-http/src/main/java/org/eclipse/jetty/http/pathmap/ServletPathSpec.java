@@ -281,9 +281,12 @@ public class ServletPathSpec extends AbstractPathSpec
 
         if (LOG.isDebugEnabled())
         {
+            if (LOG.isDebugEnabled())
+            {
             LOG.debug("Creating {}[{}] (group: {}, prefix: \"{}\", suffix: \"{}\")",
                 getClass().getSimpleName(),
                 _declaration, _group, _prefix, _suffix);
+            }
         }
     }
 

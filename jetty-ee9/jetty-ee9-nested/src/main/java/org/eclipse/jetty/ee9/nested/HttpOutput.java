@@ -1565,6 +1565,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             if (LOG.isDebugEnabled())
             {
                 t.addSuppressed(error);
+                if (LOG.isDebugEnabled())
                 LOG.debug("Failed in call onError on {}", _writeListener, t);
             }
         }

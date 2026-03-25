@@ -1952,6 +1952,7 @@ public final class URIUtil
         }
         catch (URISyntaxException e)
         {
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED: Invalid as URI Reference: {}", reference, e);
         }
 
@@ -1963,6 +1964,7 @@ public final class URIUtil
         catch (InvalidPathException e)
         {
             // Not a path reference.
+            if (LOG.isTraceEnabled())
             LOG.trace("IGNORED: Invalid as Path Reference: {}", reference, e);
         }
 
