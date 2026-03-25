@@ -123,7 +123,8 @@ public class TestConnection implements Producer
                         }
                         catch (InterruptedException e)
                         {
-                            LOG.trace("IGNORED", e);
+                            if (LOG.isTraceEnabled())
+                                LOG.trace("IGNORED", e);
                         }
                     }
                     else

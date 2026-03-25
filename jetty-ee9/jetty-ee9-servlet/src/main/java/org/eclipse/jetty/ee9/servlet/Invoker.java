@@ -208,7 +208,8 @@ public class Invoker extends HttpServlet
                             }
                             catch (Exception e)
                             {
-                                LOG.trace("IGNORED", e);
+                                if (LOG.isTraceEnabled())
+                                    LOG.trace("IGNORED", e);
                             }
 
                             LOG.warn("Dynamic servlet {} not loaded from context {}", s, request.getContextPath());

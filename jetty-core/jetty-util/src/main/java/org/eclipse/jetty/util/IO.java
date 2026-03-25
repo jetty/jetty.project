@@ -624,7 +624,8 @@ public class IO
         }
         catch (Exception x)
         {
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
         }
     }
 
@@ -771,7 +772,8 @@ public class IO
                     // 2) The input string has unencoded characters that are not allowed in a url (like spaces)
                     //    Eg: "C:\path\to dir with spaces\"
                     // We ignore this and continue with normal path processing instead.
-                    LOG.trace("ignored", e);
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("ignored", e);
                 }
             }
 

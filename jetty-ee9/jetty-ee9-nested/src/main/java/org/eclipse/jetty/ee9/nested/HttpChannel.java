@@ -643,7 +643,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             catch (Throwable failure)
             {
                 if ("org.eclipse.jetty.continuation.ContinuationThrowable".equals(failure.getClass().getName()))
-                    LOG.trace("IGNORED", failure);
+                {
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", failure);
+                }
                 else
                     handleException(failure);
             }
@@ -716,7 +719,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch (Throwable x)
         {
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
             abort(x);
         }
         return false;

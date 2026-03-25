@@ -198,7 +198,8 @@ public class ErrorHandler extends AbstractHandler
             }
             catch (Exception e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
             }
         }
         return null;
@@ -246,7 +247,8 @@ public class ErrorHandler extends AbstractHandler
                 }
                 catch (Exception e)
                 {
-                    LOG.trace("IGNORED", e);
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", e);
                 }
             }
             if (charset == null)

@@ -569,7 +569,8 @@ public class PathResourceTest
         catch (InvalidPathException e)
         {
             // this file system does allow null char ending filenames
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
     }
 
@@ -661,7 +662,8 @@ public class PathResourceTest
         catch (InvalidPathException e)
         {
             // this file system does allow null char ending filenames
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
     }
 

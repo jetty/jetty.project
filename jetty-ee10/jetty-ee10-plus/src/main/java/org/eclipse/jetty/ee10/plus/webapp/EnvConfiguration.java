@@ -169,7 +169,8 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         catch (NameNotFoundException e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
             if (LOG.isDebugEnabled())
                 LOG.debug("No jndi entries scoped to webapp {}", context);
         }

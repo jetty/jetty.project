@@ -338,7 +338,8 @@ public class ProcessWrapper implements AutoCloseable
             }
             catch (Throwable x)
             {
-                LOG.trace("", x);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("", x);
             }
             finally
             {

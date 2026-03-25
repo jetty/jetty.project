@@ -46,7 +46,8 @@ public class JaasConfiguration extends AbstractConfiguration
         }
         catch (Throwable e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
             return false;
         }
     }

@@ -422,7 +422,8 @@ public class DoSFilter implements Filter
         }
         catch (InterruptedException e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
             response.sendError(getTooManyCode());
         }
         finally
@@ -489,7 +490,8 @@ public class DoSFilter implements Filter
             }
             catch (IllegalStateException ise)
             {
-                LOG.trace("IGNORED", ise);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", ise);
                 // abort instead
                 response.sendError(-1);
             }
@@ -705,7 +707,8 @@ public class DoSFilter implements Filter
         }
         catch (Exception x)
         {
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
         }
     }
 

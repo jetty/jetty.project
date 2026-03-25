@@ -614,7 +614,10 @@ public class ServletChannel
             catch (Throwable failure)
             {
                 if ("org.eclipse.jetty.continuation.ContinuationThrowable".equals(failure.getClass().getName()))
-                    LOG.trace("IGNORED", failure);
+                {
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", failure);
+                }
                 else
                     handleException(failure);
             }

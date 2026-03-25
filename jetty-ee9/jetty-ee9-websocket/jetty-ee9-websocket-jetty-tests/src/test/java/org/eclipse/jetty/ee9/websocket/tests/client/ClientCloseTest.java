@@ -509,7 +509,8 @@ public class ClientCloseTest
                     }
                     catch (Throwable ignore)
                     {
-                        LOG.trace("IGNORED", ignore);
+                        if (LOG.isTraceEnabled())
+                            LOG.trace("IGNORED", ignore);
                     }
                 }
                 else if (reason.startsWith("sleep|"))
@@ -523,7 +524,8 @@ public class ClientCloseTest
                     }
                     catch (InterruptedException ignore)
                     {
-                        LOG.trace("IGNORED", ignore);
+                        if (LOG.isTraceEnabled())
+                            LOG.trace("IGNORED", ignore);
                     }
                 }
             }

@@ -133,7 +133,8 @@ public class JettyDemos
         }
         catch (Exception e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
         return null;
     }

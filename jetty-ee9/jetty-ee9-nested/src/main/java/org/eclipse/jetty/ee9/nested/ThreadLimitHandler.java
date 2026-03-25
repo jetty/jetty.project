@@ -136,7 +136,8 @@ public class ThreadLimitHandler extends HandlerWrapper
             }
             catch (Exception e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
             }
         }
         return _threadLimit;
