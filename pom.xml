@@ -199,7 +199,7 @@
     <dist-management-snapshot-id>sonatype-cp</dist-management-snapshot-id>
     <dist-management-snapshot-url>https://central.sonatype.com/repository/maven-snapshots</dist-management-snapshot-url>
     <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
-    <eclipse.jdt.ecj.version>3.44.0</eclipse.jdt.ecj.version>
+    <eclipse.jdt.ecj.version>3.45.0</eclipse.jdt.ecj.version>
 
     <ee10.jakarta.bom.version>10.0.0</ee10.jakarta.bom.version>
     <ee11.jakarta.bom.version>11.0.0</ee11.jakarta.bom.version>
@@ -215,13 +215,13 @@
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.7.3</flatten.maven.plugin.version>
     <groovy.version>4.0.26</groovy.version>
-    <grpc.version>1.79.0</grpc.version>
+    <grpc.version>1.80.0</grpc.version>
     <gson.version>2.13.2</gson.version>
     <guava.version>33.5.0-jre</guava.version>
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>3.0</hamcrest.version>
     <hazelcast.version>5.6.0</hazelcast.version>
-    <hibernate.search.version>8.2.2.Final</hibernate.search.version>
+    <hibernate.search.version>8.3.0.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
     <infinispan.docker.image.version>15.2.1.Final</infinispan.docker.image.version>
     <infinispan.protostream.version>6.0.6</infinispan.protostream.version>
@@ -229,14 +229,14 @@
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
-    <jackson.version>2.21.1</jackson.version>
+    <jackson.version>2.21.2</jackson.version>
     <jacoco.maven.plugin.version>0.8.14</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
-    <jboss-logmanager.version>3.2.1.Final</jboss-logmanager.version>
+    <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
     <jboss-threads.version>3.9.2</jboss-threads.version>
     <jboss.logging.annotations.version>3.0.4.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>3.0.4.Final</jboss.logging.processor.version>
-    <jboss.logging.version>3.6.2.Final</jboss.logging.version>
+    <jboss.logging.version>3.6.3.Final</jboss.logging.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty-quiche-native.version>0.24.5</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
@@ -307,7 +307,7 @@
     <modify-sources-plugin.version>1.0.13</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.6.4</mongodb.version>
-    <netty.version>4.2.10.Final</netty.version>
+    <netty.version>4.2.11.Final</netty.version>
     <njord.version>0.9.4</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
@@ -483,12 +483,12 @@
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-annotation</artifactId>
-        <version>2.16.0</version>
+        <version>2.17.0</version>
       </dependency>
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-cpu</artifactId>
-        <version>2.16.0</version>
+        <version>2.17.0</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
@@ -2283,7 +2283,7 @@
               <dependency>
                 <groupId>org.apache.maven.shared</groupId>
                 <artifactId>maven-filtering</artifactId>
-                <version>3.4.0</version>
+                <version>3.5.0</version>
               </dependency>
               <dependency>
                 <groupId>org.eclipse.jetty.toolchain</groupId>
