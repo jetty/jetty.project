@@ -1856,7 +1856,7 @@ public class HttpParser
     protected void badMessage(HttpException x)
     {
         if (debugEnabled)
-            LOG.atDebug().setCause((Throwable)x).log("Parse exception: {} for {}", this, _handler);
+            LOG.debug("Parse exception: {} for {}", this, _handler, x);
         setState(State.CLOSE);
         if (_headerComplete)
             _handler.earlyEOF();

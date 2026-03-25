@@ -345,7 +345,7 @@ public class ConnectHandler extends Handler.Wrapper
     protected void onConnectFailure(Request request, Response response, Callback callback, Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("CONNECT failed");
+            LOG.debug("CONNECT failed", failure);
         sendConnectResponse(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
     }
 
@@ -370,7 +370,7 @@ public class ConnectHandler extends Handler.Wrapper
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Could not send CONNECT response");
+                LOG.debug("Could not send CONNECT response", x);
         }
     }
 
@@ -636,7 +636,7 @@ public class ConnectHandler extends Handler.Wrapper
                 {
                     buffer = null;
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("Failed to write initial {} bytes to server {}", remaining, DownstreamConnection.this);
+                        LOG.debug("Failed to write initial {} bytes to server {}", remaining, DownstreamConnection.this, x);
                     close();
                     getConnection().close();
                 }
@@ -754,7 +754,7 @@ public class ConnectHandler extends Handler.Wrapper
                 catch (IOException x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("Could not fill {}", TunnelConnection.this);
+                        LOG.debug("Could not fill {}", TunnelConnection.this, x);
                     buffer.release();
                     disconnect(x);
                     return Action.SUCCEEDED;
@@ -773,7 +773,7 @@ public class ConnectHandler extends Handler.Wrapper
             protected void onFailure(Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Failed to write {} bytes {}", filled, TunnelConnection.this);
+                    LOG.debug("Failed to write {} bytes {}", filled, TunnelConnection.this, x);
                 disconnect(x);
             }
 

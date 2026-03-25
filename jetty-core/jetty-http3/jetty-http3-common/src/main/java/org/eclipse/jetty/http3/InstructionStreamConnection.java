@@ -122,7 +122,7 @@ public abstract class InstructionStreamConnection extends AbstractConnection.Non
         buffer.release();
         buffer = null;
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("could not process instruction stream {}", getEndPoint());
+            LOG.debug("could not process instruction stream {}", getEndPoint(), failure);
         notifySessionFailure(errorCode, message, failure);
     }
 

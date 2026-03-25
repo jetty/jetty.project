@@ -148,7 +148,7 @@ public interface ThreadPool extends Executor
     {
         Logger log = LoggerFactory.getLogger(ThreadPool.class);
         if (log.isDebugEnabled())
-            log.atDebug().setCause(cause).log("rejected {}", task);
+            log.debug("rejected {}", task, cause);
         if (task instanceof Closeable closeable)
         {
             try

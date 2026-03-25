@@ -121,7 +121,7 @@ public class ControlFlusher extends IteratingCallback
     protected void onFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("failed to write {} on {}", entries, this);
+            LOG.debug("failed to write {} on {}", entries, this, failure);
 
         List<Entry> allEntries = new ArrayList<>(entries);
         entries.clear();

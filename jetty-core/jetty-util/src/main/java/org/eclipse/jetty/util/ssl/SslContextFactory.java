@@ -1726,7 +1726,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         {
             String msg = String.format("Unable to get CertificateFactory instance for type [%s] on provider [%s], using default", type, provider);
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log(msg);
+                LOG.debug(msg, cause);
         }
 
         return CertificateFactory.getInstance(type);
@@ -1746,7 +1746,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         {
             String msg = String.format("Unable to get CertStore instance for type [%s] on provider [%s], using default", type, provider);
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log(msg);
+                LOG.debug(msg, cause);
         }
 
         return CertStore.getInstance(type, new CollectionCertStoreParameters(crls));
@@ -1766,7 +1766,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         {
             String msg = String.format("Unable to get KeyManagerFactory instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log(msg);
+                LOG.debug(msg, cause);
         }
 
         return KeyManagerFactory.getInstance(algorithm);
@@ -1789,7 +1789,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
             {
                 String msg = String.format("Unable to get SecureRandom instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(cause).log(msg);
+                    LOG.debug(msg, cause);
             }
 
             return SecureRandom.getInstance(algorithm);
@@ -1812,7 +1812,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         {
             String msg = String.format("Unable to get SSLContext instance for protocol [%s] on provider [%s], using default", protocol, provider);
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log(msg);
+                LOG.debug(msg, cause);
         }
 
         return SSLContext.getInstance(protocol);
@@ -1831,7 +1831,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         {
             String msg = String.format("Unable to get TrustManagerFactory instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log(msg);
+                LOG.debug(msg, cause);
         }
 
         return TrustManagerFactory.getInstance(algorithm);

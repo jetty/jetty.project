@@ -139,7 +139,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("onRequest() failure");
+                LOG.debug("onRequest() failure", x);
             HttpException httpException = x instanceof HttpException http ? http : new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, x);
             return onBadMessage(httpException);
         }
@@ -550,7 +550,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         HTTP3ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? HTTP3ErrorCode.NO_ERROR : HTTP3ErrorCode.REQUEST_CANCELLED_ERROR;
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(x).log("HTTP3 Response #{}/{} failed {}", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), errorCode);
+            LOG.debug("HTTP3 Response #{}/{} failed {}", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), errorCode, x);
         stream.disconnect(errorCode.code(), x, Promise.Invocable.noop());
     }
 

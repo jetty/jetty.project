@@ -190,7 +190,7 @@ public class Socks5Proxy extends Proxy
         private void fail(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("SOCKS5 failure");
+                LOG.debug("SOCKS5 failure", x);
             getEndPoint().close(x);
             @SuppressWarnings("unchecked")
             Promise<Connection> promise = (Promise<Connection>)this.context.get(Connection.PROMISE_CONTEXT_KEY);

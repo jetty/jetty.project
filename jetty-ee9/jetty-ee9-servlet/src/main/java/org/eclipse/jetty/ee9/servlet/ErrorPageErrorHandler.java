@@ -157,7 +157,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                     Throwable originalThrowable = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
                     dbg.append(originalThrowable.getClass().getName());
                     dbg.append(')');
-                    LOG.atDebug().setCause(cause).log(dbg.toString());
+                    LOG.debug(dbg.toString(), cause);
                     break;
                 case STATUS_CODE:
                     dbg.append(" (from status code ");

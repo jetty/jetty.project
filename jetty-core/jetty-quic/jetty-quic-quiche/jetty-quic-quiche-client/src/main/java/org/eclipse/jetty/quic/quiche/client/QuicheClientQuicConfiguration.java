@@ -130,7 +130,7 @@ public class QuicheClientQuicConfiguration extends ClientQuicConfiguration
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("could not delete {}", path);
+                LOG.debug("could not delete {}", path, x);
         }
     }
 }

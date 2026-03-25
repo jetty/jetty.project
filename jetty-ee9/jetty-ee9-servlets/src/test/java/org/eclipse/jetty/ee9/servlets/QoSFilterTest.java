@@ -214,7 +214,7 @@ public class QoSFilterTest
             catch (Exception e)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Request " + url + " failed", e);
+                    LOG.debug("Request {} failed", url, e);
             }
             finally
             {

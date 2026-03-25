@@ -128,7 +128,7 @@ public class EncodedFieldSection
         catch (QpackException.StreamException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Stream decode error, stream={}", getStreamId());
+                LOG.debug("Stream decode error, stream={}", getStreamId(), x);
             if (x.isRequest())
                 return MetaData.Failed.newFailedMetaDataRequest(HttpVersion.HTTP_3, x);
             if (x.isResponse())
@@ -138,7 +138,7 @@ public class EncodedFieldSection
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Stream decode failure, stream={}", getStreamId());
+                LOG.debug("Stream decode failure, stream={}", getStreamId(), x);
             return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_3, x);
         }
     }
@@ -167,7 +167,7 @@ public class EncodedFieldSection
     private EncodedField parseNameReference(ByteBuffer buffer) throws EncodingException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("parseLiteralFieldLineWithNameReference: " + BufferUtil.toDetailString(buffer));
+            LOG.debug("parseLiteralFieldLineWithNameReference: {}", BufferUtil.toDetailString(buffer));
 
         byte firstByte = buffer.get(buffer.position());
         boolean allowEncoding = (firstByte & 0x20) != 0;

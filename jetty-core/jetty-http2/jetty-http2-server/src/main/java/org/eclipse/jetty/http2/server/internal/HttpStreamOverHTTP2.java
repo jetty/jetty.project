@@ -524,7 +524,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             public void failed(Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Could not HTTP/2 push {}", resource);
+                    LOG.debug("Could not HTTP/2 push {}", resource, x);
             }
         }, null); // TODO: handle reset from the client ?
     }
@@ -699,7 +699,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         {
             // It was a tunnel attempt, but it failed.
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("HTTP2 response #{}/{}: tunnel failed", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
+                LOG.debug("HTTP2 response #{}/{}: tunnel failed", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), x);
             // Implicitly close the request side of the stream that was left
             // open by the client to tunnel opaque bytes via DATA frames.
             // Don't send RST_STREAM if a response was already sent.
@@ -712,7 +712,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         {
             ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? ErrorCode.NO_ERROR : ErrorCode.CANCEL_STREAM_ERROR;
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("HTTP2 response #{}/{}: failed {}", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), errorCode);
+                LOG.debug("HTTP2 response #{}/{}: failed {}", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), errorCode, x);
             _stream.reset(new ResetFrame(_stream.getId(), errorCode.code), Callback.NOOP);
         }
         _recycle.set(true);

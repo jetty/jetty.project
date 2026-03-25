@@ -240,7 +240,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
     public void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<ProtocolSession> promise)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("disconnecting with {} on {}", frame, this);
+            LOG.debug("disconnecting with {} on {}", frame, this, failure);
         // Terminate all the StreamEndPoints.
         // This clears the endPoints map of this class.
         for (StreamEndPoint streamEndPoint : getStreamEndPoints())

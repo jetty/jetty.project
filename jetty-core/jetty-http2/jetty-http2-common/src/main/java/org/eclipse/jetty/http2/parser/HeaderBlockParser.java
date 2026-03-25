@@ -102,7 +102,7 @@ public class HeaderBlockParser
             catch (HpackException.StreamException x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Stream error, stream={}", headerParser.getStreamId());
+                    LOG.debug("Stream error, stream={}", headerParser.getStreamId(), x);
                 if (x.isRequest())
                     return MetaData.Failed.newFailedMetaDataRequest(HttpVersion.HTTP_2, x);
                 if (x.isResponse())
@@ -112,14 +112,14 @@ public class HeaderBlockParser
             catch (HpackException.CompressionException x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Compression error, buffer={}", BufferUtil.toDetailString(buffer));
+                    LOG.debug("Compression error, buffer={}", BufferUtil.toDetailString(buffer), x);
                 notifier.connectionFailure(buffer, ErrorCode.COMPRESSION_ERROR.code, "invalid_hpack_block");
                 return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_2, x);
             }
             catch (HpackException.SessionException x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Session error, buffer={}", BufferUtil.toDetailString(buffer));
+                    LOG.debug("Session error, buffer={}", BufferUtil.toDetailString(buffer), x);
                 notifier.connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
                 return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_2, x);
             }

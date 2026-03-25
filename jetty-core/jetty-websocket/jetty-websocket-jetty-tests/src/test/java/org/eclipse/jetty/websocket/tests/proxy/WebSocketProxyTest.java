@@ -358,7 +358,7 @@ public class WebSocketProxyTest
         {
             this.session = session;
             if (LOG.isDebugEnabled())
-                LOG.debug("{}  onOpen(): {}", this, session);
+                LOG.debug("{} onOpen(): {}", this, session);
             openLatch.countDown();
         }
 
@@ -385,7 +385,7 @@ public class WebSocketProxyTest
         public void onClose(int statusCode, String reason)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{}  onClose(): {}:{}", this, statusCode, reason);
+                LOG.debug("{} onClose(): {}:{}", this, statusCode, reason);
             this.closeCode = statusCode;
             this.closeReason = reason;
             closeLatch.countDown();
@@ -395,7 +395,7 @@ public class WebSocketProxyTest
         public void onError(Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log("{}  onError(): {}", this);
+                LOG.debug("{} onError()", this, cause);
             error = cause;
             errorLatch.countDown();
         }

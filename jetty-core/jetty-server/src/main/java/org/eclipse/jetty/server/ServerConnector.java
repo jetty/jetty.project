@@ -362,7 +362,7 @@ public class ServerConnector extends AbstractNetworkConnector
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Could not configure {} to {} on {}", option, value, channel);
+                LOG.debug("Could not configure {} to {} on {}", option, value, channel, x);
         }
     }
 

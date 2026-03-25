@@ -431,7 +431,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("running failed onAllDataRead {}", this);
+                        LOG.debug("running failed onAllDataRead {}", this, x);
                     _readListener.onError(x);
                 }
             }
@@ -447,7 +447,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("running failed onDataAvailable {}", this);
+                    LOG.debug("running failed onDataAvailable {}", this, x);
                 _readListener.onError(x);
             }
         }
