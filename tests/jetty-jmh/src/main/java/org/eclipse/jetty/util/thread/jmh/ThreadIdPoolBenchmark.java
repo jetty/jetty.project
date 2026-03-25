@@ -54,7 +54,7 @@ public class ThreadIdPoolBenchmark
     public static void main(String[] args) throws RunnerException
     {
         // Measure false-sharing with:
-        //   perf c2c record -- java -jar target/benchmark.jar ThreadIdPoolBenchmark
+        //   perf c2c record -- java -jar target/benchmarks.jar ThreadIdPoolBenchmark
         // then print report with:
         //   perf c2c report --stdio
         Options opt = new OptionsBuilder()
