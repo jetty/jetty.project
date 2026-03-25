@@ -152,19 +152,19 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                     Throwable originalThrowable = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
                     dbg.append(originalThrowable.getClass().getName());
                     dbg.append(')');
-                    if(LOG.isDebugEnabled())
+                    if (LOG.isDebugEnabled())
                         LOG.debug(dbg.toString(), cause);
                     break;
                 case STATUS_CODE:
                     dbg.append(" (from status code ");
                     dbg.append(errorStatusCode);
                     dbg.append(')');
-                    if(LOG.isDebugEnabled())
+                    if (LOG.isDebugEnabled())
                         LOG.debug(dbg.toString());
                     break;
                 case GLOBAL:
                     dbg.append(" (from global default)");
-                    if(LOG.isDebugEnabled())
+                    if (LOG.isDebugEnabled())
                         LOG.debug(dbg.toString());
                     break;
                 default:
