@@ -61,27 +61,31 @@ public class WebSocketServerExamplesTest
         @OnOpen
         public void onOpen(Session sess)
         {
-            LOG.debug("ClientSocket Connected: " + sess);
+            if (LOG.isDebugEnabled())
+                LOG.debug("ClientSocket Connected: {}", sess);
         }
 
         @OnMessage
         public void onMessage(String message)
         {
             messageQueue.offer(message);
-            LOG.debug("Received TEXT message: " + message);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Received TEXT message: {}", message);
         }
 
         @OnClose
         public void onClose(CloseReason closeReason)
         {
-            LOG.debug("ClientSocket Closed: " + closeReason);
+            if (LOG.isDebugEnabled())
+                LOG.debug("ClientSocket Closed: {}", closeReason);
             closed.countDown();
         }
 
         @OnError
         public void onError(Throwable cause)
         {
-            LOG.atDebug().setCause(cause).log("ClientSocket error");
+            if (LOG.isDebugEnabled())
+                LOG.atDebug().setCause(cause).log("ClientSocket error");
         }
     }
 

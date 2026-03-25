@@ -78,7 +78,8 @@ public class GracefulHandlerTest
     {
         URI serverURI = server.getURI();
         Socket socket = new Socket(serverURI.getHost(), serverURI.getPort());
-        LOG.debug("{} : l={},r={}", id, socket.getLocalSocketAddress(), socket.getRemoteSocketAddress());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} : l={},r={}", id, socket.getLocalSocketAddress(), socket.getRemoteSocketAddress());
         return socket;
     }
 
@@ -552,7 +553,8 @@ public class GracefulHandlerTest
             {
                 try (Blocker.Callback block = Blocker.callback())
                 {
-                    LOG.debug("Response commit (early): {}", request.getHttpURI());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Response commit (early): {}", request.getHttpURI());
                     Content.Sink.write(response, false, "", block);
                     block.block();
                 }
@@ -759,7 +761,8 @@ public class GracefulHandlerTest
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            LOG.debug("process: request={}", request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("process: request={}", request);
             request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
             {
                 @Override
@@ -794,7 +797,8 @@ public class GracefulHandlerTest
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            LOG.debug("process: request={}", request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("process: request={}", request);
             onBeforeRead(request, response);
             // Read request content (completely)
             int bytesRead = 0;
@@ -814,7 +818,8 @@ public class GracefulHandlerTest
                             continue;
                         }
                     }
-                    LOG.debug("chunk = {}", chunk);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("chunk = {}", chunk);
                     if (Content.Chunk.isFailure(chunk))
                     {
                         Response.writeError(request, response, callback, chunk.getFailure());
@@ -828,7 +833,8 @@ public class GracefulHandlerTest
             }
 
             String responseBody = "(Read:%d) (Content-Length:%d)".formatted(bytesRead, contentLength);
-            LOG.debug("Content.Sink.Write: {}", responseBody);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Content.Sink.Write: {}", responseBody);
             Content.Sink.write(response, true, responseBody, callback);
             return true;
         }

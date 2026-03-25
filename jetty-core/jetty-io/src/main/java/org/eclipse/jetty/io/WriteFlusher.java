@@ -527,7 +527,8 @@ public abstract class WriteFlusher
                     if (LOG.isDebugEnabled())
                     {
                         LOG.debug("ignored: {} {}", cause, this);
-                        LOG.trace("IGNORED", cause);
+                        if (LOG.isTraceEnabled())
+                            LOG.trace("IGNORED", cause);
                     }
                     return false;
 

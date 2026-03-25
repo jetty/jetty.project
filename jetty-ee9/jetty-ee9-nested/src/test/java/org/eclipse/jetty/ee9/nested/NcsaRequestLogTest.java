@@ -542,7 +542,8 @@ public class NcsaRequestLogTest
                         }
                         catch (IOException | IllegalStateException th)
                         {
-                            LOG.trace("IGNORED", th);
+                            if (LOG.isTraceEnabled())
+                                LOG.trace("IGNORED", th);
                         }
                         finally
                         {

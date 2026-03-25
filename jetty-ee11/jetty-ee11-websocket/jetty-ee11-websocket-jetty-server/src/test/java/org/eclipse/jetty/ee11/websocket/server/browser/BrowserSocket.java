@@ -273,13 +273,15 @@ public class BrowserSocket
     {
         if (this.session == null)
         {
-            LOG.debug("Not connected");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not connected");
             return;
         }
 
         if (!session.isOpen())
         {
-            LOG.debug("Not open");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not open");
             return;
         }
 

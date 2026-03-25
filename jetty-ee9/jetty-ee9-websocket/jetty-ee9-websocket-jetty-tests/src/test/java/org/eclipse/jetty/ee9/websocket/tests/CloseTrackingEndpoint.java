@@ -80,7 +80,8 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        LOG.debug("onWebSocketClose({},{})", statusCode, reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onWebSocketClose({},{})", statusCode, reason);
         super.onWebSocketClose(statusCode, reason);
         closeCount.incrementAndGet();
         closeCode = statusCode;
@@ -91,7 +92,8 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     @Override
     public void onWebSocketConnect(Session session)
     {
-        LOG.debug("onWebSocketConnect({})", session);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onWebSocketConnect({})", session);
         super.onWebSocketConnect(session);
         openLatch.countDown();
     }
@@ -99,7 +101,8 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        LOG.atDebug().setCause(cause).log("onWebSocketError");
+        if (LOG.isDebugEnabled())
+            LOG.atDebug().setCause(cause).log("onWebSocketError");
         assertThat("Unique Error Event", error.compareAndSet(null, cause), is(true));
         errorLatch.countDown();
     }
@@ -107,14 +110,16 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     @Override
     public void onWebSocketText(String message)
     {
-        LOG.debug("onWebSocketText({})", message);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onWebSocketText({})", message);
         messageQueue.offer(message);
     }
 
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
-        LOG.debug("onWebSocketBinary({},{},{})", payload, offset, len);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onWebSocketBinary({},{},{})", payload, offset, len);
         binaryMessageQueue.offer(ByteBuffer.wrap(payload, offset, len));
     }
 

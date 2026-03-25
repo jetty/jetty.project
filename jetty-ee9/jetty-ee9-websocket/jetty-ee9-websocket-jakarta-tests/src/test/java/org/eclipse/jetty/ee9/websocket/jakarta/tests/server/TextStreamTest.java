@@ -286,8 +286,8 @@ public class TextStreamTest
                     totalRead += read;
                     output.write(buffer, 0, read);
                 }
-
-                LOG.debug("{} total bytes read/write", totalRead);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} total bytes read/write", totalRead);
             }
         }
     }

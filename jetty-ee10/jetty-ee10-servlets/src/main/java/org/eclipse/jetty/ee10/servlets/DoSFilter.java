@@ -422,7 +422,8 @@ public class DoSFilter implements Filter
         }
         catch (InterruptedException e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
             response.sendError(getTooManyCode());
         }
         finally
@@ -489,7 +490,8 @@ public class DoSFilter implements Filter
             }
             catch (IllegalStateException ise)
             {
-                LOG.trace("IGNORED", ise);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", ise);
                 // abort instead
                 response.sendError(-1);
             }
@@ -690,7 +692,8 @@ public class DoSFilter implements Filter
     @Override
     public void destroy()
     {
-        LOG.debug("Destroy {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Destroy {}", this);
         stopScheduler();
         _rateTrackers.clear();
         _whitelist.clear();
@@ -704,7 +707,8 @@ public class DoSFilter implements Filter
         }
         catch (Exception x)
         {
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
         }
     }
 
@@ -1037,7 +1041,8 @@ public class DoSFilter implements Filter
         }
         clearWhitelist();
         _whitelist.addAll(result);
-        LOG.debug("Whitelisted IP addresses: {}", result);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Whitelisted IP addresses: {}", result);
     }
 
     /**

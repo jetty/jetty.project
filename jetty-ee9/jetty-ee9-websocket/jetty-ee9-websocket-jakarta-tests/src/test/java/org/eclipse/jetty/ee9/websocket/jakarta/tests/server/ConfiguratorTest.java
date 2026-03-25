@@ -199,7 +199,8 @@ public class ConfiguratorTest
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
         {
             int upgradeNum = upgradeCount.addAndGet(1);
-            LOG.debug("Upgrade Num: {}", upgradeNum);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Upgrade Num: {}", upgradeNum);
             sec.getUserProperties().put("upgradeNum", Integer.toString(upgradeNum));
             switch (upgradeNum)
             {

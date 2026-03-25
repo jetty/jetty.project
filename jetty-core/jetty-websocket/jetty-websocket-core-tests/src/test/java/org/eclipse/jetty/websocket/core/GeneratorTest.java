@@ -1144,7 +1144,8 @@ public class GeneratorTest
         // but only a few bytes in the middle are made available for the payload.
         // we are testing that masking works as intended, even if the provided
         // payload does not start at position 0.
-        LOG.debug("Payload = {}", BufferUtil.toDetailString(payload));
+        if (LOG.isDebugEnabled())
+            LOG.debug("Payload = {}", BufferUtil.toDetailString(payload));
         Frame frame = new Frame(OpCode.TEXT).setPayload(payload);
         byte[] maskingKey = Hex.asByteArray("11223344");
         frame.setMask(maskingKey);

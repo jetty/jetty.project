@@ -651,7 +651,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
             }
             catch (Throwable t)
             {
-                LOG.trace("could not read manifest of {}", url, t);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("could not read manifest of {}", url, t);
             }
 
             definePackage(packageName, null, null, null, null, null, null, null);

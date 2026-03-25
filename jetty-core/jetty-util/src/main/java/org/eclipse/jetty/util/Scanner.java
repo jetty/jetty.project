@@ -956,7 +956,8 @@ public class Scanner extends ContainerLifeCycle
 
         if (startFailures != null)
         {
-            LOG.debug("scan failures {}", startFailures);
+            if (LOG.isDebugEnabled())
+                LOG.debug("scan failures {}", startFailures);
             startFailures.ifExceptionThrowRuntime();
         }
     }

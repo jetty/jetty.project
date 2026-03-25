@@ -59,7 +59,8 @@ public class quiche_h
 
         public void log(MemorySegment msg, MemorySegment argp)
         {
-            LOG.debug(msg.getString(0L, StandardCharsets.UTF_8));
+            if (LOG.isDebugEnabled())
+                LOG.debug(msg.getString(0L, StandardCharsets.UTF_8));
         }
     }
 
