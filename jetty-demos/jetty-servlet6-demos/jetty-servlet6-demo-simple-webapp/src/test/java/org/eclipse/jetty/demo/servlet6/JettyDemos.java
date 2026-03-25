@@ -39,11 +39,13 @@ public class JettyDemos
     static
     {
         Path demosDir = asDirectory(System.getProperty("jetty.demos"));
-        LOG.debug("JettyDemos(prop(jetty.demos)) = {}", demosDir);
+        if (LOG.isDebugEnabled())
+            LOG.debug("JettyDemos(prop(jetty.demos)) = {}", demosDir);
         if (demosDir == null)
         {
             demosDir = asDirectory(System.getenv().get("JETTY_DEMOS"));
-            LOG.debug("JettyDemos(env(JETTY_DEMOS)) = {}", demosDir);
+            if (LOG.isDebugEnabled())
+                LOG.debug("JettyDemos(env(JETTY_DEMOS)) = {}", demosDir);
         }
 
         if (demosDir == null || !Files.exists(demosDir.resolve("pom.xml")))
@@ -52,7 +54,8 @@ public class JettyDemos
             {
                 Path working = Paths.get(System.getProperty("user.dir"));
                 Path dir = null;
-                LOG.debug("JettyDemos(prop(user.dir)) = {}", working);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("JettyDemos(prop(user.dir)) = {}", working);
                 while (dir == null && working != null)
                 {
                     dir = asDirectory(working.resolve("jetty-demos/jetty-servlet6-demos/jetty-servlet6-demo-simple-webapp").toString());
@@ -105,24 +108,27 @@ public class JettyDemos
 
             if (StringUtil.isBlank(path))
             {
-                LOG.debug("asDirectory {} is blank", path);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("asDirectory {} is blank", path);
                 return null;
             }
 
             Path dir = Paths.get(path);
             if (!Files.exists(dir))
             {
-                LOG.debug("asDirectory {} does not exist", path);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("asDirectory {} does not exist", path);
                 return null;
             }
 
             if (!Files.isDirectory(dir))
             {
-                LOG.debug("asDirectory {} is not a directory", path);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("asDirectory {} is not a directory", path);
                 return null;
             }
-
-            LOG.debug("asDirectory {}", dir);
+            if (LOG.isDebugEnabled())
+                LOG.debug("asDirectory {}", dir);
             return dir.toAbsolutePath();
         }
         catch (Exception e)

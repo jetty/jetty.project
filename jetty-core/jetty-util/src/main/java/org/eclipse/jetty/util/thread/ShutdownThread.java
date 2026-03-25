@@ -72,7 +72,8 @@ public class ShutdownThread extends Thread
         catch (Exception e)
         {
             LOG.trace("IGNORED", e);
-            LOG.debug("shutdown already commenced");
+            if (LOG.isDebugEnabled())
+                LOG.debug("shutdown already commenced");
         }
     }
 
@@ -134,18 +135,21 @@ public class ShutdownThread extends Thread
                 if (lifeCycle.isStarted())
                 {
                     lifeCycle.stop();
-                    LOG.debug("Stopped {}", lifeCycle);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Stopped {}", lifeCycle);
                 }
 
                 if (lifeCycle instanceof Destroyable)
                 {
                     ((Destroyable)lifeCycle).destroy();
-                    LOG.debug("Destroyed {}", lifeCycle);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Destroyed {}", lifeCycle);
                 }
             }
             catch (Exception ex)
             {
-                LOG.debug("Unable to stop", ex);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to stop", ex);
             }
         }
     }

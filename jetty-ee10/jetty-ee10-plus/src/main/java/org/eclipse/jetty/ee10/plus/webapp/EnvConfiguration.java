@@ -170,11 +170,13 @@ public class EnvConfiguration extends AbstractConfiguration
         catch (NameNotFoundException e)
         {
             LOG.trace("IGNORED", e);
-            LOG.debug("No jndi entries scoped to webapp {}", context);
+            if (LOG.isDebugEnabled())
+                LOG.debug("No jndi entries scoped to webapp {}", context);
         }
         catch (NamingException e)
         {
-            LOG.debug("Error unbinding jndi entries scoped to webapp {}", context, e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Error unbinding jndi entries scoped to webapp {}", context, e);
         }
     }
 
@@ -192,17 +194,17 @@ public class EnvConfiguration extends AbstractConfiguration
     {
         InitialContext ic = new InitialContext();
         Context envCtx = (Context)ic.lookup("java:comp/env");
-
-        LOG.debug("Binding env entries from the jvm scope");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Binding env entries from the jvm scope");
         doBindings(envCtx, null);
-
-        LOG.debug("Binding env entries from the server scope");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Binding env entries from the server scope");
         doBindings(envCtx, context.getServer());
-
-        LOG.debug("Binding env entries from environment {} scope", ServletContextHandler.ENVIRONMENT.getName());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Binding env entries from environment {} scope", ServletContextHandler.ENVIRONMENT.getName());
         doBindings(envCtx, ServletContextHandler.ENVIRONMENT.getName());
-
-        LOG.debug("Binding env entries from the context scope");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Binding env entries from the context scope");
         doBindings(envCtx, context);
     }
 

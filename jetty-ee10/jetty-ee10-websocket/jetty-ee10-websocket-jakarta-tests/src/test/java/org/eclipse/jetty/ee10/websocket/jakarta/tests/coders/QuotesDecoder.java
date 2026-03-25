@@ -38,7 +38,8 @@ public class QuotesDecoder implements Decoder.TextStream<Quotes>
             String line;
             while ((line = buf.readLine()) != null)
             {
-                LOG.debug("decode() line = {}", line);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("decode() line = {}", line);
                 switch (line.charAt(0))
                 {
                     case 'a':
@@ -49,7 +50,8 @@ public class QuotesDecoder implements Decoder.TextStream<Quotes>
                         break;
                 }
             }
-            LOG.debug("decode() complete");
+            if (LOG.isDebugEnabled())
+                LOG.debug("decode() complete");
         }
         return quotes;
     }

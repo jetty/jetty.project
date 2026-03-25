@@ -240,11 +240,13 @@ public class PathResource extends Resource
         }
         catch (DirectoryIteratorException e)
         {
-            LOG.debug("Directory list failure", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Directory list failure", e);
         }
         catch (IOException e)
         {
-            LOG.debug("Directory list access failure", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Directory list access failure", e);
         }
         return List.of(); // empty
     }

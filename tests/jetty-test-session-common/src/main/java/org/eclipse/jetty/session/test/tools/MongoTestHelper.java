@@ -143,8 +143,8 @@ public class MongoTestHelper
         Document sessionDocument = collection.find(Filters.eq(MongoSessionDataStore.__ID, data.getId())).first();
         if (sessionDocument == null)
             return false; //doesn't exist
-
-        LOG.debug("{}", sessionDocument);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}", sessionDocument);
 
         boolean valid = (Boolean)sessionDocument.get(MongoSessionDataStore.__VALID);
 

@@ -281,21 +281,25 @@ public class CrossOriginFilter implements Filter
             {
                 if (isSimpleRequest(request))
                 {
-                    LOG.debug("Cross-origin request to {} is a simple cross-origin request", request.getRequestURI());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Cross-origin request to {} is a simple cross-origin request", request.getRequestURI());
                     handleSimpleResponse(request, response, origin);
                 }
                 else if (isPreflightRequest(request))
                 {
-                    LOG.debug("Cross-origin request to {} is a preflight cross-origin request", request.getRequestURI());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Cross-origin request to {} is a preflight cross-origin request", request.getRequestURI());
                     handlePreflightResponse(request, response, origin);
                     if (chainPreflight)
-                        LOG.debug("Preflight cross-origin request to {} forwarded to application", request.getRequestURI());
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Preflight cross-origin request to {} forwarded to application", request.getRequestURI());
                     else
                         return;
                 }
                 else
                 {
-                    LOG.debug("Cross-origin request to {} is a non-simple cross-origin request", request.getRequestURI());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Cross-origin request to {} is a non-simple cross-origin request", request.getRequestURI());
                     handleSimpleResponse(request, response, origin);
                 }
 
@@ -422,18 +426,21 @@ public class CrossOriginFilter implements Filter
     private boolean isMethodAllowed(HttpServletRequest request)
     {
         String accessControlRequestMethod = request.getHeader(ACCESS_CONTROL_REQUEST_METHOD_HEADER);
-        LOG.debug("{} is {}", ACCESS_CONTROL_REQUEST_METHOD_HEADER, accessControlRequestMethod);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} is {}", ACCESS_CONTROL_REQUEST_METHOD_HEADER, accessControlRequestMethod);
         boolean result = false;
         if (accessControlRequestMethod != null)
             result = allowedMethods.contains(accessControlRequestMethod);
-        LOG.debug("Method {} is" + (result ? "" : " not") + " among allowed methods {}", accessControlRequestMethod, allowedMethods);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Method {} is" + (result ? "" : " not") + " among allowed methods {}", accessControlRequestMethod, allowedMethods);
         return result;
     }
 
     private List<String> getAccessControlRequestHeaders(HttpServletRequest request)
     {
         String accessControlRequestHeaders = request.getHeader(ACCESS_CONTROL_REQUEST_HEADERS_HEADER);
-        LOG.debug("{} is {}", ACCESS_CONTROL_REQUEST_HEADERS_HEADER, accessControlRequestHeaders);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} is {}", ACCESS_CONTROL_REQUEST_HEADERS_HEADER, accessControlRequestHeaders);
         if (accessControlRequestHeaders == null)
             return Collections.emptyList();
 
@@ -452,7 +459,8 @@ public class CrossOriginFilter implements Filter
     {
         if (anyHeadersAllowed)
         {
-            LOG.debug("Any header is allowed");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Any header is allowed");
             return true;
         }
 
@@ -474,7 +482,8 @@ public class CrossOriginFilter implements Filter
                 break;
             }
         }
-        LOG.debug("Headers [{}] are" + (result ? "" : " not") + " among allowed headers {}", requestedHeaders, allowedHeaders);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Headers [{}] are" + (result ? "" : " not") + " among allowed headers {}", requestedHeaders, allowedHeaders);
         return result;
     }
 

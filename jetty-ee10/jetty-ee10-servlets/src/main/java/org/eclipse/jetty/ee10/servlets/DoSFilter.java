@@ -690,7 +690,8 @@ public class DoSFilter implements Filter
     @Override
     public void destroy()
     {
-        LOG.debug("Destroy {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Destroy {}", this);
         stopScheduler();
         _rateTrackers.clear();
         _whitelist.clear();
@@ -1037,7 +1038,8 @@ public class DoSFilter implements Filter
         }
         clearWhitelist();
         _whitelist.addAll(result);
-        LOG.debug("Whitelisted IP addresses: {}", result);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Whitelisted IP addresses: {}", result);
     }
 
     /**

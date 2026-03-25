@@ -1319,7 +1319,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 }
                                 catch (IOException e)
                                 {
-                                    LOG.debug("Incomplete flush?", e);
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("Incomplete flush?", e);
                                     close(e);
                                     write = BufferUtil.EMPTY_BUFFER;
                                     _flushState = FlushState.WRITING;

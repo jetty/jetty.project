@@ -104,7 +104,8 @@ public class ErrorHandler extends AbstractHandler
                 }
                 catch (ServletException e)
                 {
-                    LOG.debug("Unable to call error dispatcher", e);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unable to call error dispatcher", e);
                     if (response.isCommitted())
                         return;
                 }

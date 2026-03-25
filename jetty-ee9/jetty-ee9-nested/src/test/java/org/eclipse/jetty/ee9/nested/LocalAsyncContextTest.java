@@ -207,7 +207,8 @@ public class LocalAsyncContextTest
 
     private synchronized String process(String content) throws Exception
     {
-        LOG.debug("TEST process: {}", content);
+        if (LOG.isDebugEnabled())
+            LOG.debug("TEST process: {}", content);
         reset();
         String request = "GET / HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
@@ -281,7 +282,8 @@ public class LocalAsyncContextTest
         @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
-            LOG.debug("handle {} {}", baseRequest.getDispatcherType(), baseRequest);
+            if (LOG.isDebugEnabled())
+                LOG.debug("handle {} {}", baseRequest.getDispatcherType(), baseRequest);
             if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
             {
                 if (_read > 0)

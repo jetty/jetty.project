@@ -270,11 +270,13 @@ public class TestJNDI
             NamingContext ncontext = (NamingContext)sub0;
 
             Name nn = ncontext.toCanonicalName(ncontext.getNameParser("").parse("/yellow/blue/"));
-            LOG.debug(nn.toString());
+            if (LOG.isDebugEnabled())
+                LOG.debug(nn.toString());
             assertEquals(2, nn.size());
 
             nn = ncontext.toCanonicalName(ncontext.getNameParser("").parse("/yellow/blue"));
-            LOG.debug(nn.toString());
+            if (LOG.isDebugEnabled())
+                LOG.debug(nn.toString());
             assertEquals(2, nn.size());
 
             nn = ncontext.toCanonicalName(ncontext.getNameParser("").parse("/"));
@@ -284,7 +286,8 @@ public class TestJNDI
             assertEquals(1, nn.size());
 
             nn = ncontext.toCanonicalName(ncontext.getNameParser("").parse(""));
-            LOG.debug(nn.toString());
+            if (LOG.isDebugEnabled())
+                LOG.debug(nn.toString());
             assertEquals(0, nn.size());
 
             Context fee = ncontext.createSubcontext("fee");

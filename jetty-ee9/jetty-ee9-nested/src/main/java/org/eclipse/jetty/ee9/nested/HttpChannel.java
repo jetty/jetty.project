@@ -985,7 +985,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             catch (Throwable e)
             {
-                LOG.debug("Unable to complete bad message", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to complete bad message", e);
                 abort(e);
             }
         }

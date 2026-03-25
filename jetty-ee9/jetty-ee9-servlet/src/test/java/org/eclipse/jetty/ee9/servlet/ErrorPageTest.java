@@ -162,7 +162,8 @@ public class ErrorPageTest
         rawRequest.append("\r\n");
 
         String rawResponse = _connector.getResponse(rawRequest.toString());
-        LOG.debug(rawResponse);
+        if (LOG.isDebugEnabled())
+            LOG.debug(rawResponse);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(595));

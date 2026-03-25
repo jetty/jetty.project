@@ -179,7 +179,8 @@ public class Invoker extends HttpServlet
                     }
                     catch (Exception e)
                     {
-                        LOG.debug("Unable to start {}", holder, e);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Unable to start {}", holder, e);
                         throw new UnavailableException(e.toString());
                     }
 

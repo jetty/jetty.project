@@ -330,7 +330,8 @@ public class ReservedThreadExecutorExchanger extends ContainerLifeCycle implemen
                 _thread = null;
                 // Clear any interrupted status.
                 if (Thread.interrupted() && LOG.isDebugEnabled())
-                    LOG.debug("interrupted {}", this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("interrupted {}", this);
             }
         }
 

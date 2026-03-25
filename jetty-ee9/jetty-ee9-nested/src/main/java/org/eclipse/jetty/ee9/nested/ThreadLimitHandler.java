@@ -129,7 +129,8 @@ public class ThreadLimitHandler extends HandlerWrapper
             {
                 if (!_includeExcludeSet.test(InetAddress.getByName(ip)))
                 {
-                    LOG.debug("excluded {}", ip);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("excluded {}", ip);
                     return 0;
                 }
             }
@@ -254,7 +255,8 @@ public class ThreadLimitHandler extends HandlerWrapper
             return remote;
 
         String ip = getRemoteIP(baseRequest);
-        LOG.debug("ip={}", ip);
+        if (LOG.isDebugEnabled())
+            LOG.debug("ip={}", ip);
         if (ip == null)
             return null;
 

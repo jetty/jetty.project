@@ -81,7 +81,10 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
                 if (sslContextFactories.size() > 1)
                     LOG.info("Multiple SslContextFactory.Server instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
                 else
-                    LOG.debug("No SslContextFactory.Server instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("No SslContextFactory.Server instances discovered. Directly configure a SslClientCertAuthenticator to use one.");
+                }
             }
             else
             {

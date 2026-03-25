@@ -431,7 +431,8 @@ public class PathResourceTest
             }
             catch (InvalidPathException e)
             {
-                LOG.debug("IGNORE", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("IGNORE", e);
             }
         }
 
@@ -517,7 +518,8 @@ public class PathResourceTest
         }
         catch (InvalidPathException e)
         {
-            LOG.debug("IGNORE", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("IGNORE", e);
             assumeTrue(false, "FileSystem does not support null character");
         }
 
@@ -625,7 +627,8 @@ public class PathResourceTest
         }
         catch (InvalidPathException e)
         {
-            LOG.debug("IGNORE", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("IGNORE", e);
             assumeTrue(false, "FileSystem does not support null character");
         }
 

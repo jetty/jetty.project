@@ -377,7 +377,8 @@ public class FailedSelectorTest
                 {
                     CustomManagedSelector customManagedSelector = (CustomManagedSelector)managedSelector;
                     Selector selector = customManagedSelector.getSelector();
-                    LOG.debug("Closing selector {}}", selector);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Closing selector {}}", selector);
                     IO.close(selector);
                 }
             }

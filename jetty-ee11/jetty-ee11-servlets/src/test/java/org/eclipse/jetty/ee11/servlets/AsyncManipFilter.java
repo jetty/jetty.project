@@ -46,21 +46,25 @@ public class AsyncManipFilter implements Filter, AsyncListener
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        LOG.debug("doFilter() - {}", chain);
+        if (LOG.isDebugEnabled())
+            LOG.debug("doFilter() - {}", chain);
         AsyncContext ctx = (AsyncContext)request.getAttribute(MANIP_KEY);
         if (ctx == null)
         {
-            LOG.debug("Initial pass through: {}", chain);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Initial pass through: {}", chain);
             ctx = request.startAsync();
             ctx.addListener(this);
             ctx.setTimeout(1000);
-            LOG.debug("AsyncContext: {}", ctx);
+            if (LOG.isDebugEnabled())
+                LOG.debug("AsyncContext: {}", ctx);
             request.setAttribute(MANIP_KEY, ctx);
             return;
         }
         else
         {
-            LOG.debug("Second pass through: {}", chain);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Second pass through: {}", chain);
             chain.doFilter(request, response);
         }
     }
@@ -73,25 +77,29 @@ public class AsyncManipFilter implements Filter, AsyncListener
     @Override
     public void onComplete(AsyncEvent event) throws IOException
     {
-        LOG.debug("onComplete() {}", event);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onComplete() {}", event);
     }
 
     @Override
     public void onTimeout(AsyncEvent event) throws IOException
     {
-        LOG.debug("onTimeout() {}", event.getAsyncContext());
+        if (LOG.isDebugEnabled())
+            LOG.debug("onTimeout() {}", event.getAsyncContext());
         event.getAsyncContext().dispatch();
     }
 
     @Override
     public void onError(AsyncEvent event) throws IOException
     {
-        LOG.debug("onError()", event.getThrowable());
+        if (LOG.isDebugEnabled())
+            LOG.debug("onError()", event.getThrowable());
     }
 
     @Override
     public void onStartAsync(AsyncEvent event) throws IOException
     {
-        LOG.debug("onTimeout() {}", event);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onTimeout() {}", event);
     }
 }

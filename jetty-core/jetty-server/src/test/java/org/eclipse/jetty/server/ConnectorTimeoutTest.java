@@ -316,7 +316,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             }
             catch (SSLHandshakeException e)
             {
-                LOG.debug("Legit possible SSL result", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Legit possible SSL result", e);
             }
             catch (IOException e)
             {
