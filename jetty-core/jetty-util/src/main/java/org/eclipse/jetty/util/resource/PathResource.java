@@ -458,8 +458,10 @@ public class PathResource extends Resource
             catch (Exception e)
             {
                 if (e instanceof IOException)
+                {
                     if (LOG.isTraceEnabled())
                         LOG.trace("IGNORED", e);
+                }
                 else
                     LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
                 // Not possible to serve this resource.
