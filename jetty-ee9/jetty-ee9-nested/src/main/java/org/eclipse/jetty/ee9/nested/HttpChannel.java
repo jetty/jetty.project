@@ -635,7 +635,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             {
                 if ("org.eclipse.jetty.continuation.ContinuationThrowable".equals(failure.getClass().getName()))
                     if (LOG.isTraceEnabled())
-                    LOG.trace("IGNORED", failure);
+                        LOG.trace("IGNORED", failure);
                 else
                     handleException(failure);
             }
@@ -709,7 +709,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         catch (Throwable x)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", x);
+                LOG.trace("IGNORED", x);
             abort(x);
         }
         return false;
@@ -850,12 +850,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (LOG.isDebugEnabled())
         {
             MetaData.Request metaData = _request.getMetaData();
-            if (LOG.isDebugEnabled())
-            {
             LOG.debug("onRequest for {} on {}{}{} {} {}{}{}", metaData.getHttpURI().toString(), this, System.lineSeparator(),
                 metaData.getMethod(), metaData.getHttpURI().toString(), metaData.getHttpVersion(), System.lineSeparator(),
                 metaData.getHttpFields());
-            }
         }
     }
 
@@ -868,12 +865,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (LOG.isDebugEnabled())
         {
             MetaData.Request metaData = _request.getMetaData();
-            if (LOG.isDebugEnabled())
-            {
             LOG.debug("onProcess for {} on {}{}{} {} {}{}{}", metaData.getHttpURI().toString(), this, System.lineSeparator(),
                 metaData.getMethod(), metaData.getHttpURI().toString(), metaData.getHttpVersion(), System.lineSeparator(),
                 metaData.getHttpFields());
-            }
         }
     }
 
@@ -985,7 +979,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             catch (Throwable e)
             {
                 if (LOG.isDebugEnabled())
-                LOG.debug("Unable to complete bad message", e);
+                    LOG.debug("Unable to complete bad message", e);
                 abort(e);
             }
         }

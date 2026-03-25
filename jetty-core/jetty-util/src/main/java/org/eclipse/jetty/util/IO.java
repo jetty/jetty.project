@@ -617,7 +617,7 @@ public class IO
         catch (Exception x)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", x);
+                LOG.trace("IGNORED", x);
         }
     }
 

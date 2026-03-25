@@ -226,7 +226,6 @@ public class HazelcastSessionDataStore extends AbstractSessionDataStore
                 {
                     if (LOG.isDebugEnabled())
                     {
-                        if (LOG.isDebugEnabled())
                         LOG.debug("Session {} does not exist in Hazelcast", candidate);
                     }
                     return true;
@@ -240,7 +239,6 @@ public class HazelcastSessionDataStore extends AbstractSessionDataStore
                         {
                             if (LOG.isDebugEnabled())
                             {
-                                if (LOG.isDebugEnabled())
                                 LOG.debug("Session {} managed by {} is expired", candidate, _context.getWorkerName());
                             }
                             return true;

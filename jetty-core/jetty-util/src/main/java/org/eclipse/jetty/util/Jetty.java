@@ -48,7 +48,7 @@ public class Jetty
         catch (Exception e)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", e);
+                LOG.trace("IGNORED", e);
         }
 
         String gitHash = __buildProperties.getProperty("buildNumber", "unknown");
@@ -90,7 +90,7 @@ public class Jetty
         catch (NumberFormatException e)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", e);
+                LOG.trace("IGNORED", e);
             return "unknown";
         }
     }

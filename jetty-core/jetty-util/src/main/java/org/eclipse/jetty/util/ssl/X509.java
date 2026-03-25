@@ -149,7 +149,7 @@ public class X509
         catch (Throwable x)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", x);
+                LOG.trace("IGNORED", x);
             return null;
         }
     }

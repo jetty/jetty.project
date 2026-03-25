@@ -623,13 +623,13 @@ public class ServletHandler extends ScopedHandler
             {
                 // flush the cache
                 if (LOG.isDebugEnabled())
-                LOG.debug("{} flushed filter chain cache for {}", this, baseRequest.getDispatcherType());
+                    LOG.debug("{} flushed filter chain cache for {}", this, baseRequest.getDispatcherType());
                 cache.clear();
             }
             chain = chain == null ? new ChainEnd(servletHolder) : chain;
             // flush the cache
             if (LOG.isDebugEnabled())
-            LOG.debug("{} cached filter chain for {}: {}", this, baseRequest.getDispatcherType(), chain);
+                LOG.debug("{} cached filter chain for {}: {}", this, baseRequest.getDispatcherType(), chain);
             cache.put(key, chain);
         }
         return chain;
@@ -733,7 +733,7 @@ public class ServletHandler extends ScopedHandler
             catch (Throwable e)
             {
                 if (LOG.isDebugEnabled())
-                LOG.debug("Unable to start {}", h, e);
+                    LOG.debug("Unable to start {}", h, e);
                 multiException.add(e);
             }
         };
@@ -1417,11 +1417,8 @@ public class ServletHandler extends ScopedHandler
 
             if (LOG.isDebugEnabled())
             {
-                if (LOG.isDebugEnabled())
-                {
                 LOG.debug("filterNameMap={} pathFilters={} servletFilterMap={} servletPathMap={} servletNameMap={}",
                     _filterNameMap, _filterPathMappings, _filterNameMappings, _servletPathMap, _servletNameMap);
-                }
             }
         }
     }

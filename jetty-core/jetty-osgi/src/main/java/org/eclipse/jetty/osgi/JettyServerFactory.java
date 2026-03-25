@@ -183,7 +183,7 @@ public class JettyServerFactory
                 catch (Exception x)
                 {
                     if (LOG.isTraceEnabled())
-                    LOG.trace("IGNORED", x);
+                        LOG.trace("IGNORED", x);
                 }
             }
             throw e;

@@ -377,7 +377,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
             if (getServletHandler().isStartWithUnavailable())
             {
                 if (LOG.isTraceEnabled())
-                LOG.trace("IGNORED", ex);
+                    LOG.trace("IGNORED", ex);
                 return;
             }
             else
@@ -395,7 +395,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
             if (getServletHandler().isStartWithUnavailable())
             {
                 if (LOG.isTraceEnabled())
-                LOG.trace("IGNORED", ex);
+                    LOG.trace("IGNORED", ex);
                 return;
             }
             else

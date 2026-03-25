@@ -232,7 +232,6 @@ public class ServletTester extends ContainerLifeCycle
     {
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
             LOG.debug("Request: {}", request);
         }
         return _connector.getResponse(request);
@@ -242,7 +241,6 @@ public class ServletTester extends ContainerLifeCycle
     {
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
             LOG.debug("Request: {}", request);
         }
         return _connector.getResponse(request, idleFor, units);
@@ -252,7 +250,6 @@ public class ServletTester extends ContainerLifeCycle
     {
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
             LOG.debug("Request (Buffer): {}", BufferUtil.toUTF8String(request));
         }
         return _connector.getResponse(request);
@@ -262,7 +259,6 @@ public class ServletTester extends ContainerLifeCycle
     {
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
             LOG.debug("Requests (Buffer): {}", BufferUtil.toUTF8String(requestsBuffer));
         }
         return _connector.getResponse(requestsBuffer, idleFor, units);

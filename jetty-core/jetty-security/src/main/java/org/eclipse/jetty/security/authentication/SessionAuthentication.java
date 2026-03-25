@@ -89,7 +89,7 @@ public class SessionAuthentication extends LoginAuthenticator.UserAuthentication
 
         _userIdentity = loginService.login(_name, _credentials, null, null);
         if (LOG.isDebugEnabled())
-        LOG.debug("Deserialized and relogged in {}", this);
+            LOG.debug("Deserialized and relogged in {}", this);
     }
 
     @Override

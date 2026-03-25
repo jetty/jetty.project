@@ -102,13 +102,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
             if (LOG.isDebugEnabled())
             {
-                if (LOG.isDebugEnabled())
-                {
                 LOG.debug("HTTP3 request #{}/{}, {} {} {}{}{}",
                     stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                     requestMetaData.getMethod(), requestMetaData.getHttpURI(), requestMetaData.getHttpVersion(),
                     System.lineSeparator(), fields);
-                }
             }
 
             HttpField expectField = fields.getField(HttpHeader.EXPECT);
@@ -212,11 +209,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
-            {
             LOG.debug("HTTP3 request data available #{}/{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
-            }
         }
 
         Stream.Data data = stream.readData();
@@ -244,12 +238,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
         HttpFields trailers = frame.getMetaData().getHttpFields().asImmutable();
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
-            {
             LOG.debug("HTTP3 Request #{}/{}, trailer:{}{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                 System.lineSeparator(), trailers);
-            }
         }
         try (AutoLock ignored = lock.lock())
         {
@@ -381,13 +372,10 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
-            {
             LOG.debug("HTTP3 Response #{}/{}:{}{} {}{}{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                 System.lineSeparator(), HttpVersion.HTTP_3, response.getStatus(),
                 System.lineSeparator(), response.getHttpFields());
-            }
         }
 
         CompletableFuture<Stream> cf = stream.respond(headersFrame);
@@ -462,12 +450,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
-            {
             LOG.debug("HTTP3 Response #{}/{}: {} content bytes{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                 content.remaining(), lastContent ? " (last chunk)" : "");
-            }
         }
         DataFrame frame = new DataFrame(content, endStream);
         return stream.data(frame);
@@ -477,12 +462,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
-            {
             LOG.debug("HTTP3 Response #{}/{}: trailer{}{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                 System.lineSeparator(), trailers);
-            }
         }
 
         HeadersFrame frame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);

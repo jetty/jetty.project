@@ -63,14 +63,14 @@ public class DecoratedObjectFactory implements Iterable<Decorator>, Decorator
     public void addDecorator(Decorator decorator)
     {
         if (LOG.isDebugEnabled())
-        LOG.debug("Adding Decorator: {}", decorator);
+            LOG.debug("Adding Decorator: {}", decorator);
         decorators.add(decorator);
     }
 
     public boolean removeDecorator(Decorator decorator)
     {
         if (LOG.isDebugEnabled())
-        LOG.debug("Remove Decorator: {}", decorator);
+            LOG.debug("Remove Decorator: {}", decorator);
         return decorators.remove(decorator);
     }
 
@@ -84,7 +84,6 @@ public class DecoratedObjectFactory implements Iterable<Decorator>, Decorator
     {
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
             LOG.debug("Creating Instance: {}", clazz);
         }
         T o = clazz.getDeclaredConstructor().newInstance();

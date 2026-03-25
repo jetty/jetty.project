@@ -297,7 +297,7 @@ public class LdapLoginModule extends AbstractLoginModule
             catch (NamingException e)
             {
                 if (LOG.isDebugEnabled())
-                LOG.debug("no password available under attribute: {}", _userPasswordAttribute);
+                    LOG.debug("no password available under attribute: {}", _userPasswordAttribute);
             }
         }
 

@@ -1323,7 +1323,7 @@ public class BufferUtil
         catch (Throwable x)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", x);
+                LOG.trace("IGNORED", x);
             buf.append("!!concurrent mod!!");
         }
     }

@@ -336,7 +336,7 @@ public class PathResource extends Resource
         catch (IOException e)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", e);
+                LOG.trace("IGNORED", e);
             return Instant.EPOCH;
         }
     }
@@ -459,7 +459,7 @@ public class PathResource extends Resource
             {
                 if (e instanceof IOException)
                     if (LOG.isTraceEnabled())
-                    LOG.trace("IGNORED", e);
+                        LOG.trace("IGNORED", e);
                 else
                     LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
                 // Not possible to serve this resource.

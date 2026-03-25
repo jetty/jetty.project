@@ -392,10 +392,8 @@ public class ManagedSession implements Session
             if (LOG.isDebugEnabled())
             {
                 if (secs <= 0)
-                    if (LOG.isDebugEnabled())
                     LOG.debug("Session {} is now immortal (maxInactiveInterval={})", _sessionData.getId(), secs);
                 else
-                    if (LOG.isDebugEnabled())
                     LOG.debug("Session {} maxInactiveInterval={}", _sessionData.getId(), secs);
             }
         }

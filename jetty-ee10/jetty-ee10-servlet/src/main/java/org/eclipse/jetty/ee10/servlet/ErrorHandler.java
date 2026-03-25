@@ -215,7 +215,7 @@ public class ErrorHandler implements Request.Handler
             catch (Exception e)
             {
                 if (LOG.isTraceEnabled())
-                LOG.trace("IGNORED", e);
+                    LOG.trace("IGNORED", e);
             }
         }
         return null;
@@ -262,7 +262,7 @@ public class ErrorHandler implements Request.Handler
                 catch (Exception e)
                 {
                     if (LOG.isTraceEnabled())
-                    LOG.trace("IGNORED", e);
+                        LOG.trace("IGNORED", e);
                 }
             }
             if (charset == null)

@@ -164,11 +164,8 @@ public class ResourceService
 
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
-            {
             LOG.debug(".doGet(req={}, resp={}, callback={}, content={}) pathInContext={}, reqRanges={}, endsWithSlash={}",
                 request, response, callback, content, pathInContext, reqRanges, endsWithSlash);
-            }
         }
 
         try
@@ -237,11 +234,8 @@ public class ResourceService
     {
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
-            {
             LOG.debug("sendRedirect(req={}, resp={}, callback={}, target={})",
                 request, response, callback, target);
-            }
         }
 
         Response.sendRedirect(request, response, callback, target);
@@ -627,11 +621,8 @@ public class ResourceService
     {
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
-            {
             LOG.debug("sendDirectory(req={}, resp={}, content={}, callback={}, pathInContext={})",
                 request, response, httpContent, callback, pathInContext);
-            }
         }
         if (!_dirAllowed)
         {
@@ -659,7 +650,6 @@ public class ResourceService
     {
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
             LOG.debug("sendData(req={}, resp={}, callback={}) content={}, reqRanges={})",
                 request, response, callback, content, reqRanges);
         }

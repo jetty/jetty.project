@@ -106,7 +106,6 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
         Objects.requireNonNull(handler, "MessageHandler.Partial cannot be null");
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
             LOG.debug("Add MessageHandler.Partial: {}", handler);
         }
 
@@ -125,7 +124,6 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
         Objects.requireNonNull(handler, "MessageHandler.Whole cannot be null");
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
             LOG.debug("Add MessageHandler.Whole: {}", handler);
         }
 
@@ -195,7 +193,7 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
         catch (Throwable t)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", t);
+                LOG.trace("IGNORED", t);
         }
     }
 

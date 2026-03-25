@@ -542,7 +542,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
         catch (IOException e)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", e);
+                LOG.trace("IGNORED", e);
         }
 
         if (Resources.missing(r) && subUriPath.endsWith("/jetty-dir.css"))

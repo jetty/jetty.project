@@ -639,14 +639,14 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             catch (Throwable x)
             {
                 if (LOG.isTraceEnabled())
-                LOG.trace("IGNORED", x);
+                    LOG.trace("IGNORED", x);
             }
             return false;
         }
         else
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", ex);
+                LOG.trace("IGNORED", ex);
             return false;
         }
     }

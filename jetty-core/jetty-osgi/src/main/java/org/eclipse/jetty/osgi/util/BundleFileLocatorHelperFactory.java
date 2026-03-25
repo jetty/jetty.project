@@ -48,7 +48,7 @@ public class BundleFileLocatorHelperFactory
         catch (Throwable t)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", t);
+                LOG.trace("IGNORED", t);
         }
         return helper;
     }

@@ -138,7 +138,7 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         catch (Throwable x)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("Could not retrieve local socket address", x);
+                LOG.trace("Could not retrieve local socket address", x);
             return null;
         }
     }

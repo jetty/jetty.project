@@ -58,7 +58,7 @@ public class ShutdownThread extends Thread
         catch (Exception e)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", e);
+                LOG.trace("IGNORED", e);
             LOG.info("shutdown already commenced");
         }
     }
@@ -73,7 +73,7 @@ public class ShutdownThread extends Thread
         catch (Exception e)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", e);
+                LOG.trace("IGNORED", e);
             if (LOG.isDebugEnabled())
                 LOG.debug("shutdown already commenced");
         }

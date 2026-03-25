@@ -252,7 +252,7 @@ public class JDBCLoginService extends AbstractLoginService
             catch (Exception e)
             {
                 if (LOG.isTraceEnabled())
-                LOG.trace("IGNORED", e);
+                    LOG.trace("IGNORED", e);
             }
         }
         _con = null;

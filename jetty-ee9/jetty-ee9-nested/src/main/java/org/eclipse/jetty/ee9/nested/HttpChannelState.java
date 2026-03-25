@@ -888,7 +888,7 @@ public class HttpChannelState
             {
                 if (QuietException.isQuiet(th))
                     if (LOG.isDebugEnabled())
-                    LOG.debug("unhandled in state {}", _requestState, th);
+                        LOG.debug("unhandled in state {}", _requestState, th);
                 else
                     LOG.warn("unhandled in state {}", _requestState, th);
             }

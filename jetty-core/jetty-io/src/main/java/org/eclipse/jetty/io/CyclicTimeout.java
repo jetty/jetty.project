@@ -112,13 +112,10 @@ public abstract class CyclicTimeout implements Destroyable
             {
                 if (LOG.isDebugEnabled())
                 {
-                    if (LOG.isDebugEnabled())
-                    {
                     LOG.debug("Installed timeout in {} ms, {} wake up in {} ms",
                         units.toMillis(delay),
                         newWakeup != null ? "new" : "existing",
                         NanoTime.millisElapsed(now, wakeup._at));
-                    }
                 }
                 break;
             }

@@ -168,7 +168,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             catch (Exception e)
             {
                 if (LOG.isTraceEnabled())
-                LOG.trace("IGNORED", e);
+                    LOG.trace("IGNORED", e);
                 q = 0.0D;
             }
             buffer.setLength(Math.max(0, paramName - 1));

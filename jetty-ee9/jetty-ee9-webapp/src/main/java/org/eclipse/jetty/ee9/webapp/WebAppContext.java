@@ -403,7 +403,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             catch (MalformedURLException e)
             {
                 if (LOG.isTraceEnabled())
-                LOG.trace("IGNORED", e);
+                    LOG.trace("IGNORED", e);
                 if (mue == null)
                     mue = e;
             }
@@ -481,12 +481,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
             LOG.debug("Thread Context classloader {}", loader);
             loader = loader.getParent();
             while (loader != null)
             {
-                if (LOG.isDebugEnabled())
                 LOG.debug("Parent class loader: {} ", loader);
                 loader = loader.getParent();
             }

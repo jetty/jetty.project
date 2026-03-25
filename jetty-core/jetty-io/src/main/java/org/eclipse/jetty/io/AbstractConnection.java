@@ -114,7 +114,7 @@ public abstract class AbstractConnection implements Connection, Invocable
                 catch (RejectedExecutionException e)
                 {
                     if (LOG.isDebugEnabled())
-                    LOG.debug("Rejected", e);
+                        LOG.debug("Rejected", e);
                     callback.failed(x);
                 }
                 break;
@@ -231,10 +231,8 @@ public abstract class AbstractConnection implements Connection, Invocable
         if (LOG.isDebugEnabled())
         {
             if (cause == null)
-                if (LOG.isDebugEnabled())
                 LOG.debug("onClose {}", this);
             else
-                if (LOG.isDebugEnabled())
                 LOG.debug("onClose {}", this, cause);
         }
         for (Listener listener : _listeners)

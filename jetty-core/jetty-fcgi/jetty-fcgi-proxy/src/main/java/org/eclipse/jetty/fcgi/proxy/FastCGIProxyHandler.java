@@ -411,12 +411,9 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
                     fcgi.put(field.getName(), field.getValue());
                 }
                 String eol = System.lineSeparator();
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("FastCGI variables {}{}", eol, fcgi.entrySet().stream()
-                        .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
-                        .collect(Collectors.joining(eol)));
-                }
+                LOG.debug("FastCGI variables {}{}", eol, fcgi.entrySet().stream()
+                    .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
+                    .collect(Collectors.joining(eol)));
             }
         }
     }

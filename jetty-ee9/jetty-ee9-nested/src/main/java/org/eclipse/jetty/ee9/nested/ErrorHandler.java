@@ -105,7 +105,7 @@ public class ErrorHandler extends AbstractHandler
                 catch (ServletException e)
                 {
                     if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to call error dispatcher", e);
+                        LOG.debug("Unable to call error dispatcher", e);
                     if (response.isCommitted())
                         return;
                 }
@@ -199,7 +199,7 @@ public class ErrorHandler extends AbstractHandler
             catch (Exception e)
             {
                 if (LOG.isTraceEnabled())
-                LOG.trace("IGNORED", e);
+                    LOG.trace("IGNORED", e);
             }
         }
         return null;
@@ -248,7 +248,7 @@ public class ErrorHandler extends AbstractHandler
                 catch (Exception e)
                 {
                     if (LOG.isTraceEnabled())
-                    LOG.trace("IGNORED", e);
+                        LOG.trace("IGNORED", e);
                 }
             }
             if (charset == null)

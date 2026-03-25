@@ -380,11 +380,8 @@ public class ResourceServlet extends HttpServlet
 
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
             LOG.debug("  .baseResource = {}", baseResource);
-            if (LOG.isDebugEnabled())
             LOG.debug("  .resourceService = {}", _resourceService);
-            if (LOG.isDebugEnabled())
             LOG.debug("  .welcomeServletMode = {}", _welcomeServletMode);
         }
     }

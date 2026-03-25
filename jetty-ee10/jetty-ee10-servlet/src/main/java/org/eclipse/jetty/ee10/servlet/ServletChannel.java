@@ -586,7 +586,7 @@ public class ServletChannel
             {
                 if ("org.eclipse.jetty.continuation.ContinuationThrowable".equals(failure.getClass().getName()))
                     if (LOG.isTraceEnabled())
-                    LOG.trace("IGNORED", failure);
+                        LOG.trace("IGNORED", failure);
                 else
                     handleException(failure);
             }
@@ -624,7 +624,7 @@ public class ServletChannel
         catch (Throwable x)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", x);
+                LOG.trace("IGNORED", x);
             abort(x);
         }
         return false;

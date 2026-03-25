@@ -99,7 +99,6 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
             if (_notFound.add(name))
                 if (LOG.isDebugEnabled())
                 {
-                    if (LOG.isDebugEnabled())
                     LOG.debug("Caching not found {}", name, nfe);
                 }
             throw nfe;

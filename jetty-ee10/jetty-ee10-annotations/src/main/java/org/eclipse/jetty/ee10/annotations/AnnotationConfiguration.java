@@ -555,23 +555,18 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
             LOG.debug("Annotation scanning elapsed time={}ms", elapsedMs);
             for (ParserTask p : state._parserTasks)
             {
-                if (LOG.isDebugEnabled())
                 LOG.debug("Scanned {} in {}ms", p.getResource(), TimeUnit.NANOSECONDS.toMillis(p.getStatistic().getElapsedNanos()));
             }
 
-            if (LOG.isDebugEnabled())
-            {
             LOG.debug("Scanned {} container path jars, {} WEB-INF/lib jars, {} WEB-INF/classes dirs in {}ms for context {}",
                 (state._containerPathStats == null ? -1 : state._containerPathStats.getTotal()),
                 (state._webInfLibStats == null ? -1 : state._webInfLibStats.getTotal()),
                 (state._webInfClassesStats == null ? -1 : state._webInfClassesStats.getTotal()),
                 elapsedMs,
                 context);
-            }
         }
 
         if (timeout)
@@ -1004,7 +999,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
             int i = 0;
             for (ServletContainerInitializer sci : nonExcludedInitializers)
             {
-                if (LOG.isDebugEnabled())
                 LOG.debug("ServletContainerInitializer: {} {} from {}", (++i), sci.getClass().getName(), sciResourceMap.get(sci));
             }
         }

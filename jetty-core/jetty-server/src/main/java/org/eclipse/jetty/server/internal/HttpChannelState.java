@@ -1698,9 +1698,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 if (LOG.isDebugEnabled())
                 {
-                    if (LOG.isDebugEnabled())
                     LOG.debug("already completed {} by", _request, _completedBy);
-                    if (LOG.isDebugEnabled())
                     LOG.debug("Second complete", new Throwable("second complete"));
                 }
                 return true;

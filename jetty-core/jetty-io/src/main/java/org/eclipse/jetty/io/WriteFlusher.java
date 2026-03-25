@@ -485,9 +485,7 @@ public abstract class WriteFlusher
                 case FAILED:
                     if (LOG.isDebugEnabled())
                     {
-                        if (LOG.isDebugEnabled())
                         LOG.debug("ignored: {} {}", cause, this);
-                        if (LOG.isTraceEnabled())
                         LOG.trace("IGNORED", cause);
                     }
                     return false;

@@ -255,13 +255,10 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             if (LOG.isDebugEnabled())
             {
                 if (result.getFailure() != null)
-                    if (LOG.isDebugEnabled())
                     LOG.debug("General Failure", result.getFailure());
                 if (result.getRequestFailure() != null)
-                    if (LOG.isDebugEnabled())
                     LOG.debug("Request Failure", result.getRequestFailure());
                 if (result.getResponseFailure() != null)
-                    if (LOG.isDebugEnabled())
                     LOG.debug("Response Failure", result.getResponseFailure());
             }
 

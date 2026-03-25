@@ -49,7 +49,7 @@ public class JspConfiguration extends AbstractConfiguration
         catch (Throwable e)
         {
             if (LOG.isTraceEnabled())
-            LOG.trace("IGNORED", e);
+                LOG.trace("IGNORED", e);
             return false;
         }
     }

@@ -1399,7 +1399,6 @@ public class HttpOutput extends ServletOutputStream
             if (LOG.isDebugEnabled())
             {
                 t.addSuppressed(error);
-                if (LOG.isDebugEnabled())
                 LOG.debug("Failed in call onError on {}", _writeListener, t);
             }
         }

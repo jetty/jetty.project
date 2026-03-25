@@ -366,7 +366,7 @@ public class AttributeNormalizer
             catch (IOException x)
             {
                 if (LOG.isTraceEnabled())
-                LOG.trace("IGNORED", x);
+                    LOG.trace("IGNORED", x);
             }
 
             if (path.startsWith(a.path))

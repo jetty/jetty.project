@@ -370,10 +370,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         if (LOG.isDebugEnabled())
         {
             if (_dftMaxIdleSecs <= 0)
-                if (LOG.isDebugEnabled())
                 LOG.debug("Sessions created by this manager are immortal (default maxInactiveInterval={})", _dftMaxIdleSecs);
             else
-                if (LOG.isDebugEnabled())
                 LOG.debug("SessionManager default maxInactiveInterval={}", _dftMaxIdleSecs);
         }
     }
@@ -1377,7 +1375,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 {
                     if (LOG.isDebugEnabled())
                     {
-                    LOG.debug(duplicateSession(
+                        LOG.debug(duplicateSession(
                         requestedSessionId, true, requestedSessionIdFromCookie,
                         id, false, i < cookieIds));
                     }
