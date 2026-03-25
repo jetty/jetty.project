@@ -291,8 +291,10 @@ public class CrossOriginFilter implements Filter
                         LOG.debug("Cross-origin request to {} is a preflight cross-origin request", request.getRequestURI());
                     handlePreflightResponse(request, response, origin);
                     if (chainPreflight)
+                    {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Preflight cross-origin request to {} forwarded to application", request.getRequestURI());
+                    }
                     else
                         return;
                 }
