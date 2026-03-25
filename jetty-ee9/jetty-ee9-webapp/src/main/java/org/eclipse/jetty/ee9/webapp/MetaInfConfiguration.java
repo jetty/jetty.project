@@ -148,7 +148,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (Resources.missing(resource))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Classpath URI doesn't exist: " + resource);
+                    LOG.debug("Classpath URI doesn't exist: {}", resource);
             }
             else
             {

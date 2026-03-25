@@ -214,7 +214,7 @@ public abstract class QuicheSession extends AbstractSession
     public void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<Session> promise)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("disconnecting {} {}", frame, this);
+            LOG.debug("disconnecting {} {}", frame, this, failure);
 
         // Terminate all the streams.
         // This clears the streams map of this class.
@@ -551,7 +551,7 @@ public abstract class QuicheSession extends AbstractSession
         protected void onCompleteFailure(Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("failed to write cipher bytes, closing session on {}", QuicheSession.this);
+                LOG.debug("failed to write cipher bytes, closing session on {}", QuicheSession.this, failure);
             complete(failure);
         }
 

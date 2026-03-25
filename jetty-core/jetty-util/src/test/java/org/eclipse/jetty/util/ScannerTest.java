@@ -838,7 +838,7 @@ public class ScannerTest
         public void pathsChanged(Map<Path, Notification> pathsChanged)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().addArgument(pathsChanged).log("pathsChanged: {}");
+                LOG.debug("pathsChanged: {}", pathsChanged);
             add(pathsChanged);
         }
 

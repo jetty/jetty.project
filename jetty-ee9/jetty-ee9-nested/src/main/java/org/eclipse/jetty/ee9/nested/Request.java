@@ -867,7 +867,7 @@ public class Request implements HttpServletRequest
         catch (Exception x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Bad Cookie");
+                LOG.debug("Bad Cookie", x);
         }
         return null;
     }

@@ -134,7 +134,7 @@ public class ControlParser
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("parse failed");
+                LOG.debug("parse failed", x);
             sessionFailure(buffer, HTTP3ErrorCode.INTERNAL_ERROR.code(), "parser_error", x);
         }
     }

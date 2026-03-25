@@ -515,7 +515,7 @@ public class ServletChannel
                             else
                                 ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
                             if (LOG.isDebugEnabled())
-                                LOG.atDebug().setCause(cause).log("Could not perform error handling, aborting");
+                                LOG.debug("Could not perform error handling, aborting", cause);
 
                             try
                             {
@@ -695,7 +695,7 @@ public class ServletChannel
         if (quiet != null || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log(_servletContextRequest.getServletApiRequest().getRequestURI());
+                LOG.debug(_servletContextRequest.getServletApiRequest().getRequestURI(), failure);
         }
         else if (noStack != null)
         {

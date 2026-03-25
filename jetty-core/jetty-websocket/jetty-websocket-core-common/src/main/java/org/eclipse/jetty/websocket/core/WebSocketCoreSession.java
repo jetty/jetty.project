@@ -285,7 +285,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     public void processConnectionError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(cause).log("processConnectionError {}", this);
+            LOG.debug("processConnectionError {}", this, cause);
 
         int code;
         if (cause instanceof CloseException)
@@ -310,7 +310,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     public void processHandlerError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(cause).log("processHandlerError {}", this);
+            LOG.debug("processHandlerError {}", this, cause);
 
         int code;
         if (cause instanceof CloseException)
@@ -370,7 +370,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         x ->
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Error during OPEN");
+                LOG.debug("Error during OPEN", x);
             processHandlerError(new CloseException(CloseStatus.SERVER_ERROR, x), NOOP);
         });
 

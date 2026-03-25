@@ -95,7 +95,7 @@ public class QuicheServerConnectionFactory extends AbstractQuicheServerConnectio
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("could not create ProtocolSession");
+                    LOG.debug("could not create ProtocolSession", x);
                 session.disconnect(new ConnectionCloseFrame(ErrorCode.APPLICATION_ERROR.code(), "invalid_protocol"), x, Promise.Invocable.noop());
             }
         }

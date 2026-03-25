@@ -78,7 +78,7 @@ public class ChatWebSocketClient
                             handler.sendText("[" + value + ": changed name from " + name + "]", Callback.NOOP, false);
                             name = value;
                             if (LOG.isDebugEnabled())
-                                LOG.debug("name changed: " + name);
+                                LOG.debug("name changed: {}", name);
                         }
                         break;
 

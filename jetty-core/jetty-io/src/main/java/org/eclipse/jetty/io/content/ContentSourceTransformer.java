@@ -226,7 +226,7 @@ public abstract class ContentSourceTransformer implements Content.Source
     public void fail(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("Failing {}", this);
+            LOG.debug("Failing {}", this, failure);
 
         while (true)
         {

@@ -358,7 +358,7 @@ public class RawHTTP2ProxyTest
         public void onFailure(Session session, Throwable failure, Callback callback)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("CP failure on " + session, failure);
+                LOGGER.debug("CP failure on {}", session, failure);
             // TODO
             callback.succeeded();
         }
@@ -595,7 +595,7 @@ public class RawHTTP2ProxyTest
         public void onFailure(Session session, Throwable failure, Callback callback)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("SP failure on " + session, failure);
+                LOGGER.debug("SP failure on {}", session, failure);
             // TODO
             callback.succeeded();
         }

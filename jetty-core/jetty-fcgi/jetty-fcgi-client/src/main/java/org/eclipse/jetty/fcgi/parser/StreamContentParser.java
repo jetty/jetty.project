@@ -92,7 +92,7 @@ public class StreamContentParser extends ContentParser
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Exception while invoking listener {}", listener);
+                LOG.debug("Exception while invoking listener {}", listener, x);
             return false;
         }
     }
@@ -108,7 +108,7 @@ public class StreamContentParser extends ContentParser
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Exception while invoking listener {}", listener);
+                LOG.debug("Exception while invoking listener {}", listener, x);
             return false;
         }
     }

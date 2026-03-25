@@ -116,7 +116,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
         catch (Exception e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Error resolving WEB-INF/" + xmlFile, e);
+                LOG.debug("Error resolving WEB-INF/{}", xmlFile, e);
             return null;
         }
     }

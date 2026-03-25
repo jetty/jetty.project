@@ -55,7 +55,7 @@ public class EventSocket
         this.session = session;
         this.endpointConfig = endpointConfig;
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onOpen(): {}", this, session);
+            LOG.debug("{} onOpen(): {}", this, session);
         openLatch.countDown();
     }
 
@@ -63,7 +63,7 @@ public class EventSocket
     public void onMessage(String message) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onMessage(): {}", this, message);
+            LOG.debug("{} onMessage(): {}", this, message);
         textMessages.offer(message);
     }
 
@@ -71,7 +71,7 @@ public class EventSocket
     public void onMessage(ByteBuffer message) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onMessage(): {}", this, message);
+            LOG.debug("{} onMessage(): {}", this, message);
         binaryMessages.offer(message);
     }
 
@@ -79,7 +79,7 @@ public class EventSocket
     public void onClose(CloseReason reason)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onClose(): {}", this, reason);
+            LOG.debug("{} onClose(): {}", this, reason);
 
         closeReason = reason;
         closeLatch.countDown();
@@ -89,7 +89,7 @@ public class EventSocket
     public void onError(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(cause).log("{}  onError()", this);
+            LOG.debug("{} onError()", this, cause);
         error = cause;
         errorLatch.countDown();
     }

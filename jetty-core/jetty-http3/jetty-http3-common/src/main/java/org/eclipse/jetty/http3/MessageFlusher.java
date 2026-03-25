@@ -93,7 +93,7 @@ public class MessageFlusher extends IteratingCallback
     private void onGenerateFailure(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(cause).log("failed to generate {} on {}", entry, this);
+            LOG.debug("failed to generate {} on {}", entry, this, cause);
 
         accumulator.clear();
 
@@ -118,7 +118,7 @@ public class MessageFlusher extends IteratingCallback
     private void onWriteFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("failed to write {} on {}", entry, this);
+            LOG.debug("failed to write {} on {}", entry, this, failure);
 
         entry.callback().failed(failure);
         entry = null;
