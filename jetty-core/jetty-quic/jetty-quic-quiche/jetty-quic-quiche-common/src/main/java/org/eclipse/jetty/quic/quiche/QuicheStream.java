@@ -187,7 +187,7 @@ public class QuicheStream extends AbstractStream
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure reading from {}", this);
+                LOG.debug("failure reading from {}", this, x);
 
             Content.Chunk failure;
             try (AutoLock ignored = lock.lock())

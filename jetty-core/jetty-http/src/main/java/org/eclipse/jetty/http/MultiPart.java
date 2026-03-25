@@ -477,7 +477,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Error closing part {}", this);
+                    LOG.debug("Error closing part {}", this, x);
             }
         }
     }
@@ -1315,7 +1315,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("parse failure {} {}", state, BufferUtil.toDetailString(buffer));
+                    LOG.debug("parse failure {} {}", state, BufferUtil.toDetailString(buffer), x);
                 buffer.position(buffer.limit());
                 notifyEndOfLineViolations();
                 notifyFailure(x);
@@ -1715,7 +1715,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1728,7 +1728,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1741,7 +1741,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1754,7 +1754,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1767,7 +1767,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1780,7 +1780,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1793,7 +1793,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1826,7 +1826,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -2026,7 +2026,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying part {}", name);
+                    LOG.debug("failure while notifying part {}", name, x);
             }
         }
     }

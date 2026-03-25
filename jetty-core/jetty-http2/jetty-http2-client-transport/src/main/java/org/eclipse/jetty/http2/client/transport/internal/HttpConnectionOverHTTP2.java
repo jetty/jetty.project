@@ -301,7 +301,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     void onFailure(Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("Failure {}", this);
+            LOG.debug("Failure {}", this, failure);
         try (AutoLock ignored = lock.lock())
         {
             if (closed)

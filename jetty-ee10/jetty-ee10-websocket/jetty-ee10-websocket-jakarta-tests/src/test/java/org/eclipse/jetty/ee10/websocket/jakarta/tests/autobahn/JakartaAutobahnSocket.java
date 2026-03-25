@@ -60,7 +60,7 @@ public class JakartaAutobahnSocket
     public void onError(Throwable t)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(t).log("onError()");
+            LOG.debug("onError()", t);
     }
 
     @OnClose

@@ -303,8 +303,8 @@ public class HttpOutput extends ServletOutputStream
             }
 
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("onWriteComplete({},{}) {}->{} c={} cb={} w={}",
-                    last, failure, state, lockedStateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake);
+                LOG.debug("onWriteComplete({}) {}->{} c={} cb={} w={}",
+                    last, state, lockedStateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake, failure);
         }
 
         try
@@ -1451,7 +1451,7 @@ public class HttpOutput extends ServletOutputStream
             if (LOG.isDebugEnabled())
             {
                 t.addSuppressed(error);
-                LOG.atDebug().setCause(t).log("Failed in call onError on {}", _writeListener);
+                LOG.debug("Failed in call onError on {}", _writeListener, t);
             }
         }
         finally

@@ -301,7 +301,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
                 {
                     // Likely stopping this component, exit.
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("interrupted while waiting for permit {}", task);
+                        LOG.debug("interrupted while waiting for permit {}", task, x);
                 }
                 finally
                 {

@@ -127,7 +127,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection.NonBlocki
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("could not process stream {}", getEndPoint());
+                LOG.debug("could not process stream {}", getEndPoint(), x);
             releaseBuffer();
             getEndPoint().close(x);
         }

@@ -607,7 +607,7 @@ public abstract class IteratingCallback implements Callback
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log("failed {}", this);
+                LOG.debug("failed {}", this, cause);
             switch (_state)
             {
                 case PROCESSING:
@@ -750,7 +750,7 @@ public abstract class IteratingCallback implements Callback
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log("abort {}", this);
+                LOG.debug("abort {}", this, cause);
 
             // Are we already aborted?
             if (_aborted)

@@ -184,7 +184,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         catch (IOException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Could not read from {}", endPoint);
+                LOG.debug("Could not read from {}", endPoint, x);
             return -1;
         }
         finally

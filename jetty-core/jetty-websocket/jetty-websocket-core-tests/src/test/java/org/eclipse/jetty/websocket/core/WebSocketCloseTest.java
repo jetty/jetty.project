@@ -556,7 +556,7 @@ public class WebSocketCloseTest extends WebSocketTester
         public void onFrame(Frame frame, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+                LOG.debug("onFrame: {}", BufferUtil.toDetailString(frame.getPayload()));
             state = coreSession.toString();
             receivedCallback.offer(callback);
             receivedFrames.offer(Frame.copy(frame));
@@ -582,7 +582,7 @@ public class WebSocketCloseTest extends WebSocketTester
         public void onError(Throwable cause, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log("onError");
+                LOG.debug("onError", cause);
             error = cause;
             state = coreSession.toString();
             callback.succeeded();

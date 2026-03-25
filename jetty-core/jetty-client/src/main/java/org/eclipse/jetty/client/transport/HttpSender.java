@@ -209,7 +209,7 @@ public abstract class HttpSender
             return false;
 
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("Request failure {}, response {}", exchange.getRequest(), exchange.getResponse());
+            LOG.debug("Request failure {}, response {}", exchange.getRequest(), exchange.getResponse(), failure);
 
         // Mark atomically the request as completed, with respect
         // to concurrency between request success and request failure.
@@ -226,7 +226,7 @@ public abstract class HttpSender
         catch (RejectedExecutionException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Exchange aborted {}", exchange);
+                LOG.debug("Exchange aborted {}", exchange, x);
             abort(exchange, failure, Promise.noop());
         }
     }
@@ -243,7 +243,7 @@ public abstract class HttpSender
         dispose();
 
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("Request abort {} {} on {}", request, exchange, getHttpChannel());
+            LOG.debug("Request abort {} {} on {}", request, exchange, getHttpChannel(), failure);
         request.notifyFailure(failure);
 
         // Mark atomically the request as terminated, with

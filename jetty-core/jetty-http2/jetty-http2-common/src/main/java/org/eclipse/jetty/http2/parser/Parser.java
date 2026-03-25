@@ -175,7 +175,7 @@ public class Parser
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Parse failed");
+                LOG.debug("Parse failed", x);
             connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR, "parser_error");
         }
     }

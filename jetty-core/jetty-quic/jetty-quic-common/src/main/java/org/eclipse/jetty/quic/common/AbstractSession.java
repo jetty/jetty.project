@@ -127,7 +127,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
             return null;
         }
     }
@@ -141,7 +141,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
             return null;
         }
     }
@@ -155,7 +155,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
         }
     }
 
@@ -168,7 +168,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
         }
     }
 
@@ -181,7 +181,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
         }
     }
 
@@ -194,7 +194,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
         }
     }
 
@@ -207,7 +207,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
         }
     }
 
@@ -220,7 +220,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
         }
     }
 
@@ -235,7 +235,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
             return CompletableFuture.failedFuture(x);
         }
     }
@@ -249,7 +249,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
             return true;
         }
     }
@@ -266,7 +266,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
             promise.failed(x);
         }
     }
@@ -280,7 +280,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
         }
     }
 

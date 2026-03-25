@@ -84,7 +84,7 @@ public class HttpSenderOverHTTP extends HttpSender
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Unable to send headers on exchange {}", exchange);
+                LOG.debug("Unable to send headers on exchange {}", exchange, x);
             callback.failed(x);
         }
     }
@@ -104,7 +104,7 @@ public class HttpSenderOverHTTP extends HttpSender
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Unable to send content on {}", exchange);
+                LOG.debug("Unable to send content on {}", exchange, x);
             callback.failed(x);
         }
     }

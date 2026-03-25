@@ -170,7 +170,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("ReleaseCallback failed");
+                LOG.debug("ReleaseCallback failed", x);
             release();
         }
 
