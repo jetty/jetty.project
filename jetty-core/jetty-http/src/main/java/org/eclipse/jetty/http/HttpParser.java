@@ -2321,11 +2321,9 @@ public class HttpParser
                 default -> null;
             };
             if (info == null)
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} --> {}", _state, state);
+                LOG.debug("{} --> {}", _state, state);
             else
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} --> {}({})", _state, state, info);
+                LOG.debug("{} --> {}({})", _state, state, info);
         }
         _state = state;
     }
@@ -2335,11 +2333,9 @@ public class HttpParser
         if (debugEnabled)
         {
             if (state != FieldState.FIELD)
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{}:{} --> {}", _state, _fieldState, state);
+                LOG.debug("{}:{} --> {}", _state, _fieldState, state);
             else
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{}:{} --> {}({}: {})", _state, _fieldState, state, _field != null ? _field : _headerString, _valueString);
+                LOG.debug("{}:{} --> {}({}: {})", _state, _fieldState, state, _field != null ? _field : _headerString, _valueString);
         }
         _fieldState = state;
     }
@@ -2347,8 +2343,7 @@ public class HttpParser
     private void setChunkSizeState(ChunkSizeState state)
     {
         if (debugEnabled)
-            if (LOG.isDebugEnabled())
-                LOG.debug("{}:{} --> {}", _state, _chunkSizeState, state);
+            LOG.debug("{}:{} --> {}", _state, _chunkSizeState, state);
         _chunkSizeState = state;
     }
 
