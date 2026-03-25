@@ -183,11 +183,12 @@ public class SharedBlockingCallback
                 }
                 else
                 {
-                    LOG.warn("Failed after {}: {}", _state, cause.toString());
+                    String msg = String.format("Failed after %s: %s", _state, cause);
+                    LOG.warn(msg);
                     if (LOG.isDebugEnabled())
                     {
-                        LOG.atDebug().setCause(_state).log();
-                        LOG.atDebug().setCause(cause).log();
+                        LOG.atDebug().setCause(_state).log(msg);
+                        LOG.atDebug().setCause(cause).log(msg);
                     }
                 }
             }

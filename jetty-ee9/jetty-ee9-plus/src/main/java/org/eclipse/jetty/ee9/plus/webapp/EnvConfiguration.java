@@ -219,8 +219,8 @@ public class EnvConfiguration extends AbstractConfiguration
         if (LOG.isDebugEnabled())
             LOG.debug("Binding env entries from the server scope");
         doBindings(envCtx, context.getServer());
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Binding env entries from environment {} scope", ContextHandler.ENVIRONMENT.getName());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Binding env entries from environment {} scope", ContextHandler.ENVIRONMENT.getName());
         doBindings(envCtx, ContextHandler.ENVIRONMENT.getName());
         if (LOG.isDebugEnabled())
             LOG.debug("Binding env entries from the context scope");
