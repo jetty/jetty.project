@@ -131,7 +131,7 @@ public class ThreadIdPool<E> implements Dumpable
         int index = (int)(Thread.currentThread().getId() % capacity);
         for (int i = 0; i < capacity; i++)
         {
-            E e = _items.getAndSet(toSlot(index), null);
+            E e = _items.getAndUpdate(toSlot(index), v -> null);
             if (e != null)
                 return e;
             if (++index == capacity)
