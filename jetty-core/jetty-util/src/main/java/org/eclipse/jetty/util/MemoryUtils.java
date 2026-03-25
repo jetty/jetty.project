@@ -24,7 +24,7 @@ import javax.management.openmbean.CompositeData;
 public class MemoryUtils
 {
     private static final int CACHE_LINE_BYTES;
-    private final static int REFERENCE_PER_CACHE_LINE;
+    private static final int REFERENCE_PER_CACHE_LINE;
 
     static
     {
