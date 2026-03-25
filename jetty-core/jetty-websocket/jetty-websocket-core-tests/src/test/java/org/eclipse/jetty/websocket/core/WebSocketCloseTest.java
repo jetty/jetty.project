@@ -544,7 +544,8 @@ public class WebSocketCloseTest extends WebSocketTester
         @Override
         public void onOpen(CoreSession coreSession, Callback callback)
         {
-            LOG.debug("onOpen {}", coreSession);
+            if (LOG.isDebugEnabled())
+                LOG.debug("onOpen {}", coreSession);
             this.coreSession = coreSession;
             state = this.coreSession.toString();
             callback.succeeded();
@@ -554,7 +555,8 @@ public class WebSocketCloseTest extends WebSocketTester
         @Override
         public void onFrame(Frame frame, Callback callback)
         {
-            LOG.debug("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+            if (LOG.isDebugEnabled())
+                LOG.debug("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
             state = coreSession.toString();
             receivedCallback.offer(callback);
             receivedFrames.offer(Frame.copy(frame));
@@ -568,7 +570,8 @@ public class WebSocketCloseTest extends WebSocketTester
         @Override
         public void onClosed(CloseStatus closeStatus, Callback callback)
         {
-            LOG.debug("onClosed {}", closeStatus);
+            if (LOG.isDebugEnabled())
+                LOG.debug("onClosed {}", closeStatus);
             state = coreSession.toString();
             this.closeStatus = closeStatus;
             closed.countDown();
@@ -578,7 +581,8 @@ public class WebSocketCloseTest extends WebSocketTester
         @Override
         public void onError(Throwable cause, Callback callback)
         {
-            LOG.atDebug().setCause(cause).log("onError");
+            if (LOG.isDebugEnabled())
+                LOG.atDebug().setCause(cause).log("onError");
             error = cause;
             state = coreSession.toString();
             callback.succeeded();

@@ -71,7 +71,8 @@ public class ExtensionStackTest
         stack.initialize(session, connection, null);
 
         // Dump
-        LOG.debug("{}", stack.dump());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}", stack.dump());
 
         // Should be no change to handlers
         Extension actualIncomingExtension = assertIsExtension("Incoming", stack.getNextIncoming(), IdentityExtension.class);
@@ -94,7 +95,8 @@ public class ExtensionStackTest
         stack.initialize(session, connection, null);
 
         // Dump
-        LOG.debug("{}", stack.dump());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}", stack.dump());
 
         // Should be no change to handlers
         IdentityExtension actualIncomingExtension = assertIsExtension("Incoming", stack.getNextIncoming(), IdentityExtension.class);
@@ -108,7 +110,8 @@ public class ExtensionStackTest
     public void testToString()
     {
         // Shouldn't cause a NPE.
-        LOG.debug("Shouldn't cause a NPE: {}", stack.toString());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Shouldn't cause a NPE: {}", stack.toString());
     }
 
     @Test
@@ -122,6 +125,7 @@ public class ExtensionStackTest
         String response = ExtensionConfig.toHeaderValue(negotiated);
 
         assertThat("Negotiated Extensions", response, is("permessage-deflate"));
-        LOG.debug("Shouldn't cause a NPE: {}", stack.toString());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Shouldn't cause a NPE: {}", stack.toString());
     }
 }

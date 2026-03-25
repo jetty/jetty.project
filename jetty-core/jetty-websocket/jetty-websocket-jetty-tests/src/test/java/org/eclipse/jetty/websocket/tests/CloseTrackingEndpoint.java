@@ -81,7 +81,8 @@ public class CloseTrackingEndpoint extends Session.Listener.AbstractAutoDemandin
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        LOG.debug("onWebSocketClose({},{})", statusCode, reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onWebSocketClose({},{})", statusCode, reason);
         super.onWebSocketClose(statusCode, reason);
         closeCount.incrementAndGet();
         closeCode = statusCode;
@@ -93,14 +94,16 @@ public class CloseTrackingEndpoint extends Session.Listener.AbstractAutoDemandin
     public void onWebSocketOpen(Session session)
     {
         super.onWebSocketOpen(session);
-        LOG.debug("onWebSocketOpen({})", session);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onWebSocketOpen({})", session);
         openLatch.countDown();
     }
 
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        LOG.atDebug().setCause(cause).log("onWebSocketError");
+        if (LOG.isDebugEnabled())
+            LOG.atDebug().setCause(cause).log("onWebSocketError");
         assertThat("Unique Error Event", error.compareAndSet(null, cause), is(true));
         errorLatch.countDown();
     }
@@ -108,14 +111,16 @@ public class CloseTrackingEndpoint extends Session.Listener.AbstractAutoDemandin
     @Override
     public void onWebSocketText(String message)
     {
-        LOG.debug("onWebSocketText({})", message);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onWebSocketText({})", message);
         messageQueue.offer(message);
     }
 
     @Override
     public void onWebSocketBinary(ByteBuffer payload, Callback callback)
     {
-        LOG.debug("onWebSocketBinary({})", payload.remaining());
+        if (LOG.isDebugEnabled())
+            LOG.debug("onWebSocketBinary({})", payload.remaining());
         binaryMessageQueue.offer(BufferUtil.copy(payload));
         callback.succeed();
     }

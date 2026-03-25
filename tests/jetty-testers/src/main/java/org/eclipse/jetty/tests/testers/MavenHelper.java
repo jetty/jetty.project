@@ -86,13 +86,15 @@ class MavenHelper
         @Override
         public void artifactDownloaded(RepositoryEvent event)
         {
-            LOG.debug("downloaded {}", event.getFile());
+            if (LOG.isDebugEnabled())
+                LOG.debug("downloaded {}", event.getFile());
         }
 
         @Override
         public void artifactResolved(RepositoryEvent event)
         {
-            LOG.debug("artifact resolved {}", event.getFile());
+            if (LOG.isDebugEnabled())
+                LOG.debug("artifact resolved {}", event.getFile());
         }
     }
 }

@@ -93,7 +93,8 @@ public class PlusConfiguration extends AbstractConfiguration
             }
             catch (NameNotFoundException x)
             {
-                LOG.debug("No Transaction manager found - if your webapp requires one, please configure one.");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("No Transaction manager found - if your webapp requires one, please configure one.");
             }
         }
     }

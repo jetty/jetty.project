@@ -162,7 +162,8 @@ class CrossContextServletContext implements ServletContext
         }
         catch (Exception e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
         return null;
     }

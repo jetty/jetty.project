@@ -1801,7 +1801,8 @@ public class AsyncMiddleManServletTest
             protected String transform(String value)
             {
                 String result = PREFIX + URLEncoder.encode(value, StandardCharsets.UTF_8);
-                LOG.debug("{} -> {}", value, result);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} -> {}", value, result);
                 return result;
             }
         }
@@ -1812,7 +1813,8 @@ public class AsyncMiddleManServletTest
             protected String transform(String value)
             {
                 String result = URLDecoder.decode(value.substring(PREFIX.length()), StandardCharsets.UTF_8);
-                LOG.debug("{} <- {}", value, result);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} <- {}", value, result);
                 return result;
             }
         }

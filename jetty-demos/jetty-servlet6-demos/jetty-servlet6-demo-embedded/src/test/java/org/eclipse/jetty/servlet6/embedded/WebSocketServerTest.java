@@ -101,7 +101,8 @@ public class WebSocketServerTest
         @OnWebSocketClose
         public void onClose(int statusCode, String reason)
         {
-            LOG.debug("Closed({}, {})", statusCode, reason);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closed({}, {})", statusCode, reason);
         }
     }
 }

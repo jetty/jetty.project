@@ -202,8 +202,8 @@ public class SelectiveJarResource extends Resource
             while ((entry = jin.getNextJarEntry()) != null)
             {
                 String entryName = entry.getName();
-
-                LOG.debug("Looking at {}", entryName);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Looking at {}", entryName);
                 // make sure no access out of the root entry is present
                 if (URIUtil.isNotNormalWithinSelf(entryName))
                 {
@@ -224,10 +224,12 @@ public class SelectiveJarResource extends Resource
                                 Files.createDirectories(file);
                         }
                         else
-                            LOG.debug("{} dir is excluded", entryName);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("{} dir is excluded", entryName);
                     }
                     else
-                        LOG.debug("{} dir is NOT included", entryName);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} dir is NOT included", entryName);
                 }
                 else
                 {
@@ -252,10 +254,12 @@ public class SelectiveJarResource extends Resource
                                 Files.setLastModifiedTime(file, FileTime.fromMillis(entry.getTime()));
                         }
                         else
-                            LOG.debug("{} file is excluded", entryName);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("{} file is excluded", entryName);
                     }
                     else
-                        LOG.debug("{} file is NOT included", entryName);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} file is NOT included", entryName);
                 }
             }
 

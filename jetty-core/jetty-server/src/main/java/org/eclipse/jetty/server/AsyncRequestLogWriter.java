@@ -76,7 +76,8 @@ public class AsyncRequestLogWriter extends RequestLogWriter
                 }
                 catch (InterruptedException e)
                 {
-                    LOG.trace("IGNORED", e);
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", e);
                 }
                 catch (Throwable t)
                 {

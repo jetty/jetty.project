@@ -1054,7 +1054,8 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         }
         catch (DatastoreException e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
         long expiry = entity.getLong(_model.getExpiry());
         long maxInactive = entity.getLong(_model.getMaxInactive());

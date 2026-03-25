@@ -366,7 +366,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             catch (MalformedURLException e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
                 if (mue == null)
                     mue = e;
             }
@@ -1190,7 +1191,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public void resolveMetaData() throws Exception
     {
-        LOG.debug("metadata resolve {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("metadata resolve {}", this);
 
         //Ensure origins is fresh
         _metadata._origins.clear();
@@ -1223,7 +1225,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             p.process(this, _metadata.getWebDescriptor());
             for (WebDescriptor wd : _metadata.getOverrideDescriptors())
             {
-                LOG.debug("process {} {} {}", this, p, wd);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("process {} {} {}", this, p, wd);
                 p.process(this, wd);
             }
         }
@@ -1244,7 +1247,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             {
                 for (DescriptorProcessor p : _metadata._descriptorProcessors)
                 {
-                    LOG.debug("process {} {}", this, fd);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("process {} {}", this, fd);
                     p.process(this, fd);
                 }
             }
@@ -1257,7 +1261,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             {
                 for (DiscoveredAnnotation a : annotations)
                 {
-                    LOG.debug("apply {}", a);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("apply {}", a);
                     a.apply();
                 }
             }

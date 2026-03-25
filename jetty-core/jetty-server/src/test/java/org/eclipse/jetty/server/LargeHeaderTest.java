@@ -89,7 +89,8 @@ public class LargeHeaderTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 String idCount = request.getHeaders().get("X-Count");
-                LOG.debug("X-Count: {} [handle]", idCount);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("X-Count: {} [handle]", idCount);
 
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.getHeaders().put("LongStr", largeHeaderValue);
@@ -101,19 +102,22 @@ public class LargeHeaderTest
                     @Override
                     public void succeeded()
                     {
-                        LOG.debug("X-Count: {} [callback.succeeded]", idCount);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("X-Count: {} [callback.succeeded]", idCount);
                         callback.succeeded();
                     }
 
                     @Override
                     public void failed(Throwable x)
                     {
-                        LOG.debug("X-Count: {} [callback.failed] {}", idCount, this);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("X-Count: {} [callback.failed] {}", idCount, this);
                         callback.failed(x);
                     }
                 };
                 response.write(true, BufferUtil.toBuffer(responseBody, UTF_8), topCallback);
-                LOG.debug("X-Count: {} [handle-completed]", idCount);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("X-Count: {} [handle-completed]", idCount);
                 return true;
             }
         });
@@ -194,7 +198,8 @@ public class LargeHeaderTest
                      OutputStream output = client.getOutputStream();
                      InputStream input = client.getInputStream())
                 {
-                    LOG.debug("X-Count: {} - Send Request - {}->{}", count, client.getLocalAddress(), client.getRemoteSocketAddress());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("X-Count: {} - Send Request - {}->{}", count, client.getLocalAddress(), client.getRemoteSocketAddress());
 
                     output.write(rawRequest.formatted(count).getBytes(UTF_8));
                     output.flush();
