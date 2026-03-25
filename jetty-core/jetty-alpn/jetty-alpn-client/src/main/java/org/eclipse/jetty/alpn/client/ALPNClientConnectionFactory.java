@@ -79,9 +79,7 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
 
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
             LOG.debug("protocols: {}", protocols);
-            if (LOG.isDebugEnabled())
             LOG.debug("processors: {}", processors);
         }
 

@@ -541,7 +541,7 @@ public class DeploymentManager extends ContainerLifeCycle
             {
                 // The runBindings failed for 'failed' node
                 if (LOG.isTraceEnabled())
-                LOG.trace("IGNORED", ignore);
+                    LOG.trace("IGNORED", ignore);
             }
 
             if (isStarting())
