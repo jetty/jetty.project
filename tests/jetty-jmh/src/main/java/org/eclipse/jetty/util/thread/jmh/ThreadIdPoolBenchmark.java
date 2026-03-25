@@ -32,12 +32,12 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
 @Warmup(iterations = 4, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 4, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Fork(1)
 @Threads(200)
 public class ThreadIdPoolBenchmark
 {
-    private final ThreadIdPool<String> threadIdPool = new ThreadIdPool<>(8);
+    private final ThreadIdPool<String> threadIdPool = new ThreadIdPool<>(32);
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
