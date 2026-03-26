@@ -57,7 +57,7 @@ public class RequestLogSLF4JModuleTest extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            Files.copy(Paths.get("src/test/resources/log4j2.xml"),
+            Files.copy(Paths.get("src/test/resources/log4j2-requestlog.xml"),
                 distribution.getJettyBase().resolve("resources").resolve("log4j2.xml"),
                 StandardCopyOption.REPLACE_EXISTING);
 
@@ -68,22 +68,16 @@ public class RequestLogSLF4JModuleTest extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                // Log4j2 writes to file, not console - wait for log file
-                Path logFile = distribution.getJettyBase().resolve("logs").resolve("jetty.log");
-                await().atMost(10, TimeUnit.SECONDS).until(() -> Files.exists(logFile));
-                await().atMost(10, TimeUnit.SECONDS).until(() ->
-                {
-                    try (Stream<String> lines = Files.lines(logFile))
-                    {
-                        return lines.anyMatch(line -> line.contains("Started oejs.Server@"));
-                    }
-                });
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient(false);
 
                 // Make a request that will be logged
                 ContentResponse response = client.GET("http://localhost:" + port + "/test");
                 assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+                // Log4j2 writes to file, not console - wait for log file
+                Path logFile = distribution.getJettyBase().resolve("logs").resolve("jetty.log");
 
                 // Wait for request log entry to appear in the log file
                 await().atMost(10, TimeUnit.SECONDS).until(() ->
@@ -130,40 +124,31 @@ public class RequestLogSLF4JModuleTest extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            Files.copy(Paths.get("src/test/resources/log4j2.xml"),
-                distribution.getJettyBase().resolve("resources").resolve("log4j2.xml"),
-                StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(Paths.get("src/test/resources/log4j2-requestlog.xml"),
+                    distribution.getJettyBase().resolve("resources").resolve("log4j2.xml"),
+                    StandardCopyOption.REPLACE_EXISTING);
 
             // Configure custom logger name
             Path requestLogIni = distribution.getJettyBase().resolve("start.d/requestlog-slf4j.ini");
             String content = Files.readString(requestLogIni);
-            content += "\njetty.requestlog.slf4j.loggerName=test.CustomRequestLog\n";
+            content += "\njetty.requestlog.slf4j.loggerName=request_logs\n";
             Files.writeString(requestLogIni, content);
 
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                // Log4j2 writes to file, not console - wait for log file
-                Path logFile = distribution.getJettyBase().resolve("logs").resolve("jetty.log");
-                await().atMost(10, TimeUnit.SECONDS).until(() -> Files.exists(logFile));
-                await().atMost(10, TimeUnit.SECONDS).until(() ->
-                {
-                    try (Stream<String> lines = Files.lines(logFile))
-                    {
-                        return lines.anyMatch(line -> line.contains("Started oejs.Server@"));
-                    }
-                });
-
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 startHttpClient(false);
                 ContentResponse response = client.GET("http://localhost:" + port + "/");
                 assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
-
+                Path logFile = distribution.getJettyBase().resolve("logs").resolve("jetty_custom.log");
+                await().atMost(10, TimeUnit.SECONDS).until(() -> Files.exists(logFile));
                 // Wait for request log entry with custom logger name
                 await().atMost(10, TimeUnit.SECONDS).until(() ->
                 {
                     try (Stream<String> lines = Files.lines(logFile))
                     {
-                        return lines.anyMatch(line -> line.contains("test.CustomRequestLog"));
+                        return lines.anyMatch(line -> line.contains("request_logs"));
                     }
                 });
 
@@ -198,22 +183,15 @@ public class RequestLogSLF4JModuleTest extends AbstractJettyHomeTest
             int port = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                // Logback writes to file - wait for log file
-                Path logFile = distribution.getJettyBase().resolve("logs").resolve("jetty.log");
-                await().atMost(10, TimeUnit.SECONDS).until(() -> Files.exists(logFile));
-                await().atMost(10, TimeUnit.SECONDS).until(() ->
-                {
-                    try (Stream<String> lines = Files.lines(logFile))
-                    {
-                        return lines.anyMatch(line -> line.contains("Started oejs.Server@"));
-                    }
-                });
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient(false);
 
                 ContentResponse response = client.GET("http://localhost:" + port + "/test");
                 assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
-
+                // Logback writes to file - wait for log file
+                Path logFile = distribution.getJettyBase().resolve("logs").resolve("jetty.log");
+                await().atMost(10, TimeUnit.SECONDS).until(() -> Files.exists(logFile));
                 // Wait for request log entry to appear in the log file
                 await().atMost(10, TimeUnit.SECONDS).until(() ->
                 {

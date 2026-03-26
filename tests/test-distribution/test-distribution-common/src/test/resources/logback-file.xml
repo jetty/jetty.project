@@ -1,7 +1,7 @@
 <configuration>
   <property name="logging.dir" value="${jetty.logging.dir:-logs}" />
 
-  <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+  <appender name="request_logs" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${logging.dir}/jetty.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
       <fileNamePattern>${logging.dir}/jetty-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
@@ -9,11 +9,21 @@
       <maxHistory>30</maxHistory>
     </rollingPolicy>
     <encoder>
-      <pattern>%d [%t] %-5p %c %x - %m%n</pattern>
+      <pattern>%m%n</pattern>
     </encoder>
   </appender>
 
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d [%t] %-5p %c - %m%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="org.eclipse.jetty.server.RequestLog" level="info" additivity="false">
+    <appender-ref ref="request_logs" />
+  </logger>
+
   <root level="info">
-    <appender-ref ref="file" />
+    <appender-ref ref="STDOUT" />
   </root>
 </configuration>
