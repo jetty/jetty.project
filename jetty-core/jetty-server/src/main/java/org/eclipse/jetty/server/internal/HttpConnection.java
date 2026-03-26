@@ -1607,8 +1607,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             @SuppressWarnings("ReferenceEquality")
             boolean isPriorKnowledgeH2C = _upgrade == PREAMBLE_UPGRADE_H2C;
-            if (!isPriorKnowledgeH2C  && !_connectionUpgrade)
-                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400);
+            if (!isPriorKnowledgeH2C && !_connectionUpgrade)
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid h2c upgrade headers");
 
             // Find the upgrade factory.
             ConnectionFactory.Upgrading factory = getConnector().getConnectionFactories().stream()
