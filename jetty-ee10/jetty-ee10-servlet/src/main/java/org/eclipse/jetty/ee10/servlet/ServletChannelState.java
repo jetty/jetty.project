@@ -964,10 +964,14 @@ public class ServletChannelState
             else if (_requestState != RequestState.COMPLETE)
             {
                 if (QuietException.isQuiet(th))
+                {
                     if (LOG.isDebugEnabled())
                         LOG.debug("unhandled in state {}", _requestState, th);
+                }
                 else
+                {
                     LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
+                }
             }
             return committed;
         }
