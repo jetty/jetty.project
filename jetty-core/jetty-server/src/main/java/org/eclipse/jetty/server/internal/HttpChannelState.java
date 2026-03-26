@@ -400,7 +400,7 @@ public class HttpChannelState implements HttpChannel, Components
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(t).log("onIdleTimeout {}", this);
+                LOG.debug("onIdleTimeout {}", this, t);
 
             // Either too early or too late.
             if (_stream == null || _request == null)
@@ -478,7 +478,7 @@ public class HttpChannelState implements HttpChannel, Components
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("onFailure remote={} {}", remote, this);
+                LOG.debug("onFailure remote={} {}", remote, this, x);
 
             // If the channel doesn't have a stream, then the error is ignored.
             stream = _stream;
@@ -532,7 +532,7 @@ public class HttpChannelState implements HttpChannel, Components
                     try
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.atDebug().setCause(x).log("invoking failure listeners {} {}", HttpChannelState.this, onFailure);
+                            LOG.debug("invoking failure listeners {} {}", HttpChannelState.this, onFailure, x);
                         onFailure.accept(x);
                     }
                     catch (Throwable throwable)
@@ -721,7 +721,7 @@ public class HttpChannelState implements HttpChannel, Components
 
             // This is THE ONLY PLACE the stream is succeeded or failed.
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("completing the stream of {}", this);
+                LOG.debug("completing the stream of {}", this, failure);
             if (failure == null)
                 stream.succeeded();
             else
@@ -1455,7 +1455,7 @@ public class HttpChannelState implements HttpChannel, Components
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("write failed {}", this);
+                LOG.debug("write failed {}", this, x);
             Callback callback;
             HttpChannelState httpChannel;
             try (AutoLock ignored = _request._lock.lock())
@@ -1660,7 +1660,7 @@ public class HttpChannelState implements HttpChannel, Components
                     else if (failure != null && unconsumed != null)
                         ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(failure).log("consumeAvailable: {} {}", unconsumed == null, httpChannelState);
+                        LOG.debug("consumeAvailable: {} {}", unconsumed == null, httpChannelState, failure);
                 }
 
                 // Pending writes are also failures
@@ -1912,7 +1912,7 @@ public class HttpChannelState implements HttpChannel, Components
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("ErrorWrite failed: {}", this);
+                LOG.debug("ErrorWrite failed: {}", this, x);
             Throwable failure;
             HttpChannelState httpChannelState;
             try (AutoLock ignored = _request._lock.lock())

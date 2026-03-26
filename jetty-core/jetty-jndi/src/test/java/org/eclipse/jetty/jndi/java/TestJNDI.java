@@ -233,39 +233,39 @@ public class TestJNDI
             Name n = sub0.getNameParser("").parse("/red/green/");
 
             if (LOG.isDebugEnabled())
-                LOG.debug("get(0)=" + n.get(0));
+                LOG.debug("get(0)={}", n.get(0));
             if (LOG.isDebugEnabled())
-                LOG.debug("getPrefix(1)=" + n.getPrefix(1));
+                LOG.debug("getPrefix(1)={}", n.getPrefix(1));
             n = n.getSuffix(1);
             if (LOG.isDebugEnabled())
-                LOG.debug("getSuffix(1)=" + n);
+                LOG.debug("getSuffix(1)={}", n);
             if (LOG.isDebugEnabled())
-                LOG.debug("get(0)=" + n.get(0));
+                LOG.debug("get(0)={}", n.get(0));
             if (LOG.isDebugEnabled())
-                LOG.debug("getPrefix(1)=" + n.getPrefix(1));
+                LOG.debug("getPrefix(1)={}", n.getPrefix(1));
             n = n.getSuffix(1);
             if (LOG.isDebugEnabled())
-                LOG.debug("getSuffix(1)=" + n);
+                LOG.debug("getSuffix(1)={}", n);
             if (LOG.isDebugEnabled())
-                LOG.debug("get(0)=" + n.get(0));
+                LOG.debug("get(0)={}", n.get(0));
             if (LOG.isDebugEnabled())
-                LOG.debug("getPrefix(1)=" + n.getPrefix(1));
+                LOG.debug("getPrefix(1)={}", n.getPrefix(1));
             n = n.getSuffix(1);
             if (LOG.isDebugEnabled())
-                LOG.debug("getSuffix(1)=" + n);
+                LOG.debug("getSuffix(1)={}", n);
 
             n = sub0.getNameParser("").parse("pink/purple/");
             if (LOG.isDebugEnabled())
-                LOG.debug("get(0)=" + n.get(0));
+                LOG.debug("get(0)={}", n.get(0));
             if (LOG.isDebugEnabled())
-                LOG.debug("getPrefix(1)=" + n.getPrefix(1));
+                LOG.debug("getPrefix(1)={}", n.getPrefix(1));
             n = n.getSuffix(1);
             if (LOG.isDebugEnabled())
-                LOG.debug("getSuffix(1)=" + n);
+                LOG.debug("getSuffix(1)={}", n);
             if (LOG.isDebugEnabled())
-                LOG.debug("get(0)=" + n.get(0));
+                LOG.debug("get(0)={}", n.get(0));
             if (LOG.isDebugEnabled())
-                LOG.debug("getPrefix(1)=" + n.getPrefix(1));
+                LOG.debug("getPrefix(1)={}", n.getPrefix(1));
 
             NamingContext ncontext = (NamingContext)sub0;
 
@@ -281,7 +281,7 @@ public class TestJNDI
 
             nn = ncontext.toCanonicalName(ncontext.getNameParser("").parse("/"));
             if (LOG.isDebugEnabled())
-                LOG.debug("/ parses as: " + nn + " with size=" + nn.size());
+                LOG.debug("/ parses as: {} with size={}", nn, nn.size());
             LOG.debug(nn.toString());
             assertEquals(1, nn.size());
 

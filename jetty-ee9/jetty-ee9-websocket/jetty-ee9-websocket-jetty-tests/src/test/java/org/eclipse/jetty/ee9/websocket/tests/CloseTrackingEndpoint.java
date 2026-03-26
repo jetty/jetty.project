@@ -102,7 +102,7 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     public void onWebSocketError(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(cause).log("onWebSocketError");
+            LOG.debug("onWebSocketError", cause);
         assertThat("Unique Error Event", error.compareAndSet(null, cause), is(true));
         errorLatch.countDown();
     }

@@ -318,7 +318,7 @@ public class ServletUpgradeTest
 
             int searchIdx = actual.toLowerCase().indexOf(search.toLowerCase(), startIdx);
             if (LOG.isDebugEnabled())
-                LOG.debug("[ServletTestUtil] Scanning response for " + "search string: '" + search + "' starting at index " + "location: " + startIdx);
+                LOG.debug("[ServletTestUtil] Scanning response for search string: '{}' starting at index location: {}", search, startIdx);
             if (searchIdx < 0)
             {
                 found = false;
@@ -335,7 +335,7 @@ public class ServletUpgradeTest
                 break;
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("[ServletTestUtil] Found search string: '" + search + "' at index '" + searchIdx + "' in the server's " + "response");
+                LOG.debug("[ServletTestUtil] Found search string: '{}' at index '{}' in the server's response", search, searchIdx);
             // the new searchIdx is the old index plus the length of the
             // search string.
             startIdx = searchIdx + search.length();

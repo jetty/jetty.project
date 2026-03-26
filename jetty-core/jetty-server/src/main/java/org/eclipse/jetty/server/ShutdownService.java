@@ -402,14 +402,14 @@ public class ShutdownService
                     catch (Throwable x)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.atDebug().setCause(x).log("Failed to handle incoming shutdown client");
+                            LOG.debug("Failed to handle incoming shutdown client", x);
                     }
                 }
             }
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Failed ServerSocket");
+                    LOG.debug("Failed ServerSocket", x);
             }
             finally
             {
@@ -452,7 +452,7 @@ public class ShutdownService
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("Unable to stop component: {}", component);
+                        LOG.debug("Unable to stop component: {}", component, x);
                 }
             }
         }

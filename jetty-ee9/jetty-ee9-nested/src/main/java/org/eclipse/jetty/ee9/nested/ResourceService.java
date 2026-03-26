@@ -750,7 +750,7 @@ public class ResourceService
                             if (x instanceof IOException)
                             {
                                 if (LOG.isDebugEnabled())
-                                    LOG.atDebug().setCause(x).log(msg);
+                                    LOG.debug(msg, x);
                             }
                             else
                                 LOG.warn(msg, x);

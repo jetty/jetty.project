@@ -212,7 +212,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public void onStreamFailure(Stream stream, Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("Processing stream failure on {}", stream);
+            LOG.debug("Processing stream failure on {}", stream, failure);
         HTTP2Stream http2Stream = (HTTP2Stream)stream;
         HTTP2Channel.Server channel = (HTTP2Channel.Server)(http2Stream).getAttachment();
         if (channel == null)
@@ -240,14 +240,14 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
                 .map(HTTP2Channel.Server::isIdle)
                 .reduce(true, Boolean::logicalAnd);
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("{} idle timeout on {}", result ? "Processed" : "Ignored", session);
+            LOG.debug("{} idle timeout on {}", result ? "Processed" : "Ignored", session, failure);
         return result;
     }
 
     public void onSessionFailure(Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("Processing session failure on {}", getSession());
+            LOG.debug("Processing session failure on {}", getSession(), failure);
         // All the streams have already been failed, just succeed the callback.
         callback.succeeded();
     }

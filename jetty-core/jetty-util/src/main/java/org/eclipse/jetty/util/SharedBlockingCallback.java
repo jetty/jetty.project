@@ -179,7 +179,7 @@ public class SharedBlockingCallback
                     // Failure arrived late, block() already
                     // modified the state, nothing more to do.
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(_state).log("Failed after");
+                        LOG.debug("Failed after", _state);
                 }
                 else
                 {
@@ -187,8 +187,8 @@ public class SharedBlockingCallback
                     LOG.warn(msg);
                     if (LOG.isDebugEnabled())
                     {
-                        LOG.atDebug().setCause(_state).log(msg);
-                        LOG.atDebug().setCause(cause).log(msg);
+                        LOG.debug(msg, _state);
+                        LOG.debug(msg, cause);
                     }
                 }
             }

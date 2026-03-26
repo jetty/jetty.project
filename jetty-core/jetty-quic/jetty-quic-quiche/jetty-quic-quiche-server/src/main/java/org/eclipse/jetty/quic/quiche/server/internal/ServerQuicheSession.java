@@ -127,7 +127,7 @@ public class ServerQuicheSession extends QuicheSession implements CyclicTimeouts
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("process failure for {}", this);
+                LOG.debug("process failure for {}", this, x);
             ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.CONNECTION_REFUSED_ERROR.code(), "session_failure");
             disconnect(frame, x, Promise.Invocable.noop());
             return null;

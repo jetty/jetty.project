@@ -118,7 +118,7 @@ public class ControlStreamConnection extends AbstractConnection.NonBlocking impl
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("could not process control stream {}", getEndPoint());
+                LOG.debug("could not process control stream {}", getEndPoint(), x);
             buffer.release();
             buffer = null;
             getEndPoint().disconnect(HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code(), x, true, Promise.Invocable.noop());

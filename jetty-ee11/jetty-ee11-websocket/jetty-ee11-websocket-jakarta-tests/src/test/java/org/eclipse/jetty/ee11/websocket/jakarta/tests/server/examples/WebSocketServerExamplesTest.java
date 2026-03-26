@@ -85,7 +85,7 @@ public class WebSocketServerExamplesTest
         public void onError(Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log("ClientSocket error");
+                LOG.debug("ClientSocket error", cause);
         }
     }
 

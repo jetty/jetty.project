@@ -123,7 +123,7 @@ public class HeadersBodyParser extends BodyParser
         catch (QpackException.StreamException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("decode failure");
+                LOG.debug("decode failure", x);
 
             // TODO: handle stream exceptions in other cases (see https://github.com/jetty/jetty.project/issues/7676).
             decoder.streamCancellation(streamId);
@@ -139,13 +139,13 @@ public class HeadersBodyParser extends BodyParser
         catch (QpackException.SessionException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("decode failure");
+                LOG.debug("decode failure", x);
             notifySessionFailure(x.getErrorCode(), x.getMessage(), x);
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("decode failure");
+                LOG.debug("decode failure", x);
             notifySessionFailure(HTTP3ErrorCode.INTERNAL_ERROR.code(), "internal_error", x);
         }
         return false;

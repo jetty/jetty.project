@@ -150,7 +150,7 @@ public class ObjectMBean implements DynamicMBean
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Unable to get attribute {}", name);
+                    LOG.debug("Unable to get attribute {}", name, x);
             }
         }
         return results;
@@ -184,7 +184,7 @@ public class ObjectMBean implements DynamicMBean
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Unable to get Attribute {}", attribute);
+                    LOG.debug("Unable to get Attribute {}", attribute, x);
             }
         }
         return results;

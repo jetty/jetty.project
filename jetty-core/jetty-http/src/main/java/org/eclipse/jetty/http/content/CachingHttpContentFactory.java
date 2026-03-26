@@ -260,7 +260,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Content at path '{}' is not cacheable: {}", path, httpContent);
+                    LOG.debug("Content at path '{}' is not cacheable: {}", path, httpContent, x);
                 return null;
             }
         });
