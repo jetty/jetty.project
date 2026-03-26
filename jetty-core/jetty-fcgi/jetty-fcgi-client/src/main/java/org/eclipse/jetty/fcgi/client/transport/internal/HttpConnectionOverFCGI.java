@@ -407,6 +407,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         }
 
         @Override
+        protected boolean requiresHostHeader()
+        {
+            return true;
+        }
+
+        @Override
         protected Iterator<HttpChannel> getHttpChannels()
         {
             return Collections.<HttpChannel>singleton(channel).iterator();

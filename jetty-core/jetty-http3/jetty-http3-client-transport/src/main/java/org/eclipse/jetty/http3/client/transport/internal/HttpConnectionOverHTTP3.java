@@ -101,6 +101,12 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     }
 
     @Override
+    protected HttpVersion getHttpVersion()
+    {
+        return HttpVersion.HTTP_3;
+    }
+
+    @Override
     protected Iterator<HttpChannel> getHttpChannels()
     {
         return activeChannels.iterator();

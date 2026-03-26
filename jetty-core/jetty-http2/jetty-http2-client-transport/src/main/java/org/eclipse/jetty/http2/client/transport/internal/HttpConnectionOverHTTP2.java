@@ -136,6 +136,12 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     }
 
     @Override
+    protected HttpVersion getHttpVersion()
+    {
+        return HttpVersion.HTTP_2;
+    }
+
+    @Override
     protected Iterator<HttpChannel> getHttpChannels()
     {
         Set<HttpChannel> channels;
