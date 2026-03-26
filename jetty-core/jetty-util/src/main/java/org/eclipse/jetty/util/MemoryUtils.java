@@ -18,44 +18,71 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * MemoryUtils provides an abstraction over memory properties and operations.
  */
 public class MemoryUtils
 {
+    private static final Logger LOG = LoggerFactory.getLogger(MemoryUtils.class);
     private static final int CACHE_LINE_BYTES;
-    private static final int REFERENCE_PER_CACHE_LINE;
+    private static final int REFERENCES_PER_CACHE_LINE;
 
     static
     {
-        int defaultValue = 64;
-        int value = defaultValue;
+        int cacheLineBytes = 64;
         try
         {
-            value = Integer.parseInt(System.getProperty("org.eclipse.jetty.util.cacheLineBytes", String.valueOf(defaultValue)));
+            cacheLineBytes = Integer.parseInt(System.getProperty("org.eclipse.jetty.util.cacheLineBytes", String.valueOf(cacheLineBytes)));
         }
-        catch (Exception ignored)
+        catch (Exception e)
         {
+            if (LOG.isTraceEnabled())
+                LOG.trace("", e);
         }
-        CACHE_LINE_BYTES = value;
+        CACHE_LINE_BYTES = cacheLineBytes;
 
-        // Use pessimistic default: assume oops are compressed.
-        int referencePerCacheLine = getIntegersPerCacheLine();
+        int referencesPerCacheLine = -1;
         try
         {
-            MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-            ObjectName beanName = ObjectName.getInstance("com.sun.management:type=HotSpotDiagnostic");
-            Object vmOption = server.invoke(beanName, "getVMOption",
-                new Object[]{"UseCompressedOops"},
-                new String[]{"java.lang.String"});
-            String v = (String)((CompositeData)vmOption).get("value");
-            if (!Boolean.parseBoolean(v))
-                referencePerCacheLine = getLongsPerCacheLine();
+            String property = System.getProperty("org.eclipse.jetty.util.referencesPerCacheLine");
+            if (property != null)
+            {
+                referencesPerCacheLine = Integer.parseInt(property);
+                if (referencesPerCacheLine < 1)
+                    referencesPerCacheLine = -1;
+            }
         }
-        catch (Exception ignored)
+        catch (Exception e)
         {
+            if (LOG.isTraceEnabled())
+                LOG.trace("", e);
         }
-        REFERENCE_PER_CACHE_LINE = referencePerCacheLine;
+        if (referencesPerCacheLine == -1)
+        {
+            try
+            {
+                MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+                ObjectName beanName = ObjectName.getInstance("com.sun.management:type=HotSpotDiagnostic");
+                Object vmOption = server.invoke(beanName, "getVMOption",
+                    new Object[]{"UseCompressedOops"},
+                    new String[]{"java.lang.String"});
+                String v = (String)((CompositeData)vmOption).get("value");
+                if (!Boolean.parseBoolean(v))
+                    referencesPerCacheLine = getLongsPerCacheLine();
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isTraceEnabled())
+                    LOG.trace("", x);
+            }
+        }
+        // Use pessimistic default: assume oops are compressed to 32-bit.
+        if (referencesPerCacheLine == -1)
+            referencesPerCacheLine = getIntegersPerCacheLine();
+        REFERENCES_PER_CACHE_LINE = referencesPerCacheLine;
     }
 
     private MemoryUtils()
@@ -79,6 +106,6 @@ public class MemoryUtils
 
     public static int getReferencesPerCacheLine()
     {
-        return REFERENCE_PER_CACHE_LINE;
+        return REFERENCES_PER_CACHE_LINE;
     }
 }
