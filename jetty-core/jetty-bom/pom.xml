@@ -17,6 +17,16 @@
     <dependencies>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-bouncycastle-client</artifactId>
+        <version>12.1.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-bouncycastle-server</artifactId>
+        <version>12.1.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-client</artifactId>
         <version>12.1.8-SNAPSHOT</version>
       </dependency>
@@ -47,6 +57,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-annotations</artifactId>
+        <version>12.1.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-client</artifactId>
         <version>12.1.8-SNAPSHOT</version>
       </dependency>
@@ -58,11 +73,6 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-deploy</artifactId>
-        <version>12.1.8-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-ethereum</artifactId>
         <version>12.1.8-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -98,11 +108,6 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-keystore</artifactId>
-        <version>12.1.8-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-openid</artifactId>
         <version>12.1.8-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -182,6 +187,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.compression</groupId>
+        <artifactId>jetty-compression-client</artifactId>
+        <version>12.1.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.compression</groupId>
         <artifactId>jetty-compression-common</artifactId>
         <version>12.1.8-SNAPSHOT</version>
       </dependency>
@@ -198,11 +208,6 @@
       <dependency>
         <groupId>org.eclipse.jetty.compression</groupId>
         <artifactId>jetty-compression-zstandard</artifactId>
-        <version>12.1.8-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.demos</groupId>
-        <artifactId>jetty-core-demo-handler</artifactId>
         <version>12.1.8-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -277,6 +282,16 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-api</artifactId>
+        <version>12.1.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-client</artifactId>
+        <version>12.1.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
         <artifactId>jetty-quic-common</artifactId>
         <version>12.1.8-SNAPSHOT</version>
       </dependency>
@@ -302,7 +317,17 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-quiche-server</artifactId>
+        <version>12.1.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
         <artifactId>jetty-quic-server</artifactId>
+        <version>12.1.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-util</artifactId>
         <version>12.1.8-SNAPSHOT</version>
       </dependency>
       <dependency>
