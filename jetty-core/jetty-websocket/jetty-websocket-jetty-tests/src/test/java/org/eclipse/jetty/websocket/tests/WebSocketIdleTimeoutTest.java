@@ -19,17 +19,22 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.exceptions.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.server.ServerWebSocketContainer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.jetty.websocket.api.StatusCode.UNDEFINED;
+import static org.eclipse.jetty.websocket.api.StatusCode.NORMAL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -37,24 +42,29 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketIdleTimeoutTest
 {
-    private static final int IDLE_TIMEOUT = 1000;
+    private static final long IDLE_TIMEOUT_CONNECTOR = 10000;
+    private static final long IDLE_TIMEOUT_HTTP_CONFIG = 10001;
+    private static final long IDLE_TIMEOUT_CONTAINER = 10002;
+    private static final long IDLE_TIMEOUT_SESSION = 10003;
+
     private final AtomicBoolean _allowTimeout = new AtomicBoolean();
     private Server _server;
     private ServerConnector _connector;
     private WebSocketClient _client;
-    private TimeoutEndpoint _serverEndpoint;
+    private TimeoutEndpoint _serverEndpoint = new TimeoutEndpoint();
+    private WebSocketUpgradeHandler _upgradeHandler;
+    private HttpConfiguration _httpConfig;
 
-    @BeforeEach
-    public void before() throws Exception
+    public void before(Runnable runnable) throws Exception
     {
         _server = new Server();
-        _connector = new ServerConnector(_server);
+        _httpConfig = new HttpConfiguration();
+        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(_httpConfig);
+        _connector = new ServerConnector(_server, httpConnectionFactory);
         _server.addConnector(_connector);
-        WebSocketUpgradeHandler upgradeHandler = WebSocketUpgradeHandler.from(_server);
-        _serverEndpoint = new TimeoutEndpoint();
-        upgradeHandler.getServerWebSocketContainer().addMapping("/", (req, resp, cb) -> _serverEndpoint);
-        upgradeHandler.getServerWebSocketContainer().setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
-        _server.setHandler(upgradeHandler);
+        _upgradeHandler = WebSocketUpgradeHandler.from(_server);
+        _server.setHandler(_upgradeHandler);
+        runnable.run();
         _server.start();
 
         _client = new WebSocketClient();
@@ -68,44 +78,152 @@ public class WebSocketIdleTimeoutTest
         _server.stop();
     }
 
-    public class TimeoutEndpoint extends EventSocket
+    public class TimeoutEndpoint extends CloseTrackingEndpoint
     {
-        volatile CountDownLatch timeoutLatch;
+        private volatile CountDownLatch timeoutLatch;
+        private long idleTimeout = -1;
+
+        public void setIdleTimeout(long idleTimeout)
+        {
+            this.idleTimeout = idleTimeout;
+        }
 
         public void awaitTimeouts(int num) throws InterruptedException
         {
+            // Create the timeout latch and wait for the timeout to occur `num` times.
             timeoutLatch = new CountDownLatch(num);
-            timeoutLatch.await();
+            assertTrue(timeoutLatch.await(getSession().getIdleTimeout().toMillis() * num + 5000, TimeUnit.MILLISECONDS));
         }
 
         @Override
-        public void onOpen(Session session)
+        public void onWebSocketOpen(Session session)
         {
+            // Add an idle timeout listener to the session, which decides whether to close connection based on `_allowTimeout`.
             session.addIdleTimeoutListener(t ->
             {
                 if (timeoutLatch != null)
                     timeoutLatch.countDown();
                 return _allowTimeout.get();
             });
-            super.onOpen(session);
+            if (idleTimeout >= 0)
+                session.setIdleTimeout(Duration.ofMillis(idleTimeout));
+            super.onWebSocketOpen(session);
+        }
+
+        @Override
+        public void onWebSocketText(String message)
+        {
+            if ("getIdleTimeout".equals(message))
+            {
+                // Use the endpoint directly to get the true idleTimeout value.
+                WebSocketSession webSocketSession = (WebSocketSession)getSession();
+                WebSocketCoreSession coreSession = (WebSocketCoreSession)webSocketSession.getCoreSession();
+                long idleTimeout = coreSession.getConnection().getEndPoint().getIdleTimeout();
+                getSession().sendText(Long.toString(idleTimeout), Callback.NOOP);
+            }
         }
     }
 
     @Test
     public void testWebSocketIdleTimeout() throws Exception
     {
+        before(() ->
+        {
+            ServerWebSocketContainer container = _upgradeHandler.getServerWebSocketContainer();
+            container.addMapping("/", (req, resp, cb) -> _serverEndpoint);
+            container.setIdleTimeout(Duration.ofMillis(1000));
+        });
+
         EventSocket clientEndpoint = new EventSocket();
         _client.connect(clientEndpoint, URI.create("ws://localhost:" + _connector.getLocalPort()));
         assertTrue(_serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
 
         // The WebSocket connection has not been closed but multiple timeout events have occurred.
         _serverEndpoint.awaitTimeouts(3);
-        assertThat(_serverEndpoint.closeCode, equalTo(UNDEFINED));
+        assertThat(_serverEndpoint.closeCode, equalTo(-1));
         assertThat(_serverEndpoint.closeLatch.getCount(), equalTo(1L));
 
         // Allow the timeout listener to close the connection.
         _allowTimeout.set(true);
         assertTrue(_serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(_serverEndpoint.error, instanceOf(WebSocketTimeoutException.class));
+        assertThat(_serverEndpoint.error.get(), instanceOf(WebSocketTimeoutException.class));
+    }
+
+    @Test
+    public void testConnectorIdleTimeout() throws Exception
+    {
+        before(() ->
+        {
+            ServerWebSocketContainer container = _upgradeHandler.getServerWebSocketContainer();
+            container.addMapping("/", (req, resp, cb) -> _serverEndpoint);
+
+            _connector.setIdleTimeout(IDLE_TIMEOUT_CONNECTOR);
+        });
+
+        assertIdleTimeoutAndClose(IDLE_TIMEOUT_CONNECTOR);
+    }
+
+    @Test
+    public void testHttpConfigurationIdleTimeout() throws Exception
+    {
+        before(() ->
+        {
+            ServerWebSocketContainer container = _upgradeHandler.getServerWebSocketContainer();
+            container.addMapping("/", (req, resp, cb) -> _serverEndpoint);
+
+            _connector.setIdleTimeout(IDLE_TIMEOUT_CONNECTOR);
+            _httpConfig.setIdleTimeout(IDLE_TIMEOUT_HTTP_CONFIG);
+        });
+
+        assertIdleTimeoutAndClose(IDLE_TIMEOUT_CONNECTOR);
+    }
+
+    @Test
+    public void testWebSocketContainerIdleTimeout() throws Exception
+    {
+        before(() ->
+        {
+            ServerWebSocketContainer container = _upgradeHandler.getServerWebSocketContainer();
+            container.addMapping("/", (req, resp, cb) -> _serverEndpoint);
+
+            _connector.setIdleTimeout(IDLE_TIMEOUT_CONNECTOR);
+            _httpConfig.setIdleTimeout(IDLE_TIMEOUT_HTTP_CONFIG);
+            container.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT_CONTAINER));
+        });
+
+        assertIdleTimeoutAndClose(IDLE_TIMEOUT_CONTAINER);
+    }
+
+    @Test
+    public void testWebSocketSessionIdleTimeout() throws Exception
+    {
+        before(() ->
+        {
+            ServerWebSocketContainer container = _upgradeHandler.getServerWebSocketContainer();
+            _connector.setIdleTimeout(IDLE_TIMEOUT_CONNECTOR);
+            _httpConfig.setIdleTimeout(IDLE_TIMEOUT_HTTP_CONFIG);
+            container.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT_CONTAINER));
+            _serverEndpoint.setIdleTimeout(IDLE_TIMEOUT_SESSION);
+
+            container.addMapping("/", (req, resp, cb) -> _serverEndpoint);
+        });
+
+        assertIdleTimeoutAndClose(IDLE_TIMEOUT_SESSION);
+    }
+
+    private void assertIdleTimeoutAndClose(long expectedIdleTimeout) throws Exception
+    {
+        EventSocket clientEndpoint = new EventSocket();
+        _client.connect(clientEndpoint, URI.create("ws://localhost:" + _connector.getLocalPort()));
+        assertTrue(_serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
+
+        clientEndpoint.session.sendText("getIdleTimeout", Callback.NOOP);
+        String idleTimeout = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+        assertThat(idleTimeout, equalTo(Long.toString(expectedIdleTimeout)));
+
+        _serverEndpoint.getSession().close();
+        assertTrue(_serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(_serverEndpoint.closeCode, equalTo(NORMAL));
     }
 }
