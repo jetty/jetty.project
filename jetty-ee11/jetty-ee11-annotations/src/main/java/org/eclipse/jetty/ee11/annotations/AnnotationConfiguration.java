@@ -388,7 +388,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                         addInheritedTypes(finalClassnames, classMap, classMap.get(c.getName()));
                 }
 
-                for (String classname:_discoveredClassNames)
+                for (String classname : _discoveredClassNames)
                 {
                     //add each of the classes that were discovered to have an annotation listed in @HandlesTypes
                     finalClassnames.add(classname);

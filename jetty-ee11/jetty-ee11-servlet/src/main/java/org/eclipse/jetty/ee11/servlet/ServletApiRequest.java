@@ -833,7 +833,7 @@ public class ServletApiRequest implements HttpServletRequest
                 if (httpCookie == null)
                     continue;
 
-                // this should be httpCookie.isExpired(), but because of an error in the servlet spec it is
+                // This should be httpCookie.isExpired(), but Servlet 6.1 requires to check for Max-Age as well.
                 if (httpCookie.isExpired() || (httpCookie.getMaxAge() < 0))
                 {
                     for (Iterator<Object> i = cookies.iterator(); i.hasNext();)
@@ -844,7 +844,6 @@ public class ServletApiRequest implements HttpServletRequest
                         else if (o instanceof HttpCookie cookie && cookie.getName().equals(httpCookie.getName()))
                             i.remove();
                     }
-                    continue;
                 }
                 else
                 {

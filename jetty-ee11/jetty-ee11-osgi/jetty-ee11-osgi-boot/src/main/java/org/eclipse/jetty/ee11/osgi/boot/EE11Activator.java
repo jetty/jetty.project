@@ -99,6 +99,7 @@ public class EE11Activator extends AbstractEEActivator
             ContextHandler contextHandler = new ContextHandler();
             contextHandler.setAttribute(BundleMetadata.BUNDLE, metadata.getBundle());
             contextHandler.setAttribute(OSGiWebappConstants.JETTY_BOOT_BUNDLE_CONTEXT, getBootBundleContext());
+
             ResourceFactory resourceFactory = ResourceFactory.of(contextHandler);
 
             //Make base resource that of the bundle

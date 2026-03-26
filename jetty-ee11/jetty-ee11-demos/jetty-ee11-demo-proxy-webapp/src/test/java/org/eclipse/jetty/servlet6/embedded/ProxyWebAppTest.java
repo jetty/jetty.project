@@ -35,7 +35,7 @@ import static org.hamcrest.Matchers.is;
 
 /**
  * Starts a new Jetty Base in the target/embedded/ directory using entirely
- * embedded jetty techniques, in ways similar to the various Jetty XML files
+ * embedded Jetty techniques, in ways similar to the various Jetty XML files
  * from {@code jetty-home}
  */
 public class ProxyWebAppTest

@@ -67,7 +67,7 @@ public class JaspiMessageInfo implements MessageInfo
     {
         return _response;
     }
-    
+
     @Override
     public Object getRequestMessage()
     {

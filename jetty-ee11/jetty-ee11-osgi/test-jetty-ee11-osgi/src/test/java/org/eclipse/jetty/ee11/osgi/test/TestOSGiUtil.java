@@ -47,11 +47,10 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
  */
 public class TestOSGiUtil
 {
+    public static final String BUNDLE_DEBUG = "bundle.debug";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestOSGiUtil.class);
 
-    public static final String BUNDLE_DEBUG = "bundle.debug";
-    
     /**
      * Null FragmentActivator for the fake bundle
      * that exposes src/test/resources/jetty-logging.properties in
@@ -178,20 +177,19 @@ public class TestOSGiUtil
             res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
 
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
-
         // BEGIN - slf4j 2.x
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
+        // END - slf4j 2.x
+
         TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
         loggingPropertiesBundle.addResource("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
         loggingPropertiesBundle.setHeader(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
         loggingPropertiesBundle.setHeader(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
         loggingPropertiesBundle.addClass(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
-        // END - slf4j 2.x
-        
-        res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
 
+        res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.servlet").artifactId("jakarta.servlet-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.util").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.cm").versionAsInProject());
@@ -277,7 +275,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee11.osgi").artifactId("jetty-ee11-osgi-boot-jsp").versionAsInProject().noStart());
     }
-    
+
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
     {
         Map<String, Bundle> bundles = new HashMap<>();
@@ -326,14 +324,14 @@ public class TestOSGiUtil
             }
         }
     }
-    
+
     protected static void dumpBundle(Bundle b)
     {
         System.err.println("    " + b.getBundleId() + " " + b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion() + " " + b.getState());
     }
 
     protected static void diagnoseNonActiveOrNonResolvedBundle(Bundle b)
-    {        
+    {
         if (b.getState() != Bundle.ACTIVE && b.getHeaders().get("Fragment-Host") == null)
         {
             try
@@ -356,7 +354,9 @@ public class TestOSGiUtil
         System.err.println("RESOLVED: " + Bundle.RESOLVED);
         System.err.println("INSTALLED: " + Bundle.INSTALLED);
         for (Bundle b : bundleContext.getBundles())
+        {
             dumpBundle(b);
+        }
     }
 
     @SuppressWarnings("rawtypes")

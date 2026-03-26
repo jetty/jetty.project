@@ -174,7 +174,7 @@ public class TestJettyStopMojo
     }
 
     public WorkDir workDir;
-    Process fork;
+    public Process fork;
 
     @AfterEach
     public void tearDown() throws Exception

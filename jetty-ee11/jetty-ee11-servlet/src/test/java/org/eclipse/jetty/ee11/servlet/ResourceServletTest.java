@@ -100,6 +100,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -123,6 +124,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
+@Isolated
 public class ResourceServletTest
 {
     public WorkDir workDir;
@@ -1223,7 +1225,7 @@ public class ResourceServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("<h1>Alt Index</h1>"));
 
-        // Let's try deleting the `index.html` and accesing the welcome file at `index.htm`
+        // Let's try deleting the `index.html` and accessing the welcome file at `index.htm`
         // We skip this section of the test if the OS or filesystem doesn't support instantaneous delete
         // such as what happens on Microsoft Windows.
         if (deleteFile(altIndex))

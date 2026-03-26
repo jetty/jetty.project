@@ -135,7 +135,7 @@ public class ServletHandler extends Handler.Wrapper
     /**
      * <p>Allow or disallow ambiguous URIs to be returned by {@link ServletApiRequest#getServletPath()}
      * and {@link ServletApiRequest#getPathInfo()}.</p>
-     * <p>Note that the {@link org.eclipse.jetty.server.HttpConfiguration#setUriCompliance(UriCompliance)} 
+     * <p>Note that the {@link org.eclipse.jetty.server.HttpConfiguration#setUriCompliance(UriCompliance)}
      * must also be set to allow ambiguous URIs to be accepted by the {@link org.eclipse.jetty.server.Connector}.</p>
      *
      * @param decodeAmbiguousURIs {@code True} if ambiguous URIs are decoded by all servlet API methods.

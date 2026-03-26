@@ -65,10 +65,14 @@ public class JettyWebSocketWebApp extends WebAppContext
 
     public void createWebXml() throws IOException
     {
-        String emptyWebXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-            "<web-app xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://java.sun.com/xml/ns/javaee\" " +
-            "xsi:schemaLocation=\"http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd\" " +
-            "metadata-complete=\"false\" version=\"3.0\"></web-app>";
+        String emptyWebXml = """
+            <web-app
+                xmlns="https://jakarta.ee/xml/ns/jakartaee"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+                metadata-complete="false"
+                version="6.0">
+            </web-app>""";
 
         Path webXml = webInf.resolve("web.xml");
         try (FileWriter writer = new FileWriter(webXml.toFile()))
