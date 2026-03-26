@@ -18,7 +18,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -270,7 +269,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         // Make sure onClose is only notified once.
         if (!closeNotified.compareAndSet(false, true))
         {
-            callback.failed(new ClosedChannelException());
+            callback.succeeded();
             return;
         }
 

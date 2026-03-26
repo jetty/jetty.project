@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.websocket.common;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -296,7 +295,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         // Make sure onClose is only notified once.
         if (!closeNotified.compareAndSet(false, true))
         {
-            callback.failed(new ClosedChannelException());
+            callback.succeeded();
             return;
         }
 

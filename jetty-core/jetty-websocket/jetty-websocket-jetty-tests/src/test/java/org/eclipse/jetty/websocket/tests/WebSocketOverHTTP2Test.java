@@ -18,7 +18,9 @@ import java.net.URI;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +33,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -57,6 +60,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.Callback;
@@ -507,6 +511,57 @@ public class WebSocketOverHTTP2Test
 
         assertThat(networkConnectionLimit.getPendingNetworkConnectionCount(), equalTo(0));
         assertThat(networkConnectionLimit.getNetworkConnectionCount(), equalTo(1));
+    }
+
+    @Test
+    public void testLargeNumberOfConcurrentConnections() throws Exception
+    {
+        Map<String, TestListenerEndpoint> serverEndpoints = new HashMap<>();
+        prepareServer(container ->
+            container.addMapping("/echo", (rq, rs, cb) ->
+            {
+                String clientId = rq.getHeaders().get("clientId");
+                if (StringUtil.isEmpty(clientId))
+                    throw new BadMessageException("Client ID is empty");
+
+                TestListenerEndpoint serverEndpoint = new TestListenerEndpoint();
+                serverEndpoints.put(clientId, serverEndpoint);
+                return serverEndpoint;
+            }));
+        server.start();
+
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
+
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
+        List<TestListenerEndpoint> clientHandlers = new ArrayList<>();
+        int numConnections = 1000;
+        for (int i = 0; i < numConnections; i++)
+        {
+            TestListenerEndpoint clientEndpoint = new TestListenerEndpoint();
+            clientHandlers.add(clientEndpoint);
+
+            ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest(uri);
+            upgradeRequest.setHeader("clientId", Integer.toString(i));
+            wsClient.connect(clientEndpoint, upgradeRequest).get(5, TimeUnit.SECONDS);
+            assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
+            assertThat(clientEndpoint.session.getUpgradeRequest().getHttpVersion(), equalTo(HttpVersion.HTTP_2.asString()));
+        }
+
+        // Close all the websocket connections.
+        for (int i = 0; i < numConnections; i++)
+        {
+            TestListenerEndpoint serverEndpoint = serverEndpoints.get(Integer.toString(i));
+            TestListenerEndpoint clientEndpoint = clientHandlers.get(i);
+
+            serverEndpoint.session.close(StatusCode.NORMAL, "close initiated from server", Callback.NOOP);
+            assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(serverEndpoint.closeCode, equalTo(CloseStatus.NORMAL));
+            assertThat(serverEndpoint.closeReason, equalTo("close initiated from server"));
+
+            assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(clientEndpoint.closeCode, equalTo(CloseStatus.NORMAL));
+            assertThat(clientEndpoint.closeReason, equalTo("close initiated from server"));
+        }
     }
 
     private static void awaitConnections(int connections, NetworkConnectionLimit networkConnectionLimit)

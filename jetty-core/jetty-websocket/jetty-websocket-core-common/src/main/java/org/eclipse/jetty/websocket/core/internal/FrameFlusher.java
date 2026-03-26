@@ -389,8 +389,6 @@ public class FrameFlusher extends IteratingCallback
 
         for (FlusherEntry entry : _completedEntries)
         {
-            if (entry.getFrame().getOpCode() == OpCode.CLOSE && _behavior == Behavior.SERVER)
-                _endPoint.shutdownOutput();
             notifyCallbackSuccess(entry.getCallback());
         }
         _completedEntries.clear();
