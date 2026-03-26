@@ -244,8 +244,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      */
     public void setIdleTimeout(long idleTimeout)
     {
-        if (isStarted())
-            throw new IllegalStateException();
         _idleTimeout = idleTimeout;
     }
 
@@ -256,8 +254,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      */
     public void setShutdownIdleTimeout(long idle)
     {
-        if (isStarted())
-            throw new IllegalStateException();
         _shutdownIdleTimeout = idle;
     }
 
