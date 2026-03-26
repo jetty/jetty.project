@@ -33,9 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Extend the AnnotationConfiguration to support OSGi:
+ * Extend the {@link org.eclipse.jetty.ee10.annotations.AnnotationConfiguration} to support OSGi:
  * Look for annotations inside WEB-INF/lib and also in the fragments and required bundles.
- * Discover them using a scanner adapted to OSGi instead of the jarscanner.
+ * Discover them using a scanner adapted to OSGi.
  */
 public class AnnotationConfiguration extends org.eclipse.jetty.ee10.annotations.AnnotationConfiguration
 {
@@ -224,7 +224,6 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee10.annotations.
 
     protected void parseBundle(State state, AnnotationParser parser, Bundle webbundle, Bundle bundle)
     {
-
         Resource bundleRes = parser.getBundleIndex().getResource(bundle);
         Set<Handler> handlers = new HashSet<>(state._discoverableAnnotationHandlers);
         if (state._classInheritanceHandler != null)

@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Saves literal XML snippets from web.xml.
  */
-
 public class ExtraXmlDescriptorProcessor extends IterativeDescriptorProcessor
 {
     private static final Logger LOG = LoggerFactory.getLogger(ExtraXmlDescriptorProcessor.class);

@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
 
 import jakarta.servlet.HttpConstraintElement;
 import jakarta.servlet.HttpMethodConstraintElement;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
@@ -40,6 +42,7 @@ import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.Constraint.Transport;
 import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -372,6 +375,20 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
         //Servlet Spec 3.1 pg 147 sec 13.8.4.2 log paths for which there are uncovered http methods
         checkPathsWithUncoveredHttpMethods();
+
+        Context context = ContextHandler.getCurrentContext();
+        if (context instanceof ServletContextHandler.ServletScopedContext servletScopedContext)
+        {
+            ServletContext servletContext = servletScopedContext.getServletContext();
+            Enumeration<String> names = servletContext.getInitParameterNames();
+            while (names != null && names.hasMoreElements())
+            {
+                String name = names.nextElement();
+                if (name.startsWith("org.eclipse.jetty.security.") &&
+                    getParameter(name) == null)
+                    setParameter(name, servletContext.getInitParameter(name));
+            }
+        }
 
         super.doStart();
     }

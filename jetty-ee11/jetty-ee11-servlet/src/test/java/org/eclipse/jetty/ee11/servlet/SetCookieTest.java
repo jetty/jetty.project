@@ -116,7 +116,7 @@ public class SetCookieTest
             GET /test/after-commit HTTP/1.1
             Host: test
             Connection: close
-            
+
             """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertThat(response.getStatus(), is(200));

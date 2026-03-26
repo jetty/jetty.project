@@ -187,7 +187,6 @@ public class ServletHandler extends Handler.Wrapper
             _servletContextHandler = servletScopedContext.getServletContextHandler();
 
             if (_servletContextHandler != null)
-
             {
                 SecurityHandler securityHandler = _servletContextHandler.getDescendant(SecurityHandler.class);
                 if (securityHandler != null)
@@ -812,7 +811,6 @@ public class ServletHandler extends Handler.Wrapper
             holder.setName(servletName);
         holder.setHeldClass(servlet);
         addServletWithMappings(holder, pathSpecs);
-
         return holder;
     }
 

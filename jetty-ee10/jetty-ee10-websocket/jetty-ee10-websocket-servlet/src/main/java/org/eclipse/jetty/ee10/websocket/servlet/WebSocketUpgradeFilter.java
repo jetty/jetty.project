@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Inline Servlet Filter to capture WebSocket upgrade requests.
  * <p>
- * The configuration applied to this filter via init params will be used as the the default
+ * The configuration applied to this filter via init params will be used as the default
  * configuration of any websocket upgraded by this filter, prior to the configuration of the
  * websocket applied by the {@link WebSocketMappings}.
  * </p>
@@ -62,9 +62,9 @@ import org.slf4j.LoggerFactory;
  * <dt>idleTimeout</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
  * <dt>maxTextMessageSize</dt>
- * <dd>set the size in UTF-8 bytes that a websocket may be accept as a Text Message before closing<br>
+ * <dd>set the size in UTF-8 bytes that a websocket may accept as a Text Message before closing<br>
  * <dt>maxBinaryMessageSize</dt>
- * <dd>set the size in bytes that a websocket may be accept as a Binary Message before closing<br>
+ * <dd>set the size in bytes that a websocket may accept as a Binary Message before closing<br>
  * <dt>inputBufferSize</dt>
  * <dd>set the size in bytes of the buffer used to read raw bytes from the network layer<br>
  * <dt>outputBufferSize</dt>
