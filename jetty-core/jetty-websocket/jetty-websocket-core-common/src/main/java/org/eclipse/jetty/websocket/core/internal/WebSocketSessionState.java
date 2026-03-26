@@ -42,6 +42,11 @@ public class WebSocketSessionState
     private byte _outgoingContinuation = OpCode.UNDEFINED;
     CloseStatus _closeStatus = null;
 
+    public boolean isConnecting()
+    {
+        return getState() == State.CONNECTING;
+    }
+
     public void onConnected()
     {
         try (AutoLock l = lock.lock())
