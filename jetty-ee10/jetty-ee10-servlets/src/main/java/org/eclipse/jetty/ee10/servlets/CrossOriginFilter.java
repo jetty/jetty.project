@@ -313,14 +313,12 @@ public class CrossOriginFilter implements Filter
                 }
                 else if (LOG.isDebugEnabled())
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Cross-origin request to {} with origin {} does not match allowed timing origins {}", request.getRequestURI(), origin, allowedTimingOrigins);
+                    LOG.debug("Cross-origin request to {} with origin {} does not match allowed timing origins {}", request.getRequestURI(), origin, allowedTimingOrigins);
                 }
             }
             else if (LOG.isDebugEnabled())
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Cross-origin request to {} with origin {} does not match allowed origins {}", request.getRequestURI(), origin, allowedOrigins);
+                LOG.debug("Cross-origin request to {} with origin {} does not match allowed origins {}", request.getRequestURI(), origin, allowedOrigins);
             }
         }
 
