@@ -587,7 +587,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             {
                 for (Thread thread : _acceptors)
                 {
-                    thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, thread.getPriority() - old + acceptorPriorityDelta)));
+                    if (thread != null)
+                        thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, thread.getPriority() - old + acceptorPriorityDelta)));
                 }
             }
         }
