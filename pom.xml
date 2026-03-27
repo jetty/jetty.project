@@ -1225,6 +1225,11 @@
         <version>${hamcrest.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.hibernate.models</groupId>
+        <artifactId>hibernate-models</artifactId>
+        <version>1.1.0</version>
+      </dependency>
+      <dependency>
         <groupId>org.infinispan.protostream</groupId>
         <artifactId>protostream</artifactId>
         <version>${infinispan.protostream.version}</version>
