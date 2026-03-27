@@ -333,11 +333,6 @@
         </configuration>
         <dependencies>
           <dependency>
-            <groupId>org.apache.maven.shared</groupId>
-            <artifactId>maven-filtering</artifactId>
-            <version>3.4.0</version>
-          </dependency>
-          <dependency>
             <groupId>org.eclipse.jetty.toolchain</groupId>
             <artifactId>jetty-modify-sources-maven-plugin</artifactId>
             <version>${modify-sources-plugin.version}</version>
