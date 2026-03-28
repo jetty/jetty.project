@@ -51,7 +51,7 @@
     <javax.servlet.jsp.jstl.impl.version>1.2.5</javax.servlet.jsp.jstl.impl.version>
     <jetty.servlet.api.version>4.0.9</jetty.servlet.api.version>
     <jsp.impl.version>9.0.107</jsp.impl.version>
-    <modify-sources-plugin.version>1.0.13</modify-sources-plugin.version>
+    <modify-sources-plugin.version>1.0.14</modify-sources-plugin.version>
     <sonar.skip>true</sonar.skip>
     <weld.version>3.1.9.Final</weld.version>
   </properties>
@@ -332,11 +332,6 @@
           </nonFilteredFileExtensions>
         </configuration>
         <dependencies>
-          <dependency>
-            <groupId>org.apache.maven.shared</groupId>
-            <artifactId>maven-filtering</artifactId>
-            <version>3.4.0</version>
-          </dependency>
           <dependency>
             <groupId>org.eclipse.jetty.toolchain</groupId>
             <artifactId>jetty-modify-sources-maven-plugin</artifactId>
