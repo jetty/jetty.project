@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
@@ -404,6 +405,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         private Delegate(Destination destination)
         {
             super((HttpDestination)destination);
+        }
+
+        @Override
+        protected HttpVersion getHttpVersion()
+        {
+            return null;
         }
 
         @Override

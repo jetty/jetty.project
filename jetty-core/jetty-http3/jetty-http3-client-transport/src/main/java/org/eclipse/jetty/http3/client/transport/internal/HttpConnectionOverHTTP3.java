@@ -107,6 +107,12 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     }
 
     @Override
+    protected boolean requiresHostHeader()
+    {
+        return false;
+    }
+
+    @Override
     protected Iterator<HttpChannel> getHttpChannels()
     {
         return activeChannels.iterator();

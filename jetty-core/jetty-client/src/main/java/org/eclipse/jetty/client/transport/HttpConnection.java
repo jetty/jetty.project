@@ -70,15 +70,9 @@ public abstract class HttpConnection implements IConnection, Attachable
         return destination;
     }
 
-    protected HttpVersion getHttpVersion()
-    {
-        return null;
-    }
+    protected abstract HttpVersion getHttpVersion();
 
-    protected boolean requiresHostHeader()
-    {
-        return false;
-    }
+    protected abstract boolean requiresHostHeader();
 
     protected abstract Iterator<HttpChannel> getHttpChannels();
 
