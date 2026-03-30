@@ -61,8 +61,6 @@ updates:
       # Do not upgrade major versions of dependencies
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
-      - dependency-name: "org.apache.lucene:*"
-        versions: [ ">9.12.0"]
 
   - package-ecosystem: maven
     directory: "/jetty-ee8"
@@ -159,8 +157,6 @@ updates:
         versions: [ ">=5.4.0"]
       - dependency-name: "org.jboss.threads:jboss-threads"
         versions: [ ">=3.7.0"]
-      - dependency-name: "org.apache.lucene:*"
-        versions: [ ">9.12.0"]
 
   - package-ecosystem: maven
     directory: "/jetty-ee9"
@@ -228,8 +224,6 @@ updates:
         versions:  [ ">= 10.1.0"]
       - dependency-name: "jakarta.inject:*"
         versions: [ ">= 2.0.1" ]
-      - dependency-name: "org.apache.lucene:*"
-        versions: [ ">9.12.0"]
       - dependency-name: "org.glassfish.jersey.*:*"
         versions: [ ">3.1.0"]
 
@@ -295,8 +289,6 @@ updates:
         versions:  [ ">= 2.2.0" ]
       - dependency-name: "jakarta.inject:*"
         versions: [ ">= 2.0.1" ]
-      - dependency-name: "org.apache.lucene:*"
-        versions: [ ">9.12.0"]
 
   - package-ecosystem: maven
     directory: "/jetty-ee11"
@@ -350,8 +342,6 @@ updates:
         update-types: [ "version-update:semver-major" ]
       - dependency-name: "jakarta.inject:*"
         versions: [ ">= 2.0.1" ]
-      - dependency-name: "org.apache.lucene:*"
-        versions: [ ">9.12.0"]
 
 #### jetty-12.0.x branch
 
@@ -409,7 +399,9 @@ updates:
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
       - dependency-name: "org.apache.lucene:*"
-        versions: [ ">9.12.0"]
+        versions: [ ">=9.12.0"]
+      - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
+        versions:  [ ">=3.1.0" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee8"
@@ -507,7 +499,9 @@ updates:
       - dependency-name: "org.jboss.threads:jboss-threads"
         versions: [ ">=3.7.0"]
       - dependency-name: "org.apache.lucene:*"
-        versions: [ ">9.12.0"]
+        versions: [ ">=9.12.0"]
+      - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
+        versions:  [ ">=3.1.0" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee9"
@@ -576,9 +570,11 @@ updates:
       - dependency-name: "jakarta.inject:*"
         versions: [ ">= 2.0.1" ]
       - dependency-name: "org.apache.lucene:*"
-        versions: [ ">9.12.0"]
+        versions: [ ">=9.12.0"]
       - dependency-name: "org.glassfish.jersey.*:*"
         versions: [ ">3.1.0"]
+      - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
+        versions:  [ ">=3.1.0" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee10"
@@ -643,4 +639,6 @@ updates:
       - dependency-name: "jakarta.inject:*"
         versions: [ ">= 2.0.1" ]
       - dependency-name: "org.apache.lucene:*"
-        versions: [ ">9.12.0"]
+        versions: [ ">=9.12.0"]
+      - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
+        versions:  [ ">=3.1.0" ]
