@@ -221,7 +221,7 @@ updates:
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
         versions:  [ ">= 3.1.0"]
       - dependency-name: "org.mortbay.jasper:*"
-        versions:  [ ">= 10.1.0"]
+        versions:  [ "> 10.1.0"]
       - dependency-name: "jakarta.inject:*"
         versions: [ ">= 2.0.1" ]
       - dependency-name: "org.glassfish.jersey.*:*"
@@ -402,6 +402,8 @@ updates:
         versions: [ ">=9.12.0"]
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
         versions:  [ ">=3.1.0" ]
+      - dependency-name: "org.mortbay.jasper:*"
+        versions:  [ "> 10.1.0"]
 
   - package-ecosystem: maven
     directory: "/jetty-ee8"
@@ -502,6 +504,8 @@ updates:
         versions: [ ">=9.12.0"]
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
         versions:  [ ">=3.1.0" ]
+      - dependency-name: "org.mortbay.jasper:*"
+        versions:  [ "> 10.1.0"]
 
   - package-ecosystem: maven
     directory: "/jetty-ee9"
@@ -566,7 +570,7 @@ updates:
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
         versions:  [ ">= 3.1.0"]
       - dependency-name: "org.mortbay.jasper:*"
-        versions:  [ ">= 10.1.0"]
+        versions:  [ "> 10.1.0"]
       - dependency-name: "jakarta.inject:*"
         versions: [ ">= 2.0.1" ]
       - dependency-name: "org.apache.lucene:*"
@@ -642,3 +646,5 @@ updates:
         versions: [ ">=9.12.0"]
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
         versions:  [ ">=3.1.0" ]
+      - dependency-name: "org.mortbay.jasper:*"
+        versions:  [ "> 10.1.0"]
