@@ -176,7 +176,7 @@
     -->
     <bndlib.version>6.4.1</bndlib.version>
     <bouncycastle.version>1.83</bouncycastle.version>
-    <brotli4j.version>1.20.0</brotli4j.version>
+    <brotli4j.version>1.22.0</brotli4j.version>
     <build-helper.maven.plugin.version>3.6.1</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.3.0</buildnumber.maven.plugin.version>
