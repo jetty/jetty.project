@@ -254,8 +254,7 @@ public class JnaQuicheConnection extends QuicheConnection
      * @return true if a negotiation packet was written to the {@code packetToSend} buffer, false if negotiation failed
      * and the {@code packetRead} buffer can be dropped.
      */
-    public static boolean negotiate(TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException
-    {
+    public static boolean negotiate(TokenMinter tokenMinter, ByteBuffer packetRead, ByteBuffer packetToSend) throws IOException {
         uint8_t_pointer type = new uint8_t_pointer();
         uint32_t_pointer version = new uint32_t_pointer();
 
@@ -273,25 +272,17 @@ public class JnaQuicheConnection extends QuicheConnection
         if (LOG.isDebugEnabled())
             LOG.debug("getting header info (negotiate)...");
         int rc = LibQuiche.INSTANCE.quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(QUICHE_MAX_CONN_ID_LEN),
-            version, type,
-            scid, scid_len,
-            dcid, dcid_len,
-            token, token_len);
+                version, type,
+                scid, scid_len,
+                dcid, dcid_len,
+                token, token_len);
         if (rc < 0)
             throw new IOException("failed to parse header: " + quiche_error.errToString(rc));
         packetRead.position(packetRead.limit());
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("version: {}", version);
-        if (LOG.isDebugEnabled())
-            LOG.debug("type: {}", type);
-        if (LOG.isDebugEnabled())
-            LOG.debug("scid len: {}", scid_len);
-        if (LOG.isDebugEnabled())
-            LOG.debug("dcid len: {}", dcid_len);
-        if (LOG.isDebugEnabled())
-            LOG.debug("token len: {}", token_len);
-
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("type: {}, scid len: {}, dcid len: {}, token len: {}", type, scid_len, dcid_len, token_len);
+        }
         if (LibQuiche.INSTANCE.quiche_version_is_supported(version.getPointee()).isFalse())
         {
             if (LOG.isDebugEnabled())
@@ -361,15 +352,8 @@ public class JnaQuicheConnection extends QuicheConnection
             throw new IOException("failed to parse header: " + quiche_error.errToString(rc));
 
         if (LOG.isDebugEnabled())
-            LOG.debug("version: {}", version);
-        if (LOG.isDebugEnabled())
-            LOG.debug("type: {}", type);
-        if (LOG.isDebugEnabled())
-            LOG.debug("scid len: {}", scid_len);
-        if (LOG.isDebugEnabled())
-            LOG.debug("dcid len: {}", dcid_len);
-        if (LOG.isDebugEnabled())
-            LOG.debug("token len: {}", token_len);
+            LOG.debug("version: {}, type: {}, scid len: {}, dcid len: {}, token len: {}", version, type, scid_len, dcid_len, token_len);
+
 
         if (LibQuiche.INSTANCE.quiche_version_is_supported(version.getPointee()).isFalse())
         {

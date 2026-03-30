@@ -1373,12 +1373,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 }
                 else if (LOG.isDebugEnabled())
                 {
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug(duplicateSession(
+                    LOG.debug(duplicateSession(
                         requestedSessionId, true, requestedSessionIdFromCookie,
                         id, false, i < cookieIds));
-                    }
+
                 }
             }
         }

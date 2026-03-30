@@ -295,7 +295,7 @@ public class ProcessWrapper implements AutoCloseable
             catch (Throwable x)
             {
                 if (LOG.isTraceEnabled())
-                    LOG.trace("", x);
+                    LOG.trace("IGNORED", x);
             }
             finally
             {
