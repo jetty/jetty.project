@@ -376,7 +376,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
             makeUnavailable(ex);
             if (getServletHandler().isStartWithUnavailable())
             {
-                LOG.trace("IGNORED", ex);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", ex);
                 return;
             }
             else
@@ -393,7 +394,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
             makeUnavailable(ex);
             if (getServletHandler().isStartWithUnavailable())
             {
-                LOG.trace("IGNORED", ex);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", ex);
                 return;
             }
             else

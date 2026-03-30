@@ -1183,7 +1183,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                     }
                     catch (InterruptedException e)
                     {
-                        LOG.trace("IGNORED", e);
+                        if (LOG.isTraceEnabled())
+                            LOG.trace("IGNORED", e);
                     }
                 }
             }

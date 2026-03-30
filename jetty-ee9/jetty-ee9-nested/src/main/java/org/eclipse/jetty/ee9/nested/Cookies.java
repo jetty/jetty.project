@@ -142,8 +142,9 @@ public class Cookies implements CookieParser.Handler
         }
         catch (Exception e)
         {
-            LOG.debug("Unable to add Cookie name={}, value={}, domain={}, path={}, version={}, comment={}",
-                name, value, domain, path, version, comment, e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to add Cookie name={}, value={}, domain={}, path={}, version={}, comment={}",
+                    name, value, domain, path, version, comment, e);
         }
     }
 }

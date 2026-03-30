@@ -240,7 +240,8 @@ public class CookieCutter implements CookieParser
                                 }
                                 catch (Exception e)
                                 {
-                                    LOG.debug("Unable to process Cookie", e);
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("Unable to process Cookie", e);
                                 }
 
                                 name = null;

@@ -109,19 +109,22 @@ public abstract class IncludeExcludeBasedFilter implements Filter
     protected String guessMimeType(HttpServletRequest httpRequest, HttpServletResponse httpResponse)
     {
         String contentType = httpResponse.getContentType();
-        LOG.debug("Content Type is: {}", contentType);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Content Type is: {}", contentType);
 
         String mimeType;
         if (contentType != null)
         {
             mimeType = MimeTypes.getContentTypeWithoutCharset(contentType);
-            LOG.debug("Mime Type is: {}", mimeType);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Mime Type is: {}", mimeType);
         }
         else
         {
             String requestUrl = httpRequest.getPathInfo();
             mimeType = Objects.requireNonNullElse(httpRequest.getServletContext().getMimeType(requestUrl), "");
-            LOG.debug("Guessed mime type is {}", mimeType);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Guessed mime type is {}", mimeType);
         }
 
         return mimeType;
@@ -130,10 +133,12 @@ public abstract class IncludeExcludeBasedFilter implements Filter
     protected boolean shouldFilter(HttpServletRequest httpRequest, HttpServletResponse httpResponse)
     {
         String httpMethod = httpRequest.getMethod();
-        LOG.debug("HTTP method is: {}", httpMethod);
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP method is: {}", httpMethod);
         if (!_httpMethods.test(httpMethod))
         {
-            LOG.debug("should not apply filter because HTTP method does not match");
+            if (LOG.isDebugEnabled())
+                LOG.debug("should not apply filter because HTTP method does not match");
             return false;
         }
 
@@ -141,16 +146,19 @@ public abstract class IncludeExcludeBasedFilter implements Filter
 
         if (!_mimeTypes.test(mimeType))
         {
-            LOG.debug("should not apply filter because mime type does not match");
+            if (LOG.isDebugEnabled())
+                LOG.debug("should not apply filter because mime type does not match");
             return false;
         }
 
         ServletContext context = httpRequest.getServletContext();
         String path = context == null ? httpRequest.getRequestURI() : URIUtil.addPaths(httpRequest.getServletPath(), httpRequest.getPathInfo());
-        LOG.debug("Path is: {}", path);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Path is: {}", path);
         if (!_paths.test(path))
         {
-            LOG.debug("should not apply filter because path does not match");
+            if (LOG.isDebugEnabled())
+                LOG.debug("should not apply filter because path does not match");
             return false;
         }
 

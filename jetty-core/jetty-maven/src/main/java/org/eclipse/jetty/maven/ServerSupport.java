@@ -137,7 +137,8 @@ public class ServerSupport
         {
             for (LoginService loginService : loginServices)
             {
-                PluginLog.getLog().debug(loginService.getClass().getName() + ": " + loginService.toString());
+                if (PluginLog.getLog().isDebugEnabled())
+                    PluginLog.getLog().debug(loginService.getClass().getName() + ": " + loginService.toString());
                 server.addBean(loginService);
             }
         }

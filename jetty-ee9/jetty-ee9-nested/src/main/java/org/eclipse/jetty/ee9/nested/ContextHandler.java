@@ -1556,7 +1556,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
         catch (Exception e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
 
         return null;
@@ -1648,7 +1649,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
         catch (Exception e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
         return Collections.emptySet();
     }
@@ -2003,7 +2005,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             }
             catch (Exception e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
             }
             return null;
         }
@@ -2049,7 +2052,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             }
             catch (Exception e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
             }
 
             return null;
@@ -2103,7 +2107,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             catch (Throwable e)
             {
                 // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
                 return null;
             }
         }

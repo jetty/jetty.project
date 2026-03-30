@@ -199,7 +199,8 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                     }
                     catch (Exception e)
                     {
-                        getLog().debug(e);
+                        if (getLog().isDebugEnabled())
+                            getLog().debug(e);
                     }
                 }
             });
@@ -333,7 +334,8 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     public void restartWebApp(boolean reconfigure) throws Exception
     {
         getLog().info("Restarting " + webApp);
-        getLog().debug("Stopping webapp ...");
+        if (getLog().isDebugEnabled())
+            getLog().debug("Stopping webapp ...");
         if (scanner != null)
             scanner.stop();
 
@@ -341,7 +343,8 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         {
             case EMBED:
             {
-                getLog().debug("Reconfiguring webapp ...");
+                if (getLog().isDebugEnabled())
+                    getLog().debug("Reconfiguring webapp ...");
 
                 verifyPomConfiguration();
                 // check if we need to reconfigure the scanner,

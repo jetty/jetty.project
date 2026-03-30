@@ -563,12 +563,14 @@ public class ServletHandler extends Handler.Wrapper
             if (_maxFilterChainsCacheSize > 0 && cache.size() >= _maxFilterChainsCacheSize)
             {
                 // flush the cache
-                LOG.debug("{} flushed filter chain cache for {}", this, dispatcherType);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} flushed filter chain cache for {}", this, dispatcherType);
                 cache.clear();
             }
             chain = chain == null ? new ChainEnd(servletHolder) : chain;
             // flush the cache
-            LOG.debug("{} cached filter chain for {}: {}", this, dispatcherType, chain);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} cached filter chain for {}: {}", this, dispatcherType, chain);
             cache.put(key, chain);
         }
         return chain;

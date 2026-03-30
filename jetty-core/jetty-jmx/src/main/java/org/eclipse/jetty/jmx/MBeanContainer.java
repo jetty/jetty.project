@@ -478,7 +478,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         }
         catch (MBeanRegistrationException | InstanceNotFoundException x)
         {
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
         }
         catch (Throwable x)
         {

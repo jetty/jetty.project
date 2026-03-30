@@ -62,13 +62,15 @@ public class DecoratedObjectFactory implements Iterable<Decorator>, Decorator
 
     public void addDecorator(Decorator decorator)
     {
-        LOG.debug("Adding Decorator: {}", decorator);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Adding Decorator: {}", decorator);
         decorators.add(decorator);
     }
 
     public boolean removeDecorator(Decorator decorator)
     {
-        LOG.debug("Remove Decorator: {}", decorator);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Remove Decorator: {}", decorator);
         return decorators.remove(decorator);
     }
 

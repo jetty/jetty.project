@@ -1376,6 +1376,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     LOG.debug(duplicateSession(
                         requestedSessionId, true, requestedSessionIdFromCookie,
                         id, false, i < cookieIds));
+
                 }
             }
         }

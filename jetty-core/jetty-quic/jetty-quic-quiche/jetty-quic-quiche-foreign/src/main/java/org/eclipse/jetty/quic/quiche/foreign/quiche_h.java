@@ -41,8 +41,7 @@ public class quiche_h
 
         if (LOG.isDebugEnabled())
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Quiche version {}", quicheVersion);
+            LOG.debug("Quiche version {}", quicheVersion);
 
             MemorySegment cb = NativeHelper.upcallMemorySegment(LoggingCallback.class, "log", LoggingCallback.INSTANCE,
                 FunctionDescriptor.ofVoid(C_POINTER, C_POINTER), LoggingCallback.SCOPE);
@@ -59,7 +58,8 @@ public class quiche_h
 
         public void log(MemorySegment msg, MemorySegment argp)
         {
-            LOG.debug(msg.getString(0L, StandardCharsets.UTF_8));
+            if (LOG.isDebugEnabled())
+                LOG.debug(msg.getString(0L, StandardCharsets.UTF_8));
         }
     }
 

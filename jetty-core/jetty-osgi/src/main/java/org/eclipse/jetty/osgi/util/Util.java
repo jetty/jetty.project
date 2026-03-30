@@ -76,7 +76,8 @@ public class Util
         catch (InvalidPathException x)
         {
             //ignore and try via the jetty bundle instead
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
         }
 
         

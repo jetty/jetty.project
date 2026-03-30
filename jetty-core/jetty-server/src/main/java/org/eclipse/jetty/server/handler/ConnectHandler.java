@@ -303,7 +303,8 @@ public class ConnectHandler extends Handler.Wrapper
         }
         catch (Throwable x)
         {
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
         }
     }
 

@@ -195,7 +195,8 @@ public class Scanner extends ContainerLifeCycle
                 if (accepted)
                 {
                     scanInfoMap.put(dir, new MetaData(f.lastModified(), f.isDirectory() ? 0 : f.length()));
-                    if (LOG.isDebugEnabled()) LOG.debug("scan accepted dir {} mod={}", f, f.lastModified());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("scan accepted dir {} mod={}", f, f.lastModified());
                 }
             }
 
@@ -227,7 +228,8 @@ public class Scanner extends ContainerLifeCycle
             if (accepted)
             {
                 scanInfoMap.put(path, new MetaData(f.lastModified(), f.isDirectory() ? 0 : f.length()));
-                if (LOG.isDebugEnabled()) LOG.debug("scan accepted {} mod={}", f, f.lastModified());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("scan accepted {} mod={}", f, f.lastModified());
             }
 
             return FileVisitResult.CONTINUE;

@@ -228,7 +228,8 @@ public class HttpGenerator
                 }
                 catch (BufferOverflowException e)
                 {
-                    LOG.trace("IGNORED", e);
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", e);
                     return Result.HEADER_OVERFLOW;
                 }
                 catch (Exception e)
@@ -412,7 +413,8 @@ public class HttpGenerator
                 }
                 catch (BufferOverflowException e)
                 {
-                    LOG.trace("IGNORED", e);
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", e);
                     return Result.HEADER_OVERFLOW;
                 }
                 catch (Exception e)

@@ -408,7 +408,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
         catch (NoSuchAlgorithmException x)
         {
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
         }
     }
 

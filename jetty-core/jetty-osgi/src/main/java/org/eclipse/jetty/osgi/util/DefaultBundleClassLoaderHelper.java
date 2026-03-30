@@ -74,7 +74,8 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         }
         catch (ClassNotFoundException e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
 
         try
@@ -85,7 +86,8 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         }
         catch (ClassNotFoundException e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
 
         try
@@ -106,7 +108,8 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         }
         catch (ClassNotFoundException e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
 
         try
@@ -117,7 +120,8 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         }
         catch (ClassNotFoundException e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
 
         LOG.warn("Unknown OSGi container type");

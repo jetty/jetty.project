@@ -215,7 +215,8 @@ public class Runner
         initClassLoader();
 
         LOG.info("Runner");
-        LOG.debug("Runner classpath {}", _classpath);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Runner classpath {}", _classpath);
 
         String contextPath = DEFAULT_CONTEXT_PATH;
         boolean contextPathSet = false;

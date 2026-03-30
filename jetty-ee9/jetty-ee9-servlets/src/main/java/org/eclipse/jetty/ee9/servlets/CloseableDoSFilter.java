@@ -38,7 +38,8 @@ public class CloseableDoSFilter extends DoSFilter
         }
         catch (IOException e)
         {
-            LOG.debug("Unable to trigger channel close", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to trigger channel close", e);
         }
     }
 }

@@ -159,7 +159,8 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
             .map(a ->
             {
                 Path p = mavenProjectHelper.getPathFor(a);
-                getLog().debug("Artifact " + a.getId() + " loaded from " + p + " added to WEB-INF/lib");
+                if (getLog().isDebugEnabled())
+                    getLog().debug("Artifact " + a.getId() + " loaded from " + p + " added to WEB-INF/lib");
                 return p.toFile();
             }).collect(Collectors.toList());
 

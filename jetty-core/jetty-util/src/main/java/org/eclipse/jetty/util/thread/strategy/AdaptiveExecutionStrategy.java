@@ -552,7 +552,8 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             if (isRunning())
                 LOG.warn("Execute failed", e);
             else
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
 
             if (task instanceof Closeable)
                 IO.close((Closeable)task);

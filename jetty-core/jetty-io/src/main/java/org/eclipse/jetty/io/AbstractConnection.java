@@ -113,7 +113,8 @@ public abstract class AbstractConnection implements Connection, Invocable
                 }
                 catch (RejectedExecutionException e)
                 {
-                    LOG.debug("Rejected", e);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Rejected", e);
                     callback.failed(x);
                 }
                 break;

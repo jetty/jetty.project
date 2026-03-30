@@ -240,11 +240,13 @@ public class PathResource extends Resource
         }
         catch (DirectoryIteratorException e)
         {
-            LOG.debug("Directory list failure", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Directory list failure", e);
         }
         catch (IOException e)
         {
-            LOG.debug("Directory list access failure", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Directory list access failure", e);
         }
         return List.of(); // empty
     }
@@ -333,7 +335,8 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
             return Instant.EPOCH;
         }
     }
@@ -455,9 +458,14 @@ public class PathResource extends Resource
             catch (Exception e)
             {
                 if (e instanceof IOException)
-                    LOG.trace("IGNORED", e);
+                {
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", e);
+                }
                 else
+                {
                     LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
+                }
                 // Not possible to serve this resource.
                 //  - This resource doesn't exist.
                 //  - No access rights to this resource.

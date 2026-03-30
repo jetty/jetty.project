@@ -192,7 +192,8 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
         }
         catch (Throwable t)
         {
-            LOG.trace("IGNORED", t);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", t);
         }
     }
 

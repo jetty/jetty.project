@@ -70,7 +70,8 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
         }
         catch (ServerAuthException e)
         {
-            LOG.debug("Unable to authenticate {}", request, e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to authenticate {}", request, e);
         }
 
         return null;
@@ -98,7 +99,8 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
         }
         catch (ServerAuthException e)
         {
-            LOG.debug("Unable to authenticate {}", request, e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to authenticate {}", request, e);
         }
         return null;
     }
