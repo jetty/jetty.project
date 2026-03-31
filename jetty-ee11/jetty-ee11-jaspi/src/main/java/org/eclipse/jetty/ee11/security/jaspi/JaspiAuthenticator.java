@@ -174,9 +174,21 @@ public class JaspiAuthenticator extends LoginAuthenticator
             String authContextId = authConfig.getAuthContextID(messageInfo);
             ServerAuthContext authContext = authConfig.getAuthContext(authContextId, _serviceSubject, _authProperties);
             Subject clientSubject = new Subject();
+            AuthStatus authStatus;
+            CallerPrincipalCallback principalCallback;
+            GroupPrincipalCallback groupPrincipalCallback;
 
-            _callbackHandler.clear();
-            AuthStatus authStatus = authContext.validateRequest(messageInfo, clientSubject, _serviceSubject);
+            try
+            {
+                _callbackHandler.clear();
+                authStatus = authContext.validateRequest(messageInfo, clientSubject, _serviceSubject);
+                principalCallback = _callbackHandler.getThreadCallerPrincipalCallback();
+                groupPrincipalCallback = _callbackHandler.getThreadGroupPrincipalCallback();
+            }
+            finally
+            {
+                _callbackHandler.clear();
+            }
 
             if (authStatus == AuthStatus.SEND_CONTINUE)
                 return AuthenticationState.CHALLENGE;
@@ -187,13 +199,12 @@ public class JaspiAuthenticator extends LoginAuthenticator
             {
                 Set<UserIdentity> ids = clientSubject.getPrivateCredentials(UserIdentity.class);
                 UserIdentity userIdentity;
-                if (ids.size() > 0)
+                if (!ids.isEmpty())
                 {
                     userIdentity = ids.iterator().next();
                 }
                 else
                 {
-                    CallerPrincipalCallback principalCallback = _callbackHandler.getThreadCallerPrincipalCallback();
                     if (principalCallback == null)
                     {
                         return null;
@@ -218,7 +229,6 @@ public class JaspiAuthenticator extends LoginAuthenticator
                             principal = new UserPrincipal(principalName, null);
                         }
                     }
-                    GroupPrincipalCallback groupPrincipalCallback = _callbackHandler.getThreadGroupPrincipalCallback();
                     String[] groups = groupPrincipalCallback == null ? null : groupPrincipalCallback.getGroups();
                     userIdentity = _identityService.newUserIdentity(clientSubject, principal, groups);
                 }
@@ -248,10 +258,6 @@ public class JaspiAuthenticator extends LoginAuthenticator
         catch (AuthException e)
         {
             throw new ServerAuthException(e);
-        }
-        finally
-        {
-            _callbackHandler.clear();
         }
     }
 
