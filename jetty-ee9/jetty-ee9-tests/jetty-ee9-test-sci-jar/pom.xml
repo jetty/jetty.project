@@ -11,6 +11,7 @@
   <description>Jetty SCI Test JAR</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests.sci.jar</bundle-symbolic-name>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
   <dependencies>

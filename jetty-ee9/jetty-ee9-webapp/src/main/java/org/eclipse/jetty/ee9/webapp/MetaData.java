@@ -706,11 +706,9 @@ public class MetaData
     {
         if (!withOrdering)
             return Collections.unmodifiableList(_webInfJars);
-        else
-        {
-            orderFragments();
-            return Collections.unmodifiableList(_orderedWebInfResources);
-        }
+
+        orderFragments();
+        return Collections.unmodifiableList(_orderedWebInfResources);
     }
 
     public List<Resource> getContainerResources()
