@@ -159,7 +159,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
         boolean isMandatory = !isDeferred || isAuthenticationRequest;
         JaspiMessageInfo messageInfo = new JaspiMessageInfo(request, response, callback);
         messageInfo.setMandatory(isMandatory);
-        messageInfo.setAuthenticationRequest(isMandatory);
+        messageInfo.setAuthenticationRequest(isAuthenticationRequest);
         return validateRequest(messageInfo);
     }
 
