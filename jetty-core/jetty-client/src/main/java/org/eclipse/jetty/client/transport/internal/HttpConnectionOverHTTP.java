@@ -372,6 +372,18 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         }
 
         @Override
+        protected HttpVersion getHttpVersion()
+        {
+            return HttpVersion.HTTP_1_1;
+        }
+
+        @Override
+        protected boolean requiresHostHeader()
+        {
+            return true;
+        }
+
+        @Override
         protected Iterator<HttpChannel> getHttpChannels()
         {
             return Collections.<HttpChannel>singleton(channel).iterator();

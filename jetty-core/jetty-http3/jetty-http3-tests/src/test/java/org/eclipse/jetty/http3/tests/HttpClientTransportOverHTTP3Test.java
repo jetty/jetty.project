@@ -25,6 +25,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -118,6 +119,32 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             })
             .transport(transport)
             .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRequestDoesNotContainHostHeader(TransportType transportType) throws Exception
+    {
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .onRequestBegin(request ->
+            {
+                if (request.getHeaders().contains(HttpHeader.HOST))
+                    request.abort(new Exception("Host header should not be present"));
+            })
             .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
