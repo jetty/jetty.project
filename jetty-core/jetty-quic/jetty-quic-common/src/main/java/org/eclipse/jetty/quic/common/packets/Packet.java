@@ -39,6 +39,16 @@ public sealed interface Packet permits DiscardPacket, LongHeaderPacket, Packet.W
 
         List<Frame> frames();
 
+        /// Returns whether this packet requires acknowledgment.
+        ///
+        /// A packet requires acknowledgment if it contains
+        /// at least one frame that is not:
+        ///
+        /// * [AckFrame]
+        /// * [ConnectionCloseFrame]
+        /// * [PaddingFrame]
+        ///
+        /// @return whether this packet requires acknowledgment
         default boolean requiresAcknowledgement()
         {
             // RFC-9000[1.2,13.2.1]

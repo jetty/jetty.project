@@ -560,11 +560,7 @@ public abstract class QuicSession extends AbstractSession
             LOG.debug("processing {} in {} on {}", frame, packet, this);
         switch (frame)
         {
-            case AckFrame ackFrame ->
-            {
-                // Serialize processing of ack frames through the flusher.
-                flusher.processAcknowledgment(EncryptionLevel.from(packet), ackFrame);
-            }
+            case AckFrame ackFrame -> processAckFrame(EncryptionLevel.from(packet), ackFrame);
             case CryptoFrame cryptoFrame ->
             {
                 EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
@@ -575,7 +571,7 @@ public abstract class QuicSession extends AbstractSession
                 // Serialize processing of maxData frames through the flusher.
                 flusher.processMaxData(maxDataFrame);
             }
-            case Frame.WithStreamId withStreamId -> processFrameWithStreamId(packet, withStreamId);
+            case Frame.WithStreamId withStreamId -> processFrameWithStreamId(withStreamId);
             default ->
             {
                 // TODO: notify Session.Listener
@@ -586,10 +582,10 @@ public abstract class QuicSession extends AbstractSession
     public void processAckFrame(EncryptionLevel encryptionLevel, AckFrame frame)
     {
         packetNumbers.onAckFrameReceived(encryptionLevel, frame);
-        packetTracker.onAckFrameReceived(encryptionLevel, frame);
+        packetTracker.onAckFrameReceived(this, encryptionLevel, frame);
     }
 
-    private void processFrameWithStreamId(Packet.WithFrames packet, Frame.WithStreamId frame)
+    private void processFrameWithStreamId(Frame.WithStreamId frame)
     {
         QuicStream stream = getOrCreateRemoteStream(frame);
         stream.processFrame(frame);
@@ -804,7 +800,7 @@ public abstract class QuicSession extends AbstractSession
         @Override
         public void onOutgoingPacket(Session session, Packet packet, long length)
         {
-            packetTracker.onPacketSent(packet, length);
+            packetTracker.onPacketSent((QuicSession)session, packet, length);
         }
     }
 }

@@ -40,7 +40,7 @@ class PacketFlusher implements Callback
         this.flusher = flusher;
     }
 
-    boolean offer(Packet packet, Callback callback)
+    boolean sendPacket(Packet packet, Callback callback)
     {
         try (var _ = lock.lock())
         {
