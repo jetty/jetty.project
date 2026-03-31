@@ -123,22 +123,19 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test301WithWrongMethod(Scenario scenario) throws Exception
+    public void test301WithDeleteMethod(Scenario scenario) throws Exception
     {
         start(scenario, new RedirectHandler());
 
-        ExecutionException x = assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.DELETE)
-                .path("/301/localhost/done")
-                .timeout(5, TimeUnit.SECONDS)
-                .send());
-        HttpResponseException xx = (HttpResponseException)x.getCause();
-        Response response = xx.getResponse();
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.DELETE)
+            .path("/301/localhost/done")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertNotNull(response);
-        assertEquals(301, response.getStatus());
-        assertTrue(response.getHeaders().contains(HttpHeader.LOCATION));
+        assertEquals(200, response.getStatus());
+        assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
