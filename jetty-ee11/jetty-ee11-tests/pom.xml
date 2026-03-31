@@ -31,6 +31,8 @@
     <module>jetty-ee11-test-siwe-webapp</module>
     <module>jetty-ee11-test-owb-cdi-webapp</module>
     <module>jetty-ee11-test-quickstart</module>
+    <module>jetty-ee11-test-sci-jar</module>
+    <module>jetty-ee11-test-sci-webapp</module>
     <module>jetty-ee11-test-sessions</module>
     <module>jetty-ee11-test-simple-session-webapp</module>
     <module>jetty-ee11-test-websocket-client-provided-webapp</module>

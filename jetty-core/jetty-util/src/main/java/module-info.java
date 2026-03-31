@@ -23,6 +23,8 @@ module org.eclipse.jetty.util
     requires static java.desktop;
     // Only required if using DriverManagerLeakPreventer.
     requires static java.sql;
+    // Used by MemoryUtils when available to figure out if oops are compressed.
+    requires static java.management;
 
     exports org.eclipse.jetty.util;
     exports org.eclipse.jetty.util.annotation;
