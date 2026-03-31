@@ -17,8 +17,8 @@
   </modules>
 
   <properties>
-    <gcloud.version>2.33.1</gcloud.version>
-    <protobuf.version>3.25.8</protobuf.version>
+    <gcloud.version>2.37.0</gcloud.version>
+    <protobuf.version>4.34.1</protobuf.version>
   </properties>
 
 </project>

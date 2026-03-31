@@ -325,13 +325,18 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
     @Override
     public String toEndPointString()
     {
-        // We do a best effort to print the right toString() and that's it.
-        return String.format("%s{io=%d/%d,kio=%d,kro=%d}",
-            super.toEndPointString(),
-            _currentInterestOps,
-            _desiredInterestOps,
-            ManagedSelector.safeInterestOps(_key),
-            ManagedSelector.safeReadyOps(_key));
+        try (AutoLock ignore = _lock.tryLock())
+        {
+            String held = _lock.isHeldByCurrentThread() ? "" : "?";
+            // We do a best effort to print the right toString() and that's it.
+            return String.format("%s{%s:io=%d/%d,kio=%d,kro=%d}",
+                super.toEndPointString(),
+                held,
+                _currentInterestOps,
+                _desiredInterestOps,
+                ManagedSelector.safeInterestOps(_key),
+                ManagedSelector.safeReadyOps(_key));
+        }
     }
 
     private abstract class RunnableCloseable implements Invocable.Task, Closeable

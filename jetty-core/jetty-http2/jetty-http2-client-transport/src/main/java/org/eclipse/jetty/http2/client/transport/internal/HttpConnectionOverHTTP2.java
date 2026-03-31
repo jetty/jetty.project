@@ -136,6 +136,18 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     }
 
     @Override
+    protected HttpVersion getHttpVersion()
+    {
+        return HttpVersion.HTTP_2;
+    }
+
+    @Override
+    protected boolean requiresHostHeader()
+    {
+        return false;
+    }
+
+    @Override
     protected Iterator<HttpChannel> getHttpChannels()
     {
         Set<HttpChannel> channels;
@@ -218,23 +230,14 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     @Override
     protected void normalizeRequest(HttpRequest request)
     {
-        super.normalizeRequest(request);
-        // Do not set the HTTP version explicitly using Request.version(),
-        // in case the request needs to be retried with a different version.
-        request.useVersion(HttpVersion.HTTP_2);
-
+        boolean canUpgrade = false;
+        // Check whether the client-side supports upgrading to a different protocol.
         HttpUpgrader.Factory upgraderFactory = (HttpUpgrader.Factory)request.getAttributes().get(HttpUpgrader.Factory.class.getName());
         if (upgraderFactory != null)
         {
             // Check whether the server-side support CONNECT with :protocol pseudo-header.
-            boolean connect = ((HTTP2Session)session).isConnectProtocolEnabled();
-            if (connect)
-            {
-                HttpUpgrader upgrader = upgraderFactory.newHttpUpgrader(HttpVersion.HTTP_2);
-                request.getConversation().setAttribute(HttpUpgrader.class.getName(), upgrader);
-                upgrader.prepare(request);
-            }
-            else
+            canUpgrade = ((HTTP2Session)session).isConnectProtocolEnabled();
+            if (!canUpgrade)
             {
                 // Check whether we can fall back to another HttpClientTransport.
                 boolean dynamic = getHttpDestination().getHttpClient().getHttpClientTransport() instanceof HttpClientTransportDynamic;
@@ -253,6 +256,16 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
                 attribute.addAll(List.of("h2c", "h2"));
                 throw new RetryableRequestException("Could not upgrade from protocols " + attribute);
             }
+        }
+
+        super.normalizeRequest(request);
+        request.useVersion(HttpVersion.HTTP_2);
+
+        if (canUpgrade)
+        {
+            HttpUpgrader upgrader = upgraderFactory.newHttpUpgrader(HttpVersion.HTTP_2);
+            request.getConversation().setAttribute(HttpUpgrader.class.getName(), upgrader);
+            upgrader.prepare(request);
         }
     }
 

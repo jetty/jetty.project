@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.NanoTime;
@@ -68,6 +69,10 @@ public abstract class HttpConnection implements IConnection, Attachable
     {
         return destination;
     }
+
+    protected abstract HttpVersion getHttpVersion();
+
+    protected abstract boolean requiresHostHeader();
 
     protected abstract Iterator<HttpChannel> getHttpChannels();
 
@@ -152,8 +157,6 @@ public abstract class HttpConnection implements IConnection, Attachable
             request.path(path);
         }
 
-        boolean http1 = request.getVersion().getVersion() <= 11;
-
         boolean applyProxyAuthentication = false;
         ProxyConfiguration.Proxy proxy = destination.getProxy();
         if (proxy instanceof HttpProxy httpProxy)
@@ -163,7 +166,7 @@ public abstract class HttpConnection implements IConnection, Attachable
             // RFC 9112, section 3.2.2: when making a request to a proxy other than CONNECT,
             // the client must send the target URI in absolute-form as the request target.
             // In practice, this is only valid for HTTP/1.1 requests that are not tunnelled.
-            if (http1 && !tunnelled)
+            if (getHttpVersion() == HttpVersion.HTTP_1_1 && !tunnelled)
             {
                 URI uri = request.getURI();
                 if (uri != null)
@@ -177,7 +180,7 @@ public abstract class HttpConnection implements IConnection, Attachable
 
         // If we are HTTP 1.1, add the Host header.
         HttpFields headers = request.getHeaders();
-        if (http1)
+        if (requiresHostHeader())
         {
             if (!headers.contains(HttpHeader.HOST.asString()))
             {

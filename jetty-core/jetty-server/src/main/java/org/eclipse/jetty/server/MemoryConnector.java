@@ -113,7 +113,7 @@ public class MemoryConnector extends AbstractConnector
      */
     public EndPoint.Pipe connect()
     {
-        MemoryEndPointPipe pipe = new MemoryEndPointPipe(getScheduler(), producer::offer, socketAddress);
+        MemoryEndPointPipe pipe = new MemoryEndPointPipe(getScheduler(), getByteBufferPool(), producer::offer, socketAddress);
         accept(pipe.getRemoteEndPoint());
 
         if (LOG.isDebugEnabled())
