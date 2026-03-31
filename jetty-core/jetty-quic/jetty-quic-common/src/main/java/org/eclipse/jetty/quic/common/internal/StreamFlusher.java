@@ -24,6 +24,7 @@ import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
+import org.eclipse.jetty.quic.common.CongestionController;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicSession;
@@ -49,8 +50,11 @@ class StreamFlusher extends CryptoFlusher
         super(flusher, EncryptionLevel.ONE_RTT);
     }
 
+    @Override
     public void sendAcknowledgment(Packet.WithFrames packet, Callback callback)
     {
+        // Differently from INITIAL and HANDSHAKE,
+        // ONE_RTT acknowledgments may be delayed.
         acknowledger.sendAcknowledgment(packet, callback);
     }
 
@@ -69,6 +73,44 @@ class StreamFlusher extends CryptoFlusher
 
     boolean process() throws Exception
     {
+        // Acknowledgments are processed immediately,
+        // without pacing or congestion window checks.
+        if (acknowledger.processAcknowledgements())
+            return true;
+
+        // No more acknowledgments to send, check pacing.
+        CongestionController congestionController = getQuicSession().getCongestionController();
+        long pacingDelay = congestionController.getPacingDelay();
+        if (LOG.isDebugEnabled())
+            LOG.debug("pacing delay {} micros on {}", TimeUnit.NANOSECONDS.toMicros(pacingDelay), this);
+        if (pacingDelay > getQuicFlusher().getPacingDelayThreshold())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("delayed by pacing, flush stalled on {}", this);
+            // TODO: schedule wakeup.
+            return false;
+        }
+
+        // We can send packets according to pacing, check the congestion window.
+        long congestionWindow = congestionController.getCongestionWindow();
+        if (LOG.isDebugEnabled())
+            LOG.debug("congestion window {} on {}", congestionWindow, this);
+        if (congestionWindow <= 0)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("zero congestion window, flush stalled on {}", this);
+            return false;
+        }
+
+        // Update the flow control windows.
+        processMaxData();
+
+        // Finally, process frames to send.
+        return process(congestionWindow);
+    }
+
+    private void processMaxData()
+    {
         try (var _ = lock())
         {
             maxDataProcessing.addAll(maxDataEntries);
@@ -82,15 +124,6 @@ class StreamFlusher extends CryptoFlusher
             session.notifyMaxData(entry.stream(), entry.maxData());
         }
         maxDataProcessing.clear();
-
-        return super.process();
-    }
-
-    @Override
-    void lockedDrainTo(List<FramesEntry> output)
-    {
-        super.lockedDrainTo(output);
-        acknowledger.lockedDrainTo(output);
     }
 
     @Override
@@ -157,6 +190,7 @@ class StreamFlusher extends CryptoFlusher
     private class Acknowledger implements Runnable
     {
         private final List<Entry> packetNumbers = new ArrayList<>();
+        private final List<FramesEntry> processing = new ArrayList<>(1);
         private long largestPacketNumber;
         private Scheduler.Task ackDelayTask;
 
@@ -206,26 +240,32 @@ class StreamFlusher extends CryptoFlusher
                 getQuicFlusher().iterate();
         }
 
-        void lockedDrainTo(List<FramesEntry> output)
+        boolean processAcknowledgements() throws Exception
         {
-            if (packetNumbers.isEmpty())
+            List<Entry> numbers;
+            try (var _ = lock())
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("no acks to flush on {}", this);
-                return;
+                numbers = new ArrayList<>(packetNumbers);
+                packetNumbers.clear();
             }
+
+            if (numbers.isEmpty())
+                return false;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("flushing {} acks on {}", numbers.size(), this);
 
             long exponent = getQuicSession().getQuicConfiguration().getAcknowledgmentDelayExponent();
 
-            if (packetNumbers.size() == 1)
+            if (numbers.size() == 1)
             {
-                Entry entry = packetNumbers.removeFirst();
+                Entry entry = numbers.removeFirst();
                 long ackDelayMicros = TimeUnit.NANOSECONDS.toMicros(NanoTime.since(entry.nanoTime));
                 AckFrame frame = new AckFrame(entry.packetNumber(), AckFrame.encodeAckDelay(ackDelayMicros, exponent), 0, List.of());
                 if (LOG.isDebugEnabled())
                     LOG.debug("flushing {} on {}", frame, this);
-                output.add(new FramesEntry(null, List.of(frame), entry.callback));
-                return;
+                processing.add(new FramesEntry(null, List.of(frame), entry.callback));
+                return process(processing, Long.MAX_VALUE);
             }
 
             // RFC-9000[19.3, 19.3.1].
@@ -235,17 +275,17 @@ class StreamFlusher extends CryptoFlusher
 
             // Make sure the list is sorted, in case some packet arrives out-of-order,
             // since the algorithm below assumes the packet numbers are sorted.
-            Collections.sort(packetNumbers);
+            Collections.sort(numbers);
 
             // Calculate the first range.
-            int startIndex = packetNumbers.size() - 1;
-            Entry largest = packetNumbers.get(startIndex);
+            int startIndex = numbers.size() - 1;
+            Entry largest = numbers.get(startIndex);
             Callback combinedCallback = largest.callback();
             int index = startIndex - 1;
             while (index >= 0)
             {
-                Entry previous = packetNumbers.get(index + 1);
-                Entry current = packetNumbers.get(index);
+                Entry previous = numbers.get(index + 1);
+                Entry current = numbers.get(index);
                 // If the packet numbers are not consecutive, the range is complete.
                 if (current.packetNumber() != previous.packetNumber() - 1)
                     break;
@@ -259,18 +299,18 @@ class StreamFlusher extends CryptoFlusher
             while (index >= 0)
             {
                 int endIndex = index + 1;
-                Entry end = packetNumbers.get(endIndex);
-                Entry begin = packetNumbers.get(index);
+                Entry end = numbers.get(endIndex);
+                Entry begin = numbers.get(index);
                 long rangeGap = end.packetNumber() - begin.packetNumber() - 2;
 
                 startIndex = index;
-                Entry start = packetNumbers.get(startIndex);
+                Entry start = numbers.get(startIndex);
                 combinedCallback = Callback.combine(combinedCallback, start.callback());
                 index = startIndex - 1;
                 while (index >= 0)
                 {
-                    Entry previous = packetNumbers.get(index + 1);
-                    Entry current = packetNumbers.get(index);
+                    Entry previous = numbers.get(index + 1);
+                    Entry current = numbers.get(index);
                     // If the packet numbers are not consecutive, the range is complete.
                     if (current.packetNumber() != previous.packetNumber() - 1)
                         break;
@@ -284,15 +324,14 @@ class StreamFlusher extends CryptoFlusher
                 ackRanges.add(new AckFrame.AckRange(rangeGap, rangeLength));
             }
 
-            packetNumbers.clear();
-
             long ackDelayMicros = TimeUnit.NANOSECONDS.toMicros(NanoTime.since(largest.nanoTime()));
             long encodedAckDelay = AckFrame.encodeAckDelay(ackDelayMicros, exponent);
             AckFrame frame = new AckFrame(largest.packetNumber(), encodedAckDelay, firstRangeLength, ackRanges != null ? ackRanges : List.of());
             if (LOG.isDebugEnabled())
                 LOG.debug("flushing {} on {}", frame, this);
 
-            output.add(new FramesEntry(null, List.of(frame), combinedCallback));
+            processing.add(new FramesEntry(null, List.of(frame), combinedCallback));
+            return process(processing, Long.MAX_VALUE);
         }
 
         @Override

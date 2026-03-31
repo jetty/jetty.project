@@ -21,6 +21,7 @@ import java.util.ListIterator;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
@@ -41,8 +42,8 @@ class CryptoFlusher implements Callback
 
     private final AutoLock lock = new AutoLock();
     private final Deque<FramesEntry> entries = new ArrayDeque<>();
-    private final List<FramesEntry> candidates = new ArrayList<>();
     private final List<FramesEntry> processing = new ArrayList<>();
+    private final List<FramesEntry> writing = new ArrayList<>();
     private final QuicFlusher flusher;
     private final EncryptionLevel encryptionLevel;
     private long cryptoOffset;
@@ -78,6 +79,14 @@ class CryptoFlusher implements Callback
         return lock.lock();
     }
 
+    void sendAcknowledgment(Packet.WithFrames packet, Callback callback)
+    {
+        // RFC-9000[13.2.1]: initial and handshake packets must be acknowledged immediately.
+        AckFrame frame = new AckFrame(packet.packetNumber(), 0, 0, List.of());
+        if (sendFrames(List.of(frame), callback))
+            getQuicFlusher().iterate();
+    }
+
     boolean sendFrames(List<Frame> frames, Callback callback)
     {
         return sendFrames(null, frames, callback);
@@ -98,26 +107,42 @@ class CryptoFlusher implements Callback
 
     boolean process() throws Exception
     {
-        QuicSession session = flusher.getQuicSession();
-        long congestionWindow = session.getCongestionController().getCongestionWindow();
-        if (congestionWindow <= 0)
+        // This class performs immediate processing of frame entries,
+        // without taking into account pacing or congestion window,
+        // which are taken into account by subclass StreamFlusher.
+        return process(Long.MAX_VALUE);
+    }
+
+    boolean process(long congestionWindow) throws Exception
+    {
+        try (var _ = lock())
+        {
+            processing.addAll(entries);
+            entries.clear();
+        }
+
+        if (processing.isEmpty())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("zero congestion window, flush stalled on {}", this);
+                LOG.debug("no entries to flush on {}", this);
             return false;
         }
 
-        try (var _ = lock())
-        {
-            lockedDrainTo(candidates);
-        }
+        return process(processing, congestionWindow);
+    }
 
+    boolean process(List<FramesEntry> processing, long congestionWindow) throws Exception
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} entries on {}", processing.size(), this);
+
+        QuicSession session = getQuicSession();
         int packetHeaderLength = session.estimatePacketHeaderLength(encryptionLevel);
         long packetPayloadMaxBytes = session.getUDPPayloadLength() - packetHeaderLength;
         long maxBytes = Math.min(packetPayloadMaxBytes, congestionWindow);
 
         RetainableByteBuffer.Mutable framesAccumulator = flusher.getPlaintextBuffer();
-        ListIterator<FramesEntry> iterator = candidates.listIterator();
+        ListIterator<FramesEntry> iterator = processing.listIterator();
         while (iterator.hasNext())
         {
             FramesEntry entry = iterator.next();
@@ -174,7 +199,7 @@ class CryptoFlusher implements Callback
                     }
 
                     FramesEntry firstHalfEntry = new FramesEntry(entry.stream(), frames.subList(0, firstHalfIndex), firstHalfCallback);
-                    processing.add(firstHalfEntry);
+                    writing.add(firstHalfEntry);
 
                     // Update the current entry with the second half.
                     FramesEntry secondHalfEntry = new FramesEntry(entry.stream(), frames.subList(secondHalfIndex, frames.size()), callback);
@@ -187,8 +212,7 @@ class CryptoFlusher implements Callback
 
             if (allFramesProcessed)
             {
-                // Move the entry from candidates to processing.
-                processing.add(entry);
+                writing.add(entry);
                 iterator.remove();
             }
             else
@@ -197,22 +221,10 @@ class CryptoFlusher implements Callback
             }
         }
 
-        if (!candidates.isEmpty())
-        {
-            // Put back unprocessed candidates.
-            try (var _ = lock())
-            {
-                candidates.addAll(entries);
-                entries.clear();
-                entries.addAll(candidates);
-                candidates.clear();
-            }
-        }
-
-        if (processing.isEmpty())
+        if (writing.isEmpty())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("no entries to flush on {}", this);
+                LOG.debug("no entries to write on {}", this);
             return false;
         }
 
@@ -220,9 +232,9 @@ class CryptoFlusher implements Callback
         PacketsGenerator packetGenerator = flusher.getPacketsGenerator();
         EndPoint endPoint = session.getEndPoint();
 
-        List<Frame> frames = processing.size() == 1
-            ? processing.getFirst().frames()
-            : processing.stream()
+        List<Frame> frames = writing.size() == 1
+            ? writing.getFirst().frames()
+            : writing.stream()
                 .flatMap(entry -> entry.frames().stream())
                 .toList();
         Packet packet = session.newPacket(encryptionLevel, frames);
@@ -232,14 +244,6 @@ class CryptoFlusher implements Callback
             LOG.debug("writing {} {} to {} on {}", packet, packetAccumulator, endPoint, this);
         endPoint.write(flusher, session.getRemoteSocketAddress(), packetAccumulator.getByteBuffer());
         return true;
-    }
-
-    void lockedDrainTo(List<FramesEntry> output)
-    {
-        if (entries.isEmpty())
-            return;
-        output.addAll(entries);
-        entries.clear();
     }
 
     long generateFrame(RetainableByteBuffer.Mutable framesAccumulator, QuicStream stream, Frame frame, long maxBytes)
@@ -265,8 +269,8 @@ class CryptoFlusher implements Callback
     {
         if (LOG.isDebugEnabled())
             LOG.debug("write succeeded to {} on {}", getQuicSession().getEndPoint(), this);
-        processing.forEach(FramesEntry::succeeded);
-        processing.clear();
+        writing.forEach(FramesEntry::succeeded);
+        writing.clear();
     }
 
     @Override
@@ -274,8 +278,8 @@ class CryptoFlusher implements Callback
     {
         if (LOG.isDebugEnabled())
             LOG.atDebug().setCause(x).log("write failed to {} on {}", getQuicSession().getEndPoint(), this);
-        processing.forEach(e -> e.failed(x));
-        processing.clear();
+        writing.forEach(e -> e.failed(x));
+        writing.clear();
         // TODO: fail the queued entries.
     }
 

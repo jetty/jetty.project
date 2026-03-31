@@ -13,34 +13,47 @@
 
 package org.eclipse.jetty.quic.common;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.quic.api.frames.AckFrame;
+import org.eclipse.jetty.quic.common.internal.QuicFlusher;
 import org.eclipse.jetty.quic.common.packets.Packet;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PacketTracker extends IteratingCallback
+/// Tracks packets sent and acknowledgments received to support reliability
+/// and congestion control.
+///
+/// The "packet sent" event and the "acknowledgment received" event are notified
+/// from the [QuicFlusher].
+/// The "loss detection" scheduler task event is serialized with the "packet sent"
+/// and "acknowledgment received" events, so that this class does not require
+/// locking: all events are serialized.
+///
+/// This class maintains the round trip time (RTT), calculated as specified in
+/// RFC-9002\[5].
+///
+/// This class detects packet loss by:
+/// * Packet number: an acknowledgment for packet `N` is received, but not
+/// for packet `N-r` where `r` is the [#getPacketReorderingThreshold()].
+/// * Time: a packet is sent at time `T`, but no ack has been received
+/// within time `T+u` where `u` is a time calculated from the RTT and
+/// [#getTimeReorderingFactor()].
+public class PacketTracker
 {
     private static final Logger LOG = LoggerFactory.getLogger(PacketTracker.class);
 
-    private final AutoLock lock = new AutoLock();
-    private final Queue<PacketEntry> packetEntries = new ArrayDeque<>();
-    private final Queue<AckEntry> ackEntries = new ArrayDeque<>();
-    private final Queue<Tracker> lossTrackers = new ArrayDeque<>();
+    private final SerializedInvoker invoker = new SerializedInvoker();
     private final EnumMap<PacketNumberSpace, Tracker> trackers = new EnumMap<>(PacketNumberSpace.class);
     private final Scheduler scheduler;
     private final CongestionController congestionController;
@@ -124,8 +137,30 @@ public class PacketTracker extends IteratingCallback
         this.schedulerResolution = schedulerResolution;
     }
 
-    public void onPacketSent(Packet packet, long length)
+    /// First entry point: when a packet is sent.
+    void onPacketSent(QuicSession session, Packet packet, long length)
     {
+        invoker.run(() -> processPacketSent(session, packet, length));
+    }
+
+    /// Second entry point: when an ack is received.
+    void onAckFrameReceived(QuicSession session, EncryptionLevel encryptionLevel, AckFrame frame)
+    {
+        invoker.run(() -> processAckFrameReceived(session, encryptionLevel, frame));
+    }
+
+    /// Third entry point: when the packet loss detection timer fires.
+    private void onDetectLostPackets(Tracker tracker)
+    {
+        invoker.run(() -> processDetectLostPackets(tracker));
+    }
+
+    private void processPacketSent(QuicSession session, Packet packet, long length)
+    {
+        invoker.assertCurrentThreadInvoking();
+
+        // RFC-9002[A.5].
+
         // Packets without frames are not acknowledged, don't track them.
         if (!(packet instanceof Packet.WithFrames withFrames))
             return;
@@ -135,109 +170,58 @@ public class PacketTracker extends IteratingCallback
 
         PacketNumberSpace space = PacketNumberSpace.from(EncryptionLevel.from(withFrames));
         PacketEntry entry = new PacketEntry(space, withFrames, length, NanoTime.now());
-        try (var _ = lock.lock())
-        {
-            packetEntries.offer(entry);
-        }
-        iterate();
+
+        Tracker tracker = trackers.get(entry.space());
+        tracker.put(entry.packet().packetNumber(), entry);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("tracked {} on {}", entry, this);
+
+        congestionController.onPacketSent(entry.packet(), entry.length(), rttData);
+
+        tracker.schedulePacketLossDetection(calculatePacketLossDelay(rttData));
     }
 
-    private void processPacketsSent(List<PacketEntry> packets)
+    private void processAckFrameReceived(QuicSession session, EncryptionLevel encryptionLevel, AckFrame frame)
     {
-        // RFC-9002[A.5].
-        for (PacketEntry entry : packets)
-        {
-            Tracker tracker = trackers.get(entry.space());
-            tracker.put(entry.packet().packetNumber(), entry);
+        invoker.assertCurrentThreadInvoking();
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("tracked {} on {}", entry, this);
+        AckEntry entry = new AckEntry(encryptionLevel, frame);
 
-            congestionController.onPacketSent(entry.packet(), entry.length(), rttData);
+        if (LOG.isDebugEnabled())
+            LOG.debug("acked {} on {}", entry, this);
 
-            tracker.schedulePacketLossDetection(rttData);
-        }
-    }
+        PacketNumberSpace space = PacketNumberSpace.from(entry.encryptionLevel());
+        Tracker tracker = trackers.get(space);
 
-    public void onAckFrameReceived(EncryptionLevel encryptionLevel, AckFrame frame)
-    {
-        AckEntry ackEntry = new AckEntry(encryptionLevel, frame);
-        try (var _ = lock.lock())
-        {
-            ackEntries.offer(ackEntry);
-        }
-        iterate();
-    }
+        List<Packet.WithFrames> ackedPackets = new ArrayList<>();
+        long ackedLength = tracker.acknowledgePackets(entry.frame(), ackedPackets);
 
-    private void processAckFramesReceived(List<AckEntry> acks)
-    {
-        // RFC-9002[A.7].
-        for (AckEntry entry : acks)
-        {
-            PacketNumberSpace space = PacketNumberSpace.from(entry.encryptionLevel());
-            Tracker tracker = trackers.get(space);
+        if (LOG.isDebugEnabled())
+            LOG.debug("acked {} packet(s) length={} {}{} on {}", ackedPackets.size(), ackedLength, space, ackedPackets.stream().mapToLong(Packet.WithFrames::packetNumber).toArray(), this);
 
-            List<Packet.WithFrames> ackedPackets = new ArrayList<>();
-            long ackedLength = tracker.acknowledgePackets(entry.frame(), ackedPackets);
+        // RFC-9002[5.1]: calculate RTT only if the largestAckedEntry is newly acknowledged.
+        if (tracker.newlyAcked)
+            rttData = estimateRTTData(entry.encryptionLevel(), entry.frame(), tracker.largestAckedEntry);
+        tracker.newlyAcked = false;
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("acked {} packet(s) length={} {}{} on {}", ackedPackets.size(), ackedLength, space, ackedPackets.stream().mapToLong(Packet.WithFrames::packetNumber).toArray(), this);
-
-            if (ackedPackets.isEmpty())
-                continue;
-
-            if (tracker.largestAckedEntry != null)
-                rttData = estimateRTTData(entry.encryptionLevel(), entry.frame(), tracker.largestAckedEntry);
-
-            List<Packet.WithFrames> lostPackets = new ArrayList<>();
-            long lostLength = tracker.detectLostPackets(rttData, lostPackets);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("lost {} packet(s) length={} {}{} on {}", lostPackets.size(), lostLength, space, lostPackets.stream().mapToLong(Packet.WithFrames::packetNumber).toArray(), this);
-
-            if (!ackedPackets.isEmpty())
-                congestionController.onPacketsAcknowledged(ackedPackets, ackedLength, rttData);
-            if (!lostPackets.isEmpty())
-                congestionController.onPacketsLost(lostPackets, lostLength, rttData);
-        }
-    }
-
-    private void processLossDetection(List<Tracker> trackers)
-    {
-        long lostLength = 0;
         List<Packet.WithFrames> lostPackets = new ArrayList<>();
-        for (Tracker tracker : trackers)
-        {
-            tracker.lossDetectionTask = null;
-            lostLength += tracker.detectLostPackets(rttData, lostPackets);
-        }
+        long lostLength = tracker.detectLostPackets(rttData, lostPackets);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("lost {} packet(s) length={} {}{} on {}", lostPackets.size(), lostLength, space, lostPackets.stream().mapToLong(Packet.WithFrames::packetNumber).toArray(), this);
+
+        if (!ackedPackets.isEmpty())
+            congestionController.onPacketsAcknowledged(ackedPackets, ackedLength, rttData);
         if (!lostPackets.isEmpty())
             congestionController.onPacketsLost(lostPackets, lostLength, rttData);
     }
 
-    @Override
-    protected Action process() throws Throwable
+    private void processDetectLostPackets(Tracker tracker)
     {
-        List<PacketEntry> packets;
-        List<AckEntry> acks;
-        List<Tracker> trackers;
-        try (var _ = lock.lock())
-        {
-            packets = new ArrayList<>(packetEntries);
-            packetEntries.clear();
-            acks = new ArrayList<>(ackEntries);
-            ackEntries.clear();
-            trackers = new ArrayList<>(lossTrackers);
-            lossTrackers.clear();
-        }
+        invoker.assertCurrentThreadInvoking();
 
-        processPacketsSent(packets);
-
-        processAckFramesReceived(acks);
-
-        processLossDetection(trackers);
-
-        return Action.IDLE;
+        tracker.detectLostPackets();
     }
 
     private RTTData estimateRTTData(EncryptionLevel encryptionLevel, AckFrame frame, PacketEntry largestEntry)
@@ -295,12 +279,13 @@ public class PacketTracker extends IteratingCallback
         return "%s@%x%s".formatted(TypeUtil.toShortName(getClass()), hashCode(), trackers.values());
     }
 
-    private class Tracker implements Runnable
+    private class Tracker
     {
         private final Map<Long, PacketEntry> entries = new LinkedHashMap<>();
         private final PacketNumberSpace packetNumberSpace;
         private Scheduler.Task lossDetectionTask;
         private PacketEntry largestAckedEntry;
+        private boolean newlyAcked;
 
         private Tracker(PacketNumberSpace packetNumberSpace)
         {
@@ -325,8 +310,11 @@ public class PacketTracker extends IteratingCallback
             {
                 long packetNumber = acknowledged[i];
                 PacketEntry entry = remove(packetNumber);
-                if (i == 0)
+                if (i == 0 && entry != null && entry.largerThan(largestAckedEntry))
+                {
                     largestAckedEntry = entry;
+                    newlyAcked = true;
+                }
                 if (entry != null)
                 {
                     ackedLength += entry.length();
@@ -386,31 +374,32 @@ public class PacketTracker extends IteratingCallback
 
                 // The packet is in-flight, calculate the earliest
                 // time to schedule loss detection by send time.
-                if (lossDetectionTask == null)
-                    lossDetectionDelay = Math.min(lossDetectionDelay, sentDelay);
+                lossDetectionDelay = Math.min(lossDetectionDelay, lossDelay - sentDelay);
             }
 
             // Only schedule loss detection if there are packets in-flight.
             if (!entries.isEmpty())
-                lossDetectionTask = scheduler.schedule(this, lossDetectionDelay, TimeUnit.NANOSECONDS);
+                schedulePacketLossDetection(lossDetectionDelay);
 
             return lostLength;
         }
 
-        private void schedulePacketLossDetection(RTTData rttData)
+        private void schedulePacketLossDetection(long delayNanos)
         {
             if (lossDetectionTask == null)
-                lossDetectionTask = scheduler.schedule(this, calculatePacketLossDelay(rttData), TimeUnit.NANOSECONDS);
+            {
+                Runnable task = () -> onDetectLostPackets(this);
+                lossDetectionTask = scheduler.schedule(task, delayNanos, TimeUnit.NANOSECONDS);
+            }
         }
 
-        @Override
-        public void run()
+        private void detectLostPackets()
         {
-            try(var _ = lock.lock())
-            {
-                lossTrackers.add(this);
-            }
-            iterate();
+            lossDetectionTask = null;
+            List<Packet.WithFrames> lostPackets = new ArrayList<>();
+            long lostLength = detectLostPackets(rttData, lostPackets);
+            if (!lostPackets.isEmpty())
+                congestionController.onPacketsLost(lostPackets, lostLength, rttData);
         }
 
         @Override
@@ -422,14 +411,26 @@ public class PacketTracker extends IteratingCallback
 
     private record PacketEntry(PacketNumberSpace space, Packet.WithFrames packet, long length, long sendNanoTime)
     {
+        public boolean largerThan(PacketEntry other)
+        {
+            if (other == null)
+                return true;
+            return packet().packetNumber() > other.packet().packetNumber();
+        }
+
         @Override
         public String toString()
         {
-            return "%s@%x[%s,#%d,length=%d]".formatted(TypeUtil.toShortName(getClass()), hashCode(), space, packet.packetNumber(), length);
+            return "%s@%x[%s,#%d,length=%d]".formatted(TypeUtil.toShortName(getClass()), hashCode(), space(), packet().packetNumber(), length());
         }
     }
 
     private record AckEntry(EncryptionLevel encryptionLevel, AckFrame frame)
     {
+        @Override
+        public String toString()
+        {
+            return "%s@%x[%s,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), PacketNumberSpace.from(encryptionLevel()), frame());
+        }
     }
 }
