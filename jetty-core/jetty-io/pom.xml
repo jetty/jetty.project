@@ -42,30 +42,31 @@
       <artifactId>reactive-streams-tck-flow</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>7.12.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>@{argLine} ${jetty.surefire.argLine} 
             --add-reads org.eclipse.jetty.io=org.eclipse.jetty.logging</argLine>
+          <dependenciesToScan>
+            <dependencyToScan>org.reactivestreams:reactive-streams-tck-flow</dependencyToScan>
+          </dependenciesToScan>
         </configuration>
         <dependencies>
-          <!--
-          surefire plugin currently does not support junit5 with testng out of the box: https://maven.apache.org/surefire/maven-surefire-plugin/examples/testng.html#running-testng-and-junit-tests
-          We need to specify providers explicitly: https://maven.apache.org/surefire/maven-surefire-plugin/examples/providers.html
-          -->
-          <!--          <dependency>-->
-          <!--            <groupId>org.apache.maven.surefire</groupId>-->
-          <!--            <artifactId>surefire-junit-platform</artifactId>-->
-          <!--            <version>${maven.surefire.plugin.version}</version>-->
-          <!--          </dependency>-->
-          <!--          <dependency>-->
-          <!--            <groupId>org.apache.maven.surefire</groupId>-->
-          <!--            <artifactId>surefire-testng</artifactId>-->
-          <!--            <version>${maven.surefire.plugin.version}</version>-->
-          <!--          </dependency>-->
+          <dependency>
+            <groupId>org.junit.support</groupId>
+            <artifactId>testng-engine</artifactId>
+            <version>1.1.0</version>
+          </dependency>
         </dependencies>
       </plugin>
     </plugins>
