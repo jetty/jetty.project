@@ -1,3 +1,5 @@
+jetty-12.1.9-SNAPSHOT
+
 12.1.8 - 31 March 2026
  + 10906 Is there a ConsoleRequestLog (JettySlf4jRequestLog) module?
  + 13513 Make MemoryEndPoint use RBB.DynamicCapacity (@afarber)
