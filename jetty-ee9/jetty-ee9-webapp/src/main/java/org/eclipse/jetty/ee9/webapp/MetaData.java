@@ -330,6 +330,7 @@ public class MetaData
         }
 
         //recompute the ordering with the new fragment name
+        _orderedWebInfResources.clear();
         orderFragments();
     }
 
@@ -429,8 +430,7 @@ public class MetaData
 
     public void orderFragments()
     {
-        _orderedWebInfResources.clear();
-        if (getOrdering() != null)
+        if (_orderedWebInfResources.isEmpty() && getOrdering() != null && !_webInfJars.isEmpty())
             _orderedWebInfResources.addAll(getOrdering().order(_webInfJars));
     }
 
@@ -487,7 +487,7 @@ public class MetaData
         resources.add(null); //always apply annotations with no resource first
         resources.addAll(_orderedContainerResources); //next all annotations from container path
         resources.addAll(_webInfClasses); //next everything from web-inf classes
-        resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path 
+        resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path
 
         for (Resource r : resources)
         {
@@ -532,7 +532,7 @@ public class MetaData
     {
         boolean distributable = (
             (_webDefaultsRoot != null && _webDefaultsRoot.isDistributable()) ||
-                (_webXmlRoot != null && _webXmlRoot.isDistributable()));
+            (_webXmlRoot != null && _webXmlRoot.isDistributable()));
 
         for (WebDescriptor d : _webOverrideRoots)
         {
@@ -580,7 +580,7 @@ public class MetaData
     public void setOrdering(Ordering o)
     {
         _ordering = o;
-        orderFragments();
+        _orderedWebInfResources.clear();
     }
 
     /**
@@ -702,14 +702,16 @@ public class MetaData
     public void addWebInfResource(Resource newResource)
     {
         _webInfJars.add(newResource);
+        _orderedWebInfResources.clear();
     }
 
     public List<Resource> getWebInfResources(boolean withOrdering)
     {
         if (!withOrdering)
             return Collections.unmodifiableList(_webInfJars);
-        else
-            return Collections.unmodifiableList(_orderedWebInfResources);
+
+        orderFragments();
+        return Collections.unmodifiableList(_orderedWebInfResources);
     }
 
     public List<Resource> getContainerResources()

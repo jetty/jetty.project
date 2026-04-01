@@ -330,6 +330,7 @@ public class MetaData
         }
 
         //recompute the ordering with the new fragment name
+        _orderedWebInfResources.clear();
         orderFragments();
     }
 
@@ -429,8 +430,7 @@ public class MetaData
 
     public void orderFragments()
     {
-        _orderedWebInfResources.clear();
-        if (getOrdering() != null)
+        if (_orderedWebInfResources.isEmpty() && getOrdering() != null && !_webInfJars.isEmpty())
             _orderedWebInfResources.addAll(getOrdering().order(_webInfJars));
     }
 
@@ -580,7 +580,7 @@ public class MetaData
     public void setOrdering(Ordering o)
     {
         _ordering = o;
-        orderFragments();
+        _orderedWebInfResources.clear();
     }
 
     /**
@@ -702,14 +702,16 @@ public class MetaData
     public void addWebInfResource(Resource newResource)
     {
         _webInfJars.add(newResource);
+        _orderedWebInfResources.clear();
     }
 
     public List<Resource> getWebInfResources(boolean withOrdering)
     {
         if (!withOrdering)
             return Collections.unmodifiableList(_webInfJars);
-        else
-            return Collections.unmodifiableList(_orderedWebInfResources);
+
+        orderFragments();
+        return Collections.unmodifiableList(_orderedWebInfResources);
     }
 
     public List<Resource> getContainerResources()
