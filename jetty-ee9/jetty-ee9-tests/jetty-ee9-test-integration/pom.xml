@@ -98,6 +98,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-test-sci-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-test-webapp-rfc2616</artifactId>
       <version>${project.version}</version>
       <type>war</type>
@@ -192,6 +199,12 @@
                   <artifactId>jetty-ee9-demo-jetty-webapp</artifactId>
                   <type>war</type>
                   <destFileName>ee9-demo-jetty.war</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.ee9</groupId>
+                  <artifactId>jetty-ee9-test-sci-webapp</artifactId>
+                  <type>war</type>
+                  <destFileName>jetty-ee9-test-sci-webapp.war</destFileName>
                 </artifactItem>
               </artifactItems>
               <stripVersion>true</stripVersion>
