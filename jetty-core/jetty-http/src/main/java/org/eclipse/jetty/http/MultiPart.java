@@ -477,7 +477,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Error closing part {}", this);
+                    LOG.debug("Error closing part {}", this, x);
             }
         }
     }
@@ -1259,14 +1259,14 @@ public class MultiPart
                             // SPEC: ignore linear whitespace after boundary.
                             else if (type != HttpTokens.Type.SPACE && type != HttpTokens.Type.HTAB)
                             {
-                                throw new BadMessageException("bad last boundary");
+                                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "bad last boundary");
                             }
                         }
                         case BOUNDARY_CLOSE ->
                         {
                             HttpTokens.Token token = next(buffer);
                             if (token.getByte() != '-')
-                                throw new BadMessageException("bad last boundary");
+                                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "bad last boundary");
                             notifyEndOfLineViolations();
                             state = State.EPILOGUE;
                         }
@@ -1315,7 +1315,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("parse failure {} {}", state, BufferUtil.toDetailString(buffer));
+                    LOG.debug("parse failure {} {}", state, BufferUtil.toDetailString(buffer), x);
                 buffer.position(buffer.limit());
                 notifyEndOfLineViolations();
                 notifyFailure(x);
@@ -1338,7 +1338,7 @@ public class MultiPart
             {
                 case CNTL ->
                 {
-                    throw new BadMessageException("invalid byte " + Integer.toHexString(t.getChar()));
+                    throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid byte " + Integer.toHexString(t.getChar()));
                 }
                 case LF ->
                 {
@@ -1347,7 +1347,7 @@ public class MultiPart
                         MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
                         addEndOfLineViolation(violation);
                         if (!compliance.allows(violation))
-                            throw new BadMessageException("invalid LF-only EOL");
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid LF-only EOL");
                     }
                     crFlag = false;
                 }
@@ -1358,7 +1358,7 @@ public class MultiPart
                         MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.CR_LINE_TERMINATION;
                         addEndOfLineViolation(violation);
                         if (!compliance.allows(violation))
-                            throw new BadMessageException("invalid CR-only EOL");
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid CR-only EOL");
                     }
                     crFlag = true;
                 }
@@ -1369,7 +1369,7 @@ public class MultiPart
                         MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.CR_LINE_TERMINATION;
                         addEndOfLineViolation(violation);
                         if (!compliance.allows(violation))
-                            throw new BadMessageException("invalid CR-only EOL");
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid CR-only EOL");
                     }
                 }
             }
@@ -1441,14 +1441,14 @@ public class MultiPart
                     }
                     case COLON ->
                     {
-                        throw new BadMessageException("invalid empty header name");
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid empty header name");
                     }
                     default ->
                     {
                         if (Character.isWhitespace(token.getByte()))
                         {
                             if (text.length() == 0)
-                                throw new BadMessageException("invalid leading whitespace before header");
+                                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid leading whitespace before header");
                         }
                         else
                         {
@@ -1482,7 +1482,7 @@ public class MultiPart
                     {
                         byte current = token.getByte();
                         if (trailingWhiteSpaces > 0)
-                            throw new BadMessageException("invalid header name");
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid header name");
                         incrementAndCheckPartHeadersLength();
                         text.append(current);
                     }
@@ -1496,7 +1496,7 @@ public class MultiPart
                         }
                         else
                         {
-                            throw new BadMessageException("invalid header name");
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid header name");
                         }
                     }
                 }
@@ -1572,7 +1572,7 @@ public class MultiPart
                             MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
                             addEndOfLineViolation(violation);
                             if (!compliance.allows(violation))
-                                throw new BadMessageException("invalid LF-only EOL");
+                                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid LF-only EOL");
                         }
                         partialBoundaryMatch = 0;
                         crContent = false;
@@ -1622,7 +1622,7 @@ public class MultiPart
                         MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
                         addEndOfLineViolation(violation);
                         if (!compliance.allows(violation))
-                            throw new BadMessageException("invalid LF-only EOL");
+                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid LF-only EOL");
                     }
                     crContent = false;
                 }
@@ -1644,7 +1644,7 @@ public class MultiPart
                     MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
                     addEndOfLineViolation(violation);
                     if (!compliance.allows(violation))
-                        throw new BadMessageException("invalid LF-only EOL");
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid LF-only EOL");
                 }
                 Content.Chunk content = asSlice(chunk, position, length, true);
                 buffer.position(position + boundaryOffset + boundaryFinder.getLength());
@@ -1715,7 +1715,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1728,7 +1728,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1741,7 +1741,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1754,7 +1754,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1767,7 +1767,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1780,7 +1780,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1793,7 +1793,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -1826,7 +1826,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                    LOG.debug("failure while notifying listener {}", listener, x);
             }
         }
 
@@ -2026,7 +2026,7 @@ public class MultiPart
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure while notifying part {}", name);
+                    LOG.debug("failure while notifying part {}", name, x);
             }
         }
     }

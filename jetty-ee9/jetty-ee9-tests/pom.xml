@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.9-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-tests</artifactId>
   <packaging>pom</packaging>
@@ -27,6 +27,8 @@
     <module>jetty-ee9-test-openid-webapp</module>
     <module>jetty-ee9-test-owb-cdi-webapp</module>
     <module>jetty-ee9-test-quickstart</module>
+    <module>jetty-ee9-test-sci-jar</module>
+    <module>jetty-ee9-test-sci-webapp</module>
     <module>jetty-ee9-test-sessions</module>
     <module>jetty-ee9-test-simple-session-webapp</module>
     <module>jetty-ee9-test-websocket-client-provided-webapp</module>

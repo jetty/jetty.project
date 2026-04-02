@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -65,7 +66,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             catch (Throwable t)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(t).log("Extension Error During Close");
+                    LOG.debug("Extension Error During Close", t);
             }
         }
     }
@@ -152,7 +153,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                         for (ExtensionConfig offered : offeredConfigs)
                         {
                             if (offered.getParameterizedName().equals(parameterizedName))
-                                throw new BadMessageException("could not instantiate offered extension", t);
+                                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "could not instantiate offered extension", t);
                         }
                         throw new WebSocketException("could not instantiate negotiated extension", t);
                     }
@@ -164,7 +165,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                             if (offered.getParameterizedName().equals(parameterizedName))
                                 throw new WebSocketException("could not instantiate offered extension", t);
                         }
-                        throw new BadMessageException("could not instantiate negotiated extension", t);
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "could not instantiate negotiated extension", t);
                     }
                     default:
                         throw new IllegalStateException();

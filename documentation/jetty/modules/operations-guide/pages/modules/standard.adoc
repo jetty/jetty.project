@@ -631,6 +631,29 @@ The property `jetty.requestlog.formatString` can be customized using format code
 
 javadoc::code:partial$org/eclipse/jetty/server/CustomRequestLog.java[]
 
+[[requestlog-slf4j]]
+== Module `requestlog-slf4j`
+
+The `requestlog-slf4j` module provides HTTP request/response logging to the SLF4J logging framework, as an alternative to the file-based <<requestlog,requestlog>> module.
+
+Request logs are written to a configurable SLF4J logger at INFO level, allowing integration with any SLF4J-compatible logging framework (Logback, Log4j2, etc.).
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/requestlog-slf4j.mod[tags=documentation]
+----
+
+The property `jetty.requestlog.formatString` uses the same format codes as the <<requestlog,requestlog>> module.
+
+javadoc::code:partial$org/eclipse/jetty/server/CustomRequestLog.java[]
+
+[NOTE]
+====
+Unlike the `requestlog` module, `requestlog-slf4j` does not create a `logs/` directory or write to files.
+All log output is handled by your SLF4J logging configuration.
+====
+
 [[resources]]
 == Module `resources`
 
@@ -973,8 +996,12 @@ The specific properties to configure virtual threads are:
 `jetty.threadPool.virtual.namePrefix`::
 The name prefix to use for the virtual thread names.
 
-`jetty.threadPool.virtual.inheritInheritableThreadLocals`::
-Whether virtual threads inherit the values of `InheritableThreadLocal` variables.
+`jetty.threadPool.virtual.tracking`::
+Whether to track virtual threads so that they appear in a xref:troubleshooting/index.adoc#dump[Server Dump] even when they are unmounted.
+
+`jetty.threadPool.virtual.maxConcurrentTasks`::
+The number of concurrent tasks run by virtual threads.
+This property limits resource usage, avoiding that virtual threads run an unlimited number of concurrent tasks when the system is under load.
 
 [[threadpool-virtual-preview]]
 == Module `threadpool-virtual-preview`

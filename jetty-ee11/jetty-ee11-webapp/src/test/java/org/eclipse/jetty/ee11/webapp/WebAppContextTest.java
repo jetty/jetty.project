@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,6 +48,8 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee.webapp.WebAppClassLoading;
 import org.eclipse.jetty.ee11.servlet.DefaultServlet;
@@ -78,6 +81,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.xml.XmlParser;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -110,6 +114,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Isolated()
@@ -1287,6 +1292,81 @@ public class WebAppContextTest
             assertThat("Should have default patterns", protectedClasses, hasItem(defaultSystemClass));
 
         assertThat("context API", protectedClasses, hasItem("org.context.specific."));
+    }
+
+    @Test
+    public void testAmbiguousPaths() throws Exception
+    {
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        Path testPath = MavenPaths.targetTestDir("testAmbiguousPaths");
+        FS.ensureEmpty(testPath);
+        context.setBaseResource(context.getResourceFactory().newResource(testPath));
+
+        Server server = newServer();
+        server.setHandler(context);
+        server.start();
+
+        HttpClient client = new HttpClient();
+        client.start();
+
+        try
+        {
+            String baseURI = "http://%s".formatted(server.getURI().getAuthority());
+
+            for (String ambiguous : new String[] {"/foo%2Fbar", "/foo//bar", "/foo/..;/bar", "/foo/%2e%2e;param/bar"})
+            {
+                ContentResponse response = client.GET(baseURI + ambiguous);
+                assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus(), new ResponseDetails(response));
+            }
+        }
+        finally
+        {
+            LifeCycle.stop(client);
+        }
+    }
+
+    protected static class ResponseDetails implements Supplier<String>
+    {
+        private final ContentResponse response;
+
+        public ResponseDetails(ContentResponse response)
+        {
+            this.response = response;
+        }
+
+        @Override
+        public String get()
+        {
+            StringBuilder ret = new StringBuilder();
+            ret.append(response.toString()).append(System.lineSeparator());
+            ret.append(response.getHeaders().toString()).append(System.lineSeparator());
+            ret.append(response.getContentAsString()).append(System.lineSeparator());
+            return ret.toString();
+        }
+    }
+
+    @Test
+    public void testCustomXmlParser(WorkDir workDir) throws Exception
+    {
+        Server server = newServer();
+
+        MyXmlParser xmlParser = new MyXmlParser();
+        WebAppContext context = new WebAppContext();
+        context.getMetaData().setXmlParser(xmlParser);
+        context.setBaseResourceAsPath(workDir.getEmptyPathDir());
+
+        server.setHandler(context);
+        server.start();
+
+        assertTrue(context.isStarted());
+        assertTrue(context.isAvailable());
+        XmlParser startedXmlParser = context.getMetaData().getXmlParser();
+        assertSame(startedXmlParser, xmlParser);
+    }
+
+    public static class MyXmlParser extends XmlParser
+    {
     }
 
     public static class OkServlet extends HttpServlet

@@ -212,7 +212,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             }
             catch (IndexOutOfBoundsException e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
                 size = entries.size();
                 // Size can be 0 when the pool is in the middle of
                 // acquiring a connection while another thread

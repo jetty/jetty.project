@@ -882,7 +882,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
         private static class GZIPDecoder extends GZIPContentDecoder
         {
-            public GZIPDecoder(ByteBufferPool bufferPool)
+            private GZIPDecoder(ByteBufferPool bufferPool)
             {
                 super(bufferPool, IO.DEFAULT_BUFFER_SIZE);
             }

@@ -189,6 +189,22 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         this.initialize = initialize;
     }
 
+    /**
+     * @return the transfer-encoding content chunk max length
+     */
+    public int getTransferEncodingChunkMaxLength()
+    {
+        return getHttpChannel().getHttpSender().getHttpGenerator().getChunkMaxLength();
+    }
+
+    /**
+     * @param chunkMaxLength the transfer-encoding content chunk max length
+     */
+    public void setTransferEncodingChunkMaxLength(int chunkMaxLength)
+    {
+        getHttpChannel().getHttpSender().getHttpGenerator().setChunkMaxLength(chunkMaxLength);
+    }
+
     @Override
     public InvocationType getInvocationType()
     {
@@ -353,6 +369,18 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         private Delegate(HttpDestination destination)
         {
             super(destination);
+        }
+
+        @Override
+        protected HttpVersion getHttpVersion()
+        {
+            return HttpVersion.HTTP_1_1;
+        }
+
+        @Override
+        protected boolean requiresHostHeader()
+        {
+            return true;
         }
 
         @Override

@@ -135,7 +135,7 @@ public class ServletHandler extends Handler.Wrapper
     /**
      * <p>Allow or disallow ambiguous URIs to be returned by {@link ServletApiRequest#getServletPath()}
      * and {@link ServletApiRequest#getPathInfo()}.</p>
-     * <p>Note that the {@link org.eclipse.jetty.server.HttpConfiguration#setUriCompliance(UriCompliance)} 
+     * <p>Note that the {@link org.eclipse.jetty.server.HttpConfiguration#setUriCompliance(UriCompliance)}
      * must also be set to allow ambiguous URIs to be accepted by the {@link org.eclipse.jetty.server.Connector}.</p>
      *
      * @param decodeAmbiguousURIs {@code True} if ambiguous URIs are decoded by all servlet API methods.
@@ -562,12 +562,14 @@ public class ServletHandler extends Handler.Wrapper
             if (_maxFilterChainsCacheSize > 0 && cache.size() >= _maxFilterChainsCacheSize)
             {
                 // flush the cache
-                LOG.debug("{} flushed filter chain cache for {}", this, dispatcherType);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} flushed filter chain cache for {}", this, dispatcherType);
                 cache.clear();
             }
             chain = chain == null ? new ChainEnd(servletHolder) : chain;
             // flush the cache
-            LOG.debug("{} cached filter chain for {}: {}", this, dispatcherType, chain);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} cached filter chain for {}: {}", this, dispatcherType, chain);
             cache.put(key, chain);
         }
         return chain;

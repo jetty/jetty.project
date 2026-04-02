@@ -65,6 +65,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
@@ -177,6 +178,27 @@ public class AsyncMiddleManServletTest
         LifeCycle.stop(client);
         LifeCycle.stop(proxy);
         LifeCycle.stop(server);
+    }
+
+    @Test
+    public void testExpect100WithBody() throws Exception
+    {
+        startServer(new EchoHttpServlet());
+        startProxy(new AsyncMiddleManServlet());
+        startClient();
+
+        for (int i = 0; i < 100; i++)
+        {
+            String body = Character.toString('a' + (i % 26)); // only use 'a' to 'z'
+            ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .path("/" + body)
+                .headers(h -> h.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
+                .timeout(5, TimeUnit.SECONDS)
+                .body(new StringRequestContent(body))
+                .send();
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(body, response.getContentAsString());
+        }
     }
 
     @Test
@@ -1801,7 +1823,8 @@ public class AsyncMiddleManServletTest
             protected String transform(String value)
             {
                 String result = PREFIX + URLEncoder.encode(value, StandardCharsets.UTF_8);
-                LOG.debug("{} -> {}", value, result);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} -> {}", value, result);
                 return result;
             }
         }
@@ -1812,7 +1835,8 @@ public class AsyncMiddleManServletTest
             protected String transform(String value)
             {
                 String result = URLDecoder.decode(value.substring(PREFIX.length()), StandardCharsets.UTF_8);
-                LOG.debug("{} <- {}", value, result);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} <- {}", value, result);
                 return result;
             }
         }

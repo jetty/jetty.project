@@ -55,6 +55,10 @@ public class HttpCookieTest
             Arguments.of("A=B; a=", HttpCookie.build("A", "B").attribute("a", "").build()),
             Arguments.of("A=B; a=v", HttpCookie.build("A", "B").attribute("a", "v").build()),
             Arguments.of("A=B; Secure; Path=/", HttpCookie.build("A", "B").secure(true).path("/").build()),
+            Arguments.of("A=B; Max-Age=-2", HttpCookie.build("A", "B").maxAge(-2).build()),
+            Arguments.of("A=B; Max-Age=-1", HttpCookie.build("A", "B").maxAge(-1).build()),
+            Arguments.of("A=B; Max-Age=0", HttpCookie.build("A", "B").maxAge(0).build()),
+            Arguments.of("A=B; Max-Age=1", HttpCookie.build("A", "B").maxAge(1).build()),
             // Quoted cookie.
             Arguments.of("A=\"1\"", HttpCookie.build("A", "1").build()),
             Arguments.of("A=\"1\"; HttpOnly", HttpCookie.build("A", "1").httpOnly(true).build()),
@@ -156,5 +160,17 @@ public class HttpCookieTest
         assertThat(noAttributes.getSameSite(), nullValue());
         assertThat(noAttributes.isSecure(), is(false));
         assertThat(noAttributes.isPartitioned(), is(false));
+    }
+
+    @Test
+    public void testNegativeMaxAge()
+    {
+        HttpCookie cookie = HttpCookie.build("A", "B").maxAge(-1).build();
+        assertThat(cookie.getAttributes().size(), is(1));
+        assertThat(cookie.getMaxAge(), is(-1L));
+
+        cookie = HttpCookie.build("A", "B").attribute("max-age", "-2").build();
+        assertThat(cookie.getAttributes().size(), is(1));
+        assertThat(cookie.getMaxAge(), is(-2L));
     }
 }

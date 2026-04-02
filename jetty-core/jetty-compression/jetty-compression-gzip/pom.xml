@@ -5,12 +5,12 @@
   <parent>
     <groupId>org.eclipse.jetty.compression</groupId>
     <artifactId>jetty-compression</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.9-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-compression-gzip</artifactId>
   <packaging>jar</packaging>
   <name>Core :: Compression :: Gzip Support</name>
-  <description>Jetty Core Compression :: Gzip Support</description>
+  <description>Jetty Compression Gzip Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.gzip</bundle-symbolic-name>

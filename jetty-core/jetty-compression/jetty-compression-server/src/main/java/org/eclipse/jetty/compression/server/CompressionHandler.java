@@ -21,8 +21,8 @@ import java.util.TreeMap;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.server.internal.CompressionResponse;
 import org.eclipse.jetty.compression.server.internal.DecompressionRequest;
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -34,7 +34,7 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -271,18 +271,10 @@ public class CompressionHandler extends Handler.Wrapper
                     // Collect all Accept-Encoding headers.
                     if (qualityCSV == null)
                     {
-                        HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
-                        qualityCSV = new QuotedQualityCSV()
-                        {
-                            @Override
-                            protected void onComplianceViolation(ComplianceViolation violation, String value)
-                            {
-                                if (httpConfiguration.getHttpCompliance().allows(violation))
-                                    httpConfiguration.notifyViolation(violation, value);
-                                else
-                                    throw new BadMessageException(violation.toString());
-                            }
-                        };
+                        HttpChannel httpChannel = HttpChannel.from(request);
+                        HttpCompliance httpCompliance = httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
+                        ComplianceViolation.Listener complianceListener = httpChannel.getComplianceViolationListener();
+                        qualityCSV = new QuotedQualityCSV(httpCompliance, complianceListener, null);
                     }
                     qualityCSV.addValue(field.getValue());
                 }
@@ -324,21 +316,26 @@ public class CompressionHandler extends Handler.Wrapper
                 request, requestContentEncoding, requestAcceptEncoding, decompressEncoding, compressEncoding);
         }
 
-        // wrap request if etags need to be adjusted
+        String originalEtag = null;
+        // Wrap request if etags need to be adjusted.
         if (ifMatch != null || ifNoneMatch != null)
+        {
             request = new StripEtagRequest(request, ifMatch, ifNoneMatch);
+            originalEtag = (ifMatch != null) ? ifMatch : ifNoneMatch;
+        }
 
-        // wrap the request if we can decompress.
+        // Wrap the request if we can decompress.
         if (decompressEncoding != null)
             request = newDecompressionRequest(request, decompressEncoding);
 
-        // wrap the response if we can deflate.
-        if (compressEncoding != null)
-        {
-            // The response may vary based on the presence or lack of Accept-Encoding.
+        // Add the Vary header only if compression is possible for this method and path.
+        // Compression for the path is possible because it was matched above.
+        if (config.isCompressMethodSupported(request.getMethod()))
             response.getHeaders().ensureField(varyAcceptEncoding);
-            response = newCompressionResponse(request, response, compressEncoding, config);
-        }
+
+        // Wrap the response if we can compress.
+        if (compressEncoding != null)
+            response = newCompressionResponse(request, response, compressEncoding, config, originalEtag);
 
         if (LOG.isDebugEnabled())
             LOG.debug("handle {} {} {}", request, response, this);
@@ -365,13 +362,13 @@ public class CompressionHandler extends Handler.Wrapper
         return compression;
     }
 
-    private Response newCompressionResponse(Request request, Response response, String compressEncoding, CompressionConfig config)
+    private Response newCompressionResponse(Request request, Response response, String compressEncoding, CompressionConfig config, String originalEtag)
     {
         Compression compression = getCompression(compressEncoding);
         if (compression == null)
             return response;
 
-        return new CompressionResponse(request, response, compression, config);
+        return new CompressionResponse(request, response, compression, config, originalEtag);
     }
 
     private Request newDecompressionRequest(Request request, String decompressEncoding)

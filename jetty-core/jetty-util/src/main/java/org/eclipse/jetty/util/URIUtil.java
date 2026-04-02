@@ -1952,7 +1952,8 @@ public final class URIUtil
         }
         catch (URISyntaxException e)
         {
-            LOG.trace("IGNORED: Invalid as URI Reference: {}", reference, e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED: Invalid as URI Reference: {}", reference, e);
         }
 
         try
@@ -1963,7 +1964,8 @@ public final class URIUtil
         catch (InvalidPathException e)
         {
             // Not a path reference.
-            LOG.trace("IGNORED: Invalid as Path Reference: {}", reference, e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED: Invalid as Path Reference: {}", reference, e);
         }
 
         // If we reached this here, that means the input string cannot be used as

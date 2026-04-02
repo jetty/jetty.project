@@ -284,7 +284,8 @@ public class DigestAuthenticator extends LoginAuthenticator
         }
         catch (Exception e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
         return -1;
     }

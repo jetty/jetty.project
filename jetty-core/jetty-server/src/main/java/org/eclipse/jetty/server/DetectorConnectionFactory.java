@@ -270,7 +270,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
                     {
                         // It's just bubbling up from a nested Detector, so it's already handled, just rethrow it.
                         if (LOG.isDebugEnabled())
-                            LOG.atDebug().setCause(x).log("Detector {} failed to upgrade, rethrowing", getProtocol());
+                            LOG.debug("Detector {} failed to upgrade, rethrowing", getProtocol(), x);
                         throw x;
                     }
                     catch (Throwable x)

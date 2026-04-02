@@ -240,7 +240,8 @@ public class CookieCutter implements CookieParser
                                 }
                                 catch (Exception e)
                                 {
-                                    LOG.debug("Unable to process Cookie", e);
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("Unable to process Cookie", e);
                                 }
 
                                 name = null;
@@ -373,8 +374,9 @@ public class CookieCutter implements CookieParser
 
     protected void reportComplianceViolation(CookieCompliance.Violation violation, String reason)
     {
+        boolean allows = _complianceMode.allows(violation);
         if (_complianceListener != null)
-            _complianceListener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, reason));
+            _complianceListener.onComplianceViolation(new ComplianceViolation.Event(_complianceMode, violation, reason, allows));
     }
 
     protected boolean isRFC6265RejectedCharacter(char c)

@@ -231,7 +231,7 @@ public class ByteArrayISO8859Writer extends Writer
         {
             if (_fixed)
                 throw new IOException("Buffer overflow: " + _buf.length);
-            _buf = Arrays.copyOf(_buf, (_buf.length + n) * 4 / 3);
+            _buf = ArrayUtil.grow(_buf, n, Integer.MAX_VALUE);
         }
     }
 

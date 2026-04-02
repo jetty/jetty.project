@@ -15,13 +15,13 @@ package org.eclipse.jetty.http3.server.internal;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -39,6 +39,7 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
@@ -85,14 +86,17 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             MetaData.Request requestMetaData = (MetaData.Request)frame.getMetaData();
 
-            // Grab freshly initialized ComplianceViolation.Listener here, no need to reinitialize.
-            ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
+            HttpConfiguration httpConfiguration = httpChannel.getConnectionMetaData().getHttpConfiguration();
+
             Runnable handler = httpChannel.onRequest(requestMetaData);
-            Request request = this.httpChannel.getRequest();
+            Request request = httpChannel.getRequest();
+            // Grab the request specific ComplianceViolation Listener (possibly a composite).
+            ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
             listener.onRequestBegin(request);
-            // Note UriCompliance is done by HandlerInvoker
-            HttpCompliance httpCompliance = httpChannel.getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
-            HttpCompliance.checkHttpCompliance(requestMetaData, httpCompliance, listener);
+
+            // Note: UriCompliance is done by HandlerInvoker
+            // Perform HttpCompliance
+            ComplianceUtils.verify(httpConfiguration.getHttpCompliance(), requestMetaData, listener);
 
             if (frame.isLast())
             {
@@ -114,32 +118,28 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
             HttpField expectField = fields.getField(HttpHeader.EXPECT);
             if (expectField != null && !HttpHeaderValue.CONTINUE.is(expectField.getValue()))
-                throw new BadMessageException(HttpStatus.EXPECTATION_FAILED_417);
+                throw new HttpException.RuntimeException(HttpStatus.EXPECTATION_FAILED_417);
 
             InvocationType invocationType = Invocable.getInvocationType(handler);
-            return new ReadyTask(invocationType, handler)
+            return Invocable.from(invocationType, () ->
             {
-                @Override
-                public void run()
+                if (stream.isClosed())
                 {
-                    if (stream.isClosed())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("HTTP3 request #{}/{} skipped handling, stream already closed {}",
-                                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                                stream);
-                    }
-                    else
-                    {
-                        super.run();
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP3 request #{}/{} skipped handling, stream already closed {}",
+                            stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                            stream);
                 }
-            };
+                else
+                {
+                    handler.run();
+                }
+            });
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("onRequest() failure");
+                LOG.debug("onRequest() failure", x);
             HttpException httpException = x instanceof HttpException http ? http : new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, x);
             return onBadMessage(httpException);
         }
@@ -251,11 +251,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
     @Override
     public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
+        ByteBuffer content = Objects.requireNonNullElse(byteBuffer, BufferUtil.EMPTY_BUFFER);
         if (response != null)
             sendHeaders(request, response, content, last, callback);
         else
-            sendContent(request, content, last, callback);
+            sendContent(request, responseMetaData, content, last, callback);
     }
 
     @Override
@@ -284,7 +284,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        this.responseMetaData = response;
+        responseMetaData = response;
 
         HeadersFrame headersFrame;
         DataFrame dataFrame = null;
@@ -295,13 +295,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
         if (HttpStatus.isInterim(response.getStatus()))
         {
             // Must not commit interim responses.
-
             if (hasContent)
             {
                 callback.failed(new IllegalStateException("Interim response cannot have content"));
                 return;
             }
-
             headersFrame = new HeadersFrame(response, false);
         }
         else
@@ -313,7 +311,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 long contentLength = response.getContentLength();
                 if (contentLength < 0)
                 {
-                    this.responseMetaData = new MetaData.Response(
+                    responseMetaData = new MetaData.Response(
                         response.getStatus(), response.getReason(), response.getHttpVersion(),
                         response.getHttpFields(),
                         realContentLength,
@@ -407,11 +405,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
         }, callback::failed));
     }
 
-    private void sendContent(MetaData.Request request, ByteBuffer content, boolean lastContent, Callback callback)
+    private void sendContent(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        if (hasContent || (lastContent && !isTunnel(request, responseMetaData)))
+        if (hasContent || (lastContent && !isTunnel(request, response)))
         {
             if (!hasContent)
                 content = BufferUtil.EMPTY_BUFFER;
@@ -552,7 +550,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         HTTP3ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? HTTP3ErrorCode.NO_ERROR : HTTP3ErrorCode.REQUEST_CANCELLED_ERROR;
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(x).log("HTTP3 Response #{}/{} failed {}", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), errorCode);
+            LOG.debug("HTTP3 Response #{}/{} failed {}", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), errorCode, x);
         stream.disconnect(errorCode.code(), x, Promise.Invocable.noop());
     }
 

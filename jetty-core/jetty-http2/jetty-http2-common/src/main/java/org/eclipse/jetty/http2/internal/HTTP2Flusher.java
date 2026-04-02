@@ -274,14 +274,14 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 catch (HpackException.StreamException failure)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(failure).log("Failure generating {}", entry);
+                        LOG.debug("Failure generating {}", entry, failure);
                     entry.resetAndFail(failure);
                     pending.remove();
                 }
                 catch (HpackException.SessionException failure)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(failure).log("Failure generating {}", entry);
+                        LOG.debug("Failure generating {}", entry, failure);
                     onSessionFailure(failure);
                     // The method above will try to send
                     // a GOAWAY, so we will iterate again.
@@ -291,7 +291,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 {
                     // Failure to generate the entry is catastrophic.
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(failure).log("Failure generating {}", entry);
+                        LOG.debug("Failure generating {}", entry, failure);
                     failed(failure);
                     return Action.SCHEDULED;
                 }
@@ -346,7 +346,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
     private void finish()
     {
-        accumulator.clear();
         processedEntries.forEach(HTTP2Session.Entry::succeeded);
         processedEntries.clear();
         invocationType = InvocationType.NON_BLOCKING;
@@ -382,11 +381,11 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             closed = terminated;
             terminated = x;
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log(String.format("%s, entries processed/pending/queued=%d/%d/%d",
+                LOG.debug("{}, entries processed/pending/queued={}/{}/{}",
                     closed != null ? "Closing" : "Failing",
                     processedEntries.size(),
                     pendingEntries.size(),
-                    entries.size()));
+                    entries.size(), x);
             allEntries = new HashSet<>(entries);
             entries.clear();
         }
@@ -420,11 +419,11 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             closed = terminated;
             terminated = x;
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log(String.format("%s, entries processed/pending/queued=%d/%d/%d",
+                LOG.debug("{}, entries processed/pending/queued={}/{}/{}",
                     closed != null ? "Closing" : "Failing",
                     processedEntries.size(),
                     pendingEntries.size(),
-                    entries.size()));
+                    entries.size(), x);
             allEntries = new HashSet<>(entries);
             entries.clear();
         }

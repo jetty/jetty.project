@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee11.osgi</groupId>
     <artifactId>jetty-ee11-osgi</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.9-SNAPSHOT</version>
   </parent>
   <artifactId>test-jetty-ee11-osgi</artifactId>
   <name>EE11 :: OSGi :: Test</name>
@@ -405,8 +405,8 @@
       <artifactId>pax-exam</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- Use the forked container so we can pass it system properties eg for alpn -->
     <dependency>
+      <!-- Use the forked container so we can pass it system properties eg for alpn -->
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-container-forked</artifactId>
       <scope>test</scope>
@@ -544,6 +544,7 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
+            <skipTests>${skipTests}</skipTests>
             <systemPropertyVariables>
               <bundle.debug/>
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>

@@ -286,7 +286,8 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
         }
         catch (IOException x)
         {
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
         }
     }
 

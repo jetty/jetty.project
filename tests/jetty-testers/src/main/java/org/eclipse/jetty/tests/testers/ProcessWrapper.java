@@ -331,13 +331,15 @@ public class ProcessWrapper implements AutoCloseable
                 String line;
                 while ((line = reader.readLine()) != null)
                 {
-                    LOG.debug(line);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug(line);
                     logs.add(line);
                 }
             }
             catch (Throwable x)
             {
-                LOG.trace("", x);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("", x);
             }
             finally
             {

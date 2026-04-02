@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -574,7 +575,8 @@ public class RequestTest
         }
         catch (UnknownHostException e)
         {
-            LOG.debug("Unable to obtain InetAddress.LocalHost", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to obtain InetAddress.LocalHost", e);
         }
         return hostHeader.stream().map(Arguments::of);
     }
@@ -786,5 +788,70 @@ public class RequestTest
         {
             assertThat(response, startsWith("HTTP/1.1 200 OK"));
         }
+    }
+
+    public record ParameterCase(String purpose, Consumer<HttpServletRequest> requestAction)
+    {
+        @Override
+        public String toString()
+        {
+            return purpose;
+        }
+    }
+
+    public static Stream<Arguments> parameterISECases()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        cases.add(Arguments.of(new ParameterCase("getParameter(String)",
+            (request) -> request.getParameter("x"))));
+        cases.add(Arguments.of(new ParameterCase("getParameterNames()",
+            ServletRequest::getParameterNames)));
+        cases.add(Arguments.of(new ParameterCase("getParameterValues(String)",
+            (request) -> request.getParameterValues("x"))));
+        cases.add(Arguments.of(new ParameterCase("getParameterMap()",
+            ServletRequest::getParameterMap)));
+
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("parameterISECases")
+    public void testGetParameterISE(ParameterCase parameterCase) throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
+            {
+                try
+                {
+                    parameterCase.requestAction.accept(request);
+                    resp.setStatus(500);
+                    resp.getWriter().print("BAD: ISE Should have Occurred");
+                }
+                catch (IllegalStateException e)
+                {
+                    resp.setStatus(200);
+                    resp.getWriter().print("GOOD: ISE Occurred");
+                }
+                catch (Throwable t)
+                {
+                    t.printStackTrace();
+                    throw t;
+                }
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                POST /test/parameters?x=%80 HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), is("GOOD: ISE Occurred"));
     }
 }

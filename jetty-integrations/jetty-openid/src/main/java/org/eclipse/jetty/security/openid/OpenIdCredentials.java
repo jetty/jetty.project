@@ -100,16 +100,11 @@ public class OpenIdCredentials implements Serializable
      */
     public void redeemAuthCode(OpenIdConfiguration configuration)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("redeemAuthCode() {}", this);
-
         if (authCode != null)
         {
             try
             {
                 response = claimAuthCode(configuration);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("response: {}", response);
 
                 // Parse error response define by Section 5.2 of OAuth 2.0 [RFC6749].
                 String errorCode = (String)response.get("error");
@@ -145,8 +140,6 @@ public class OpenIdCredentials implements Serializable
                     throw new AuthenticationException("invalid token_type");
 
                 claims = JwtDecoder.decode(idToken);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("claims {}", claims);
                 validateClaims(configuration);
             }
             catch (Throwable t)
@@ -246,9 +239,6 @@ public class OpenIdCredentials implements Serializable
         request = request.body(formContent).timeout(10, TimeUnit.SECONDS);
         ContentResponse response = request.send();
         String responseBody = response.getContentAsString();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Authentication response: {}", responseBody);
-
         Object parsedResponse = new JSON().fromJSON(responseBody);
         if (!(parsedResponse instanceof Map))
             throw new AuthenticationException("Malformed response from OpenID Provider");

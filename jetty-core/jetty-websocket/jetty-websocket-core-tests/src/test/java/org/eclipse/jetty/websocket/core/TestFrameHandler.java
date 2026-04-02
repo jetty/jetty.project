@@ -64,7 +64,7 @@ public class TestFrameHandler implements SynchronousFrameHandler
     public void onFrame(Frame frame)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onFrame: " + OpCode.name(frame.getOpCode()) + ":" + BufferUtil.toDetailString(frame.getPayload()));
+            LOG.debug("onFrame: {}:{}", OpCode.name(frame.getOpCode()), BufferUtil.toDetailString(frame.getPayload()));
         receivedFrames.offer(Frame.copy(frame));
         demand();
     }
@@ -87,7 +87,7 @@ public class TestFrameHandler implements SynchronousFrameHandler
     public void onError(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(cause).log("onError ");
+            LOG.debug("onError ", cause);
         failure = cause;
         error.countDown();
     }

@@ -229,7 +229,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     public UserIdentity login(String username, Object credentials, ServletRequest request)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("login {} {} {}", username, credentials, request);
+            LOG.debug("login {} {}", username, request);
 
         UserIdentity user = super.login(username, credentials, request);
         if (user != null)

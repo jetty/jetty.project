@@ -110,7 +110,8 @@ public class MessageOutputStreamTest
     {
         int bufsize = (int)(OUTPUT_BUFFER_SIZE * 2.5);
         byte[] buf = new byte[bufsize];
-        LOG.debug("Buffer sizes: max:{}, test:{}", OUTPUT_BUFFER_SIZE, bufsize);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Buffer sizes: max:{}, test:{}", OUTPUT_BUFFER_SIZE, bufsize);
         Arrays.fill(buf, (byte)'x');
         buf[bufsize - 1] = (byte)'o'; // mark last entry for debugging
 

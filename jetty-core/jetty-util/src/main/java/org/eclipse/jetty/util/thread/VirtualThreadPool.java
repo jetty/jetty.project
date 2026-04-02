@@ -29,9 +29,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>An implementation of {@link ThreadPool} interface that does not pool, but instead uses {@link VirtualThreads}.</p>
- * <p>It is possible to specify the max number of concurrent virtual threads that can be spawned, to help limiting
- * resource usage in applications, especially in case of load spikes, where an unlimited number of virtual threads
- * may be spawned, compete for resources, and eventually bring the system down due to memory exhaustion.</p>
+ * <p>It is possible to specify the max number of concurrent tasks run by virtual threads, to help limiting
+ * resource usage in applications, especially in the case of load spikes.
+ * An unlimited number of tasks run concurrently by virtual threads may compete for resources and eventually
+ * bring the system down due to memory exhaustion.</p>
  */
 @ManagedObject("A thread non-pool for virtual threads")
 public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool, Dumpable, TryExecutor, VirtualThreads.Configurable
@@ -40,7 +41,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
 
     private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
     private String _name;
-    private int _maxThreads;
+    private int _maxTasks;
     private boolean _tracking;
     private boolean _detailedDump;
     private Thread _keepAlive;
@@ -53,11 +54,11 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
         this(200);
     }
 
-    public VirtualThreadPool(int maxThreads)
+    public VirtualThreadPool(int maxTasks)
     {
         if (!VirtualThreads.areSupported())
             throw new IllegalStateException("Virtual Threads not supported");
-        _maxThreads = maxThreads;
+        _maxTasks = maxTasks;
     }
 
     /**
@@ -84,22 +85,42 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
     }
 
     /**
-     * @return the maximum number of concurrent virtual threads
+     * @return the maximum number of concurrent tasks run by virtual threads
+     * @deprecated use {@link #getMaxConcurrentTasks()} instead
      */
-    @ManagedAttribute("The max number of concurrent virtual threads")
+    @Deprecated(forRemoval = true, since = "12.1.6")
     public int getMaxThreads()
     {
-        return _maxThreads;
+        return getMaxConcurrentTasks();
     }
 
     /**
-     * @param maxThreads the maximum number of concurrent virtual threads
+     * @param maxTasks the maximum number of concurrent tasks run by virtual threads
+     * @deprecated use {@link #setMaxConcurrentTasks(int)} instead
      */
-    public void setMaxThreads(int maxThreads)
+    @Deprecated(forRemoval = true, since = "12.1.6")
+    public void setMaxThreads(int maxTasks)
+    {
+        setMaxConcurrentTasks(maxTasks);
+    }
+
+    /**
+     * @return the maximum number of concurrent tasks run by virtual threads
+     */
+    @ManagedAttribute("The max number of concurrent tasks run by virtual threads")
+    public int getMaxConcurrentTasks()
+    {
+        return _maxTasks;
+    }
+
+    /**
+     * @param maxConcurrentTasks the maximum number of concurrent tasks run by virtual threads
+     */
+    public void setMaxConcurrentTasks(int maxConcurrentTasks)
     {
         if (isRunning())
             throw new IllegalStateException(getState());
-        _maxThreads = maxThreads;
+        _maxTasks = maxConcurrentTasks;
     }
 
     /**
@@ -163,13 +184,14 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
                 ? VirtualThreads.getDefaultVirtualThreadsExecutor()
                 : VirtualThreads.getNamedVirtualThreadsExecutor(_name));
         }
-        if (_tracking && !(_virtualExecutor instanceof TrackingExecutor))
+        if (isTracking() && !(_virtualExecutor instanceof TrackingExecutor))
             _virtualExecutor = new TrackingExecutor(_virtualExecutor, isDetailedDump());
         addBean(_virtualExecutor);
 
-        if (_maxThreads > 0)
+        int maxTasks = getMaxConcurrentTasks();
+        if (maxTasks > 0)
         {
-            _semaphore = new Semaphore(_maxThreads);
+            _semaphore = new Semaphore(maxTasks);
             addBean(_semaphore);
         }
 
@@ -271,7 +293,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
                     // The caller of execute(Runnable) cannot be blocked,
                     // as it is unknown whether it is a virtual thread.
                     // But this is a virtual thread, so acquiring a permit here
-                    // blocks the virtual thread, but does not pin the carrier.
+                    // blocks the virtual thread but does not pin the carrier.
                     semaphore.acquire();
                     task.run();
                 }
@@ -279,7 +301,7 @@ public class VirtualThreadPool extends ContainerLifeCycle implements ThreadPool,
                 {
                     // Likely stopping this component, exit.
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("interrupted while waiting for permit {}", task);
+                        LOG.debug("interrupted while waiting for permit {}", task, x);
                 }
                 finally
                 {

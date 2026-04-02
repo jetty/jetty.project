@@ -187,7 +187,6 @@ public class ServletHandler extends Handler.Wrapper
             _servletContextHandler = servletScopedContext.getServletContextHandler();
 
             if (_servletContextHandler != null)
-
             {
                 SecurityHandler securityHandler = _servletContextHandler.getDescendant(SecurityHandler.class);
                 if (securityHandler != null)
@@ -563,12 +562,14 @@ public class ServletHandler extends Handler.Wrapper
             if (_maxFilterChainsCacheSize > 0 && cache.size() >= _maxFilterChainsCacheSize)
             {
                 // flush the cache
-                LOG.debug("{} flushed filter chain cache for {}", this, dispatcherType);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} flushed filter chain cache for {}", this, dispatcherType);
                 cache.clear();
             }
             chain = chain == null ? new ChainEnd(servletHolder) : chain;
             // flush the cache
-            LOG.debug("{} cached filter chain for {}: {}", this, dispatcherType, chain);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} cached filter chain for {}: {}", this, dispatcherType, chain);
             cache.put(key, chain);
         }
         return chain;
@@ -810,7 +811,6 @@ public class ServletHandler extends Handler.Wrapper
             holder.setName(servletName);
         holder.setHeldClass(servlet);
         addServletWithMappings(holder, pathSpecs);
-
         return holder;
     }
 

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee11</groupId>
     <artifactId>jetty-ee11-tests</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.9-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee11-test-felix-webapp</artifactId>
   <packaging>war</packaging>
@@ -33,10 +33,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>11</source>
-          <target>11</target>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

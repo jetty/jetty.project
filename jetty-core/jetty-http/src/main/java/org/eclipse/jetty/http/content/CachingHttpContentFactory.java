@@ -218,6 +218,10 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         if (httpContent.getResource().isDirectory())
             return false;
 
+        // Content with unknown length is not cacheable.
+        if (httpContent.getContentLengthValue() < 0L)
+            return false;
+
         if (_maxCachedFiles <= 0)
             return false;
 
@@ -249,21 +253,14 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             try
             {
                 CachingHttpContent cachingContent = (httpContent == null) ? newNotFoundContent(key) : newCachedContent(key, httpContent);
-                long contentLengthValue = cachingContent.getContentLengthValue();
-                if (contentLengthValue < 0L)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Content at path '{}' with unknown length is not cacheable: {}", path, httpContent);
-                    return null;
-                }
                 added.set(true);
-                _cachedSize.addAndGet(contentLengthValue);
+                _cachedSize.addAndGet(cachingContent.getContentLengthValue());
                 return cachingContent;
             }
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Content at path '{}' is not cacheable: {}", path, httpContent);
+                    LOG.debug("Content at path '{}' is not cacheable: {}", path, httpContent, x);
                 return null;
             }
         });
@@ -274,7 +271,9 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             shrinkCache();
         }
 
-        return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
+        if (cachingHttpContent instanceof NotFoundHttpContent)
+            return null;
+        return cachingHttpContent != null ? cachingHttpContent : httpContent;
     }
 
     protected CachingHttpContent newCachedContent(String p, HttpContent httpContent)

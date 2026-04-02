@@ -82,7 +82,7 @@ public class HttpConfiguration implements Dumpable
     private long _minResponseDataRate;
     private HttpCompliance _httpCompliance = HttpCompliance.RFC9110;
     private UriCompliance _uriCompliance = UriCompliance.DEFAULT;
-    private UriCompliance _redirectUriCompliance = UriCompliance.DEFAULT;
+    private UriCompliance _redirectUriCompliance = UriCompliance.DEFAULT_REDIRECT;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartCompliance _multiPartCompliance = MultiPartCompliance.RFC7578;
@@ -93,6 +93,7 @@ public class HttpConfiguration implements Dumpable
     private SocketAddress _localAddress;
     private int _maxUnconsumedRequestContentReads = 16;
     private int _minInputBufferSpace = 1500;
+    private boolean _notifyForbiddenComplianceViolations = false;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -173,6 +174,7 @@ public class HttpConfiguration implements Dumpable
         _localAddress = config._localAddress;
         _maxUnconsumedRequestContentReads = config._maxUnconsumedRequestContentReads;
         _minInputBufferSpace = config._minInputBufferSpace;
+        _notifyForbiddenComplianceViolations = config._notifyForbiddenComplianceViolations;
     }
 
     /**
@@ -684,24 +686,44 @@ public class HttpConfiguration implements Dumpable
         _httpCompliance = httpCompliance;
     }
 
-    @ManagedAttribute("The URI compliance mode")
+    /**
+     * The URI Compliance for HTTP Requests.
+     *
+     * @return the URI Compliance in use for HTTP Requests.
+     */
+    @ManagedAttribute("The URI compliance mode for HTTP Requests")
     public UriCompliance getUriCompliance()
     {
         return _uriCompliance;
     }
 
+    /**
+     * The URI Compliance for HTTP Response Redirects (the {@code Location} header)
+     *
+     * @return the URI Compliance in use for HTTP Response Redirects.
+     */
+    @ManagedAttribute("The URI Compliance mode for HTTP Response Redirects")
     public UriCompliance getRedirectUriCompliance()
     {
         return _redirectUriCompliance;
     }
 
+    /**
+     * URI Compliance for HTTP Requests.
+     *
+     * @param uriCompliance the {@link UriCompliance} to apply for HTTP requests.
+     */
     public void setUriCompliance(UriCompliance uriCompliance)
     {
         _uriCompliance = uriCompliance;
     }
 
     /**
-     * @param uriCompliance The {@link UriCompliance} to apply in {@link Response#toRedirectURI(Request, String)} or {@code null}.
+     * URI Compliance for HTTP Redirects.
+     *
+     * @param uriCompliance The {@link UriCompliance} to apply in HTTP Redirects.
+     * @see Response#toRedirectURI(Request, String)
+     * @see <a href="https://javadoc.io/doc/jakarta.servlet/jakarta.servlet-api/latest/jakarta.servlet/jakarta/servlet/http/HttpServletResponse.html">Jakarta Servlet API: HttpServletResponse.sendRedirect()</a>
      */
     public void setRedirectUriCompliance(UriCompliance uriCompliance)
     {
@@ -761,6 +783,19 @@ public class HttpConfiguration implements Dumpable
         this._multiPartCompliance = multiPartCompliance;
     }
 
+    public boolean isNotifyForbiddenComplianceViolations()
+    {
+        return _notifyForbiddenComplianceViolations;
+    }
+
+    /**
+     * @param notifyForbiddenComplianceViolations true notify forbidden events to {@code ComplianceViolation.Listener}s, false to notify all events.
+     */
+    public void setNotifyForbiddenComplianceViolations(boolean notifyForbiddenComplianceViolations)
+    {
+        _notifyForbiddenComplianceViolations = notifyForbiddenComplianceViolations;
+    }
+
     /**
      * Add a {@link ComplianceViolation.Listener} to the configuration
      * @param listener the listener to add
@@ -782,29 +817,18 @@ public class HttpConfiguration implements Dumpable
 
     /**
      * Get the list of configured {@link ComplianceViolation.Listener} to use.
+     *
+     * <p>
+     *     This is the default list of listeners, for request specific
+     *     listeners, see {@code HttpChannelState} and its
+     *     {@code ComplianceViolation.Listener} (which might be
+     *     a composite listener).
+     * </p>
      * @return the list of configured listeners
      */
     public List<ComplianceViolation.Listener> getComplianceViolationListeners()
     {
         return this._complianceViolationListeners;
-    }
-
-    /**
-     * Utility to notify a violation for the appropriate compliance mode
-     *
-     * @param violation The violation to notify
-     * @param details Details of the violation
-     */
-    public void notifyViolation(ComplianceViolation violation, String details)
-    {
-        if (violation instanceof UriCompliance.Violation)
-            ComplianceViolation.notify(getComplianceViolationListeners(), getUriCompliance(), violation, details);
-        else if (violation instanceof HttpCompliance.Violation)
-            ComplianceViolation.notify(getComplianceViolationListeners(), getHttpCompliance(), violation, details);
-        else if (violation instanceof MultiPartCompliance.Violation)
-            ComplianceViolation.notify(getComplianceViolationListeners(), getMultiPartCompliance(), violation, details);
-        else if (violation instanceof CookieCompliance.Violation)
-            ComplianceViolation.notify(getComplianceViolationListeners(), getRequestCookieCompliance(), violation, details);
     }
 
     /**

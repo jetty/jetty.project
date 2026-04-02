@@ -141,7 +141,8 @@ public class URLResourceFactory implements ResourceFactory
                     }
                     catch (IOException e)
                     {
-                        LOG.trace("IGNORED", e);
+                        if (LOG.isTraceEnabled())
+                            LOG.trace("IGNORED", e);
                     }
                 }
                 return connection != null;
@@ -228,7 +229,8 @@ public class URLResourceFactory implements ResourceFactory
             }
             catch (IOException e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
             }
             return false;
         }

@@ -256,7 +256,8 @@ public class DumpHandler extends AbstractHandler
         }
         catch (Exception e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
         }
     }
 }

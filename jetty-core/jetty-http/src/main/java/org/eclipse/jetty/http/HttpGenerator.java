@@ -39,17 +39,24 @@ import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
  */
 public class HttpGenerator
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpGenerator.class);
-
+    /**
+     * <p>The default max number of bytes of the content of a transfer-encoding chunk, {@value}.</p>
+     */
+    public static final int DEFAULT_CHUNK_MAX_LENGTH = 1024 * 1024 * 1024;
+    /**
+     * The number of bytes for the buffer allocation of the chunk size part, {@value}.
+     */
+    public static final int CHUNK_SIZE = 12;
     public static final boolean __STRICT = Boolean.getBoolean("org.eclipse.jetty.http.HttpGenerator.STRICT");
-    private static final byte[] __colon_space = new byte[]{':', ' '};
     public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(100, null, HttpVersion.HTTP_1_1, HttpFields.EMPTY);
+
+    private static final Logger LOG = LoggerFactory.getLogger(HttpGenerator.class);
+    private static final byte[] __colon_space = new byte[]{':', ' '};
     private static final Index<Boolean> ASSUMED_CONTENT_METHODS = new Index.Builder<Boolean>()
         .caseSensitive(false)
         .with(HttpMethod.POST.asString(), Boolean.TRUE)
         .with(HttpMethod.PUT.asString(), Boolean.TRUE)
         .build();
-    public static final int CHUNK_SIZE = 12;
 
     // states
     public enum State
@@ -82,10 +89,7 @@ public class HttpGenerator
     private Boolean _persistent = null;
     private boolean _needCRLF = false;
     private int _maxHeaderBytes;
-
-    public HttpGenerator()
-    {
-    }
+    private int _chunkMaxLength = DEFAULT_CHUNK_MAX_LENGTH;
 
     public void reset()
     {
@@ -106,6 +110,18 @@ public class HttpGenerator
     public void setMaxHeaderBytes(int maxHeaderBytes)
     {
         _maxHeaderBytes = maxHeaderBytes;
+    }
+
+    public int getChunkMaxLength()
+    {
+        return _chunkMaxLength;
+    }
+
+    public void setChunkMaxLength(int chunkMaxLength)
+    {
+        if (chunkMaxLength <= 0)
+            throw new IllegalArgumentException("invalid chunk max length");
+        _chunkMaxLength = chunkMaxLength;
     }
 
     public State getState()
@@ -214,22 +230,25 @@ public class HttpGenerator
                     }
                     else
                     {
-                        // handle the content.
-                        int len = BufferUtil.length(content);
-                        if (len > 0)
+                        int contentLength = BufferUtil.length(content);
+                        int committedLength = contentLength;
+                        if (committedLength > 0)
                         {
-                            _contentPrepared += len;
                             if (isChunking())
-                                prepareChunk(header, len);
+                                committedLength = prepareChunk(header, committedLength);
+                            _contentPrepared += committedLength;
                         }
-                        _state = last ? State.COMPLETING : State.COMMITTED;
+                        _state = State.COMMITTED;
+                        if (last && committedLength == contentLength)
+                            _state = State.COMPLETING;
                     }
 
                     return Result.FLUSH;
                 }
                 catch (BufferOverflowException e)
                 {
-                    LOG.trace("IGNORED", e);
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", e);
                     return Result.HEADER_OVERFLOW;
                 }
                 catch (Exception e)
@@ -270,28 +289,28 @@ public class HttpGenerator
 
     private Result committed(ByteBuffer chunk, ByteBuffer content, boolean last)
     {
-        int len = BufferUtil.length(content);
-
-        // handle the content.
-        if (len > 0)
+        int contentLength = BufferUtil.length(content);
+        int committedLength = contentLength;
+        if (committedLength > 0)
         {
             if (isChunking())
             {
                 if (chunk == null)
                     return Result.NEED_CHUNK;
                 BufferUtil.clearToFill(chunk);
-                prepareChunk(chunk, len);
+                committedLength = prepareChunk(chunk, committedLength);
                 BufferUtil.flipToFlush(chunk, 0);
             }
-            _contentPrepared += len;
+            _contentPrepared += committedLength;
         }
 
         if (last)
         {
-            _state = State.COMPLETING;
-            return len > 0 ? Result.FLUSH : Result.CONTINUE;
+            if (committedLength == contentLength)
+                _state = State.COMPLETING;
+            return committedLength > 0 ? Result.FLUSH : Result.CONTINUE;
         }
-        return len > 0 ? Result.FLUSH : Result.DONE;
+        return committedLength > 0 ? Result.FLUSH : Result.DONE;
     }
 
     private Result completing(ByteBuffer chunk, ByteBuffer content)
@@ -401,19 +420,22 @@ public class HttpGenerator
 
                     generateHeaders(header, content, last);
 
-                    // handle the content.
-                    int len = BufferUtil.length(content);
-                    if (len > 0)
+                    int contentLength = BufferUtil.length(content);
+                    int committedLength = contentLength;
+                    if (committedLength > 0)
                     {
-                        _contentPrepared += len;
                         if (isChunking() && !head)
-                            prepareChunk(header, len);
+                            committedLength = prepareChunk(header, committedLength);
+                        _contentPrepared += committedLength;
                     }
-                    _state = last ? State.COMPLETING : State.COMMITTED;
+                    _state = State.COMMITTED;
+                    if (last && committedLength == contentLength)
+                        _state = State.COMPLETING;
                 }
                 catch (BufferOverflowException e)
                 {
-                    LOG.trace("IGNORED", e);
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", e);
                     return Result.HEADER_OVERFLOW;
                 }
                 catch (Exception e)
@@ -474,7 +496,7 @@ public class HttpGenerator
         startTunnel();
     }
 
-    private void prepareChunk(ByteBuffer chunk, int remaining)
+    private int prepareChunk(ByteBuffer chunk, long remaining)
     {
         // if we need CRLF add this to header
         if (_needCRLF)
@@ -483,14 +505,17 @@ public class HttpGenerator
         // Add the chunk size to the header
         if (remaining > 0)
         {
-            BufferUtil.putHexInt(chunk, remaining);
+            int length = (int)Math.min(getChunkMaxLength(), remaining);
+            BufferUtil.putHexInt(chunk, length);
             BufferUtil.putCRLF(chunk);
             _needCRLF = true;
+            return length;
         }
         else
         {
             chunk.put(LAST_CHUNK);
             _needCRLF = false;
+            return 0;
         }
     }
 

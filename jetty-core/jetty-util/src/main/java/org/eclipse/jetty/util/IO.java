@@ -624,7 +624,8 @@ public class IO
         }
         catch (Exception x)
         {
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
         }
     }
 
@@ -735,22 +736,22 @@ public class IO
 
     /**
      * <p>
-     *     Convert an object to a {@link File} if possible.
+     * Convert an object to a {@link File} if possible.
      * </p>
      *
-     * @param fileObject A {@link File}, {@link Path}, {@link String} (supporting absolute, relative, partial, and other URI syntaxes), to be converted into a {@link File}.
-     *  {@code null} will result in a {@code null} return.
-     * @return A {@link File} representation of the passed argument or {@code null}.
+     * @param pathObject A {@link File}, {@link Path}, {@link String} (supporting absolute, relative, partial, and other URI syntaxes), to be converted into a {@link File}.
+     * {@code null} will result in a {@code null} return.
+     * @return A {@link Path} representation of the passed argument or {@code null}.
      */
-    public static File asFile(Object fileObject)
+    public static Path asPath(Object pathObject)
     {
-        if (fileObject == null)
+        if (pathObject == null)
             return null;
-        if (fileObject instanceof File file)
-            return file;
-        if (fileObject instanceof Path path)
-            return path.toFile();
-        if (fileObject instanceof String str)
+        if (pathObject instanceof File file)
+            return file.toPath();
+        if (pathObject instanceof Path path)
+            return path;
+        if (pathObject instanceof String str)
         {
             // attempt to support absolute, relative, partial, and URI syntaxes.
             if (URIUtil.hasScheme(str))
@@ -758,13 +759,10 @@ public class IO
                 try
                 {
                     URI uri = new URI(str);
-                    if (uri.isAbsolute() && !uri.getScheme().equalsIgnoreCase("file"))
+                    if (uri.isAbsolute() && uri.getScheme().equalsIgnoreCase("file"))
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Not a local file system: {}", str);
-                        return null;
+                        return Path.of(uri);
                     }
-                    return Path.of(uri).toFile();
                 }
                 catch (URISyntaxException e)
                 {
@@ -774,14 +772,14 @@ public class IO
                     // 2) The input string has unencoded characters that are not allowed in a url (like spaces)
                     //    Eg: "C:\path\to dir with spaces\"
                     // We ignore this and continue with normal path processing instead.
-                    LOG.trace("ignored", e);
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("ignored", e);
                 }
             }
 
             try
             {
-                Path path = Path.of(str);
-                return path.toFile();
+                return Path.of(str);
             }
             catch (InvalidPathException x)
             {
@@ -792,8 +790,27 @@ public class IO
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Not able to be converted to a File object: ({}) {}", fileObject.getClass().getName(), fileObject);
+            LOG.debug("Not able to be converted to a Path object: ({}) {}", pathObject.getClass().getName(), pathObject);
         return null;
+    }
+
+    /**
+     * <p>
+     *     Convert an object to a {@link File} if possible.
+     * </p>
+     *
+     * @param fileObject A {@link File}, {@link Path}, {@link String} (supporting absolute, relative, partial, and other URI syntaxes), to be converted into a {@link File}.
+     *  {@code null} will result in a {@code null} return.
+     * @return A {@link File} representation of the passed argument or {@code null}.
+     * @deprecated use {@link #asPath(Object)} instead to have proper conversion of various path syntaxes across JVMs, Architectures, and OSs.
+     */
+    @Deprecated(since = "12.1.6", forRemoval = true)
+    public static File asFile(Object fileObject)
+    {
+        Path path = asPath(fileObject);
+        if (path == null)
+            return null;
+        return path.toFile();
     }
 
     private IO()

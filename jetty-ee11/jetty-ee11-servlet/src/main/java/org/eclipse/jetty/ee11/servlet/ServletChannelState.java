@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import jakarta.servlet.AsyncListener;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,9 +35,6 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_EXCEPTION;
-import static org.eclipse.jetty.server.handler.ErrorHandler.ERROR_STATUS;
 
 /**
  * holder of the state of request-response cycle.
@@ -69,20 +67,20 @@ public class ServletChannelState
     /*
      * The state of the request processing lifecycle.
      * <pre>
-     *       ERRORING
-     *       BLOCKING <----> COMPLETING ---> COMPLETED
-     *       ^  |  ^            ^
-     *      /   |   \           |
-     *     |    |    DISPATCH   |
-     *     |    |    ^  ^       |
-     *     |    v   /   |       |
-     *     |  ASYNC -------> COMPLETE
-     *     |    |       |       ^
-     *     |    v       |       |
-     *     |  EXPIRE    |       |
-     *      \   |      /        |
-     *       \  v     /         |
-     *       EXPIRING ----------+
+     *                   ERRORING
+     *      +----------- BLOCKING <----> COMPLETING ---> COMPLETED
+     *      |           ^   |  ^            ^
+     *      |          /    |   \           |
+     *      |         |     |    DISPATCH   |
+     *      |         |     |    ^  ^       |
+     *      v         |     v   /   |       |
+     *  UPGRADING <------> ASYNC -------> COMPLETE
+     *      ^         |     |       |       ^
+     *      |         |     v       |       |
+     *      |         |   EXPIRE    |       |
+     *      |          \    |      /        |
+     *      |           \   v     /         |
+     *      +----------- EXPIRING ----------+
      * </pre>
      */
     private enum RequestState
@@ -397,7 +395,7 @@ public class ServletChannelState
         {
             boolean aborted = abortResponse(failure);
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("abort={} {}", aborted, this);
+                LOG.debug("abort={} {}", aborted, this, failure);
             if (aborted)
             {
                 handle = _state == State.WAITING;
@@ -429,7 +427,7 @@ public class ServletChannelState
                     _state = State.HANDLING;
                     if (_servletChannel.getResponse().getStatus() != 0)
                     {
-                        if (_servletChannel.getRequest().getAttribute(ERROR_STATUS) instanceof Integer errorCode)
+                        if (_servletChannel.getRequest().getAttribute(ErrorHandler.ERROR_STATUS) instanceof Integer errorCode)
                         {
                             _servletChannel.getServletRequestState().sendError(errorCode, null);
                             _requestState = RequestState.BLOCKING;
@@ -663,7 +661,7 @@ public class ServletChannelState
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("errorHandlingComplete {}", toStringLocked());
+                LOG.debug("errorHandlingComplete {}", toStringLocked(), failure);
 
             handle = _state == State.WAITING;
             if (handle)
@@ -863,7 +861,7 @@ public class ServletChannelState
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("asyncError {}", toStringLocked());
+                LOG.debug("asyncError {}", toStringLocked(), failure);
 
             if (_state == State.WAITING && _requestState == RequestState.ASYNC)
             {
@@ -876,7 +874,7 @@ public class ServletChannelState
                 if (!QuietException.isQuiet(failure))
                     LOG.warn(failure.toString());
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(failure).log("Async error");
+                    LOG.debug("Async error", failure);
             }
         }
 
@@ -983,7 +981,10 @@ public class ServletChannelState
             else if (_requestState != RequestState.COMPLETE)
             {
                 if (QuietException.isQuiet(th))
-                    LOG.debug("unhandled in state {}", _requestState, th);
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("unhandled in state {}", _requestState, th);
+                }
                 else
                     LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
             }
@@ -1028,7 +1029,10 @@ public class ServletChannelState
         sendError(code, message);
 
         // No ISE, so good to modify request/state
-        request.setAttribute(ERROR_EXCEPTION, th);
+        request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, th);
+        request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE, th.getClass());
+
+        // Set Jetty specific attributes.
         request.setAttribute(ErrorHandler.ERROR_EXCEPTION, th);
 
         // Ensure any async lifecycle is ended!
@@ -1072,15 +1076,18 @@ public class ServletChannelState
             response.setStatus(code);
             servletContextRequest.errorClose();
 
-            request.setAttribute(ErrorHandler.ERROR_ORIGIN, servletContextRequest.getServletName());
+            // Set Jetty Specific Attributes.
             request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getServletContext());
             request.setAttribute(ErrorHandler.ERROR_MESSAGE, message);
             request.setAttribute(ErrorHandler.ERROR_STATUS, code);
+            request.setAttribute(ErrorHandler.ERROR_ORIGIN, servletContextRequest.getServletName());
 
             _sendError = true;
             if (_event != null)
             {
-                Throwable cause = (Throwable)request.getAttribute(ErrorHandler.ERROR_EXCEPTION);
+                Throwable cause = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+                if (cause == null)
+                    cause = (Throwable)request.getAttribute(ErrorHandler.ERROR_EXCEPTION);
                 if (cause != null)
                     _event.addThrowable(cause);
             }

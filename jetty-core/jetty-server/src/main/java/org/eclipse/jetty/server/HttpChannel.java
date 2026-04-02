@@ -131,6 +131,8 @@ public interface HttpChannel extends Invocable
     void initialize();
 
     /**
+     * Get the request specific {@link ComplianceViolation.Listener}.
+     *
      * @return the active {@link ComplianceViolation.Listener}
      */
     ComplianceViolation.Listener getComplianceViolationListener();

@@ -16,7 +16,7 @@ package org.eclipse.jetty.ee11.servlet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
@@ -134,7 +134,8 @@ class AsyncContentProducer implements ContentProducer
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("checkMinDataRate check failed {}", this);
-                    BadMessageException bad = new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,
+                    HttpException.IllegalStateException bad = new HttpException.IllegalStateException(
+                        HttpStatus.REQUEST_TIMEOUT_408,
                         String.format("Request content data rate < %d B/s", minRequestDataRate));
                     if (_servletChannel.getServletRequestState().isResponseCommitted())
                     {

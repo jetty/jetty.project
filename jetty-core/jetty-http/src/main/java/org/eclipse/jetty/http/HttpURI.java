@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.eclipse.jetty.http.UriCompliance.Violation;
 import org.eclipse.jetty.util.HostPort;
@@ -64,7 +65,7 @@ import org.eclipse.jetty.util.URIUtil;
  * <p>This class collates any {@link UriCompliance.Violation violations} against the specification
  * and/or best practises in the {@link #getViolations()}.  Users of this class should check against a
  * configured {@link UriCompliance} mode if the {@code HttpURI} is suitable for use
- * (see {@link UriCompliance#checkUriCompliance(UriCompliance, HttpURI, ComplianceViolation.Listener)}).</p>
+ * (see {@link ComplianceUtils#verify(UriCompliance, HttpURI, ComplianceViolation.Listener, Function)}).</p>
  * <p>For example, implementations that wish to process ambiguous URI paths must configure the compliance
  * modes to accept them and then perform their own decoding of {@link #getPath()}.</p>
  * <p>If there are multiple path parameters, only the last one is returned by {@link #getParam()}.</p>
@@ -158,60 +159,133 @@ public interface HttpURI
         return new Immutable(scheme, host, port, path, query, fragment, false);
     }
 
+    /**
+     * @return An immutable copy of this HttpURI.
+     */
     Immutable asImmutable();
 
+    /**
+     * @return The URI as a string.
+     */
     String asString();
 
+    /**
+     * @return The authority component of the URI in the form {@code host:port},
+     *         or just {@code host} if the port is not set, or {@code null} if no host is set.
+     */
     String getAuthority();
 
+    /**
+     * @return The decoded path with percent-encoded characters decoded, or {@code null} if no path is set.
+     * @see #getCanonicalPath()
+     */
     String getDecodedPath();
 
+    /**
+     * @return The canonical path with path parameters removed and percent-encoded characters decoded,
+     *         or {@code null} if no path is set.
+     * @see #getDecodedPath()
+     * @see #getPath()
+     */
     String getCanonicalPath();
 
+    /**
+     * @return The fragment component of the URI (after the {@code #} character), or {@code null} if not set.
+     */
     String getFragment();
 
+    /**
+     * @return The host component of the URI, or {@code null} if not set.
+     */
     String getHost();
 
     /**
-     * Get a URI path parameter. Only parameters from the last segment are returned.
-     * @return The last path parameter or null
+     * <p>Get a URI path parameter.</p>
+     * <p>Path parameters were defined in
+     * <a href="https://www.rfc-editor.org/rfc/rfc2068">RFC 2068</a> and appear
+     * after a semicolon in the path, such as {@code /path;param}. This is distinct from
+     * query parameters which appear after the {@code ?} character.</p>
+     * @return The last path parameter, or {@code null} if no path parameter is present.
+     *         If there are multiple path parameters, only the last one is returned.
+     * @see #getQuery()
      */
     String getParam();
 
+    /**
+     * @return The raw, undecoded, path component of the URI including path parameters, or {@code null} if not set.
+     * @see #getCanonicalPath()
+     * @see #getDecodedPath()
+     */
     String getPath();
 
+    /**
+     * @return The raw, undecoded, path and query components combined as {@code path?query},
+     *         or just the path if no query is present, or {@code null} if no path is set.
+     */
     String getPathQuery();
 
+    /**
+     * @return The port number of the URI, or {@code -1} if not set.
+     */
     int getPort();
 
+    /**
+     * @return The query string component of the URI (after the {@code ?} character
+     *         but before any {@code #} fragment), or {@code null} if not set.
+     * @see #getParam()
+     */
     String getQuery();
 
+    /**
+     * @return The URI scheme such as {@code http} or {@code https}, or {@code null} if not set.
+     */
     String getScheme();
 
+    /**
+     * @return The user info component of the URI authority (before the {@code @} character),
+     *         or {@code null} if not set.
+     */
     String getUser();
 
+    /**
+     * @return {@code true} if the URI has an authority component.
+     */
     boolean hasAuthority();
 
+    /**
+     * @return {@code true} if the URI has a scheme component.
+     */
     boolean isAbsolute();
 
     /**
-     * @return True if the URI has any ambiguous {@link Violation}s.
+     * <p>Checks if the URI contains any ambiguous path violations that could be
+     * interpreted differently by different URI parsers.</p>
+     * @return {@code true} if the URI has any ambiguous {@link Violation}s.
+     * @see #hasViolations()
+     * @see UriCompliance#isAmbiguous(Set)
      */
     boolean isAmbiguous();
 
     /**
-     * @return True if the URI has any {@link Violation}s.
+     * <p>Checks if the URI has any compliance violations against the URI specification
+     * or best practices.</p>
+     * @return {@code true} if the URI has any {@link Violation}s.
+     * @see #getViolations()
+     * @see #isAmbiguous()
      */
     boolean hasViolations();
 
     /**
-     * @param violation the violation to check.
-     * @return true if the URI has the passed violation.
+     * @param violation The violation to check.
+     * @return {@code true} if the URI has the specified violation.
+     * @see #getViolations()
      */
     boolean hasViolation(Violation violation);
 
     /**
-     * @return Set of violations in the URI.
+     * @return The set of {@link Violation}s detected in the URI, or an empty set if none.
+     * @see #hasViolations()
+     * @see #hasViolation(Violation)
      */
     Collection<Violation> getViolations();
 
@@ -804,6 +878,10 @@ public interface HttpURI
             return path.startsWith("/");
         }
 
+        /**
+         * Clears all URI components, resetting this mutable to an empty state.
+         * @return this mutable for chaining.
+         */
         public Mutable clear()
         {
             _scheme = null;
@@ -822,6 +900,11 @@ public interface HttpURI
             return this;
         }
 
+        /**
+         * Sets the path from a decoded (non-percent-encoded) string.
+         * @param path The decoded path to set.
+         * @return this mutable for chaining.
+         */
         public Mutable decodedPath(String path)
         {
             _uri = null;
@@ -840,6 +923,10 @@ public interface HttpURI
             return asString().equals(((HttpURI)o).asString());
         }
 
+        /**
+         * @param fragment The fragment to set.
+         * @return this mutable for chaining.
+         */
         public Mutable fragment(String fragment)
         {
             _fragment = fragment;
@@ -935,6 +1022,11 @@ public interface HttpURI
             return asString().hashCode();
         }
 
+        /**
+         * @param host The host to set.
+         * @return this mutable for chaining.
+         * @throws IllegalArgumentException if a relative path is set with an authority.
+         */
         public Mutable host(String host)
         {
             if (host != null && !isPathValidForAuthority(_path))
@@ -974,6 +1066,10 @@ public interface HttpURI
             return _violations == null ? Collections.emptySet() : Collections.unmodifiableCollection(_violations);
         }
 
+        /**
+         * Normalizes the URI by removing the default port if it matches the scheme's default port.
+         * @return this mutable for chaining.
+         */
         public Mutable normalize()
         {
             HttpScheme scheme = _scheme == null ? null : HttpScheme.CACHE.get(_scheme);
@@ -985,6 +1081,11 @@ public interface HttpURI
             return this;
         }
 
+        /**
+         * Sets the path parameter, appending it to the path after a semicolon.
+         * @param param The path parameter to set.
+         * @return this mutable for chaining.
+         */
         public Mutable param(String param)
         {
             _param = param;
@@ -1035,6 +1136,12 @@ public interface HttpURI
             return this;
         }
 
+        /**
+         * Sets the path and query from a combined string in the form {@code path?query}.
+         * @param pathQuery The path and query string to set.
+         * @return this mutable for chaining.
+         * @throws IllegalArgumentException if a relative path is set with an authority.
+         */
         public Mutable pathQuery(String pathQuery)
         {
             if (hasAuthority() && !isPathValidForAuthority(pathQuery))
@@ -1052,6 +1159,10 @@ public interface HttpURI
             return this;
         }
 
+        /**
+         * @param port The port to set, or {@code -1} to clear the port.
+         * @return this mutable for chaining.
+         */
         public Mutable port(int port)
         {
             _port = (port > 0) ? port : URIUtil.UNDEFINED_PORT;
@@ -1059,6 +1170,10 @@ public interface HttpURI
             return this;
         }
 
+        /**
+         * @param query The query string to set.
+         * @return this mutable for chaining.
+         */
         public Mutable query(String query)
         {
             _query = query;
@@ -1066,11 +1181,19 @@ public interface HttpURI
             return this;
         }
 
+        /**
+         * @param scheme The {@link HttpScheme} to set.
+         * @return this mutable for chaining.
+         */
         public Mutable scheme(HttpScheme scheme)
         {
             return scheme(scheme.asString());
         }
 
+        /**
+         * @param scheme The scheme to set, which will be normalized to lower-case.
+         * @return this mutable for chaining.
+         */
         public Mutable scheme(String scheme)
         {
             _scheme = URIUtil.normalizeScheme(scheme);
@@ -1084,6 +1207,11 @@ public interface HttpURI
             return asString();
         }
 
+        /**
+         * Sets all URI components from another {@link HttpURI}.
+         * @param uri The URI to copy components from.
+         * @return this mutable for chaining.
+         */
         public Mutable uri(HttpURI uri)
         {
             _scheme = uri.getScheme();
@@ -1101,6 +1229,11 @@ public interface HttpURI
             return this;
         }
 
+        /**
+         * Parses and sets all URI components from a string.
+         * @param uri The URI string to parse.
+         * @return this mutable for chaining.
+         */
         public Mutable uri(String uri)
         {
             clear();
@@ -1109,6 +1242,12 @@ public interface HttpURI
             return this;
         }
 
+        /**
+         * Parses and sets URI components from a string, handling HTTP method-specific parsing.
+         * @param method The HTTP method, which affects parsing for CONNECT requests.
+         * @param uri The URI string to parse.
+         * @return this mutable for chaining.
+         */
         public Mutable uri(String method, String uri)
         {
             if (HttpMethod.CONNECT.is(method))
@@ -1129,6 +1268,13 @@ public interface HttpURI
             return this;
         }
 
+        /**
+         * Parses and sets all URI components from a substring.
+         * @param uri The string containing the URI.
+         * @param offset The offset within the string where the URI starts.
+         * @param length The length of the URI substring.
+         * @return this mutable for chaining.
+         */
         public Mutable uri(String uri, int offset, int length)
         {
             clear();
@@ -1138,6 +1284,11 @@ public interface HttpURI
             return this;
         }
 
+        /**
+         * Sets the user info component of the URI authority.
+         * @param user The user info to set, or {@code null} to clear it.
+         * @return this mutable for chaining.
+         */
         public Mutable user(String user)
         {
             _user = user;
@@ -1397,7 +1548,11 @@ public interface HttpURI
                                 URIUtil.validateInetAddress(host);
                                 _host = host;
                                 if (i == end)
+                                {
+                                    pathMark = mark = i;
+                                    state = State.PATH;
                                     break;
+                                }
                                 c = uri.charAt(i);
                                 if (c == ':')
                                 {
@@ -1768,7 +1923,7 @@ public interface HttpURI
         {
             if (_violations == null)
                 _violations = EnumSet.of(violation);
-            else 
+            else
                 _violations.add(violation);
         }
 

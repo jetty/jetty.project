@@ -57,9 +57,11 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     };
 
     private final List<QualityValue> _qualities = new ArrayList<>();
+    private final ComplianceViolation.Mode _compliance;
+    private final ComplianceViolation.Listener _listener;
+    private final ToIntFunction<String> _secondaryOrdering;
     private QualityValue _lastQualityValue;
     private boolean _sorted = false;
-    private final ToIntFunction<String> _secondaryOrdering;
 
     /**
      * Sorts values with equal quality according to the length of the value String.
@@ -76,19 +78,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
      */
     public QuotedQualityCSV(String[] preferredOrder)
     {
-        this((s) ->
-        {
-            for (int i = 0; i < preferredOrder.length; ++i)
-            {
-                if (preferredOrder[i].equals(s))
-                    return preferredOrder.length - i;
-            }
-
-            if ("*".equals(s))
-                return preferredOrder.length;
-
-            return 0;
-        });
+        this(List.of(preferredOrder));
     }
 
     /**
@@ -98,7 +88,34 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
      */
     public QuotedQualityCSV(List<String> preferredOrder)
     {
-        this((s) ->
+        this(secondaryOrdering(preferredOrder));
+    }
+
+    /**
+     * Orders values with equal quality with the given function.
+     *
+     * @param secondaryOrdering Function to apply an ordering other than specified by quality, highest values are sorted first.
+     */
+    public QuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
+    {
+        this(null, null, secondaryOrdering);
+    }
+
+    public QuotedQualityCSV(ComplianceViolation.Mode compliance, ComplianceViolation.Listener listener, ToIntFunction<String> secondaryOrdering)
+    {
+        _compliance = compliance;
+        _listener = listener;
+        _secondaryOrdering = secondaryOrdering == null ? s -> 0 : secondaryOrdering;
+    }
+
+    private QuotedQualityCSV(ComplianceViolation.Mode compliance, ComplianceViolation.Listener listener, List<String> preferredOrder)
+    {
+        this(compliance, listener, secondaryOrdering(preferredOrder));
+    }
+
+    private static ToIntFunction<String> secondaryOrdering(List<String> preferredOrder)
+    {
+        return (s) ->
         {
             for (int i = 0; i < preferredOrder.size(); ++i)
             {
@@ -110,17 +127,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
                 return preferredOrder.size();
 
             return 0;
-        });
-    }
-
-    /**
-     * Orders values with equal quality with the given function.
-     *
-     * @param secondaryOrdering Function to apply an ordering other than specified by quality, highest values are sorted first.
-     */
-    public QuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
-    {
-        this._secondaryOrdering = secondaryOrdering == null ? s -> 0 : secondaryOrdering;
+        };
     }
 
     @Override
@@ -193,7 +200,8 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             }
             catch (Exception e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
                 q = 0.0D;
             }
             buffer.setLength(Math.max(0, paramName - 1));
@@ -237,6 +245,20 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
     public List<QualityValue> getQualityValues()
     {
         return _qualities.stream().sorted().toList();
+    }
+
+    @Override
+    protected void onComplianceViolation(ComplianceViolation violation, String value)
+    {
+        if (_compliance != null)
+        {
+            if (!ComplianceUtils.allows(_compliance, violation, _listener))
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid quoted-quality: " + value);
+        }
+        else
+        {
+            super.onComplianceViolation(violation, value);
+        }
     }
 
     /**
@@ -327,39 +349,39 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         }
     }
 
+    /**
+     * @deprecated use {@link QuotedQualityCSV} instead
+     */
+    @Deprecated(since = "12.1.6", forRemoval = true)
     public static class Compliant extends QuotedQualityCSV
     {
-        private final ComplianceViolation.Mode _complianceMode;
-        private final BiConsumer<ComplianceViolation, String> _violationNotifier;
-
         public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, String[] preferredOrder)
         {
-            super(preferredOrder);
-            _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
+            this(complianceMode, violationNotifier, List.of(preferredOrder));
         }
 
         public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, List<String> preferredOrder)
         {
-            super(preferredOrder);
-            _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
+            super(complianceMode, new ComplianceViolation.Listener()
+            {
+                @Override
+                public void onComplianceViolation(ComplianceViolation.Event event)
+                {
+                    violationNotifier.accept(event.violation(), event.details());
+                }
+            }, preferredOrder);
         }
 
         public Compliant(ComplianceViolation.Mode complianceMode, BiConsumer<ComplianceViolation, String> violationNotifier, ToIntFunction<String> secondaryOrdering)
         {
-            super(secondaryOrdering);
-            _complianceMode = complianceMode;
-            _violationNotifier = violationNotifier;
-        }
-
-        @Override
-        protected void onComplianceViolation(ComplianceViolation violation, String value)
-        {
-            if (_complianceMode != null && _complianceMode.allows(violation))
-                _violationNotifier.accept(violation, value);
-            else
-                super.onComplianceViolation(violation, value);
+            super(complianceMode, new ComplianceViolation.Listener()
+            {
+                @Override
+                public void onComplianceViolation(ComplianceViolation.Event event)
+                {
+                    violationNotifier.accept(event.violation(), event.details());
+                }
+            }, secondaryOrdering);
         }
     }
 }

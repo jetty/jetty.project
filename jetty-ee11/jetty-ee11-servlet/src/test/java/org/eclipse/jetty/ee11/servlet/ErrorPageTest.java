@@ -44,7 +44,7 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -517,7 +517,8 @@ public class ErrorPageTest
                 }
                 catch (Throwable ignore)
                 {
-                    LOG.trace("IGNORED", ignore);
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", ignore);
                 }
             }
         };
@@ -1369,7 +1370,9 @@ public class ErrorPageTest
         contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
 
         ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
-        errorPageErrorHandler.addErrorPage(BadMessageException.class, "/error/BadMessageException");
+        errorPageErrorHandler.addErrorPage(HttpException.RuntimeException.class, "/error/BadMessageException");
+        errorPageErrorHandler.addErrorPage(HttpException.IllegalStateException.class, "/error/BadMessageException");
+        errorPageErrorHandler.addErrorPage(HttpException.IllegalArgumentException.class, "/error/BadMessageException");
         contextHandler.setErrorHandler(errorPageErrorHandler);
 
         startServer(contextHandler);
@@ -1392,12 +1395,12 @@ public class ErrorPageTest
             assertThat(responseBody, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
             assertThat(responseBody, Matchers.containsString("ERROR_MESSAGE: Bad query"));
             assertThat(responseBody, Matchers.containsString("ERROR_CODE: 400"));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Bad query"));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
+            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.HttpException$IllegalStateException: 400: Bad query"));
+            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.HttpException$IllegalStateException"));
             assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + appServlet.getClass().getName()));
             assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /app"));
             assertThat(responseBody, Matchers.containsString("getQueryString()=[baa=%88%A4]"));
-            assertThat(responseBody, Matchers.containsString("getParameterMap().size=org.eclipse.jetty.http.BadMessageException"));
+            assertThat(responseBody, Matchers.containsString("getParameterMap().size=0"));
         }
     }
 
@@ -1482,7 +1485,8 @@ public class ErrorPageTest
                             }
                             catch (IllegalStateException e)
                             {
-                                LOG.trace("IGNORED", e);
+                                if (LOG.isTraceEnabled())
+                                    LOG.trace("IGNORED", e);
                             }
                             finally
                             {
@@ -1923,6 +1927,7 @@ public class ErrorPageTest
             @Override
             protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
+                assertThat(req.getDispatcherType(), is(DispatcherType.ERROR));
                 AsyncContext asyncContext = req.startAsync();
                 asyncContext.start(() ->
                 {

@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -203,7 +203,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         {
             case "GET" -> doGetAuthEndpoint(request, response, callback);
             case "POST" -> doPostAuthEndpoint(request, response, callback);
-            default -> throw new BadMessageException("Unsupported HTTP method: " + method);
+            default -> throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Unsupported HTTP method: " + method);
         }
     }
 
@@ -332,7 +332,7 @@ public class OpenIdProvider extends ContainerLifeCycle
     protected void doTokenEndpoint(Request request, Response response, Callback callback) throws Exception
     {
         if (!HttpMethod.POST.is(request.getMethod()))
-            throw new BadMessageException("Unsupported HTTP method for token Endpoint: " + request.getMethod());
+            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Unsupported HTTP method for token Endpoint: " + request.getMethod());
 
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "application/json");
 

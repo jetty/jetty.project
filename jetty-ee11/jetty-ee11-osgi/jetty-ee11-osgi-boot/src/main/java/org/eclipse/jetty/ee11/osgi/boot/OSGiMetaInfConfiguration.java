@@ -166,7 +166,8 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
             mergedResources.addAll(webInfJars);
 
         //add fragment jars and any Required-Bundles as if in WEB-INF/lib of the associated webapp
-        Bundle[] bundles = Util.getFragmentsAndRequiredBundles((BundleContext)context.getAttribute(OSGiWebappConstants.JETTY_BOOT_BUNDLE_CONTEXT), (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
+        BundleContext bootBundleContext = (BundleContext)context.getAttribute(OSGiWebappConstants.JETTY_BOOT_BUNDLE_CONTEXT);
+        Bundle[] bundles = Util.getFragmentsAndRequiredBundles(bootBundleContext, (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
         if (bundles != null && bundles.length > 0)
         {
             @SuppressWarnings("unchecked")

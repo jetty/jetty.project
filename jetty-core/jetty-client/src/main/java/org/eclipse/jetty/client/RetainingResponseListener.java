@@ -16,15 +16,8 @@ package org.eclipse.jetty.client;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
 /**
- * <p>Implementation of {@link Response.Listener} that retains the response
+ * <p>Implementation of {@link AbstractResponseListener} that retains the response
  * content without copying it, up to a configurable number of bytes.</p>
- * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
- * via {@link #getContent()} or {@link #getContentAsString()}.</p>
- * <p>Instances of this class are not reusable, so one must be allocated for each request.</p>
- * <p>The implementation retains the response content chunks, and converts them into a {@code byte[]}
- * upon response success, returned by {@link #getContent()}.</p>
- * <p>Subclasses overriding {@link #onSuccess(Response)} or {@link #onFailure(Response, Throwable)}
- * must always call the {@code super} method to guarantee that the retained chunks are released.</p>
  */
 public abstract class RetainingResponseListener extends AbstractResponseListener
 {

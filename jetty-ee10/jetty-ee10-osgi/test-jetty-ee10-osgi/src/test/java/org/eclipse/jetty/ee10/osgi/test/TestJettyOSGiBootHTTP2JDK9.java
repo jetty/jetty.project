@@ -75,6 +75,7 @@ public class TestJettyOSGiBootHTTP2JDK9
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("jetty-http2-client-transport").versionAsInProject().start());
+
         options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[0]);
     }

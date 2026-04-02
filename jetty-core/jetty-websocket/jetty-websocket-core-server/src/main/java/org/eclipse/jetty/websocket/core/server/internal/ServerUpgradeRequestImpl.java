@@ -15,7 +15,7 @@ package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.util.List;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -32,7 +32,7 @@ public class ServerUpgradeRequestImpl extends Request.Wrapper implements ServerU
     private final Request request;
     private final WebSocketNegotiation negotiation;
 
-    public ServerUpgradeRequestImpl(WebSocketNegotiation negotiation, Request baseRequest) throws BadMessageException
+    public ServerUpgradeRequestImpl(WebSocketNegotiation negotiation, Request baseRequest) throws HttpException.RuntimeException
     {
         super(baseRequest);
         this.negotiation = negotiation;

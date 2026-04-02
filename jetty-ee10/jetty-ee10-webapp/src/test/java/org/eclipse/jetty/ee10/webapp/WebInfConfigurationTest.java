@@ -209,7 +209,6 @@ public class WebInfConfigurationTest
         context.setExtractWAR(false);
         context.setCopyWebDir(false);
         context.setCopyWebInf(true);
-        // System.err.println(warPath.toUri().toURL().toString());
         context.setWar(warPath.toUri().toURL().toString());
         _server.setHandler(context);
         _server.start();

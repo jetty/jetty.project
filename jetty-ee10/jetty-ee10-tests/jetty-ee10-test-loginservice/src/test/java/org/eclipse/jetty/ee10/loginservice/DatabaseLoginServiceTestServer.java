@@ -55,7 +55,7 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 public class DatabaseLoginServiceTestServer
 {
     private static final Logger LOG = LoggerFactory.getLogger(DatabaseLoginServiceTestServer.class);
-    private static final Logger MARIADB_LOG = LoggerFactory.getLogger("org.eclipse.jetty.security.MariaDbLogs");
+    private static final Logger MARIADB_LOG = LoggerFactory.getLogger("org.eclipse.jetty.test.MariaDbLogs");
     
     static MariaDBContainer MARIA_DB;
 

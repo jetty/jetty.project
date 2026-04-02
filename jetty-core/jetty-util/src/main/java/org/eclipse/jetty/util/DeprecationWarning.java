@@ -40,7 +40,8 @@ public class DeprecationWarning implements Decorator
         }
         catch (Throwable t)
         {
-            LOG.trace("IGNORED", t);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", t);
         }
 
         verifyIndirectTypes(clazz.getSuperclass(), clazz, "Class");
@@ -70,7 +71,8 @@ public class DeprecationWarning implements Decorator
         }
         catch (Throwable t)
         {
-            LOG.trace("IGNORED", t);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", t);
         }
     }
 

@@ -81,7 +81,7 @@ public class QuickStartTest
         URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/index.html");
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         assertEquals(200, connection.getResponseCode());
-        assertThat(IO.toString((InputStream)connection.getContent()), Matchers.containsString("<p>Contents of no-web-xml</p>"));
+        assertThat(IO.toString((InputStream)connection.getContent()), containsString("<p>Contents of no-web-xml</p>"));
 
         server.stop();
     }
@@ -133,7 +133,7 @@ public class QuickStartTest
         URL url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/test/dump/info");
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         assertEquals(200, connection.getResponseCode());
-        assertThat(IO.toString((InputStream)connection.getContent()), Matchers.containsString("Dump Servlet"));
+        assertThat(IO.toString((InputStream)connection.getContent()), containsString("Dump Servlet"));
 
         server.stop();
     }
@@ -189,7 +189,7 @@ public class QuickStartTest
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         assertEquals(200, connection.getResponseCode());
         String content = IO.toString((InputStream)connection.getContent());
-        assertThat(content, Matchers.containsString("Welcome to a Fragment"));
+        assertThat(content, containsString("Welcome to a Fragment"));
 
         //test annotations etc
         url = new URL("http://127.0.0.1:" + server.getBean(NetworkConnector.class).getLocalPort() + "/test/");
@@ -198,8 +198,8 @@ public class QuickStartTest
         
         assertEquals(200, connection.getResponseCode());
         content = IO.toString((InputStream)connection.getContent());
-        assertThat(content, Matchers.containsString("Results"));
-        assertThat(content, Matchers.not(Matchers.containsString("FAIL")));
+        assertThat(content, containsString("Results"));
+        assertThat(content, Matchers.not(containsString("FAIL")));
         server.stop();
     }
 
@@ -253,7 +253,7 @@ public class QuickStartTest
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         String content = IO.toString((InputStream)connection.getContent());
         assertEquals(200, connection.getResponseCode());
-        assertThat(content, Matchers.containsString("JNDI Demo WebApp"));
+        assertThat(content, containsString("JNDI Demo WebApp"));
 
         server.stop();
     }

@@ -24,14 +24,15 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.CookieParser;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -245,7 +246,7 @@ public class CookieCache extends AbstractList<HttpCookie> implements CookieParse
             }
             catch (CookieParser.InvalidCookieException invalidCookieException)
             {
-                throw new BadMessageException(invalidCookieException.getMessage(), invalidCookieException);
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, invalidCookieException.getMessage(), invalidCookieException);
             }
         }
 

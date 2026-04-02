@@ -797,6 +797,25 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 
 The example above will retain only cookies that come from the `google.com` domain or sub-domains.
 
+=== Cookie Name Prefixes
+
+Jetty's `HttpClient` validates cookie name prefixes as defined in https://datatracker.ietf.org/doc/draft-ietf-httpbis-rfc6265bis/[RFC 6265bis].
+
+Cookies with the `+__Secure-+` prefix are only accepted if:
+
+* The cookie has the `Secure` attribute set.
+* The cookie was received over a secure (HTTPS) connection.
+
+Cookies with the `+__Host-+` prefix are only accepted if:
+
+* The cookie has the `Secure` attribute set.
+* The cookie was received over a secure (HTTPS) connection.
+* The cookie does not have a `Domain` attribute (making it a host-only cookie).
+* The cookie has `Path=/` explicitly set.
+
+These prefixes allow servers to "lock down" cookies with additional security guarantees.
+Cookies that violate these requirements are silently discarded by the `HttpCookieStore`.
+
 // TODO: move this section to server-side
 === Special Characters in Cookies
 
@@ -831,6 +850,28 @@ jakarta.servlet.http.Cookie cookie = new Cookie("foo", URLEncoder.encode("bar;ba
 
 Jetty validates all cookie names and values being added to the `HttpServletResponse` via the `addCookie(Cookie)` method.
 If an illegal value is discovered Jetty will throw an `IllegalArgumentException` with the details.
+
+[[redirect-cache]]
+== Redirect Caching
+
+By default, `HttpClient` follows redirects but does not cache them.
+This means that repeated requests to a URL that returns a redirect will each incur the redirect round-trip.
+
+You can enable redirect caching to avoid the redirect round-trip:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=redirectCache]
+----
+
+`RedirectCache.Default` caches _permanent_ redirects (status codes 301 and 308).
+Subsequent requests with the same HTTP method and the same URI result in requests using the redirect HTTP method and the redirect HTTP URI.
+
+NOTE: `POST` requests replied with `301` will have the redirect method changed to `GET`.
+Requests replied with `308` preserve the original HTTP method.
+
+The `RedirectCache.Default` implementation accepts a maximum size parameter to limit memory usage.
+When the limit is reached, least recently used entries are evicted.
 
 [[authentication]]
 == HttpClient Authentication Support

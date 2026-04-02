@@ -1,4 +1,54 @@
-jetty-12.1.6-SNAPSHOT
+jetty-12.1.9-SNAPSHOT
+
+12.1.8 - 31 March 2026
+ + 10906 Is there a ConsoleRequestLog (JettySlf4jRequestLog) module?
+ + 13513 Make MemoryEndPoint use RBB.DynamicCapacity (@afarber)
+ + 13685 Infinite loop on Content.copy() with Content.Source.from(... , Path, ) when Path has size 0.
+ + 14332 Complete mess with idleTimeout
+ + 14431 ServletContainerInitializers are always excluded when used with absolute-ordering
+ + 14494 Review use of CharsetStringBuilder subclasses
+ + 14651 Retain negative Max-Age cookie attribute
+ + 14685 CachingHttpContentFactory#getContent may return null if httpContent size is not set
+ + 14689 `ThreadIdPool.take()` bottlenecks `QueuedThreadPool.tryExecute()`
+ + 14694 Sync jetty-ee11 with jetty-ee10
+ + 14732 possible race condition in jetty 12.x code
+ + 14747 Revert usage of SLF4J2 fluent APIs
+ + 14752 Jetty 12.1 Violation of RFC9113 with Host and :authority headers
+
+12.1.7 - 04 March 2026
+ + 14165 Integrating Eclipse Soteria with Jetty EE10+
+ + 14366 Clarify Deprecation Policy
+ + 14373 Response listener that avoids any data copies
+ + 14408 Redundant database index created by JDBCSessionDataStore
+ + 14435 NoSuchMethodError error raised by HttpStateChannel  with Jetty 12.1.6 run with maven plugin
+ + 14436 Jetty 12.1.6 HttpFields from(HttpField...) does not provide opportunity to set compliance listener (@afarber)
+ + 14442 Allow splitting of Transfer-Encoding chunks
+ + 14485 Illegal header value on UTF-8 encoding when using HTTP/2
+ + 14495 Support Transfer-Encoding chunk extensions
+ + 14566 CompressionHandler/GzipEncoderSink not respect setSyncFlush(true)
+
+12.1.6 - 27 January 2026
+ + 9019 Server cannot be closed gracefully when ServerConnector's IdleTimeout is 0
+ + 10281 pom.xml description tags need updated
+ + 10355 Http3Fields efficiency
+ + 10905 Support cookie name prefixes (@afarber)
+ + 11505 Document HttpURI methods (@afarber)
+ + 12660 Tagging the ClientUpgradeRequest to be able to support per-reqiest client ssl auth
+ + 12806 ComplianceViolation.Listener isn't very useful for helping identify clients that need to migrate to standards
+ + 13328 Add option to share thread pool in ProxyHandler (@afarber)
+ + 13353 Create a glossary in the documentation (@afarber)
+ + 13670 jetty-ee11-servlet getParameter does not throw IllegalStateException
+ + 13686 Improve grow algorithms
+ + 14061 Jetty 12.1.4 demo HTTP/3 wrong port in alt-svc response header (@afarber)
+ + 14068 Jetty tmpdir processing doesn't match Java on Windows
+ + 14137 304 Not Modified produces incorrect ETag from CompressionHandler.
+ + 14209 Unable to use custom XmlParser for WebAppContext / MetaData descriptor parsing
+ + 14260 Improve GZIP performance
+ + 14264 org.eclipse.jetty.server.Response.sendRedirect doesn't allow a location containing a fragment (/#fragment)
+ + 14280 `jetty-ee11-servlets` mistakenly depends on `jetty-client`
+ + 14319 ZSTD CompressionHandler may duplicate bytes in response (@afarber)
+ + 14330 VirtualThreadPool can create unlimited threads while doc mentions otherwise
+ + 14360 jetty-ee8-cdi missing from jetty-ee8-bom
 
 12.1.5 - 03 December 2025
  + 13960 Ensure demand is called after MessageInputStream.close()

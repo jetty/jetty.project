@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -300,8 +300,9 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
     public UserIdentity login(String username, Object credentials, Request request, Response response)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("login {} {} {}", username, credentials, request);
+            LOG.debug("login {} {}", username, request);
 
+        // Credentials are always null.
         UserIdentity user = super.login(username, credentials, request, response);
         if (user != null)
         {
@@ -447,7 +448,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
 
             totalRead += len;
             if (_maxMessageSize >= 0 && totalRead > _maxMessageSize)
-                throw new BadMessageException("SIWE Message Too Large");
+                throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, "SIWE Message Too Large");
             out.append(buffer, 0, len);
         }
 
@@ -498,7 +499,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(t).log("error reading SIWE message and signature");
+                LOG.debug("error reading SIWE message and signature", t);
             sendError(request, response, callback, t.getMessage());
             return null;
         }

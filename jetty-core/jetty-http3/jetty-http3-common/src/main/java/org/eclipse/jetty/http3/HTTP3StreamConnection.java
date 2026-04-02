@@ -84,7 +84,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     public void onFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("onFailure on {}", this);
+            LOG.debug("onFailure on {}", this, failure);
         tryReleaseData(true);
     }
 
@@ -196,7 +196,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("failure processing frames on {}", this);
+                    LOG.debug("failure processing frames on {}", this, x);
                 tryReleaseData(true);
                 throw x;
             }
@@ -272,9 +272,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         }
                         else
                         {
+                            // Retain because multiple frames can be parsed from the same QUIC chunk.
+                            quicChunk.retain();
                             Content.Chunk h3Chunk = Content.Chunk.asChunk(dataFrame.getByteBuffer(), dataFrame.isLast(), quicChunk);
-                            // Retain because multiple data can be parsed from the same QUIC data.
-                            h3Chunk.retain();
                             if (h3Chunk.isLast())
                                 tryReleaseData(true);
                             yield h3Chunk;
@@ -299,7 +299,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure reading data on {}", this);
+                LOG.debug("failure reading data on {}", this, x);
             tryReleaseData(true);
             return Content.Chunk.from(x);
         }
@@ -349,7 +349,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("parse+fill failure on {}", this);
+                LOG.debug("parse+fill failure on {}", this, x);
             throw x;
         }
     }
@@ -408,7 +408,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             LOG.debug("releasing force={} {} on {}", force, quicChunk, this);
         if (quicChunk == null)
             return;
-        if (force || (quicChunk.isLast() && !quicChunk.hasRemaining()))
+        if (force || !quicChunk.hasRemaining())
         {
             quicChunk.release();
             quicChunk = null;

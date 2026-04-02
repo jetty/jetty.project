@@ -120,6 +120,16 @@ public interface HttpCookieStore
 
     /**
      * <p>A default implementation of {@link HttpCookieStore}.</p>
+     * <p>RFC 6265, section 5.2.2, states that negative values of the
+     * {@code Max-Age} attribute should be treated like `0`, which
+     * indicates that the cookie is expired.
+     * However, the de-facto standard for implementations (browsers
+     * and {@code java.net.http.HttpClient}) is that negative values
+     * are treated as "session cookie": a cookie that is not expired,
+     * but won't be persisted and will be removed when the browser
+     * or client is closed or stopped.
+     * This is in line with the javadocs of {@code java.net.HttpCookie}
+     * as well as {@code jakarta.servlet.http.Cookie}.
      */
     class Default implements HttpCookieStore
     {
@@ -130,6 +140,10 @@ public interface HttpCookieStore
         public boolean add(URI uri, HttpCookie cookie)
         {
             // TODO: reject if cookie size is too big?
+
+            // Validate cookie name prefixes (RFC 6265bis).
+            if (!validateCookiePrefix(uri, cookie))
+                return false;
 
             String resolvedDomain = resolveDomain(uri, cookie);
             if (resolvedDomain == null)
@@ -223,6 +237,57 @@ public interface HttpCookieStore
                 }
             }
             return resolvedPath;
+        }
+
+        /**
+         * <p>Validates cookie name prefixes as defined in RFC 6265bis.</p>
+         * <p>Cookies with the {@code __Secure-} prefix must have the
+         * {@code Secure} attribute and be received over a secure connection.</p>
+         * <p>Cookies with the {@code __Host-} prefix must have the
+         * {@code Secure} attribute, be received over a secure connection,
+         * must not have a {@code Domain} attribute, and must have
+         * {@code Path=/} explicitly set.</p>
+         *
+         * @param uri the URI associated with the cookie
+         * @param cookie the cookie to validate
+         * @return whether the cookie passes prefix validation
+         */
+        private boolean validateCookiePrefix(URI uri, HttpCookie cookie)
+        {
+            String name = cookie.getName();
+            if (name == null)
+                return true;
+
+            boolean secure = HttpScheme.isSecure(uri.getScheme());
+
+            // __Host- prefix validation (case-sensitive per RFC 6265bis).
+            if (name.startsWith("__Host-"))
+            {
+                // Must be secure connection.
+                if (!secure)
+                    return false;
+                // Must have Secure attribute.
+                if (!cookie.isSecure())
+                    return false;
+                // Must NOT have Domain attribute (host-only).
+                if (cookie.getDomain() != null)
+                    return false;
+                // Must have Path=/ explicitly.
+                if (!"/".equals(cookie.getPath()))
+                    return false;
+            }
+            // __Secure- prefix validation (case-sensitive per RFC 6265bis).
+            else if (name.startsWith("__Secure-"))
+            {
+                // Must be secure connection.
+                if (!secure)
+                    return false;
+                // Must have Secure attribute.
+                if (!cookie.isSecure())
+                    return false;
+            }
+
+            return true;
         }
 
         /**

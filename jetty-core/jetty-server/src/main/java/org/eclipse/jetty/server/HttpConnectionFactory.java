@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.util.Objects;
 
+import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -30,6 +31,7 @@ import org.eclipse.jetty.util.annotation.Name;
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private final HttpConfiguration _config;
+    private int _transferEncodingChunkMaxLength = HttpGenerator.DEFAULT_CHUNK_MAX_LENGTH;
 
     public HttpConnectionFactory()
     {
@@ -85,10 +87,23 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         _config.setUseOutputDirectByteBuffers(useOutputDirectByteBuffers);
     }
 
+    public int getTransferEncodingChunkMaxLength()
+    {
+        return _transferEncodingChunkMaxLength;
+    }
+
+    public void setTransferEncodingChunkMaxLength(int transferEncodingChunkMaxLength)
+    {
+        if (transferEncodingChunkMaxLength <= 0)
+            throw new IllegalArgumentException("invalid transfer-encoding chunk max length");
+        _transferEncodingChunkMaxLength = transferEncodingChunkMaxLength;
+    }
+
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
         HttpConnection connection = new HttpConnection(_config, connector, endPoint);
+        connection.setTransferEncodingChunkMaxLength(getTransferEncodingChunkMaxLength());
         return configure(connection, connector, endPoint);
     }
 }

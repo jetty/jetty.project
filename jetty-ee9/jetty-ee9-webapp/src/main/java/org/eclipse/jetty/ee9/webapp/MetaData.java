@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.xml.XmlParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,7 @@ public class MetaData
 
     private final AutoLock _lock = new AutoLock();
     protected Map<String, OriginInfo> _origins = new HashMap<>();
+    protected XmlParser _xmlParser;
     protected WebDescriptor _webDefaultsRoot;
     protected WebDescriptor _webXmlRoot;
     protected final List<WebDescriptor> _webOverrideRoots = new ArrayList<>();
@@ -193,7 +195,7 @@ public class MetaData
         throws Exception
     {
         _webDefaultsRoot = descriptor;
-        _webDefaultsRoot.parse(WebDescriptor.getParser(isValidateXml()));
+        _webDefaultsRoot.parse(getXmlParser());
         if (_webDefaultsRoot.isOrdered())
         {
             Ordering ordering = getOrdering();
@@ -222,7 +224,7 @@ public class MetaData
         throws Exception
     {
         _webXmlRoot = descriptor;
-        _webXmlRoot.parse(WebDescriptor.getParser(isValidateXml()));
+        _webXmlRoot.parse(getXmlParser());
         _metaDataComplete = WebDescriptor.isMetaDataComplete(_webXmlRoot);
 
         if (_webXmlRoot.isOrdered())
@@ -253,7 +255,7 @@ public class MetaData
     public void addOverrideDescriptor(OverrideDescriptor descriptor)
         throws Exception
     {
-        descriptor.parse(WebDescriptor.getParser(isValidateXml()));
+        descriptor.parse(getXmlParser());
 
         switch (descriptor.getMetaDataComplete())
         {
@@ -308,7 +310,7 @@ public class MetaData
         //Metadata-complete is not set, or there is no web.xml
         _webFragmentResourceMap.put(jarResource, descriptor);
         _webFragmentRoots.add(descriptor);
-        descriptor.parse(WebDescriptor.getParser(isValidateXml()));
+        descriptor.parse(getXmlParser());
 
         if (descriptor.getName() != null)
         {
@@ -329,6 +331,7 @@ public class MetaData
         }
 
         //recompute the ordering with the new fragment name
+        _orderedWebInfResources.clear();
         orderFragments();
     }
 
@@ -428,8 +431,7 @@ public class MetaData
 
     public void orderFragments()
     {
-        _orderedWebInfResources.clear();
-        if (getOrdering() != null)
+        if (_orderedWebInfResources.isEmpty() && getOrdering() != null && !_webInfJars.isEmpty())
             _orderedWebInfResources.addAll(getOrdering().order(_webInfJars));
     }
 
@@ -442,7 +444,8 @@ public class MetaData
     public void resolve(WebAppContext context)
         throws Exception
     {
-        LOG.debug("metadata resolve {}", context);
+        if (LOG.isDebugEnabled())
+            LOG.debug("metadata resolve {}", context);
 
         //Ensure origins is fresh
         _origins.clear();
@@ -475,7 +478,8 @@ public class MetaData
             p.process(context, getWebDescriptor());
             for (WebDescriptor wd : getOverrideDescriptors())
             {
-                LOG.debug("process {} {} {}", context, p, wd);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("process {} {} {}", context, p, wd);
                 p.process(context, wd);
             }
         }
@@ -484,7 +488,7 @@ public class MetaData
         resources.add(null); //always apply annotations with no resource first
         resources.addAll(_orderedContainerResources); //next all annotations from container path
         resources.addAll(_webInfClasses); //next everything from web-inf classes
-        resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path 
+        resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path
 
         for (Resource r : resources)
         {
@@ -496,7 +500,8 @@ public class MetaData
             {
                 for (DescriptorProcessor p : _descriptorProcessors)
                 {
-                    LOG.debug("process {} {}", context, fd);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("process {} {}", context, fd);
                     p.process(context, fd);
                 }
             }
@@ -509,7 +514,8 @@ public class MetaData
             {
                 for (DiscoveredAnnotation a : annotations)
                 {
-                    LOG.debug("apply {}", a);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("apply {}", a);
                     a.apply();
                 }
             }
@@ -527,7 +533,7 @@ public class MetaData
     {
         boolean distributable = (
             (_webDefaultsRoot != null && _webDefaultsRoot.isDistributable()) ||
-                (_webXmlRoot != null && _webXmlRoot.isDistributable()));
+            (_webXmlRoot != null && _webXmlRoot.isDistributable()));
 
         for (WebDescriptor d : _webOverrideRoots)
         {
@@ -575,7 +581,7 @@ public class MetaData
     public void setOrdering(Ordering o)
     {
         _ordering = o;
-        orderFragments();
+        _orderedWebInfResources.clear();
     }
 
     /**
@@ -697,14 +703,16 @@ public class MetaData
     public void addWebInfResource(Resource newResource)
     {
         _webInfJars.add(newResource);
+        _orderedWebInfResources.clear();
     }
 
     public List<Resource> getWebInfResources(boolean withOrdering)
     {
         if (!withOrdering)
             return Collections.unmodifiableList(_webInfJars);
-        else
-            return Collections.unmodifiableList(_orderedWebInfResources);
+
+        orderFragments();
+        return Collections.unmodifiableList(_orderedWebInfResources);
     }
 
     public List<Resource> getContainerResources()
@@ -757,7 +765,38 @@ public class MetaData
      */
     public void setValidateXml(boolean validateXml)
     {
+        if (_xmlParser != null && _xmlParser.isValidating() != _validateXml)
+            throw new IllegalStateException("XmlParser previously set");
+
         _validateXml = validateXml;
+    }
+
+    /**
+     * Set the XmlParser to use for handling metadata, this will
+     * also add an environment specific catalog to the XmlParser.
+     *
+     * <p>This is useful when you want to configure a custom XML Parser
+     * with a variety of custom attributes and configurations.</p>
+     *
+     * @param xmlParser the XML parser to use.
+     */
+    public void setXmlParser(XmlParser xmlParser)
+    {
+        _xmlParser = Objects.requireNonNull(xmlParser);
+
+        WebDescriptor.addDescriptorCatalog(_xmlParser);
+    }
+
+    /**
+     * The XmlParser in use for this metadata.
+     *
+     * @return the in use XML Parser
+     */
+    public XmlParser getXmlParser()
+    {
+        if (_xmlParser == null)
+            setXmlParser(new XmlParser(isValidateXml()));
+        return _xmlParser;
     }
 
     public Map<String, OriginInfo> getOrigins()

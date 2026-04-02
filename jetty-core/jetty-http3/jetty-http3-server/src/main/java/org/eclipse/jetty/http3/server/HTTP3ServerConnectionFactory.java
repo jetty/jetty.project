@@ -17,9 +17,6 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
@@ -28,11 +25,7 @@ import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.http3.server.internal.HTTP3StreamServer;
 import org.eclipse.jetty.http3.server.internal.HttpStreamOverHTTP3;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3StreamConnection;
-import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.NetworkConnector;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -49,20 +42,6 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
     public HTTP3ServerConnectionFactory(HttpConfiguration configuration)
     {
         super(configuration, new HTTP3SessionListener());
-        configuration.addCustomizer(new AltSvcCustomizer());
-    }
-
-    private static class AltSvcCustomizer implements HttpConfiguration.Customizer
-    {
-        @Override
-        public Request customize(Request request, HttpFields.Mutable responseHeaders)
-        {
-            ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
-            Connector connector = connectionMetaData.getConnector();
-            if (connector instanceof NetworkConnector networkConnector && HttpVersion.HTTP_2 == connectionMetaData.getHttpVersion())
-                responseHeaders.add(HttpHeader.ALT_SVC, String.format("h3=\":%d\"", networkConnector.getLocalPort()));
-            return request;
-        }
     }
 
     private static class HTTP3SessionListener implements HTTP3SessionServer.Listener

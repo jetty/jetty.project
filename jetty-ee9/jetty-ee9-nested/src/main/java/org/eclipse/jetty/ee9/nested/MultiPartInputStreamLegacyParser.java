@@ -601,9 +601,10 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             // check compliance of preamble
             // this will show up as whitespace before the boundary that exists after the preamble
             if (Character.isWhitespace(untrimmed.charAt(0)))
-                nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                    MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY,
-                    String.format("0x%02x", untrimmed.charAt(0))));
+            {
+                complianceAllows(MultiPartCompliance.Violation.WHITESPACE_BEFORE_BOUNDARY,
+                    String.format("0x%02x", untrimmed.charAt(0)));
+            }
 
             // Read each part
             boolean lastPart = false;
@@ -644,7 +645,10 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                         if (key.equalsIgnoreCase("content-type"))
                             contentType = value;
                         if (key.equals("content-transfer-encoding"))
-                            contentTransferEncoding = value;
+                        {
+                            if (complianceAllows(MultiPartCompliance.Violation.CONTENT_TRANSFER_ENCODING, value))
+                                contentTransferEncoding = value;
+                        }
                     }
                 }
 
@@ -703,19 +707,15 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 part.open();
 
                 InputStream partInput = null;
-                if ("base64".equalsIgnoreCase(contentTransferEncoding))
+                // If the MultiPartCompliance doesn't CONTENT_TRANSFER_ENCODING, then `contentTransferEncoding` will be null.
+                // The BASE64_TRANSFER_ENCODING and QUOTED_PRINTABLE_TRANSFER_ENCODING violations just control how the Content-Transfer-Encoding is handled.
+                if ("base64".equalsIgnoreCase(contentTransferEncoding) && _multiPartCompliance.allows(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING))
                 {
-                    nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                        MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING, contentTransferEncoding));
-                    if (_multiPartCompliance.allows(MultiPartCompliance.Violation.BASE64_TRANSFER_ENCODING))
-                        partInput = new Base64InputStream((ReadLineInputStream)_in);
-                    else
-                        partInput = _in;
+                    //noinspection removal
+                    partInput = new Base64InputStream((ReadLineInputStream)_in);
                 }
-                else if ("quoted-printable".equalsIgnoreCase(contentTransferEncoding))
+                else if ("quoted-printable".equalsIgnoreCase(contentTransferEncoding) && _multiPartCompliance.allows(MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING))
                 {
-                    nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                        MultiPartCompliance.Violation.QUOTED_PRINTABLE_TRANSFER_ENCODING, contentTransferEncoding));
                     partInput = new FilterInputStream(_in)
                     {
                         @Override
@@ -850,11 +850,13 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
                 EnumSet<ReadLineInputStream.Termination> term = ((ReadLineInputStream)_in).getLineTerminations();
 
                 if (term.contains(ReadLineInputStream.Termination.CR))
-                    nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                        MultiPartCompliance.Violation.CR_LINE_TERMINATION, "0x13"));
+                {
+                    complianceAllows(MultiPartCompliance.Violation.CR_LINE_TERMINATION, "0x0D");
+                }
                 if (term.contains(ReadLineInputStream.Termination.LF))
-                    nonComplianceWarnings.add(new ComplianceViolation.Event(MultiPartCompliance.LEGACY,
-                        MultiPartCompliance.Violation.LF_LINE_TERMINATION, "0x10"));
+                {
+                    complianceAllows(MultiPartCompliance.Violation.LF_LINE_TERMINATION, "0x0A");
+                }
             }
             else
                 throw new IOException("Incomplete Multipart");
@@ -924,6 +926,13 @@ public class MultiPartInputStreamLegacyParser implements MultiPart.Parser
             //even on *nix systems will not escape a filename containing
             //backslashes
             return unquoteOnly(value, true);
+    }
+
+    private boolean complianceAllows(ComplianceViolation violation, String reason)
+    {
+        boolean allowed = _multiPartCompliance.allows(violation);
+        nonComplianceWarnings.add(new ComplianceViolation.Event(_multiPartCompliance, violation, reason, allowed));
+        return allowed;
     }
 
     // TODO: consider switching to Base64.getMimeDecoder().wrap(InputStream)

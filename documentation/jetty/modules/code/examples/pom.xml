@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.documentation</groupId>
     <artifactId>documentation</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.9-SNAPSHOT</version>
     <relativePath>../../../../pom.xml</relativePath>
   </parent>
   <artifactId>code-examples</artifactId>
@@ -61,6 +61,10 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-openid</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-proxy</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

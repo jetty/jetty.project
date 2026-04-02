@@ -291,5 +291,4 @@ public class QuickStartTest
               </filter-mapping>
             """));
     }
-
 }

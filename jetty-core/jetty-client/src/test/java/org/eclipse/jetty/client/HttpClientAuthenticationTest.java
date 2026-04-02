@@ -29,6 +29,7 @@ import java.util.function.IntFunction;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Constraint;
@@ -95,7 +96,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     private void start(Scenario scenario, Authenticator authenticator, Handler handler) throws Exception
     {
-        server = new Server();
+        server = new Server(null, null, new ArrayByteBufferPool.Tracking());
         Path realmFile = MavenTestingUtils.getTestResourcePath("realm.properties");
         LoginService loginService = new HashLoginService(realm, ResourceFactory.root().newResource(realmFile));
         server.addBean(loginService);

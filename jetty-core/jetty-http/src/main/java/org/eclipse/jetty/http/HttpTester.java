@@ -491,7 +491,7 @@ public class HttpTester
 
                         case HEADER_OVERFLOW:
                             if (header.capacity() >= 32 * 1024)
-                                throw new BadMessageException(500, "Header too large");
+                                throw new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, "Header too large");
                             header = BufferUtil.allocate(32 * 1024);
                             continue;
 
@@ -519,6 +519,13 @@ public class HttpTester
                             }
                             if (BufferUtil.hasContent(content))
                             {
+                                int chunkMaxLength = generator.getChunkMaxLength();
+                                if (generator.isChunking() && content.remaining() > chunkMaxLength)
+                                {
+                                    ByteBuffer slice = content.slice(content.position(), chunkMaxLength);
+                                    content.position(content.position() + chunkMaxLength);
+                                    content = slice;
+                                }
                                 out.write(BufferUtil.toArray(content));
                                 BufferUtil.clear(content);
                             }

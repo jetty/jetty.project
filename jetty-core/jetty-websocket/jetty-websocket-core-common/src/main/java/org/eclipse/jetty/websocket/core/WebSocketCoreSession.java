@@ -132,15 +132,20 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     @Override
     public Duration getIdleTimeout()
     {
-        return idleTimeout != null ? idleTimeout : WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
+        if (idleTimeout != null)
+            return idleTimeout;
+        else if (connection != null)
+            return Duration.ofMillis(connection.getEndPoint().getIdleTimeout());
+        else
+            return WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     }
 
     @Override
     public void setIdleTimeout(Duration timeout)
     {
         idleTimeout = Objects.requireNonNull(timeout);
-        if (connection != null)
-            connection.getEndPoint().setIdleTimeout(timeout.toMillis());
+        if (!sessionState.isConnecting())
+            connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
     }
 
     public SocketAddress getLocalAddress()
@@ -176,13 +181,6 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
      */
     public void setWebSocketConnection(WebSocketConnection connection)
     {
-        // If the idle timeout is not initialized by a WebSocket
-        // configurator, then inherit that of the EndPoint; otherwise
-        // force the EndPoint to use the WebSocket configured idle timeout.
-        if (idleTimeout == null)
-            idleTimeout = Duration.ofMillis(connection.getEndPoint().getIdleTimeout());
-        else
-            connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
         extensionStack.setLastDemand(connection::demand);
         this.connection = connection;
     }
@@ -285,7 +283,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     public void processConnectionError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(cause).log("processConnectionError {}", this);
+            LOG.debug("processConnectionError {}", this, cause);
 
         int code;
         if (cause instanceof CloseException)
@@ -310,7 +308,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     public void processHandlerError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(cause).log("processHandlerError {}", this);
+            LOG.debug("processHandlerError {}", this, cause);
 
         int code;
         if (cause instanceof CloseException)
@@ -356,6 +354,10 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("onOpen() {}", this);
 
+        // Delay setting the idleTimeout until the session is opened.
+        if (idleTimeout != null)
+            connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
+
         // Upgrade success
         sessionState.onConnected();
         if (LOG.isDebugEnabled())
@@ -370,7 +372,7 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
         x ->
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Error during OPEN");
+                LOG.debug("Error during OPEN", x);
             processHandlerError(new CloseException(CloseStatus.SERVER_ERROR, x), NOOP);
         });
 

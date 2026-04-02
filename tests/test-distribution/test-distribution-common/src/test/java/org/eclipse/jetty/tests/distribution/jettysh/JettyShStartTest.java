@@ -144,7 +144,8 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             startHttpClient();
 
             URI containerUriRoot = URI.create("http://" + genericContainer.getHost() + ":" + genericContainer.getMappedPort(8080) + "/");
-            LOG.debug("Container URI Root: {}", containerUriRoot);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Container URI Root: {}", containerUriRoot);
 
             // System.err.println("== Attempt GET request to service ==");
             ContentResponse response = client.GET(containerUriRoot);
@@ -230,7 +231,8 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             startHttpClient();
 
             URI containerUriRoot = URI.create("http://" + genericContainer.getHost() + ":" + genericContainer.getMappedPort(8080) + "/");
-            LOG.debug("Container URI Root: {}", containerUriRoot);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Container URI Root: {}", containerUriRoot);
 
             // System.err.println("== Attempt GET request to service ==");
             ContentResponse response = client.GET(containerUriRoot);
@@ -318,7 +320,8 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
     private void createImage(ImageFromDSL image)
     {
-        LOG.debug("Create Image: {}", image.getDockerImageName());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Create Image: {}", image.getDockerImageName());
         try (GenericContainer<?> container = new GenericContainer<>(image))
         {
             container.start();

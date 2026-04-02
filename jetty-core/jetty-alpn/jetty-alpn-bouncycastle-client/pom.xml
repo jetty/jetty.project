@@ -6,10 +6,11 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-alpn</artifactId>
-    <version>12.1.6-SNAPSHOT</version>
+    <version>12.1.9-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-alpn-bouncycastle-client</artifactId>
   <name>Core :: ALPN :: Bouncy Castle Client</name>
+  <description>Jetty ALPN Client Bouncy Castle Artifact</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.bouncycastle.client</bundle-symbolic-name>

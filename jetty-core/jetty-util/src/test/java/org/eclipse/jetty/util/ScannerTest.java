@@ -24,10 +24,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -42,6 +45,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.nullValue;
@@ -203,13 +208,12 @@ public class ScannerTest
         assertEquals(Notification.ADDED, event.notification);
 
         // -- add 3 more files
-        Thread.sleep(1100); // make sure time in seconds changes
         Path fileA1 = directory.resolve("a1");
         Path fileA2 = directory.resolve("a2");
         Path fileA3 = directory.resolve("a3");
-        touch(fileA1);
-        touch(fileA2);
-        touch(fileA3);
+        touch(fileA1, (ft) -> ft + 1100);
+        touch(fileA2, (ft) -> ft + 1100);
+        touch(fileA3, (ft) -> ft + 1100);
 
         // -- not stable after 1 scan so should not be seen yet
         _scanner.scan();
@@ -217,8 +221,7 @@ public class ScannerTest
         assertNull(event);
 
         // -- Keep a2 unstable and remove a3 before it stabilized
-        Thread.sleep(1100); // make sure time in seconds changes
-        touch(fileA2);
+        touch(fileA2, (ft) -> ft + 1100);
         delete(fileA3);
 
         // -- only a1 is stable so it should be seen, a3 is deleted
@@ -240,17 +243,15 @@ public class ScannerTest
         assertTrue(discreteQueue.isEmpty());
 
         // -- touch a1 and a2
-        Thread.sleep(1100); // make sure time in seconds changes
-        touch(fileA1);
-        touch(fileA2);
+        touch(fileA1, (ft) -> ft + 1100);
+        touch(fileA2, (ft) -> ft + 1100);
         // -- not stable after 1scan so nothing should not be seen yet
         _scanner.scan();
         event = discreteQueue.poll();
         assertNull(event);
 
         // -- Keep a2 unstable
-        Thread.sleep(1100); // make sure time in seconds changes
-        touch(fileA2);
+        touch(fileA2, (ft) -> ft + 1100);
 
         // -- only a1 is stable so it should be seen
         _scanner.scan();
@@ -283,7 +284,7 @@ public class ScannerTest
         assertTrue(discreteQueue.isEmpty());
 
         // -- recreate a2
-        touch(fileA2);
+        touch(fileA2, (ft) -> ft + 1100);
 
         // -- a2 not stable yet, shouldn't be seen
         _scanner.scan();
@@ -460,14 +461,18 @@ public class ScannerTest
         assertThat(paths, containsInAnyOrder(fileA0, fileA1));
 
         // -- touch A0
-        touch(fileA0);
-        _scanner.scan();
+        touch(fileA0, (ft) -> ft + 1100);
 
-        paths = bulkQueue.poll();
-        assertThat("The changes to A0 are not stable yet", paths, nullValue());
+        paths = Awaitility.await().atMost(5, TimeUnit.SECONDS)
+            .until(() ->
+            {
+                _scanner.scan();
+                return bulkQueue.poll();
+            },
+                (pathSet) ->
+                    !pathSet.isEmpty()
+            );
 
-        _scanner.scan();
-        paths = bulkQueue.poll();
         assertThat(paths, containsInAnyOrder(fileA0));
     }
 
@@ -665,14 +670,16 @@ public class ScannerTest
         assertThat(actualChanges, ordered(expected));
 
         // -- touch A0
-        touch(fileA0);
-        _scanner.scan();
+        touch(fileA0, (ft) -> ft + 1100);
 
-        actualChanges = pathsChangedQueue.pollOrderedChanges();
-        assertThat("The changes to A0 are not stable yet", actualChanges, nullValue());
+        actualChanges = Awaitility.await().atMost(5, TimeUnit.SECONDS)
+            .until(() ->
+                {
+                    _scanner.scan();
+                    return pathsChangedQueue.pollOrderedChanges();
+                },
+                Objects::nonNull);
 
-        _scanner.scan();
-        actualChanges = pathsChangedQueue.pollOrderedChanges();
         expected = List.of(
             "CHANGED|" + fileA0
         );
@@ -735,9 +742,27 @@ public class ScannerTest
         FS.deleteFile(path);
     }
 
-    private static void touch(Path path) throws IOException
+    private static void touch(Path file) throws IOException
     {
-        FS.touch(path);
+        touch(file, (ft) -> ft + 1L);
+    }
+
+    private static void touch(Path file, Function<Long, Long> fileTimeDelta) throws IOException
+    {
+        if (Files.exists(file))
+        {
+            FileTime timeOrig = Files.getLastModifiedTime(file);
+            long newTime = fileTimeDelta.apply(timeOrig.toMillis());
+            Files.setLastModifiedTime(file, FileTime.from(newTime, TimeUnit.MILLISECONDS));
+            FileTime timeNow = Files.getLastModifiedTime(file);
+            // Verify that timestamp was actually updated.
+            assertThat("Timestamp updated", timeOrig, not(equalTo(timeNow)));
+        }
+        else
+        {
+            Files.createFile(file);
+            assertTrue(Files.exists(file), "Created new file?: " + file);
+        }
     }
 
     private static class DiscreteQueueListener extends LinkedBlockingQueue<Event> implements Scanner.DiscreteListener
@@ -747,21 +772,24 @@ public class ScannerTest
         @Override
         public void fileRemoved(String filename)
         {
-            LOG.debug("fileRemoved: {}", filename);
+            if (LOG.isDebugEnabled())
+                LOG.debug("fileRemoved: {}", filename);
             this.add(new Event(filename, Notification.REMOVED));
         }
 
         @Override
         public void fileChanged(String filename)
         {
-            LOG.debug("fileChanged: {}", filename);
+            if (LOG.isDebugEnabled())
+                LOG.debug("fileChanged: {}", filename);
             this.add(new Event(filename, Notification.CHANGED));
         }
 
         @Override
         public void fileAdded(String filename)
         {
-            LOG.debug("fileAdded: {}", filename);
+            if (LOG.isDebugEnabled())
+                LOG.debug("fileAdded: {}", filename);
             this.add(new Event(filename, Notification.ADDED));
         }
     }
@@ -775,7 +803,8 @@ public class ScannerTest
         @Override
         public void pathsChanged(Set<Path> paths)
         {
-            LOG.debug("pathsChanged: {}", paths);
+            if (LOG.isDebugEnabled())
+                LOG.debug("pathsChanged: {}", paths);
             add(paths);
         }
 
@@ -795,7 +824,8 @@ public class ScannerTest
         @Override
         public void filesChanged(Set<String> filenames)
         {
-            LOG.debug("filesChanged: {}", filenames);
+            if (LOG.isDebugEnabled())
+                LOG.debug("filesChanged: {}", filenames);
             add(filenames);
         }
     }
@@ -807,7 +837,8 @@ public class ScannerTest
         @Override
         public void pathsChanged(Map<Path, Notification> pathsChanged)
         {
-            LOG.atDebug().addArgument(pathsChanged).log("pathsChanged: {}");
+            if (LOG.isDebugEnabled())
+                LOG.debug("pathsChanged: {}", pathsChanged);
             add(pathsChanged);
         }
 

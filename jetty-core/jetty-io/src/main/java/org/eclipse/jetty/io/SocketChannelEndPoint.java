@@ -67,7 +67,7 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Could not shutdown output for {}", getChannel());
+                LOG.debug("Could not shutdown output for {}", getChannel(), x);
         }
     }
 

@@ -800,7 +800,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         final int newTail;
         final int capacity = _elements.length;
 
-        Object[] elements = new Object[newCapacity(capacity, _maxCapacity)];
+        Object[] elements = new Object[ArrayUtil.growCapacity(capacity, 1, _maxCapacity)];
 
         if (head < tail)
         {
@@ -893,14 +893,6 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         if (oldSize > 1)
             _headLock.signal();
         return wasFull;
-    }
-
-    static int newCapacity(int currentCapacity, int maxCapacity)
-    {
-        int newCapacity = currentCapacity + Math.max(8, currentCapacity / 2);
-        if (newCapacity >= maxCapacity || newCapacity < 0)
-            return maxCapacity;
-        return newCapacity;
     }
 
     private class Itr implements ListIterator<E>

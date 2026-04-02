@@ -500,7 +500,7 @@ public abstract class HttpReceiver implements Invocable
     public void abort(HttpExchange exchange, Throwable failure, Promise<Boolean> promise)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("Invoking abort for {} on {}", exchange, this);
+            LOG.debug("Invoking abort for {} on {}", exchange, this, failure);
 
         if (!exchange.isResponseCompleteOrTerminated())
             throw new IllegalStateException();
@@ -681,7 +681,7 @@ public abstract class HttpReceiver implements Invocable
         @Override
         public void demand(Runnable demandCallback)
         {
-            Runnable demand = new Invocable.ReadyTask(Invocable.getInvocationType(demandCallback), () -> invoker.run(demandCallback));
+            Runnable demand = Invocable.from(Invocable.getInvocationType(demandCallback), () -> invoker.run(demandCallback));
             source.demand(demand);
         }
 

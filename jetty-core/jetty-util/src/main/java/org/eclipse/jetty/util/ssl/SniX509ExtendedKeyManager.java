@@ -182,7 +182,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Failure matching X509 for SNI {}", host);
+                LOG.debug("Failure matching X509 for SNI {}", host, x);
             return null;
         }
     }

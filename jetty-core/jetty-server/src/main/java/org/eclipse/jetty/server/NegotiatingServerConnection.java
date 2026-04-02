@@ -148,7 +148,8 @@ public abstract class NegotiatingServerConnection extends AbstractConnection.Non
         }
         catch (IOException x)
         {
-            LOG.atDebug().setCause(x).log("Unable to fill from endpoint {}", getEndPoint());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
             close();
             return -1;
         }

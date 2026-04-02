@@ -43,7 +43,6 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee11.annotations.
 
     public class BundleParserTask extends ParserTask
     {
-
         public BundleParserTask(AnnotationParser parser, Set<? extends Handler> handlers, Resource resource)
         {
             super(parser, handlers, resource);

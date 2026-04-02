@@ -138,7 +138,8 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         }
         catch (Throwable x)
         {
-            LOG.trace("Could not retrieve local socket address", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("Could not retrieve local socket address", x);
             return null;
         }
     }
@@ -300,7 +301,7 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         catch (CancelledKeyException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Ignoring key update for cancelled key {}", this);
+                LOG.debug("Ignoring key update for cancelled key {}", this, x);
             close();
         }
         catch (Throwable x)
@@ -324,13 +325,18 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
     @Override
     public String toEndPointString()
     {
-        // We do a best effort to print the right toString() and that's it.
-        return String.format("%s{io=%d/%d,kio=%d,kro=%d}",
-            super.toEndPointString(),
-            _currentInterestOps,
-            _desiredInterestOps,
-            ManagedSelector.safeInterestOps(_key),
-            ManagedSelector.safeReadyOps(_key));
+        try (AutoLock ignore = _lock.tryLock())
+        {
+            String held = _lock.isHeldByCurrentThread() ? "" : "?";
+            // We do a best effort to print the right toString() and that's it.
+            return String.format("%s{%s:io=%d/%d,kio=%d,kro=%d}",
+                super.toEndPointString(),
+                held,
+                _currentInterestOps,
+                _desiredInterestOps,
+                ManagedSelector.safeInterestOps(_key),
+                ManagedSelector.safeReadyOps(_key));
+        }
     }
 
     private abstract class RunnableCloseable implements Invocable.Task, Closeable

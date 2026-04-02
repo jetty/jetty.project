@@ -17,6 +17,8 @@ import java.util.Arrays;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
 /**
@@ -24,6 +26,8 @@ import java.util.stream.Stream;
  */
 class ImmutableHttpFields implements HttpFields
 {
+    final HttpCompliance _httpCompliance;
+    final Supplier<ComplianceViolation.Listener> _listenerSupplier;
     final HttpField[] _fields;
     final int _size;
 
@@ -39,6 +43,13 @@ class ImmutableHttpFields implements HttpFields
 
     protected ImmutableHttpFields(HttpField[] fields, int size)
     {
+        this(null, null, fields, size);
+    }
+
+    ImmutableHttpFields(HttpCompliance httpCompliance, Supplier<ComplianceViolation.Listener> listenerSupplier, HttpField[] fields, int size)
+    {
+        _httpCompliance = httpCompliance;
+        _listenerSupplier = Objects.requireNonNullElse(listenerSupplier, () -> null);
         _fields = fields;
         _size = size;
     }
@@ -142,6 +153,18 @@ class ImmutableHttpFields implements HttpFields
     public Stream<HttpField> stream()
     {
         return Arrays.stream(_fields).filter(Objects::nonNull);
+    }
+
+    @Override
+    public QuotedCSV newQuotedCSV(boolean keepQuotes)
+    {
+        return new QuotedCSV(_httpCompliance, _listenerSupplier.get(), keepQuotes);
+    }
+
+    @Override
+    public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
+    {
+        return new QuotedQualityCSV(_httpCompliance, _listenerSupplier.get(), secondaryOrdering);
     }
 
     @Override

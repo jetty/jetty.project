@@ -16,7 +16,6 @@ package org.eclipse.jetty.security.jaas;
 
 import java.util.List;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -61,7 +60,7 @@ public class TestHandler extends Handler.Abstract
                 for (String role : _hasRoles)
                 {
                     if (!userAuthentication.isUserInRole(role))
-                        throw new BadMessageException(HttpStatus.FORBIDDEN_403, "! in role " + role);
+                        throw new HttpException.RuntimeException(HttpStatus.FORBIDDEN_403, "! in role " + role);
                 }
             }
         }

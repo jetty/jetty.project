@@ -50,7 +50,8 @@ public class JettySimpleEchoSocket
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        LOG.debug("Connection closed: {} - {}", statusCode, reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Connection closed: {} - {}", statusCode, reason);
         this.session = null;
         this.closeLatch.countDown(); // trigger latch
     }
@@ -58,7 +59,8 @@ public class JettySimpleEchoSocket
     @OnWebSocketOpen
     public void onOpen(Session session)
     {
-        LOG.debug("Open: {}", session);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Open: {}", session);
         this.session = session;
         session.setMaxTextMessageSize(64 * 1024);
         try
@@ -75,6 +77,7 @@ public class JettySimpleEchoSocket
     @OnWebSocketMessage
     public void onMessage(String msg)
     {
-        LOG.debug("Got msg: {}", msg);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Got msg: {}", msg);
     }
 }

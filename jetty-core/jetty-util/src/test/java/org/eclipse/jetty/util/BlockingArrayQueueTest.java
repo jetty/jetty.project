@@ -157,16 +157,6 @@ public class BlockingArrayQueueTest
     }
 
     @Test
-    public void testNewCapacity()
-    {
-        assertEquals(0, BlockingArrayQueue.newCapacity(0, 0));
-        assertEquals(1, BlockingArrayQueue.newCapacity(1, 1));
-        assertEquals(2, BlockingArrayQueue.newCapacity(1, 2));
-        assertEquals(Integer.MAX_VALUE, BlockingArrayQueue.newCapacity(Integer.MAX_VALUE - 1, Integer.MAX_VALUE));
-        assertEquals(Integer.MAX_VALUE, BlockingArrayQueue.newCapacity(Integer.MAX_VALUE, Integer.MAX_VALUE));
-    }
-
-    @Test
     public void testTake() throws Exception
     {
         final String[] data = new String[4];

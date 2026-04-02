@@ -135,7 +135,7 @@ public abstract class AbstractConnection implements Connection
     public void onFillInterestedFailed(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(cause).log("onFillInterestedFailed {}", this);
+            LOG.debug("onFillInterestedFailed {}", this, cause);
         if (_endPoint.isOpen())
         {
             boolean close = true;
@@ -197,7 +197,7 @@ public abstract class AbstractConnection implements Connection
             if (cause == null)
                 LOG.debug("onClose {}", this);
             else
-                LOG.atDebug().setCause(cause).log("onClose {}", this);
+                LOG.debug("onClose {}", this, cause);
         }
         for (Listener listener : _listeners)
         {

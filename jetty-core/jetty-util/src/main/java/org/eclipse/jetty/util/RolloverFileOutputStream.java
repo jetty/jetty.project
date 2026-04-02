@@ -268,7 +268,6 @@ public class RolloverFileOutputStream extends OutputStream
                     renameFile(file, backupFile);
                 }
                 _out = new FileOutputStream(file.toString(), _append);
-                //if(log.isDebugEnabled())log.debug("Opened "+_file);
             }
         }
 

@@ -76,7 +76,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         super.doStop();
         removeBean(pool);
         pool.terminate().forEach(this::close);
-        pool = null;
     }
 
     @Override
@@ -586,7 +585,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Connection creation failed {}", reserved);
+                LOG.debug("Connection creation failed {}", reserved, x);
             pending.decrementAndGet();
             reserved.remove();
             super.failed(x);

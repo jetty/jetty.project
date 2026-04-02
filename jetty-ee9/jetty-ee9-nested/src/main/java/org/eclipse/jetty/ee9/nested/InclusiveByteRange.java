@@ -236,7 +236,8 @@ public class InclusiveByteRange
                     {
                         ranges = null;
                         LOG.warn("Bad range format: {}", t);
-                        LOG.trace("IGNORED", e);
+                        if (LOG.isTraceEnabled())
+                            LOG.trace("IGNORED", e);
                     }
                 }
             }
@@ -244,7 +245,8 @@ public class InclusiveByteRange
             {
                 ranges = null;
                 LOG.warn("Bad range format: {}", t);
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
             }
         }
 

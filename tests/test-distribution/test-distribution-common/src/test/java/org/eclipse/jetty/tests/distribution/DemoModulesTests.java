@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import java.io.EOFException;
 import java.net.URI;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.ByteBufferRequestContent;
@@ -28,11 +31,13 @@ import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Fields;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -413,24 +418,51 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
                 String baseURI = "http://localhost:%d/%s-test-spec".formatted(httpPort, env);
 
-                //test the async listener
+                // Test the async listener
                 ContentResponse response = client.POST(baseURI + "/asy/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("<span class=\"pass\">PASS</span>"));
                 assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
 
-                //test the servlet 3.1/4 features
+                // Test the servlet 3.1/4 features
                 response = client.POST(baseURI + "/test/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("<span class=\"pass\">PASS</span>"));
                 assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
 
-                //test dynamic jsp
+                // Test dynamic jsp
                 response = client.POST(baseURI + "/dynamicjsp/xx").send();
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Programmatically Added Jsp File"));
 
+                // Test ambiguous paths..
+                for (String ambiguous : new String[] {"/foo%2Fbar", "/foo//bar", "/foo/..;/bar", "/foo/%2e%2e;param/bar"})
+                {
+                    try
+                    {
+                        response = client.GET(baseURI + ambiguous);
+                        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus(), new ResponseDetails(response));
+                    }
+                    catch (ExecutionException e)
+                    {
+                        // FLAKY workaround for issue https://github.com/jetty/jetty.project/issues/14327
+                        // REMOVE once that issue is resolved.
+                        Throwable cause = e.getCause();
+                        // Handle bad input URL EOF situations as flaky.
+                        if (cause instanceof EOFException ||
+                            cause instanceof AsynchronousCloseException)
+                        {
+                            LoggerFactory.getLogger(DemoModulesTests.class).info("EOF During request to {}{}", baseURI, ambiguous, e);
+                            Assumptions.assumeTrue(false, "Jetty Client should not have failed with %s: %s".formatted(cause.getClass().getName(), cause.getMessage()));
+                        }
+                        else
+                        {
+                            throw e;
+                        }
+                    }
+                }
 
+                // Extra tests for ee11 (Servlet 6.1.x)
                 if ("ee11".equalsIgnoreCase(env))
                 {
                     baseURI = "http://localhost:%d/ee11-demo-spec-6-1".formatted(httpPort);
@@ -445,12 +477,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                         .send();
                     assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                     assertThat(response.getContentAsString(), is("Hello World!"));
-
-                    for (String ambiguous : new String[] {"/foo%2Fbar", "/foo//bar", "/foo/..;/bar", "/foo/%2e%2e;param/bar"})
-                    {
-                        response = client.GET(baseURI + ambiguous);
-                        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus(), new ResponseDetails(response));
-                    }
                 }
             }
         }

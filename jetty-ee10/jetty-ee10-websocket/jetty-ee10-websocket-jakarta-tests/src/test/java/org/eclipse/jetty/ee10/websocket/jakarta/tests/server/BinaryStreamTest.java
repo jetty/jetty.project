@@ -41,8 +41,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,11 +57,11 @@ public class BinaryStreamTest
 {
     private static final String PATH = "/echo";
 
-    private static LocalServer server;
-    private static JakartaWebSocketClientContainer wsClient;
+    private LocalServer server;
+    private JakartaWebSocketClientContainer wsClient;
 
-    @BeforeAll
-    public static void startServer() throws Exception
+    @BeforeEach
+    public void startServer() throws Exception
     {
         server = new LocalServer();
         server.start();
@@ -72,8 +72,8 @@ public class BinaryStreamTest
         wsClient.start();
     }
 
-    @AfterAll
-    public static void stopServer() throws Exception
+    @AfterEach
+    public void stopServer() throws Exception
     {
         wsClient.stop();
         server.stop();
@@ -265,16 +265,24 @@ public class BinaryStreamTest
         public void echo(Session session, InputStream input) throws IOException
         {
             byte[] buffer = new byte[128];
+            int readCount = 0;
+            int read;
             try (OutputStream output = session.getBasicRemote().getSendStream())
             {
-                int readCount = 0;
-                int read;
                 while ((read = input.read(buffer)) >= 0)
                 {
                     output.write(buffer, 0, read);
                     readCount += read;
                 }
-                LOG.debug("Read {} bytes", readCount);
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Error from ServerBinaryStreamer", t);
+                throw t;
+            }
+            finally
+            {
+                LOG.info("Read {} bytes", readCount);
             }
         }
     }
