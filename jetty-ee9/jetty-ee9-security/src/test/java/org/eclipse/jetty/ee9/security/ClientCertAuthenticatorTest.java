@@ -74,7 +74,7 @@ public class ClientCertAuthenticatorTest
 
         int port = freePort();
         int securePort = freePort();
-        SslContextFactory.Server sslContextFactory = createServerSslContextFactory("cacerts.jks", "changeit");
+        SslContextFactory.Server sslContextFactory = createServerSslContextFactory("truststore.p12", "changeit");
         // Setup HTTP Configuration
         HttpConfiguration httpConf = new HttpConfiguration();
         httpConf.setSecurePort(securePort);
@@ -144,7 +144,7 @@ public class ClientCertAuthenticatorTest
         cf.setNeedClientAuth(true);
         cf.setTrustStorePassword(trustStorePassword);
         cf.setTrustStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile(trustStorePath)));
-        cf.setKeyStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile("clientcert.jks")));
+        cf.setKeyStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile("server_keystore.p12")));
         cf.setKeyStorePassword("changeit");
         cf.setSniRequired(false);
         cf.setWantClientAuth(true);
@@ -155,14 +155,27 @@ public class ClientCertAuthenticatorTest
     public void testAuthenticationWithClientCertificateSucceeds() throws Exception
     {
         HttpsURLConnection.setDefaultHostnameVerifier((s, sslSession) -> true);
-        SslContextFactory.Server cf = createServerSslContextFactory("cacerts.jks", "changeit");
+        // Create proper client SSL context with client certificate
+        SslContextFactory.Client cf = new SslContextFactory.Client();
+        cf.setKeyStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile("client_keystore.p12")));
+        cf.setKeyStorePassword("changeit");
+        cf.setTrustStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile("truststore.p12")));
+        cf.setTrustStorePassword("changeit");
+        cf.setEndpointIdentificationAlgorithm(null); // Disable hostname verification for test
         cf.start();
-        HttpsURLConnection.setDefaultSSLSocketFactory(cf.getSslContext().getSocketFactory());
-        URL url = serverHttpsUri.resolve("/").toURL();
-        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-        assertThat("response code", connection.getResponseCode(), is(200));
-        String response = IO.toString(connection.getInputStream());
-        assertThat("response message", response, containsString(MESSAGE));
+        try
+        {
+            HttpsURLConnection.setDefaultSSLSocketFactory(cf.getSslContext().getSocketFactory());
+            URL url = serverHttpsUri.resolve("/").toURL();
+            HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+            assertThat("response code", connection.getResponseCode(), is(200));
+            String response = IO.toString(connection.getInputStream());
+            assertThat("response message", response, containsString(MESSAGE));
+        }
+        finally
+        {
+            cf.stop();
+        }
     }
 
     @Test
