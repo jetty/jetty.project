@@ -1,3 +1,8 @@
+12.0.34 - 01 April 2026
+ + 14332 Fix idleTimeout for websocket
+ + 14431 ServletContainerInitializers are always excluded when used with absolute-ordering
+ + 14494 Review use of CharsetStringBuilder subclasses
+
 12.0.33 - 04 March 2026
  + 14495 Support Transfer-Encoding chunk extensions
 
