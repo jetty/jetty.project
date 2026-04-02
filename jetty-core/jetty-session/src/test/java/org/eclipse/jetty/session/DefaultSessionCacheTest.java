@@ -390,6 +390,43 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertFalse(store.exists("1234"));
     }
 
+    /** Test that during a call to getAndEnter that the activation
+     * listeners are called if the session was loaded from the session data store.
+     *
+     * @throws Exception on unspecified problem
+     */
+    @Test
+    public void testGetAndEnter() throws Exception
+    {
+        Server server = new Server();
+
+        TestableSessionManager sessionManager = new TestableSessionManager();
+        sessionManager.setServer(server);
+        AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
+        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionManager);
+
+        TestableSessionDataStore store = new TestableSessionDataStore(true);
+        cache.setSessionDataStore(store);
+        sessionManager.setSessionCache(cache);
+        server.addBean(sessionManager);
+        sessionManager.setServer(server);
+        server.start();
+
+        //add data for a session to the store
+        long now = System.currentTimeMillis();
+        SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
+        data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
+        data.setAttribute("foo", "bar");
+        store.store("1234", data);
+
+        ManagedSession session = cache.getAndEnter("1234", true);
+        assertNotNull(session);
+        assertTrue(session.isResident());
+        assertTrue(cache.contains("1234"));
+        assertTrue(session.isValid());
+        assertTrue(sessionManager._sessionActivationListenersCalled.contains("1234"));
+    }
+
     /**
      * Test releasing use of a session 
      * @throws Exception if there is an unspecified problem

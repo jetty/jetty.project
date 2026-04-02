@@ -309,7 +309,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * 
      * @param id The session to retrieve
      * @param enter if true, the usage count of the session will be incremented
-     * @return the session if it exists either in the cache or the store,, null otherwise
+     * @return the session if it exists either in the cache or the store, null otherwise
      * @throws Exception if the session cannot be loaded
      */
     protected ManagedSession getAndEnter(String id, boolean enter) throws Exception
@@ -334,7 +334,11 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                     return session;
                 }
 
-                //session is not resident, it might have just been evicted, we should try again
+                //session is not resident, it could have just been evicted, or it
+                //could have been deleted. If we're not evicting, we shouldn't waste
+                //time trying to load a session that has in fact been deleted.
+                if (getEvictionPolicy() == SessionCache.NEVER_EVICT)
+                    return null;
             }
         }
 
@@ -364,7 +368,11 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 {
                     try (AutoLock lock = s.lock())
                     {
-                        s.setResident(true); //ensure freshly loaded session is resident
+                        //ensure freshly loaded session is resident, and if the datastore
+                        //supports passivation, call the activation listener
+                        s.setResident(true);
+                        if (s.isValid() && _sessionDataStore.isPassivating())
+                            s.onSessionActivation();
                     }
                 }
                 else
@@ -640,13 +648,17 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 LOG.debug("Session id={} deleted in session data store {}", id, dsdel);
         }
 
-        //delete it from the session object store
         if (session != null)
         {
-            session.setResident(false);
+            try (AutoLock lock = session.lock())
+            {
+                session.setResident(false); //no longer resident
+                return doDelete(id); //remove from cache - note some caches may return null here
+            }
         }
 
-        return doDelete(id);
+        //No session object exists
+        return null;
     }
 
     @Override
@@ -719,8 +731,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                         _sessionDataStore.store(session.getId(), session.getSessionData());
                     }
 
-                    doDelete(session.getId()); //detach from this cache
                     session.setResident(false);
+                    doDelete(session.getId()); //detach from this cache
                 }
                 catch (Exception e)
                 {
