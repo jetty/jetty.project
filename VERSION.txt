@@ -1,4 +1,19 @@
-jetty-12.1.8-SNAPSHOT
+jetty-12.1.9-SNAPSHOT
+
+12.1.8 - 31 March 2026
+ + 10906 Is there a ConsoleRequestLog (JettySlf4jRequestLog) module?
+ + 13513 Make MemoryEndPoint use RBB.DynamicCapacity (@afarber)
+ + 13685 Infinite loop on Content.copy() with Content.Source.from(... , Path, ) when Path has size 0.
+ + 14332 Complete mess with idleTimeout
+ + 14431 ServletContainerInitializers are always excluded when used with absolute-ordering
+ + 14494 Review use of CharsetStringBuilder subclasses
+ + 14651 Retain negative Max-Age cookie attribute
+ + 14685 CachingHttpContentFactory#getContent may return null if httpContent size is not set
+ + 14689 `ThreadIdPool.take()` bottlenecks `QueuedThreadPool.tryExecute()`
+ + 14694 Sync jetty-ee11 with jetty-ee10
+ + 14732 possible race condition in jetty 12.x code
+ + 14747 Revert usage of SLF4J2 fluent APIs
+ + 14752 Jetty 12.1 Violation of RFC9113 with Host and :authority headers
 
 12.1.7 - 04 March 2026
  + 14165 Integrating Eclipse Soteria with Jetty EE10+
