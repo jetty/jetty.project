@@ -6,7 +6,7 @@ These keystores support mutual TLS (client certificate) authentication testing.
 
 - **Signature Algorithm:** SHA256withRSA (client cert), SHA384withRSA (server cert)
 - **Key Size:** 2048-bit RSA
-- **Validity:** 100 years (36500 days)
+- **Validity:** 100 years (36500 days) (yup we should be retired by then)
 - **Format:** PKCS12
 - **Password:** changeit (all keystores)
 
@@ -100,13 +100,3 @@ Expected output:
 - Signature algorithm: SHA256withRSA or SHA384withRSA (NOT MD5withRSA)
 - Key size: 2048-bit RSA
 - Client keystore contains 2 entries: "ca" (trusted cert) + "mykey" (private key with chain)
-
-## Why These Were Regenerated
-
-The previous keystores (cacerts.jks, clientcert.jks) were created in 2003 and used:
-- MD5withRSA signatures (disabled in JDK 26 security policies)
-- 1024-bit RSA keys (weak, deprecated)
-- Expired certificates (valid until January 2020)
-
-These new certificates use modern cryptographic algorithms compliant with JDK 17-26+
-security requirements.
