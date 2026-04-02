@@ -18,12 +18,12 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.quic.api.frames.AckFrame;
-import org.eclipse.jetty.quic.common.internal.QuicFlusher;
+import org.eclipse.jetty.quic.api.frames.PingFrame;
 import org.eclipse.jetty.quic.common.packets.Packet;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -31,19 +31,38 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// Tracks packets sent and acknowledgments received to support reliability
-/// and congestion control.
+/// Tracks packets sent and acknowledgments received to support reliability and
+/// congestion control, as per [RFC-9002](https://datatracker.ietf.org/doc/html/rfc9002).
 ///
-/// The "packet sent" event and the "acknowledgment received" event are notified
-/// from the [QuicFlusher].
-/// The "loss detection" scheduler task event is serialized with the "packet sent"
-/// and "acknowledgment received" events, so that this class does not require
-/// locking: all events are serialized.
+/// The basic design of QUIC loss detection is as follows:
+///
+/// * Packets sent schedule a probe timeout (PTO). The PTO is canceled when an
+/// ack is received. The PTO mechanism covers the case where no acks are received.
+/// * Acks received may schedule a loss timeout (LTO). The LTO mechanism covers the
+/// case where acks are received, but packets might be lost.
+/// A new LTO may be scheduled from a previous LTO.
+/// * There is only one timeout mechanism active at any given time. The PTO is
+/// scheduled for the latest packet sent, while the LTO is scheduled for the earliest
+/// non-lost packet for which an ack has not been received yet.
+/// If the system is idle, neither the PTO nor the LTO are active.
+///
+/// The corresponding events are:
+///
+/// * Packet sent
+/// * Ack received
+/// * PTO expires
+/// * LTO expires
+///
+/// Each of these events calls the corresponding `onXYZ()` method, that serializes
+/// the processing of the event across other events by calling the corresponding
+/// `processXYZ()` method.
+/// The serialization of the processing of the events simplifies the implementation,
+/// both of this class and of the [CongestionController] implementation.
 ///
 /// This class maintains the round trip time (RTT), calculated as specified in
 /// RFC-9002\[5].
 ///
-/// This class detects packet loss by:
+/// Packet loss is detected by:
 /// * Packet number: an acknowledgment for packet `N` is received, but not
 /// for packet `N-r` where `r` is the [#getPacketReorderingThreshold()].
 /// * Time: a packet is sent at time `T`, but no ack has been received
@@ -62,6 +81,7 @@ public class PacketTracker
     private int packetReorderingThreshold;
     private float timeReorderingFactor;
     private long schedulerResolution;
+    private long probeTimeoutBackoff;
     private RTTData rttData;
 
     public PacketTracker(Scheduler scheduler, CongestionController congestionController)
@@ -85,11 +105,13 @@ public class PacketTracker
         return congestionController;
     }
 
+    /// @return the acknowledgment max delay in milliseconds
     public long getAcknowledgmentMaxDelay()
     {
         return ackMaxDelay;
     }
 
+    /// @param ackMaxDelay the acknowledgment max delay in milliseconds
     public void setAcknowledgmentMaxDelay(long ackMaxDelay)
     {
         this.ackMaxDelay = ackMaxDelay;
@@ -137,6 +159,11 @@ public class PacketTracker
         this.schedulerResolution = schedulerResolution;
     }
 
+    public long getProbeTimeoutBackoff()
+    {
+        return probeTimeoutBackoff;
+    }
+
     /// First entry point: when a packet is sent.
     void onPacketSent(QuicSession session, Packet packet, long length)
     {
@@ -149,10 +176,16 @@ public class PacketTracker
         invoker.run(() -> processAckFrameReceived(session, encryptionLevel, frame));
     }
 
-    /// Third entry point: when the packet loss detection timer fires.
-    private void onDetectLostPackets(Tracker tracker)
+    /// Third entry point: when the loss timeout fires.
+    private void onLossTimeout(QuicSession session, Tracker tracker)
     {
-        invoker.run(() -> processDetectLostPackets(tracker));
+        invoker.run(() -> processLossTimeout(session, tracker));
+    }
+
+    /// Fourth entry point: when the probe timeout fires.
+    private void onProbeTimeout(QuicSession session, PacketEntry packetEntry, Tracker tracker)
+    {
+        invoker.run(() -> processProbeTimeout(session, packetEntry, tracker));
     }
 
     private void processPacketSent(QuicSession session, Packet packet, long length)
@@ -168,18 +201,19 @@ public class PacketTracker
         if (!withFrames.requiresAcknowledgement())
             return;
 
-        PacketNumberSpace space = PacketNumberSpace.from(EncryptionLevel.from(withFrames));
-        PacketEntry entry = new PacketEntry(space, withFrames, length, NanoTime.now());
+        EncryptionLevel encryptionLevel = EncryptionLevel.from(withFrames);
+        PacketNumberSpace space = PacketNumberSpace.from(encryptionLevel);
+        PacketEntry packetEntry = new PacketEntry(space, withFrames, length, NanoTime.now());
 
-        Tracker tracker = trackers.get(entry.space());
-        tracker.put(entry.packet().packetNumber(), entry);
+        Tracker tracker = trackers.get(packetEntry.space());
+        tracker.put(packetEntry.packet().packetNumber(), packetEntry);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("tracked {} on {}", entry, this);
+            LOG.debug("tracked {} on {}", packetEntry, this);
 
-        congestionController.onPacketSent(entry.packet(), entry.length(), rttData);
+        congestionController.onPacketSent(packetEntry.packet(), packetEntry.length(), rttData);
 
-        tracker.schedulePacketLossDetection(calculatePacketLossDelay(rttData));
+        tracker.tryScheduleProbeTimeout(session, packetEntry, calculateProbeTimeout(packetEntry, rttData));
     }
 
     private void processAckFrameReceived(QuicSession session, EncryptionLevel encryptionLevel, AckFrame frame)
@@ -197,31 +231,48 @@ public class PacketTracker
         List<Packet.WithFrames> ackedPackets = new ArrayList<>();
         long ackedLength = tracker.acknowledgePackets(entry.frame(), ackedPackets);
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("acked {} packet(s) length={} {}{} on {}", ackedPackets.size(), ackedLength, space, ackedPackets.stream().mapToLong(Packet.WithFrames::packetNumber).toArray(), this);
+        if (ackedPackets.isEmpty())
+            return;
 
         // RFC-9002[5.1]: calculate RTT only if the largestAckedEntry is newly acknowledged.
         if (tracker.newlyAcked)
             rttData = estimateRTTData(entry.encryptionLevel(), entry.frame(), tracker.largestAckedEntry);
         tracker.newlyAcked = false;
 
+        // RFC-9002[6.2.1]: the PTO backoff is not reset for InitialPackets.
+        if (ackedPackets.stream().anyMatch(p -> EncryptionLevel.from(p) != EncryptionLevel.INITIAL))
+            probeTimeoutBackoff = 0;
+        tracker.cancelProbeTimeout();
+
         List<Packet.WithFrames> lostPackets = new ArrayList<>();
-        long lostLength = tracker.detectLostPackets(rttData, lostPackets);
+        long lostLength = tracker.detectLostPackets(session, rttData, lostPackets);
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("lost {} packet(s) length={} {}{} on {}", lostPackets.size(), lostLength, space, lostPackets.stream().mapToLong(Packet.WithFrames::packetNumber).toArray(), this);
-
-        if (!ackedPackets.isEmpty())
-            congestionController.onPacketsAcknowledged(ackedPackets, ackedLength, rttData);
+        congestionController.onPacketsAcknowledged(ackedPackets, ackedLength, rttData);
         if (!lostPackets.isEmpty())
             congestionController.onPacketsLost(lostPackets, lostLength, rttData);
+
+        tracker.tryScheduleProbeTimeout(session);
     }
 
-    private void processDetectLostPackets(Tracker tracker)
+    private void processLossTimeout(QuicSession session, Tracker tracker)
     {
         invoker.assertCurrentThreadInvoking();
 
-        tracker.detectLostPackets();
+        tracker.processLossTimeout(session);
+    }
+
+    private void processProbeTimeout(QuicSession session, PacketEntry packetEntry, Tracker tracker)
+    {
+        invoker.assertCurrentThreadInvoking();
+
+        tracker.probeTimeoutTask = null;
+        ++probeTimeoutBackoff;
+        sendProbe(session, EncryptionLevel.from(packetEntry.packet()));
+    }
+
+    void sendProbe(QuicSession session, EncryptionLevel encryptionLevel)
+    {
+        session.sendFrames(encryptionLevel, List.of(new PingFrame()), Callback.NOOP);
     }
 
     private RTTData estimateRTTData(EncryptionLevel encryptionLevel, AckFrame frame, PacketEntry largestEntry)
@@ -273,6 +324,30 @@ public class PacketTracker
         return Math.max(lossDelay, getSchedulerResolution());
     }
 
+    private long calculateProbeTimeout(PacketEntry packetEntry, RTTData rttData)
+    {
+        // RFC-9002[6.2.1].
+        long pto = rttData.smoothedRTT() +
+            Math.max(4 * rttData.variationRTT(), getSchedulerResolution());
+        if (PacketNumberSpace.from(EncryptionLevel.from(packetEntry.packet())) == PacketNumberSpace.APPLICATION)
+            pto += TimeUnit.MILLISECONDS.toNanos(getAcknowledgmentMaxDelay());
+
+        // RFC-9002[A.8].
+        return pto * (1L << getProbeTimeoutBackoff());
+    }
+
+    // Used only in tests.
+    boolean hasLossTimeoutTask(EncryptionLevel encryptionLevel)
+    {
+        return trackers.get(PacketNumberSpace.from(encryptionLevel)).lossTimeoutTask != null;
+    }
+
+    // Used only in tests.
+    boolean hasProbeTimeoutTask(EncryptionLevel encryptionLevel)
+    {
+        return trackers.get(PacketNumberSpace.from(encryptionLevel)).probeTimeoutTask != null;
+    }
+
     @Override
     public String toString()
     {
@@ -281,9 +356,10 @@ public class PacketTracker
 
     private class Tracker
     {
-        private final Map<Long, PacketEntry> entries = new LinkedHashMap<>();
+        private final LinkedHashMap<Long, PacketEntry> entries = new LinkedHashMap<>();
         private final PacketNumberSpace packetNumberSpace;
-        private Scheduler.Task lossDetectionTask;
+        private Scheduler.Task lossTimeoutTask;
+        private Scheduler.Task probeTimeoutTask;
         private PacketEntry largestAckedEntry;
         private boolean newlyAcked;
 
@@ -294,7 +370,8 @@ public class PacketTracker
 
         private void put(long packetNumber, PacketEntry entry)
         {
-            entries.put(packetNumber, entry);
+            PacketEntry existing = entries.put(packetNumber, entry);
+            assert existing == null;
         }
 
         private PacketEntry remove(long packetNumber)
@@ -321,85 +398,126 @@ public class PacketTracker
                     output.add(entry.packet());
                 }
             }
+            if (LOG.isDebugEnabled())
+                LOG.debug("acked {} packet(s) length={} {}{} on {}", output.size(), ackedLength, packetNumberSpace, output.stream().mapToLong(Packet.WithFrames::packetNumber).toArray(), this);
             return ackedLength;
         }
 
-        private long detectLostPackets(RTTData rttData, List<Packet.WithFrames> output)
+        private long detectLostPackets(QuicSession session, RTTData rttData, List<Packet.WithFrames> output)
         {
             // RFC-9002[A.10].
 
-            long lossDelay = calculatePacketLossDelay(rttData);
+            // This method is called after receiving an ack,
+            // or from the task scheduled in this method, so
+            // there always is at least one acked entry.
+            assert largestAckedEntry != null;
 
             long lostLength = 0;
-            long largestAckedPacketNumber = largestAckedEntry == null ? -1 : largestAckedEntry.packet().packetNumber();
-
-            long lossDetectionDelay = lossDelay;
+            long lossDelay = calculatePacketLossDelay(rttData);
+            long largestAckedPacketNumber = largestAckedEntry.packet().packetNumber();
             Iterator<PacketEntry> iterator = entries.values().iterator();
             while (iterator.hasNext())
             {
                 PacketEntry entry = iterator.next();
+                long packetNumber = entry.packet().packetNumber();
+
+                // If the packet is in-flight, it is not lost.
+                if (packetNumber > largestAckedPacketNumber)
+                    break;
 
                 // Detect loss by packet number.
-                if (largestAckedPacketNumber >= 0)
-                {
-                    long packetNumber = entry.packet().packetNumber();
-
-                    // If the packet is in-flight, it is not lost.
-                    if (packetNumber > largestAckedPacketNumber)
-                        break;
-
-                    // Assumes the sender does not introduce packet number gaps.
-                    if (largestAckedPacketNumber > packetNumber + getPacketReorderingThreshold())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("packet lost by number {}>{}+{} {} on {}", largestAckedPacketNumber, packetNumber, getPacketReorderingThreshold(), entry.packet(), this);
-                        lostLength += entry.length();
-                        output.add(entry.packet());
-                        iterator.remove();
-                        continue;
-                    }
-                }
-
-                // Detect loss by send time.
-                long sentDelay = NanoTime.since(entry.sendNanoTime());
-                if (sentDelay > lossDelay)
+                // Assumes the sender does not introduce packet number gaps.
+                if (largestAckedPacketNumber >= packetNumber + getPacketReorderingThreshold())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("packet lost by time sentDelay={}us lossDelay={}us {} on {}", TimeUnit.NANOSECONDS.toMicros(sentDelay), TimeUnit.NANOSECONDS.toMicros(lossDelay), entry.packet(), this);
+                        LOG.debug("packet lost by number {}>{}+{} {} on {}", largestAckedPacketNumber, packetNumber, getPacketReorderingThreshold(), entry.packet(), this);
                     lostLength += entry.length();
                     output.add(entry.packet());
                     iterator.remove();
                     continue;
                 }
 
-                // The packet is in-flight, calculate the earliest
-                // time to schedule loss detection by send time.
-                lossDetectionDelay = Math.min(lossDetectionDelay, lossDelay - sentDelay);
+                // Detect loss by send time.
+                long sentDelay = NanoTime.since(entry.sendNanoTime());
+                if (sentDelay >= lossDelay)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("packet lost by time sentDelay={} lossDelay={} {} on {}", sentDelay, lossDelay, entry.packet(), this);
+                    lostLength += entry.length();
+                    output.add(entry.packet());
+                    iterator.remove();
+                    continue;
+                }
+
+                // The packet is in-flight and not yet lost,
+                // despite a packet with a larger number was
+                // acked (reordering), schedule the loss timeout.
+                long lossTimeout = lossDelay - sentDelay;
+                tryScheduleLossTimeout(session, lossTimeout);
+                break;
             }
 
-            // Only schedule loss detection if there are packets in-flight.
-            if (!entries.isEmpty())
-                schedulePacketLossDetection(lossDetectionDelay);
+            if (LOG.isDebugEnabled())
+                LOG.debug("lost {} packet(s) length={} {}{} on {}", output.size(), lostLength, packetNumberSpace, output.stream().mapToLong(Packet.WithFrames::packetNumber).toArray(), this);
 
             return lostLength;
         }
 
-        private void schedulePacketLossDetection(long delayNanos)
+        private void tryScheduleLossTimeout(QuicSession session, long timeoutNanos)
         {
-            if (lossDetectionTask == null)
-            {
-                Runnable task = () -> onDetectLostPackets(this);
-                lossDetectionTask = scheduler.schedule(task, delayNanos, TimeUnit.NANOSECONDS);
-            }
+            if (lossTimeoutTask != null)
+                lossTimeoutTask.cancel();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("scheduling loss timeout in {} ns on {}", timeoutNanos, this);
+
+            Runnable task = () -> onLossTimeout(session, this);
+            lossTimeoutTask = scheduler.schedule(task, timeoutNanos, TimeUnit.NANOSECONDS);
         }
 
-        private void detectLostPackets()
+        private void processLossTimeout(QuicSession session)
         {
-            lossDetectionTask = null;
+            lossTimeoutTask = null;
             List<Packet.WithFrames> lostPackets = new ArrayList<>();
-            long lostLength = detectLostPackets(rttData, lostPackets);
+            long lostLength = detectLostPackets(session, rttData, lostPackets);
             if (!lostPackets.isEmpty())
                 congestionController.onPacketsLost(lostPackets, lostLength, rttData);
+            tryScheduleProbeTimeout(session);
+        }
+
+        private void tryScheduleProbeTimeout(QuicSession session)
+        {
+            if (entries.isEmpty())
+                return;
+            PacketEntry packetEntry = entries.sequencedValues().getLast();
+            tryScheduleProbeTimeout(session, packetEntry, calculateProbeTimeout(packetEntry, rttData));
+        }
+
+        private void tryScheduleProbeTimeout(QuicSession session, PacketEntry packetEntry, long timeoutNanos)
+        {
+            // RFC-9002[6.2.1]: do not set the PTO if LTO is present.
+            if (lossTimeoutTask != null)
+                return;
+
+            cancelProbeTimeout();
+
+            long delayNanos = timeoutNanos - NanoTime.since(packetEntry.sendNanoTime());
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("scheduling probe timeout in {} ns on {}", delayNanos, this);
+
+            probeTimeoutTask = scheduler.schedule(() -> onProbeTimeout(session, packetEntry, this), delayNanos, TimeUnit.NANOSECONDS);
+        }
+
+        private void cancelProbeTimeout()
+        {
+            if (probeTimeoutTask == null)
+                return;
+
+            probeTimeoutTask.cancel();
+            probeTimeoutTask = null;
+            if (LOG.isDebugEnabled())
+                LOG.debug("cancelled probe timeout on {}", this);
         }
 
         @Override
