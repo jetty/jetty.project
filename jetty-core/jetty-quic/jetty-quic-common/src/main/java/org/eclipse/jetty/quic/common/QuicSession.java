@@ -365,21 +365,21 @@ public abstract class QuicSession extends AbstractSession
     public void maxStreams(MaxStreamsFrame frame, Promise.Invocable<Session> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, this);
-        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+        sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
     @Override
     public void ping(Promise.Invocable<Session> promise)
     {
         List<Frame> frames = List.of(new PingFrame());
-        flusher.sendFrames(EncryptionLevel.ONE_RTT, frames, Promise.Invocable.toCallback(promise, this));
+        sendFrames(EncryptionLevel.ONE_RTT, frames, Promise.Invocable.toCallback(promise, this));
     }
 
     @Override
     public void maxData(MaxDataFrame frame, Promise.Invocable<Session> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, this);
-        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+        sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
     void data(QuicStream stream, StreamFrame frame, Promise.Invocable<Stream> promise)
@@ -390,25 +390,30 @@ public abstract class QuicSession extends AbstractSession
     void maxData(QuicStream stream, StreamMaxDataFrame frame, Promise.Invocable<Stream> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, stream);
-        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+        sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
     void reset(QuicStream stream, ResetFrame frame, Promise.Invocable<Stream> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, stream);
-        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+        sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
     void stopSending(QuicStream stream, StopSendingFrame frame, Promise.Invocable<Stream> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, stream);
-        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+        sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
     void dataBlocked(QuicStream stream, StreamDataBlockedFrame frame, Promise.Invocable<Stream> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, stream);
-        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+        sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+    }
+
+    void sendFrames(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback)
+    {
+        flusher.sendFrames(encryptionLevel, frames, callback);
     }
 
     @Override
@@ -800,7 +805,7 @@ public abstract class QuicSession extends AbstractSession
         @Override
         public void onOutgoingPacket(Session session, Packet packet, long length)
         {
-            packetTracker.onPacketSent((QuicSession)session, packet, length);
+            packetTracker.onPacketSent(QuicSession.this, packet, length);
         }
     }
 }
