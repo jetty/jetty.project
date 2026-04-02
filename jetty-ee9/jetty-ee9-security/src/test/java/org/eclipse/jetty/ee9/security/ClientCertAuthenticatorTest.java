@@ -155,27 +155,14 @@ public class ClientCertAuthenticatorTest
     public void testAuthenticationWithClientCertificateSucceeds() throws Exception
     {
         HttpsURLConnection.setDefaultHostnameVerifier((s, sslSession) -> true);
-        // Create proper client SSL context with client certificate
-        SslContextFactory.Client cf = new SslContextFactory.Client();
-        cf.setKeyStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile("client_keystore.p12")));
-        cf.setKeyStorePassword("changeit");
-        cf.setTrustStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile("truststore.p12")));
-        cf.setTrustStorePassword("changeit");
-        cf.setEndpointIdentificationAlgorithm(null); // Disable hostname verification for test
+        SslContextFactory.Server cf = createServerSslContextFactory("server_keystore.p12", "changeit");
         cf.start();
-        try
-        {
-            HttpsURLConnection.setDefaultSSLSocketFactory(cf.getSslContext().getSocketFactory());
-            URL url = serverHttpsUri.resolve("/").toURL();
-            HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-            assertThat("response code", connection.getResponseCode(), is(200));
-            String response = IO.toString(connection.getInputStream());
-            assertThat("response message", response, containsString(MESSAGE));
-        }
-        finally
-        {
-            cf.stop();
-        }
+        HttpsURLConnection.setDefaultSSLSocketFactory(cf.getSslContext().getSocketFactory());
+        URL url = serverHttpsUri.resolve("/").toURL();
+        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+        assertThat("response code", connection.getResponseCode(), is(200));
+        String response = IO.toString(connection.getInputStream());
+        assertThat("response message", response, containsString(MESSAGE));
     }
 
     @Test
