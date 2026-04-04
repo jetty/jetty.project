@@ -159,7 +159,7 @@
 
   <properties>
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.15</ant.version>
+    <ant.version>1.10.16</ant.version>
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
@@ -224,7 +224,7 @@
     <jetty.xhtml.schemas-version>1.4</jetty.xhtml.schemas-version>
     <jettyHomeZip>${project.build.directory}/${jettyHomeZipFileName}</jettyHomeZip>
     <jettyHomeZipFileName>jetty-home.zip</jettyHomeZipFileName>
-    <jffi.version>1.3.14</jffi.version>
+    <jffi.version>1.3.15</jffi.version>
     <jmh.version>1.37</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <jna.version>5.18.1</jna.version>
@@ -246,7 +246,7 @@
     <logback.version>1.5.32</logback.version>
     <lucene.version>9.11.1</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <mariadb.version>3.5.7</mariadb.version>
+    <mariadb.version>3.5.8</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.2.2</maven-build-cache.version>
     <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
