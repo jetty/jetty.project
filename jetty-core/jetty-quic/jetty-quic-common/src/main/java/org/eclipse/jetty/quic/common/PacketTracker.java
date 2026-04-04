@@ -249,7 +249,10 @@ public class PacketTracker
 
         congestionController.onPacketsAcknowledged(ackedPackets, ackedLength, rttData);
         if (!lostPackets.isEmpty())
+        {
             congestionController.onPacketsLost(lostPackets, lostLength, rttData);
+            session.retransmit(lostPackets);
+        }
 
         tracker.tryScheduleProbeTimeout(session);
     }
@@ -481,7 +484,10 @@ public class PacketTracker
             List<Packet.WithFrames> lostPackets = new ArrayList<>();
             long lostLength = detectLostPackets(session, rttData, lostPackets);
             if (!lostPackets.isEmpty())
+            {
                 congestionController.onPacketsLost(lostPackets, lostLength, rttData);
+                session.retransmit(lostPackets);
+            }
             tryScheduleProbeTimeout(session);
         }
 

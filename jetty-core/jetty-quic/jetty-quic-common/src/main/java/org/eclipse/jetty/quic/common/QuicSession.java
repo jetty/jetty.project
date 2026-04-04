@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -34,15 +35,24 @@ import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
+import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
+import org.eclipse.jetty.quic.api.frames.NewConnectionIdFrame;
+import org.eclipse.jetty.quic.api.frames.NewTokenFrame;
+import org.eclipse.jetty.quic.api.frames.PaddingFrame;
+import org.eclipse.jetty.quic.api.frames.PathChallengeFrame;
+import org.eclipse.jetty.quic.api.frames.PathResponseFrame;
 import org.eclipse.jetty.quic.api.frames.PingFrame;
 import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.RetireConnectionIdFrame;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
+import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.frames.FrameStream;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
@@ -738,7 +748,7 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    public void notifyIncomingPacket(Packet packet)
+    private void notifyIncomingPacket(Packet packet)
     {
         try
         {
@@ -773,6 +783,110 @@ public abstract class QuicSession extends AbstractSession
     protected void generateRetryPacket(RetainableByteBuffer.Mutable retryAccumulator, RetryPacket retryPacket)
     {
         retryPacketGenerator.generate(retryAccumulator, retryPacket);
+    }
+
+    public void retransmit(List<Packet.WithFrames> packets)
+    {
+        // TODO: retransmissions should have higher priority than normal transmissions.
+        //  This means that either we need some private API such as QuicStream.retransmitData()
+        //  or we need to unwrap that and call flusher.prepend() + flusher.iterate().
+
+        Map<EncryptionLevel, List<Frame>> groups = packets.stream()
+            .collect(Collectors.groupingBy(EncryptionLevel::from,
+                Collectors.flatMapping(p -> p.frames().stream(), Collectors.toList())));
+
+        for (Map.Entry<EncryptionLevel, List<Frame>> entry : groups.entrySet())
+        {
+            EncryptionLevel encryptionLevel = entry.getKey();
+            for (Frame frame : entry.getValue())
+            {
+                switch (frame)
+                {
+                    case AckFrame _,
+                         ConnectionCloseFrame _,
+                         PaddingFrame _,
+                         PathResponseFrame _,
+                         PingFrame _ ->
+                    {
+                        // These frames are not retransmitted.
+                    }
+                    case CryptoFrame cryptoFrame ->
+                    {
+                        // TODO: only retransmit if the keys for the EncryptionLevel are available.
+                        crypto(encryptionLevel, cryptoFrame, Callback.NOOP);
+                    }
+                    case DataBlockedFrame dataBlockedFrame ->
+                    {
+                        // TODO: only resend if still blocked.
+                    }
+                    case HandshakeDoneFrame handshakeDoneFrame ->
+                    {
+                        // TODO: retransmit as-is.
+                    }
+                    case MaxDataFrame maxDataFrame ->
+                    {
+                        // TODO: there is an API for maxData(), but not sure I want to expose it to applications.
+                        //  Flow control is not implemented yet; maxData() is to tell the other peer that it can
+                        //  send more data. However, this should not be done by applications, but by the flow
+                        //  control mechanism: when approaching the max, it can decide to either close the
+                        //  connection, or send a maxData, which we should remember here (on in the flow control
+                        //  component) to be able to send the most updated value.
+                    }
+                    case MaxStreamsFrame maxStreamsFrame ->
+                    {
+                        // TODO: see discussion in MAX_DATA: we need a strategy mechanism similar to flow control
+                        //  to decide whether to close the connection, or allow more streams.
+                    }
+                    case NewConnectionIdFrame newConnectionIdFrame ->
+                    {
+                        // TODO: retransmit as-is.
+                    }
+                    case NewTokenFrame newTokenFrame ->
+                    {
+                        // TODO: retransmit as-is.
+                    }
+                    case PathChallengeFrame pathChallengeFrame ->
+                    {
+                        // TODO: payload must be refreshed.
+                    }
+                    case ResetFrame resetFrame ->
+                    {
+                        QuicStream stream = getStream(resetFrame.streamId());
+                        if (stream != null && !stream.isLocallyClosed())
+                            stream.reset(resetFrame.applicationErrorCode(), Promise.Invocable.noop());
+                    }
+                    case RetireConnectionIdFrame retireConnectionIdFrame ->
+                    {
+                        // TODO: retransmit as-is.
+                    }
+                    case StopSendingFrame stopSendingFrame ->
+                    {
+                        QuicStream stream = getStream(stopSendingFrame.streamId());
+                        if (stream != null && !stream.isRemotelyClosed())
+                            stream.stopSending(stopSendingFrame.applicationErrorCode(), Promise.Invocable.noop());
+                    }
+                    case StreamDataBlockedFrame streamDataBlockedFrame ->
+                    {
+                        // TODO: only resend if still blocked.
+                    }
+                    case StreamFrame streamFrame ->
+                    {
+                        QuicStream stream = getStream(streamFrame.streamId());
+                        if (stream != null && !stream.isLocallyClosed())
+                            stream.data(streamFrame.isEndStream(), streamFrame.data(), Promise.Invocable.noop());
+                    }
+                    case StreamMaxDataFrame streamMaxDataFrame ->
+                    {
+                        // TODO: see MAX_DATA, with the additional check that the stream must not be remotely closed,
+                        //  see RFC-9000[13.3]
+                    }
+                    case StreamsBlockedFrame streamsBlockedFrame ->
+                    {
+                        // TODO: only resend if still blocked.
+                    }
+                }
+            }
+        }
     }
 
     public void fail(Throwable x)
