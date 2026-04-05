@@ -73,6 +73,7 @@ class StreamFlusher extends CryptoFlusher
 
     boolean process() throws Exception
     {
+        // RFC-9002[7.7].
         // Acknowledgments are processed immediately,
         // without pacing or congestion window checks.
         if (acknowledger.processAcknowledgements())

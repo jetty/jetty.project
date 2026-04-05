@@ -202,6 +202,8 @@ public class QuicFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("no entries to flush on {}", this);
 
+        getQuicSession().getCongestionController().onIdle();
+
         return Action.IDLE;
     }
 
