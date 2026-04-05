@@ -150,6 +150,11 @@ public abstract class QuicSession extends AbstractSession
         return packetTracker.getCongestionController();
     }
 
+    public PacketTracker getPacketTracker()
+    {
+        return packetTracker;
+    }
+
     public PacketNumbers getPacketNumbers()
     {
         return packetNumbers;
@@ -597,7 +602,7 @@ public abstract class QuicSession extends AbstractSession
     public void processAckFrame(EncryptionLevel encryptionLevel, AckFrame frame)
     {
         packetNumbers.onAckFrameReceived(encryptionLevel, frame);
-        packetTracker.onAckFrameReceived(this, encryptionLevel, frame);
+        flusher.onAckFrameReceived(encryptionLevel, frame);
     }
 
     private void processFrameWithStreamId(Frame.WithStreamId frame)
@@ -746,6 +751,11 @@ public abstract class QuicSession extends AbstractSession
             accumulator.release();
             callback.failed(x);
         }
+    }
+
+    void onScheduledTask(Runnable task)
+    {
+        flusher.onScheduledTask(task);
     }
 
     private void notifyIncomingPacket(Packet packet)
@@ -919,7 +929,7 @@ public abstract class QuicSession extends AbstractSession
         @Override
         public void onOutgoingPacket(Session session, Packet packet, long length)
         {
-            packetTracker.onPacketSent(QuicSession.this, packet, length);
+            packetTracker.processPacketSent(QuicSession.this, packet, length);
         }
     }
 }

@@ -13,7 +13,10 @@
 
 package org.eclipse.jetty.quic.common.internal;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -41,6 +44,8 @@ public class QuicFlusher extends IteratingCallback
     private static final Logger LOG = LoggerFactory.getLogger(QuicFlusher.class);
 
     private final AutoLock lock = new AutoLock();
+    private final Queue<AckEntry> ackEntries = new ArrayDeque<>();
+    private final Queue<Runnable> scheduledTasks = new ArrayDeque<>();
     private final PacketFlusher packetFlusher = new PacketFlusher(this);
     private final CryptoFlusher initialFlusher = new CryptoFlusher(this, EncryptionLevel.INITIAL);
     private final CryptoFlusher handshakeFlusher = new CryptoFlusher(this, EncryptionLevel.HANDSHAKE);
@@ -172,9 +177,31 @@ public class QuicFlusher extends IteratingCallback
             iterate();
     }
 
+    public void onAckFrameReceived(EncryptionLevel encryptionLevel, AckFrame frame)
+    {
+        try (var _ = lock.lock())
+        {
+            ackEntries.offer(new AckEntry(encryptionLevel, frame));
+        }
+        iterate();
+    }
+
+    public void onScheduledTask(Runnable task)
+    {
+        try (var _ = lock.lock())
+        {
+            scheduledTasks.offer(task);
+        }
+        iterate();
+    }
+
     @Override
     protected Action process() throws Throwable
     {
+        processAcknowledgments();
+
+        processScheduledTasks();
+
         if (oneRTTFlusher.process())
         {
             flusher = oneRTTFlusher;
@@ -226,6 +253,32 @@ public class QuicFlusher extends IteratingCallback
         if (flusher != null)
             flusher.failed(cause);
         flusher = null;
+    }
+
+    private void processAcknowledgments()
+    {
+        List<AckEntry> entries;
+        try (var _ = lock.lock())
+        {
+            entries = new ArrayList<>(ackEntries);
+        }
+        for (AckEntry entry : entries)
+        {
+            getQuicSession().getPacketTracker().processAckFrameReceived(session, entry.encryptionLevel(), entry.frame());
+        }
+    }
+
+    private void processScheduledTasks()
+    {
+        List<Runnable> tasks;
+        try (var _ = lock.lock())
+        {
+            tasks = new ArrayList<>(scheduledTasks);
+        }
+        for (Runnable task : tasks)
+        {
+            task.run();
+        }
     }
 
     public void resetCrypto()
