@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +42,7 @@ import org.slf4j.LoggerFactory;
 /// A new LTO may be scheduled from a previous LTO.
 /// * There is only one timeout mechanism active at any given time. The PTO is
 /// scheduled for the latest packet sent, while the LTO is scheduled for the earliest
-/// non-lost packet for which an ack has not been received yet.
+/// non-lost packet for which an ack is expected but has not been received yet.
 /// If the system is idle, neither the PTO nor the LTO are active.
 ///
 /// The corresponding events are:
@@ -53,9 +52,9 @@ import org.slf4j.LoggerFactory;
 /// * PTO expires
 /// * LTO expires
 ///
-/// Each of these events calls the corresponding `onXYZ()` method, that serializes
-/// the processing of the event across other events by calling the corresponding
-/// `processXYZ()` method.
+/// These events are serialized with respect to each other so that the flusher
+/// can always see stable values from the [CongestionController].
+///
 /// The serialization of the processing of the events simplifies the implementation,
 /// both of this class and of the [CongestionController] implementation.
 ///
@@ -72,7 +71,6 @@ public class PacketTracker
 {
     private static final Logger LOG = LoggerFactory.getLogger(PacketTracker.class);
 
-    private final SerializedInvoker invoker = new SerializedInvoker();
     private final EnumMap<PacketNumberSpace, Tracker> trackers = new EnumMap<>(PacketNumberSpace.class);
     private final Scheduler scheduler;
     private final CongestionController congestionController;
@@ -165,33 +163,8 @@ public class PacketTracker
     }
 
     /// First entry point: when a packet is sent.
-    void onPacketSent(QuicSession session, Packet packet, long length)
+    void processPacketSent(QuicSession session, Packet packet, long length)
     {
-        invoker.run(() -> processPacketSent(session, packet, length));
-    }
-
-    /// Second entry point: when an ack is received.
-    void onAckFrameReceived(QuicSession session, EncryptionLevel encryptionLevel, AckFrame frame)
-    {
-        invoker.run(() -> processAckFrameReceived(session, encryptionLevel, frame));
-    }
-
-    /// Third entry point: when the loss timeout fires.
-    private void onLossTimeout(QuicSession session, Tracker tracker)
-    {
-        invoker.run(() -> processLossTimeout(session, tracker));
-    }
-
-    /// Fourth entry point: when the probe timeout fires.
-    private void onProbeTimeout(QuicSession session, PacketEntry packetEntry, Tracker tracker)
-    {
-        invoker.run(() -> processProbeTimeout(session, packetEntry, tracker));
-    }
-
-    private void processPacketSent(QuicSession session, Packet packet, long length)
-    {
-        invoker.assertCurrentThreadInvoking();
-
         // RFC-9002[A.5].
 
         // Packets without frames are not acknowledged, don't track them.
@@ -216,10 +189,9 @@ public class PacketTracker
         tracker.tryScheduleProbeTimeout(session, packetEntry, calculateProbeTimeout(packetEntry, rttData));
     }
 
-    private void processAckFrameReceived(QuicSession session, EncryptionLevel encryptionLevel, AckFrame frame)
+    /// Second entry point: when an ack is received.
+    public void processAckFrameReceived(QuicSession session, EncryptionLevel encryptionLevel, AckFrame frame)
     {
-        invoker.assertCurrentThreadInvoking();
-
         AckEntry entry = new AckEntry(encryptionLevel, frame);
 
         if (LOG.isDebugEnabled())
@@ -251,23 +223,36 @@ public class PacketTracker
         if (!lostPackets.isEmpty())
         {
             congestionController.onPacketsLost(lostPackets, lostLength, rttData);
-            session.retransmit(lostPackets);
+            retransmit(session, lostPackets);
         }
 
         tracker.tryScheduleProbeTimeout(session);
     }
 
+    /// Third entry point: when the loss timeout fires.
+    private void onLossTimeout(QuicSession session, Tracker tracker)
+    {
+        onTaskTimeout(session, () -> processLossTimeout(session, tracker));
+    }
+
+    /// Fourth entry point: when the probe timeout fires.
+    private void onProbeTimeout(QuicSession session, PacketEntry packetEntry, Tracker tracker)
+    {
+        onTaskTimeout(session, () -> processProbeTimeout(session, packetEntry, tracker));
+    }
+
+    void onTaskTimeout(QuicSession session, Runnable task)
+    {
+        session.onScheduledTask(task);
+    }
+
     private void processLossTimeout(QuicSession session, Tracker tracker)
     {
-        invoker.assertCurrentThreadInvoking();
-
         tracker.processLossTimeout(session);
     }
 
     private void processProbeTimeout(QuicSession session, PacketEntry packetEntry, Tracker tracker)
     {
-        invoker.assertCurrentThreadInvoking();
-
         tracker.probeTimeoutTask = null;
         ++probeTimeoutBackoff;
         sendProbe(session, EncryptionLevel.from(packetEntry.packet()));
@@ -276,6 +261,11 @@ public class PacketTracker
     void sendProbe(QuicSession session, EncryptionLevel encryptionLevel)
     {
         session.sendFrames(encryptionLevel, List.of(new PingFrame()), Callback.NOOP);
+    }
+
+    void retransmit(QuicSession session, List<Packet.WithFrames> lostPackets)
+    {
+        session.retransmit(lostPackets);
     }
 
     private RTTData estimateRTTData(EncryptionLevel encryptionLevel, AckFrame frame, PacketEntry largestEntry)
@@ -486,7 +476,7 @@ public class PacketTracker
             if (!lostPackets.isEmpty())
             {
                 congestionController.onPacketsLost(lostPackets, lostLength, rttData);
-                session.retransmit(lostPackets);
+                retransmit(session, lostPackets);
             }
             tryScheduleProbeTimeout(session);
         }
