@@ -318,6 +318,11 @@ public class PacketTrackerTest
         }
 
         @Override
+        public void onIdle()
+        {
+        }
+
+        @Override
         public long getCongestionWindow()
         {
             return 0;

@@ -508,7 +508,7 @@ public abstract class QuicSession extends AbstractSession
             // Processing of frames by a different layer (such as the
             // TLS layer or the application layer) is independent of
             // acknowledgments at the transport layer.
-            ack(packet);
+            acknowledge(packet);
 
             if (packet instanceof InitialPacket || Arrays.equals(getSourceConnectionId(), packet.destinationConnectionId()))
             {
@@ -700,7 +700,7 @@ public abstract class QuicSession extends AbstractSession
         notifyTransportParameters(transportParameters);
     }
 
-    private void ack(Packet packet)
+    private void acknowledge(Packet packet)
     {
         if (packet instanceof Packet.WithFrames p && p.requiresAcknowledgement())
             flusher.sendAcknowledgment(p, Callback.NOOP/*TODO*/);

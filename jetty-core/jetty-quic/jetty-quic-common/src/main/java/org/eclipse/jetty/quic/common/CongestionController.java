@@ -17,20 +17,55 @@ import java.util.List;
 
 import org.eclipse.jetty.quic.common.packets.Packet;
 
+/// A congestion controller implements the algorithm that
+/// regulates the traffic of data sent over the network.
+///
+/// A congestion controller prevents committing too
+/// much data to the network, which reduces data loss
+/// and prevents network collapse due to congestion.
 public interface CongestionController
 {
+    /// Method invoked when a packet is sent.
+    ///
+    /// @param packet the packet being sent
+    /// @param length the length in bytes of the packet being sent
+    /// @param rttData the round trip time data
     void onPacketSent(Packet.WithFrames packet, long length, RTTData rttData);
 
+    /// Method invoked when acknowledgments are received.
+    ///
+    /// @param packets the packets being acknowledged
+    /// @param totalLength the length in bytes of the packets being acknowledged
+    /// @param rttData the round trip time data
     void onPacketsAcknowledged(List<Packet.WithFrames> packets, long totalLength, RTTData rttData);
 
+    /// Method invoked when packets are lost.
+    ///
+    /// @param packets the packets being lost
+    /// @param totalLength the length in bytes of the packets being lost
+    /// @param rttData the round trip time data
     void onPacketsLost(List<Packet.WithFrames> packets, long totalLength, RTTData rttData);
 
+    /// Method invoked when there are no packets to send.
+    void onIdle();
+
+    /// The congestion window is the number of bytes that
+    /// can be sent without waiting for acknowledgments.
+    ///
+    /// @return the congestion window in bytes
     long getCongestionWindow();
 
+    /// The pacing delay is the time to wait between each packet send.
+    /// The delay avoids committing too much data to the network,
+    /// which reduces packet loss and prevents network collapse.
+    ///
+    /// @return the pacing delay in nanoseconds
     long getPacingDelay();
 
+    /// A factory for creating [CongestionController] instances.
     interface Factory
     {
+        /// @return a new [CongestionController] instance
         CongestionController newCongestionController();
     }
 }
