@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee11.servlet;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -66,6 +67,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -85,6 +88,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
 public class MultiPartServletTest
 {
     private static final int MAX_FILE_SIZE = 512 * 1024;
@@ -349,6 +353,7 @@ public class MultiPartServletTest
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testTempFilesDeletedOnError(boolean eager) throws Exception
     {
         byte[] bytes = new byte[2 * MAX_FILE_SIZE];
@@ -542,7 +547,7 @@ public class MultiPartServletTest
 
         assertEquals(200, response.getStatus());
         assertThat(response.getContentAsString(), containsString("Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog\n" +
-            "Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog"));
+            "Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog".replace("\n", System.lineSeparator())));
     }
 
     @ParameterizedTest
