@@ -101,6 +101,7 @@ public class TestOSGiUtil
         options.add(systemProperty("jetty.http.port").value("0"));
         options.add(systemProperty("jetty.home").value(etc.getParent().toString()));
         options.add(systemProperty("jetty.base").value(etc.getParent().toString()));
+        options.add(systemProperty("java.io.tmpdir").value(System.getProperty("java.io.tmpdir")));
         return options;
     }
 
@@ -161,6 +162,7 @@ public class TestOSGiUtil
     {
         //enables a dump of the status of all deployed bundles
         res.add(systemProperty("bundle.debug").value(Boolean.toString(Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))));
+        res.add(systemProperty("java.io.tmpdir").value(System.getProperty("java.io.tmpdir")));
 
         //add locations to look for jars to deploy
         String mavenRepoPath = System.getProperty("mavenRepoPath");
