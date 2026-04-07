@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -64,17 +65,17 @@ public class VersionedModulesTest extends AbstractUseCase
 
         // === Validate Resulting XMLs
         List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml"
+            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
+            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar)
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
+            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));

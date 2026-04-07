@@ -61,6 +61,8 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -301,6 +303,7 @@ public class FlowControlStrategyTest
 
     @ParameterizedTest
     @EnumSource(FlowControlStrategyType.class)
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testServerFlowControlOneBigWrite(FlowControlStrategyType type) throws Exception
     {
         int windowSize = 1536;

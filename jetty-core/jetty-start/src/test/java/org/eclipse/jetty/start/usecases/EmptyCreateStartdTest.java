@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -50,22 +51,22 @@ public class EmptyCreateStartdTest extends AbstractUseCase
 
         // === Validate Resulting XMLs
         List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/optional.xml",
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml",
-            "${jetty.home}/etc/extra.xml"
+            "${jetty.home}/etc/optional.xml".replace('/', File.separatorChar),
+            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
+            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar),
+            "${jetty.home}/etc/extra.xml".replace('/', File.separatorChar)
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/optional.jar",
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar",
-            "${jetty.home}/lib/extra/extra0.jar",
-            "${jetty.home}/lib/extra/extra1.jar"
+            "${jetty.home}/lib/optional.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/extra/extra0.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/extra/extra1.jar".replace('/', File.separatorChar)
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
