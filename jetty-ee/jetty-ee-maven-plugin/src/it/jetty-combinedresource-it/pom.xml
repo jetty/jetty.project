@@ -13,7 +13,7 @@
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>EE11 :: Webapp with multiple base resources</name>
+  <name>EECommon :: Webapp with multiple base resources</name>
 
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-combinedresource-port.txt</jetty.port.file>

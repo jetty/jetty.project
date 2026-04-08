@@ -10,7 +10,7 @@
   <artifactId>jetty-ee-test-openid-webapp</artifactId>
   <packaging>war</packaging>
 
-  <name>EE11 :: Tests :: OpenID WebApp</name>
+  <name>EECommon :: Tests :: OpenID WebApp</name>
 
   <dependencies>
     <dependency>

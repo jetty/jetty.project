@@ -11,7 +11,7 @@
 
   <packaging>war</packaging>
 
-  <name>EE11 :: Tests :: Simple Session WebApp</name>
+  <name>EECommon :: Tests :: Simple Session WebApp</name>
 
   <dependencies>
     <dependency>

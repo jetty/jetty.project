@@ -12,7 +12,7 @@
 //
 
 /**
- * Jetty EE11 Jndi : Factories
+ * Jetty EECommon Jndi : Factories
  */
 package org.eclipse.jetty.ee.jndi.factories;
 

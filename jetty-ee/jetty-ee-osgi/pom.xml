@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.ee.osgi</groupId>
   <artifactId>jetty-ee-osgi</artifactId>
   <packaging>pom</packaging>
-  <name>EE11 :: OSGi</name>
+  <name>EECommon :: OSGi</name>
 
   <modules>
     <module>jetty-ee-osgi-alpn</module>

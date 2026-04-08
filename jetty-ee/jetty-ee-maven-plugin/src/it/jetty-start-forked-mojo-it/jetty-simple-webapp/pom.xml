@@ -11,7 +11,7 @@
   <artifactId>jetty-simple-webapp</artifactId>
   <packaging>war</packaging>
 
-  <name>EE11 :: Simple :: WebApp</name>
+  <name>EECommon :: Simple :: WebApp</name>
 
   <properties>
     <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>

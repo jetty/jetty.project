@@ -48,7 +48,7 @@ public class EnvConfiguration extends AbstractConfiguration
     private static final Logger LOG = LoggerFactory.getLogger(EnvConfiguration.class);
 
     private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
-    private static final String JETTY_EE11_ENV_XML_FILENAME = "jetty-ee-env.xml";
+    private static final String JETTY_EECommon_ENV_XML_FILENAME = "jetty-ee-env.xml";
     private static final String JETTY_ENV_XML_FILENAME = "jetty-env.xml";
 
     public EnvConfiguration()
@@ -262,7 +262,7 @@ public class EnvConfiguration extends AbstractConfiguration
                 return null;
 
             //try to find jetty-ee-env.xml
-            Resource xmlResource = webInf.resolve(JETTY_EE11_ENV_XML_FILENAME);
+            Resource xmlResource = webInf.resolve(JETTY_EECommon_ENV_XML_FILENAME);
             if (!Resources.missing(xmlResource))
                 return xmlResource;
 

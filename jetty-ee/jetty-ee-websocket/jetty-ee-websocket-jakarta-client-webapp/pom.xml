@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-websocket-jakarta-client-webapp</artifactId>
-  <name>EE11 :: Websocket :: Jakarta Client WebApp</name>
+  <name>EECommon :: Websocket :: Jakarta Client WebApp</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jakarta.client.webapp</bundle-symbolic-name>

@@ -8,7 +8,7 @@
   </parent>
   <artifactId>test-jetty-ee-osgi-webapp-resources</artifactId>
   <packaging>war</packaging>
-  <name>EE11 :: OSGi :: WebApp With Resources</name>
+  <name>EECommon :: OSGi :: WebApp With Resources</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp.resources</bundle-symbolic-name>
     <maven.deploy.skip>true</maven.deploy.skip>

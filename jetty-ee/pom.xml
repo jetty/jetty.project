@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.ee</groupId>
   <artifactId>jetty-ee</artifactId>
   <packaging>pom</packaging>
-  <name>EE11</name>
+  <name>EECommon</name>
 
   <modules>
     <module>jetty-ee-annotations</module>
@@ -76,7 +76,7 @@
         <artifactId>jakarta.xml.bind-api</artifactId>
         <version>${ee.jakarta.xml.bind.api.version}</version>
       </dependency>
-      <!-- Jetty EE11 Dependencies -->
+      <!-- Jetty EECommon Dependencies -->
       <dependency>
         <groupId>org.eclipse.jetty.ee</groupId>
         <artifactId>jetty-ee-annotations</artifactId>
@@ -227,7 +227,7 @@
         <artifactId>mortbay-apache-el</artifactId>
         <version>${ee.jsp.impl.version}</version>
       </dependency>
-      <!-- Jakarta EE11 Dependencies -->
+      <!-- Jakarta EECommon Dependencies -->
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>mortbay-apache-jsp</artifactId>

@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-webapp</artifactId>
-  <name>EE11 :: WebApp</name>
+  <name>EECommon :: WebApp</name>
   <description>Jetty web application support</description>
 
   <properties>

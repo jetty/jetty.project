@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-plus</artifactId>
-  <name>EE11 :: Plus</name>
+  <name>EECommon :: Plus</name>
   <description>Jetty JavaEE style services</description>
 
   <properties>

@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-websocket-jetty-server</artifactId>
-  <name>EE11 :: Websocket :: Jetty Server</name>
+  <name>EECommon :: Websocket :: Jetty Server</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>

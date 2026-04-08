@@ -10,7 +10,7 @@
   <artifactId>jetty-ee-test-siwe-webapp</artifactId>
   <packaging>war</packaging>
 
-  <name>EE11 :: Tests :: SIWE WebApp</name>
+  <name>EECommon :: Tests :: SIWE WebApp</name>
 
   <dependencies>
     <dependency>

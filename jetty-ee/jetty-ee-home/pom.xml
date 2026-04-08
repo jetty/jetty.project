@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee-home</artifactId>
   <packaging>pom</packaging>
-  <name>EE11 :: Home Assembly</name>
+  <name>EECommon :: Home Assembly</name>
 
   <properties>
     <assembly-directory>${basedir}/target/jetty-ee-home</assembly-directory>
@@ -95,7 +95,7 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
-    <!-- Demo EE11 Apps -->
+    <!-- Demo EECommon Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee.demos</groupId>
       <artifactId>jetty-ee-demo-proxy-webapp</artifactId>

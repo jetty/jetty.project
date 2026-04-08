@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee-test-cdi</artifactId>
   <packaging>jar</packaging>
-  <name>EE11 :: Tests :: CDI</name>
+  <name>EECommon :: Tests :: CDI</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.cdi.tests</bundle-symbolic-name>

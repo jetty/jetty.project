@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee-osgi-boot-warurl</artifactId>
-  <name>EE11 :: OSGi :: Boot :: Warurl</name>
+  <name>EECommon :: OSGi :: Boot :: Warurl</name>
   <description>Jetty OSGi Boot-Warurl bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot.warurl</bundle-symbolic-name>

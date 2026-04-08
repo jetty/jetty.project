@@ -444,8 +444,8 @@ public class CrossContextDispatcherTest
     @Test
     public void testSimulatedCrossContextCrossEnvironmentInclude() throws Exception
     {
-        // test that if a dispatch from EE11 was received by an EE8 context,
-        // the EE8 api constants can be used to retrieve their EE11 equivalents.
+        // test that if a dispatch from EECommon was received by an EE8 context,
+        // the EE8 api constants can be used to retrieve their EECommon equivalents.
         _targetServletContextHandler.addServlet(VerifySimulatedEE8IncludeServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 

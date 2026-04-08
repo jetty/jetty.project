@@ -7,7 +7,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-osgi-boot</artifactId>
-  <name>EE11 :: OSGi :: Boot</name>
+  <name>EECommon :: OSGi :: Boot</name>
   <description>Jetty OSGi Boot bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>
@@ -61,7 +61,7 @@
         <configuration>
           <instructions>
             <Bundle-SymbolicName>org.eclipse.jetty.ee.osgi.boot;singleton:=true</Bundle-SymbolicName>
-            <Bundle-Activator>org.eclipse.jetty.ee.osgi.boot.EE11Activator</Bundle-Activator>
+            <Bundle-Activator>org.eclipse.jetty.ee.osgi.boot.EECommonActivator</Bundle-Activator>
             <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
             <Import-Package>${osgi.slf4j.import.packages},
               jakarta.mail;version="2.0";resolution:=optional,

@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-fcgi-proxy</artifactId>
-  <name>EE11 :: FCGI Proxy</name>
+  <name>EECommon :: FCGI Proxy</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.fcgi.proxy</bundle-symbolic-name>

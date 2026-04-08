@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.ee.websocket</groupId>
   <artifactId>jetty-ee-websocket</artifactId>
   <packaging>pom</packaging>
-  <name>EE11 :: Websocket</name>
+  <name>EECommon :: Websocket</name>
 
   <modules>
     <module>jetty-ee-websocket-jakarta-client</module>

@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee-test-weld-cdi-webapp</artifactId>
   <packaging>war</packaging>
-  <name>EE11 :: Tests :: CDI Weld Demo WebApp</name>
+  <name>EECommon :: Tests :: CDI Weld Demo WebApp</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.cdi.weld</bundle-symbolic-name>

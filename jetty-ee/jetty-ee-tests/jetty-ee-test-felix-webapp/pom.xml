@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee-test-felix-webapp</artifactId>
   <packaging>war</packaging>
-  <name>EE11 :: Tests :: Felix WebApp</name>
+  <name>EECommon :: Tests :: Felix WebApp</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.felix</bundle-symbolic-name>

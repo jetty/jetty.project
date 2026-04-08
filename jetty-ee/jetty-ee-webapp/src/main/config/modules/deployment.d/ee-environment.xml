@@ -2,5 +2,5 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="wac" class="org.eclipse.jetty.ee.webapp.WebAppContext">
-  <!-- Configuration for applications in EE11 Environment -->
+  <!-- Configuration for applications in EECommon Environment -->
 </Configure>

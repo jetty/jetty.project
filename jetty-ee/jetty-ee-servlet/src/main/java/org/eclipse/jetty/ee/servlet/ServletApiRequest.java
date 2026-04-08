@@ -658,7 +658,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
-        //TODO support parts read during a cross context dispatch to environment other than EE11
+        //TODO support parts read during a cross context dispatch to environment other than EECommon
         if (_parts == null)
         {
             try

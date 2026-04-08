@@ -1,5 +1,5 @@
 [description]
-Enables support for EE11 FastCGI proxying.
+Enables support for EECommon FastCGI proxying.
 
 [environment]
 ee

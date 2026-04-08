@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-ee-jspc-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <name>EE11 :: Jetty JSPC Maven Plugin</name>
+  <name>EECommon :: Jetty JSPC Maven Plugin</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jspc.plugin</bundle-symbolic-name>
   </properties>

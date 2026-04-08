@@ -46,13 +46,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * EE11Activator
+ * EECommonActivator
  * <p>
  * Enable deployment of webapps/contexts to E10E
  */
-public class EE11Activator extends AbstractEEActivator
+public class EECommonActivator extends AbstractEEActivator
 {
-    private static final Logger LOG = LoggerFactory.getLogger(EE11Activator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EECommonActivator.class);
 
     public static final String ENVIRONMENT = "ee";
 
@@ -65,7 +65,7 @@ public class EE11Activator extends AbstractEEActivator
     @Override
     public ContextFactory newContextFactory(Bundle bundle)
     {
-        return new EE11ContextFactory(bundle);
+        return new EECommonContextFactory(bundle);
     }
 
     @Override
@@ -77,14 +77,14 @@ public class EE11Activator extends AbstractEEActivator
     @Override
     public ContextFactory newWebAppFactory(Bundle bundle)
     {
-        return new EE11WebAppFactory(bundle);
+        return new EECommonWebAppFactory(bundle);
     }
 
-    public class EE11ContextFactory implements ContextFactory
+    public class EECommonContextFactory implements ContextFactory
     {
         private final Bundle _myBundle;
 
-        public EE11ContextFactory(Bundle bundle)
+        public EECommonContextFactory(Bundle bundle)
         {
             _myBundle = bundle;
         }
@@ -177,11 +177,11 @@ public class EE11Activator extends AbstractEEActivator
         }
     }
 
-    public class EE11WebAppFactory implements ContextFactory
+    public class EECommonWebAppFactory implements ContextFactory
     {
         private final Bundle _myBundle;
 
-        public EE11WebAppFactory(Bundle bundle)
+        public EECommonWebAppFactory(Bundle bundle)
         {
             _myBundle = bundle;
         }

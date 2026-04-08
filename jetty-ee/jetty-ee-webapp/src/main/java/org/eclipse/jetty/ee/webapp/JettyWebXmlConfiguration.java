@@ -35,7 +35,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     public static final String PROPERTY_WEB_INF = "web-inf";
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
-    public static final String JETTY_EE11_WEB_XML = "jetty-ee-web.xml";
+    public static final String JETTY_EECommon_WEB_XML = "jetty-ee-web.xml";
 
     public JettyWebXmlConfiguration()
     {
@@ -94,7 +94,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
      */
     private Resource resolveJettyWebXml(Resource webInf)
     {
-        String xmlFile = JETTY_EE11_WEB_XML;
+        String xmlFile = JETTY_EECommon_WEB_XML;
         try
         {
             if (webInf == null || !webInf.isDirectory())

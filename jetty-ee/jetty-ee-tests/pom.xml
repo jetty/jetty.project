@@ -10,7 +10,7 @@
   </parent>
   <artifactId>jetty-ee-tests</artifactId>
   <packaging>pom</packaging>
-  <name>EE11 :: Tests</name>
+  <name>EECommon :: Tests</name>
 
   <modules>
     <module>jetty-ee-test-bad-websocket-webapp</module>

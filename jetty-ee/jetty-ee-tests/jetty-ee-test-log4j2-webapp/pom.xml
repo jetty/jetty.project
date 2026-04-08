@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee-test-log4j2-webapp</artifactId>
   <packaging>war</packaging>
-  <name>EE11 :: Tests :: Log4j2 WebApp</name>
+  <name>EECommon :: Tests :: Log4j2 WebApp</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.log4j2</bundle-symbolic-name>

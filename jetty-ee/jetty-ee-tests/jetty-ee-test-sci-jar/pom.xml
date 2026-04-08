@@ -7,7 +7,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-test-sci-jar</artifactId>
-  <name>EE11 :: Tests :: SCI Test JAR</name>
+  <name>EECommon :: Tests :: SCI Test JAR</name>
   <description>Jetty SCI Test JAR</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests.sci.jar</bundle-symbolic-name>

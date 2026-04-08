@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-servlet</artifactId>
-  <name>EE11 :: Servlet</name>
+  <name>EECommon :: Servlet</name>
   <description>Jetty Servlet Container</description>
 
   <properties>

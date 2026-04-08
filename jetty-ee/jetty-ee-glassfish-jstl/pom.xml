@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-ee-glassfish-jstl</artifactId>
   <packaging>jar</packaging>
-  <name>EE11 :: Glassfish JSTL</name>
+  <name>EECommon :: Glassfish JSTL</name>
   <url>https://projects.eclipse.org/projects/ee4j.glassfish</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.glassfish.jstl</bundle-symbolic-name>
