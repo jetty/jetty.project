@@ -85,10 +85,21 @@ public class MessageHandler implements FrameHandler
 
     private static final Logger LOG = LoggerFactory.getLogger(MessageHandler.class);
 
+    private final boolean autoDemand;
     private CoreSession coreSession;
     private Utf8StringBuilder textMessageBuffer;
     private ByteArrayOutputStream binaryMessageBuffer;
     private byte dataType = OpCode.UNDEFINED;
+
+    public MessageHandler()
+    {
+        this(true);
+    }
+
+    public MessageHandler(boolean autoDemand)
+    {
+        this.autoDemand = autoDemand;
+    }
 
     public CoreSession getCoreSession()
     {
@@ -117,7 +128,8 @@ public class MessageHandler implements FrameHandler
 
         this.coreSession = coreSession;
         callback.succeeded();
-        coreSession.demand();
+        if (autoDemand)
+            coreSession.demand();
     }
 
     @Override
@@ -201,16 +213,17 @@ public class MessageHandler implements FrameHandler
             {
                 onText(textBuffer.takeCompleteString(BadPayloadException.InvalidUtf8::new), callback);
                 textBuffer.reset();
+                if (autoDemand)
+                    coreSession.demand();
             }
             else
             {
                 if (textBuffer.hasCodingErrors())
                     throw new BadPayloadException.InvalidUtf8();
-                else
-                    callback.succeeded();
-            }
 
-            coreSession.demand();
+                callback.succeeded();
+                coreSession.demand();
+            }
         }
         catch (Throwable t)
         {
@@ -236,15 +249,17 @@ public class MessageHandler implements FrameHandler
 
             if (frame.isFin())
             {
-                onBinary(BufferUtil.toBuffer(binaryBuffer.toByteArray()), callback);
+                ByteBuffer buffer = BufferUtil.toBuffer(binaryBuffer.toByteArray());
+                onBinary(buffer, callback);
                 binaryBuffer.reset();
+                if (autoDemand)
+                    coreSession.demand();
             }
             else
             {
                 callback.succeeded();
+                coreSession.demand();
             }
-
-            coreSession.demand();
         }
         catch (Throwable t)
         {
