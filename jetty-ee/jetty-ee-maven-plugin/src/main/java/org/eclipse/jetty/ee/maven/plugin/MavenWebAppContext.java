@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.maven.plugin;
+package org.eclipse.jetty.ee.maven.plugin;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -26,16 +26,16 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.ee11.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.ee11.quickstart.QuickStartConfiguration;
-import org.eclipse.jetty.ee11.servlet.FilterHolder;
-import org.eclipse.jetty.ee11.servlet.FilterMapping;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.ee11.servlet.ServletMapping;
-import org.eclipse.jetty.ee11.webapp.Configuration;
-import org.eclipse.jetty.ee11.webapp.Configurations;
-import org.eclipse.jetty.ee11.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.ee.servlet.FilterHolder;
+import org.eclipse.jetty.ee.servlet.FilterMapping;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
+import org.eclipse.jetty.ee.servlet.ServletMapping;
+import org.eclipse.jetty.ee.webapp.Configuration;
+import org.eclipse.jetty.ee.webapp.Configurations;
+import org.eclipse.jetty.ee.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.maven.Overlay;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
@@ -486,7 +486,7 @@ public class MavenWebAppContext extends WebAppContext
         Class<?> cdiInitializer;
         try
         {
-            cdiInitializer = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.ee11.cdi.servlet.JettyWeldInitializer");
+            cdiInitializer = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.ee.cdi.servlet.JettyWeldInitializer");
             Method initWebAppMethod = cdiInitializer.getMethod("initWebApp", WebAppContext.class);
             initWebAppMethod.invoke(null, this);
         }

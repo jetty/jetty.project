@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.security.jaspi.modules;
+package org.eclipse.jetty.ee.security.jaspi.modules;
 
 import java.io.IOException;
 import java.util.Map;
@@ -25,7 +25,7 @@ import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.auth.message.MessagePolicy;
 import jakarta.security.auth.message.module.ServerAuthModule;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee11.security.jaspi.JaspiMessageInfo;
+import org.eclipse.jetty.ee.security.jaspi.JaspiMessageInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.server.Request;
@@ -42,7 +42,7 @@ public class BasicAuthenticationAuthModule extends BaseAuthModule
 
     private String _realmName;
 
-    private static final String REALM_KEY = "org.eclipse.jetty.ee11.security.jaspi.modules.RealmName";
+    private static final String REALM_KEY = "org.eclipse.jetty.ee.security.jaspi.modules.RealmName";
 
     public BasicAuthenticationAuthModule()
     {

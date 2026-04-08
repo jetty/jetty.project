@@ -2,11 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11.demos</groupId>
-    <artifactId>jetty-ee11-demos</artifactId>
+    <groupId>org.eclipse.jetty.ee.demos</groupId>
+    <artifactId>jetty-ee-demos</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee11-demo-jetty-websocket-webapp</artifactId>
+  <artifactId>jetty-ee-demo-jetty-websocket-webapp</artifactId>
   <packaging>war</packaging>
   <name>EE11 :: Demo :: Jetty WebApp</name>
   <properties>
@@ -19,8 +19,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jetty-server</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -44,14 +44,14 @@
             <Export-Package>!org.example*</Export-Package>
             <!-- the test webapp is configured via a jetty xml file
             in order to add the security handler. -->
-            <Web-ContextPath>/ee11-demo-jetty-websocket</Web-ContextPath>
+            <Web-ContextPath>/ee-demo-jetty-websocket</Web-ContextPath>
             <!-- in fact the '.' must not be there
             but Felix-BND has a bug:
             http://www.mail-archive.com/users@felix.apache.org/msg04730.html
             https://issues.apache.org/jira/browse/FELIX-1571
             -->
             <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
-            <Jetty-Environment>ee11</Jetty-Environment>
+            <Jetty-Environment>ee</Jetty-Environment>
           </instructions>
         </configuration>
       </plugin>

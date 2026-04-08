@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.server.browser;
+package org.eclipse.jetty.ee.websocket.jakarta.server.browser;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;

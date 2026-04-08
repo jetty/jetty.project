@@ -13,7 +13,7 @@
 
 import org.eclipse.jetty.security.Authenticator;
 
-module org.eclipse.jetty.ee11.servlet
+module org.eclipse.jetty.ee.servlet
 {
     requires org.slf4j;
 
@@ -34,14 +34,14 @@ module org.eclipse.jetty.ee11.servlet
     // Only required if using JDBCLoginService.
     requires static java.sql;
 
-    exports org.eclipse.jetty.ee11.servlet;
-    exports org.eclipse.jetty.ee11.servlet.listener;
-    exports org.eclipse.jetty.ee11.servlet.security;
-    exports org.eclipse.jetty.ee11.servlet.security.authentication;
-    exports org.eclipse.jetty.ee11.servlet.util;
+    exports org.eclipse.jetty.ee.servlet;
+    exports org.eclipse.jetty.ee.servlet.listener;
+    exports org.eclipse.jetty.ee.servlet.security;
+    exports org.eclipse.jetty.ee.servlet.security.authentication;
+    exports org.eclipse.jetty.ee.servlet.util;
 
 
-    exports org.eclipse.jetty.ee11.servlet.jmx to
+    exports org.eclipse.jetty.ee.servlet.jmx to
          org.eclipse.jetty.jmx;
 
     uses Authenticator.Factory;

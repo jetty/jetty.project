@@ -3,11 +3,11 @@
 
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-    <artifactId>jetty-ee11-websocket</artifactId>
+    <groupId>org.eclipse.jetty.ee.websocket</groupId>
+    <artifactId>jetty-ee-websocket</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee11-websocket-jakarta-common</artifactId>
+  <artifactId>jetty-ee-websocket-jakarta-common</artifactId>
   <name>EE11 :: Websocket :: Jakarta Common</name>
 
   <properties>
@@ -58,7 +58,7 @@
             <configuration>
               <instructions>
                 <Bundle-Description>Jakarta Websocket Common Implementation</Bundle-Description>
-                <Export-Package>org.eclipse.jetty.ee11.websocket.jakarta.common.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+                <Export-Package>org.eclipse.jetty.ee.websocket.jakarta.common.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
               </instructions>
             </configuration>
           </execution>

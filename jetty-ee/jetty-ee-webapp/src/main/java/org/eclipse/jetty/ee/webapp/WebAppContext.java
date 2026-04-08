@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -40,14 +40,14 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee.webapp.WebAppClassLoading;
-import org.eclipse.jetty.ee11.servlet.ErrorHandler;
-import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHandler;
-import org.eclipse.jetty.ee11.servlet.SessionHandler;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee.servlet.ErrorHandler;
+import org.eclipse.jetty.ee.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletHandler;
+import org.eclipse.jetty.ee.servlet.SessionHandler;
+import org.eclipse.jetty.ee.servlet.security.ConstraintAware;
+import org.eclipse.jetty.ee.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Deployable;
@@ -74,7 +74,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * The WebAppContext handler is an extension of ContextHandler that
  * coordinates the construction and configuration of nested handlers:
- * {@link ConstraintSecurityHandler}, {@link org.eclipse.jetty.ee11.servlet.SessionHandler}
+ * {@link ConstraintSecurityHandler}, {@link org.eclipse.jetty.ee.servlet.SessionHandler}
  * and {@link ServletHandler}.
  * The handlers are configured by pluggable configuration classes, with
  * the default being  {@link WebXmlConfiguration} and
@@ -88,7 +88,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 {
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
-    public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee11/webapp/webdefault-ee11.xml";
+    public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/ee/webapp/webdefault-ee.xml";
     /**
      * @deprecated use {@link WebAppClassLoading#PROTECTED_CLASSES_ATTRIBUTE} instead.
      */

@@ -18,4 +18,4 @@
  */
 File buildLog = new File( basedir, 'build.log' )
 assert buildLog.text.contains( 'Started oejs.Server' )
-assert buildLog.text.contains( 'Running org.eclipse.jetty.ee11.maven.plugin.it.IntegrationTestGetContent')
+assert buildLog.text.contains( 'Running org.eclipse.jetty.ee.maven.plugin.it.IntegrationTestGetContent')

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.common.decoders;
+package org.eclipse.jetty.ee.websocket.jakarta.common.decoders;
 
 import java.io.IOException;
 import java.io.InputStream;

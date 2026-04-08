@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.maven.plugin;
+package org.eclipse.jetty.ee.maven.plugin;
 
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.ee11.servlet.ListenerHolder;
+import org.eclipse.jetty.ee.servlet.ListenerHolder;
 import org.eclipse.jetty.maven.MavenServerConnector;
 import org.eclipse.jetty.maven.ServerSupport;
 import org.eclipse.jetty.server.Server;
@@ -123,7 +123,7 @@ public class TestJettyEmbedder
             boolean someListener = false;
             for (ListenerHolder h : webApp.getServletHandler().getListeners())
             {
-                if (h.getHeldClass() != null && "org.eclipse.jetty.ee11.maven.plugin.SomeListener".equalsIgnoreCase(h.getHeldClass().getName()))
+                if (h.getHeldClass() != null && "org.eclipse.jetty.ee.maven.plugin.SomeListener".equalsIgnoreCase(h.getHeldClass().getName()))
                 {
                     if (someListener)
                         fail("Duplicate listeners");
@@ -140,7 +140,7 @@ public class TestJettyEmbedder
             //ensure still only 1 listener
             for (ListenerHolder h : webApp.getServletHandler().getListeners())
             {
-                if (h.getHeldClass() != null && "org.eclipse.jetty.ee11.maven.plugin.SomeListener".equalsIgnoreCase(h.getHeldClass().getName()))
+                if (h.getHeldClass() != null && "org.eclipse.jetty.ee.maven.plugin.SomeListener".equalsIgnoreCase(h.getHeldClass().getName()))
                 {
                     if (someListener)
                         fail("Duplicate listeners");

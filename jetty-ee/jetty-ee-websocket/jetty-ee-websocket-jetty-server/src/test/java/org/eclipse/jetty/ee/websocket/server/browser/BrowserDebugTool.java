@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.server.browser;
+package org.eclipse.jetty.ee.websocket.server.browser;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -22,15 +22,15 @@ import java.util.List;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee11.servlet.DefaultServlet;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.ee11.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.ee11.websocket.server.JettyServerUpgradeResponse;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketCreator;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServletFactory;
-import org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee.servlet.DefaultServlet;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
+import org.eclipse.jetty.ee.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.ee.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.ee.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.ee.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.ee.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.ee.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;

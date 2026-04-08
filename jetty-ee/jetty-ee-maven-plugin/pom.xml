@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11</groupId>
-    <artifactId>jetty-ee11</artifactId>
+    <groupId>org.eclipse.jetty.ee</groupId>
+    <artifactId>jetty-ee</artifactId>
     <version>13.0.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>jetty-ee11-maven-plugin</artifactId>
+  <artifactId>jetty-ee-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
   <name>EE11 :: Jetty Maven Plugin</name>
   <description>Jetty EE11 maven plugins</description>
@@ -99,38 +99,38 @@
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-annotations</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-apache-jsp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-apache-jsp</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-glassfish-jstl</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-glassfish-jstl</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-plus</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-plus</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-quickstart</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-quickstart</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlet</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-webapp</artifactId>
       <optional>true</optional>
       <exclusions>
         <exclusion>
@@ -140,13 +140,13 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-jakarta-server</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jakarta-server</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jetty-server</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
@@ -247,14 +247,14 @@
         <configuration>
           <extraArtifacts>
             <extraArtifact>org.eclipse.jetty:jetty-slf4j-impl:${project.version}</extraArtifact>
-            <extraArtifact>org.eclipse.jetty.ee11:jetty-ee11-apache-jsp:${project.version}</extraArtifact>
-            <extraArtifact>org.eclipse.jetty.ee11:jetty-ee11-glassfish-jstl:${project.version}</extraArtifact>
-            <extraArtifact>org.eclipse.jetty.ee11:jetty-ee11-webapp:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty.ee:jetty-ee-apache-jsp:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty.ee:jetty-ee-glassfish-jstl:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty.ee:jetty-ee-webapp:${project.version}</extraArtifact>
             <extraArtifact>org.eclipse.jetty:jetty-server:${project.version}</extraArtifact>
             <extraArtifact>org.eclipse.jetty:jetty-deploy:${project.version}</extraArtifact>
             <extraArtifact>org.eclipse.jetty:jetty-home:${project.version}:zip</extraArtifact>
           </extraArtifacts>
-          <junitPackageName>org.eclipse.jetty.maven.its.ee11</junitPackageName>
+          <junitPackageName>org.eclipse.jetty.maven.its.ee</junitPackageName>
           <setupIncludes>
             <setupInclude>it-parent-pom/pom.xml</setupInclude>
           </setupIncludes>

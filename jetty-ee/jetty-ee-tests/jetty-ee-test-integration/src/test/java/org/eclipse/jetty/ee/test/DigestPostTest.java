@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test;
+package org.eclipse.jetty.ee.test;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -37,9 +37,9 @@ import org.eclipse.jetty.client.DigestAuthentication;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.StringRequestContent;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.Constraint;

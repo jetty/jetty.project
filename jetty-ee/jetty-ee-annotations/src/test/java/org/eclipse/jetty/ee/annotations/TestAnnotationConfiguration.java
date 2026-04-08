@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.annotations;
+package org.eclipse.jetty.ee.annotations;
 
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -20,10 +20,10 @@ import java.nio.file.Path;
 import java.util.List;
 
 import jakarta.servlet.ServletContainerInitializer;
-import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration.State;
-import org.eclipse.jetty.ee11.webapp.RelativeOrdering;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.webapp.WebDescriptor;
+import org.eclipse.jetty.ee.annotations.AnnotationConfiguration.State;
+import org.eclipse.jetty.ee.webapp.RelativeOrdering;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebDescriptor;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenPaths;

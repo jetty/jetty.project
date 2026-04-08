@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.tests;
+package org.eclipse.jetty.ee.websocket.tests;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -19,9 +19,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.webapp.WebDescriptor;
-import org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketConfiguration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebDescriptor;
+import org.eclipse.jetty.ee.websocket.server.config.JettyWebSocketConfiguration;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;

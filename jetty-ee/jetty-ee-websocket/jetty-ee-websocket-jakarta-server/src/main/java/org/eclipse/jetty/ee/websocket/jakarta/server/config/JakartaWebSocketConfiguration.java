@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.server.config;
+package org.eclipse.jetty.ee.websocket.jakarta.server.config;
 
-import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
-import org.eclipse.jetty.ee11.webapp.FragmentConfiguration;
-import org.eclipse.jetty.ee11.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebAppConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee.webapp.FragmentConfiguration;
+import org.eclipse.jetty.ee.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee.webapp.WebAppConfiguration;
+import org.eclipse.jetty.ee.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee.webapp.WebXmlConfiguration;
 
 /**
  * <p>Websocket Configuration</p>
@@ -31,10 +31,10 @@ public class JakartaWebSocketConfiguration extends AbstractConfiguration
     {
         super(new Builder()
             .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class)
-            .addDependents("org.eclipse.jetty.ee11.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName())
-            .protectAndExpose("org.eclipse.jetty.ee11.websocket.servlet.") // For WebSocketUpgradeFilter
-            .protectAndExpose("org.eclipse.jetty.ee11.websocket.jakarta.server.config.")
-            .protectAndExpose("org.eclipse.jetty.ee11.websocket.jakarta.client.JakartaWebSocketClientContainerProvider")
-            .protectAndExpose("org.eclipse.jetty.ee11.websocket.jakarta.client.JakartaWebSocketShutdownContainer"));
+            .addDependents("org.eclipse.jetty.ee.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName())
+            .protectAndExpose("org.eclipse.jetty.ee.websocket.servlet.") // For WebSocketUpgradeFilter
+            .protectAndExpose("org.eclipse.jetty.ee.websocket.jakarta.server.config.")
+            .protectAndExpose("org.eclipse.jetty.ee.websocket.jakarta.client.JakartaWebSocketClientContainerProvider")
+            .protectAndExpose("org.eclipse.jetty.ee.websocket.jakarta.client.JakartaWebSocketShutdownContainer"));
     }
 }

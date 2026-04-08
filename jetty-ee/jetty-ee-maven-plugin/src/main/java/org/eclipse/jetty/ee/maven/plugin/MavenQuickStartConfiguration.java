@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.maven.plugin;
+package org.eclipse.jetty.ee.maven.plugin;
 
-import org.eclipse.jetty.ee11.quickstart.QuickStartConfiguration;
-import org.eclipse.jetty.ee11.webapp.Configuration;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.ee.webapp.Configuration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.server.internal;
+package org.eclipse.jetty.ee.websocket.jakarta.server.internal;
 
 import java.net.URI;
 import java.security.Principal;
@@ -23,7 +23,7 @@ import java.util.Map;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.websocket.server.HandshakeRequest;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.JakartaWebSocketServerContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Request;

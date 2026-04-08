@@ -14,7 +14,7 @@
 // This module is a mixed bag of things.
 // There are some utility classes that only depend on Servlet APIs,
 // but other utility classes that depend on some Jetty module.
-module org.eclipse.jetty.ee11.servlets
+module org.eclipse.jetty.ee.servlets
 {
     requires org.slf4j;
 
@@ -28,5 +28,5 @@ module org.eclipse.jetty.ee11.servlets
     // Only required if using CrossOriginFilter, DoSFilter, etc.
     requires static transitive org.eclipse.jetty.util;
 
-    exports org.eclipse.jetty.ee11.servlets;
+    exports org.eclipse.jetty.ee.servlets;
 }

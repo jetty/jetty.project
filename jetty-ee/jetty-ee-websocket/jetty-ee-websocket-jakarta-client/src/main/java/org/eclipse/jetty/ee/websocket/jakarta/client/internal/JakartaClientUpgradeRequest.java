@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.client.internal;
+package org.eclipse.jetty.ee.websocket.jakarta.client.internal;
 
 import java.net.URI;
 import java.security.Principal;
 
 import jakarta.websocket.DeploymentException;
-import org.eclipse.jetty.ee11.websocket.jakarta.client.JakartaWebSocketClientContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketFrameHandler;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.UpgradeRequest;
+import org.eclipse.jetty.ee.websocket.jakarta.client.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketFrameHandler;
+import org.eclipse.jetty.ee.websocket.jakarta.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;

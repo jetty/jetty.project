@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.matchers;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.matchers;
 
 import jakarta.websocket.Decoder;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.PongMessage;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketSession;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.RegisteredDecoder;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.MessageType;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketSession;
+import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.RegisteredDecoder;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.MessageType;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;

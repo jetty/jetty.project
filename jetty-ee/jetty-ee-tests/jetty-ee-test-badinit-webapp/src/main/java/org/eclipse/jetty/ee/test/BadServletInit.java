@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test;
+package org.eclipse.jetty.ee.test;
 
 import java.io.IOException;
 

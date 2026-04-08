@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 
-import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
@@ -43,7 +43,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
-        //parse webdefault-ee11.xml
+        //parse webdefault-ee.xml
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (StringUtil.isNotBlank(defaultsDescriptor))
         {

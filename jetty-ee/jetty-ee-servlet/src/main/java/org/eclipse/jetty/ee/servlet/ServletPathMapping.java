@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee.servlet;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

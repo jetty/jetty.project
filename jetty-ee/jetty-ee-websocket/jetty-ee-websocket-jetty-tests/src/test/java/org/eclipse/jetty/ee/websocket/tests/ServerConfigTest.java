@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.tests;
+package org.eclipse.jetty.ee.websocket.tests;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -22,11 +22,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServletFactory;
-import org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
+import org.eclipse.jetty.ee.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.ee.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.ee.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;

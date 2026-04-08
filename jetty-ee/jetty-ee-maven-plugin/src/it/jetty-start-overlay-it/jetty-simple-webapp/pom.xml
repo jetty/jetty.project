@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.eclipse.jetty.ee11.its.jetty-start-overlay-it</groupId>
+    <groupId>org.eclipse.jetty.ee.its.jetty-start-overlay-it</groupId>
     <artifactId>jetty-simple-project</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
@@ -20,20 +20,20 @@
   <dependencies>
 
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.its.jetty-start-overlay-it</groupId>
+      <groupId>org.eclipse.jetty.ee.its.jetty-start-overlay-it</groupId>
       <artifactId>jetty-simple-base-webapp</artifactId>
       <type>war</type>
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlet</artifactId>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-maven-plugin</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-maven-plugin</artifactId>
       <classifier>tests</classifier>
       <type>test-jar</type>
       <scope>test</scope>
@@ -70,7 +70,7 @@
             <failOnMissingWebXml>false</failOnMissingWebXml>
             <overlays>
               <overlay>
-                <groupId>org.eclipse.jetty.ee11.its.jetty-start-overlay-it</groupId>
+                <groupId>org.eclipse.jetty.ee.its.jetty-start-overlay-it</groupId>
                 <artifactId>jetty-simple-base-webapp</artifactId>
                 <includes>
                   <include>index.html</include>
@@ -107,15 +107,15 @@
             <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
           </systemPropertyVariables>
           <dependenciesToScan>
-            <dependency>org.eclipse.jetty.ee11:jetty-ee11-maven-plugin</dependency>
+            <dependency>org.eclipse.jetty.ee:jetty-ee-maven-plugin</dependency>
           </dependenciesToScan>
         </configuration>
           </execution>
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-maven-plugin</artifactId>
         <executions>
           <execution>
             <id>start-jetty</id>

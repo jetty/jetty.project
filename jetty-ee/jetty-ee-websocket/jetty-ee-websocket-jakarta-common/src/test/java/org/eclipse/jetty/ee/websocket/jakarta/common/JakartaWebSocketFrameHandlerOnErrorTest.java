@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.common;
+package org.eclipse.jetty.ee.websocket.jakarta.common;
 
 import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.OnError;
 import jakarta.websocket.Session;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.sockets.TrackingSocket;
+import org.eclipse.jetty.ee.websocket.jakarta.common.sockets.TrackingSocket;
 import org.eclipse.jetty.util.Callback;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;

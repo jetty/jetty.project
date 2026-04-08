@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.osgi.test;
+package org.eclipse.jetty.ee.osgi.test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -25,7 +25,7 @@ import javax.inject.Inject;
 
 import aQute.bnd.osgi.Constants;
 import org.eclipse.jetty.annotations.ClassInheritanceHandler;
-import org.eclipse.jetty.ee11.osgi.annotations.AnnotationParser;
+import org.eclipse.jetty.ee.osgi.annotations.AnnotationParser;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.Test;
 import org.junit.runner.RunWith;

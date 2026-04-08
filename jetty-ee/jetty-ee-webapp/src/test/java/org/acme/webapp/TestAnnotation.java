@@ -15,8 +15,8 @@ package org.acme.webapp;
 
 import java.util.List;
 
-import org.eclipse.jetty.ee11.webapp.DiscoveredAnnotation;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.util.resource.Resource;
 
 public class TestAnnotation extends DiscoveredAnnotation

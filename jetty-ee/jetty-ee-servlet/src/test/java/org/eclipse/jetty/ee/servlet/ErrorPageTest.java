@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee.servlet;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -1597,7 +1597,7 @@ public class ErrorPageTest
         assertThat(responseBody, not(Matchers.containsString("ERROR_CODE: 404")));
         assertThat(responseBody, not(Matchers.containsString("ERROR_EXCEPTION: null")));
         assertThat(responseBody, not(Matchers.containsString("ERROR_EXCEPTION_TYPE: null")));
-        assertThat(responseBody, not(Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee11.servlet.DefaultServlet-")));
+        assertThat(responseBody, not(Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee.servlet.DefaultServlet-")));
         assertThat(responseBody, not(Matchers.containsString("ERROR_REQUEST_URI: /noop/info")));
     }
 
@@ -1846,8 +1846,8 @@ public class ErrorPageTest
             assertThat(response.get(HttpHeader.DATE), notNullValue());
 
             String responseBody = response.getContent();
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.ee11.servlet.ErrorPageTest$TestServletException"));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.ee11.servlet.ErrorPageTest$TestServletException"));
+            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.ee.servlet.ErrorPageTest$TestServletException"));
+            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.ee.servlet.ErrorPageTest$TestServletException"));
         }
     }
 

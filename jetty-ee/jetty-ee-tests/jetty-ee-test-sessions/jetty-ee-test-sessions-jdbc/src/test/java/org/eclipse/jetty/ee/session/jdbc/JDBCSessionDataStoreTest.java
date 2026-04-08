@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session.jdbc;
+package org.eclipse.jetty.ee.session.jdbc;
 
 import java.io.NotSerializableException;
 

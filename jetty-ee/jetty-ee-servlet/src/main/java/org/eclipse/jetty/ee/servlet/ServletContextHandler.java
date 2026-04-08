@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee.servlet;
 
 import java.io.File;
 import java.io.IOException;
@@ -68,11 +68,11 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee11.servlet.ServletContextResponse.EncodingFrom;
-import org.eclipse.jetty.ee11.servlet.ServletContextResponse.OutputType;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee.servlet.ServletContextResponse.EncodingFrom;
+import org.eclipse.jetty.ee.servlet.ServletContextResponse.OutputType;
+import org.eclipse.jetty.ee.servlet.security.ConstraintAware;
+import org.eclipse.jetty.ee.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
@@ -132,7 +132,7 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
 public class ServletContextHandler extends ContextHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
-    public static final Environment ENVIRONMENT = Environment.ensure("ee11", ServletContextHandler.class);
+    public static final Environment ENVIRONMENT = Environment.ensure("ee", ServletContextHandler.class);
     /**
      * @deprecated Use {@link ServletContextHandler#ENVIRONMENT} instead.
      */

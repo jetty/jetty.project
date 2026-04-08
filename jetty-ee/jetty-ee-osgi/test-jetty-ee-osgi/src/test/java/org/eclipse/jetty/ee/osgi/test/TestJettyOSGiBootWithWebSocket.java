@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.osgi.test;
+package org.eclipse.jetty.ee.osgi.test;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -68,7 +68,7 @@ public class TestJettyOSGiBootWithWebSocket
     {
         List<Option> res = new ArrayList<>();
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.ee11.demos").artifactId("jetty-ee11-demo-jetty-websocket-webapp").classifier("webbundle").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee.demos").artifactId("jetty-ee-demo-jetty-websocket-webapp").classifier("webbundle").versionAsInProject());
         return res;
     }
 
@@ -86,7 +86,7 @@ public class TestJettyOSGiBootWithWebSocket
         String port = System.getProperty("boot.websocket.port");
         assertNotNull(port);
 
-        URI uri = new URI("ws://127.0.0.1:" + port + "/ee11-demo-jetty-websocket/jetty.websocket/foo");
+        URI uri = new URI("ws://127.0.0.1:" + port + "/ee-demo-jetty-websocket/jetty.websocket/foo");
         WebSocketClient client = new WebSocketClient();
         try
         {

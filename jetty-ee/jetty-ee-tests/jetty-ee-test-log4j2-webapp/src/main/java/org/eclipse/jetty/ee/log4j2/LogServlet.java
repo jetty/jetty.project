@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.log4j2;
+package org.eclipse.jetty.ee.log4j2;
 
 import java.io.IOException;
 

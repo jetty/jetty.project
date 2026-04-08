@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
-<Configure id='wac' class="org.eclipse.jetty.ee11.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee.webapp.WebAppContext">
 
-  <New id="tx" class="org.eclipse.jetty.ee11.plus.jndi.Transaction">
-    <Arg>ee11</Arg>
+  <New id="tx" class="org.eclipse.jetty.ee.plus.jndi.Transaction">
+    <Arg>ee</Arg>
     <Arg>
       <New class="org.example.MockUserTransaction"/>
     </Arg>

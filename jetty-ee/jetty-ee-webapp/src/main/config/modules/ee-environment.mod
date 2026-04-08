@@ -7,9 +7,9 @@ Template configuration file to apply to all web applications deployed in the EE1
 deployment
 
 [depend]
-ee11-deploy
+ee-deploy
 
 [files]
-basehome:modules/deployment.d/ee11-environment.properties|environments/ee11-environment.properties
-basehome:modules/deployment.d/ee11-environment.xml|environments/ee11-environment.xml
+basehome:modules/deployment.d/ee-environment.properties|environments/ee-environment.properties
+basehome:modules/deployment.d/ee-environment.xml|environments/ee-environment.xml
 

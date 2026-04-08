@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11</groupId>
-    <artifactId>jetty-ee11-tests</artifactId>
+    <groupId>org.eclipse.jetty.ee</groupId>
+    <artifactId>jetty-ee-tests</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>jetty-ee11-test-integration</artifactId>
+  <artifactId>jetty-ee-test-integration</artifactId>
   <packaging>jar</packaging>
   <name>EE11 :: Tests :: Integrations</name>
 
@@ -75,50 +75,50 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-apache-jsp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-apache-jsp</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-servlets</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlets</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-test-sci-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-test-sci-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-webapp</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.demos</groupId>
-      <artifactId>jetty-ee11-demo-jetty-websocket-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee.demos</groupId>
+      <artifactId>jetty-ee-demo-jetty-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-jakarta-server</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jakarta-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jetty-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -184,16 +184,16 @@
                   <destFileName>servlet5-demo-jakarta-websocket.war</destFileName>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.ee11.demos</groupId>
-                  <artifactId>jetty-ee11-demo-jetty-websocket-webapp</artifactId>
+                  <groupId>org.eclipse.jetty.ee.demos</groupId>
+                  <artifactId>jetty-ee-demo-jetty-websocket-webapp</artifactId>
                   <type>war</type>
-                  <destFileName>jetty-ee11-demo-jetty-websocket.war</destFileName>
+                  <destFileName>jetty-ee-demo-jetty-websocket.war</destFileName>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.ee11</groupId>
-                  <artifactId>jetty-ee11-test-sci-webapp</artifactId>
+                  <groupId>org.eclipse.jetty.ee</groupId>
+                  <artifactId>jetty-ee-test-sci-webapp</artifactId>
                   <type>war</type>
-                  <destFileName>jetty-ee11-test-sci-webapp.war</destFileName>
+                  <destFileName>jetty-ee-test-sci-webapp.war</destFileName>
                 </artifactItem>
               </artifactItems>
               <stripVersion>true</stripVersion>
@@ -208,7 +208,7 @@
             <phase>process-test-resources</phase>
             <configuration>
               <includeScope>test</includeScope>
-              <includeGroupIds>org.eclipse.jetty, org.eclipse.jetty.ee11</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty, org.eclipse.jetty.ee</includeGroupIds>
               <classifier>config</classifier>
               <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
               <outputDirectory>${project.build.directory}/configs</outputDirectory>

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.annotations;
+package org.eclipse.jetty.ee.annotations;
 
 import java.util.List;
 
@@ -21,12 +21,12 @@ import jakarta.servlet.annotation.ServletSecurity;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import jakarta.servlet.http.HttpServlet;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.ee11.servlet.ServletMapping;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
+import org.eclipse.jetty.ee.servlet.ServletMapping;
+import org.eclipse.jetty.ee.servlet.security.ConstraintAware;
+import org.eclipse.jetty.ee.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.Constraint.Transport;
 import org.hamcrest.Matchers;

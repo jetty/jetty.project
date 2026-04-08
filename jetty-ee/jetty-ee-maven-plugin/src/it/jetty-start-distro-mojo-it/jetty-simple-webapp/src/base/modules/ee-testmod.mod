@@ -4,11 +4,11 @@
 Enables test setup
 
 [environment]
-ee11
+ee
 
 [depend]
 http
 
 [xml]
-etc/test-jetty-ee11.xml
+etc/test-jetty-ee.xml
 

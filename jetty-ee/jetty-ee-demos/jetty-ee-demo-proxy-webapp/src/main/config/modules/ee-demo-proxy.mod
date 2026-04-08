@@ -4,15 +4,15 @@
 Demo Proxy Webapp
 
 [environment]
-ee11
+ee
 
 [tags]
 demo
 webapp
 
 [depends]
-ee11-deploy
+ee-deploy
 
 [files]
-basehome:modules/demo.d/ee11-demo-proxy.properties|webapps/ee11-demo-proxy.properties
-maven://org.eclipse.jetty.ee11.demos/jetty-ee11-demo-proxy-webapp/${jetty.version}/war|webapps/ee11-demo-proxy.war
+basehome:modules/demo.d/ee-demo-proxy.properties|webapps/ee-demo-proxy.properties
+maven://org.eclipse.jetty.ee.demos/jetty-ee-demo-proxy-webapp/${jetty.version}/war|webapps/ee-demo-proxy.war

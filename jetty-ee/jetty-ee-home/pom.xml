@@ -2,18 +2,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11</groupId>
-    <artifactId>jetty-ee11</artifactId>
+    <groupId>org.eclipse.jetty.ee</groupId>
+    <artifactId>jetty-ee</artifactId>
     <version>13.0.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>jetty-ee11-home</artifactId>
+  <artifactId>jetty-ee-home</artifactId>
   <packaging>pom</packaging>
   <name>EE11 :: Home Assembly</name>
 
   <properties>
-    <assembly-directory>${basedir}/target/jetty-ee11-home</assembly-directory>
-    <source-assembly-directory>${basedir}/target/jetty-ee11-home-sources</source-assembly-directory>
+    <assembly-directory>${basedir}/target/jetty-ee-home</assembly-directory>
+    <source-assembly-directory>${basedir}/target/jetty-ee-home-sources</source-assembly-directory>
     <spotbugs.skip>true</spotbugs.skip>
   </properties>
 
@@ -24,26 +24,26 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-annotations</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-apache-jsp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-apache-jsp</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-cdi</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-cdi</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-fcgi-proxy</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-fcgi-proxy</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-glassfish-jstl</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-glassfish-jstl</artifactId>
       <exclusions>
         <exclusion>
           <groupId>jakarta.el</groupId>
@@ -56,40 +56,40 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-jaspi</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-jaspi</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-jndi</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-jndi</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-plus</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-plus</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-proxy</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-proxy</artifactId>
     </dependency>
 
-    <!-- ee11 specific dependencies -->
+    <!-- ee specific dependencies -->
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-quickstart</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-quickstart</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlet</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-servlets</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlets</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.demos</groupId>
-      <artifactId>jetty-ee11-demo-jetty-websocket-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee.demos</groupId>
+      <artifactId>jetty-ee-demo-jetty-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>
@@ -97,28 +97,28 @@
     </dependency>
     <!-- Demo EE11 Apps -->
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.demos</groupId>
-      <artifactId>jetty-ee11-demo-proxy-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee.demos</groupId>
+      <artifactId>jetty-ee-demo-proxy-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
       <type>jar</type>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-jakarta-server</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jakarta-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-jetty-client-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jetty-client-webapp</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jetty-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-servlet</artifactId>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
@@ -180,7 +180,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <id>copy-ee11-annotations-deps</id>
+            <id>copy-ee-annotations-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -189,11 +189,11 @@
               <includeGroupIds>jakarta.annotation</includeGroupIds>
               <includeArtifactIds>jakarta.annotation-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee11-annotations</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee-annotations</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee11-annotations-src-deps</id>
+            <id>copy-ee-annotations-src-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -203,26 +203,26 @@
               <includeArtifactIds>jakarta.annotation-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee11-annotations</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee-annotations</outputDirectory>
             </configuration>
           </execution>
 
           <execution>
-            <id>copy-ee11-deps</id>
+            <id>copy-ee-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee11</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.ee</includeGroupIds>
               <excludeArtifactIds>jetty-websocket-core-client,jetty-websocket-core-common,jetty-websocket-core-server,jetty-websocket-jetty-api,jetty-websocket-jetty-client,jetty-websocket-jetty-common,jetty-websocket-jetty-server</excludeArtifactIds>
-              <excludeGroupIds>org.eclipse.jetty.ee11.demos,org.eclipse.jetty.ee11.websocket</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.ee.demos,org.eclipse.jetty.ee.websocket</excludeGroupIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee11-jaspi-deps</id>
+            <id>copy-ee-jaspi-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -231,11 +231,11 @@
               <includeGroupIds>jakarta.authentication</includeGroupIds>
               <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee11-jaspi</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee-jaspi</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee11-jaspi-src-deps</id>
+            <id>copy-ee-jaspi-src-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -245,11 +245,11 @@
               <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee11-jaspi</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee-jaspi</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee11-jsp-deps</id>
+            <id>copy-ee-jsp-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -258,11 +258,11 @@
               <includeGroupIds>jakarta.servlet.jsp,jakarta.el,org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp-api,jakarta.el-api,mortbay-apache-el,mortbay-apache-jsp,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee11-apache-jsp</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee-apache-jsp</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee11-jsp-src-deps</id>
+            <id>copy-ee-jsp-src-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -272,11 +272,11 @@
               <includeArtifactIds>jakart.servlet.jsp-api,jakarta.el-api,mortbay-apache-el,mortbay-apache-jsp,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee11-apache-jsp</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee-apache-jsp</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee11-jstl-deps</id>
+            <id>copy-ee-jstl-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -285,11 +285,11 @@
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.wasp</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,wasp</includeArtifactIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee11-glassfish-jstl</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee-glassfish-jstl</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee11-jstl-src-deps</id>
+            <id>copy-ee-jstl-src-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -299,11 +299,11 @@
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,wasp</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee11-glassfish-jstl</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee-glassfish-jstl</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee11-lib-jakarta-websocket-deps</id>
+            <id>copy-ee-lib-jakarta-websocket-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -311,11 +311,11 @@
             <configuration>
               <includeGroupIds>jakarta.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee11-websocket</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee-websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee11-lib-jakarta-websocket-src-deps</id>
+            <id>copy-ee-lib-jakarta-websocket-src-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -324,19 +324,19 @@
               <includeGroupIds>jakarta.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee11-websocket</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee-websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee11-src-deps</id>
+            <id>copy-ee-src-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee11</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.ee</includeGroupIds>
               <includeTypes>jar</includeTypes>
-              <excludeGroupIds>org.eclipse.jetty.ee11.demos,org.eclipse.jetty.ee11.websocket</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.ee.demos,org.eclipse.jetty.ee.websocket</excludeGroupIds>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -367,28 +367,28 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-ee11-websocket-deps</id>
+            <id>copy-lib-ee-websocket-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee11.websocket</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.ee.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee11-websocket</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee-websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-ee11-websocket-src-deps</id>
+            <id>copy-lib-ee-websocket-src-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee11.websocket</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.ee.websocket</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee11-websocket</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee-websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -481,7 +481,7 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee11, org.eclipse.jetty.ee11.demos</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.ee, org.eclipse.jetty.ee.demos</includeGroupIds>
               <excludeArtifactIds/>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>

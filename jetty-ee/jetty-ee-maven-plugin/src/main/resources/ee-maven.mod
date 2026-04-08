@@ -4,15 +4,15 @@
 Enables an un-assembled Maven webapp to run in a Jetty distribution.
 
 [environment]
-ee11
+ee
 
 [depends]
 server
-ee11-webapp
-ee11-annotations
+ee-webapp
+ee-annotations
 
 [lib]
-lib/ee11-maven/*.jar
+lib/ee-maven/*.jar
 
 [xml]
-etc/jetty-ee11-maven.xml
+etc/jetty-ee-maven.xml

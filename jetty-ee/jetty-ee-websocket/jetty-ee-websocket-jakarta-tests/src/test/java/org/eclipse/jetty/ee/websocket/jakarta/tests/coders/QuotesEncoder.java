@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.coders;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.coders;
 
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder;

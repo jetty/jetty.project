@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.server.sockets;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.server.sockets;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;

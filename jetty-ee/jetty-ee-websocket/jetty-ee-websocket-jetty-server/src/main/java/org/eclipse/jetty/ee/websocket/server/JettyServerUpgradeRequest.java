@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.server;
+package org.eclipse.jetty.ee.websocket.server;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;

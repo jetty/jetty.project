@@ -11,20 +11,20 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.plus.webapp;
+package org.eclipse.jetty.ee.plus.webapp;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
-import org.eclipse.jetty.ee11.plus.jndi.Transaction;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
-import org.eclipse.jetty.ee11.webapp.FragmentConfiguration;
-import org.eclipse.jetty.ee11.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.ee11.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee.plus.jndi.Transaction;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee.webapp.FragmentConfiguration;
+import org.eclipse.jetty.ee.webapp.JettyWebXmlConfiguration;
+import org.eclipse.jetty.ee.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.util.NanoTime;
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 public class PlusConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = LoggerFactory.getLogger(PlusConfiguration.class);
-    private static final String LOCK_JNDI_KEY = "org.eclipse.jetty.ee11.plus.webapp.PlusConfiguration.jndiKey";
+    private static final String LOCK_JNDI_KEY = "org.eclipse.jetty.ee.plus.webapp.PlusConfiguration.jndiKey";
 
     public PlusConfiguration()
     {

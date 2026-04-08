@@ -14,4 +14,4 @@
 /**
  * Jetty Plus : Limited Additional JEE Webapp Support
  */
-package org.eclipse.jetty.ee11.plus.webapp;
+package org.eclipse.jetty.ee.plus.webapp;

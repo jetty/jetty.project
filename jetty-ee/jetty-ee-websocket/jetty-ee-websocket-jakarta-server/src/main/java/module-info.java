@@ -11,24 +11,24 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee11.websocket.jakarta.server
+module org.eclipse.jetty.ee.websocket.jakarta.server
 {
-    requires org.eclipse.jetty.ee11.websocket.servlet;
+    requires org.eclipse.jetty.ee.websocket.servlet;
     requires org.slf4j;
 
-    requires transitive org.eclipse.jetty.ee11.webapp;
-    requires transitive org.eclipse.jetty.ee11.websocket.jakarta.client;
+    requires transitive org.eclipse.jetty.ee.webapp;
+    requires transitive org.eclipse.jetty.ee.websocket.jakarta.client;
     requires transitive org.eclipse.jetty.websocket.core.server;
 
-    exports org.eclipse.jetty.ee11.websocket.jakarta.server;
-    exports org.eclipse.jetty.ee11.websocket.jakarta.server.config;
+    exports org.eclipse.jetty.ee.websocket.jakarta.server;
+    exports org.eclipse.jetty.ee.websocket.jakarta.server.config;
 
     provides jakarta.servlet.ServletContainerInitializer with
-        org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+        org.eclipse.jetty.ee.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 
     provides jakarta.websocket.server.ServerEndpointConfig.Configurator with
-        org.eclipse.jetty.ee11.websocket.jakarta.server.config.ContainerDefaultConfigurator;
+        org.eclipse.jetty.ee.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 
-    provides  org.eclipse.jetty.ee11.webapp.Configuration with
-        org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
+    provides  org.eclipse.jetty.ee.webapp.Configuration with
+        org.eclipse.jetty.ee.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
 }

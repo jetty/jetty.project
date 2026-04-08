@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test;
+package org.eclipse.jetty.ee.test;
 
 import java.io.IOException;
 import java.net.URI;
@@ -25,8 +25,8 @@ import java.util.Map;
 
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.StandardDeployer;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.webapp.WebDescriptor;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebDescriptor;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -69,8 +69,8 @@ public class DeploymentDefaultContextPathTest
         deploymentScanner.addWebappsDirectory(webappsDir);
         deploymentScanner.setScanInterval(1);
 
-        Environment.ensure("ee11", WebAppContext.class);
-        DeploymentScanner.EnvironmentConfig environmentConfig = deploymentScanner.configureEnvironment("ee11");
+        Environment.ensure("ee", WebAppContext.class);
+        DeploymentScanner.EnvironmentConfig environmentConfig = deploymentScanner.configureEnvironment("ee");
         environmentConfig.setDefaultContextHandlerClass(WebAppContext.class);
 
         server.addBean(deploymentScanner);
@@ -139,7 +139,7 @@ public class DeploymentDefaultContextPathTest
         String xmlText = """
             <?xml version="1.0"?>
             <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure.dtd">
-            <Configure id="wac" class="org.eclipse.jetty.ee11.webapp.WebAppContext">
+            <Configure id="wac" class="org.eclipse.jetty.ee.webapp.WebAppContext">
               <Set name="contextPath">/test-alt</Set>
               <Set name="war"><Property name="jetty.webapps" default="." />/test.war</Set>
               <Set name="extractWAR">false</Set>

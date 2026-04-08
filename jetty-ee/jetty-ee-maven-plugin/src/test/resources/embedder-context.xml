@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee11.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee.webapp.WebAppContext">
   <Set name="contextPath">/embedder</Set>
   <Get name="servletHandler">
     <Call name="addListener">
       <Arg>
-        <New class="org.eclipse.jetty.ee11.servlet.ListenerHolder">
+        <New class="org.eclipse.jetty.ee.servlet.ListenerHolder">
           <Set name="listener">
-            <New class="org.eclipse.jetty.ee11.maven.plugin.SomeListener"/>
+            <New class="org.eclipse.jetty.ee.maven.plugin.SomeListener"/>
           </Set>
         </New>
       </Arg>

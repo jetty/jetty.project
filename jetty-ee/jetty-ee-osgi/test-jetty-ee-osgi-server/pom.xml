@@ -2,11 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11.osgi</groupId>
-    <artifactId>jetty-ee11-osgi</artifactId>
+    <groupId>org.eclipse.jetty.ee.osgi</groupId>
+    <artifactId>jetty-ee-osgi</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>test-jetty-ee11-osgi-server</artifactId>
+  <artifactId>test-jetty-ee-osgi-server</artifactId>
   <name>EE11 :: OSGi :: Server</name>
   <description>Test Jetty OSGi bundle with a Server</description>
   <properties>
@@ -16,8 +16,8 @@
   </properties>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-webapp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.platform</groupId>
@@ -56,7 +56,7 @@
               org.xml.sax,
               org.xml.sax.helpers,
               *</Import-Package>
-            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;==;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee11.*;version="[$(version;==;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;==;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee.*;version="[$(version;==;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
           </instructions>
         </configuration>
       </plugin>

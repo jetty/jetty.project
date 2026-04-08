@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee.servlet;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -40,7 +40,7 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.servlet.http.Part;
-import org.eclipse.jetty.ee11.servlet.util.ServletOutputStreamWrapper;
+import org.eclipse.jetty.ee.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;

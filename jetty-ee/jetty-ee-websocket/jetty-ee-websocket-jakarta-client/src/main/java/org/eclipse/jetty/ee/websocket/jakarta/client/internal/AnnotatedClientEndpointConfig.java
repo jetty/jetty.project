@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.client.internal;
+package org.eclipse.jetty.ee.websocket.jakarta.client.internal;
 
 import java.util.Collections;
 import java.util.List;
@@ -19,7 +19,7 @@ import java.util.List;
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.DeploymentException;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.ClientEndpointConfigWrapper;
+import org.eclipse.jetty.ee.websocket.jakarta.common.ClientEndpointConfigWrapper;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 public class AnnotatedClientEndpointConfig extends ClientEndpointConfigWrapper

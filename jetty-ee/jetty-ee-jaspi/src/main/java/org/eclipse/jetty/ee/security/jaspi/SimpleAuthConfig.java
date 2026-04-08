@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.security.jaspi;
+package org.eclipse.jetty.ee.security.jaspi;
 
 import java.util.Map;
 import javax.security.auth.Subject;
@@ -19,7 +19,7 @@ import javax.security.auth.Subject;
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.auth.message.config.ServerAuthConfig;
 import jakarta.security.auth.message.config.ServerAuthContext;
-import org.eclipse.jetty.ee11.security.jaspi.provider.JaspiAuthConfigProvider;
+import org.eclipse.jetty.ee.security.jaspi.provider.JaspiAuthConfigProvider;
 
 /**
  * @deprecated use {@link JaspiAuthConfigProvider}.

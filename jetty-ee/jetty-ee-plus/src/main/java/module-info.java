@@ -11,21 +11,21 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee11.plus
+module org.eclipse.jetty.ee.plus
 {
     requires transitive org.eclipse.jetty.plus;
     requires org.slf4j;
 
-    requires transitive org.eclipse.jetty.ee11.webapp;
+    requires transitive org.eclipse.jetty.ee.webapp;
 
     // Only required if using Transaction.
     requires static transitive jakarta.transaction;
     requires org.eclipse.jetty.jndi;
 
-    exports org.eclipse.jetty.ee11.plus.jndi;
-    exports org.eclipse.jetty.ee11.plus.webapp;
+    exports org.eclipse.jetty.ee.plus.jndi;
+    exports org.eclipse.jetty.ee.plus.webapp;
 
-    provides org.eclipse.jetty.ee11.webapp.Configuration with
-        org.eclipse.jetty.ee11.plus.webapp.EnvConfiguration,
-        org.eclipse.jetty.ee11.plus.webapp.PlusConfiguration;
+    provides org.eclipse.jetty.ee.webapp.Configuration with
+        org.eclipse.jetty.ee.plus.webapp.EnvConfiguration,
+        org.eclipse.jetty.ee.plus.webapp.PlusConfiguration;
 }

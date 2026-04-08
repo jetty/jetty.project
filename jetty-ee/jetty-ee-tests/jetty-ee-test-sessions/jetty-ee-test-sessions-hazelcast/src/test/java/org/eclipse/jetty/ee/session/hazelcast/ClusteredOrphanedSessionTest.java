@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session.hazelcast;
+package org.eclipse.jetty.ee.session.hazelcast;
 
-import org.eclipse.jetty.ee11.session.AbstractClusteredOrphanedSessionTest;
+import org.eclipse.jetty.ee.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.tools.HazelcastTestHelper;
 import org.junit.jupiter.api.AfterEach;

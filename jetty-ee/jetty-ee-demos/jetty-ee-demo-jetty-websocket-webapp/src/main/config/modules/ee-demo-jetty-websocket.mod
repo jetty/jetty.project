@@ -4,18 +4,18 @@
 Demo Jetty WebSocket Webapp
 
 [environment]
-ee11
+ee
 
 [tags]
 demo
 webapp
 
 [depends]
-ee11-deploy
+ee-deploy
 ext
-ee11-websocket-jetty
+ee-websocket-jetty
 
 [files]
-basehome:modules/demo.d/ee11-demo-jetty-websocket.xml|webapps/ee11-demo-jetty-websocket.xml
-basehome:modules/demo.d/ee11-demo-jetty-websocket.properties|webapps/ee11-demo-jetty-websocket.properties
-maven://org.eclipse.jetty.demos/jetty-ee11-demo-jetty-websocket/webapp/${jetty.version}/war|webapps/ee11-demo-jetty-websocket.war
+basehome:modules/demo.d/ee-demo-jetty-websocket.xml|webapps/ee-demo-jetty-websocket.xml
+basehome:modules/demo.d/ee-demo-jetty-websocket.properties|webapps/ee-demo-jetty-websocket.properties
+maven://org.eclipse.jetty.demos/jetty-ee-demo-jetty-websocket/webapp/${jetty.version}/war|webapps/ee-demo-jetty-websocket.war

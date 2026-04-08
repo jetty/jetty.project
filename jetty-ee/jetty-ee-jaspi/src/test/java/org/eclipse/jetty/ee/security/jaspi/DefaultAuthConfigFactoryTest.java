@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.security.jaspi;
+package org.eclipse.jetty.ee.security.jaspi;
 
 import java.util.Map;
 
 import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.security.auth.message.config.AuthConfigProvider;
 import jakarta.security.auth.message.config.RegistrationListener;
-import org.eclipse.jetty.ee11.security.jaspi.provider.JaspiAuthConfigProvider;
+import org.eclipse.jetty.ee.security.jaspi.provider.JaspiAuthConfigProvider;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,14 +33,14 @@ public class DefaultAuthConfigFactoryTest
 
     private static final String MESSAGE_LAYER = "HttpServlet";
 
-    private final String jettyAuthConfigProvider = "org.eclipse.jetty.ee11.security.jaspi.provider.JaspiAuthConfigProvider";
+    private final String jettyAuthConfigProvider = "org.eclipse.jetty.ee.security.jaspi.provider.JaspiAuthConfigProvider";
     private final String appContext = "server /test";
 
     private final Map<String, String> serverAuthModuleProperties = Map.of("ServerAuthModule",
-            "org.eclipse.jetty.ee11.security.jaspi.modules.BasicAuthenticationAuthModule", "AppContextID", appContext,
-            "org.eclipse.jetty.ee11.security.jaspi.modules.RealmName", "TestRealm");
+            "org.eclipse.jetty.ee.security.jaspi.modules.BasicAuthenticationAuthModule", "AppContextID", appContext,
+            "org.eclipse.jetty.ee.security.jaspi.modules.RealmName", "TestRealm");
 
-    private final String serverAuthModuleClassName = "org.eclipse.jetty.ee11.security.jaspi.modules.BasicAuthenticationAuthModule";
+    private final String serverAuthModuleClassName = "org.eclipse.jetty.ee.security.jaspi.modules.BasicAuthenticationAuthModule";
     
     @Test
     public void testRegisterConfigProviderByClassName() throws Exception

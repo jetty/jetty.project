@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.server;
+package org.eclipse.jetty.ee.websocket.server;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -24,14 +24,14 @@ import java.util.function.Consumer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletCoreRequest;
-import org.eclipse.jetty.ee11.servlet.ServletCoreResponse;
-import org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee11.websocket.server.internal.DelegatedServerUpgradeRequest;
-import org.eclipse.jetty.ee11.websocket.server.internal.DelegatedServerUpgradeResponse;
-import org.eclipse.jetty.ee11.websocket.server.internal.JettyServerFrameHandlerFactory;
-import org.eclipse.jetty.ee11.websocket.servlet.WebSocketUpgradeFilter;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletCoreRequest;
+import org.eclipse.jetty.ee.servlet.ServletCoreResponse;
+import org.eclipse.jetty.ee.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee.websocket.server.internal.DelegatedServerUpgradeRequest;
+import org.eclipse.jetty.ee.websocket.server.internal.DelegatedServerUpgradeResponse;
+import org.eclipse.jetty.ee.websocket.server.internal.JettyServerFrameHandlerFactory;
+import org.eclipse.jetty.ee.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;

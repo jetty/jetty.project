@@ -7,49 +7,49 @@
     <artifactId>jetty-project</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <groupId>org.eclipse.jetty.ee11</groupId>
-  <artifactId>jetty-ee11</artifactId>
+  <groupId>org.eclipse.jetty.ee</groupId>
+  <artifactId>jetty-ee</artifactId>
   <packaging>pom</packaging>
   <name>EE11</name>
 
   <modules>
-    <module>jetty-ee11-annotations</module>
-    <module>jetty-ee11-apache-jsp</module>
-    <module>jetty-ee11-bom</module>
-    <module>jetty-ee11-cdi</module>
-    <module>jetty-ee11-demos</module>
-    <module>jetty-ee11-fcgi-proxy</module>
-    <module>jetty-ee11-glassfish-jstl</module>
-    <module>jetty-ee11-home</module>
-    <module>jetty-ee11-jaspi</module>
-    <module>jetty-ee11-jndi</module>
-    <module>jetty-ee11-jspc-maven-plugin</module>
-    <module>jetty-ee11-maven-plugin</module>
-    <module>jetty-ee11-osgi</module>
-    <module>jetty-ee11-plus</module>
-    <module>jetty-ee11-proxy</module>
-    <module>jetty-ee11-quickstart</module>
-    <module>jetty-ee11-servlet</module>
-    <module>jetty-ee11-servlets</module>
-    <module>jetty-ee11-tests</module>
-    <module>jetty-ee11-webapp</module>
-    <module>jetty-ee11-websocket</module>
+    <module>jetty-ee-annotations</module>
+    <module>jetty-ee-apache-jsp</module>
+    <module>jetty-ee-bom</module>
+    <module>jetty-ee-cdi</module>
+    <module>jetty-ee-demos</module>
+    <module>jetty-ee-fcgi-proxy</module>
+    <module>jetty-ee-glassfish-jstl</module>
+    <module>jetty-ee-home</module>
+    <module>jetty-ee-jaspi</module>
+    <module>jetty-ee-jndi</module>
+    <module>jetty-ee-jspc-maven-plugin</module>
+    <module>jetty-ee-maven-plugin</module>
+    <module>jetty-ee-osgi</module>
+    <module>jetty-ee-plus</module>
+    <module>jetty-ee-proxy</module>
+    <module>jetty-ee-quickstart</module>
+    <module>jetty-ee-servlet</module>
+    <module>jetty-ee-servlets</module>
+    <module>jetty-ee-tests</module>
+    <module>jetty-ee-webapp</module>
+    <module>jetty-ee-websocket</module>
   </modules>
 
   <properties>
 
-    <ee11.jakarta.activation.api.version>2.1.3</ee11.jakarta.activation.api.version>
-    <ee11.jakarta.mail.api.version>2.1.3</ee11.jakarta.mail.api.version>
-    <ee11.jakarta.servlet.api.version>6.1.0</ee11.jakarta.servlet.api.version>
-    <ee11.jakarta.servlet.jsp.api.version>4.0.0</ee11.jakarta.servlet.jsp.api.version>
-    <ee11.jakarta.servlet.jsp.jstl.impl.version>4.0.0</ee11.jakarta.servlet.jsp.jstl.impl.version>
-    <ee11.jakarta.xml.bind.api.version>4.0.5</ee11.jakarta.xml.bind.api.version>
-    <ee11.jakarta.xml.bind.impl.version>4.0.7</ee11.jakarta.xml.bind.impl.version>
-    <ee11.jakarta.xml.jaxws.impl.version>4.0.2</ee11.jakarta.xml.jaxws.impl.version>
-    <ee11.jersey.version>4.0.2</ee11.jersey.version>
-    <ee11.jsp.impl.version>11.0.10.1</ee11.jsp.impl.version>
-    <ee11.mail.impl.version>2.0.2</ee11.mail.impl.version>
-    <ee11.weld.version>6.0.4.Final</ee11.weld.version>
+    <ee.jakarta.activation.api.version>2.1.3</ee.jakarta.activation.api.version>
+    <ee.jakarta.mail.api.version>2.1.3</ee.jakarta.mail.api.version>
+    <ee.jakarta.servlet.api.version>6.1.0</ee.jakarta.servlet.api.version>
+    <ee.jakarta.servlet.jsp.api.version>4.0.0</ee.jakarta.servlet.jsp.api.version>
+    <ee.jakarta.servlet.jsp.jstl.impl.version>4.0.0</ee.jakarta.servlet.jsp.jstl.impl.version>
+    <ee.jakarta.xml.bind.api.version>4.0.5</ee.jakarta.xml.bind.api.version>
+    <ee.jakarta.xml.bind.impl.version>4.0.7</ee.jakarta.xml.bind.impl.version>
+    <ee.jakarta.xml.jaxws.impl.version>4.0.2</ee.jakarta.xml.jaxws.impl.version>
+    <ee.jersey.version>4.0.2</ee.jersey.version>
+    <ee.jsp.impl.version>11.0.10.1</ee.jsp.impl.version>
+    <ee.mail.impl.version>2.0.2</ee.mail.impl.version>
+    <ee.weld.version>6.0.4.Final</ee.weld.version>
   </properties>
 
   <dependencyManagement>
@@ -57,181 +57,181 @@
       <dependency>
         <groupId>jakarta.platform</groupId>
         <artifactId>jakarta.jakartaee-bom</artifactId>
-        <version>${ee11.jakarta.bom.version}</version>
+        <version>${ee.jakarta.bom.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>com.sun.mail</groupId>
         <artifactId>jakarta.mail</artifactId>
-        <version>${ee11.mail.impl.version}</version>
+        <version>${ee.mail.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>com.sun.xml.ws</groupId>
         <artifactId>jaxws-rt</artifactId>
-        <version>{ee11.jakarta.xml.jaxws.impl.version}</version>
+        <version>{ee.jakarta.xml.jaxws.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.xml.bind</groupId>
         <artifactId>jakarta.xml.bind-api</artifactId>
-        <version>${ee11.jakarta.xml.bind.api.version}</version>
+        <version>${ee.jakarta.xml.bind.api.version}</version>
       </dependency>
       <!-- Jetty EE11 Dependencies -->
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-annotations</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-annotations</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-apache-jsp</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-apache-jsp</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-cdi</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-cdi</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-fcgi-proxy</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-fcgi-proxy</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-glassfish-jstl</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-glassfish-jstl</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-jaspi</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-jaspi</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-jndi</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-jndi</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-jspc-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-jspc-maven-plugin</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-maven-plugin</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-plus</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-plus</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-proxy</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-proxy</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-quickstart</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-quickstart</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-servlet</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-servlet</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-servlets</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-servlets</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-webapp</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-webapp</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11.demos</groupId>
-        <artifactId>jetty-ee11-demo-proxy-webapp</artifactId>
+        <groupId>org.eclipse.jetty.ee.demos</groupId>
+        <artifactId>jetty-ee-demo-proxy-webapp</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-        <artifactId>jetty-ee11-websocket-jakarta-client</artifactId>
+        <groupId>org.eclipse.jetty.ee.websocket</groupId>
+        <artifactId>jetty-ee-websocket-jakarta-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-        <artifactId>jetty-ee11-websocket-jakarta-client-webapp</artifactId>
+        <groupId>org.eclipse.jetty.ee.websocket</groupId>
+        <artifactId>jetty-ee-websocket-jakarta-client-webapp</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-        <artifactId>jetty-ee11-websocket-jakarta-common</artifactId>
+        <groupId>org.eclipse.jetty.ee.websocket</groupId>
+        <artifactId>jetty-ee-websocket-jakarta-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-        <artifactId>jetty-ee11-websocket-jakarta-server</artifactId>
+        <groupId>org.eclipse.jetty.ee.websocket</groupId>
+        <artifactId>jetty-ee-websocket-jakarta-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-        <artifactId>jetty-ee11-websocket-jetty-client-webapp</artifactId>
+        <groupId>org.eclipse.jetty.ee.websocket</groupId>
+        <artifactId>jetty-ee-websocket-jetty-client-webapp</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-        <artifactId>jetty-ee11-websocket-jetty-server</artifactId>
+        <groupId>org.eclipse.jetty.ee.websocket</groupId>
+        <artifactId>jetty-ee-websocket-jetty-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-        <artifactId>jetty-ee11-websocket-servlet</artifactId>
+        <groupId>org.eclipse.jetty.ee.websocket</groupId>
+        <artifactId>jetty-ee-websocket-servlet</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jaxb</groupId>
         <artifactId>jaxb-runtime</artifactId>
-        <version>${ee11.jakarta.xml.bind.impl.version}</version>
+        <version>${ee.jakarta.xml.bind.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jersey.containers</groupId>
         <artifactId>jersey-container-servlet</artifactId>
-        <version>${ee11.jersey.version}</version>
+        <version>${ee.jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jersey.inject</groupId>
         <artifactId>jersey-hk2</artifactId>
-        <version>${ee11.jersey.version}</version>
+        <version>${ee.jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.jersey.media</groupId>
         <artifactId>jersey-media-json-binding</artifactId>
-        <version>${ee11.jersey.version}</version>
+        <version>${ee.jersey.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.wasp</groupId>
         <artifactId>wasp</artifactId>
-        <version>${ee11.jakarta.servlet.jsp.jstl.impl.version}</version>
+        <version>${ee.jakarta.servlet.jsp.jstl.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.weld.servlet</groupId>
         <artifactId>weld-servlet-core</artifactId>
-        <version>${ee11.weld.version}</version>
+        <version>${ee.weld.version}</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>mortbay-apache-el</artifactId>
-        <version>${ee11.jsp.impl.version}</version>
+        <version>${ee.jsp.impl.version}</version>
       </dependency>
       <!-- Jakarta EE11 Dependencies -->
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>mortbay-apache-jsp</artifactId>
-        <version>${ee11.jsp.impl.version}</version>
+        <version>${ee.jsp.impl.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

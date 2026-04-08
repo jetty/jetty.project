@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet.jmx;
+package org.eclipse.jetty.ee.servlet.jmx;
 
-import org.eclipse.jetty.ee11.servlet.ServletMapping;
+import org.eclipse.jetty.ee.servlet.ServletMapping;
 import org.eclipse.jetty.jmx.ObjectMBean;
 
 public class ServletMappingMBean extends ObjectMBean

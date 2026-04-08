@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
 import org.eclipse.jetty.util.Loader;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ public class JaspiConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.ee11.security.jaspi.JaspiAuthenticator") != null;
+            return Loader.loadClass("org.eclipse.jetty.ee.security.jaspi.JaspiAuthenticator") != null;
         }
         catch (Throwable e)
         {

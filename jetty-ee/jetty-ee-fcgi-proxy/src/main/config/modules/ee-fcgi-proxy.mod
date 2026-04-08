@@ -2,7 +2,7 @@
 Enables support for EE11 FastCGI proxying.
 
 [environment]
-ee11
+ee
 
 [tags]
 fcgi
@@ -12,5 +12,5 @@ proxy
 fcgi
 
 [lib]
-lib/jetty-ee11-fcgi-proxy-${jetty.version}.jar
-lib/jetty-ee11-proxy-${jetty.version}.jar
+lib/jetty-ee-fcgi-proxy-${jetty.version}.jar
+lib/jetty-ee-proxy-${jetty.version}.jar

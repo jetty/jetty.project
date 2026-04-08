@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
 /**
  * <p>WebApp Configuration</p>
@@ -27,10 +27,10 @@ public class WebAppConfiguration extends AbstractConfiguration
             .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class)
             .addDependents(JettyWebXmlConfiguration.class)
             .protectAndExpose(
-                "org.eclipse.jetty.ee11.servlet.StatisticsServlet",
-                "org.eclipse.jetty.ee11.servlet.DefaultServlet",
-                "org.eclipse.jetty.ee11.servlet.NoJspServlet"
+                "org.eclipse.jetty.ee.servlet.StatisticsServlet",
+                "org.eclipse.jetty.ee.servlet.DefaultServlet",
+                "org.eclipse.jetty.ee.servlet.NoJspServlet"
             )
-            .expose("org.eclipse.jetty.ee11.servlet.listener."));
+            .expose("org.eclipse.jetty.ee.servlet.listener."));
     }
 }

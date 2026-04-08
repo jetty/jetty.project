@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlets;
+package org.eclipse.jetty.ee.servlets;
 
 import java.io.IOException;
 import java.util.ArrayList;

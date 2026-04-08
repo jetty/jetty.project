@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.framehandlers;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.framehandlers;
 
 import java.nio.ByteBuffer;
 

@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee11.websocket.jetty.server
+module org.eclipse.jetty.ee.websocket.jetty.server
 {
     requires jakarta.servlet;
-    requires transitive org.eclipse.jetty.ee11.webapp;
-    requires org.eclipse.jetty.ee11.websocket.servlet;
+    requires transitive org.eclipse.jetty.ee.webapp;
+    requires org.eclipse.jetty.ee.websocket.servlet;
     requires transitive org.eclipse.jetty.websocket.api;
     requires org.eclipse.jetty.websocket.common;
     requires org.eclipse.jetty.websocket.core.server;
@@ -24,12 +24,12 @@ module org.eclipse.jetty.ee11.websocket.jetty.server
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 
-    exports org.eclipse.jetty.ee11.websocket.server;
-    exports org.eclipse.jetty.ee11.websocket.server.config;
+    exports org.eclipse.jetty.ee.websocket.server;
+    exports org.eclipse.jetty.ee.websocket.server.config;
 
     provides jakarta.servlet.ServletContainerInitializer with
-        org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketServletContainerInitializer;
+        org.eclipse.jetty.ee.websocket.server.config.JettyWebSocketServletContainerInitializer;
 
-    provides org.eclipse.jetty.ee11.webapp.Configuration with
-        org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketConfiguration;
+    provides org.eclipse.jetty.ee.webapp.Configuration with
+        org.eclipse.jetty.ee.websocket.server.config.JettyWebSocketConfiguration;
 }

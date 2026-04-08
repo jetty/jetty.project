@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.jspc.plugin;
+package org.eclipse.jetty.ee.jspc.plugin;
 
 import java.io.BufferedReader;
 import java.io.File;

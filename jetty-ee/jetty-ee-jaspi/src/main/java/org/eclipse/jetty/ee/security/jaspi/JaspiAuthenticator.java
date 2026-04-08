@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.security.jaspi;
+package org.eclipse.jetty.ee.security.jaspi;
 
 import java.security.Principal;
 import java.util.HashMap;
@@ -31,7 +31,7 @@ import jakarta.security.auth.message.config.ServerAuthContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.eclipse.jetty.ee11.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee.servlet.ServletContextRequest;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.EmptyLoginService;
 import org.eclipse.jetty.security.IdentityService;
@@ -45,7 +45,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 
-import static org.eclipse.jetty.ee11.security.jaspi.JaspiAuthenticatorFactory.MESSAGE_LAYER;
+import static org.eclipse.jetty.ee.security.jaspi.JaspiAuthenticatorFactory.MESSAGE_LAYER;
 
 /**
  * Implementation of Jetty {@link LoginAuthenticator} that is a bridge from Jakarta Authentication to Jetty Security.
@@ -265,7 +265,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
     public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, AuthenticationState.Succeeded validatedSucceeded) throws ServerAuthException
     {
         ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
-        JaspiMessageInfo info = (JaspiMessageInfo)servletContextRequest.getServletApiRequest().getAttribute("org.eclipse.jetty.ee11.security.jaspi.info");
+        JaspiMessageInfo info = (JaspiMessageInfo)servletContextRequest.getServletApiRequest().getAttribute("org.eclipse.jetty.ee.security.jaspi.info");
         if (info == null)
             throw new NullPointerException("MessageInfo from request missing: " + request);
         return secureResponse(info, validatedSucceeded);

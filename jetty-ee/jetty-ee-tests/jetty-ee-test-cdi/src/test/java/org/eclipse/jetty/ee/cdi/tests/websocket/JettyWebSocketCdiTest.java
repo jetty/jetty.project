@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.cdi.tests.websocket;
+package org.eclipse.jetty.ee.cdi.tests.websocket;
 
 import java.io.IOException;
 import java.net.URI;
@@ -20,10 +20,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import jakarta.inject.Inject;
-import org.eclipse.jetty.ee11.cdi.CdiDecoratingListener;
-import org.eclipse.jetty.ee11.cdi.CdiServletContainerInitializer;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee.cdi.CdiDecoratingListener;
+import org.eclipse.jetty.ee.cdi.CdiServletContainerInitializer;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;

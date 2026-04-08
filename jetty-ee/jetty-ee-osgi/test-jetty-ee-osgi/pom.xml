@@ -2,11 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11.osgi</groupId>
-    <artifactId>jetty-ee11-osgi</artifactId>
+    <groupId>org.eclipse.jetty.ee.osgi</groupId>
+    <artifactId>jetty-ee-osgi</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>test-jetty-ee11-osgi</artifactId>
+  <artifactId>test-jetty-ee-osgi</artifactId>
   <name>EE11 :: OSGi :: Test</name>
   <description>Jetty OSGi Integration test</description>
   <properties>
@@ -136,54 +136,54 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-annotations</artifactId>
       <scope>runtime</scope>
     </dependency>
     <!-- Jetty Deps -->
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-jndi</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-jndi</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-plus</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-plus</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlet</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-servlets</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlets</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-webapp</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-jakarta-client</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jakarta-client</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-jakarta-server</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jakarta-server</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jetty-server</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-      <artifactId>jetty-ee11-websocket-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-servlet</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -281,53 +281,53 @@
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jakarta-websocket-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee11</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee11</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee11</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee11</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet6-demo-jspc-6-1-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee11</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.demos</groupId>
-      <artifactId>jetty-ee11-demo-jetty-websocket-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee.demos</groupId>
+      <artifactId>jetty-ee-demo-jetty-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.osgi</groupId>
-      <artifactId>jetty-ee11-osgi-alpn</artifactId>
+      <groupId>org.eclipse.jetty.ee.osgi</groupId>
+      <artifactId>jetty-ee-osgi-alpn</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.osgi</groupId>
-      <artifactId>jetty-ee11-osgi-boot</artifactId>
+      <groupId>org.eclipse.jetty.ee.osgi</groupId>
+      <artifactId>jetty-ee-osgi-boot</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -341,8 +341,8 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.osgi</groupId>
-      <artifactId>jetty-ee11-osgi-boot-jsp</artifactId>
+      <groupId>org.eclipse.jetty.ee.osgi</groupId>
+      <artifactId>jetty-ee-osgi-boot-jsp</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -356,20 +356,20 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.osgi</groupId>
-      <artifactId>test-jetty-ee11-osgi-fragment</artifactId>
+      <groupId>org.eclipse.jetty.ee.osgi</groupId>
+      <artifactId>test-jetty-ee-osgi-fragment</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.osgi</groupId>
-      <artifactId>test-jetty-ee11-osgi-server</artifactId>
+      <groupId>org.eclipse.jetty.ee.osgi</groupId>
+      <artifactId>test-jetty-ee-osgi-server</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.osgi</groupId>
-      <artifactId>test-jetty-ee11-osgi-webapp-resources</artifactId>
+      <groupId>org.eclipse.jetty.ee.osgi</groupId>
+      <artifactId>test-jetty-ee-osgi-webapp-resources</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
@@ -607,7 +607,7 @@
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
-          <includeArtifactIds>test-jetty-ee11-osgi-webapp-resources</includeArtifactIds>
+          <includeArtifactIds>test-jetty-ee-osgi-webapp-resources</includeArtifactIds>
           <outputDirectory>target</outputDirectory>
           <stripVersion>true</stripVersion>
         </configuration>

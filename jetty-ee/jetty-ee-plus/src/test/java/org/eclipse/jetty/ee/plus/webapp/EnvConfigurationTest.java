@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.plus.webapp;
+package org.eclipse.jetty.ee.plus.webapp;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,8 +20,8 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
-import org.eclipse.jetty.ee11.webapp.Configuration;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.Configuration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -72,7 +72,7 @@ public class EnvConfigurationTest
     @Test
     public void testWithJettyEEWebXml() throws Exception
     {
-        Path testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp-with-jetty-ee11-env-xml");
+        Path testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp-with-jetty-ee-env-xml");
         assertTrue(Files.exists(testWebappDir));
 
         WebAppContext context = new WebAppContext();

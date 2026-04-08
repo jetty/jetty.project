@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
-<Configure id="wac" class="org.eclipse.jetty.ee11.maven.plugin.MavenWebAppContext">
+<Configure id="wac" class="org.eclipse.jetty.ee.maven.plugin.MavenWebAppContext">
 
-  <Call class="org.eclipse.jetty.ee11.maven.plugin.WebAppPropertyConverter" name="fromProperties">
+  <Call class="org.eclipse.jetty.ee.maven.plugin.WebAppPropertyConverter" name="fromProperties">
     <Arg>
       <Ref refid="wac" />
     </Arg>

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.common.encoders;
+package org.eclipse.jetty.ee.websocket.jakarta.common.encoders;
 
 import jakarta.websocket.Encoder;
 import jakarta.websocket.EndpointConfig;

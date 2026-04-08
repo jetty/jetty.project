@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee.servlet;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -60,7 +60,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler.ServletRequestInfo;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler.ServletRequestInfo;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpException;
@@ -99,10 +99,10 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.ee11.servlet.Dispatcher.WRAPPED_REQUEST_ATTRIBUTE;
+import static org.eclipse.jetty.ee.servlet.Dispatcher.WRAPPED_REQUEST_ATTRIBUTE;
 
 /**
- * The Jetty implementation of the ee11 {@link HttpServletRequest} object.
+ * The Jetty implementation of the ee {@link HttpServletRequest} object.
  * This provides the bridge from Servlet {@link HttpServletRequest} to the Jetty Core {@link Request}
  * via the {@link ServletContextRequest}.
  */

@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.client;
+package org.eclipse.jetty.ee.websocket.jakarta.client;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
-import org.eclipse.jetty.ee11.websocket.jakarta.client.internal.BasicClientEndpointConfig;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketFrameHandlerMetadata;
+import org.eclipse.jetty.ee.websocket.jakarta.client.internal.BasicClientEndpointConfig;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketFrameHandlerMetadata;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
 
 public class JakartaWebSocketClientFrameHandlerFactory extends JakartaWebSocketFrameHandlerFactory

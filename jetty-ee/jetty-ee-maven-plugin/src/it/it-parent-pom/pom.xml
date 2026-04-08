@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.eclipse.jetty.ee11.its</groupId>
+  <groupId>org.eclipse.jetty.ee.its</groupId>
   <artifactId>it-parent-pom</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
@@ -22,7 +22,7 @@
       <dependency>
         <groupId>jakarta.platform</groupId>
         <artifactId>jakarta.jakartaee-bom</artifactId>
-        <version>@ee11.jakarta.bom.version@</version>
+        <version>@ee.jakarta.bom.version@</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -42,8 +42,8 @@
         <version>@slf4j.version@</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-servlet</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-servlet</artifactId>
         <version>@project.version@</version>
       </dependency>
       <dependency>
@@ -67,8 +67,8 @@
         <version>@project.version@</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-maven-plugin</artifactId>
         <version>@project.version@</version>
         <classifier>tests</classifier>
         <type>test-jar</type>
@@ -122,8 +122,8 @@
           <version>@maven.source.plugin.version@</version>
         </plugin>
         <plugin>
-          <groupId>org.eclipse.jetty.ee11</groupId>
-          <artifactId>jetty-ee11-maven-plugin</artifactId>
+          <groupId>org.eclipse.jetty.ee</groupId>
+          <artifactId>jetty-ee-maven-plugin</artifactId>
           <version>${jetty.version}</version>
         </plugin>
         <plugin>

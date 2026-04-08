@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee.servlet;
 
 import java.io.IOException;
 
@@ -28,7 +28,7 @@ public class NoJspServlet extends HttpServlet
     protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
     {
         if (!_warned)
-            getServletContext().log("No JSP support. Check that the ee11-jsp module is enabled, or otherwise ensure the jsp jars are on the server classpath.");
+            getServletContext().log("No JSP support. Check that the ee-jsp module is enabled, or otherwise ensure the jsp jars are on the server classpath.");
         _warned = true;
 
         response.sendError(500, "JSP support not configured");

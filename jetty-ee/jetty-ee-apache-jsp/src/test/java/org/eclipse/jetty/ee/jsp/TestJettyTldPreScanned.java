@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.jsp;
+package org.eclipse.jetty.ee.jsp;
 
 import java.io.File;
 import java.net.URL;
@@ -21,8 +21,8 @@ import java.util.Map;
 
 import org.apache.tomcat.util.descriptor.tld.TaglibXml;
 import org.apache.tomcat.util.descriptor.tld.TldResourcePath;
-import org.eclipse.jetty.ee11.apache.jsp.JettyTldPreScanned;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.apache.jsp.JettyTldPreScanned;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 

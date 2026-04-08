@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.security.jaspi;
+package org.eclipse.jetty.ee.security.jaspi;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,8 +19,8 @@ import java.util.Map;
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import org.eclipse.jetty.ee11.servlet.ServletContextRequest;
-import org.eclipse.jetty.ee11.servlet.ServletContextResponse;
+import org.eclipse.jetty.ee.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee.servlet.ServletContextResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;

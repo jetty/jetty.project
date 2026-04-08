@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test.client.transport;
+package org.eclipse.jetty.ee.test.client.transport;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;

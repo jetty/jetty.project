@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session.infinispan;
+package org.eclipse.jetty.ee.session.infinispan;
 
-import org.eclipse.jetty.ee11.session.AbstractClusteredOrphanedSessionTest;
+import org.eclipse.jetty.ee.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.session.test.tools.InfinispanTestSupport;

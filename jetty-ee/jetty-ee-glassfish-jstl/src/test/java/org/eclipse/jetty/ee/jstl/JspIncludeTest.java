@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.jstl;
+package org.eclipse.jetty.ee.jstl;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,10 +22,10 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee11.webapp.Configurations;
-import org.eclipse.jetty.ee11.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee.webapp.Configurations;
+import org.eclipse.jetty.ee.webapp.JettyWebXmlConfiguration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;

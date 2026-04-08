@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlets;
+package org.eclipse.jetty.ee.servlets;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -20,7 +20,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee11.servlet.HttpOutput;
+import org.eclipse.jetty.ee.servlet.HttpOutput;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 
 /**

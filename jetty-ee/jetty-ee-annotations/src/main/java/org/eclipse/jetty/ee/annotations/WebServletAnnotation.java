@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.annotations;
+package org.eclipse.jetty.ee.annotations;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,13 +21,13 @@ import jakarta.servlet.Servlet;
 import jakarta.servlet.annotation.WebInitParam;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.ee11.servlet.ServletMapping;
-import org.eclipse.jetty.ee11.servlet.Source;
-import org.eclipse.jetty.ee11.webapp.DiscoveredAnnotation;
-import org.eclipse.jetty.ee11.webapp.MetaData;
-import org.eclipse.jetty.ee11.webapp.Origin;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
+import org.eclipse.jetty.ee.servlet.ServletMapping;
+import org.eclipse.jetty.ee.servlet.Source;
+import org.eclipse.jetty.ee.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.ee.webapp.MetaData;
+import org.eclipse.jetty.ee.webapp.Origin;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
@@ -176,10 +176,10 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             //check the url-patterns
             //ServletSpec 3.0 p81 If a servlet already has url mappings from a
             //webxml or fragment descriptor the annotation is ignored.
-            //However, we want to be able to replace mappings that were given in webdefault-ee11.xml
+            //However, we want to be able to replace mappings that were given in webdefault-ee.xml
             List<ServletMapping> existingMappings = getServletMappingsForServlet(servletName);
 
-            //if any mappings for this servlet already set by a descriptor that is not webdefault-ee11.xml forget
+            //if any mappings for this servlet already set by a descriptor that is not webdefault-ee.xml forget
             //about processing these url mappings
             if (existingMappings.isEmpty() || !containsNonDefaultMappings(existingMappings))
             {
@@ -190,8 +190,8 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             }
         }
 
-        //We also want to be able to replace mappings that were defined in webdefault-ee11.xml
-        //that were for a different servlet eg a mapping in webdefault-ee11.xml for / to the jetty
+        //We also want to be able to replace mappings that were defined in webdefault-ee.xml
+        //that were for a different servlet eg a mapping in webdefault-ee.xml for / to the jetty
         //default servlet should be able to be replaced by an annotation for / to a different
         //servlet
         if (mapping != null)

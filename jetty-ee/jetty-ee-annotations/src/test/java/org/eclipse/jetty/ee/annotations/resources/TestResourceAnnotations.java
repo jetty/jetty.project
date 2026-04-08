@@ -11,17 +11,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.annotations.resources;
+package org.eclipse.jetty.ee.annotations.resources;
 
 import java.lang.reflect.Field;
 import java.util.Set;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
-import org.eclipse.jetty.ee11.annotations.AnnotationIntrospector;
-import org.eclipse.jetty.ee11.annotations.ResourceAnnotationHandler;
-import org.eclipse.jetty.ee11.annotations.ResourcesAnnotationHandler;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.annotations.AnnotationIntrospector;
+import org.eclipse.jetty.ee.annotations.ResourceAnnotationHandler;
+import org.eclipse.jetty.ee.annotations.ResourcesAnnotationHandler;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
@@ -90,10 +90,10 @@ public class TestResourceAnnotations
         assertEquals(objB, env.lookup("myf"));
         assertEquals(objA, env.lookup("mye"));
         assertEquals(objA, env.lookup("resA"));
-        assertEquals(objA, env.lookup("org.eclipse.jetty.ee11.annotations.resources.ResourceA/g"));
-        assertEquals(objA, env.lookup("org.eclipse.jetty.ee11.annotations.resources.ResourceA/h"));
-        assertEquals(objB, env.lookup("org.eclipse.jetty.ee11.annotations.resources.ResourceB/f"));
-        assertEquals(objB, env.lookup("org.eclipse.jetty.ee11.annotations.resources.ResourceA/n"));
+        assertEquals(objA, env.lookup("org.eclipse.jetty.ee.annotations.resources.ResourceA/g"));
+        assertEquals(objA, env.lookup("org.eclipse.jetty.ee.annotations.resources.ResourceA/h"));
+        assertEquals(objB, env.lookup("org.eclipse.jetty.ee.annotations.resources.ResourceB/f"));
+        assertEquals(objB, env.lookup("org.eclipse.jetty.ee.annotations.resources.ResourceA/n"));
 
         //we should have Injections
         assertNotNull(injections);

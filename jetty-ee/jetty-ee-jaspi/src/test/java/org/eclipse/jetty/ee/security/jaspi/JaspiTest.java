@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.security.jaspi;
+package org.eclipse.jetty.ee.security.jaspi;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -25,9 +25,9 @@ import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.RolePrincipal;
@@ -92,14 +92,14 @@ public class JaspiTest
     {
         AuthConfigFactory factory = new DefaultAuthConfigFactory();
 
-        factory.registerConfigProvider("org.eclipse.jetty.ee11.security.jaspi.provider.JaspiAuthConfigProvider",
-            Map.of("ServerAuthModule", "org.eclipse.jetty.ee11.security.jaspi.modules.BasicAuthenticationAuthModule",
+        factory.registerConfigProvider("org.eclipse.jetty.ee.security.jaspi.provider.JaspiAuthConfigProvider",
+            Map.of("ServerAuthModule", "org.eclipse.jetty.ee.security.jaspi.modules.BasicAuthenticationAuthModule",
                 "AppContextID", "server /ctx",
-                "org.eclipse.jetty.ee11.security.jaspi.modules.RealmName", "TestRealm"),
+                "org.eclipse.jetty.ee.security.jaspi.modules.RealmName", "TestRealm"),
             "HttpServlet", "server /ctx", "a test provider");
 
-        factory.registerConfigProvider("org.eclipse.jetty.ee11.security.jaspi.provider.JaspiAuthConfigProvider",
-            Map.of("ServerAuthModule", "org.eclipse.jetty.ee11.security.jaspi.HttpHeaderAuthModule",
+        factory.registerConfigProvider("org.eclipse.jetty.ee.security.jaspi.provider.JaspiAuthConfigProvider",
+            Map.of("ServerAuthModule", "org.eclipse.jetty.ee.security.jaspi.HttpHeaderAuthModule",
                 "AppContextID", "server /other"),
             "HttpServlet", "server /other", "another test provider");
 

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.server.internal;
+package org.eclipse.jetty.ee.websocket.jakarta.server.internal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,9 +22,9 @@ import jakarta.websocket.Encoder;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.ServerEndpointConfigWrapper;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.config.ContainerDefaultConfigurator;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.common.ServerEndpointConfigWrapper;
+import org.eclipse.jetty.ee.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 
 public class AnnotatedServerEndpointConfig extends ServerEndpointConfigWrapper
 {

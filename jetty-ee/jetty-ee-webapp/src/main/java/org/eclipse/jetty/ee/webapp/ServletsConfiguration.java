@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
 import org.eclipse.jetty.util.Loader;
 import org.slf4j.Logger;
@@ -33,7 +33,7 @@ public class ServletsConfiguration extends AbstractConfiguration
             .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, WebAppConfiguration.class)
             .addDependents(JettyWebXmlConfiguration.class)
             .protectAndExpose()
-            .expose("org.eclipse.jetty.ee11.servlets.")); // don't hide jetty servlets
+            .expose("org.eclipse.jetty.ee.servlets.")); // don't hide jetty servlets
     }
 
     @Override
@@ -41,7 +41,7 @@ public class ServletsConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.ee11.servlets.DoSFilter") != null;
+            return Loader.loadClass("org.eclipse.jetty.ee.servlets.DoSFilter") != null;
         }
         catch (Throwable e)
         {

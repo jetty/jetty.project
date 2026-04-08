@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
 import org.eclipse.jetty.util.Loader;
 import org.slf4j.Logger;
@@ -35,7 +35,7 @@ public class JaasConfiguration extends AbstractConfiguration
             .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class)
             .addDependents(WebAppConfiguration.class)
             .protectAndExpose("org.eclipse.jetty.security.jaas.")
-            .protectAndExpose("org.eclipse.jetty.ee11.jaas."));
+            .protectAndExpose("org.eclipse.jetty.ee.jaas."));
     }
 
     @Override

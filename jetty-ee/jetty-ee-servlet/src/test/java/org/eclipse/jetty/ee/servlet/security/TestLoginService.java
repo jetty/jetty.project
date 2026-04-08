@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet.security;
+package org.eclipse.jetty.ee.servlet.security;
 
 import java.util.List;
 

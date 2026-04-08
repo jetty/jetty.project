@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.server;
+package org.eclipse.jetty.ee.websocket.jakarta.server;
 
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.server.ServerEndpoint;
-import org.eclipse.jetty.ee11.websocket.jakarta.client.JakartaWebSocketClientFrameHandlerFactory;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketFrameHandlerMetadata;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.internal.JakartaServerUpgradeRequest;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.internal.PathParamIdentifier;
+import org.eclipse.jetty.ee.websocket.jakarta.client.JakartaWebSocketClientFrameHandlerFactory;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketFrameHandlerMetadata;
+import org.eclipse.jetty.ee.websocket.jakarta.server.internal.JakartaServerUpgradeRequest;
+import org.eclipse.jetty.ee.websocket.jakarta.server.internal.PathParamIdentifier;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;

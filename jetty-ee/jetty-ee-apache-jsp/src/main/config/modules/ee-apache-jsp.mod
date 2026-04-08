@@ -4,17 +4,17 @@
 Enables use of the apache implementation of JSP.
 
 [environment]
-ee11
+ee
 
 [depend]
-ee11-servlet
-ee11-annotations
+ee-servlet
+ee-annotations
 
 [lib]
-lib/ee11-apache-jsp/@jakarta.el:jakarta.el-api@
-lib/ee11-apache-jsp/@jakarta.servlet.jsp:jakarta.servlet.jsp-api@
-lib/ee11-apache-jsp/@org.eclipse.jdt:ecj@
-lib/ee11-apache-jsp/@org.mortbay.jasper:mortbay-apache-el@
-lib/ee11-apache-jsp/@org.mortbay.jasper:mortbay-apache-jsp@
-lib/jetty-ee11-apache-jsp-${jetty.version}.jar
+lib/ee-apache-jsp/@jakarta.el:jakarta.el-api@
+lib/ee-apache-jsp/@jakarta.servlet.jsp:jakarta.servlet.jsp-api@
+lib/ee-apache-jsp/@org.eclipse.jdt:ecj@
+lib/ee-apache-jsp/@org.mortbay.jasper:mortbay-apache-el@
+lib/ee-apache-jsp/@org.mortbay.jasper:mortbay-apache-jsp@
+lib/jetty-ee-apache-jsp-${jetty.version}.jar
 

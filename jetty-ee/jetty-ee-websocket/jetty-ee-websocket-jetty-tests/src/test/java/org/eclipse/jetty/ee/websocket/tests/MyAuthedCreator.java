@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.tests;
+package org.eclipse.jetty.ee.websocket.tests;
 
 import java.io.IOException;
 import java.security.Principal;
 
-import org.eclipse.jetty.ee11.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.ee11.websocket.server.JettyServerUpgradeResponse;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.ee.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.ee.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.ee.websocket.server.JettyWebSocketCreator;
 
 public class MyAuthedCreator implements JettyWebSocketCreator
 {

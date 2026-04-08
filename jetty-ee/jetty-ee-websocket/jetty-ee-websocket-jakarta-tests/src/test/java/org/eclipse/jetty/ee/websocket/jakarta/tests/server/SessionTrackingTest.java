@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.server;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -21,9 +21,9 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
-import org.eclipse.jetty.ee11.websocket.jakarta.client.JakartaWebSocketClientContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.EventSocket;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee.websocket.jakarta.client.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.EventSocket;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

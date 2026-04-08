@@ -14,5 +14,5 @@
 /**
  * Jetty Jaspi : Java Authentication SPI
  */
-package org.eclipse.jetty.ee11.security.jaspi;
+package org.eclipse.jetty.ee.security.jaspi;
 

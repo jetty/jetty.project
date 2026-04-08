@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.osgi.test;
+package org.eclipse.jetty.ee.osgi.test;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -77,7 +77,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     {
         List<Option> res = new ArrayList<>();
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-jakarta-websocket-webapp").classifier("webbundle-ee11").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-jakarta-websocket-webapp").classifier("webbundle-ee").versionAsInProject().noStart());
         return res;
     }
 
@@ -93,9 +93,9 @@ public class TestJettyOSGiBootWithJakartaWebSocket
     @Test
     public void testWebsocket() throws Exception
     {
-        startBundle(bundleContext, "org.eclipse.jetty.ee11.websocket.jakarta.common");
-        startBundle(bundleContext, "org.eclipse.jetty.ee11.websocket.jakarta.client");
-        startBundle(bundleContext, "org.eclipse.jetty.ee11.websocket.jakarta.server");
+        startBundle(bundleContext, "org.eclipse.jetty.ee.websocket.jakarta.common");
+        startBundle(bundleContext, "org.eclipse.jetty.ee.websocket.jakarta.client");
+        startBundle(bundleContext, "org.eclipse.jetty.ee.websocket.jakarta.server");
         startBundle(bundleContext, "org.eclipse.jetty.demos.servlet5.jakarta.websocket.webapp");
 
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))

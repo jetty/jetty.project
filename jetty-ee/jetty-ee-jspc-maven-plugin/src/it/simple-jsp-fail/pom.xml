@@ -20,8 +20,8 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-jspc-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-jspc-maven-plugin</artifactId>
         <version>${jetty.version}</version>
         <executions>
           <execution>

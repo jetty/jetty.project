@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.tests;
+package org.eclipse.jetty.ee.websocket.tests;
 
 import java.time.Duration;
 
 import jakarta.servlet.annotation.WebServlet;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.ee.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.ee.websocket.server.JettyWebSocketServletFactory;
 
 @WebServlet(name = "MyAdvanced Echo WebSocket Servlet", urlPatterns = {"/advecho"})
 public class MyAdvancedEchoServlet extends JettyWebSocketServlet

@@ -1,21 +1,21 @@
 <?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <!-- =============================================================== -->
-<!-- Configure the "ee11" environment deployment defaults            -->
+<!-- Configure the "ee" environment deployment defaults            -->
 <!-- =============================================================== -->
 <Configure>
   <Ref refid="deploymentScanner">
     <Call name="configureEnvironment">
-      <Arg>ee11</Arg>
+      <Arg>ee</Arg>
       <Set name="defaultContextHandlerClassName">
-        <Property name="jetty.deploy.defaultContextHandlerClass" default="org.eclipse.jetty.ee11.webapp.WebAppContext" />
+        <Property name="jetty.deploy.defaultContextHandlerClass" default="org.eclipse.jetty.ee.webapp.WebAppContext" />
       </Set>
       <Set name="defaultsDescriptor">
         <Property>
           <Name>jetty.deploy.defaultsDescriptorPath</Name>
           <Deprecated>jetty.deploy.defaultsDescriptor</Deprecated>
           <Default>
-            <Property name="jetty.home" default="." />/etc/webdefault-ee11.xml
+            <Property name="jetty.home" default="." />/etc/webdefault-ee.xml
           </Default>
         </Property>
       </Set>

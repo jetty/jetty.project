@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.common.messages;
+package org.eclipse.jetty.ee.websocket.jakarta.common.messages;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.RegisteredDecoder;
+import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;

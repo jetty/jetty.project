@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.common.util;
+package org.eclipse.jetty.ee.websocket.jakarta.common.util;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
@@ -24,7 +24,7 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.PathParam;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 import org.junit.jupiter.api.Test;
 
-import static org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory.bindTemplateVariables;
+import static org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory.bindTemplateVariables;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNull;

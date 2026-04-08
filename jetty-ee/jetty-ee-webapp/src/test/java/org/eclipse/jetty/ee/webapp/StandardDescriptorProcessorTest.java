@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
@@ -20,9 +20,9 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.ee11.servlet.DefaultServlet;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.ee11.servlet.ServletMapping;
+import org.eclipse.jetty.ee.servlet.DefaultServlet;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
+import org.eclipse.jetty.ee.servlet.ServletMapping;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -65,7 +65,7 @@ public class StandardDescriptorProcessorTest
     @Test
     public void testJettyApiDefaults(WorkDir workDir) throws Exception
     {
-        //Test that the DefaultServlet named "default" defined by jetty api is not redefined by webdefault-ee11.xml
+        //Test that the DefaultServlet named "default" defined by jetty api is not redefined by webdefault-ee.xml
         Path docroot = workDir.getEmptyPathDir();
         WebAppContext wac = new WebAppContext();
         wac.setServer(_server);
@@ -113,7 +113,7 @@ public class StandardDescriptorProcessorTest
     @Test
     public void testDuplicateServletMappingsFromJettyApi(WorkDir workDir) throws Exception
     {
-        //Test that an embedded mapping overrides one from webdefault-ee11.xml
+        //Test that an embedded mapping overrides one from webdefault-ee.xml
         Path docroot = workDir.getEmptyPathDir();
         WebAppContext wac = new WebAppContext();
         wac.setServer(_server);
@@ -142,7 +142,7 @@ public class StandardDescriptorProcessorTest
     @Test
     public void testDuplicateServletMappingsFromDescriptors(WorkDir workDir) throws Exception
     {
-        //Test that the DefaultServlet mapping from webdefault-ee11.xml can be overridden in web.xml
+        //Test that the DefaultServlet mapping from webdefault-ee.xml can be overridden in web.xml
         Path docroot = workDir.getEmptyPathDir();
         File webXml = MavenTestingUtils.getTestResourceFile("web-redefine-mapping.xml");
         WebAppContext wac = new WebAppContext();

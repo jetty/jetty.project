@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test.client.transport;
+package org.eclipse.jetty.ee.test.client.transport;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -55,8 +55,8 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
-import org.eclipse.jetty.ee11.servlet.HttpOutput;
-import org.eclipse.jetty.ee11.servlet.ResourceServlet;
+import org.eclipse.jetty.ee.servlet.HttpOutput;
+import org.eclipse.jetty.ee.servlet.ResourceServlet;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;

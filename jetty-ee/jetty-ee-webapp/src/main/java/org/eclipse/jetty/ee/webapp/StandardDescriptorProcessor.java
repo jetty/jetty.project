@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,19 +30,19 @@ import java.util.concurrent.TimeUnit;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.SessionTrackingMode;
-import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.ee11.servlet.FilterHolder;
-import org.eclipse.jetty.ee11.servlet.FilterMapping;
-import org.eclipse.jetty.ee11.servlet.ListenerHolder;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler.JspConfig;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler.JspPropertyGroup;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler.TagLib;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.ee11.servlet.ServletMapping;
-import org.eclipse.jetty.ee11.servlet.Source;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee.servlet.FilterHolder;
+import org.eclipse.jetty.ee.servlet.FilterMapping;
+import org.eclipse.jetty.ee.servlet.ListenerHolder;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler.JspConfig;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler.JspPropertyGroup;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler.TagLib;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
+import org.eclipse.jetty.ee.servlet.ServletMapping;
+import org.eclipse.jetty.ee.servlet.Source;
+import org.eclipse.jetty.ee.servlet.security.ConstraintAware;
+import org.eclipse.jetty.ee.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Constraint;
@@ -284,7 +284,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             catch (ClassNotFoundException e)
             {
                 LOG.info("NO JSP Support for {}, did not find {}", context.getContextPath(), servletClass);
-                servletClass = "org.eclipse.jetty.ee11.servlet.NoJspServlet";
+                servletClass = "org.eclipse.jetty.ee.servlet.NoJspServlet";
             }
         }
 
@@ -998,7 +998,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             case WebDefaults:
             case WebOverride:
             {
-                //an error page setup was set in web.xml/webdefault-ee11.xml/web-override.xml, only allow other web xml descriptors to override it
+                //an error page setup was set in web.xml/webdefault-ee.xml/web-override.xml, only allow other web xml descriptors to override it
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
                     //if set twice in the same descriptor, its an error
@@ -1906,7 +1906,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     public void visitRequestCharacterEncoding(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //As per spec, this element can only appear in web.xml, never in a fragment. Jetty will
-        //allow it to be specified in webdefault-ee11.xml, web.xml, and web-override.xml.
+        //allow it to be specified in webdefault-ee.xml, web.xml, and web-override.xml.
         if (!(descriptor instanceof FragmentDescriptor))
         {
             String encoding = node.toString(false, true);
@@ -1928,7 +1928,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     public void visitResponseCharacterEncoding(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //As per spec, this element can only appear in web.xml, never in a fragment. Jetty will
-        //allow it to be specified in webdefault-ee11.xml, web.xml, and web-override.xml.
+        //allow it to be specified in webdefault-ee.xml, web.xml, and web-override.xml.
         if (!(descriptor instanceof FragmentDescriptor))
         {
             String encoding = node.toString(false, true);

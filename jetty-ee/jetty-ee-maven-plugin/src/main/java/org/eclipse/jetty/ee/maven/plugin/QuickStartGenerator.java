@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.maven.plugin;
+package org.eclipse.jetty.ee.maven.plugin;
 
 import java.nio.file.Path;
 
-import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee11.quickstart.QuickStartConfiguration;
-import org.eclipse.jetty.ee11.quickstart.QuickStartConfiguration.Mode;
-import org.eclipse.jetty.ee11.webapp.Configurations;
+import org.eclipse.jetty.ee.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.ee.quickstart.QuickStartConfiguration.Mode;
+import org.eclipse.jetty.ee.webapp.Configurations;
 import org.eclipse.jetty.maven.ServerSupport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;

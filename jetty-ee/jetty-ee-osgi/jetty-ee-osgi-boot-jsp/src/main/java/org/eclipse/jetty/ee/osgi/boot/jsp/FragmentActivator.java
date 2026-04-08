@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.osgi.boot.jsp;
+package org.eclipse.jetty.ee.osgi.boot.jsp;
 
 import org.eclipse.jetty.osgi.ServerClasspathContributor;
 import org.osgi.framework.BundleActivator;

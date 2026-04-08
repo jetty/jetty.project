@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test.websocket;
+package org.eclipse.jetty.ee.test.websocket;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +20,7 @@ import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
-import org.eclipse.jetty.ee11.test.support.XmlBasedJettyServer;
+import org.eclipse.jetty.ee.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.websocket.api.util.WSURI;
@@ -45,7 +45,7 @@ public class JakartaWebSocketTest
         server.addXmlConfiguration("login-service.xml");
         server.addTargetFileAsXmlConfiguration("configs/etc/jetty-deployer-standard.xml");
         server.addTargetFileAsXmlConfiguration("configs/etc/jetty-deployment-scanner.xml");
-        server.addTargetFileAsXmlConfiguration("configs/etc/jetty-ee11-deploy.xml");
+        server.addTargetFileAsXmlConfiguration("configs/etc/jetty-ee-deploy.xml");
         server.addXmlConfiguration("NIOHttp.xml");
 
         server.addWebApp("servlet5-demo-jakarta-websocket.war");

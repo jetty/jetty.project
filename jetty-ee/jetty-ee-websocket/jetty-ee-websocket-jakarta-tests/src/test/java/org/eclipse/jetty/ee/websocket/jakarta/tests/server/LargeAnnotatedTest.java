@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.server;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.server.ServerEndpoint;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.WSServer;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.framehandlers.FrameHandlerTracker;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.WSServer;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.framehandlers.FrameHandlerTracker;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;

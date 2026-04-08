@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.plus.annotation;
+package org.eclipse.jetty.ee.plus.annotation;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 
 import jakarta.servlet.http.HttpServlet;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallback;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.PostConstructCallback;

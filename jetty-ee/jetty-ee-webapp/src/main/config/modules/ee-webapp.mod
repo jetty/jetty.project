@@ -4,18 +4,18 @@
 This module enables support for Jakarta EE 11 web applications.
 
 [environment]
-ee11
+ee
 
 [depend]
 ee-webapp
-ee11-servlet
-ee11-security
+ee-servlet
+ee-security
 
 [xml]
-etc/jetty-ee11-webapp.xml
+etc/jetty-ee-webapp.xml
 
 [lib]
-lib/jetty-ee11-webapp-${jetty.version}.jar
+lib/jetty-ee-webapp-${jetty.version}.jar
 
 [ini-template]
 # tag::ini-template[]
@@ -23,6 +23,6 @@ lib/jetty-ee11-webapp-${jetty.version}.jar
 #jetty.webapp.addProtectedClasses+=,org.example.
 #jetty.webapp.addHiddenClasses+=,org.example.
 
-## Default ContextHandler class for ee11 environment deployments
-# jetty.deploy.defaultContextHandlerClass=org.eclipse.jetty.ee11.webapp.WebAppContext
+## Default ContextHandler class for ee environment deployments
+# jetty.deploy.defaultContextHandlerClass=org.eclipse.jetty.ee.webapp.WebAppContext
 # end::ini-template[]

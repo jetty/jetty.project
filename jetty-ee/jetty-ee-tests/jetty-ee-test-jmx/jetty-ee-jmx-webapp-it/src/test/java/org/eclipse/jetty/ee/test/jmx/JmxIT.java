@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test.jmx;
+package org.eclipse.jetty.ee.test.jmx;
 
 import java.lang.management.ManagementFactory;
 import java.net.ServerSocket;
@@ -29,9 +29,9 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
-import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee11.webapp.JmxConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee.webapp.JmxConfiguration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.jmx.ConnectorServer;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -65,7 +65,7 @@ public class JmxIT
         // although this test runs an embedded server.
         Path jettyBase = target.resolve("test-base");
         Path webapps = jettyBase.resolve("webapps");
-        Path war = webapps.resolve("jetty-ee11-jmx-webapp.war");
+        Path war = webapps.resolve("jetty-ee-jmx-webapp.war");
 
         _server = new Server(0);
         _server.setName("server");
@@ -128,7 +128,7 @@ public class JmxIT
     @Test
     public void testObtainJmxWebAppState() throws Exception
     {
-        ObjectName webappName = new ObjectName("org.eclipse.jetty.ee11.webapp:type=webappcontext,*");
+        ObjectName webappName = new ObjectName("org.eclipse.jetty.ee.webapp:type=webappcontext,*");
 
         String contextPath = getAttribute(webappName, "contextPath");
         assertThat(contextPath, is("/jmx-webapp"));
@@ -143,7 +143,7 @@ public class JmxIT
     @Test
     public void testAccessToCommonComponent() throws Exception
     {
-        ObjectName commonName = new ObjectName("org.eclipse.jetty.ee11.test.jmx:type=commoncomponent,*");
+        ObjectName commonName = new ObjectName("org.eclipse.jetty.ee.test.jmx:type=commoncomponent,*");
         String name = getAttribute(commonName, "name");
         assertThat(name, is("i am common"));
     }
@@ -155,7 +155,7 @@ public class JmxIT
     @Test
     public void testAccessToPingerMBean() throws Exception
     {
-        ObjectName pingerName = new ObjectName("org.eclipse.jetty.ee11.test.jmx:type=pinger,*");
+        ObjectName pingerName = new ObjectName("org.eclipse.jetty.ee.test.jmx:type=pinger,*");
         // Get initial count
         int count = getAttribute(pingerName, "count");
         // Operations
@@ -172,7 +172,7 @@ public class JmxIT
     @Test
     public void testAccessToEchoerMBean() throws Exception
     {
-        ObjectName echoerName = new ObjectName("org.eclipse.jetty.ee11.test.jmx:type=echoer,*");
+        ObjectName echoerName = new ObjectName("org.eclipse.jetty.ee.test.jmx:type=echoer,*");
         // Get initial count
         int count = getAttribute(echoerName, "count");
         // Operations

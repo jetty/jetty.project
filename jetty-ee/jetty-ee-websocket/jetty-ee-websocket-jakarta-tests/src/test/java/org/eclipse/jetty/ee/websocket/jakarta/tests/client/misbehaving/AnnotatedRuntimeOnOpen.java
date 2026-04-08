@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.client.misbehaving;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.client.misbehaving;
 
 import java.util.LinkedList;
 import java.util.concurrent.CountDownLatch;

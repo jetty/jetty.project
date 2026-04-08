@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.fcgi.proxy;
+package org.eclipse.jetty.ee.fcgi.proxy;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -31,7 +31,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.ee11.proxy.AsyncProxyServlet;
+import org.eclipse.jetty.ee.proxy.AsyncProxyServlet;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpField;
@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Specific implementation of {@link org.eclipse.jetty.ee11.proxy.AsyncProxyServlet.Transparent} for FastCGI.
+ * Specific implementation of {@link org.eclipse.jetty.ee.proxy.AsyncProxyServlet.Transparent} for FastCGI.
  * <p>
  * This servlet accepts an HTTP request and transforms it into a FastCGI request
  * that is sent to the FastCGI server specified in the {@code proxyTo}

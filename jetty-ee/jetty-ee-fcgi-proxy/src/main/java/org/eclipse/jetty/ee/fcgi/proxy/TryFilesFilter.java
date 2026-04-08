@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.fcgi.proxy;
+package org.eclipse.jetty.ee.fcgi.proxy;
 
 import java.io.IOException;
 import java.net.URISyntaxException;

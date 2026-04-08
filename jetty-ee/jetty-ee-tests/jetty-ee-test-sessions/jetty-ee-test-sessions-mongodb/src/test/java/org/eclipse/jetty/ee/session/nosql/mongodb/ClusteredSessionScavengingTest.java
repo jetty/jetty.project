@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session.nosql.mongodb;
+package org.eclipse.jetty.ee.session.nosql.mongodb;
 
-import org.eclipse.jetty.ee11.session.AbstractClusteredSessionScavengingTest;
+import org.eclipse.jetty.ee.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.tools.MongoTestHelper;
 import org.junit.jupiter.api.AfterAll;

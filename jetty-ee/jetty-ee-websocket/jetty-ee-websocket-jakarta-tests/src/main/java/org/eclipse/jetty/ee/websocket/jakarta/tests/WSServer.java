@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests;
+package org.eclipse.jetty.ee.websocket.jakarta.tests;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,8 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
 
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
+import org.eclipse.jetty.ee.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -101,7 +101,7 @@ public class WSServer extends LocalServer
             // Configure the WebAppContext.
             context = new WebAppContext();
             context.setContextPath("/" + contextName);
-            context.setInitParameter("org.eclipse.jetty.ee11.servlet.Default.dirAllowed", "false");
+            context.setInitParameter("org.eclipse.jetty.ee.servlet.Default.dirAllowed", "false");
             context.setBaseResourceAsPath(contextDir);
             context.setAttribute("org.eclipse.jetty.websocket.jakarta", Boolean.TRUE);
             context.addConfiguration(new JakartaWebSocketConfiguration());

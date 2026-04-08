@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session.jdbc;
+package org.eclipse.jetty.ee.session.jdbc;
 
-import org.eclipse.jetty.ee11.session.AbstractWebAppObjectInSessionTest;
+import org.eclipse.jetty.ee.session.AbstractWebAppObjectInSessionTest;
 import org.eclipse.jetty.session.JdbcTestHelper;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;

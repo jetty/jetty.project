@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests;
+package org.eclipse.jetty.ee.websocket.jakarta.tests;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;

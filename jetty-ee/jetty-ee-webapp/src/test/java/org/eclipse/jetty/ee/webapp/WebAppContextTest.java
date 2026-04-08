@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,12 +52,12 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee.webapp.WebAppClassLoading;
-import org.eclipse.jetty.ee11.servlet.DefaultServlet;
-import org.eclipse.jetty.ee11.servlet.Dispatcher;
-import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.ee11.servlet.ServletChannel;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
+import org.eclipse.jetty.ee.servlet.DefaultServlet;
+import org.eclipse.jetty.ee.servlet.Dispatcher;
+import org.eclipse.jetty.ee.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee.servlet.ServletChannel;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
@@ -381,13 +381,13 @@ public class WebAppContextTest
         {
             expectedConfigurations.add("org.eclipse.jetty.webapp.JmxConfiguration");
         }
-        expectedConfigurations.add("org.eclipse.jetty.ee11.webapp.WebInfConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.ee11.webapp.WebXmlConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.ee11.webapp.MetaInfConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.ee11.webapp.FragmentConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.ee11.webapp.JaasConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.ee11.webapp.WebAppConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.ee11.webapp.JettyWebXmlConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee.webapp.WebInfConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee.webapp.WebXmlConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee.webapp.MetaInfConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee.webapp.FragmentConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee.webapp.JaasConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee.webapp.WebAppConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee.webapp.JettyWebXmlConfiguration");
 
         assertThat(actualConfigurations, Matchers.contains(expectedConfigurations.toArray()));
     }
@@ -1231,7 +1231,7 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        String testPattern = "org.eclipse.jetty.ee11.webapp.test.";
+        String testPattern = "org.eclipse.jetty.ee.webapp.test.";
 
         WebAppClassLoading.addHiddenClasses(server, testPattern);
 
@@ -1265,7 +1265,7 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        String testPattern = "org.eclipse.jetty.ee11.webapp.test.";
+        String testPattern = "org.eclipse.jetty.ee.webapp.test.";
 
         WebAppClassLoading.addProtectedClasses(server, testPattern);
 

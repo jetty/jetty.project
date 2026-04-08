@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet.internal;
+package org.eclipse.jetty.ee.servlet.internal;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import jakarta.servlet.ReadListener;
-import org.eclipse.jetty.ee11.servlet.HttpInput;
-import org.eclipse.jetty.ee11.servlet.util.ServletInputStreamWrapper;
+import org.eclipse.jetty.ee.servlet.HttpInput;
+import org.eclipse.jetty.ee.servlet.util.ServletInputStreamWrapper;
 
 public class UpgradedServletInputStream extends ServletInputStreamWrapper
 {

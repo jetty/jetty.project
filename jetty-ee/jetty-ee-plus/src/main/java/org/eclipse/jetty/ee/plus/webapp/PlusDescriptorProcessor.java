@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.plus.webapp;
+package org.eclipse.jetty.ee.plus.webapp;
 
 import java.util.Iterator;
 import java.util.Objects;
@@ -19,12 +19,12 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.webapp.Descriptor;
-import org.eclipse.jetty.ee11.webapp.FragmentDescriptor;
-import org.eclipse.jetty.ee11.webapp.IterativeDescriptorProcessor;
-import org.eclipse.jetty.ee11.webapp.Origin;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.webapp.Descriptor;
+import org.eclipse.jetty.ee.webapp.FragmentDescriptor;
+import org.eclipse.jetty.ee.webapp.IterativeDescriptorProcessor;
+import org.eclipse.jetty.ee.webapp.Origin;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallback;

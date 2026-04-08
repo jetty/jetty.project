@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests;
+package org.eclipse.jetty.ee.websocket.jakarta.tests;
 
 import java.net.URI;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -33,11 +33,11 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.gzip.GzipCompression;
-import org.eclipse.jetty.ee11.webapp.Configuration;
-import org.eclipse.jetty.ee11.webapp.Configurations;
-import org.eclipse.jetty.ee11.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
+import org.eclipse.jetty.ee.webapp.Configuration;
+import org.eclipse.jetty.ee.webapp.Configurations;
+import org.eclipse.jetty.ee.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
@@ -146,8 +146,8 @@ public class JakartaClientClassLoaderTest
 
         // Copy over the individual jars required for Jakarta WebSocket.
         app.createWebInf();
-        app.copyLib(JakartaWebSocketClientContainerProvider.class, "jetty-ee11-websocket-jakarta-client.jar");
-        app.copyLib(JakartaWebSocketContainer.class, "jetty-ee11-websocket-jakarta-common.jar");
+        app.copyLib(JakartaWebSocketClientContainerProvider.class, "jetty-ee-websocket-jakarta-client.jar");
+        app.copyLib(JakartaWebSocketContainer.class, "jetty-ee-websocket-jakarta-common.jar");
         app.copyLib(ContainerLifeCycle.class, "jetty-util.jar");
         app.copyLib(CoreClientUpgradeRequest.class, "jetty-websocket-core-client.jar");
         app.copyLib(WebSocketComponents.class, "jetty-websocket-core-common.jar");

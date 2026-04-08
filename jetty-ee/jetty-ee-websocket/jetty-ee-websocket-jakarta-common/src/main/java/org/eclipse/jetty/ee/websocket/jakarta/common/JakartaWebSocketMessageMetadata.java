@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.common;
+package org.eclipse.jetty.ee.websocket.jakarta.common;
 
 import java.util.List;
 
-import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.RegisteredDecoder;
+import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
 import org.eclipse.jetty.websocket.core.util.MethodHolder;
 

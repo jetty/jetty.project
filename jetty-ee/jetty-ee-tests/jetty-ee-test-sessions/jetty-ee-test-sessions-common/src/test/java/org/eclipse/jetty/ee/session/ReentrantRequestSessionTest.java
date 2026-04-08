@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session;
+package org.eclipse.jetty.ee.session;
 
 import java.io.IOException;
 
@@ -23,7 +23,7 @@ import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.NullSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionCache;

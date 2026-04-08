@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.proxy;
+package org.eclipse.jetty.ee.proxy;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;

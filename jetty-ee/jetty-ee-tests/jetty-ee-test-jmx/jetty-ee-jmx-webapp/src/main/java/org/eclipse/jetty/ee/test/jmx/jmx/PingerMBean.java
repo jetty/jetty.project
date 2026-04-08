@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test.jmx.jmx;
+package org.eclipse.jetty.ee.test.jmx.jmx;
 
-import org.eclipse.jetty.ee11.test.jmx.Pinger;
+import org.eclipse.jetty.ee.test.jmx.Pinger;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;

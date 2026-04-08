@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session.hazelcast;
+package org.eclipse.jetty.ee.session.hazelcast;
 
-import org.eclipse.jetty.ee11.session.AbstractClusteredInvalidationSessionTest;
+import org.eclipse.jetty.ee.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.tools.HazelcastTestHelper;

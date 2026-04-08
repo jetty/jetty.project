@@ -11,18 +11,18 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee11.quickstart.QuickStartConfiguration;
-import org.eclipse.jetty.ee11.quickstart.QuickStartGeneratorConfiguration;
-import org.eclipse.jetty.ee11.webapp.Configuration;
+import org.eclipse.jetty.ee.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.ee.quickstart.QuickStartGeneratorConfiguration;
+import org.eclipse.jetty.ee.webapp.Configuration;
 
-module org.eclipse.jetty.ee11.quickstart
+module org.eclipse.jetty.ee.quickstart
 {
     requires  jakarta.servlet;
     requires org.slf4j;
 
-    requires transitive org.eclipse.jetty.ee11.annotations;
+    requires transitive org.eclipse.jetty.ee.annotations;
 
-    exports org.eclipse.jetty.ee11.quickstart;
+    exports org.eclipse.jetty.ee.quickstart;
 
     provides Configuration with QuickStartConfiguration, QuickStartGeneratorConfiguration;
 }

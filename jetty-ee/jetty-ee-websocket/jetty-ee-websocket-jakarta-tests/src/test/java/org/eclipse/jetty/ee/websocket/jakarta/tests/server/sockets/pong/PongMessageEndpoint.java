@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.server.sockets.pong;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.server.sockets.pong;
 
 import java.nio.charset.StandardCharsets;
 

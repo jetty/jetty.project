@@ -1,11 +1,11 @@
 [description]
-Scans and deploys `ee11` environment web applications.
+Scans and deploys `ee` environment web applications.
 
 [tags]
 deployment
 
 [environment]
-ee11
+ee
 
 [before]
 ee10-deploy
@@ -16,15 +16,15 @@ static-deploy
 
 [depend]
 deployment-scanner
-ee11-webapp
+ee-webapp
 
 [xml]
-etc/jetty-ee11-deploy.xml
+etc/jetty-ee-deploy.xml
 
 [ini-template]
 # tag::ini-template[]
 ## Defaults Descriptor for all deployed webapps
-# jetty.deploy.defaultsDescriptorPath=${jetty.base}/etc/webdefault-ee11.xml
+# jetty.deploy.defaultsDescriptorPath=${jetty.base}/etc/webdefault-ee.xml
 
 ## Whether to extract *.war files
 # jetty.deploy.extractWars=true

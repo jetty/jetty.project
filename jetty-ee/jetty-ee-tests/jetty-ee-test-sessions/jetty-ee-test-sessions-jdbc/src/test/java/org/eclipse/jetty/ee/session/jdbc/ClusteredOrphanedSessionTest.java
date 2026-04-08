@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session.jdbc;
+package org.eclipse.jetty.ee.session.jdbc;
 
-import org.eclipse.jetty.ee11.session.AbstractClusteredOrphanedSessionTest;
+import org.eclipse.jetty.ee.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.session.JdbcTestHelper;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;

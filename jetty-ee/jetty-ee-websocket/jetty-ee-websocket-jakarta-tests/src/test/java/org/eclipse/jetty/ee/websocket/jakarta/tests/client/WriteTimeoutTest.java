@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.client;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.client;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -22,10 +22,10 @@ import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.ee11.websocket.jakarta.client.JakartaWebSocketClientContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.EventSocket;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee.websocket.jakarta.client.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.EventSocket;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

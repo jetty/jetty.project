@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.osgi.annotations;
+package org.eclipse.jetty.ee.osgi.annotations;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.servlet.ServletContainerInitializer;
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
-import org.eclipse.jetty.ee11.osgi.boot.OSGiMetaInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.Configuration;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.osgi.boot.OSGiMetaInfConfiguration;
+import org.eclipse.jetty.ee.webapp.Configuration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
@@ -33,13 +33,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Extend the {@link org.eclipse.jetty.ee11.annotations.AnnotationConfiguration} to support OSGi:
+ * Extend the {@link org.eclipse.jetty.ee.annotations.AnnotationConfiguration} to support OSGi:
  * Look for annotations inside WEB-INF/lib and also in the fragments and required bundles.
  * Discover them using a scanner adapted to OSGi.
  */
-public class AnnotationConfiguration extends org.eclipse.jetty.ee11.annotations.AnnotationConfiguration
+public class AnnotationConfiguration extends org.eclipse.jetty.ee.annotations.AnnotationConfiguration
 {
-    private static final Logger LOG = LoggerFactory.getLogger(org.eclipse.jetty.ee11.annotations.AnnotationConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(org.eclipse.jetty.ee.annotations.AnnotationConfiguration.class);
 
     public class BundleParserTask extends ParserTask
     {
@@ -53,7 +53,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee11.annotations.
         {
             if (_parser != null)
             {
-                org.eclipse.jetty.ee11.osgi.annotations.AnnotationParser osgiAnnotationParser = (org.eclipse.jetty.ee11.osgi.annotations.AnnotationParser)_parser;
+                org.eclipse.jetty.ee.osgi.annotations.AnnotationParser osgiAnnotationParser = (org.eclipse.jetty.ee.osgi.annotations.AnnotationParser)_parser;
                 Bundle bundle = osgiAnnotationParser.getBundleIndex().getBundle(_resource);
                 if (_stat != null)
                     _stat.start();
@@ -72,7 +72,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.ee11.annotations.
     @Override
     public Class<? extends Configuration> replaces()
     {
-        return org.eclipse.jetty.ee11.annotations.AnnotationConfiguration.class;
+        return org.eclipse.jetty.ee.annotations.AnnotationConfiguration.class;
     }
 
     /**

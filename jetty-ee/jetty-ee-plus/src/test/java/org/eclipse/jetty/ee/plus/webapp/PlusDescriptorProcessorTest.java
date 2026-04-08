@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.plus.webapp;
+package org.eclipse.jetty.ee.plus.webapp;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
@@ -20,13 +20,13 @@ import javax.naming.InitialContext;
 import javax.naming.Name;
 
 import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.webapp.Configuration;
-import org.eclipse.jetty.ee11.webapp.Descriptor;
-import org.eclipse.jetty.ee11.webapp.FragmentDescriptor;
-import org.eclipse.jetty.ee11.webapp.Origin;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.webapp.WebDescriptor;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.webapp.Configuration;
+import org.eclipse.jetty.ee.webapp.Descriptor;
+import org.eclipse.jetty.ee.webapp.FragmentDescriptor;
+import org.eclipse.jetty.ee.webapp.Origin;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebDescriptor;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
@@ -132,7 +132,7 @@ public class PlusDescriptorProcessorTest
         context.setConfigurations(new Configuration[]{new PlusConfiguration(), new EnvConfiguration()});
         context.preConfigure();
         context.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), context));
-        context.getHiddenClassMatcher().exclude("org.eclipse.jetty.ee11.plus.webapp."); //need visbility of the TestInjections class
+        context.getHiddenClassMatcher().exclude("org.eclipse.jetty.ee.plus.webapp."); //need visbility of the TestInjections class
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
         Context icontext = new InitialContext();

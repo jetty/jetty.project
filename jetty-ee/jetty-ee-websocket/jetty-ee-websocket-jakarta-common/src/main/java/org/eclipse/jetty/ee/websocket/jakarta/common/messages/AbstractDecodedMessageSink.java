@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.common.messages;
+package org.eclipse.jetty.ee.websocket.jakarta.common.messages;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.Decoder;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.RegisteredDecoder;
+import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;

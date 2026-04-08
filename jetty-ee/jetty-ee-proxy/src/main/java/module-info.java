@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee11.proxy
+module org.eclipse.jetty.ee.proxy
 {
     requires transitive jakarta.servlet;
     requires transitive org.eclipse.jetty.client;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.slf4j;
 
-    exports org.eclipse.jetty.ee11.proxy;
+    exports org.eclipse.jetty.ee.proxy;
 }

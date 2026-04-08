@@ -3,17 +3,17 @@
 
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11</groupId>
-    <artifactId>jetty-ee11</artifactId>
+    <groupId>org.eclipse.jetty.ee</groupId>
+    <artifactId>jetty-ee</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee11-webapp</artifactId>
+  <artifactId>jetty-ee-webapp</artifactId>
   <name>EE11 :: WebApp</name>
   <description>Jetty web application support</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee11.webapp.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee.webapp.*</spotbugs.onlyAnalyze>
   </properties>
 
   <dependencies>
@@ -30,8 +30,8 @@
       <artifactId>jetty-ee-webapp</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlet</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -65,11 +65,11 @@
         <directory>src/main/resources</directory>
       </resource>
       <resource>
-        <targetPath>org/eclipse/jetty/ee11/webapp</targetPath>
+        <targetPath>org/eclipse/jetty/ee/webapp</targetPath>
         <filtering>false</filtering>
         <directory>src/main/config/etc</directory>
         <includes>
-          <include>webdefault-ee11.xml</include>
+          <include>webdefault-ee.xml</include>
         </includes>
       </resource>
     </resources>
@@ -81,8 +81,8 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)", osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.ee11.webapp.Configuration)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
-            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee11.webapp.Configuration</Provide-Capability>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)", osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.ee.webapp.Configuration)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee.webapp.Configuration</Provide-Capability>
           </instructions>
         </configuration>
       </plugin>
@@ -91,7 +91,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>@{argLine} ${jetty.surefire.argLine}
-            --add-exports org.eclipse.jetty.ee11.webapp/org.acme.webapp=org.eclipse.jetty.ee11.servlet --add-reads org.eclipse.jetty.ee11.webapp=org.eclipse.jetty.logging</argLine>
+            --add-exports org.eclipse.jetty.ee.webapp/org.acme.webapp=org.eclipse.jetty.ee.servlet --add-reads org.eclipse.jetty.ee.webapp=org.eclipse.jetty.logging</argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>
             <additionalClasspathElement>${basedir}/src/test/resources/mods/foo-bar-janb.jar</additionalClasspathElement>

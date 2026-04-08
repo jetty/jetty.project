@@ -3,11 +3,11 @@
 
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11.websocket</groupId>
-    <artifactId>jetty-ee11-websocket</artifactId>
+    <groupId>org.eclipse.jetty.ee.websocket</groupId>
+    <artifactId>jetty-ee-websocket</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee11-websocket-servlet</artifactId>
+  <artifactId>jetty-ee-websocket-servlet</artifactId>
   <name>EE11 :: Websocket :: Servlet</name>
 
   <properties>
@@ -16,8 +16,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlet</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>

@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session.gcloud;
+package org.eclipse.jetty.ee.session.gcloud;
 
-import org.eclipse.jetty.ee11.session.AbstractClusteredInvalidationSessionTest;
+import org.eclipse.jetty.ee.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.tools.GCloudSessionTestSupport;
 import org.testcontainers.junit.jupiter.Testcontainers;

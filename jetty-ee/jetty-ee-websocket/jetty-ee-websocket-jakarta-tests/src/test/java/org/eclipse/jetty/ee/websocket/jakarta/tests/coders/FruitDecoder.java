@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.coders;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.coders;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

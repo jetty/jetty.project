@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.quickstart;
+package org.eclipse.jetty.ee.quickstart;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,14 +19,14 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.ee11.annotations.AnnotationDecorator;
-import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
-import org.eclipse.jetty.ee11.webapp.Configuration;
-import org.eclipse.jetty.ee11.webapp.StandardDescriptorProcessor;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.webapp.WebDescriptor;
-import org.eclipse.jetty.ee11.webapp.WebInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee.annotations.AnnotationDecorator;
+import org.eclipse.jetty.ee.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee.webapp.Configuration;
+import org.eclipse.jetty.ee.webapp.StandardDescriptorProcessor;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebDescriptor;
+import org.eclipse.jetty.ee.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -52,10 +52,10 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
     static
     {
-        __replacedConfigurations.add(org.eclipse.jetty.ee11.webapp.WebXmlConfiguration.class);
-        __replacedConfigurations.add(org.eclipse.jetty.ee11.webapp.MetaInfConfiguration.class);
-        __replacedConfigurations.add(org.eclipse.jetty.ee11.webapp.FragmentConfiguration.class);
-        __replacedConfigurations.add(org.eclipse.jetty.ee11.annotations.AnnotationConfiguration.class);
+        __replacedConfigurations.add(org.eclipse.jetty.ee.webapp.WebXmlConfiguration.class);
+        __replacedConfigurations.add(org.eclipse.jetty.ee.webapp.MetaInfConfiguration.class);
+        __replacedConfigurations.add(org.eclipse.jetty.ee.webapp.FragmentConfiguration.class);
+        __replacedConfigurations.add(org.eclipse.jetty.ee.annotations.AnnotationConfiguration.class);
     }
 
     private ResourceFactory.Closeable _resourceFactory;

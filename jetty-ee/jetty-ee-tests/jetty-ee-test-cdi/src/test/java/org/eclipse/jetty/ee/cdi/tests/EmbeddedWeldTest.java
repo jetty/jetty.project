@@ -11,21 +11,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.cdi.tests;
+package org.eclipse.jetty.ee.cdi.tests;
 
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.EnumSet;
 
 import jakarta.servlet.DispatcherType;
-import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee11.cdi.CdiConfiguration;
-import org.eclipse.jetty.ee11.cdi.CdiDecoratingListener;
-import org.eclipse.jetty.ee11.cdi.CdiServletContainerInitializer;
-import org.eclipse.jetty.ee11.cdi.CdiSpiDecorator;
-import org.eclipse.jetty.ee11.servlet.ListenerHolder;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee.cdi.CdiConfiguration;
+import org.eclipse.jetty.ee.cdi.CdiDecoratingListener;
+import org.eclipse.jetty.ee.cdi.CdiServletContainerInitializer;
+import org.eclipse.jetty.ee.cdi.CdiSpiDecorator;
+import org.eclipse.jetty.ee.servlet.ListenerHolder;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Assumptions;
@@ -87,7 +87,7 @@ public class EmbeddedWeldTest
 
             case "DecoratingListener+Listener":
                 // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters.
-                context.addEventListener(new org.eclipse.jetty.ee11.webapp.DecoratingListener(context));
+                context.addEventListener(new org.eclipse.jetty.ee.webapp.DecoratingListener(context));
                 context.getServletHandler().addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
                 break;
 
@@ -152,7 +152,7 @@ public class EmbeddedWeldTest
         //instantiate injection capabilities into jetty, but as of Weld 5.1.1 this relied on pre jetty-12 classes.
         //Mode "DecoratingListener+Listener is incompatible with jetty-12. The name of the attribute that communicates
         //the injector decorator between Weld and jetty-12 relies on the classname of the DecoratingListener class, which
-        //in pre jetty-12 was org.eclipse.jetty.webapp.DecoratingListener, but is now org.eclipse.jetty.ee11.webapp.DecoratingListener.
+        //in pre jetty-12 was org.eclipse.jetty.webapp.DecoratingListener, but is now org.eclipse.jetty.ee.webapp.DecoratingListener.
         Assumptions.assumeFalse(mode.equals("none") || mode.equals("DecoratingListener+Listener"));
 
         Server server = createServerWithServletContext(mode);
@@ -198,8 +198,8 @@ public class EmbeddedWeldTest
         webapp.setBaseResourceAsPath(Paths.get("src", "test", "weldtest"));
         server.setHandler(webapp);
 
-        webapp.setInitParameter(org.eclipse.jetty.ee11.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.ee11.cdi.CdiDecoratingListener.MODE);
-        webapp.addServletContainerInitializer(new org.eclipse.jetty.ee11.cdi.CdiServletContainerInitializer());
+        webapp.setInitParameter(org.eclipse.jetty.ee.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.ee.cdi.CdiDecoratingListener.MODE);
+        webapp.addServletContainerInitializer(new org.eclipse.jetty.ee.cdi.CdiServletContainerInitializer());
         webapp.addServletContainerInitializer(new org.jboss.weld.environment.servlet.EnhancedListener());
 
         String pkg = EmbeddedWeldTest.class.getPackage().getName();
@@ -235,7 +235,7 @@ public class EmbeddedWeldTest
         webapp.addConfiguration(new CdiConfiguration());
 
         //ensure our CDI SCI is run first so the decorator is set up before Weld runs
-        webapp.setAttribute(AnnotationConfiguration.SERVLET_CONTAINER_INITIALIZER_ORDER, "org.eclipse.jetty.ee11.cdi.CdiServletContainerInitializer, *");
+        webapp.setAttribute(AnnotationConfiguration.SERVLET_CONTAINER_INITIALIZER_ORDER, "org.eclipse.jetty.ee.cdi.CdiServletContainerInitializer, *");
 
         // This is ugly but needed for maven for testing in a overlaid war pom
         String pkg = EmbeddedWeldTest.class.getPackage().getName();

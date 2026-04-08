@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
 import org.eclipse.jetty.util.Loader;
 import org.slf4j.Logger;
@@ -34,8 +34,8 @@ public class JspConfiguration extends AbstractConfiguration
         super(new Builder()
             .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class)
             .addDependents(WebAppConfiguration.class)
-            .protectAndExpose("org.eclipse.jetty.ee11.jsp.")
-            .expose("org.eclipse.jetty.ee11.apache.")
+            .protectAndExpose("org.eclipse.jetty.ee.jsp.")
+            .expose("org.eclipse.jetty.ee.apache.")
             .hide("org.eclipse.jdt."));
     }
 
@@ -44,7 +44,7 @@ public class JspConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.ee11.jsp.JettyJspServlet") != null;
+            return Loader.loadClass("org.eclipse.jetty.ee.jsp.JettyJspServlet") != null;
         }
         catch (Throwable e)
         {

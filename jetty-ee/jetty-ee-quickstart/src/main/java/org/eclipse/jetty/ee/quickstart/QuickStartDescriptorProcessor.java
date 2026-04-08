@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.quickstart;
+package org.eclipse.jetty.ee.quickstart;
 
 import java.io.Closeable;
 import java.net.URI;
@@ -22,14 +22,14 @@ import java.util.Iterator;
 import java.util.List;
 
 import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee11.servlet.ServletContainerInitializerHolder;
-import org.eclipse.jetty.ee11.servlet.ServletMapping;
-import org.eclipse.jetty.ee11.webapp.DefaultsDescriptor;
-import org.eclipse.jetty.ee11.webapp.Descriptor;
-import org.eclipse.jetty.ee11.webapp.IterativeDescriptorProcessor;
-import org.eclipse.jetty.ee11.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee.servlet.ServletContainerInitializerHolder;
+import org.eclipse.jetty.ee.servlet.ServletMapping;
+import org.eclipse.jetty.ee.webapp.DefaultsDescriptor;
+import org.eclipse.jetty.ee.webapp.Descriptor;
+import org.eclipse.jetty.ee.webapp.IterativeDescriptorProcessor;
+import org.eclipse.jetty.ee.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;

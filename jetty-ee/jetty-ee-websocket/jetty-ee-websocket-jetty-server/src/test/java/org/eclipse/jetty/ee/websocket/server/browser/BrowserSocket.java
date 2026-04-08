@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.server.browser;
+package org.eclipse.jetty.ee.websocket.server.browser;
 
 import java.io.IOException;
 import java.io.InputStream;

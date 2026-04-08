@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.quickstart;
+package org.eclipse.jetty.ee.quickstart;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

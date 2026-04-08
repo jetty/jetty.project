@@ -14,4 +14,4 @@
 /**
  * Jetty Annotations : Support for Servlet Annotations
  */
-package org.eclipse.jetty.ee11.annotations;
+package org.eclipse.jetty.ee.annotations;

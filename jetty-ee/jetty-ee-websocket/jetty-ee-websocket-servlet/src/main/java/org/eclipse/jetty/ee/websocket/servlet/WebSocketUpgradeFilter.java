@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.servlet;
+package org.eclipse.jetty.ee.websocket.servlet;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -28,12 +28,12 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee11.servlet.FilterHolder;
-import org.eclipse.jetty.ee11.servlet.FilterMapping;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletCoreRequest;
-import org.eclipse.jetty.ee11.servlet.ServletCoreResponse;
-import org.eclipse.jetty.ee11.servlet.ServletHandler;
+import org.eclipse.jetty.ee.servlet.FilterHolder;
+import org.eclipse.jetty.ee.servlet.FilterMapping;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletCoreRequest;
+import org.eclipse.jetty.ee.servlet.ServletCoreResponse;
+import org.eclipse.jetty.ee.servlet.ServletHandler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;

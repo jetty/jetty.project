@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee11.apache.jsp
+module org.eclipse.jetty.ee.apache.jsp
 {
     requires java.xml;
     requires transitive jakarta.servlet;
@@ -19,12 +19,12 @@ module org.eclipse.jetty.ee11.apache.jsp
     requires transitive org.mortbay.apache.jasper;
     requires org.slf4j;
 
-    exports org.eclipse.jetty.ee11.apache.jsp;
-    exports org.eclipse.jetty.ee11.jsp;
+    exports org.eclipse.jetty.ee.apache.jsp;
+    exports org.eclipse.jetty.ee.jsp;
 
     provides org.apache.juli.logging.Log with
-        org.eclipse.jetty.ee11.apache.jsp.JuliLog;
+        org.eclipse.jetty.ee.apache.jsp.JuliLog;
 
     provides jakarta.servlet.ServletContainerInitializer with
-        org.eclipse.jetty.ee11.apache.jsp.JettyJasperInitializer;
+        org.eclipse.jetty.ee.apache.jsp.JettyJasperInitializer;
 }

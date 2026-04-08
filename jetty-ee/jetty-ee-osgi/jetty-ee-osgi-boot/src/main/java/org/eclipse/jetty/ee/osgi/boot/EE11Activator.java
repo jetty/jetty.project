@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.osgi.boot;
+package org.eclipse.jetty.ee.osgi.boot;
 
 import java.net.URI;
 import java.net.URL;
@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
-import org.eclipse.jetty.ee11.webapp.Configuration;
-import org.eclipse.jetty.ee11.webapp.Configurations;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.Configuration;
+import org.eclipse.jetty.ee.webapp.Configurations;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.AbstractContextProvider;
 import org.eclipse.jetty.osgi.AbstractEEActivator;
 import org.eclipse.jetty.osgi.BundleMetadata;
@@ -54,7 +54,7 @@ public class EE11Activator extends AbstractEEActivator
 {
     private static final Logger LOG = LoggerFactory.getLogger(EE11Activator.class);
 
-    public static final String ENVIRONMENT = "ee11";
+    public static final String ENVIRONMENT = "ee";
 
     @Override
     public String getEnvironment()
@@ -110,7 +110,7 @@ public class EE11Activator extends AbstractEEActivator
             if (LOG.isDebugEnabled())
                 LOG.debug("Core classloader = {}", coreLoader.getClass());
 
-            //provide access to all ee11 classes
+            //provide access to all ee classes
             ClassLoader environmentLoader = new OSGiClassLoader(coreLoader, _myBundle);
 
             //Use a classloader that knows about the common jetty parent loader, and also the bundle                  
@@ -206,12 +206,12 @@ public class EE11Activator extends AbstractEEActivator
             if (LOG.isDebugEnabled())
                 LOG.debug("Core classloader = {}", coreLoader);
 
-            //provide access to all ee11 classes
+            //provide access to all ee classes
             ClassLoader environmentLoader = new OSGiClassLoader(coreLoader, _myBundle);
             if (LOG.isDebugEnabled())
                 LOG.debug("Environment classloader = {}", environmentLoader);
 
-            //Ensure Configurations.getKnown is called with a classloader that can see all of the ee11 and core classes
+            //Ensure Configurations.getKnown is called with a classloader that can see all of the ee and core classes
 
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try
@@ -394,7 +394,7 @@ public class EE11Activator extends AbstractEEActivator
                     webApp.setDescriptor(webXml.toString());
             }
 
-            // webdefault-ee11.xml
+            // webdefault-ee.xml
             tmp = (String)metadata.getAttributes().getAttribute(OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH);
             if (tmp != null)
             {

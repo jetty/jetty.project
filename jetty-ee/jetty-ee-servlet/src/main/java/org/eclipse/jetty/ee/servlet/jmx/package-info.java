@@ -14,5 +14,5 @@
 /**
  * Jetty Servlet : Servlet JMX Integration
  */
-package org.eclipse.jetty.ee11.servlet.jmx;
+package org.eclipse.jetty.ee.servlet.jmx;
 

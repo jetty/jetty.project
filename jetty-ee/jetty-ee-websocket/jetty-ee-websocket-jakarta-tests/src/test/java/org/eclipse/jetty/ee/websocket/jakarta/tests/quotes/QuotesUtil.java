@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.quotes;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.quotes;
 
 import java.io.BufferedReader;
 import java.io.File;

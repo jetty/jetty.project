@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.loginservice;
+package org.eclipse.jetty.ee.loginservice;
 
 import java.io.File;
 import java.io.FileOutputStream;

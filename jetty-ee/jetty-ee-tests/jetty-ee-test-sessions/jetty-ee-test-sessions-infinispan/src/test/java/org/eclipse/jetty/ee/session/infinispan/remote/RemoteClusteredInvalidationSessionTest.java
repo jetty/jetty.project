@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session.infinispan.remote;
+package org.eclipse.jetty.ee.session.infinispan.remote;
 
-import org.eclipse.jetty.ee11.session.AbstractClusteredInvalidationSessionTest;
+import org.eclipse.jetty.ee.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.session.test.tools.LoggingUtil;

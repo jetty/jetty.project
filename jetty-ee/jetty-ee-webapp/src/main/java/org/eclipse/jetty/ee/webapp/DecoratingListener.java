@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
 
 /**
  * An extended org.eclipse.jetty.servlet.DecoratingListener.
  * The context attribute "org.eclipse.jetty.webapp.DecoratingListener" if
  * not set, is set to the name of the attribute this listener listens for.
  */
-public class DecoratingListener extends org.eclipse.jetty.ee11.servlet.DecoratingListener
+public class DecoratingListener extends org.eclipse.jetty.ee.servlet.DecoratingListener
 {
     public static final String DECORATOR_ATTRIBUTE = "org.eclipse.jetty.webapp.decorator";
 

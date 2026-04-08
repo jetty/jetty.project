@@ -4,7 +4,7 @@
 Enables standard Servlet handling.
 
 [environment]
-ee11
+ee
 
 [depend]
 server
@@ -12,4 +12,4 @@ sessions
 
 [lib]
 lib/@jakarta.servlet:jakarta.servlet-api@
-lib/jetty-ee11-servlet-${jetty.version}.jar
+lib/jetty-ee-servlet-${jetty.version}.jar

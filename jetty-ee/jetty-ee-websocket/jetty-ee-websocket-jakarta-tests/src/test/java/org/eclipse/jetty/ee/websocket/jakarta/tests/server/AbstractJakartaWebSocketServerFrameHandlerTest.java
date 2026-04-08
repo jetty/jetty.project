@@ -11,18 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.server;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import jakarta.websocket.EndpointConfig;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.websocket.jakarta.client.internal.BasicClientEndpointConfig;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.encoders.AvailableEncoders;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.JakartaWebSocketServerContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.websocket.jakarta.client.internal.BasicClientEndpointConfig;
+import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.ee.websocket.jakarta.common.encoders.AvailableEncoders;
+import org.eclipse.jetty.ee.websocket.jakarta.server.JakartaWebSocketServerContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.AfterAll;

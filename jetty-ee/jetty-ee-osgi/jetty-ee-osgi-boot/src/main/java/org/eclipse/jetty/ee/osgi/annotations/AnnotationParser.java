@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.osgi.annotations;
+package org.eclipse.jetty.ee.osgi.annotations;
 
 import java.net.URI;
 import java.util.Set;

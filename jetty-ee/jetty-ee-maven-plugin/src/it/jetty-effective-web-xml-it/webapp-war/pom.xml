@@ -2,7 +2,7 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11.its.jetty-effective-web-xml-it</groupId>
+    <groupId>org.eclipse.jetty.ee.its.jetty-effective-web-xml-it</groupId>
     <artifactId>jetty-effective-web-xml-project</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
@@ -11,11 +11,11 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlet</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.its.jetty-effective-web-xml-it</groupId>
+      <groupId>org.eclipse.jetty.ee.its.jetty-effective-web-xml-it</groupId>
       <artifactId>resources</artifactId>
     </dependency>
   </dependencies>
@@ -28,8 +28,8 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-maven-plugin</artifactId>
         <executions>
           <execution>
             <id>gen-effective-web-xml</id>

@@ -5,7 +5,7 @@
   <Ref refid="Contexts">
     <Call name="addHandler">
       <Arg>
-        <New class="org.eclipse.jetty.ee11.servlet.ServletContextHandler">
+        <New class="org.eclipse.jetty.ee.servlet.ServletContextHandler">
           <Set name="contextPath"><Property name="jetty.proxy.contextPath" default="/"/></Set>
           <Call name="insertHandler">
             <Arg>
@@ -13,7 +13,7 @@
             </Arg>
           </Call>
           <Call id="proxyHolder" name="addServlet">
-            <Arg><Property name="jetty.proxy.servletClass" default="org.eclipse.jetty.ee11.proxy.ProxyServlet$Transparent"/></Arg>
+            <Arg><Property name="jetty.proxy.servletClass" default="org.eclipse.jetty.ee.proxy.ProxyServlet$Transparent"/></Arg>
             <Arg><Property name="jetty.proxy.servletMapping" default="/*"/></Arg>
             <Call name="setInitParameter">
               <Arg>proxyTo</Arg>

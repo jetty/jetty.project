@@ -4,10 +4,10 @@
 Adds servlet standard security handling to the classpath.
 
 [environment]
-ee11
+ee
 
 [depend]
 server
 security
-ee11-servlet
+ee-servlet
 

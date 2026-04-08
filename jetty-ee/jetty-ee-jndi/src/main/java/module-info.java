@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee11.jndi
+module org.eclipse.jetty.ee.jndi
 {
     requires org.slf4j;
 
@@ -21,5 +21,5 @@ module org.eclipse.jetty.ee11.jndi
     // Only required if using MailSessionReference.
     requires static transitive jakarta.mail;
 
-    exports org.eclipse.jetty.ee11.jndi.factories;
+    exports org.eclipse.jetty.ee.jndi.factories;
 }

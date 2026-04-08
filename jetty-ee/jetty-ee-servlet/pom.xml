@@ -3,17 +3,17 @@
 
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11</groupId>
-    <artifactId>jetty-ee11</artifactId>
+    <groupId>org.eclipse.jetty.ee</groupId>
+    <artifactId>jetty-ee</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee11-servlet</artifactId>
+  <artifactId>jetty-ee-servlet</artifactId>
   <name>EE11 :: Servlet</name>
   <description>Jetty Servlet Container</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlet</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee11.servlet.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee.servlet.*</spotbugs.onlyAnalyze>
   </properties>
 
   <dependencies>
@@ -86,9 +86,9 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>@{argLine} ${jetty.surefire.argLine}
-            --add-reads org.eclipse.jetty.ee11.servlet=org.eclipse.jetty.util.ajax
-            --add-reads org.eclipse.jetty.ee11.servlet=org.eclipse.jetty.ee.test.resources
-            --add-reads org.eclipse.jetty.ee11.servlet=org.eclipse.jetty.logging</argLine>
+            --add-reads org.eclipse.jetty.ee.servlet=org.eclipse.jetty.util.ajax
+            --add-reads org.eclipse.jetty.ee.servlet=org.eclipse.jetty.ee.test.resources
+            --add-reads org.eclipse.jetty.ee.servlet=org.eclipse.jetty.logging</argLine>
         </configuration>
       </plugin>
     </plugins>

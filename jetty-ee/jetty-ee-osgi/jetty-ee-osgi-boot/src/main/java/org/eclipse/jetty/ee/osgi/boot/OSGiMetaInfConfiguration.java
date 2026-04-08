@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.osgi.boot;
+package org.eclipse.jetty.ee.osgi.boot;
 
 import java.io.File;
 import java.net.URI;
@@ -27,9 +27,9 @@ import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.ee11.webapp.Configuration;
-import org.eclipse.jetty.ee11.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.Configuration;
+import org.eclipse.jetty.ee.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.osgi.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.util.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.util.Util;
@@ -58,8 +58,8 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
      * Regex of symbolic names of bundles that should be considered to be on the container classpath
      */
     public static final String CONTAINER_BUNDLE_PATTERN = "org.eclipse.jetty.server.webapp.containerIncludeBundlePattern";
-    public static final String FRAGMENT_AND_REQUIRED_BUNDLES = "org.eclipse.jetty.ee11.osgi.fragmentAndRequiredBundles";
-    public static final String FRAGMENT_AND_REQUIRED_RESOURCES = "org.eclipse.jetty.ee11.osgi.fragmentAndRequiredResources";
+    public static final String FRAGMENT_AND_REQUIRED_BUNDLES = "org.eclipse.jetty.ee.osgi.fragmentAndRequiredBundles";
+    public static final String FRAGMENT_AND_REQUIRED_RESOURCES = "org.eclipse.jetty.ee.osgi.fragmentAndRequiredResources";
 
     @Override
     public Class<? extends Configuration> replaces()
@@ -79,7 +79,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
      * We also allow individual bundles to specify particular bundles that might include TLDs via the Require-Tlds
      * MANIFEST.MF header.
      *
-     * @see org.eclipse.jetty.ee11.webapp.WebInfConfiguration#preConfigure(org.eclipse.jetty.ee11.webapp.WebAppContext)
+     * @see org.eclipse.jetty.ee.webapp.WebInfConfiguration#preConfigure(org.eclipse.jetty.ee.webapp.WebAppContext)
      */
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
@@ -153,7 +153,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
     /**
      * Consider the fragment bundles associated with the bundle of the webapp being deployed.
      *
-     * @see org.eclipse.jetty.ee11.webapp.MetaInfConfiguration#findJars(org.eclipse.jetty.ee11.webapp.WebAppContext)
+     * @see org.eclipse.jetty.ee.webapp.MetaInfConfiguration#findJars(org.eclipse.jetty.ee.webapp.WebAppContext)
      */
     @Override
     protected List<Resource> findJars(WebAppContext context)
@@ -210,7 +210,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
      *
      * The resources can be either prepended or appended to the baseResource.
      *
-     * @see org.eclipse.jetty.ee11.webapp.WebInfConfiguration#configure(org.eclipse.jetty.ee11.webapp.WebAppContext)
+     * @see org.eclipse.jetty.ee.webapp.WebInfConfiguration#configure(org.eclipse.jetty.ee.webapp.WebAppContext)
      */
     @Override
     public void configure(WebAppContext context) throws Exception

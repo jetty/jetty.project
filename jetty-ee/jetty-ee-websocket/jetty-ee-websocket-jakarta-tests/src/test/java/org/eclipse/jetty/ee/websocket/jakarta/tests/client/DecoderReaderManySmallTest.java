@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.client;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.client;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,8 +30,8 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.CoreServer;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.WSEventTracker;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.CoreServer;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.WSEventTracker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.internal.MessageHandler;
 import org.junit.jupiter.api.AfterEach;

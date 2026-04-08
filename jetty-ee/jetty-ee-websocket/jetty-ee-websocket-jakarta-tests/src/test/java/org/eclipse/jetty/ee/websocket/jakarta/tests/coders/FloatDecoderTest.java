@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.coders;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.coders;
 
 import jakarta.websocket.DecodeException;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.FloatDecoder;
+import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.FloatDecoder;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

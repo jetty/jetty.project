@@ -35,7 +35,7 @@
     <env-entry-type>java.lang.String</env-entry-type>
     <env-entry-value>beer</env-entry-value>
     <injection-target>
-      <injection-target-class>org.eclipse.jetty.ee11.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
+      <injection-target-class>org.eclipse.jetty.ee.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
       <injection-target-name>foo</injection-target-name>
     </injection-target>
   </env-entry>
@@ -46,7 +46,7 @@
     <env-entry-type>java.lang.String</env-entry-type>
     <env-entry-value>beer</env-entry-value>
     <injection-target>
-      <injection-target-class>org.eclipse.jetty.ee11.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
+      <injection-target-class>org.eclipse.jetty.ee.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
       <injection-target-name>bah</injection-target-name>
     </injection-target>
   </env-entry>
@@ -57,7 +57,7 @@
     <env-entry-type>java.lang.String</env-entry-type>
     <env-entry-value></env-entry-value>
     <injection-target>
-      <injection-target-class>org.eclipse.jetty.ee11.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
+      <injection-target-class>org.eclipse.jetty.ee.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
       <injection-target-name>empty</injection-target-name>
     </injection-target>
   </env-entry>
@@ -68,7 +68,7 @@
     <env-entry-type>java.lang.String</env-entry-type>
     <env-entry-value></env-entry-value>
     <injection-target>
-      <injection-target-class>org.eclipse.jetty.ee11.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
+      <injection-target-class>org.eclipse.jetty.ee.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
       <injection-target-name>vacuum</injection-target-name>
     </injection-target>
   </env-entry>
@@ -79,7 +79,7 @@
     <env-entry-type>java.lang.String</env-entry-type>
     <env-entry-value>WEBXMLONLY</env-entry-value>
     <injection-target>
-      <injection-target-class>org.eclipse.jetty.ee11.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
+      <injection-target-class>org.eclipse.jetty.ee.plus.webapp.PlusDescriptorProcessorTest$TestInjections</injection-target-class>
       <injection-target-name>webXmlOnly</injection-target-name>
     </injection-target>
   </env-entry>

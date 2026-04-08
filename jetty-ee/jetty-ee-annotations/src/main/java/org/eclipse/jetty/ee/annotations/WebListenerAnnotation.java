@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.annotations;
+package org.eclipse.jetty.ee.annotations;
 
 import java.util.EventListener;
 
@@ -23,12 +23,12 @@ import jakarta.servlet.annotation.WebListener;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee11.servlet.ListenerHolder;
-import org.eclipse.jetty.ee11.servlet.Source;
-import org.eclipse.jetty.ee11.webapp.DiscoveredAnnotation;
-import org.eclipse.jetty.ee11.webapp.MetaData;
-import org.eclipse.jetty.ee11.webapp.Origin;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.servlet.ListenerHolder;
+import org.eclipse.jetty.ee.servlet.Source;
+import org.eclipse.jetty.ee.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.ee.webapp.MetaData;
+import org.eclipse.jetty.ee.webapp.Origin;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

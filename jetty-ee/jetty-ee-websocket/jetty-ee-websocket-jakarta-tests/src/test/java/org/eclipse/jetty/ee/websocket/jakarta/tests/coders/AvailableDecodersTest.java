@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.coders;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.coders;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -26,9 +26,9 @@ import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.IntegerDecoder;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.RegisteredDecoder;
+import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.IntegerDecoder;
+import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;

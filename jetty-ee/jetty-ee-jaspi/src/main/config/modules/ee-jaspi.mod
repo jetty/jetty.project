@@ -4,22 +4,22 @@
 Enables JASPI authentication for deployed web applications.
 
 [environment]
-ee11
+ee
 
 [tags]
 security
 
 [depend]
-ee11-security
+ee-security
 auth-config-factory
 
 [lib]
-lib/jetty-ee11-jaspi-${jetty.version}.jar
-lib/ee11-jaspi/@jakarta.authentication:jakarta.authentication-api@
+lib/jetty-ee-jaspi-${jetty.version}.jar
+lib/ee-jaspi/@jakarta.authentication:jakarta.authentication-api@
 
 [xml]
-etc/jaspi/jetty-ee11-jaspi-authmoduleconfig.xml
+etc/jaspi/jetty-ee-jaspi-authmoduleconfig.xml
 
 [files]
-basehome:etc/jaspi/jetty-ee11-jaspi-authmoduleconfig.xml|etc/jaspi/jetty-ee11-jaspi-authmoduleconfig.xml
+basehome:etc/jaspi/jetty-ee-jaspi-authmoduleconfig.xml|etc/jaspi/jetty-ee-jaspi-authmoduleconfig.xml
 

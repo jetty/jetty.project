@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.pathparam;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.pathparam;
 
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;

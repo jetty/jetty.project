@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet.security.authentication;
+package org.eclipse.jetty.ee.servlet.security.authentication;
 
 import java.security.Principal;
 import javax.security.auth.Subject;

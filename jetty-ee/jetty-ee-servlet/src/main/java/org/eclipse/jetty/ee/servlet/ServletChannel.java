@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee.servlet;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -25,10 +25,10 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpUpgradeHandler;
-import org.eclipse.jetty.ee11.servlet.ServletChannelState.Action;
-import org.eclipse.jetty.ee11.servlet.internal.JettyWebConnection;
-import org.eclipse.jetty.ee11.servlet.internal.UpgradedServletInputStream;
-import org.eclipse.jetty.ee11.servlet.internal.UpgradedServletOutputStream;
+import org.eclipse.jetty.ee.servlet.ServletChannelState.Action;
+import org.eclipse.jetty.ee.servlet.internal.JettyWebConnection;
+import org.eclipse.jetty.ee.servlet.internal.UpgradedServletInputStream;
+import org.eclipse.jetty.ee.servlet.internal.UpgradedServletOutputStream;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;

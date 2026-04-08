@@ -4,10 +4,10 @@
 <!-- =============================================================== -->
 <!-- Configure the test-jndi webapp                                  -->
 <!-- =============================================================== -->
-<Configure id='wac' class="org.eclipse.jetty.ee11.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee.webapp.WebAppContext">
 
-  <New id="tx" class="org.eclipse.jetty.ee11.plus.jndi.Transaction">
-    <Arg>ee11</Arg>
+  <New id="tx" class="org.eclipse.jetty.ee.plus.jndi.Transaction">
+    <Arg>ee</Arg>
     <Arg>
       <New class="org.example.MockUserTransaction"/>
     </Arg>
@@ -45,7 +45,7 @@
     </Arg>
     <Arg>mail/Session</Arg>
     <Arg>
-      <New class="org.eclipse.jetty.ee11.jndi.factories.MailSessionReference">
+      <New class="org.eclipse.jetty.ee.jndi.factories.MailSessionReference">
         <Set name="user">CHANGE-ME</Set>
         <Set name="password">CHANGE-ME</Set>
         <Set name="properties">

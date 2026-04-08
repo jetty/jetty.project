@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee.servlet;
 
 import jakarta.servlet.ServletException;
 import org.eclipse.jetty.io.QuietException;

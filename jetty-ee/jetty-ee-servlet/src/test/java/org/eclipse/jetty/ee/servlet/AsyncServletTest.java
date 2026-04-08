@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee.servlet;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -334,7 +334,7 @@ public class AsyncServletTest
             "REQUEST >>> PathServlet /ctx/path/info?start=1000&throw=true",
             "initial",
             "startAsync",
-            "PathServlet!!! org.eclipse.jetty.ee11.servlet.QuietServletException: java.lang.Exception: test throw in async",
+            "PathServlet!!! org.eclipse.jetty.ee.servlet.QuietServletException: java.lang.Exception: test throw in async",
             "REQUEST <<< PathServlet /ctx/path/info?start=1000&throw=true",
             "onError",
             "ERROR >>> PathServlet /ctx/error/custom?start=1000&throw=true",

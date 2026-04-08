@@ -11,19 +11,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.client.config;
+package org.eclipse.jetty.ee.websocket.client.config;
 
-import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
-import org.eclipse.jetty.ee11.webapp.FragmentConfiguration;
-import org.eclipse.jetty.ee11.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebAppConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee.webapp.FragmentConfiguration;
+import org.eclipse.jetty.ee.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee.webapp.WebAppConfiguration;
+import org.eclipse.jetty.ee.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee.webapp.WebXmlConfiguration;
 
 /**
  * <p>Websocket Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * be able to see the {@code org.eclipse.jetty.ee11.websocket.client} package.</p>
+ * be able to see the {@code org.eclipse.jetty.ee.websocket.client} package.</p>
  */
 public class JettyWebSocketClientConfiguration extends AbstractConfiguration
 {
@@ -31,10 +31,10 @@ public class JettyWebSocketClientConfiguration extends AbstractConfiguration
     {
         super(new Builder()
             .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class)
-            .addDependents("org.eclipse.jetty.ee11.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName())
+            .addDependents("org.eclipse.jetty.ee.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName())
             .protectAndExpose("org.eclipse.jetty.websocket.api.")
             .protectAndExpose("org.eclipse.jetty.websocket.client.")
             .hide("org.eclipse.jetty.websocket.client.internal.")
-            .hide("org.eclipse.jetty.ee11.websocket.client.config."));
+            .hide("org.eclipse.jetty.ee.websocket.client.config."));
     }
 }

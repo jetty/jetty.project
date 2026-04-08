@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session;
+package org.eclipse.jetty.ee.session;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.osgi.test;
+package org.eclipse.jetty.ee.osgi.test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +38,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
 /**
- * Pax-Exam to make sure the jetty-ee11-osgi-boot can be started along with the
+ * Pax-Exam to make sure the jetty-ee-osgi-boot can be started along with the
  * httpservice web-bundle. Then make sure we can deploy an OSGi service on the
  * top of this.
  */
@@ -69,7 +69,7 @@ public class TestJettyOSGiBootWithAnnotations
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
         options.addAll(annotationDependencies());
-        options.add(mavenBundle().groupId("org.eclipse.jetty.ee11.osgi").artifactId("test-jetty-ee11-osgi-fragment").versionAsInProject().noStart());
+        options.add(mavenBundle().groupId("org.eclipse.jetty.ee.osgi").artifactId("test-jetty-ee-osgi-fragment").versionAsInProject().noStart());
         return options.toArray(new Option[0]);
     }
 
@@ -79,7 +79,7 @@ public class TestJettyOSGiBootWithAnnotations
         res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-container-initializer").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-mock-resources").versionAsInProject());
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-spec-webapp").classifier("webbundle-ee11").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-spec-webapp").classifier("webbundle-ee").versionAsInProject());
         return res;
     }
 

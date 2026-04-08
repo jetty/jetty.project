@@ -4,17 +4,17 @@
 Enables the Jetty Proxy Servlet.
 
 [environment]
-ee11
+ee
 
 [depend]
 client
-ee11-servlet
+ee-servlet
 
 [lib]
-lib/jetty-ee11-proxy-${jetty.version}.jar
+lib/jetty-ee-proxy-${jetty.version}.jar
 
 [xml]
-etc/jetty-ee11-proxy.xml
+etc/jetty-ee-proxy.xml
 
 [ini-template]
 # tag::documentation[]
@@ -22,7 +22,7 @@ etc/jetty-ee11-proxy.xml
 # jetty.proxy.contextPath=/
 
 ## The proxy Servlet class.
-# jetty.proxy.servletClass=org.eclipse.jetty.ee11.proxy.ProxyServlet$Transparent
+# jetty.proxy.servletClass=org.eclipse.jetty.ee.proxy.ProxyServlet$Transparent
 
 ## The proxy Servlet mapping.
 # jetty.proxy.servletMapping=/*

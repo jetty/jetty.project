@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.tests;
+package org.eclipse.jetty.ee.websocket.tests;
 
 import java.net.URI;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -28,10 +28,10 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.gzip.GzipCompression;
-import org.eclipse.jetty.ee11.websocket.client.config.JettyWebSocketClientConfiguration;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServletFactory;
-import org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketConfiguration;
+import org.eclipse.jetty.ee.websocket.client.config.JettyWebSocketClientConfiguration;
+import org.eclipse.jetty.ee.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.ee.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.ee.websocket.server.config.JettyWebSocketConfiguration;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.client;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.client;
 
 import java.net.HttpCookie;
 import java.util.Collections;
@@ -25,10 +25,10 @@ import jakarta.websocket.Endpoint;
 import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.CoreServer;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.DummyEndpoint;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.framehandlers.StaticText;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.framehandlers.WholeMessageEcho;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.CoreServer;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.DummyEndpoint;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.framehandlers.StaticText;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.framehandlers.WholeMessageEcho;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.FuturePromise;

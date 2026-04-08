@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.security.jaspi.callback;
+package org.eclipse.jetty.ee.security.jaspi.callback;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;

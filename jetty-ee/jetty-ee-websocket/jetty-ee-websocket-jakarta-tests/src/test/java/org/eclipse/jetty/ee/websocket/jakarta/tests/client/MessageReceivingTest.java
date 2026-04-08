@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.client;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.client;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -30,8 +30,8 @@ import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.CoreServer;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.DataUtils;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.CoreServer;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.DataUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;

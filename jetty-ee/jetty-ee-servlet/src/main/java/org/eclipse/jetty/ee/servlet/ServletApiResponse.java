@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -29,8 +29,8 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler.ServletRequestInfo;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler.ServletResponseInfo;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler.ServletRequestInfo;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler.ServletResponseInfo;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
 /**
- * The Jetty implementation of the ee11 {@link HttpServletResponse} object.
+ * The Jetty implementation of the ee {@link HttpServletResponse} object.
  * This provides the bridge from the Servlet {@link HttpServletResponse} to the Jetty Core {@link Response}
  * via the {@link ServletContextResponse}.
  */

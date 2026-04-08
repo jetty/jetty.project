@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test;
+package org.eclipse.jetty.ee.test;
 
 import java.io.IOException;
 import java.net.URI;
@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 import jakarta.servlet.ServletContainerInitializer;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -74,13 +74,13 @@ public class ClassLoaderProtectResourcesTest
         ClassLoader serverClassLoader = Thread.currentThread().getContextClassLoader();
         String resourceName = "META-INF/services/" + ServletContainerInitializer.class.getName();
         List<URL> allServiceFiles = Collections.list(serverClassLoader.getResources(resourceName));
-        // Find the ee11-apache-jsp URLs
-        List<URI> ee11ApacheJspHits = allServiceFiles.stream()
+        // Find the ee-apache-jsp URLs
+        List<URI> eeApacheJspHits = allServiceFiles.stream()
             .map(ClassLoaderProtectResourcesTest::toJarURI)
-            .filter(uri -> uri.toASCIIString().contains("ee11-apache-jsp"))
+            .filter(uri -> uri.toASCIIString().contains("ee-apache-jsp"))
             .toList();
-        assertThat("Expecting some ee11-apache-jsp SCI", ee11ApacheJspHits.size(), greaterThan(0));
-        int expectedHitsFromServlet = allServiceFiles.size() - ee11ApacheJspHits.size();
+        assertThat("Expecting some ee-apache-jsp SCI", eeApacheJspHits.size(), greaterThan(0));
+        int expectedHitsFromServlet = allServiceFiles.size() - eeApacheJspHits.size();
 
         // Create webapp directory
         Path basePath = workDir.getEmptyPathDir();
@@ -92,7 +92,7 @@ public class ClassLoaderProtectResourcesTest
         webapp.addServlet(ServletContainerInitializerDiscoveryServlet.class.getName(), "/lookup");
 
         // Protect a specific jar's SCI from being discovered.
-        ee11ApacheJspHits.forEach(uri ->
+        eeApacheJspHits.forEach(uri ->
             webapp.getHiddenClassMatcher().add(uri.toASCIIString()));
 
         startServer(webapp);

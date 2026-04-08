@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session.file;
+package org.eclipse.jetty.ee.session.file;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.ee11.session.AbstractClusteredOrphanedSessionTest;
+import org.eclipse.jetty.ee.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.session.FileSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;

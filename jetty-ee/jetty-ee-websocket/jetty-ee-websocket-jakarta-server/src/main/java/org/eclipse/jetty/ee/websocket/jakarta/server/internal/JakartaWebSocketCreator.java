@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.server.internal;
+package org.eclipse.jetty.ee.websocket.jakarta.server.internal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,11 +22,11 @@ import java.util.Objects;
 import jakarta.websocket.Extension;
 import jakarta.websocket.Extension.Parameter;
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.ConfiguredEndpoint;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketExtension;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.ServerEndpointConfigWrapper;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.JakartaWebSocketServerContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.common.ConfiguredEndpoint;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketExtension;
+import org.eclipse.jetty.ee.websocket.jakarta.common.ServerEndpointConfigWrapper;
+import org.eclipse.jetty.ee.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;

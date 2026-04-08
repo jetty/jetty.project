@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.common.util;
+package org.eclipse.jetty.ee.websocket.jakarta.common.util;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

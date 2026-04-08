@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.client;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.client;
 
-import org.eclipse.jetty.ee11.websocket.jakarta.client.JakartaWebSocketClientContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.client.internal.BasicClientEndpointConfig;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketFrameHandler;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketSession;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.UpgradeRequest;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.UpgradeRequestAdapter;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.DummyEndpoint;
+import org.eclipse.jetty.ee.websocket.jakarta.client.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.client.internal.BasicClientEndpointConfig;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketFrameHandler;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketSession;
+import org.eclipse.jetty.ee.websocket.jakarta.common.UpgradeRequest;
+import org.eclipse.jetty.ee.websocket.jakarta.common.UpgradeRequestAdapter;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.DummyEndpoint;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.junit.jupiter.api.AfterAll;

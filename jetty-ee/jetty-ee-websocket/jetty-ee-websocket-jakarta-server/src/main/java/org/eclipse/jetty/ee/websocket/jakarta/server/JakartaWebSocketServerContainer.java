@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.server;
+package org.eclipse.jetty.ee.websocket.jakarta.server;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -29,14 +29,14 @@ import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletCoreRequest;
-import org.eclipse.jetty.ee11.servlet.ServletCoreResponse;
-import org.eclipse.jetty.ee11.websocket.jakarta.client.JakartaWebSocketClientContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.config.ContainerDefaultConfigurator;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.internal.AnnotatedServerEndpointConfig;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.internal.JakartaWebSocketCreator;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletCoreRequest;
+import org.eclipse.jetty.ee.servlet.ServletCoreResponse;
+import org.eclipse.jetty.ee.websocket.jakarta.client.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.server.config.ContainerDefaultConfigurator;
+import org.eclipse.jetty.ee.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee.websocket.jakarta.server.internal.AnnotatedServerEndpointConfig;
+import org.eclipse.jetty.ee.websocket.jakarta.server.internal.JakartaWebSocketCreator;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.Request;

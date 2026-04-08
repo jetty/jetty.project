@@ -14,5 +14,5 @@
 /**
  * Jetty EE11 Jndi : Factories
  */
-package org.eclipse.jetty.ee11.jndi.factories;
+package org.eclipse.jetty.ee.jndi.factories;
 

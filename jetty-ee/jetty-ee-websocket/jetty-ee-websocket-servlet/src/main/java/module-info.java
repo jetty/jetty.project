@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee11.websocket.servlet
+module org.eclipse.jetty.ee.websocket.servlet
 {
     requires org.eclipse.jetty.websocket.core.server;
     requires org.slf4j;
 
-    requires transitive org.eclipse.jetty.ee11.servlet;
+    requires transitive org.eclipse.jetty.ee.servlet;
 
-    exports org.eclipse.jetty.ee11.websocket.servlet;
+    exports org.eclipse.jetty.ee.websocket.servlet;
 }

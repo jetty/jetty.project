@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.client.internal;
+package org.eclipse.jetty.ee.websocket.jakarta.client.internal;
 
-import org.eclipse.jetty.ee11.websocket.jakarta.common.ClientEndpointConfigWrapper;
+import org.eclipse.jetty.ee.websocket.jakarta.common.ClientEndpointConfigWrapper;
 
 public class BasicClientEndpointConfig extends ClientEndpointConfigWrapper
 {

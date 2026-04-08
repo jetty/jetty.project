@@ -7,7 +7,7 @@
 
   <servlet>
     <servlet-name>BadInit</servlet-name>
-    <servlet-class>org.eclipse.jetty.ee11.test.BadServletInit</servlet-class>
+    <servlet-class>org.eclipse.jetty.ee.test.BadServletInit</servlet-class>
     <load-on-startup>0</load-on-startup>
   </servlet>
 

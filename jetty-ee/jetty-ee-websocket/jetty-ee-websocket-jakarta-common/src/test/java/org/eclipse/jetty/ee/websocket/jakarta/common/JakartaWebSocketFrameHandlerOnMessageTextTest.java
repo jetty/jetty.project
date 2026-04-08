@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.common;
+package org.eclipse.jetty.ee.websocket.jakarta.common;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -21,7 +21,7 @@ import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.sockets.TrackingSocket;
+import org.eclipse.jetty.ee.websocket.jakarta.common.sockets.TrackingSocket;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;

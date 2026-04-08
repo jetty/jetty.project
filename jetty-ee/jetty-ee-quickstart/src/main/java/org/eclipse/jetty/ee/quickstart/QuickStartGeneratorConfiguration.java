@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.quickstart;
+package org.eclipse.jetty.ee.quickstart;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -30,25 +30,25 @@ import jakarta.servlet.SessionCookieConfig;
 import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
 import jakarta.servlet.descriptor.TaglibDescriptor;
-import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.ee11.servlet.FilterHolder;
-import org.eclipse.jetty.ee11.servlet.FilterMapping;
-import org.eclipse.jetty.ee11.servlet.ListenerHolder;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler.JspConfig;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler.ServletContainerInitializerStarter;
-import org.eclipse.jetty.ee11.servlet.ServletHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.ee11.servlet.ServletMapping;
-import org.eclipse.jetty.ee11.servlet.Source;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
-import org.eclipse.jetty.ee11.webapp.MetaData;
-import org.eclipse.jetty.ee11.webapp.MetaData.OriginInfo;
-import org.eclipse.jetty.ee11.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee.servlet.FilterHolder;
+import org.eclipse.jetty.ee.servlet.FilterMapping;
+import org.eclipse.jetty.ee.servlet.ListenerHolder;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler.JspConfig;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler.ServletContainerInitializerStarter;
+import org.eclipse.jetty.ee.servlet.ServletHandler;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
+import org.eclipse.jetty.ee.servlet.ServletMapping;
+import org.eclipse.jetty.ee.servlet.Source;
+import org.eclipse.jetty.ee.servlet.security.ConstraintAware;
+import org.eclipse.jetty.ee.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee.webapp.MetaData;
+import org.eclipse.jetty.ee.webapp.MetaData.OriginInfo;
+import org.eclipse.jetty.ee.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallback;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
@@ -72,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * from web.xml, web-fragment.xmls annotations etc.
  * <p>
  * If generating quickstart for a different java platform than the current running
- * platform, then the org.eclipse.jetty.ee11.annotations.javaTargetPlatform attribute
+ * platform, then the org.eclipse.jetty.ee.annotations.javaTargetPlatform attribute
  * should be set on the Context with the platform number of the target JVM (eg 8).
  */
 public class QuickStartGeneratorConfiguration extends AbstractConfiguration

@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test.websocket;
+package org.eclipse.jetty.ee.test.websocket;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.ee11.test.support.XmlBasedJettyServer;
+import org.eclipse.jetty.ee.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.websocket.api.util.WSURI;
@@ -43,10 +43,10 @@ public class JettyWebSocketTest
         server.addXmlConfiguration("login-service.xml");
         server.addTargetFileAsXmlConfiguration("configs/etc/jetty-deployer-standard.xml");
         server.addTargetFileAsXmlConfiguration("configs/etc/jetty-deployment-scanner.xml");
-        server.addTargetFileAsXmlConfiguration("configs/etc/jetty-ee11-deploy.xml");
+        server.addTargetFileAsXmlConfiguration("configs/etc/jetty-ee-deploy.xml");
         server.addXmlConfiguration("NIOHttp.xml");
 
-        server.addWebApp("jetty-ee11-demo-jetty-websocket.war");
+        server.addWebApp("jetty-ee-demo-jetty-websocket.war");
 
         server.load();
         server.start();
@@ -61,7 +61,7 @@ public class JettyWebSocketTest
     @Test
     public void testChatEndpoint() throws Exception
     {
-        URI uri = WSURI.toWebsocket(server.getServerURI().resolve("/jetty-ee11-demo-jetty-websocket/jetty.websocket/foo"));
+        URI uri = WSURI.toWebsocket(server.getServerURI().resolve("/jetty-ee-demo-jetty-websocket/jetty.websocket/foo"));
 
         WebSocketClient client = new WebSocketClient();
 

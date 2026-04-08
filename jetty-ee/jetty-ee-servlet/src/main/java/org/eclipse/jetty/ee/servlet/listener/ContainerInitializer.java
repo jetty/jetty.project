@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet.listener;
+package org.eclipse.jetty.ee.servlet.listener;
 
 import java.util.Arrays;
 import java.util.HashSet;

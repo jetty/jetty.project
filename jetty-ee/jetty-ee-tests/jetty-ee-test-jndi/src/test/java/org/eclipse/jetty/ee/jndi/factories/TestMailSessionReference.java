@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.jndi.factories;
+package org.eclipse.jetty.ee.jndi.factories;
 
 import java.util.Properties;
 import javax.naming.Context;

@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.cdi;
+package org.eclipse.jetty.ee.cdi;
 
-import org.eclipse.jetty.ee11.servlet.DecoratingListener;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.DecoratingListener;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
 
 /**
  * A DecoratingListener that listens for "org.eclipse.jetty.cdi.decorator"

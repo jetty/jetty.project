@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,7 +60,7 @@ public class JettyWebXmlConfigurationTest
     @Test
     public void testWithJettyEEWebXml() throws Exception
     {
-        Path testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp-with-jetty-ee11-web-xml");
+        Path testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp-with-jetty-ee-web-xml");
         assertTrue(Files.exists(testWebappDir));
 
         WebAppContext context = new WebAppContext();

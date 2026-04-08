@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -272,7 +272,7 @@ public class CrossContextDispatcherFilterTest
         assertThat(response.getContent(), containsString("Reached Service context"));
         assertTrue(filterCompleteLatch.await(5, TimeUnit.SECONDS));
 
-        //Note that events are in a different order than ee9: in ee11 and above the forward
+        //Note that events are in a different order than ee9: in ee and above the forward
         //from the first context to the second context cannot complete until the async
         //dispatch that is started within the second context has completed.
         List<String> expectedEvents = new ArrayList<>();

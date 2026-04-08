@@ -3,17 +3,17 @@
 
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11</groupId>
-    <artifactId>jetty-ee11</artifactId>
+    <groupId>org.eclipse.jetty.ee</groupId>
+    <artifactId>jetty-ee</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee11-proxy</artifactId>
+  <artifactId>jetty-ee-proxy</artifactId>
   <name>EE11 :: Proxy</name>
   <description>Jetty Proxy</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee11.proxy.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee.proxy.*</spotbugs.onlyAnalyze>
   </properties>
 
   <dependencies>
@@ -35,8 +35,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlet</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -73,7 +73,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee11.proxy=org.eclipse.jetty.logging</argLine>
+          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee.proxy=org.eclipse.jetty.logging</argLine>
         </configuration>
       </plugin>
     </plugins>

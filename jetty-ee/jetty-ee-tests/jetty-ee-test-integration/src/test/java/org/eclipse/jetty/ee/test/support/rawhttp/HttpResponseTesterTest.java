@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test.support.rawhttp;
+package org.eclipse.jetty.ee.test.support.rawhttp;
 
 import java.io.IOException;
 import java.util.List;

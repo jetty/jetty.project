@@ -4,11 +4,11 @@
 Enables the glassfish version of JSTL for all webapps.
 
 [environment]
-ee11
+ee
 
 [depends]
-ee11-apache-jsp
+ee-apache-jsp
 
 [lib]
-lib/ee11-glassfish-jstl/@jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api@
-lib/ee11-glassfish-jstl/@org.glassfish.wasp:wasp@
+lib/ee-glassfish-jstl/@jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api@
+lib/ee-glassfish-jstl/@org.glassfish.wasp:wasp@

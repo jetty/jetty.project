@@ -4,12 +4,12 @@
 Enables Annotation scanning for deployed web applications.
 
 [environment]
-ee11
+ee
 
 [depend]
-ee11-plus
+ee-plus
 annotations
 
 [lib]
-lib/jetty-ee11-annotations-${jetty.version}.jar
-lib/ee11-annotations/@jakarta.annotation:jakarta.annotation-api@
+lib/jetty-ee-annotations-${jetty.version}.jar
+lib/ee-annotations/@jakarta.annotation:jakarta.annotation-api@

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.cdi.tests.websocket;
+package org.eclipse.jetty.ee.cdi.tests.websocket;
 
 import java.util.logging.Logger;
 

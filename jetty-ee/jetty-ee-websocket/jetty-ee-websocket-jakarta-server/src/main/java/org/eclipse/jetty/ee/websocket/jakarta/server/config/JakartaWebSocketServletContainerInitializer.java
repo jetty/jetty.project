@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.server.config;
+package org.eclipse.jetty.ee.websocket.jakarta.server.config;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -26,10 +26,10 @@ import jakarta.websocket.server.ServerApplicationConfig;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.ee11.servlet.FilterHolder;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.JakartaWebSocketServerContainer;
-import org.eclipse.jetty.ee11.websocket.servlet.WebSocketUpgradeFilter;
+import org.eclipse.jetty.ee.servlet.FilterHolder;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.websocket.jakarta.server.JakartaWebSocketServerContainer;
+import org.eclipse.jetty.ee.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;

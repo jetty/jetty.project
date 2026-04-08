@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests;
+package org.eclipse.jetty.ee.websocket.jakarta.tests;
 
 import java.net.URI;
 import java.util.List;
 
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.framehandlers.FrameEcho;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.framehandlers.WholeMessageEcho;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.framehandlers.FrameEcho;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.framehandlers.WholeMessageEcho;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;

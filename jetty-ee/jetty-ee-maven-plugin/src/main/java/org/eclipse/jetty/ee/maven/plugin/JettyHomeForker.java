@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.maven.plugin;
+package org.eclipse.jetty.ee.maven.plugin;
 
 import java.io.File;
 
@@ -28,7 +28,7 @@ public class JettyHomeForker extends AbstractHomeForker
     public JettyHomeForker(String javaPath)
     {
         super(javaPath);
-        environment = "ee11";
+        environment = "ee";
     }
 
     public void setWebApp(MavenWebAppContext webApp)

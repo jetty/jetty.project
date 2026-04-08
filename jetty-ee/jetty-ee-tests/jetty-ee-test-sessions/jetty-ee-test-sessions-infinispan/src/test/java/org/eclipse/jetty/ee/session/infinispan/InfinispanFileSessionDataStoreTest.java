@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.session.infinispan;
+package org.eclipse.jetty.ee.session.infinispan;
 
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.EmbeddedQueryManager;

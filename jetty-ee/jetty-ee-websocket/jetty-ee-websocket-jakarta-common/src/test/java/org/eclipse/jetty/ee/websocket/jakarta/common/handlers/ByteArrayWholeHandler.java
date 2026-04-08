@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.common.handlers;
+package org.eclipse.jetty.ee.websocket.jakarta.common.handlers;
 
 import jakarta.websocket.MessageHandler;
 

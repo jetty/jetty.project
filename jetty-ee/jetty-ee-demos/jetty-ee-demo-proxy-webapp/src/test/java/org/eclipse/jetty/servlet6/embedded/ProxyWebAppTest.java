@@ -18,7 +18,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -56,7 +56,7 @@ public class ProxyWebAppTest
         // This is a pieced together WebApp.
         // We don't have a valid WEB-INF/lib to rely on at this point.
         // So, open up server classes here, for purposes of this testcase.
-        webapp.getHiddenClassMatcher().add("-org.eclipse.jetty.ee11.proxy.");
+        webapp.getHiddenClassMatcher().add("-org.eclipse.jetty.ee.proxy.");
         webapp.setWar(MavenTestingUtils.getProjectDirPath("src/main/webapp").toString());
         webapp.setExtraClasspath(MavenTestingUtils.getTargetPath().resolve("test-classes").toString());
         server.setHandler(webapp);

@@ -11,18 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests;
+package org.eclipse.jetty.ee.websocket.jakarta.tests;
 
 import java.net.URI;
 import java.util.Map;
 
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.server.ServerEndpoint;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketSession;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.JakartaWebSocketSessionListener;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.JakartaWebSocketServerContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketSession;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketSessionListener;
+import org.eclipse.jetty.ee.websocket.jakarta.server.JakartaWebSocketServerContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;

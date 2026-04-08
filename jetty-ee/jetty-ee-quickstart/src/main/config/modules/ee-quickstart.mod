@@ -4,19 +4,19 @@
 Enables the Jetty Quickstart module for rapid deployment of preconfigured web applications.
 
 [environment]
-ee11
+ee
 
 [depend]
 server
-ee11-annotations
-ee11-webapp
-ee11-plus
+ee-annotations
+ee-webapp
+ee-plus
 
 [lib]
-lib/jetty-ee11-quickstart-${jetty.version}.jar
+lib/jetty-ee-quickstart-${jetty.version}.jar
 
 [xml]
-etc/jetty-ee11-quickstart.xml
+etc/jetty-ee-quickstart.xml
 
 [ini-template]
 

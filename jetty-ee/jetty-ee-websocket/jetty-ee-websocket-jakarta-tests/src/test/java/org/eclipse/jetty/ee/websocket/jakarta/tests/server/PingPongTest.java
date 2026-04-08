@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee.websocket.jakarta.tests.server;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -24,9 +24,9 @@ import com.acme.websocket.PongContextListener;
 import com.acme.websocket.PongMessageEndpoint;
 import com.acme.websocket.PongSocket;
 import com.acme.websocket.PongSocketStringReturn;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.Timeouts;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.WSServer;
-import org.eclipse.jetty.ee11.websocket.jakarta.tests.framehandlers.FrameHandlerTracker;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.Timeouts;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.WSServer;
+import org.eclipse.jetty.ee.websocket.jakarta.tests.framehandlers.FrameHandlerTracker;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.annotations;
+package org.eclipse.jetty.ee.annotations;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -25,11 +25,11 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jetty.annotations.AnnotationParser;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.ee11.servlet.ServletMapping;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee11.webapp.DiscoveredAnnotation;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
+import org.eclipse.jetty.ee.servlet.ServletMapping;
+import org.eclipse.jetty.ee.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -76,7 +76,7 @@ public class TestServletAnnotations
     public void testServletAnnotation(WorkDir workDir) throws Exception
     {
         Path root = workDir.getEmptyPathDir();
-        copyClass(org.eclipse.jetty.ee11.annotations.ServletC.class, root);
+        copyClass(org.eclipse.jetty.ee.annotations.ServletC.class, root);
 
         AnnotationParser parser = new AnnotationParser();
 
@@ -123,7 +123,7 @@ public class TestServletAnnotations
 
         WebAppContext wac = new WebAppContext();
         ServletHolder defaultServlet = new ServletHolder();
-        defaultServlet.setClassName("org.eclipse.jetty.ee11.servlet.DefaultServlet");
+        defaultServlet.setClassName("org.eclipse.jetty.ee.servlet.DefaultServlet");
         defaultServlet.setName("default");
         wac.getServletHandler().addServlet(defaultServlet);
 
@@ -133,7 +133,7 @@ public class TestServletAnnotations
         m.setFromDefaultDescriptor(true);  //this mapping will be from a default descriptor
         wac.getServletHandler().addServletMapping(m);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee11.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee.annotations.ServletD", null);
         annotation.apply();
 
         //test that as the original servlet mapping had only 1 pathspec, then the whole
@@ -156,7 +156,7 @@ public class TestServletAnnotations
         //DO allow the annotation to replace the mapping.
         WebAppContext wac = new WebAppContext();
         ServletHolder defaultServlet = new ServletHolder();
-        defaultServlet.setClassName("org.eclipse.jetty.ee11.servlet.DefaultServlet");
+        defaultServlet.setClassName("org.eclipse.jetty.ee.servlet.DefaultServlet");
         defaultServlet.setName("default");
         wac.getServletHandler().addServlet(defaultServlet);
 
@@ -172,7 +172,7 @@ public class TestServletAnnotations
         m2.setFromDefaultDescriptor(true);  //this mapping will be from a default descriptor
         wac.getServletHandler().addServletMapping(m2);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee11.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee.annotations.ServletD", null);
         annotation.apply();
 
         //test that only the mapping for "/" was removed from the mappings to the default servlet
@@ -207,7 +207,7 @@ public class TestServletAnnotations
         //DO NOT allow the annotation to replace the mapping
         WebAppContext wac = new WebAppContext();
         ServletHolder servlet = new ServletHolder();
-        servlet.setClassName("org.eclipse.jetty.ee11.servlet.FooServlet");
+        servlet.setClassName("org.eclipse.jetty.ee.servlet.FooServlet");
         servlet.setName("foo");
         wac.getServletHandler().addServlet(servlet);
         ServletMapping m = new ServletMapping();
@@ -215,7 +215,7 @@ public class TestServletAnnotations
         m.setServletName("foo");
         wac.getServletHandler().addServletMapping(m);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee11.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee.annotations.ServletD", null);
         annotation.apply();
 
         ServletMapping[] resultMappings = wac.getServletHandler().getServletMappings();
@@ -242,7 +242,7 @@ public class TestServletAnnotations
         //any of the url mappings in the annotation
         WebAppContext wac = new WebAppContext();
         ServletHolder servlet = new ServletHolder();
-        servlet.setClassName("org.eclipse.jetty.ee11.servlet.OtherDServlet");
+        servlet.setClassName("org.eclipse.jetty.ee.servlet.OtherDServlet");
         servlet.setName("DServlet");
         wac.getServletHandler().addServlet(servlet);
 
@@ -257,7 +257,7 @@ public class TestServletAnnotations
         m2.setServletName("DServlet");
         wac.getServletHandler().addServletMapping(m2);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee11.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee.annotations.ServletD", null);
         annotation.apply();
 
         ServletMapping[] resultMappings = wac.getServletHandler().getServletMappings();
@@ -281,7 +281,7 @@ public class TestServletAnnotations
         servlet.setName("foo");
         wac.getServletHandler().addServlet(servlet);
 
-        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee11.annotations.ServletD", null);
+        WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.ee.annotations.ServletD", null);
         annotation.apply();
 
         ServletMapping[] resultMappings = wac.getServletHandler().getServletMappings();

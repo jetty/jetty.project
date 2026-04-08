@@ -2,16 +2,16 @@
 
 [description]
 Adds Jetty EE11 utility servlets and filters available to a webapp.
-Puts org.eclipse.jetty.ee11.servlets on the server classpath
+Puts org.eclipse.jetty.ee.servlets on the server classpath
 (CrossOriginFilter, DosFilter, MultiPartFilter, QoSFilter, etc.)
 for use by all web applications.
 
 [environment]
-ee11
+ee
 
 [depend]
-ee11-servlet
+ee-servlet
 
 [lib]
-lib/jetty-ee11-servlets-${jetty.version}.jar
+lib/jetty-ee-servlets-${jetty.version}.jar
 

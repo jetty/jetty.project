@@ -2,11 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11</groupId>
-    <artifactId>jetty-ee11-test-jmx</artifactId>
+    <groupId>org.eclipse.jetty.ee</groupId>
+    <artifactId>jetty-ee-test-jmx</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee11-jmx-webapp-it</artifactId>
+  <artifactId>jetty-ee-jmx-webapp-it</artifactId>
   <packaging>jar</packaging>
   <name>EE11 :: Tests :: JMX :: WebApp Integration Tests</name>
   <properties>
@@ -25,12 +25,12 @@
       <artifactId>jetty-slf4j-impl</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-annotations</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-jmx-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-jmx-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>runtime</scope>
@@ -49,7 +49,7 @@
             </goals>
             <phase>process-test-resources</phase>
             <configuration>
-              <includeArtifactIds>jetty-ee11-jmx-webapp</includeArtifactIds>
+              <includeArtifactIds>jetty-ee-jmx-webapp</includeArtifactIds>
               <includeScope>runtime</includeScope>
               <includeTypes>war</includeTypes>
               <overWriteSnapshots>true</overWriteSnapshots>

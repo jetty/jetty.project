@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet;
+package org.eclipse.jetty.ee.servlet;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,7 +69,7 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
@@ -958,7 +958,7 @@ public class ServletContextHandlerTest
             assertTrue(l.isStarted());
             assertNotNull(l.getListener());
             //all listeners except the first should be programmatic
-            if (!"org.eclipse.jetty.ee11.servlet.ServletContextHandlerTest$InitialListener".equals(l.getClassName()))
+            if (!"org.eclipse.jetty.ee.servlet.ServletContextHandlerTest$InitialListener".equals(l.getClassName()))
             {
                 assertFalse(root.isDurableListener(l.getListener()));
                 assertTrue(root.isProgrammaticListener(l.getListener()));
@@ -971,12 +971,12 @@ public class ServletContextHandlerTest
             listenerClassNames.add(l.getClass().getName());
         }
 
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee11.servlet.ServletContextHandlerTest$MySCAListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee11.servlet.ServletContextHandlerTest$MyRequestListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee11.servlet.ServletContextHandlerTest$MyRAListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee11.servlet.ServletContextHandlerTest$MySListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee11.servlet.ServletContextHandlerTest$MySAListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee11.servlet.ServletContextHandlerTest$MySIListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee.servlet.ServletContextHandlerTest$MySCAListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee.servlet.ServletContextHandlerTest$MyRequestListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee.servlet.ServletContextHandlerTest$MyRAListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee.servlet.ServletContextHandlerTest$MySListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee.servlet.ServletContextHandlerTest$MySAListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee.servlet.ServletContextHandlerTest$MySIListener"));
 
         //test ServletRequestAttributeListener
         String response = _connector.getResponse("GET /test?req=all HTTP/1.0\r\n\r\n");

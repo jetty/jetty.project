@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.common;
+package org.eclipse.jetty.ee.websocket.jakarta.common;
 
 import java.net.URI;
 import java.security.Principal;
@@ -33,8 +33,8 @@ import jakarta.websocket.RemoteEndpoint.Async;
 import jakarta.websocket.RemoteEndpoint.Basic;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.encoders.AvailableEncoders;
+import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.ee.websocket.jakarta.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;

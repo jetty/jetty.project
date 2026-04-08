@@ -4,16 +4,16 @@
 Expose the Jetty WebSocket Client classes to deployed web applications.
 
 [environment]
-ee11
+ee
 
 [tags]
 websocket
 
 [depend]
 client
-ee11-annotations
+ee-annotations
 websocket-jetty-client
 
 [lib]
-lib/ee11-websocket/jetty-ee11-websocket-jetty-client-webapp-${jetty.version}.jar
+lib/ee-websocket/jetty-ee-websocket-jetty-client-webapp-${jetty.version}.jar
 

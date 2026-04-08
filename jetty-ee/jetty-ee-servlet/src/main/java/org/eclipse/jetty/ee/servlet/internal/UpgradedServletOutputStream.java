@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.servlet.internal;
+package org.eclipse.jetty.ee.servlet.internal;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import jakarta.servlet.WriteListener;
-import org.eclipse.jetty.ee11.servlet.HttpOutput;
-import org.eclipse.jetty.ee11.servlet.util.ServletOutputStreamWrapper;
+import org.eclipse.jetty.ee.servlet.HttpOutput;
+import org.eclipse.jetty.ee.servlet.util.ServletOutputStreamWrapper;
 
 public class UpgradedServletOutputStream extends ServletOutputStreamWrapper
 {

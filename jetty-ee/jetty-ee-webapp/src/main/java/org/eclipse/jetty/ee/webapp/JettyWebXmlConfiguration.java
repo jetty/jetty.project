@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.webapp;
+package org.eclipse.jetty.ee.webapp;
 
 import java.io.IOException;
 import java.net.URI;
@@ -35,7 +35,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     public static final String PROPERTY_WEB_INF = "web-inf";
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
-    public static final String JETTY_EE11_WEB_XML = "jetty-ee11-web.xml";
+    public static final String JETTY_EE11_WEB_XML = "jetty-ee-web.xml";
 
     public JettyWebXmlConfiguration()
     {
@@ -56,7 +56,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
             LOG.debug("Configuring web-jetty.xml");
 
         Resource webInf = context.getWebInf();
-        // get the jetty-ee11-web.xml or jetty-web.xml
+        // get the jetty-ee-web.xml or jetty-web.xml
         Resource jetty = resolveJettyWebXml(webInf);
         if (Resources.isReadableFile(jetty))
         {
@@ -86,7 +86,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     }
 
     /**
-     * Obtain a WEB-INF/jetty-ee11-web.xml, falling back to
+     * Obtain a WEB-INF/jetty-ee-web.xml, falling back to
      * looking for WEB-INF/jetty-web.xml.
      *
      * @param webInf the WEB-INF of the context to search
@@ -100,7 +100,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
             if (webInf == null || !webInf.isDirectory())
                 return null;
 
-            //try to find jetty-ee11-web.xml
+            //try to find jetty-ee-web.xml
             Resource jetty = webInf.resolve(xmlFile);
             if (!Resources.missing(jetty))
                 return jetty;

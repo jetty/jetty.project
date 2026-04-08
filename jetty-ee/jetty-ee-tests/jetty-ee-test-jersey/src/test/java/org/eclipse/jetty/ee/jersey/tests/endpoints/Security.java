@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.jersey.tests.endpoints;
+package org.eclipse.jetty.ee.jersey.tests.endpoints;
 
 import java.util.ArrayList;
 import java.util.List;

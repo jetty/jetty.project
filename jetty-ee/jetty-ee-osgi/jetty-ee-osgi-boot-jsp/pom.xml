@@ -2,16 +2,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.ee11.osgi</groupId>
-    <artifactId>jetty-ee11-osgi</artifactId>
+    <groupId>org.eclipse.jetty.ee.osgi</groupId>
+    <artifactId>jetty-ee-osgi</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee11-osgi-boot-jsp</artifactId>
+  <artifactId>jetty-ee-osgi-boot-jsp</artifactId>
   <name>EE11 :: OSGi :: Boot JSP</name>
   <description>Jetty OSGi Boot JSP bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot.jsp</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee11.osgi.boot.jsp.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee.osgi.boot.jsp.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <!-- Servlet Deps -->
@@ -25,8 +25,8 @@
     </dependency>
     <!-- JSP Deps -->
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-apache-jsp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-apache-jsp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.platform</groupId>
@@ -37,8 +37,8 @@
       <artifactId>org.eclipse.osgi.services</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11.osgi</groupId>
-      <artifactId>jetty-ee11-osgi-boot</artifactId>
+      <groupId>org.eclipse.jetty.ee.osgi</groupId>
+      <artifactId>jetty-ee-osgi-boot</artifactId>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -54,7 +54,7 @@
           <instructions>
             <Bundle-Name>Jetty-OSGi-Jasper Integration</Bundle-Name>
             <Bundle-Classpath/>
-            <Fragment-Host>org.eclipse.jetty.ee11.osgi.boot</Fragment-Host>
+            <Fragment-Host>org.eclipse.jetty.ee.osgi.boot</Fragment-Host>
             <Import-Package>${osgi.slf4j.import.packages},
               org.eclipse.jdt.*;resolution:=optional,
               org.eclipse.jdt.core.compiler.*;resolution:=optional,
@@ -112,7 +112,7 @@
               org.glassfish.wasp.taglibs.standard.tei;resolution:=optional,
               org.glassfish.wasp.taglibs.standard.tlv;resolution:=optional,
               org.apache.tomcat;version="[$(version;==;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))";resolution:=optional,,
-              org.eclipse.jetty.ee11.jsp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:=optional,
+              org.eclipse.jetty.ee.jsp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:=optional,
               org.osgi.*,
               org.xml.*;resolution:=optional,
               org.xml.sax.*;resolution:=optional,
@@ -120,7 +120,7 @@
               org.w3c.dom;resolution:=optional,
               org.w3c.dom.ls;resolution:=optional,
               javax.xml.parser;resolution:=optional</Import-Package>
-            <DynamicImport-Package>org.eclipse.jetty.ee11.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
+            <DynamicImport-Package>org.eclipse.jetty.ee.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
                 org.apache.jasper.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))",
                 org.apache.el.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))"</DynamicImport-Package>
           </instructions>
@@ -138,7 +138,7 @@
             </goals>
             <phase>validate</phase>
             <configuration>
-              <versionString>${ee11.jakarta.servlet.jsp.api.version}</versionString>
+              <versionString>${ee.jakarta.servlet.jsp.api.version}</versionString>
               <propertyPrefix>jspApi</propertyPrefix>
             </configuration>
           </execution>
@@ -149,7 +149,7 @@
             </goals>
             <phase>validate</phase>
             <configuration>
-              <versionString>${ee11.jsp.impl.version}</versionString>
+              <versionString>${ee.jsp.impl.version}</versionString>
               <propertyPrefix>jspImpl</propertyPrefix>
             </configuration>
           </execution>
@@ -160,7 +160,7 @@
             </goals>
             <phase>validate</phase>
             <configuration>
-              <versionString>${ee11.jakarta.servlet.api.version}</versionString>
+              <versionString>${ee.jakarta.servlet.api.version}</versionString>
               <propertyPrefix>servletApi</propertyPrefix>
             </configuration>
           </execution>

@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.annotations;
+package org.eclipse.jetty.ee.annotations;
 
 import java.util.Objects;
 
 import org.eclipse.jetty.annotations.AnnotationParser;
-import org.eclipse.jetty.ee11.servlet.ServletContainerInitializerHolder;
+import org.eclipse.jetty.ee.servlet.ServletContainerInitializerHolder;
 
 /**
  * Discovers classes that contain the specified annotation, either at class or

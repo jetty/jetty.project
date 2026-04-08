@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.websocket.jakarta.common.encoders;
+package org.eclipse.jetty.ee.websocket.jakarta.common.encoders;
 
 import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 import jakarta.websocket.Encoder;
 import jakarta.websocket.EndpointConfig;
-import org.eclipse.jetty.ee11.websocket.jakarta.common.InitException;
+import org.eclipse.jetty.ee.websocket.jakarta.common.InitException;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;

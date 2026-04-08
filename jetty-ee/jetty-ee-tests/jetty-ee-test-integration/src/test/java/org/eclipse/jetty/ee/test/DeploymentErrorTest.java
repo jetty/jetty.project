@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee11.test;
+package org.eclipse.jetty.ee.test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -29,12 +29,12 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.deploy.Deployer;
 import org.eclipse.jetty.deploy.DeploymentScanner;
 import org.eclipse.jetty.deploy.StandardDeployer;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.webapp.AbstractConfiguration;
-import org.eclipse.jetty.ee11.webapp.Configuration;
-import org.eclipse.jetty.ee11.webapp.Configurations;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
-import org.eclipse.jetty.ee11.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee.webapp.Configuration;
+import org.eclipse.jetty.ee.webapp.Configurations;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -99,7 +99,7 @@ public class DeploymentErrorTest
         System.setProperty("test.docroots", docroots.toAbsolutePath().toString());
         DeploymentScanner deploymentScanner = new DeploymentScanner(server, deployer);
         assertNotNull(ServletContextHandler.ENVIRONMENT, "Expected environment does not exist");
-        DeploymentScanner.EnvironmentConfig envConfig = deploymentScanner.configureEnvironment("ee11");
+        DeploymentScanner.EnvironmentConfig envConfig = deploymentScanner.configureEnvironment("ee");
         envConfig.setDefaultContextHandlerClass(WebAppContext.class);
         deploymentScanner.setScanInterval(1);
         deploymentScanner.addWebappsDirectory(docroots);
@@ -112,9 +112,9 @@ public class DeploymentErrorTest
 
         // Setup Configurations
         Configurations.setServerDefault(server)
-            .add("org.eclipse.jetty.ee11.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.ee11.plus.webapp.PlusConfiguration",
-                "org.eclipse.jetty.ee11.annotations.AnnotationConfiguration",
+            .add("org.eclipse.jetty.ee.plus.webapp.EnvConfiguration",
+                "org.eclipse.jetty.ee.plus.webapp.PlusConfiguration",
+                "org.eclipse.jetty.ee.annotations.AnnotationConfiguration",
                 TrackedConfiguration.class.getName()
             );
 
