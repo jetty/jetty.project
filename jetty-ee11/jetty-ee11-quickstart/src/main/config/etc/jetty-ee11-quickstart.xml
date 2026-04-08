@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call class="org.eclipse.jetty.ee11.quickstart.QuickStartConfiguration" name="configureMode">
+    <Arg><Ref refid="Server"/></Arg>
+    <Arg><Property name="jetty.quickstart.mode"/></Arg>
+  </Call>
+
+  <Call class="org.eclipse.jetty.util.component.Environment" name="get">
+    <Arg>ee11</Arg>
+    <Call name="setAttribute">
+      <Arg>org.eclipse.jetty.quickstart.mode</Arg>
+      <Arg>
+        <Property name="jetty.quickstart.mode" />
+      </Arg>
+    </Call>
+    <Call name="setAttribute">
+      <Arg>org.eclipse.jetty.quickstart.origin</Arg>
+      <Arg>
+        <Property name="jetty.quickstart.origin" />
+      </Arg>
+    </Call>
+    <Call name="setAttribute">
+      <Arg>org.eclipse.jetty.quickstart.xml</Arg>
+      <Arg>
+        <Property name="jetty.quickstart.xml" />
+      </Arg>
+    </Call>
+  </Call>
+</Configure>

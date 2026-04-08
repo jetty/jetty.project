@@ -1,0 +1,2 @@
+This folder is part of the class-loader shared by the webapps run in jetty.
+Typically it contains log4j configuration files.

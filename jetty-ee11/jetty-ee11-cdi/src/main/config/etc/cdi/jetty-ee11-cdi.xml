@@ -1,0 +1,8 @@
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://eclipse.dev/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="setAttribute">
+    <Arg type="String">org.eclipse.jetty.ee11.cdi</Arg>
+    <Arg><Property name="jetty.cdi.mode" default="CdiSpiDecorator"/></Arg>
+  </Call>
+</Configure>
