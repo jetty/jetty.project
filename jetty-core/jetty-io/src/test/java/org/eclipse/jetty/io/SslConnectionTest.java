@@ -60,8 +60,7 @@ public class SslConnectionTest
 
     private static final int TIMEOUT = 1000000;
 
-    // TODO: track leaks
-    private final ByteBufferPool _bufferPool = new ArrayByteBufferPool();
+    private final ArrayByteBufferPool.Tracking _bufferPool = new ArrayByteBufferPool.Tracking();
     private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
     protected volatile EndPoint _lastEndp;
     private volatile boolean _testFill = true;
@@ -171,6 +170,7 @@ public class SslConnectionTest
     {
         stopManager();
         _sslCtxFactory.stop();
+        assertThat("leaks: " + _bufferPool.dumpLeaks(), _bufferPool.getLeaks().size(), is(0));
     }
 
     private void stopManager() throws Exception
