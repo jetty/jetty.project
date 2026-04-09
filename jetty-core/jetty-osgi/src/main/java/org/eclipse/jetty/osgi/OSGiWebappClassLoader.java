@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
 
-import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee.common.WebAppClassLoader;
 import org.eclipse.jetty.osgi.util.BundleClassLoaderHelperFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;

@@ -28,6 +28,10 @@
       <artifactId>jetty-client</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jakarta-client</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee11.websocket</groupId>
       <artifactId>jetty-ee11-websocket-jakarta-common</artifactId>
     </dependency>

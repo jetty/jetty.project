@@ -16,10 +16,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>jakarta.websocket</groupId>
-      <artifactId>jakarta.websocket-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.ee</groupId>
       <artifactId>jetty-ee-annotations</artifactId>
     </dependency>
@@ -34,6 +30,21 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.websocket</groupId>
+      <artifactId>jakarta.websocket-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.websocket</groupId>
+      <artifactId>jakarta.websocket-client-api</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

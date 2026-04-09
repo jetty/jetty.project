@@ -62,6 +62,13 @@
         <scope>import</scope>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-bom</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>com.sun.mail</groupId>
         <artifactId>jakarta.mail</artifactId>
         <version>${ee11.mail.impl.version}</version>

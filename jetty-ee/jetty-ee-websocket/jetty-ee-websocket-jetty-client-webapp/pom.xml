@@ -23,6 +23,11 @@
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>jetty-websocket-jetty-client</artifactId>
     </dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <build>

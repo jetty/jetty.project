@@ -22,20 +22,4 @@ module org.eclipse.jetty.ee11.webapp
     requires transitive org.eclipse.jetty.ee.webapp;
 
     exports org.eclipse.jetty.ee11.webapp;
-
-    uses org.eclipse.jetty.ee11.webapp.Configuration;
-
-    provides org.eclipse.jetty.ee11.webapp.Configuration with
-        org.eclipse.jetty.ee11.webapp.FragmentConfiguration,
-        org.eclipse.jetty.ee11.webapp.JaasConfiguration,
-        org.eclipse.jetty.ee11.webapp.JaspiConfiguration,
-        org.eclipse.jetty.ee11.webapp.JettyWebXmlConfiguration,
-        org.eclipse.jetty.ee11.webapp.JmxConfiguration,
-        org.eclipse.jetty.ee11.webapp.JndiConfiguration,
-        org.eclipse.jetty.ee11.webapp.JspConfiguration,
-        org.eclipse.jetty.ee11.webapp.MetaInfConfiguration,
-        org.eclipse.jetty.ee11.webapp.ServletsConfiguration,
-        org.eclipse.jetty.ee11.webapp.WebAppConfiguration,
-        org.eclipse.jetty.ee11.webapp.WebInfConfiguration,
-        org.eclipse.jetty.ee11.webapp.WebXmlConfiguration;
 }

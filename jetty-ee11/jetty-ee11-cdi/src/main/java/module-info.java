@@ -12,9 +12,6 @@
 //
 
 import jakarta.servlet.ServletContainerInitializer;
-import org.eclipse.jetty.ee11.cdi.CdiConfiguration;
-import org.eclipse.jetty.ee11.cdi.CdiServletContainerInitializer;
-import org.eclipse.jetty.ee11.webapp.Configuration;
 
 module org.eclipse.jetty.ee11.cdi
 {
@@ -23,9 +20,4 @@ module org.eclipse.jetty.ee11.cdi
     requires transitive org.eclipse.jetty.ee11.servlet;
     requires transitive org.eclipse.jetty.ee11.webapp;
     requires static jakarta.cdi;
-
-    exports org.eclipse.jetty.ee11.cdi;
-
-    provides ServletContainerInitializer with CdiServletContainerInitializer;
-    provides Configuration with CdiConfiguration;
 }

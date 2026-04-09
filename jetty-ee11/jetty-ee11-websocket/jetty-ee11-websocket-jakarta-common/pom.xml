@@ -24,6 +24,10 @@
       <artifactId>jakarta.websocket-client-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jakarta-common</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>jetty-websocket-core-client</artifactId>
     </dependency>

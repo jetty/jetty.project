@@ -26,10 +26,4 @@ module org.eclipse.jetty.ee11.websocket.jetty.server
 
     exports org.eclipse.jetty.ee11.websocket.server;
     exports org.eclipse.jetty.ee11.websocket.server.config;
-
-    provides jakarta.servlet.ServletContainerInitializer with
-        org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketServletContainerInitializer;
-
-    provides org.eclipse.jetty.ee11.webapp.Configuration with
-        org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketConfiguration;
 }

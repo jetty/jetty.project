@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee.webapp
+module org.eclipse.jetty.ee.common
 {
     requires org.slf4j;
 
@@ -19,5 +19,5 @@ module org.eclipse.jetty.ee.webapp
     requires transitive org.eclipse.jetty.server;
     requires java.instrument;
 
-    exports org.eclipse.jetty.ee.webapp;
+    exports org.eclipse.jetty.ee.common;
 }

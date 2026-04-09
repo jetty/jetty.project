@@ -19,7 +19,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee.common.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee.webapp;
+package org.eclipse.jetty.ee.common;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;

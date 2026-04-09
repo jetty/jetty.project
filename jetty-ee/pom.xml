@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.ee</groupId>
   <artifactId>jetty-ee</artifactId>
   <packaging>pom</packaging>
-  <name>EECommon</name>
+  <name>EE Common</name>
 
   <modules>
     <module>jetty-ee-annotations</module>

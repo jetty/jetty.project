@@ -50,6 +50,11 @@
       <groupId>org.osgi</groupId>
       <artifactId>org.osgi.util.tracker</artifactId>
     </dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <build>

@@ -15,7 +15,7 @@ package org.eclipse.jetty.ee.maven.plugin;
 
 import java.net.URI;
 
-import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee.common.WebAppClassLoader;
 import org.eclipse.jetty.ee.webapp.Configuration;
 import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.ee.webapp.WebInfConfiguration;

@@ -18,20 +18,22 @@
 
   <dependencies>
     <dependency>
-      <groupId>jakarta.authentication</groupId>
-      <artifactId>jakarta.authentication-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.servlet</groupId>
-      <artifactId>jakarta.servlet-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.ee</groupId>
       <artifactId>jetty-ee-servlet</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.authentication</groupId>
+      <artifactId>jakarta.authentication-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.activation</groupId>

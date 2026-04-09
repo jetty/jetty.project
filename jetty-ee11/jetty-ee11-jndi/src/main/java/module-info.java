@@ -15,6 +15,7 @@ module org.eclipse.jetty.ee11.jndi
 {
     requires org.slf4j;
 
+    requires transitive org.eclipse.jetty.ee.jndi;
     requires transitive org.eclipse.jetty.util;
     requires transitive java.naming;
 

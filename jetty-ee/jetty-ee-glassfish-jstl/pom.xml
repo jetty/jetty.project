@@ -16,12 +16,6 @@
   </properties>
 
   <dependencies>
-    <!-- JSTL Api -->
-    <dependency>
-      <groupId>jakarta.servlet.jsp.jstl</groupId>
-      <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.ee</groupId>
       <artifactId>jetty-ee-apache-jsp</artifactId>
@@ -30,6 +24,13 @@
     <dependency>
       <groupId>org.glassfish.wasp</groupId>
       <artifactId>wasp</artifactId>
+    </dependency>
+
+    <!-- JSTL Api -->
+    <dependency>
+      <groupId>jakarta.servlet.jsp.jstl</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>

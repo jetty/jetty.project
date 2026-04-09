@@ -22,10 +22,5 @@ module org.eclipse.jetty.ee11.annotations
     requires transitive org.eclipse.jetty.ee11.plus;
     requires transitive org.objectweb.asm;
 
-    exports org.eclipse.jetty.ee11.annotations;
-
     uses jakarta.servlet.ServletContainerInitializer;
-
-    provides org.eclipse.jetty.ee11.webapp.Configuration with
-        org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
 }

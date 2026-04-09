@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee.webapp;
+package org.eclipse.jetty.ee.common;
 
 import java.io.IOException;
 import java.io.InputStream;

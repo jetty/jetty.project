@@ -17,13 +17,11 @@ module org.eclipse.jetty.ee11.security.jaspi
     requires org.slf4j;
 
     requires transitive jakarta.security.auth.message;
+    requires transitive org.eclipse.jetty.ee.security.jaspi;
     requires transitive org.eclipse.jetty.ee11.servlet;
 
     exports org.eclipse.jetty.ee11.security.jaspi;
     exports org.eclipse.jetty.ee11.security.jaspi.callback;
     exports org.eclipse.jetty.ee11.security.jaspi.modules;
     exports org.eclipse.jetty.ee11.security.jaspi.provider;
-
-    provides org.eclipse.jetty.security.Authenticator.Factory with
-        org.eclipse.jetty.ee11.security.jaspi.JaspiAuthenticatorFactory;
 }

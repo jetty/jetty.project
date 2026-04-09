@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee.webapp;
 
 import java.util.Arrays;
 
+import org.eclipse.jetty.ee.common.WebAppClassLoading;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.component.Environment;
