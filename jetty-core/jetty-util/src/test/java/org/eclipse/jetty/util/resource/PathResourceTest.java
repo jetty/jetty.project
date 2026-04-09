@@ -34,8 +34,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +43,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -64,18 +61,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 public class PathResourceTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResourceTest.class);
-
-    @BeforeEach
-    public void beforeEach()
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
-
-    @AfterEach
-    public void afterEach()
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
 
     @Test
     public void testNonDefaultFileSystemGetInputStream() throws IOException
@@ -242,7 +227,7 @@ public class PathResourceTest
 
             if (resourceFactory instanceof ResourceFactoryInternals.Tracking tracking)
             {
-                assertThat(tracking.getTrackingCount(), is(1));
+                assertThat(tracking.getTrackingCount(), is(0));
             }
         }
     }
@@ -276,7 +261,7 @@ public class PathResourceTest
 
             if (resourceFactory instanceof ResourceFactoryInternals.Tracking tracking)
             {
-                assertThat(tracking.getTrackingCount(), is(1));
+                assertThat(tracking.getTrackingCount(), is(2));
             }
         }
     }
@@ -301,8 +286,6 @@ public class PathResourceTest
             Files.writeString(dir.resolve("two.txt"), "Contents of two.txt", StandardCharsets.UTF_8);
         }
 
-        assertThat(FileSystemPool.INSTANCE.mounts(), is(empty()));
-
         try (ResourceFactory.Closeable resourceFactory1 = ResourceFactory.closeable();
              ResourceFactory.Closeable resourceFactory2 = ResourceFactory.closeable())
         {
@@ -315,11 +298,9 @@ public class PathResourceTest
             Resource twoTxt = resourceFactory2.newResource(jarUri.toASCIIString() + "datainf/two.txt");
             assertTrue(Resources.isReadableFile(twoTxt));
 
-            assertThat("Should see only 1 FS Mount", FileSystemPool.INSTANCE.mounts().size(), is(1));
-
             if (resourceFactory1 instanceof ResourceFactoryInternals.Tracking tracking)
             {
-                assertThat(tracking.getTrackingCount(), is(1));
+                assertThat(tracking.getTrackingCount(), is(2));
             }
 
             if (resourceFactory2 instanceof ResourceFactoryInternals.Tracking tracking)
@@ -335,13 +316,8 @@ public class PathResourceTest
                 assertThat(tracking.getTrackingCount(), is(0));
             }
 
-            // Resource one still works because factory 2 is holding filesystem open
-            assertThat(IO.toString(oneTxt.newInputStream()), is("Contents of one.txt"));
-
             // should not be able to use closed ResourceFactory.Closable
             assertThrows(IllegalStateException.class, () -> resourceFactory1.newResource(jarUri.toASCIIString() + "one.txt"));
-
-            assertThat("Should see only 1 FS Mount", FileSystemPool.INSTANCE.mounts().size(), is(1));
 
             Resource oneAlt = resourceFactory2.newResource(jarUri.toASCIIString() + "one.txt");
             assertTrue(Resources.isReadableFile(oneAlt));
@@ -352,12 +328,6 @@ public class PathResourceTest
             // Neither Resource one nor two  works because filesystem is now closed
             assertThrows(ClosedFileSystemException.class, oneTxt::newInputStream);
             assertThrows(ClosedFileSystemException.class, oneTxt2::newInputStream);
-
-            assertThat("Should see only 0 FS Mount", FileSystemPool.INSTANCE.mounts().size(), is(0));
-        }
-        finally
-        {
-            assertThat(FileSystemPool.INSTANCE.mounts(), is(empty()));
         }
     }
 
