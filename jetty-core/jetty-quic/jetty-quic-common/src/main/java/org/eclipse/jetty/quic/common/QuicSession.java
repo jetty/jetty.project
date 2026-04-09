@@ -742,9 +742,10 @@ public abstract class QuicSession extends AbstractSession
             {
                 getTLSEngine().getMessagesGenerator().generate(accumulator, message);
             }
-            // Always use offset 0, as it will be calculated properly when flushing the frame.
-            CryptoFrame cryptoFrame = new CryptoFrame(0, accumulator);
+            // The offset will be calculated properly when flushing the frame.
+            CryptoFrame cryptoFrame = new CryptoFrame(-1, accumulator);
             crypto(encryptionLevel, cryptoFrame, callback);
+            accumulator.release();
         }
         catch (Throwable x)
         {
@@ -800,6 +801,9 @@ public abstract class QuicSession extends AbstractSession
         // TODO: retransmissions should have higher priority than normal transmissions.
         //  This means that either we need some private API such as QuicStream.retransmitData()
         //  or we need to unwrap that and call flusher.prepend() + flusher.iterate().
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("retransmitting {} on {}", packets, this);
 
         Map<EncryptionLevel, List<Frame>> groups = packets.stream()
             .collect(Collectors.groupingBy(EncryptionLevel::from,

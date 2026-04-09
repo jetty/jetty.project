@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.quic.api.frames.AckFrame;
+import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.PingFrame;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.util.Callback;
@@ -78,7 +79,6 @@ public class PacketTracker
     private long ackDelayExponent;
     private int packetReorderingThreshold;
     private float timeReorderingFactor;
-    private long schedulerResolution;
     private long probeTimeoutBackoff;
     private RTTData rttData;
 
@@ -92,7 +92,6 @@ public class PacketTracker
         // RFC-9002[6.1.1]: recommended initial values.
         packetReorderingThreshold = 3;
         timeReorderingFactor = 9F / 8;
-        schedulerResolution = TimeUnit.MILLISECONDS.toNanos(1);
         // RFC-9002[A.4]: initialization of RTT data.
         long smoothedRTT = TimeUnit.MILLISECONDS.toNanos(333);
         rttData = new RTTData(0, 0, smoothedRTT, smoothedRTT / 2);
@@ -145,18 +144,6 @@ public class PacketTracker
         this.timeReorderingFactor = timeReorderingFactor;
     }
 
-    /// @return the scheduler resolution in nanoseconds
-    public long getSchedulerResolution()
-    {
-        return schedulerResolution;
-    }
-
-    /// @param schedulerResolution the scheduler resolution in nanoseconds
-    public void setSchedulerResolution(long schedulerResolution)
-    {
-        this.schedulerResolution = schedulerResolution;
-    }
-
     public long getProbeTimeoutBackoff()
     {
         return probeTimeoutBackoff;
@@ -195,7 +182,7 @@ public class PacketTracker
         AckEntry entry = new AckEntry(encryptionLevel, frame);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("acked {} on {}", entry, this);
+            LOG.debug("acking {} on {}", entry, this);
 
         PacketNumberSpace space = PacketNumberSpace.from(entry.encryptionLevel());
         Tracker tracker = trackers.get(space);
@@ -313,15 +300,13 @@ public class PacketTracker
 
     private long calculatePacketLossDelay(RTTData rttData)
     {
-        long lossDelay = (long)(getTimeReorderingFactor() * Math.max(rttData.latestRTT(), rttData.smoothedRTT()));
-        return Math.max(lossDelay, getSchedulerResolution());
+        return (long)(getTimeReorderingFactor() * Math.max(rttData.latestRTT(), rttData.smoothedRTT()));
     }
 
     private long calculateProbeTimeout(PacketEntry packetEntry, RTTData rttData)
     {
         // RFC-9002[6.2.1].
-        long pto = rttData.smoothedRTT() +
-            Math.max(4 * rttData.variationRTT(), getSchedulerResolution());
+        long pto = rttData.smoothedRTT() + 4 * rttData.variationRTT();
         if (PacketNumberSpace.from(EncryptionLevel.from(packetEntry.packet())) == PacketNumberSpace.APPLICATION)
             pto += TimeUnit.MILLISECONDS.toNanos(getAcknowledgmentMaxDelay());
 
@@ -372,9 +357,9 @@ public class PacketTracker
             return entries.remove(packetNumber);
         }
 
-        private long acknowledgePackets(AckFrame frame, List<Packet.WithFrames> output)
+        private long acknowledgePackets(AckFrame ackFrame, List<Packet.WithFrames> output)
         {
-            long[] acknowledged = frame.allAcknowledged();
+            long[] acknowledged = ackFrame.allAcknowledged();
             long ackedLength = 0;
             for (int i = 0; i < acknowledged.length; i++)
             {
@@ -388,7 +373,13 @@ public class PacketTracker
                 if (entry != null)
                 {
                     ackedLength += entry.length();
-                    output.add(entry.packet());
+                    Packet.WithFrames packet = entry.packet();
+                    output.add(packet);
+                    for (Frame frame : packet.frames())
+                    {
+                        if (frame instanceof Frame.WithData withData)
+                            withData.release();
+                    }
                 }
             }
             if (LOG.isDebugEnabled())
@@ -502,7 +493,8 @@ public class PacketTracker
             if (LOG.isDebugEnabled())
                 LOG.debug("scheduling probe timeout in {} ns on {}", delayNanos, this);
 
-            probeTimeoutTask = scheduler.schedule(() -> onProbeTimeout(session, packetEntry, this), delayNanos, TimeUnit.NANOSECONDS);
+            Runnable task = () -> onProbeTimeout(session, packetEntry, this);
+            probeTimeoutTask = scheduler.schedule(task, delayNanos, TimeUnit.NANOSECONDS);
         }
 
         private void cancelProbeTimeout()

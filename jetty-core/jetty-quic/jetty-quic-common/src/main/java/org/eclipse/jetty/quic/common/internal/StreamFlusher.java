@@ -29,6 +29,7 @@ import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStream;
+import org.eclipse.jetty.quic.common.frames.GeneratedFrame;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
@@ -79,32 +80,36 @@ class StreamFlusher extends CryptoFlusher
         if (acknowledger.processAcknowledgements())
             return true;
 
+        // Update the flow control windows.
+        processMaxData();
+
+        // TODO: if there are no entries to flush, likely
+        //  we just sent a packet, so pacing delay > 0,
+        //  and we would schedule an unnecessary task.
+
         // No more acknowledgments to send, check pacing.
         CongestionController congestionController = getQuicSession().getCongestionController();
         long pacingDelay = congestionController.getPacingDelay();
         if (LOG.isDebugEnabled())
-            LOG.debug("pacing delay {} micros on {}", TimeUnit.NANOSECONDS.toMicros(pacingDelay), this);
+            LOG.debug("pacing delay {} ns on {}", pacingDelay, this);
         if (pacingDelay > getQuicFlusher().getPacingDelayThreshold())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("delayed by pacing, flush stalled on {}", this);
-            // TODO: schedule wakeup.
+            getQuicSession().getScheduler().schedule(getQuicFlusher()::iterate, pacingDelay, TimeUnit.NANOSECONDS);
             return false;
         }
 
         // We can send packets according to pacing, check the congestion window.
         long congestionWindow = congestionController.getCongestionWindow();
         if (LOG.isDebugEnabled())
-            LOG.debug("congestion window {} on {}", congestionWindow, this);
+            LOG.debug("congestion window {} bytes on {}", congestionWindow, this);
         if (congestionWindow <= 0)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("zero congestion window, flush stalled on {}", this);
             return false;
         }
-
-        // Update the flow control windows.
-        processMaxData();
 
         // Finally, process frames to send.
         return process(congestionWindow);
@@ -128,7 +133,7 @@ class StreamFlusher extends CryptoFlusher
     }
 
     @Override
-    long generateFrame(RetainableByteBuffer.Mutable framesAccumulator, QuicStream stream, Frame frame, long maxBytes)
+    GeneratedFrame generateFrame(RetainableByteBuffer.Mutable framesAccumulator, QuicStream stream, Frame frame, long maxBytes)
     {
         return switch (frame)
         {
@@ -143,7 +148,7 @@ class StreamFlusher extends CryptoFlusher
                         // TODO: optimize immediate generation if there is room.
                         sendFrames(null, List.of(new DataBlockedFrame(session.getSendData(null))), NOOP/*TODO: failures*/);
                     }
-                    yield 0;
+                    yield null;
                 }
 
                 long streamWindow = session.getSendWindow(stream);
@@ -154,7 +159,7 @@ class StreamFlusher extends CryptoFlusher
                         // TODO: optimize immediate generation if there is room.
                         sendFrames(null, List.of(new StreamDataBlockedFrame(stream.getId(), session.getSendData(stream))), NOOP/*TODO: failures*/);
                     }
-                    yield 0;
+                    yield null;
                 }
 
                 long sendWindow = Math.min(sessionWindow, streamWindow);
@@ -163,11 +168,19 @@ class StreamFlusher extends CryptoFlusher
                 long offset = session.getSendData(stream);
                 if (LOG.isDebugEnabled())
                     LOG.debug("generating offset={} {} for stream {} on {}", offset, frame, stream, this);
-                long initial = streamFrame.data().size();
-                long frameBytesGenerated = getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, maxBytes);
-                long dataBytes = initial - streamFrame.data().size();
-                session.updateSendData(stream, dataBytes);
-                yield frameBytesGenerated;
+                if (streamFrame.offset() < 0)
+                {
+                    GeneratedFrame generated = getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, maxBytes);
+                    if (generated != null)
+                        session.updateSendData(stream, ((StreamFrame)generated.frame()).data().size());
+                    yield generated;
+                }
+                else
+                {
+                    // A retransmitted frame.
+                    streamFrame.rewind();
+                    yield getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, streamFrame.offset(), maxBytes);
+                }
             }
             default -> super.generateFrame(framesAccumulator, stream, frame, maxBytes);
         };

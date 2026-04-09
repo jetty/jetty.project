@@ -192,7 +192,9 @@ public class QuicFlusher extends IteratingCallback
         {
             scheduledTasks.offer(task);
         }
-        iterate();
+        // Don't make the scheduler thread do the work: iterating
+        // may take a long time and scheduling will be delayed.
+        session.getExecutor().execute(this::iterate);
     }
 
     @Override
@@ -261,6 +263,7 @@ public class QuicFlusher extends IteratingCallback
         try (var _ = lock.lock())
         {
             entries = new ArrayList<>(ackEntries);
+            ackEntries.clear();
         }
         for (AckEntry entry : entries)
         {
@@ -274,6 +277,7 @@ public class QuicFlusher extends IteratingCallback
         try (var _ = lock.lock())
         {
             tasks = new ArrayList<>(scheduledTasks);
+            scheduledTasks.clear();
         }
         for (Runnable task : tasks)
         {
