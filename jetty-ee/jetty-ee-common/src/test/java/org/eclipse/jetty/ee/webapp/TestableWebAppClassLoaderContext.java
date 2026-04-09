@@ -18,6 +18,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.eclipse.jetty.ee.common.WebAppClassLoader;
+import org.eclipse.jetty.ee.common.WebAppClassLoading;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;

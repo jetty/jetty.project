@@ -40,7 +40,7 @@ public class BasicAuthenticationAuthModule extends BaseAuthModule
 {
     private static final Logger LOG = LoggerFactory.getLogger(BasicAuthenticationAuthModule.class);
 
-    private String _realmName;
+    protected String _realmName;
 
     private static final String REALM_KEY = "org.eclipse.jetty.ee.security.jaspi.modules.RealmName";
 

@@ -19,7 +19,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
 
-import org.eclipse.jetty.ee.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee.common.WebAppClassLoader;
 import org.eclipse.jetty.ee.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee.webapp.Configuration;
 import org.eclipse.jetty.ee.webapp.Descriptor;

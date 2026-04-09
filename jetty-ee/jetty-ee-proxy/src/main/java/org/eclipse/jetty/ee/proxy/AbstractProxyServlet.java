@@ -210,6 +210,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
         return LoggerFactory.getLogger(servletName);
     }
 
+    public Logger getLogger()
+    {
+        return _log;
+    }
+
     /**
      * <p>Creates a {@link HttpClient} instance, configured with init parameters of this servlet.</p>
      * <p>The init parameters used to configure the {@link HttpClient} instance are:</p>
