@@ -20,7 +20,6 @@
     <module>jetty-compression</module>
     <module>jetty-coreapp</module>
     <module>jetty-deploy</module>
-    <module>jetty-ee</module>
     <module>jetty-fcgi</module>
     <module>jetty-http</module>
     <module>jetty-http-spi</module>

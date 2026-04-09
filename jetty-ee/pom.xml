@@ -17,6 +17,7 @@
     <module>jetty-ee-apache-jsp</module>
     <module>jetty-ee-bom</module>
     <module>jetty-ee-cdi</module>
+    <module>jetty-ee-common</module>
     <module>jetty-ee-demos</module>
     <module>jetty-ee-fcgi-proxy</module>
     <module>jetty-ee-glassfish-jstl</module>
@@ -31,6 +32,7 @@
     <module>jetty-ee-quickstart</module>
     <module>jetty-ee-servlet</module>
     <module>jetty-ee-servlets</module>
+    <module>jetty-ee-test-resources</module>
     <module>jetty-ee-tests</module>
     <module>jetty-ee-webapp</module>
     <module>jetty-ee-websocket</module>
@@ -94,6 +96,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee</groupId>
         <artifactId>jetty-ee-fcgi-proxy</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -145,6 +152,11 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee</groupId>
         <artifactId>jetty-ee-servlets</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-test-resources</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
