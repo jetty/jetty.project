@@ -38,6 +38,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -562,6 +564,35 @@ public class BufferUtil
         }
 
         return space;
+    }
+
+    /**
+     * Put data from a {@link ReadableBuffer} into a NIO buffer, avoiding over/under flows
+     *
+     * @param from ReadableBuffer to take bytes from, whose position is modified with the bytes taken.
+     * @param to Buffer to put bytes to in flush mode.
+     * @return number of bytes moved
+     * @throws ReadOnlyBufferException if the to buffer is read only
+     */
+    public static int put(ReadableBuffer from, ByteBuffer to)
+    {
+        int pos = BufferUtil.flipToFill(to);
+        int filled;
+        if (to.remaining() >= from.remaining())
+        {
+            filled = (int)from.remaining();
+            WritableBuffer.wrap(to).put(from);
+        }
+        else
+        {
+            filled = to.remaining();
+            ReadableBuffer slice = from.slice(from.position(), to.remaining());
+            WritableBuffer.wrap(to).put(slice);
+            slice.release();
+            from.position(from.position() + filled);
+        }
+        BufferUtil.flipToFlush(to, pos);
+        return filled;
     }
 
     /**
