@@ -70,14 +70,14 @@ public class MountedPathResourceFactory implements ResourceFactory
     @Override
     public Resource newResource(URI uri)
     {
-        // ZipFileSystemProvider only supports absolute URIs with scheme "jar"
+        // Most FileSystemProviders only supports absolute URIs
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
 
         // Unwrap any containers found.
         // Examples:
         //    "jar:file:/path/to/foo.jar!/deep/reference.txt" becomes "file:/path/to/foo.jar"
-        //    ""jimfs://testNavigateResource/" becomes ""jimfs://testNavigateResource/"
+        //    "jimfs://testNavigateResource/" becomes ""jimfs://testNavigateResource/"
         URI containerURI = URIUtil.unwrapContainer(uri);
         Path containerPath = Path.of(containerURI.normalize());
         if (!Files.exists(containerPath))
@@ -85,19 +85,16 @@ public class MountedPathResourceFactory implements ResourceFactory
 
         FileSystem fs = forcedFileSystem != null ? forcedFileSystem : newFileSystem(containerPath);
 
-        // Obtain the deep reference inside the URI.
+        // Get a Path that is the deep reference specified in the URI.
         // Examples:
-        //   "jar:file:/path/to/foo.jar!/deep/ref.txt" would be "/deep/ref.txt"
-        //   "jar:file:/path/to/bar.jar!/" would be "/"
+        //   "jar:file:/path/to/foo.jar!/deep/ref.txt"
+        //   "jar:file:/path/to/bar.jar!/"
+        //   "jimfs://a3cc0bda-1238-4847-864f-22fae7614146/path/inside/"
         Path ref = getDeepPathReference(fs, uri);
 
-        // Check for existence of deep reference, we don't want to create (top level)
-        // Resource objects that don't have an associated file.
-        if (Files.exists(ref))
-        {
-            return new MountedPathResource(forcedFileSystem == null ? fs : null, ref, uri);
-        }
-        else
+        // Check for existence of the URI deep reference, we don't want to create
+        // Resource objects that don't have an associated file/dir.
+        if (!Files.exists(ref))
         {
             if (forcedFileSystem == null)
             {
@@ -113,6 +110,8 @@ public class MountedPathResourceFactory implements ResourceFactory
             }
             return null;
         }
+
+        return new MountedPathResource(forcedFileSystem == null ? fs : null, ref, uri);
     }
 
     private Path getDeepPathReference(FileSystem fs, URI uri)
