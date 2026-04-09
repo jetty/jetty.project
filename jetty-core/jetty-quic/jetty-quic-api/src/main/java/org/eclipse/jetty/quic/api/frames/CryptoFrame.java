@@ -20,13 +20,15 @@ public final class CryptoFrame extends Frame.Abstract implements Frame.WithData
     private final long offset;
     private final long length;
     private final RetainableByteBuffer data;
+    private RetainableByteBuffer slice;
 
     public CryptoFrame(long offset, RetainableByteBuffer data)
     {
         super(0x06);
         this.offset = offset;
-        this.length = data.remaining();
+        this.length = data.size();
         this.data = data;
+        this.slice = data.slice();
     }
 
     @Override
@@ -44,7 +46,19 @@ public final class CryptoFrame extends Frame.Abstract implements Frame.WithData
     @Override
     public RetainableByteBuffer data()
     {
-        return data;
+        return slice;
+    }
+
+    public void rewind()
+    {
+        slice.release();
+        slice = data.slice();
+    }
+
+    @Override
+    public boolean release()
+    {
+        return slice.release();
     }
 
     @Override

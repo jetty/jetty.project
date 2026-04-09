@@ -98,7 +98,7 @@ public class FrameGeneratorParserTest
     public void testStreamFrame() throws Exception
     {
         ByteBuffer bytes = StandardCharsets.UTF_8.encode("DATA");
-        StreamFrame frame = new StreamFrame(3290901290300L, RetainableByteBuffer.wrap(bytes), 120911129347656L, true, true);
+        StreamFrame frame = new StreamFrame(3290901290300L, RetainableByteBuffer.wrap(bytes), 120911129347656L, true, true, true);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
         generator.generateFrame(accumulator, frame, Integer.MAX_VALUE);
         bytes.clear();

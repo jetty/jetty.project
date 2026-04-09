@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-import java.util.List;
-
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
@@ -44,56 +42,37 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     private final long length;
     private final boolean endStream;
     private final boolean endData;
+    private RetainableByteBuffer slice;
 
-    /// Creates the first stream frame with `offset=0` for a new [Stream].
-    ///
-    /// Applications should use this constructor in conjunction with
-    /// [Session#newStream(long, Stream.Listener)].
-    /// For subsequent data to be sent on the same stream, applications should use
-    /// [Stream#data(boolean, java.util.List, org.eclipse.jetty.util.Promise.Invocable)],
-    /// so that the implementation can compute the `offset` on behalf of the application.
+    /// Creates a stream data frame for a [Stream].
     ///
     /// @param streamId the stream id generated using [Session#newStreamId(boolean)]
     /// @param data the data bytes to send
     /// @param endStream whether the data is the last to be sent
     public StreamFrame(long streamId, RetainableByteBuffer data, boolean endStream)
     {
-        this(streamId, data, 0, endStream);
-    }
-
-    /// Creates a stream frame with the given `offset` for a [Stream].
-    ///
-    /// Applications should not use this constructor but instead use
-    /// [Stream#data(boolean, List, Promise.Invocable)].
-    ///
-    /// @param streamId the stream id generated using [Session#newStreamId(boolean)]
-    /// @param data the data bytes to send
-    /// @param offset the data offset
-    /// @param endStream whether the data is the last to be sent
-    public StreamFrame(long streamId, RetainableByteBuffer data, long offset, boolean endStream)
-    {
-        this(streamId, data, offset, true, endStream);
+        this(toFrameType(true, true, endStream), streamId, data, -1, true);
     }
 
     /// Creates a stream frame for a [Stream].
     ///
     /// Applications should not use this constructor but instead
-    /// use [Stream#data(boolean, List, Promise.Invocable)].
+    /// use [Stream#data(boolean, RetainableByteBuffer, Promise.Invocable)].
     ///
     /// @param streamId the stream id generated using [Session#newStreamId(boolean)]
     /// @param data the data bytes to send
     /// @param offset the data offset
     /// @param hasLength whether the frame explicitly specifies the data length
     /// @param endStream whether the data is the last to be sent
-    public StreamFrame(long streamId, RetainableByteBuffer data, long offset, boolean hasLength, boolean endStream)
+    public StreamFrame(long streamId, RetainableByteBuffer data, long offset, boolean hasOffset, boolean hasLength, boolean endStream)
     {
-        this(toFrameType(offset >= 0, hasLength, endStream), streamId, data, offset, true);
+        this(toFrameType(hasOffset, hasLength, endStream), streamId, data, offset, true);
     }
 
     /// Creates a stream frame for a [Stream].
     ///
     /// Applications should not use this constructor but instead
-    /// use [Stream#data(boolean, List, Promise.Invocable)].
+    /// use [Stream#data(boolean, RetainableByteBuffer, Promise.Invocable)].
     ///
     /// @param frameType the frame type
     /// @param streamId the stream id generated using [Session#newStreamId(boolean)]
@@ -107,6 +86,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
         this.length = data.size();
         this.endStream = (frameType & END_STREAM_MASK) == END_STREAM_MASK;
         this.endData = endData;
+        this.slice = data.slice();
     }
 
     /// @return the stream offset of the data bytes carried by this frame
@@ -120,7 +100,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     @Override
     public RetainableByteBuffer data()
     {
-        return data;
+        return slice;
     }
 
     /// @return the number of data bytes
@@ -144,6 +124,18 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     public boolean isEndData()
     {
         return endData;
+    }
+
+    public void rewind()
+    {
+        slice.release();
+        slice = data.slice();
+    }
+
+    @Override
+    public boolean release()
+    {
+        return slice.release();
     }
 
     @Override

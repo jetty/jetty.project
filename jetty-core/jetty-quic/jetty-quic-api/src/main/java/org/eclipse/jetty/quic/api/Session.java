@@ -15,9 +15,9 @@ package org.eclipse.jetty.quic.api;
 
 import java.net.SocketAddress;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -48,7 +48,7 @@ public interface Session
 
     /// Creates a new local QUIC stream with the given stream id and listener.
     /// No communication happens with the other peer until [Stream] methods are
-    /// called to send frames, such as [Stream#data(boolean, List, Promise.Invocable)].
+    /// called to send frames, such as [Stream#data(boolean, RetainableByteBuffer, Promise.Invocable)].
     ///
     /// @param streamId the QUIC stream id
     /// @param listener the listener of stream events

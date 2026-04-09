@@ -28,6 +28,7 @@ import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStream;
 import org.eclipse.jetty.quic.common.frames.FramesGenerator;
+import org.eclipse.jetty.quic.common.frames.GeneratedFrame;
 import org.eclipse.jetty.quic.common.internal.packets.PacketsGenerator;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.util.Callback;
@@ -146,21 +147,17 @@ class CryptoFlusher implements Callback
         while (iterator.hasNext())
         {
             FramesEntry entry = iterator.next();
-            boolean progress = false;
             boolean allFramesProcessed = true;
+            List<Frame> framesGenerated = new ArrayList<>();
             List<Frame> frames = entry.frames();
             for (int i = 0; i < frames.size(); ++i)
             {
                 Frame frame = frames.get(i);
-                long generated = generateFrame(framesAccumulator, entry.stream(), frame, maxBytes);
+                GeneratedFrame generated = generateFrame(framesAccumulator, entry.stream(), frame, maxBytes);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("generated {} bytes udp/cwnd={}/{} for {} on {}", generated, packetPayloadMaxBytes, congestionWindow, frame, this);
+                    LOG.debug("generated {} udp/cwnd={}/{} for {} on {}", generated, packetPayloadMaxBytes, congestionWindow, frame, this);
 
-                maxBytes -= generated;
-                assert maxBytes >= 0;
-                progress |= generated > 0;
-
-                if (generated == 0 && !progress)
+                if (generated == null && i == 0)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("could not generate frame {}, flush stalled on {}", frame, this);
@@ -168,57 +165,63 @@ class CryptoFlusher implements Callback
                     break;
                 }
 
-                if (generated == 0 || maxBytes == 0)
+                int splitIndex = -1;
+                if (generated != null)
                 {
-                    // Only some of, or part of, the frames of the entry could be generated, split the entry.
-                    // Non-data frames are either fully generated or not generated at all, while data frames
-                    // may be partially generated, so the entry must be split accordingly.
+                    maxBytes -= generated.length();
+                    assert maxBytes >= 0;
 
-                    Callback callback = entry.callback();
-                    // The first half does not notify successful completion
-                    // until all frames are processed but does notify failures.
-                    Callback firstHalfCallback = Callback.from(callback.getInvocationType(), () -> {}, callback::failed);
+                    framesGenerated.add(generated.frame());
 
-                    int firstHalfIndex = i;
-                    int secondHalfIndex = i;
                     if (maxBytes == 0)
                     {
                         if (frame instanceof Frame.WithData dataFrame && !dataFrame.data().isEmpty())
                         {
-                            // The data frame was split, include it in
-                            // both the first half and the second half.
-                            firstHalfIndex = i + 1;
+                            // The data frame was split, retain it to finish processing.
+                            splitIndex = i;
                         }
                         else
                         {
-                            // The frame was fully generated exactly at the maxBytes limit,
-                            // include it in the first half but not in the second half.
-                            firstHalfIndex = i + 1;
-                            secondHalfIndex = i + 1;
+                            // The frame was fully generated exactly at the maxBytes limit.
+                            splitIndex = i + 1;
                         }
                     }
-
-                    FramesEntry firstHalfEntry = new FramesEntry(entry.stream(), frames.subList(0, firstHalfIndex), firstHalfCallback);
-                    writing.add(firstHalfEntry);
-
-                    // Update the current entry with the second half.
-                    FramesEntry secondHalfEntry = new FramesEntry(entry.stream(), frames.subList(secondHalfIndex, frames.size()), callback);
-                    iterator.set(secondHalfEntry);
-
-                    allFramesProcessed = false;
-                    break;
                 }
-            }
+                else
+                {
+                    // The frame was not generated.
+                    splitIndex = i;
+                }
 
-            if (allFramesProcessed)
-            {
-                writing.add(entry);
-                iterator.remove();
-            }
-            else
-            {
+                // No split occurred, continue with the next frame.
+                if (splitIndex < 0)
+                    continue;
+
+                // Only some of, or part of, the frames of the entry could be generated, split the entry.
+                // Non-data frames are either fully generated or not generated at all, while data frames
+                // may be partially generated, so the entry must be split accordingly.
+
+                Callback callback = entry.callback();
+                // The first half does not notify successful completion
+                // until all frames are processed but does notify failures.
+                Callback firstHalfCallback = Callback.from(callback.getInvocationType(), () -> {}, callback::failed);
+
+                FramesEntry firstHalfEntry = new FramesEntry(entry.stream(), framesGenerated, firstHalfCallback);
+                writing.add(firstHalfEntry);
+
+                // Update the current entry with the second half.
+                FramesEntry secondHalfEntry = new FramesEntry(entry.stream(), frames.subList(splitIndex, frames.size()), callback);
+                iterator.set(secondHalfEntry);
+
+                allFramesProcessed = false;
                 break;
             }
+
+            if (!allFramesProcessed)
+                break;
+
+            writing.add(new FramesEntry(entry.stream(), framesGenerated, entry.callback()));
+            iterator.remove();
         }
 
         if (writing.isEmpty())
@@ -246,7 +249,7 @@ class CryptoFlusher implements Callback
         return true;
     }
 
-    long generateFrame(RetainableByteBuffer.Mutable framesAccumulator, QuicStream stream, Frame frame, long maxBytes)
+    GeneratedFrame generateFrame(RetainableByteBuffer.Mutable framesAccumulator, QuicStream stream, Frame frame, long maxBytes)
     {
         FramesGenerator framesGenerator = getFramesGenerator();
         return switch (frame)
@@ -255,12 +258,21 @@ class CryptoFlusher implements Callback
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("generating offset={} {} for stream {} on {}", cryptoOffset, frame, stream, this);
-                long initialDataBytes = cryptoFrame.data().size();
-                long frameBytesGenerated = framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, cryptoOffset, maxBytes);
-                cryptoOffset += initialDataBytes - cryptoFrame.data().size();
-                yield frameBytesGenerated;
+                if (cryptoFrame.offset() < 0)
+                {
+                    GeneratedFrame generated = framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, cryptoOffset, maxBytes);
+                    if (generated != null)
+                        cryptoOffset += ((CryptoFrame)generated.frame()).data().size();
+                    yield generated;
+                }
+                else
+                {
+                    // A retransmitted frame.
+                    cryptoFrame.rewind();
+                    yield framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, cryptoFrame.offset(), maxBytes);
+                }
             }
-            default -> framesGenerator.generateFrame(framesAccumulator, frame, maxBytes);
+            default -> new GeneratedFrame(frame, framesGenerator.generateFrame(framesAccumulator, frame, maxBytes));
         };
     }
 

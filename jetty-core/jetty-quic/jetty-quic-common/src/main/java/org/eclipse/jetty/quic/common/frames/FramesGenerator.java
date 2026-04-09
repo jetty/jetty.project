@@ -101,11 +101,6 @@ public class FramesGenerator
         return 0;
     }
 
-    public void generateFrame(RetainableByteBuffer.Mutable accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
-    {
-        generateStreamFrame(accumulator, frame, maxDataBytes, maxFrameBytes);
-    }
-
     private long generateNoContentFrame(RetainableByteBuffer.Mutable accumulator, Frame frame, long maxBytes)
     {
         long limit = accumulator.size();
@@ -181,7 +176,7 @@ public class FramesGenerator
         return generated;
     }
 
-    public long generateCryptoFrame(RetainableByteBuffer.Mutable accumulator, CryptoFrame frame, long offset, final long maxBytes)
+    public GeneratedFrame generateCryptoFrame(RetainableByteBuffer.Mutable accumulator, CryptoFrame frame, long offset, final long maxBytes)
     {
         int capacity = VarLenInt.length(frame.type());
         capacity += VarLenInt.length(offset);
@@ -190,11 +185,11 @@ public class FramesGenerator
         RetainableByteBuffer data = frame.data();
         long estimatedDataLength = Math.min(data.size(), maxBytes - capacity);
         if (estimatedDataLength <= 0)
-            return 0;
+            return null;
         capacity += VarLenInt.length(estimatedDataLength);
         long dataLength = Math.min(data.size(), maxBytes - capacity);
         if (dataLength <= 0)
-            return 0;
+            return null;
         boolean excessData = data.size() > dataLength;
 
         long generated = VarLenInt.encode(accumulator, frame.type());
@@ -206,13 +201,15 @@ public class FramesGenerator
             data.skip(dataLength);
             generated += dataLength;
             accumulator.add(slice);
+            return new GeneratedFrame(new CryptoFrame(offset, slice), generated);
         }
         else
         {
             generated += data.size();
-            accumulator.add(data);
+            var slice = data.slice();
+            accumulator.add(slice);
+            return new GeneratedFrame(new CryptoFrame(offset, slice), generated);
         }
-        return generated;
     }
 
     private long generateNewTokenFrame(RetainableByteBuffer.Mutable accumulator, NewTokenFrame frame, long maxBytes)
@@ -232,7 +229,7 @@ public class FramesGenerator
         return generated;
     }
 
-    public long generateStreamFrame(RetainableByteBuffer.Mutable accumulator, StreamFrame frame, long offset, long maxBytes)
+    public GeneratedFrame generateStreamFrame(RetainableByteBuffer.Mutable accumulator, StreamFrame frame, long offset, long maxBytes)
     {
         long frameType = frame.type();
         int capacity = VarLenInt.length(frameType);
@@ -255,14 +252,14 @@ public class FramesGenerator
         RetainableByteBuffer data = frame.data();
         long estimatedDataLength = Math.min(data.size(), maxBytes - capacity);
         if (estimatedDataLength < 0 || (estimatedDataLength == 0 && !frame.isEndStream()))
-            return 0;
+            return null;
         int dataLengthLength = 0;
         if (hasLength)
             dataLengthLength = VarLenInt.length(estimatedDataLength);
         capacity += dataLengthLength;
         long dataLength = Math.min(data.size(), maxBytes - capacity);
         if (dataLength < 0 || (dataLength == 0 && !frame.isEndStream()))
-            return 0;
+            return null;
 
         boolean endStream = (frameType & StreamFrame.END_STREAM_MASK) == StreamFrame.END_STREAM_MASK;
         // Clear the endStream bit if the frame cannot be fully generated.
@@ -282,13 +279,14 @@ public class FramesGenerator
             data.skip(dataLength);
             generated += dataLength;
             accumulator.add(slice);
+            return new GeneratedFrame(new StreamFrame(frame.type(), frame.streamId(), slice, offset, frame.isEndData()), generated);
         }
         else
         {
             generated += dataLength;
             accumulator.add(data);
+            return new GeneratedFrame(new StreamFrame(frame.type(), frame.streamId(), data, offset, frame.isEndData()), generated);
         }
-        return generated;
     }
 
     private long generateMaxDataFrame(RetainableByteBuffer.Mutable accumulator, MaxDataFrame frame, long maxBytes)

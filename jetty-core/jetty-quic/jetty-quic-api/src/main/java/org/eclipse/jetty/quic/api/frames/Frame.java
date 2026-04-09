@@ -109,10 +109,11 @@ public sealed interface Frame
         }
     }
 
-    // TODO: this is necessary to know if a frame has been fully generated, see CryptoFlusher.
     sealed interface WithData extends WithOffset permits CryptoFrame, StreamFrame
     {
         RetainableByteBuffer data();
+
+        boolean release();
     }
 
     interface Listener
