@@ -33,6 +33,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-common</artifactId>
+        <version>13.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee</groupId>
         <artifactId>jetty-ee-fcgi-proxy</artifactId>
         <version>13.0.0-SNAPSHOT</version>
       </dependency>

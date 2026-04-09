@@ -7,13 +7,13 @@
     <artifactId>jetty-ee</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-ee-webapp</artifactId>
-  <name>Core :: EE :: Web Application</name>
-  <description>Jetty EE Web Application Artifact</description>
+  <artifactId>jetty-ee-common</artifactId>
+  <name>Core :: EE :: Common</name>
+  <description>Jetty EE Common Artifact</description>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee.webapp.*</spotbugs.onlyAnalyze>
+    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee.common.*</spotbugs.onlyAnalyze>
   </properties>
 
   <dependencies>
@@ -49,10 +49,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee.webapp=org.eclipse.jetty.logging</argLine>
+          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee.common=org.eclipse.jetty.logging</argLine>
           <excludes>
             <!-- This class modifies internal JVM statics, and causes problems in parallel testing -->
-            <exclude>org.eclipse.jetty.ee.webapp.WebAppClassLoaderUrlStreamTest</exclude>
+            <exclude>org.eclipse.jetty.ee.common.WebAppClassLoaderUrlStreamTest</exclude>
           </excludes>
         </configuration>
       </plugin>

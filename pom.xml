@@ -202,6 +202,7 @@
     <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
     <eclipse.jdt.ecj.version>3.45.0</eclipse.jdt.ecj.version>
 
+    <ee.jakarta.bom.version>11.0.0</ee.jakarta.bom.version>
     <ee10.jakarta.bom.version>10.0.0</ee10.jakarta.bom.version>
     <ee11.jakarta.bom.version>11.0.0</ee11.jakarta.bom.version>
     <ee8.jakarta.annotation.api.version>1.3.5</ee8.jakarta.annotation.api.version>
