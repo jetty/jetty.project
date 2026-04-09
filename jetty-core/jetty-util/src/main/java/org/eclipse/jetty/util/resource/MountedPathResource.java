@@ -26,17 +26,27 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class MountedPathResource extends PathResource
 {
+    private final FileSystem fileSystem;
     private final URI containerUri;
 
     MountedPathResource(URI uri) throws IOException
     {
         super(uri, true);
+        fileSystem = null;
         containerUri = URIUtil.unwrapContainer(getURI());
     }
 
     MountedPathResource(Path path, URI uri)
     {
         super(path, uri, true);
+        fileSystem = null;
+        containerUri = URIUtil.unwrapContainer(getURI());
+    }
+
+    MountedPathResource(FileSystem fs, Path path, URI uri)
+    {
+        super(path, uri, true);
+        fileSystem = fs;
         containerUri = URIUtil.unwrapContainer(getURI());
     }
 
@@ -50,6 +60,11 @@ public class MountedPathResource extends PathResource
     public boolean isContainedIn(Resource container)
     {
         return URIUtil.unwrapContainer(container.getURI()).equals(containerUri);
+    }
+
+    public FileSystem getFileSystem()
+    {
+        return fileSystem;
     }
 
     public Path getContainerPath()

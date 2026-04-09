@@ -44,9 +44,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO figure out if this should be a LifeCycle or not, how many instances of this class can reside in a JVM, who can call sweep and when.
+ * @deprecated FileSystemPool is no longer used.
  */
 @ManagedObject("Pool of FileSystems used to mount Resources")
+@Deprecated(since = "12.1.9", forRemoval = true)
 public class FileSystemPool implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileSystemPool.class);

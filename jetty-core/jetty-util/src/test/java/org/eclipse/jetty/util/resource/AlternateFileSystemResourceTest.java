@@ -69,7 +69,7 @@ public class AlternateFileSystemResourceTest
         }
         fsBaseURI = jimfs.getPath("/").toUri();
 
-        ResourceFactory.registerResourceFactory(fsBaseURI.getScheme(), new MountedPathResourceFactory());
+        ResourceFactory.registerResourceFactory(fsBaseURI.getScheme(), new MountedPathResourceFactory(jimfs));
     }
 
     @AfterEach
@@ -84,16 +84,19 @@ public class AlternateFileSystemResourceTest
         // Create some content to reference
         Files.writeString(jimfs.getPath("/foo.txt"), "Hello Foo", StandardCharsets.UTF_8);
 
-        // Reference it via Resource object
-        Resource resource = ResourceFactory.root().newResource(fsBaseURI.resolve("/foo.txt"));
-        assertTrue(Resources.isReadable(resource));
-
-        LOG.info("resource = {}", resource);
-
-        try (InputStream in = resource.newInputStream())
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            String contents = IO.toString(in, StandardCharsets.UTF_8);
-            assertThat(contents, is("Hello Foo"));
+            // Reference it via Resource object
+            Resource resource = resourceFactory.newResource(fsBaseURI.resolve("/foo.txt"));
+            assertTrue(Resources.isReadable(resource));
+
+            LOG.info("resource = {}", resource);
+
+            try (InputStream in = resource.newInputStream())
+            {
+                String contents = IO.toString(in, StandardCharsets.UTF_8);
+                assertThat(contents, is("Hello Foo"));
+            }
         }
     }
 
@@ -104,20 +107,23 @@ public class AlternateFileSystemResourceTest
         Files.createDirectories(jimfs.getPath("/zed"));
         Files.writeString(jimfs.getPath("/zed/bar.txt"), "Hello Bar", StandardCharsets.UTF_8);
 
-        // Reference it via Resource object
-        Resource resourceRoot = ResourceFactory.root().newResource(fsBaseURI.resolve("/"));
-        assertTrue(Resources.isDirectory(resourceRoot));
-
-        Resource resourceZedDir = resourceRoot.resolve("zed");
-        assertTrue(Resources.isDirectory(resourceZedDir));
-
-        Resource resourceBarText = resourceZedDir.resolve("bar.txt");
-        LOG.info("resource = {}", resourceBarText);
-
-        try (InputStream in = resourceBarText.newInputStream())
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            String contents = IO.toString(in, StandardCharsets.UTF_8);
-            assertThat(contents, is("Hello Bar"));
+            // Reference it via Resource object
+            Resource resourceRoot = resourceFactory.newResource(fsBaseURI.resolve("/"));
+            assertTrue(Resources.isDirectory(resourceRoot));
+
+            Resource resourceZedDir = resourceRoot.resolve("zed");
+            assertTrue(Resources.isDirectory(resourceZedDir));
+
+            Resource resourceBarText = resourceZedDir.resolve("bar.txt");
+            LOG.info("resource = {}", resourceBarText);
+
+            try (InputStream in = resourceBarText.newInputStream())
+            {
+                String contents = IO.toString(in, StandardCharsets.UTF_8);
+                assertThat(contents, is("Hello Bar"));
+            }
         }
     }
 }
