@@ -179,23 +179,22 @@ public class PacketTracker
     /// Second entry point: when an ack is received.
     public void processAckFrameReceived(QuicSession session, EncryptionLevel encryptionLevel, AckFrame frame)
     {
-        AckEntry entry = new AckEntry(encryptionLevel, frame);
+        PacketNumberSpace space = PacketNumberSpace.from(encryptionLevel);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("acking {} on {}", entry, this);
+            LOG.debug("acking {}[{}] on {}", space, frame, this);
 
-        PacketNumberSpace space = PacketNumberSpace.from(entry.encryptionLevel());
         Tracker tracker = trackers.get(space);
 
         List<Packet.WithFrames> ackedPackets = new ArrayList<>();
-        long ackedLength = tracker.acknowledgePackets(entry.frame(), ackedPackets);
+        long ackedLength = tracker.acknowledgePackets(frame, ackedPackets);
 
         if (ackedPackets.isEmpty())
             return;
 
         // RFC-9002[5.1]: calculate RTT only if the largestAckedEntry is newly acknowledged.
         if (tracker.newlyAcked)
-            rttData = estimateRTTData(entry.encryptionLevel(), entry.frame(), tracker.largestAckedEntry);
+            rttData = estimateRTTData(encryptionLevel, frame, tracker.largestAckedEntry);
         tracker.newlyAcked = false;
 
         // RFC-9002[6.2.1]: the PTO backoff is not reset for InitialPackets.
@@ -528,15 +527,6 @@ public class PacketTracker
         public String toString()
         {
             return "%s@%x[%s,#%d,length=%d]".formatted(TypeUtil.toShortName(getClass()), hashCode(), space(), packet().packetNumber(), length());
-        }
-    }
-
-    private record AckEntry(EncryptionLevel encryptionLevel, AckFrame frame)
-    {
-        @Override
-        public String toString()
-        {
-            return "%s@%x[%s,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), PacketNumberSpace.from(encryptionLevel()), frame());
         }
     }
 }

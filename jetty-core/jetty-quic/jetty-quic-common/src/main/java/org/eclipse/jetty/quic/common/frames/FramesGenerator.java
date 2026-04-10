@@ -206,7 +206,7 @@ public class FramesGenerator
         else
         {
             generated += data.size();
-            var slice = data.slice();
+            RetainableByteBuffer slice = data.slice();
             accumulator.add(slice);
             return new GeneratedFrame(new CryptoFrame(offset, slice), generated);
         }
@@ -279,13 +279,14 @@ public class FramesGenerator
             data.skip(dataLength);
             generated += dataLength;
             accumulator.add(slice);
-            return new GeneratedFrame(new StreamFrame(frame.type(), frame.streamId(), slice, offset, frame.isEndData()), generated);
+            return new GeneratedFrame(new StreamFrame(frameType, streamId, slice, offset, frame.isEndData()), generated);
         }
         else
         {
             generated += dataLength;
-            accumulator.add(data);
-            return new GeneratedFrame(new StreamFrame(frame.type(), frame.streamId(), data, offset, frame.isEndData()), generated);
+            RetainableByteBuffer slice = data.slice();
+            accumulator.add(slice);
+            return new GeneratedFrame(new StreamFrame(frameType, streamId, slice, offset, frame.isEndData()), generated);
         }
     }
 
