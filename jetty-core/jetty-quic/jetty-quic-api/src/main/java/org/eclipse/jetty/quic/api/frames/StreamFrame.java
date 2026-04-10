@@ -81,12 +81,12 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     public StreamFrame(long frameType, long streamId, RetainableByteBuffer data, long offset, boolean endData)
     {
         super(frameType, streamId);
-        this.offset = offset < 0 ? 0 : offset;
-        this.data = data;
+        this.offset = offset;
+        this.data = data.slice();
         this.length = data.size();
         this.endStream = (frameType & END_STREAM_MASK) == END_STREAM_MASK;
         this.endData = endData;
-        this.slice = data.slice();
+        this.slice = data;
     }
 
     /// @return the stream offset of the data bytes carried by this frame
@@ -135,7 +135,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     @Override
     public boolean release()
     {
-        return slice.release();
+        return data.release();
     }
 
     @Override

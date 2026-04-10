@@ -827,7 +827,7 @@ public abstract class QuicSession extends AbstractSession
                     case CryptoFrame cryptoFrame ->
                     {
                         // TODO: only retransmit if the keys for the EncryptionLevel are available.
-                        crypto(encryptionLevel, cryptoFrame, Callback.NOOP);
+                        flusher.sendFrames(encryptionLevel, List.of(frame), Callback.NOOP);
                     }
                     case DataBlockedFrame dataBlockedFrame ->
                     {
@@ -865,6 +865,9 @@ public abstract class QuicSession extends AbstractSession
                     }
                     case ResetFrame resetFrame ->
                     {
+                        // TODO: reset() sets the stream to locally closed after the send.
+                        //  However, we should think about making it so after we received
+                        //  and ack for it?
                         QuicStream stream = getStream(resetFrame.streamId());
                         if (stream != null && !stream.isLocallyClosed())
                             stream.reset(resetFrame.applicationErrorCode(), Promise.Invocable.noop());
@@ -875,6 +878,7 @@ public abstract class QuicSession extends AbstractSession
                     }
                     case StopSendingFrame stopSendingFrame ->
                     {
+                        // TODO: Same comment as reset().
                         QuicStream stream = getStream(stopSendingFrame.streamId());
                         if (stream != null && !stream.isRemotelyClosed())
                             stream.stopSending(stopSendingFrame.applicationErrorCode(), Promise.Invocable.noop());
@@ -886,8 +890,12 @@ public abstract class QuicSession extends AbstractSession
                     case StreamFrame streamFrame ->
                     {
                         QuicStream stream = getStream(streamFrame.streamId());
-                        if (stream != null && !stream.isLocallyClosed())
-                            stream.data(streamFrame.isEndStream(), streamFrame.data(), Promise.Invocable.noop());
+                        if (stream != null)
+                        {
+                            // Bypass stream.data() since the stream may be writing
+                            // and this additional write would cause WritePendingException.
+                            data(stream, streamFrame, Promise.Invocable.noop());
+                        }
                     }
                     case StreamMaxDataFrame streamMaxDataFrame ->
                     {

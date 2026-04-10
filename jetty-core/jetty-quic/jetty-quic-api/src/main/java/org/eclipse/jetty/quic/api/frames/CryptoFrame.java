@@ -27,8 +27,8 @@ public final class CryptoFrame extends Frame.Abstract implements Frame.WithData
         super(0x06);
         this.offset = offset;
         this.length = data.size();
-        this.data = data;
-        this.slice = data.slice();
+        this.data = data.slice();
+        this.slice = data;
     }
 
     @Override
@@ -58,7 +58,7 @@ public final class CryptoFrame extends Frame.Abstract implements Frame.WithData
     @Override
     public boolean release()
     {
-        return slice.release();
+        return data.release();
     }
 
     @Override
