@@ -49,7 +49,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PermessageDeflateDemandTest
+public class PerMessageDeflateDemandTest
 {
     private Server _server;
     private ArrayByteBufferPool.Tracking _bufferPool;
