@@ -81,10 +81,31 @@ public sealed interface Packet permits DiscardPacket, LongHeaderPacket, Packet.W
         {
         }
 
-        // TODO: javadoc this because it's the mechanism to
-        //  customize packet processing in QuicSession.
         class Wrapper implements Listener
         {
+            private final Listener wrapped;
+
+            public Wrapper(Listener wrapped)
+            {
+                this.wrapped = wrapped;
+            }
+
+            public Listener getWrapped()
+            {
+                return wrapped;
+            }
+
+            @Override
+            public void onIncomingPacket(Session session, Packet packet)
+            {
+                getWrapped().onIncomingPacket(session, packet);
+            }
+
+            @Override
+            public void onOutgoingPacket(Session session, Packet packet, long length)
+            {
+                getWrapped().onOutgoingPacket(session, packet, length);
+            }
         }
     }
 }

@@ -496,31 +496,37 @@ public abstract class QuicSession extends AbstractSession
             if (packet == Packet.DISCARD)
                 continue;
 
-            packetNumbers.onPacketReceived(packet);
+            notifyIncomingPacket(packet);
+        }
+    }
 
-            // Minimally process first packets to set
-            // the dcid be used by acknowledgments.
-            switch (packet)
+    private void process(Packet packet)
+    {
+        packetNumbers.onPacketReceived(packet);
+
+        // Minimally process first packets to set
+        // the dcid be used by acknowledgments.
+        switch (packet)
+        {
+            case InitialPacket initialPacket -> setDestinationConnectionId(initialPacket.sourceConnectionId());
+            case RetryPacket retryPacket -> setDestinationConnectionId(retryPacket.sourceConnectionId());
+            default ->
             {
-                case InitialPacket initialPacket -> setDestinationConnectionId(initialPacket.sourceConnectionId());
-                case RetryPacket retryPacket -> setDestinationConnectionId(retryPacket.sourceConnectionId());
-                default ->
-                {
-                }
             }
+        }
 
-            // The packet was fully decrypted and parsed, ack it now.
-            // Processing of frames by a different layer (such as the
-            // TLS layer or the application layer) is independent of
-            // acknowledgments at the transport layer.
-            acknowledge(packet);
+        // The packet was fully decrypted and parsed, ack it now.
+        // Processing of frames by a different layer (such as the
+        // TLS layer or the application layer) is independent of
+        // acknowledgments at the transport layer.
+        acknowledge(packet);
 
-            if (packet instanceof InitialPacket || Arrays.equals(getSourceConnectionId(), packet.destinationConnectionId()))
-            {
-                notifyIncomingPacket(packet);
-                continue;
-            }
-
+        if (packet instanceof InitialPacket || Arrays.equals(getSourceConnectionId(), packet.destinationConnectionId()))
+        {
+            processPacket(packet);
+        }
+        else
+        {
             // RFC-9000[7.2]: the packet must be discarded
             // if the packet dcid does not match.
             if (LOG.isDebugEnabled())
@@ -827,7 +833,8 @@ public abstract class QuicSession extends AbstractSession
                     case CryptoFrame cryptoFrame ->
                     {
                         // TODO: only retransmit if the keys for the EncryptionLevel are available.
-                        flusher.sendFrames(encryptionLevel, List.of(frame), Callback.NOOP);
+                        cryptoFrame.rewind();
+                        crypto(encryptionLevel, cryptoFrame, Callback.NOOP);
                     }
                     case DataBlockedFrame dataBlockedFrame ->
                     {
@@ -892,6 +899,7 @@ public abstract class QuicSession extends AbstractSession
                         QuicStream stream = getStream(streamFrame.streamId());
                         if (stream != null)
                         {
+                            streamFrame.rewind();
                             // Bypass stream.data() since the stream may be writing
                             // and this additional write would cause WritePendingException.
                             data(stream, streamFrame, Promise.Invocable.noop());
@@ -935,7 +943,7 @@ public abstract class QuicSession extends AbstractSession
         @Override
         public void onIncomingPacket(Session session, Packet packet)
         {
-            processPacket(packet);
+            process(packet);
         }
 
         @Override

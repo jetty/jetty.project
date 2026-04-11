@@ -58,14 +58,18 @@ public class FrameStream
                 break;
 
             if (offset != candidate.offset())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("stalling out-of-order {} on {}", candidate, this);
                 break;
+            }
 
             // This frame is in order, deliver it.
             queue.poll();
             offset += candidate.length();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("notifying {} on {}", candidate, this);
+                LOG.debug("notifying in-order {} on {}", candidate, this);
 
             notifyFrame(candidate);
         }

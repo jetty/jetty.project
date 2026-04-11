@@ -96,7 +96,8 @@ class StreamFlusher extends CryptoFlusher
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("delayed by pacing, flush stalled on {}", this);
-            getQuicSession().getScheduler().schedule(getQuicFlusher()::iterate, pacingDelay, TimeUnit.NANOSECONDS);
+            Runnable task = () -> getQuicSession().getExecutor().execute(getQuicFlusher()::iterate);
+            getQuicSession().getScheduler().schedule(task, pacingDelay, TimeUnit.NANOSECONDS);
             return false;
         }
 
@@ -165,11 +166,11 @@ class StreamFlusher extends CryptoFlusher
                 long sendWindow = Math.min(sessionWindow, streamWindow);
                 maxBytes = Math.min(sendWindow, maxBytes);
 
-                long offset = session.getSendData(stream);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("generating offset={} {} for stream {} on {}", offset, frame, stream, this);
                 if (streamFrame.offset() < 0)
                 {
+                    long offset = session.getSendData(stream);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("generating offset={} {} for stream {} on {}", offset, frame, stream, this);
                     GeneratedFrame generated = getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, maxBytes);
                     if (generated != null)
                         session.updateSendData(stream, ((StreamFrame)generated.frame()).data().size());
@@ -178,8 +179,10 @@ class StreamFlusher extends CryptoFlusher
                 else
                 {
                     // A retransmitted frame.
-                    streamFrame.rewind();
-                    yield getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, streamFrame.offset(), maxBytes);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("re-generating {} for stream {} on {}", frame, stream, this);
+                    long offset = streamFrame.offset() + (streamFrame.length() - streamFrame.data().size());
+                    yield getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, maxBytes);
                 }
             }
             default -> super.generateFrame(framesAccumulator, stream, frame, maxBytes);
@@ -227,7 +230,8 @@ class StreamFlusher extends CryptoFlusher
                 else if (ackDelayTask == null)
                 {
                     QuicSession session = getQuicSession();
-                    ackDelayTask = session.getScheduler().schedule(this, session.getQuicConfiguration().getAcknowledgmentMaxDelay(), TimeUnit.MILLISECONDS);
+                    Runnable task = () -> session.getExecutor().execute(this);
+                    ackDelayTask = session.getScheduler().schedule(task, session.getQuicConfiguration().getAcknowledgmentMaxDelay(), TimeUnit.MILLISECONDS);
                 }
 
                 largestPacketNumber = Math.max(largestPacketNumber, packetNumber);
