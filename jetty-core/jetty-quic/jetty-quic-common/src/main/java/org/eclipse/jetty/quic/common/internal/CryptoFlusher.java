@@ -184,6 +184,9 @@ class CryptoFlusher implements Callback
                         {
                             // The frame was fully generated exactly at the maxBytes limit.
                             splitIndex = i + 1;
+                            // If it was the last frame, we are done.
+                            if (splitIndex == frames.size())
+                                break;
                         }
                     }
                 }
@@ -268,11 +271,15 @@ class CryptoFlusher implements Callback
                 else
                 {
                     // A retransmitted frame.
-                    cryptoFrame.rewind();
-                    yield framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, cryptoFrame.offset(), maxBytes);
+                    long offset = cryptoFrame.offset() + (cryptoFrame.length() - cryptoFrame.data().size());
+                    yield framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, offset, maxBytes);
                 }
             }
-            default -> new GeneratedFrame(frame, framesGenerator.generateFrame(framesAccumulator, frame, maxBytes));
+            default ->
+            {
+                long length = framesGenerator.generateFrame(framesAccumulator, frame, maxBytes);
+                yield length == 0 ? null : new GeneratedFrame(frame, length);
+            }
         };
     }
 

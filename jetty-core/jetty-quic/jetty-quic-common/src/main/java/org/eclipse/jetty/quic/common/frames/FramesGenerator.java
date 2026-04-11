@@ -195,21 +195,12 @@ public class FramesGenerator
         long generated = VarLenInt.encode(accumulator, frame.type());
         generated += VarLenInt.encode(accumulator, offset);
         generated += VarLenInt.encode(accumulator, dataLength);
-        if (excessData)
-        {
-            RetainableByteBuffer slice = data.slice(dataLength);
-            data.skip(dataLength);
-            generated += dataLength;
-            accumulator.add(slice);
-            return new GeneratedFrame(new CryptoFrame(offset, slice), generated);
-        }
-        else
-        {
-            generated += data.size();
-            RetainableByteBuffer slice = data.slice();
-            accumulator.add(slice);
-            return new GeneratedFrame(new CryptoFrame(offset, slice), generated);
-        }
+
+        RetainableByteBuffer slice = excessData ? data.slice(dataLength) : data.slice();
+        data.skip(dataLength);
+        generated += dataLength;
+        accumulator.add(slice);
+        return new GeneratedFrame(new CryptoFrame(offset, slice), generated);
     }
 
     private long generateNewTokenFrame(RetainableByteBuffer.Mutable accumulator, NewTokenFrame frame, long maxBytes)
@@ -273,21 +264,12 @@ public class FramesGenerator
             generated += VarLenInt.encode(accumulator, offset);
         if (hasLength)
             generated += VarLenInt.encode(accumulator, dataLength);
-        if (excessData)
-        {
-            RetainableByteBuffer slice = data.slice(dataLength);
-            data.skip(dataLength);
-            generated += dataLength;
-            accumulator.add(slice);
-            return new GeneratedFrame(new StreamFrame(frameType, streamId, slice, offset, frame.isEndData()), generated);
-        }
-        else
-        {
-            generated += dataLength;
-            RetainableByteBuffer slice = data.slice();
-            accumulator.add(slice);
-            return new GeneratedFrame(new StreamFrame(frameType, streamId, slice, offset, frame.isEndData()), generated);
-        }
+
+        RetainableByteBuffer slice = excessData ? data.slice(dataLength) : data.slice();
+        data.skip(dataLength);
+        generated += dataLength;
+        accumulator.add(slice);
+        return new GeneratedFrame(new StreamFrame(frameType, streamId, slice, offset, frame.isEndData()), generated);
     }
 
     private long generateMaxDataFrame(RetainableByteBuffer.Mutable accumulator, MaxDataFrame frame, long maxBytes)

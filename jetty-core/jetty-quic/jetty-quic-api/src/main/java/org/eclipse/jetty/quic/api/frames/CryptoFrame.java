@@ -29,6 +29,7 @@ public final class CryptoFrame extends Frame.Abstract implements Frame.WithData
         this.length = data.size();
         this.data = data.slice();
         this.slice = data;
+        this.slice.retain();
     }
 
     @Override
@@ -64,6 +65,6 @@ public final class CryptoFrame extends Frame.Abstract implements Frame.WithData
     @Override
     public String toString()
     {
-        return "%s[offset=%d,length=%d]".formatted(super.toString(), offset(), length());
+        return "%s[offset=%d,remaining/length=%d/%d]".formatted(super.toString(), offset(), data().size(), length());
     }
 }

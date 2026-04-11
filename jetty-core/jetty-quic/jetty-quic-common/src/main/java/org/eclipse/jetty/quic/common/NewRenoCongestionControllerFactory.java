@@ -210,7 +210,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         @Override
         public String toString()
         {
-            return "%s@%x[%s,cwnd/inFlight/maxInFlight=%d/%d/%d]".formatted(TypeUtil.toShortName(getClass()), hashCode(), state, getCongestionWindow(), inFlight, maxInFlight);
+            return "%s@%x[%s,cwnd/flight/max=%d/%d/%d]".formatted(TypeUtil.toShortName(getClass()), hashCode(), state, getCongestionWindow(), inFlight, maxInFlight);
         }
 
         private enum State

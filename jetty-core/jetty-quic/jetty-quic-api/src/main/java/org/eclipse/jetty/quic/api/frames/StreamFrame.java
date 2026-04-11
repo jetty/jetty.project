@@ -87,6 +87,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
         this.endStream = (frameType & END_STREAM_MASK) == END_STREAM_MASK;
         this.endData = endData;
         this.slice = data;
+        this.slice.retain();
     }
 
     /// @return the stream offset of the data bytes carried by this frame
@@ -141,7 +142,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     @Override
     public String toString()
     {
-        return "%s[offset=%d,length=%d/%d,last=%b]".formatted(
+        return "%s[offset=%d,remaining/length=%d/%d,last=%b]".formatted(
             super.toString(),
             offset(),
             data().size(),
