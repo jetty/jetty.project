@@ -54,7 +54,7 @@ public abstract class MessageGenerator
             }
             catch (Throwable x)
             {
-                LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.info("failure while notifying listener {}", listener, x);
             }
         }
     }

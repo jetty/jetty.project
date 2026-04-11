@@ -134,7 +134,7 @@ public class ClientQuicConnection extends QuicConnection implements Callback
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failed to produce on {}", getEndPoint());
+                LOG.debug("failed to produce on {}", getEndPoint(), x);
             buffer.release();
             // TODO
             // fail(x);

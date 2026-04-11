@@ -416,7 +416,8 @@ public class PacketProtector implements Encrypter, Decrypter
             }
             catch (Throwable x)
             {
-                LOG.atTrace().setCause(x).log("failed to destroy {}", secretKey);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("failed to destroy {}", secretKey, x);
             }
         }
 

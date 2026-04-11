@@ -773,7 +773,7 @@ public abstract class QuicSession extends AbstractSession
         }
         catch (Throwable x)
         {
-            LOG.atInfo().setCause(x).log("failure while notifying listener {}", packetListener);
+            LOG.info("failure while notifying listener {}", packetListener, x);
         }
     }
 
@@ -785,7 +785,7 @@ public abstract class QuicSession extends AbstractSession
         }
         catch (Throwable x)
         {
-            LOG.atInfo().setCause(x).log("failure while notifying listener {}", packetListener);
+            LOG.info("failure while notifying listener {}", packetListener, x);
         }
     }
 
@@ -922,7 +922,7 @@ public abstract class QuicSession extends AbstractSession
     public void fail(Throwable x)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(x).log("failure on {}", this);
+            LOG.debug("failure on {}", this, x);
         // TODO: initiate inward close? or outward?
     }
 
