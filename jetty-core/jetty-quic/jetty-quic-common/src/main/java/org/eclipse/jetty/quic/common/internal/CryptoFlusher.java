@@ -296,7 +296,7 @@ class CryptoFlusher implements Callback
     public void failed(Throwable x)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(x).log("write failed to {} on {}", getQuicSession().getEndPoint(), this);
+            LOG.debug("write failed to {} on {}", getQuicSession().getEndPoint(), this, x);
         writing.forEach(e -> e.failed(x));
         writing.clear();
         // TODO: fail the queued entries.

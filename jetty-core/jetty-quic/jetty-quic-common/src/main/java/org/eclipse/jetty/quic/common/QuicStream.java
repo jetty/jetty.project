@@ -272,7 +272,7 @@ public class QuicStream extends AbstractStream
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.debug("failure while notifying listener {}", listener, x);
         }
     }
 

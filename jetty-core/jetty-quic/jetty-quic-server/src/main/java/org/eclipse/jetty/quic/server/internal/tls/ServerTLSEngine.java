@@ -420,7 +420,7 @@ public class ServerTLSEngine extends TLSEngine
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("invalid certificate {} on {}", certificate, this);
+                        LOG.debug("invalid certificate {} on {}", certificate, this, x);
                     candidate = null;
                     break;
                 }

@@ -132,7 +132,7 @@ public abstract class TLSEngine
             }
             catch (Throwable x)
             {
-                LOG.atInfo().setCause(x).log("failure while notifying listener {}", listener);
+                LOG.info("failure while notifying listener {}", listener, x);
             }
         }
     }
@@ -370,7 +370,7 @@ public abstract class TLSEngine
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("could not match identity of certificate {} with server name {}", certificate, name);
+                LOG.debug("could not match identity of certificate {} with server name {}", certificate, name, x);
             return false;
         }
     }
@@ -401,7 +401,7 @@ public abstract class TLSEngine
         if (failure == null)
             return;
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("failure on {}", this);
+            LOG.debug("failure on {}", this, failure);
         dispose(failure);
     }
 
@@ -420,7 +420,7 @@ public abstract class TLSEngine
         catch (Throwable x)
         {
             if (LOG.isTraceEnabled())
-                LOG.atTrace().setCause(x).log("failure while destroying {}", secretKey);
+                LOG.trace("failure while destroying {}", secretKey, x);
         }
     }
 

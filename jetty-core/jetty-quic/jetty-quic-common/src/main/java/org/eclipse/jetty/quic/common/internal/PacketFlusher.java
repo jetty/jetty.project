@@ -89,7 +89,7 @@ class PacketFlusher implements Callback
     public void failed(Throwable x)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(x).log("write failed {} to {} on {}", processingPacketEntry.packet(), flusher.getQuicSession().getEndPoint(), this);
+            LOG.debug("write failed {} to {} on {}", processingPacketEntry.packet(), flusher.getQuicSession().getEndPoint(), this, x);
         processingPacketEntry.failed(x);
         processingPacketEntry = null;
         // TODO: fail the queued entries.
