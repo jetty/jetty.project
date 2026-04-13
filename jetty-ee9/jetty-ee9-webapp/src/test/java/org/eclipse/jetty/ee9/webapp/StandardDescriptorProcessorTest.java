@@ -14,7 +14,13 @@
 package org.eclipse.jetty.ee9.webapp;
 
 import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
@@ -22,20 +28,28 @@ import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.servlet.ServletMapping;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.resource.Resources;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class StandardDescriptorProcessorTest
@@ -143,7 +157,7 @@ public class StandardDescriptorProcessorTest
         WebAppContext wac = new WebAppContext();
         wac.setServer(_server);
         wac.setBaseResourceAsPath(docroot);
-        wac.setDescriptor(webXml.toUri().toURL().toString());
+        wac.setDescriptor(webXml.toUri().toASCIIString());
         wac.start();
         ServletMapping[] mappings = wac.getServletHandler().getServletMappings();
         ServletMapping mapping = null;
@@ -169,11 +183,102 @@ public class StandardDescriptorProcessorTest
         WebAppContext wac = new WebAppContext();
         wac.setServer(_server);
         wac.setBaseResourceAsPath(docroot);
-        wac.setDescriptor(webXml.toUri().toURL().toString());
+        wac.setDescriptor(webXml.toUri().toASCIIString());
         wac.setThrowUnavailableOnStartupException(true);
         try (StacklessLogging ignored = new StacklessLogging(WebAppContext.class))
         {
             assertThrows(RuntimeException.class, () -> wac.start());
+        }
+    }
+
+    @Test
+    public void testDuplicateMimeTypes(WorkDir workDir) throws Exception
+    {
+        // Ensure that behavior of duplicate mime-type works as intended.
+        Path docroot = workDir.getEmptyPathDir();
+        WebAppContext wac = new WebAppContext();
+        wac.setServer(_server);
+        wac.setBaseResourceAsPath(docroot);
+
+        Path descriptorXml = docroot.resolve("WEB-INF/web.xml");
+        FS.ensureDirExists(descriptorXml.getParent());
+        Files.writeString(descriptorXml, """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+              version="4.0">
+              <name>Test WebApp</name>
+            </web-app>
+            """);
+        wac.setDescriptor(descriptorXml.toUri().toASCIIString());
+
+        Map<String, String> CREATE_JAR_ENV = new HashMap<>();
+        CREATE_JAR_ENV.put("create", "true");
+
+        // Fragment one: sets the eot mime-type
+        Path fragmentOneJar = docroot.resolve("WEB-INF/lib/frag1.jar");
+        FS.ensureDirExists(fragmentOneJar.getParent());
+        URI uriOne = URI.create("jar:" + fragmentOneJar.toUri().toASCIIString());
+        try (FileSystem zipfs = FileSystems.newFileSystem(uriOne, CREATE_JAR_ENV))
+        {
+            String fragmentXml = """
+                <?xml version="1.0" encoding="ISO-8859-1"?>
+                <web-fragment
+                   xmlns="http://java.sun.com/xml/ns/javaee"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-fragment_4_0.xsd"
+                   version="4.0">
+                  <name>Frag1Test</name>
+                  <mime-mapping>
+                    <extension>eot</extension>
+                    <mime-type>application/octet-stream</mime-type>
+                  </mime-mapping>
+                </web-fragment>
+                """;
+            Path path = zipfs.getPath("/META-INF/web-fragment.xml");
+            FS.ensureDirExists(path.getParent());
+            Files.writeString(path, fragmentXml);
+        }
+
+        // Fragment two: tries to set the eot mime-type to something difference (it should fail)
+        Path fragmentTwoJar = docroot.resolve("WEB-INF/lib/frag2.jar");
+        FS.ensureDirExists(fragmentTwoJar.getParent());
+        URI uriTwo = URI.create("jar:" + fragmentTwoJar.toUri().toASCIIString());
+        try (FileSystem zipfs = FileSystems.newFileSystem(uriTwo, CREATE_JAR_ENV))
+        {
+            String fragmentXml = """
+                <?xml version="1.0" encoding="ISO-8859-1"?>
+                <web-fragment
+                   xmlns="http://java.sun.com/xml/ns/javaee"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-fragment_4_0.xsd"
+                   version="4.0">
+                  <name>Frag2Test</name>
+                  <mime-mapping>
+                    <extension>eot</extension>
+                    <mime-type>application/vnd.ms-fontobject</mime-type>
+                  </mime-mapping>
+                </web-fragment>
+                """;
+            Path path = zipfs.getPath("/META-INF/web-fragment.xml");
+            FS.ensureDirExists(path.getParent());
+            Files.writeString(path, fragmentXml);
+        }
+
+        ResourceFactory resourceFactory = wac.getResourceFactory();
+        Resource fragResource = resourceFactory.newResource(fragmentTwoJar);
+        assertTrue(Resources.exists(fragResource));
+        wac.setThrowUnavailableOnStartupException(true);
+        try (StacklessLogging ignored = new StacklessLogging(WebAppContext.class))
+        {
+            RuntimeException re = assertThrows(RuntimeException.class, wac::start);
+            assertThat(re.getCause(), is(instanceOf(InvocationTargetException.class)));
+            InvocationTargetException ite = (InvocationTargetException)re.getCause();
+            assertThat(ite.getCause(), is(instanceOf(IllegalStateException.class)));
+            IllegalStateException ise = (IllegalStateException)ite.getCause();
+            assertThat(ise.getMessage(), containsString("Conflicting mime-type application/vnd.ms-fontobject for extension eot in " +
+                "jar:" + fragResource.getURI().toASCIIString() + "!/META-INF/web-fragment.xml"));
         }
     }
 
@@ -185,7 +290,7 @@ public class StandardDescriptorProcessorTest
         WebAppContext wac = new WebAppContext();
         wac.setServer(_server);
         wac.setBaseResourceAsPath(docroot);
-        wac.setDescriptor(webXml.toUri().toURL().toString());
+        wac.setDescriptor(webXml.toUri().toASCIIString());
         wac.start();
         assertEquals(54, TimeUnit.SECONDS.toMinutes(wac.getSessionHandler().getMaxInactiveInterval()));
         
