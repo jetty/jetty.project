@@ -15,24 +15,26 @@ package org.eclipse.jetty.websocket.core.extensions;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Random;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestFrameHandler;
+import org.eclipse.jetty.websocket.core.TestMessageHandler;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
@@ -40,19 +42,21 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PermessageDeflateDemandTest
+public class PerMessageDeflateDemandTest
 {
     private Server _server;
     private ArrayByteBufferPool.Tracking _bufferPool;
     private WebSocketCoreClient _client;
     private ServerConnector _connector;
     private WebSocketUpgradeHandler _upgradeHandler;
+    private WebSocketComponents _components;
 
     @BeforeEach
     public void before() throws Exception
@@ -62,7 +66,8 @@ public class PermessageDeflateDemandTest
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        _upgradeHandler = new WebSocketUpgradeHandler();
+        _components = new WebSocketComponents();
+        _upgradeHandler = new WebSocketUpgradeHandler(_components);
         _server.setHandler(_upgradeHandler);
         _server.start();
 
@@ -85,9 +90,9 @@ public class PermessageDeflateDemandTest
     }
 
     @Test
-    public void test() throws Exception
+    public void testManyIncomingFrames() throws Exception
     {
-        ServerHandler serverHandler = new ServerHandler();
+        TestMessageHandler serverHandler = new TestMessageHandler();
         _upgradeHandler.addMapping("/", (req, resp, cb) -> serverHandler);
 
         TestFrameHandler clientHandler = new TestFrameHandler();
@@ -113,91 +118,79 @@ public class PermessageDeflateDemandTest
         assertThat(recvMessage, equalTo(messageSlice));
     }
 
+    @Test
+    public void testExternalDemand() throws Exception
+    {
+        _components.getExtensionRegistry().register("@test", MyExtension.class);
+        TestMessageHandler serverHandler = new TestMessageHandler(false);
+        _upgradeHandler.addMapping("/", (req, resp, cb) ->
+        {
+            List<ExtensionConfig> extensions = resp.getExtensions();
+            extensions.add(0, ExtensionConfig.parse("@test"));
+            resp.setExtensions(extensions);
+            return serverHandler;
+        });
+
+        try
+        {
+            TestFrameHandler clientHandler = new TestFrameHandler();
+            URI uri = URI.create("ws://localhost:" + _connector.getLocalPort());
+            CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(_client, uri, clientHandler);
+            upgradeRequest.addExtensions("permessage-deflate");
+
+            CoreSession coreSession = _client.connect(upgradeRequest).get(5, TimeUnit.SECONDS);
+            assertNotNull(coreSession);
+            ByteBuffer message = randomBytes(1024);
+
+            // Send the same message twice.
+            coreSession.sendFrame(new Frame(OpCode.BINARY, message.slice()).setFin(true), Callback.NOOP, false);
+            coreSession.sendFrame(new Frame(OpCode.BINARY, message.slice()).setFin(true), Callback.NOOP, false);
+
+            // If we demand we receive the first message.
+            serverHandler.getCoreSession().demand();
+            ByteBuffer recvMessage = serverHandler.binaryMessages.poll(5, TimeUnit.SECONDS);
+            assertNotNull(recvMessage);
+            assertThat(recvMessage, equalTo(message));
+
+            // Delay demanding until we have returned from the permessage-deflate extension.
+            await().atMost(5, TimeUnit.SECONDS).until(() -> MyExtension.COUNT.get() == 0);
+            serverHandler.getCoreSession().demand();
+            recvMessage = serverHandler.binaryMessages.poll(5, TimeUnit.SECONDS);
+            assertNotNull(recvMessage);
+            assertThat(recvMessage, equalTo(message));
+
+            // Assert that the session can be closed normally.
+            serverHandler.getCoreSession().demand();
+            coreSession.close(CloseStatus.NORMAL, null, Callback.NOOP);
+            assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
+            assertThat(clientHandler.closeStatus.getCode(), equalTo(CloseStatus.NORMAL));
+        }
+        catch (Throwable t)
+        {
+            Throwable serverError = serverHandler.error;
+            if (serverError != null)
+                serverError.printStackTrace(System.err);
+            throw t;
+        }
+    }
+
+    public static class MyExtension extends AbstractExtension
+    {
+        static final AtomicInteger COUNT =  new AtomicInteger(0);
+
+        @Override
+        public void onFrame(Frame frame, Callback callback)
+        {
+            COUNT.incrementAndGet();
+            super.onFrame(frame, callback);
+            COUNT.decrementAndGet();
+        }
+    }
+
     private static ByteBuffer randomBytes(int size)
     {
         var bytes = new byte[size];
         new Random(42).nextBytes(bytes);
         return BufferUtil.toBuffer(bytes);
-    }
-
-    public static class ServerHandler implements FrameHandler
-    {
-        private CoreSession _coreSession;
-        private byte _messageType;
-        public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
-        public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
-        private StringBuilder _stringBuilder = new StringBuilder();
-        private ByteBufferCallbackAccumulator _byteBuilder = new ByteBufferCallbackAccumulator();
-
-        @Override
-        public void onOpen(CoreSession coreSession, Callback callback)
-        {
-            _coreSession = coreSession;
-            callback.succeeded();
-            coreSession.demand();
-        }
-
-        @Override
-        public void onFrame(Frame frame, Callback callback)
-        {
-            if (frame.isDataFrame())
-            {
-                switch (frame.getOpCode())
-                {
-                    case OpCode.TEXT:
-                        _messageType = OpCode.TEXT;
-                        break;
-                    case OpCode.BINARY:
-                        _messageType = OpCode.BINARY;
-                        break;
-                    case OpCode.CONTINUATION:
-                        break;
-                    default:
-                        throw new IllegalStateException(OpCode.name(frame.getOpCode()));
-                }
-
-                switch (_messageType)
-                {
-                    case OpCode.TEXT:
-                        _stringBuilder.append(frame.getPayloadAsUTF8());
-                        callback.succeeded();
-                        if (frame.isFin())
-                        {
-                            textMessages.add(_stringBuilder.toString());
-                            _stringBuilder = new StringBuilder();
-                        }
-                        break;
-                    case OpCode.BINARY:
-                        _byteBuilder.addEntry(frame.getPayload(), callback);
-                        if (frame.isFin())
-                        {
-                            binaryMessages.add(BufferUtil.toBuffer(_byteBuilder.takeByteArray()));
-                            _byteBuilder = new ByteBufferCallbackAccumulator();
-                        }
-                        break;
-                    default:
-                        throw new IllegalStateException(OpCode.name(_messageType));
-                }
-            }
-            else
-            {
-                callback.succeeded();
-            }
-
-            _coreSession.demand();
-        }
-
-        @Override
-        public void onError(Throwable cause, Callback callback)
-        {
-            cause.printStackTrace();
-            callback.succeeded();
-        }
-
-        @Override
-        public void onClosed(CloseStatus closeStatus, Callback callback)
-        {
-            callback.succeeded();
-        }
     }
 }

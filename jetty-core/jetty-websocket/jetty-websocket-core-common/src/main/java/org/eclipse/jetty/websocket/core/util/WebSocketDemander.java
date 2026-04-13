@@ -216,6 +216,8 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
 
                 if (_inputDemand)
                     return Action.IDLE;
+                if (!_outputDemand)
+                    return Action.IDLE;
 
                 if (_needContent)
                 {
