@@ -1026,7 +1026,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case WebFragment:
                 {
                     //a web-fragment set the value, all web-fragments must have the same value
-                    if (!mimeType.equals(context.getMimeTypes().getMimeByExtension("." + extension)))
+                    if (!mimeType.equals(context.getMimeTypes().getMimeForExtension(extension)))
                         throw new IllegalStateException("Conflicting mime-type " + mimeType + " for extension " + extension + " in " + descriptor.getURI());
                     break;
                 }
