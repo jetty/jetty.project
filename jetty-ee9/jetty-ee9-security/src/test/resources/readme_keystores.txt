@@ -5,7 +5,7 @@ These keystores support client certificate authentication testing on modern JDKs
 (JDK 17+), replacing legacy JKS keystores that used MD5withRSA (disabled in JDK 26).
 
 IMPORTANT: The certificate Distinguished Name (DN) must match the entry in realm.properties:
-CN=CTS,OU=Java Software,O=Sun Microsystems Inc.,L=Burlington,ST=MA,C=US=,,Administrator
+CN=localhost,OU=Jetty,O=Webtide,L=Omaha,ST=NE,C=US=,,Administrator
 
 Certificate Properties
 ----------------------
@@ -13,7 +13,7 @@ Certificate Properties
 - Key Size: 2048-bit RSA (recommended minimum)
 - Validity: 100 years (36500 days) (all good we should be retired by then)
 - Format: PKCS12 (industry standard)
-- Distinguished Name: CN=CTS, OU=Java Software, O=Sun Microsystems Inc., L=Burlington, ST=MA, C=US
+- Distinguished Name: CN=localhost, OU=Jetty, O=Webtide, L=Omaha, ST=NE, C=US
 
 Keystore Files
 -------------
@@ -41,16 +41,16 @@ keytool -v -genkeypair \
   -keysize 2048 \
   -keystore server_keystore.p12 \
   -storetype pkcs12 \
-  -storepass changeit \
-  -keypass changeit \
-  -dname "CN=CTS, OU=Java Software, O=Sun Microsystems Inc., L=Burlington, ST=MA, C=US" \
+  -storepass storepwd \
+  -keypass storepwd \
+  -dname "CN=localhost, OU=Jetty, O=Webtide, L=Omaha, ST=NE, C=US" \
   -ext bc=ca:true \
   -ext san=ip:127.0.0.1,ip:[::1],dns:localhost
 
 # 2. Export certificate and create truststore
 keytool -exportcert \
   -keystore server_keystore.p12 \
-  -storepass changeit \
+  -storepass storepwd \
   -rfc \
   -file server.crt
 
@@ -59,7 +59,7 @@ keytool -importcert \
   -file server.crt \
   -keystore truststore.p12 \
   -storetype pkcs12 \
-  -storepass changeit \
+  -storepass storepwd \
   -noprompt
 
 # 3. Clean up temporary file
@@ -68,7 +68,7 @@ rm server.crt
 Verification Commands
 --------------------
 # Verify server keystore contents
-keytool -list -v -keystore server_keystore.p12 -storepass changeit
+keytool -list -v -keystore server_keystore.p12 -storepass storepwd
 
 # Expected output:
 # - Signature algorithm: SHA384withRSA (NOT MD5withRSA)
@@ -79,7 +79,7 @@ keytool -list -v -keystore server_keystore.p12 -storepass changeit
 # - No security warnings
 
 # Verify truststore contents
-keytool -list -v -keystore truststore.p12 -storepass changeit
+keytool -list -v -keystore truststore.p12 -storepass storepwd
 
 # Expected output:
 # - One trusted certificate entry
@@ -92,5 +92,5 @@ mvn -pl jetty-ee9/jetty-ee9-security test -Dtest=ClientCertAuthenticatorTest
 
 Passwords
 ---------
-All keystores use password: changeit
+All keystores use password: storepwd
 

@@ -74,7 +74,7 @@ public class ClientCertAuthenticatorTest
 
         int port = freePort();
         int securePort = freePort();
-        SslContextFactory.Server sslContextFactory = createServerSslContextFactory("truststore.p12", "changeit");
+        SslContextFactory.Server sslContextFactory = createServerSslContextFactory("truststore.p12", "storepwd");
         // Setup HTTP Configuration
         HttpConfiguration httpConf = new HttpConfiguration();
         httpConf.setSecurePort(securePort);
@@ -145,7 +145,7 @@ public class ClientCertAuthenticatorTest
         cf.setTrustStorePassword(trustStorePassword);
         cf.setTrustStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile(trustStorePath)));
         cf.setKeyStoreResource(ResourceFactory.root().newResource(MavenPaths.findTestResourceFile("server_keystore.p12")));
-        cf.setKeyStorePassword("changeit");
+        cf.setKeyStorePassword("storepwd");
         cf.setSniRequired(false);
         cf.setWantClientAuth(true);
         return cf;
@@ -155,7 +155,7 @@ public class ClientCertAuthenticatorTest
     public void testAuthenticationWithClientCertificateSucceeds() throws Exception
     {
         HttpsURLConnection.setDefaultHostnameVerifier((s, sslSession) -> true);
-        SslContextFactory.Server cf = createServerSslContextFactory("server_keystore.p12", "changeit");
+        SslContextFactory.Server cf = createServerSslContextFactory("server_keystore.p12", "storepwd");
         cf.start();
         HttpsURLConnection.setDefaultSSLSocketFactory(cf.getSslContext().getSocketFactory());
         URL url = serverHttpsUri.resolve("/").toURL();

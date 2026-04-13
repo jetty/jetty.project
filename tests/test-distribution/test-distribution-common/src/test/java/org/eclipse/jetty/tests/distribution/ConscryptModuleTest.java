@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -26,12 +25,11 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
-import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-//@DisabledOnJre(JRE.JAVA_26)
+@DisabledOnJre(value = JRE.JAVA_26, disabledReason = "Conscrypt returns obsolete signature algorithms, see #14856")
 public class ConscryptModuleTest
 {
     @Test
@@ -48,16 +46,7 @@ public class ConscryptModuleTest
             assertEquals(0, configRun.getExitValue());
 
             int httpsPort = Tester.freePort();
-            // Conscrypt returns hard-coded obsolete signature algorithms (SHA1withRSA, SHA1withECDSA)
-            // which are rejected by JDK 26+'s new certificate checks in SunX509KeyManagerImpl.
-            // Disable the check until Conscrypt fixes this upstream.
-            // See https://github.com/google/conscrypt/issues/1486
-            List<String> jvmArgs = new ArrayList<>();
-            if (Runtime.version().feature() >= 26)
-            {
-                jvmArgs.add("-Djdk.tls.SunX509KeyManager.certChecking=false");
-            }
-            try (JettyHomeTester.Run startRun = distribution.start(jvmArgs, List.of("jetty.ssl.selectors=1", "jetty.ssl.port=" + httpsPort)))
+            try (JettyHomeTester.Run startRun = distribution.start(List.of("jetty.ssl.selectors=1", "jetty.ssl.port=" + httpsPort)))
             {
                 assertTrue(startRun.awaitForJettyStart());
                 assertTrue(startRun.getLogs().stream().anyMatch(line -> line.contains("provider=Conscrypt")));
