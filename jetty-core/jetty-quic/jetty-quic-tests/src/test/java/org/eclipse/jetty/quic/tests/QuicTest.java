@@ -30,6 +30,8 @@ import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
@@ -178,8 +180,9 @@ public class QuicTest extends AbstractQuicTest
         await().atMost(5, TimeUnit.SECONDS).until(clientSession::getStreams, empty());
     }
 
-    @Test
-    public void testLargeDownload() throws Exception
+    @ParameterizedTest
+    @ValueSource(ints = {1, 1024, 1024 * 1024, 8 * 1024 * 1024})
+    public void testDownload(int length) throws Exception
     {
         start(() -> new Session.Listener()
         {
@@ -191,16 +194,23 @@ public class QuicTest extends AbstractQuicTest
                     @Override
                     public void onNewStream(Stream stream, Frame.WithStreamId frame)
                     {
-                        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.allocate(1024 * 1024)), Promise.Invocable.noop());
+                        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.allocate(length)), Promise.Invocable.noop());
                     }
                 };
             }
         });
 
         CountDownLatch clientDataLatch = new CountDownLatch(1);
-        Session clientSession = Promise.Completable.<Session>with(p ->
-            client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, p)
-        ).get(5, TimeUnit.SECONDS);
+        Promise.Completable<Session> promise = new Promise.Completable<>();
+        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        {
+            @Override
+            public void onPrepare(Session session, TransportParameters transportParameters)
+            {
+                transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL, Math.max(128, 2L * length));
+            }
+        }, promise);
+        Session clientSession = promise.get(5, TimeUnit.SECONDS);
         long streamId = clientSession.newStreamId(true);
         Stream stream = clientSession.newStream(streamId, new Stream.Listener()
         {
