@@ -92,6 +92,11 @@
         <artifactId>jakarta.validation-api</artifactId>
         <version>${ee9.jakarta.validation.api.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <!-- Jetty EE 9 Dependencies -->
       <dependency>

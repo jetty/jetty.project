@@ -17,8 +17,11 @@ module org.eclipse.jetty.ee11.plus
     requires org.slf4j;
 
     requires transitive org.eclipse.jetty.ee11.webapp;
+    requires transitive org.eclipse.jetty.ee.plus;
 
     // Only required if using Transaction.
     requires static transitive jakarta.transaction;
     requires org.eclipse.jetty.jndi;
+
+    exports org.eclipse.jetty.ee11.plus.jndi;
 }

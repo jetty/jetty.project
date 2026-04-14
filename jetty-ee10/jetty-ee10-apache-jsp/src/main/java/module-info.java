@@ -16,6 +16,7 @@ module org.eclipse.jetty.ee10.apache.jsp
     requires java.xml;
     requires transitive jakarta.servlet;
     requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.ee.apache.jsp;
     requires transitive org.mortbay.apache.jasper;
     requires org.slf4j;
 }

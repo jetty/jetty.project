@@ -20,7 +20,4 @@ module org.eclipse.jetty.ee10.websocket.jakarta.client.webapp
     requires transitive org.eclipse.jetty.ee10.websocket.jakarta.client;
 
     exports org.eclipse.jetty.ee10.websocket.jakarta.client.webapp;
-
-    provides jakarta.servlet.ServletContainerInitializer with
-        JakartaWebSocketShutdownContainer;
 }

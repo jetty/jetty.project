@@ -16,10 +16,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee.websocket</groupId>
-      <artifactId>jetty-ee-websocket-jetty-client-webapp</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-webapp</artifactId>
     </dependency>
