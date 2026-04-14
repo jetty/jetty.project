@@ -11,15 +11,7 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee11.websocket.client.config.JettyWebSocketClientConfiguration;
-
-module org.eclipse.jetty.ee11.websocket.jetty.client
-{
-    requires org.eclipse.jetty.websocket.client;
-
-    requires transitive org.eclipse.jetty.ee11.webapp;
-
-    exports org.eclipse.jetty.ee11.websocket.client.config;
-
-    provides org.eclipse.jetty.ee.webapp.Configuration with JettyWebSocketClientConfiguration;
-}
+/**
+ * Jetty Annotations : Support for Servlet Annotations
+ */
+package org.eclipse.jetty.ee10.annotations;

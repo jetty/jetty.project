@@ -23,5 +23,7 @@ module org.eclipse.jetty.ee10.annotations
     requires transitive org.eclipse.jetty.ee10.plus;
     requires transitive org.objectweb.asm;
 
+    exports org.eclipse.jetty.ee10.annotations;
+
     uses jakarta.servlet.ServletContainerInitializer;
 }

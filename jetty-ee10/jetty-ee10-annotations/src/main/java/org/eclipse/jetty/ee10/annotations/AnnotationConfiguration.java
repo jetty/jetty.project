@@ -11,15 +11,11 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee11.websocket.client.config.JettyWebSocketClientConfiguration;
+package org.eclipse.jetty.ee10.annotations;
 
-module org.eclipse.jetty.ee11.websocket.jetty.client
+/**
+ * Configuration for Annotations
+ */
+public class AnnotationConfiguration extends org.eclipse.jetty.ee.annotations.AnnotationConfiguration
 {
-    requires org.eclipse.jetty.websocket.client;
-
-    requires transitive org.eclipse.jetty.ee11.webapp;
-
-    exports org.eclipse.jetty.ee11.websocket.client.config;
-
-    provides org.eclipse.jetty.ee.webapp.Configuration with JettyWebSocketClientConfiguration;
 }
