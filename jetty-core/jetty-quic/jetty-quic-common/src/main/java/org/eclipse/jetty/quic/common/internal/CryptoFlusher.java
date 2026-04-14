@@ -153,9 +153,11 @@ class CryptoFlusher implements Callback
             for (int i = 0; i < frames.size(); ++i)
             {
                 Frame frame = frames.get(i);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("generating {} udp/cwnd={}/{} on {}", frame, packetPayloadMaxBytes, maxBytes, this);
                 GeneratedFrame generated = generateFrame(framesAccumulator, entry.stream(), frame, maxBytes);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("generated {} udp/cwnd={}/{} for {} on {}", generated, packetPayloadMaxBytes, congestionWindow, frame, this);
+                    LOG.debug("generated {} on {}", generated, this);
 
                 if (generated == null && i == 0)
                 {
@@ -165,7 +167,6 @@ class CryptoFlusher implements Callback
                     break;
                 }
 
-                int splitIndex = -1;
                 if (generated != null)
                 {
                     maxBytes -= generated.length();
@@ -173,32 +174,9 @@ class CryptoFlusher implements Callback
 
                     framesGenerated.add(generated.frame());
 
-                    if (maxBytes == 0)
-                    {
-                        if (frame instanceof Frame.WithData dataFrame && !dataFrame.data().isEmpty())
-                        {
-                            // The data frame was split, retain it to finish processing.
-                            splitIndex = i;
-                        }
-                        else
-                        {
-                            // The frame was fully generated exactly at the maxBytes limit.
-                            splitIndex = i + 1;
-                            // If it was the last frame, we are done.
-                            if (splitIndex == frames.size())
-                                break;
-                        }
-                    }
+                    if (!(frame instanceof Frame.WithData dataFrame) || dataFrame.remaining() == 0)
+                        continue;
                 }
-                else
-                {
-                    // The frame was not generated.
-                    splitIndex = i;
-                }
-
-                // No split occurred, continue with the next frame.
-                if (splitIndex < 0)
-                    continue;
 
                 // Only some of, or part of, the frames of the entry could be generated, split the entry.
                 // Non-data frames are either fully generated or not generated at all, while data frames
@@ -213,7 +191,7 @@ class CryptoFlusher implements Callback
                 writing.add(firstHalfEntry);
 
                 // Update the current entry with the second half.
-                FramesEntry secondHalfEntry = new FramesEntry(entry.stream(), frames.subList(splitIndex, frames.size()), callback);
+                FramesEntry secondHalfEntry = new FramesEntry(entry.stream(), frames.subList(i, frames.size()), callback);
                 iterator.set(secondHalfEntry);
 
                 allFramesProcessed = false;
@@ -265,13 +243,13 @@ class CryptoFlusher implements Callback
                 {
                     GeneratedFrame generated = framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, cryptoOffset, maxBytes);
                     if (generated != null)
-                        cryptoOffset += ((CryptoFrame)generated.frame()).data().size();
+                        cryptoOffset += ((CryptoFrame)generated.frame()).remaining();
                     yield generated;
                 }
                 else
                 {
                     // A retransmitted frame.
-                    long offset = cryptoFrame.offset() + (cryptoFrame.length() - cryptoFrame.data().size());
+                    long offset = cryptoFrame.offset() + (cryptoFrame.length() - cryptoFrame.remaining());
                     yield framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, offset, maxBytes);
                 }
             }

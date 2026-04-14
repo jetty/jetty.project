@@ -111,7 +111,7 @@ public class FrameGeneratorParserTest
         assertEqual(StreamFrame::type, frame, result);
         assertEqual(StreamFrame::streamId, frame, result);
         assertEqual(StreamFrame::offset, frame, result);
-        assertEquals(frame.data().getByteBuffer(), result.data().getByteBuffer());
+        assertEquals(frame.map(RetainableByteBuffer::getByteBuffer), result.map(RetainableByteBuffer::getByteBuffer));
         assertEqual(StreamFrame::isEndStream, frame, result);
     }
 

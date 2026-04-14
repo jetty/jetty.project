@@ -182,25 +182,23 @@ public class FramesGenerator
         capacity += VarLenInt.length(offset);
 
         // Same logic as generateStreamFrame().
-        RetainableByteBuffer data = frame.data();
-        long estimatedDataLength = Math.min(data.size(), maxBytes - capacity);
+        long estimatedDataLength = Math.min(frame.remaining(), maxBytes - capacity);
         if (estimatedDataLength <= 0)
             return null;
         capacity += VarLenInt.length(estimatedDataLength);
-        long dataLength = Math.min(data.size(), maxBytes - capacity);
+        long dataLength = Math.min(frame.remaining(), maxBytes - capacity);
         if (dataLength <= 0)
             return null;
-        boolean excessData = data.size() > dataLength;
 
         long generated = VarLenInt.encode(accumulator, frame.type());
         generated += VarLenInt.encode(accumulator, offset);
         generated += VarLenInt.encode(accumulator, dataLength);
 
-        RetainableByteBuffer slice = excessData ? data.slice(dataLength) : data.slice();
-        data.skip(dataLength);
+        CryptoFrame sliced = frame.slice(offset, dataLength);
+        frame.skip(dataLength);
         generated += dataLength;
-        accumulator.add(slice);
-        return new GeneratedFrame(new CryptoFrame(offset, slice), generated);
+        sliced.accept(accumulator::add);
+        return new GeneratedFrame(sliced, generated);
     }
 
     private long generateNewTokenFrame(RetainableByteBuffer.Mutable accumulator, NewTokenFrame frame, long maxBytes)
@@ -240,21 +238,20 @@ public class FramesGenerator
         // will occupy 2 bytes; however, when correcting the data length subtracting the
         // length field length (2 bytes), the data length will be 62, which can be encoded
         // as just 1 byte, so 63 data bytes could have been generated, but we don't bother.
-        RetainableByteBuffer data = frame.data();
-        long estimatedDataLength = Math.min(data.size(), maxBytes - capacity);
+        long estimatedDataLength = Math.min(frame.remaining(), maxBytes - capacity);
         if (estimatedDataLength < 0 || (estimatedDataLength == 0 && !frame.isEndStream()))
             return null;
         int dataLengthLength = 0;
         if (hasLength)
             dataLengthLength = VarLenInt.length(estimatedDataLength);
         capacity += dataLengthLength;
-        long dataLength = Math.min(data.size(), maxBytes - capacity);
+        long dataLength = Math.min(frame.remaining(), maxBytes - capacity);
         if (dataLength < 0 || (dataLength == 0 && !frame.isEndStream()))
             return null;
 
         boolean endStream = (frameType & StreamFrame.END_STREAM_MASK) == StreamFrame.END_STREAM_MASK;
         // Clear the endStream bit if the frame cannot be fully generated.
-        boolean excessData = data.size() > dataLength;
+        boolean excessData = frame.remaining() > dataLength;
         if (endStream && excessData)
             frameType = frameType & ~StreamFrame.END_STREAM_MASK;
 
@@ -265,11 +262,11 @@ public class FramesGenerator
         if (hasLength)
             generated += VarLenInt.encode(accumulator, dataLength);
 
-        RetainableByteBuffer slice = excessData ? data.slice(dataLength) : data.slice();
-        data.skip(dataLength);
+        StreamFrame sliced = frame.slice(offset, dataLength);
+        frame.skip(dataLength);
         generated += dataLength;
-        accumulator.add(slice);
-        return new GeneratedFrame(new StreamFrame(frameType, streamId, slice, offset, frame.isEndData()), generated);
+        sliced.accept(accumulator::add);
+        return new GeneratedFrame(sliced, generated);
     }
 
     private long generateMaxDataFrame(RetainableByteBuffer.Mutable accumulator, MaxDataFrame frame, long maxBytes)

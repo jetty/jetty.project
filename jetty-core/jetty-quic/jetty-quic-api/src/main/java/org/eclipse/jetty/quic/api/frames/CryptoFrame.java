@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
 public final class CryptoFrame extends Frame.Abstract implements Frame.WithData
@@ -45,9 +48,32 @@ public final class CryptoFrame extends Frame.Abstract implements Frame.WithData
     }
 
     @Override
-    public RetainableByteBuffer data()
+    public long remaining()
     {
-        return slice;
+        return slice.remaining();
+    }
+
+    public long skip(long skip)
+    {
+        return slice.skip(skip);
+    }
+
+    @Override
+    public CryptoFrame slice(long offset, long length)
+    {
+        return new CryptoFrame(offset, slice.slice(length));
+    }
+
+    @Override
+    public void accept(Consumer<RetainableByteBuffer> consumer)
+    {
+        consumer.accept(slice);
+    }
+
+    @Override
+    public <T> T map(Function<RetainableByteBuffer, T> mapper)
+    {
+        return mapper.apply(slice);
     }
 
     public void rewind()
@@ -57,14 +83,15 @@ public final class CryptoFrame extends Frame.Abstract implements Frame.WithData
     }
 
     @Override
-    public boolean release()
+    public void close()
     {
-        return data.release();
+        slice.release();
+        data.release();
     }
 
     @Override
     public String toString()
     {
-        return "%s[offset=%d,remaining/length=%d/%d]".formatted(super.toString(), offset(), data().size(), length());
+        return "%s[offset=%d,remaining/length=%d/%d]".formatted(super.toString(), offset(), remaining(), length());
     }
 }

@@ -21,7 +21,7 @@ import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.PaddingFrame;
 
-public sealed interface Packet permits DiscardPacket, LongHeaderPacket, Packet.WithFrames, ShortHeaderPacket
+public sealed interface Packet extends AutoCloseable permits DiscardPacket, LongHeaderPacket, Packet.WithFrames, ShortHeaderPacket
 {
     Packet DISCARD = new DiscardPacket();
 
@@ -32,6 +32,11 @@ public sealed interface Packet permits DiscardPacket, LongHeaderPacket, Packet.W
     }
 
     byte[] destinationConnectionId();
+
+    @Override
+    default void close()
+    {
+    }
 
     sealed interface WithFrames extends Packet permits HandshakePacket, InitialPacket, OneRTTPacket, ZeroRTTPacket
     {
@@ -66,6 +71,12 @@ public sealed interface Packet permits DiscardPacket, LongHeaderPacket, Packet.W
                 }
             }
             return false;
+        }
+
+        @Override
+        default void close()
+        {
+            frames().forEach(Frame::close);
         }
     }
 

@@ -237,7 +237,10 @@ public class QuicStream extends AbstractStream
         notIdle();
         switch (frame)
         {
-            case ResetFrame resetFrame -> frameStream.offer(resetFrame);
+            case ResetFrame resetFrame ->
+            {
+                // TODO: frameStream.reset(resetFrame);
+            }
             case StopSendingFrame stopSendingFrame -> notifyStopSendingFrame(stopSendingFrame);
             case StreamDataBlockedFrame streamDataBlockedFrame -> notifyDataBlockedFrame(streamDataBlockedFrame);
             case StreamFrame streamFrame -> frameStream.offer(streamFrame);
@@ -282,7 +285,7 @@ public class QuicStream extends AbstractStream
         try (var _ = lock.lock())
         {
             process = dataQueue.isEmpty() && readDemand;
-            Content.Chunk chunk = Content.Chunk.from(frame.data(), frame.isEndStream());
+            Content.Chunk chunk = frame.map(data -> Content.Chunk.from(data, frame.isEndStream()));
             // Retain the chunk because it is stored for later use.
             chunk.retain();
             dataQueue.offer(chunk);

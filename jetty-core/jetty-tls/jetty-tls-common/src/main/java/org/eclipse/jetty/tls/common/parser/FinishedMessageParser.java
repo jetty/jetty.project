@@ -25,7 +25,7 @@ public class FinishedMessageParser implements MessageParser
     private byte[] verifyData;
 
     @Override
-    public Message parse(int messageLength, RetainableByteBuffer buffer) throws Exception
+    public Message parse(int messageLength, RetainableByteBuffer buffer)
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         if (verifyData == null)

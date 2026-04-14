@@ -29,7 +29,7 @@ public class CertificateVerifyMessageParser implements MessageParser
     private byte[] signature;
 
     @Override
-    public Message parse(int messageLength, RetainableByteBuffer buffer) throws Exception
+    public Message parse(int messageLength, RetainableByteBuffer buffer)
     {
         while (true)
         {

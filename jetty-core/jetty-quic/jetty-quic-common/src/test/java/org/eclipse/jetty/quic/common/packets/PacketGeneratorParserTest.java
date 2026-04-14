@@ -222,10 +222,8 @@ public class PacketGeneratorParserTest
         CryptoFrame parsedCryptoFrame = (CryptoFrame)parsed.frames().getFirst();
         assertEquals(generatedCryptoFrame.offset(), parsedCryptoFrame.offset());
         assertEquals(generatedCryptoFrame.length(), parsedCryptoFrame.length());
-        assertArrayEquals(clientHello, parsedCryptoFrame.data().takeByteArray());
+        parsedCryptoFrame.accept(data -> assertEquals(clientHello, data.takeByteArray()));
     }
 
     // TODO: RetryPacket from the RFC + RetryPacketGenerateParse
 }
-// cf000000010008f067a5502a4262b5004075c0d95a482cd0991cd25b0aac406a5816b6394100f37a1c69797554780bb38cc5a99f5ede4cf73c3ec2493a1839b3dbcba3f6ea46c5b7684df3548e7ddeb9c3bf9c73cc3f3bded74b562bfb19fb84022f8ef4cdd93795d77d06edbb7aaf2f58891850abbdca3d20398c276456cbc42158407dd074ee
-// Cf000000010008F067A5502a4262B500449cC0D95a482cD0991cD25b0aAc406a5816B6394100F37a1c69797554780bB38cC5A99f5eDe4cF73c3eC2493a1839B3DbCbA3F6Ea46C5B7684dF3548e7dDeB9C3Bf9c73Cc3f3bDeD74b562bFb19Fb84022f8eF4CdD93795D77d06EdBb7aAf2f58891850AbBdCa2414F33f252

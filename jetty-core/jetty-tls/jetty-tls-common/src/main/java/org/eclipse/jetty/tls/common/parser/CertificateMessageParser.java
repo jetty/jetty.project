@@ -15,6 +15,7 @@ package org.eclipse.jetty.tls.common.parser;
 
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import java.util.List;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.ext.Extension;
 
 public class CertificateMessageParser implements MessageParser
@@ -42,7 +44,7 @@ public class CertificateMessageParser implements MessageParser
     }
 
     @Override
-    public Message parse(int messageLength, RetainableByteBuffer buffer) throws Exception
+    public Message parse(int messageLength, RetainableByteBuffer buffer)
     {
         while (true)
         {
@@ -133,26 +135,33 @@ public class CertificateMessageParser implements MessageParser
                 }
                 case EXTENSIONS ->
                 {
-                    List<Extension> extensions = extensionsParser.parse(buffer, extensionsLength -> entriesLength -= extensionsLength);
-                    if (extensions == null)
-                        return null;
-                    CertificateFactory certificateFactory = CertificateFactory.getInstance("X509");
-                    X509Certificate x509 = (X509Certificate)certificateFactory.generateCertificate(new ByteArrayInputStream(certificate));
-                    CertificateMessage.Entry entry = new CertificateMessage.Entry(x509, extensions);
-                    entries.add(entry);
-                    certificateLength = 0;
-                    certificate = null;
-                    if (entriesLength == 0)
+                    try
                     {
-                        CertificateMessage message = new CertificateMessage(context, List.copyOf(entries));
-                        context = null;
-                        entries.clear();
-                        state = State.CONTEXT_LENGTH;
-                        return message;
+                        List<Extension> extensions = extensionsParser.parse(buffer, extensionsLength -> entriesLength -= extensionsLength);
+                        if (extensions == null)
+                            return null;
+                        CertificateFactory certificateFactory = CertificateFactory.getInstance("X509");
+                        X509Certificate x509 = (X509Certificate)certificateFactory.generateCertificate(new ByteArrayInputStream(certificate));
+                        CertificateMessage.Entry entry = new CertificateMessage.Entry(x509, extensions);
+                        entries.add(entry);
+                        certificateLength = 0;
+                        certificate = null;
+                        if (entriesLength == 0)
+                        {
+                            CertificateMessage message = new CertificateMessage(context, List.copyOf(entries));
+                            context = null;
+                            entries.clear();
+                            state = State.CONTEXT_LENGTH;
+                            return message;
+                        }
+                        else
+                        {
+                            state = State.CERTIFICATE_LENGTH;
+                        }
                     }
-                    else
+                    catch (CertificateException x)
                     {
-                        state = State.CERTIFICATE_LENGTH;
+                        throw new TLSException(TLSException.Alert.BAD_CERTIFICATE, x);
                     }
                 }
             }

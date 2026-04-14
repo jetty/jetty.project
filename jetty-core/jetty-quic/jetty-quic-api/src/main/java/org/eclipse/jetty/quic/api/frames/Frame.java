@@ -13,15 +13,23 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.TypeUtil;
 
 /// A generic QUIC frame carrying a frame type.
 ///
 /// @see WithStreamId
-public sealed interface Frame
+public sealed interface Frame extends AutoCloseable
 {
     long type();
+
+    @Override
+    default void close()
+    {
+    }
 
     abstract sealed class Abstract implements Frame permits
         AckFrame,
@@ -111,13 +119,12 @@ public sealed interface Frame
 
     sealed interface WithData extends WithOffset permits CryptoFrame, StreamFrame
     {
-        RetainableByteBuffer data();
+        long remaining();
 
-        boolean release();
-    }
+        WithData slice(long offset, long length);
 
-    interface Listener
-    {
-        void onFrame(Frame frame);
+        void accept(Consumer<RetainableByteBuffer> consumer);
+
+        <T> T map(Function<RetainableByteBuffer, T> mapper);
     }
 }

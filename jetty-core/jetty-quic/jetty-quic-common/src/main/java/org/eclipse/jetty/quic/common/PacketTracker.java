@@ -374,11 +374,7 @@ public class PacketTracker
                     ackedLength += entry.length();
                     Packet.WithFrames packet = entry.packet();
                     output.add(packet);
-                    for (Frame frame : packet.frames())
-                    {
-                        if (frame instanceof Frame.WithData withData)
-                            withData.release();
-                    }
+                    packet.frames().forEach(Frame::close);
                 }
             }
             if (LOG.isDebugEnabled())

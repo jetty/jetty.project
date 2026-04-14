@@ -476,27 +476,28 @@ public abstract class QuicSession extends AbstractSession
         setRemoteSocketAddress(remoteSocketAddress);
         while (buffer.hasRemaining())
         {
-            Packet packet = parser.parse(buffer);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("parsed {} on {}", packet, this);
-
-            if (packet == null)
+            try (Packet packet = parser.parse(buffer))
             {
-                // UDP datagrams should contain one or more full packets.
-                // If they don't, then it's the other peer sending badly
-                // encoded packets, so we just disconnect.
-                buffer.skip(buffer.remaining());
-                QuicException quicException = new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_packet");
-                ConnectionCloseFrame frame = new ConnectionCloseFrame(quicException.getErrorCode().code(), quicException.getMessage(), 0);
-                disconnect(frame, quicException, Promise.Invocable.noop());
-                return;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("parsed {} on {}", packet, this);
+
+                if (packet == null)
+                {
+                    // UDP datagrams should contain one or more full packets.
+                    // If they don't, then it's the other peer sending badly
+                    // encoded packets, so we just disconnect.
+                    buffer.skip(buffer.remaining());
+                    QuicException quicException = new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_packet");
+                    ConnectionCloseFrame frame = new ConnectionCloseFrame(quicException.getErrorCode().code(), quicException.getMessage(), 0);
+                    disconnect(frame, quicException, Promise.Invocable.noop());
+                    return;
+                }
+
+                if (packet == Packet.DISCARD)
+                    continue;
+
+                notifyIncomingPacket(packet);
             }
-
-            if (packet == Packet.DISCARD)
-                continue;
-
-            notifyIncomingPacket(packet);
         }
     }
 
@@ -660,15 +661,13 @@ public abstract class QuicSession extends AbstractSession
         return result;
     }
 
-    private void processCryptoFrame(Frame frame)
+    private void processCryptoFrame(Frame.WithData frame)
     {
         try
         {
-            CryptoFrame cryptoFrame = (CryptoFrame)frame;
-            RetainableByteBuffer data = cryptoFrame.data();
-            while (data.hasRemaining())
+            while (frame.remaining() > 0)
             {
-                Message message = getTLSEngine().getMessagesParser().parse(data);
+                Message message = frame.map(data -> getTLSEngine().getMessagesParser().parse(data));
                 if (LOG.isDebugEnabled())
                     LOG.debug("parsed {} on {}", message, this);
                 if (message == null)
