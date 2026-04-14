@@ -120,7 +120,7 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
             combinedPath.resolve("externalCombinedSymlinkFile"),
             webRootPath.resolve("../sibling"));
 
-        // Symlink to the webroot directories for a combined base resource which are aliases.
+        // Symlink to the webroot directories for a combined base resource which is an alias.
         Path webrootSymlink = combinedPath.resolve(getResource("webrootSymlink"));
         Path combinedSymlink = combinedPath.resolve(getResource("combinedSymlink"));
         createSymbolicLink(
@@ -158,7 +158,7 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
         _context2.setHandler(new ResourceHandler());
         _context2.clearAliasChecks();
 
-        // Base Resource as CombinedResource tests.
+        // Aliased CombinedResource for Base Resource tests.
         resource = ResourceFactory.combine(
             resourceFactory.newResource(webrootSymlink),
             resourceFactory.newResource(combinedSymlink));
