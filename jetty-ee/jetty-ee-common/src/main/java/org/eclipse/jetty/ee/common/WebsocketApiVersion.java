@@ -93,7 +93,8 @@ public enum WebsocketApiVersion
         }
     }
 
-    public static WebsocketApiVersion getWebsocketApiVersion() {
+    public static WebsocketApiVersion getWebsocketApiVersion()
+    {
         return currentVersion;
     }
 

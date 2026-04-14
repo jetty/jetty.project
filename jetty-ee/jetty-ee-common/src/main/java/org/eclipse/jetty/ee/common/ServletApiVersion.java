@@ -94,7 +94,8 @@ public enum ServletApiVersion
         }
     }
 
-    public static ServletApiVersion getServletApiVersion() {
+    public static ServletApiVersion getServletApiVersion()
+    {
         return currentVersion;
     }
 
