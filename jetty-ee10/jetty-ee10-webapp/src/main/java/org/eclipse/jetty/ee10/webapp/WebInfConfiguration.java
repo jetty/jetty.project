@@ -11,15 +11,17 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee11.websocket.client.config.JettyWebSocketClientConfiguration;
+package org.eclipse.jetty.ee10.webapp;
 
-module org.eclipse.jetty.ee11.websocket.jetty.client
+public class WebInfConfiguration extends org.eclipse.jetty.ee.webapp.WebInfConfiguration
 {
-    requires org.eclipse.jetty.websocket.client;
+    public WebInfConfiguration()
+    {
+        super();
+    }
 
-    requires transitive org.eclipse.jetty.ee11.webapp;
-
-    exports org.eclipse.jetty.ee11.websocket.client.config;
-
-    provides org.eclipse.jetty.ee.webapp.Configuration with JettyWebSocketClientConfiguration;
+    protected WebInfConfiguration(Builder builder)
+    {
+        super(builder);
+    }
 }
