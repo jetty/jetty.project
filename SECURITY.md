@@ -19,7 +19,7 @@ Failing to do so, also known as [AI slop](https://en.wikipedia.org/wiki/AI_slop)
 The following checklist is used to handle security issues:
 
 - [ ] On receipt of a security report via security@jetty.org or other channels, if it cannot be trivially dismissed (already fixed, known not a problem, etc.), then project leadership creates a GitHub security advisory.
-- [ ] Copy this list as a Markdown in the security advisory for tracking the completion of various tasks.
+- [ ] Copy this list (from GitHub's Jetty Project `SECURITY.md` file) as a Markdown in the security advisory for tracking the completion of various tasks.
 - [ ] Jetty committers and the reporters are added to the security advisory. Individual committers can also be named in the comments for addition.
 - [ ] Initial triage and discussion are performed in the comments of the advisory.
 - [ ] If enough information exists to attempt reproduction or fix, then a private repository is created as part of the GitHub security advisory.
@@ -31,21 +31,22 @@ The following checklist is used to handle security issues:
 - [ ] Open a [Gitlab@Eclipse CVE Assignment](https://gitlab.eclipse.org/security/cve-assignement/-/issues/new) to have a CVE allocated.   
       The issue should be opened under the "Eclipse Foundation" > "EMO Team" > "EMO" section as a "cve" description, with the "This issue is confidential" checkbox checked.   
       Follow the template for what details are necessary to file for a CVE.
+-     Add a comment in the issue asking the Eclipse team to add @jerdfelt, @jmcconnell, @olamy and @sbordet as assignees (otherwise only the issue opener will be able to see the issue).
 - [ ] Once the CVE is allocated, update the Security Advisory with the number
 - [ ] Build and test fix(es) locally and in the CI environment.
 - [ ] Merge tests and fix - ensure description does not mention vulnerability directly. Do not merge directly from the security advisory as it can be traced back before publication.
 - [ ] Build and stage the release candidate.
 - [ ] Notify interested parties of the pending security advisory and of the staged release:
-    1. Include CVE number, CVE score, and CWE
-    2. Include Workarounds
-    3. Stress that it is confidential
+    1. Include CVE number, CVE score, and CWE.
+    2. Include Workarounds.
+    3. Stress that it is confidential.
     4. Advise the security advisory will be published in 1 month unless they indicate they need more time.
 - [ ] If testing is OK, then the release is promoted.
 - [ ] Interested parties are notified of the availability of the release on Maven Central.
-- [ ] Publish security advisory and CVE publicly.
+- [ ] Publish security advisory from GitHub.
+- [ ] Add a comment to the GitLab issue opened at Eclipse asking to publish the CVE.
 - [ ] Edit VERSION.txt and so that the CVE number is now recorded against merged PR.
 - [ ] Edit the release(s) on GitHub to identify the CVE number that was addressed/resolved.
 - [ ] Update downstream images (Docker, etc.).
 - [ ] Update the project [website](https://jetty.org/security.html) with the new security entry.
 - [ ] Review security processes and completion.
-
