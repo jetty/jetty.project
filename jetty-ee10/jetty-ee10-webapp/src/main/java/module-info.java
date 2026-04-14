@@ -19,5 +19,10 @@ module org.eclipse.jetty.ee10.webapp
     requires transitive org.eclipse.jetty.session;
     requires transitive org.eclipse.jetty.ee10.servlet;
     requires transitive org.eclipse.jetty.xml;
+    requires transitive org.eclipse.jetty.ee.common;
     requires transitive org.eclipse.jetty.ee.webapp;
+
+    exports org.eclipse.jetty.ee10.webapp;
+
+    uses org.eclipse.jetty.ee.webapp.Configuration;
 }

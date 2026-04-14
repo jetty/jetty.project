@@ -1,2 +1,0 @@
-This folder contains the default jetty configurations file for the server.
-In production, it is likely to be a different folder outside of the jetty's bootstrap plugin.

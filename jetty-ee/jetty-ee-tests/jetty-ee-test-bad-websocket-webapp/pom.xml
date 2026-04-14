@@ -25,6 +25,11 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>jakarta.websocket</groupId>
+      <artifactId>jakarta.websocket-client-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee.websocket</groupId>
       <artifactId>jetty-ee-websocket-jakarta-common</artifactId>
       <scope>provided</scope>

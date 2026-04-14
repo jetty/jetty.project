@@ -30,6 +30,6 @@ module org.eclipse.jetty.ee10.websocket.jetty.server
     provides jakarta.servlet.ServletContainerInitializer with
         org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 
-    provides org.eclipse.jetty.ee10.webapp.Configuration with
+    provides org.eclipse.jetty.ee.webapp.Configuration with
         org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketConfiguration;
 }

@@ -17,11 +17,11 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee11.plus.jndi.Transaction;
-import org.eclipse.jetty.ee11.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.ee11.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee.plus.jndi.Transaction;
+import org.eclipse.jetty.ee.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.Resource;
 import org.eclipse.jetty.security.HashLoginService;

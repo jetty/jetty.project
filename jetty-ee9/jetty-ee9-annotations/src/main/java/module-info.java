@@ -17,7 +17,7 @@ module org.eclipse.jetty.ee9.annotations
     requires java.naming;
     requires org.slf4j;
     requires transitive org.eclipse.jetty.annotations;
-    requires transitive org.eclipse.jetty.ee.webapp;
+    requires transitive org.eclipse.jetty.ee.common;
     requires transitive org.eclipse.jetty.plus;
 
     requires transitive org.eclipse.jetty.ee9.plus;

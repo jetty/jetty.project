@@ -18,7 +18,7 @@ module org.eclipse.jetty.ee9.webapp
     requires transitive java.instrument;
     requires transitive org.eclipse.jetty.ee9.servlet;
     requires transitive org.eclipse.jetty.xml;
-    requires transitive org.eclipse.jetty.ee.webapp;
+    requires transitive org.eclipse.jetty.ee.common;
 
     exports org.eclipse.jetty.ee9.webapp;
 
