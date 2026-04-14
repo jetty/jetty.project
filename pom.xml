@@ -266,7 +266,6 @@
     <junit.platform.version>${junit.version}</junit.platform.version>
     <junit.version>6.0.3</junit.version>
     <kerb-simplekdc.version>2.1.1</kerb-simplekdc.version>
-    <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.25.4</log4j2.version>
     <logback.version>1.5.32</logback.version>
@@ -1511,11 +1510,6 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>com.mycila</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <version>${license.maven.plugin.version}</version>
-        </plugin>
-        <plugin>
           <groupId>eu.maveniverse.maven.plugins</groupId>
           <artifactId>njord</artifactId>
           <version>${njord.version}</version>
@@ -1904,6 +1898,39 @@
         <artifactId>spotless-maven-plugin</artifactId>
         <version>2.46.1</version>
         <configuration>
+          <skip>${spotless.skip}</skip>
+          <!-- Java files license header -->
+          <java>
+            <excludes>
+              <!-- Build output directories -->
+              <exclude>**/target/**</exclude>
+              <!-- Aki Yoshida copyright -->
+              <exclude>**/UnixCrypt.java</exclude>
+            </excludes>
+            <licenseHeader>
+              <file>${maven.multiModuleProjectDirectory}/header-template.txt</file>
+              <delimiter>(package |import |public |class |interface |enum |@)</delimiter>
+            </licenseHeader>
+          </java>
+          <!-- AsciiDoc files license header -->
+          <formats>
+            <format>
+              <includes>
+                <include>**/*.adoc</include>
+              </includes>
+              <excludes>
+                <!-- Build output directories -->
+                <exclude>**/target/**</exclude>
+                <!-- Distribution Text (no header, too noisy) -->
+                <exclude>**/jetty-home/src/main/resources/README.adoc</exclude>
+              </excludes>
+              <licenseHeader>
+                <file>${maven.multiModuleProjectDirectory}/header-template.txt</file>
+                <delimiter>(?=^[^/])</delimiter>
+              </licenseHeader>
+            </format>
+          </formats>
+          <!-- POM formatting -->
           <pom>
             <includes>
               <include>pom.xml</include>
@@ -1936,42 +1963,6 @@
               <goal>check</goal>
             </goals>
             <phase>validate</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <inherited>false</inherited>
-        <configuration>
-          <failIfMissing>true</failIfMissing>
-          <aggregate>true</aggregate>
-          <strictCheck>true</strictCheck>
-        </configuration>
-        <executions>
-          <execution>
-            <id>check-java-headers</id>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <phase>verify</phase>
-            <configuration>
-              <header>header-template.txt</header>
-              <mapping>
-                <java>DOUBLESLASH_STYLE</java>
-                <adoc>DOUBLESLASH_STYLE</adoc>
-              </mapping>
-              <includes>
-                <include>**/*.java</include>
-                <include>**/*.adoc</include>
-              </includes>
-              <excludes>
-                <!-- Aki Yoshida -->
-                <exclude>jetty-core/jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
-                <!-- Distribution Text (no header, too noisy) -->
-                <exclude>jetty-home/src/main/resources/README.adoc</exclude>
-              </excludes>
-            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -2849,9 +2840,9 @@
       <properties>
         <checkstyle.skip>true</checkstyle.skip>
         <enforcer.skip>true</enforcer.skip>
-        <license.skip>true</license.skip>
         <skipTests>true</skipTests>
         <spotbugs.skip>true</spotbugs.skip>
+        <spotless.skip>true</spotless.skip>
       </properties>
     </profile>
     <profile>
