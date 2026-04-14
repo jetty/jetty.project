@@ -33,6 +33,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -280,6 +281,10 @@ public class StandardDescriptorProcessorTest
             IllegalStateException ise = (IllegalStateException)ite.getCause();
             assertThat(ise.getMessage(), containsString("Conflicting mime-type application/vnd.ms-fontobject for extension eot in " +
                 "jar:" + fragResource.getURI().toASCIIString() + "!/META-INF/web-fragment.xml"));
+        }
+        finally
+        {
+            LifeCycle.stop(wac);
         }
     }
 
