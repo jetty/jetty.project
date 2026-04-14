@@ -213,7 +213,7 @@ public class StandardDescriptorProcessorTest
             """);
         wac.setDescriptor(descriptorXml.toUri().toASCIIString());
 
-        Map<String, String> CREATE_JAR_ENV = new HashMap<>();
+        final Map<String, String> CREATE_JAR_ENV = new HashMap<>();
         CREATE_JAR_ENV.put("create", "true");
 
         // Fragment one: sets the eot mime-type
