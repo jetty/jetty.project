@@ -14,9 +14,9 @@ Here are some quick links to other useful resources:
 
 ## Eclipse Contributor Agreement
 
-Before we can accept your contributions to the Jetty project, you will need to create and electronically sign a [Eclipse Contributor Agreement (ECA)](http://www.eclipse.org/legal/ecafaq.php):
+Before we can accept your contributions to the Jetty project, you will need to create and electronically sign the [Eclipse Contributor Agreement (ECA)](http://www.eclipse.org/legal/ecafaq.php):
 
-1. Create an account on the [Eclipse foundation website](https://accounts.eclipse.org/user/login/) if you have not already done so.
+1. Create an account on the [Eclipse Foundation website](https://accounts.eclipse.org/user/login/) if you have not already done so.
 2. Log into your account, click **Eclipse Contributor Agreement**, and complete the form.
 
 Be sure to use the same email address in your Eclipse account that you intend to use when you commit to GitHub.
@@ -24,8 +24,4 @@ Be sure to use the same email address in your Eclipse account that you intend to
 
 ## Reporting Security Issues
 
-Jetty is actively developed by the team at [Webtide](https://webtide.com/), and the most direct method for reporting security issues is to mail [security@webtide.com](mailto:security@webtide.com).
-
-We are flexible in how we work with reporters of security issues; however, we reserve the right to act in the interests of the Jetty project in all circumstances.
-
-If the issue is related to Eclipse or its Jetty integration, then we encourage you to reach out to the Eclipse Foundation directly at [security@eclipse.org](mailto:security@eclipse.org).
+See [SECURITY.md](SECURITY.md) for information on how to report security issues.
