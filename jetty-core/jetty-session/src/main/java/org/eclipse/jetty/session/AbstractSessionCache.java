@@ -314,48 +314,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      */
     protected ManagedSession getAndEnter(String id, boolean enter) throws Exception
     {
-        //As a session may be in the process of being evicted we might need to retry to get it afresh
-        int retries = 10;
-
-        while (retries-- > 0)
-        {
-            ManagedSession session = computeIfAbsent(id);
-
-            if (session == null) //not in cache and doesn't exist in store
-                return null;
-
-            //we have a session, check it
-            try (AutoLock lock = session.lock())
-            {
-                if (session.isResident()) //session is currently in the cache, we can use it
-                {
-                    if (enter)
-                        session.use();
-                    return session;
-                }
-
-                //session is not resident, it could have just been evicted, or it
-                //could have been deleted. If we're not evicting, we shouldn't waste
-                //time trying to load a session that has in fact been deleted.
-                if (getEvictionPolicy() == SessionCache.NEVER_EVICT)
-                    return null;
-            }
-        }
-
-        //if we got here we never got a useable session
-        if (LOG.isDebugEnabled())
-            LOG.debug("Retries to get resident session {} exhausted", id);
-        return null;
-    }
-
-    /** Get an existing session object from the cache or load from the session store.
-     * @param id the session to obtain
-     * @return the existing session from the cache or one that has been freshly loaded
-     * @throws Exception if an error occurred
-     */
-    private ManagedSession computeIfAbsent(String id) throws Exception
-    {
-        AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        AtomicReference<Exception> exception = new AtomicReference<>();
         ManagedSession session = doComputeIfAbsent(id, k ->
         {
             if (LOG.isDebugEnabled())
@@ -393,7 +352,28 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         if (ex != null)
             throw ex;
 
-        return session;
+        if (session == null) //not in cache and doesn't exist in store
+            return null;
+            
+        try (AutoLock lock = session.lock())
+        {
+            if (session.isResident()) //session is currently in the cache, we can use it
+            {
+                if (enter)
+                    session.use();
+                return session;
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Non-resident session {} in cache", id);
+
+            //session is not resident, it could have just been evicted, or it
+            //could have been deleted. If we're not evicting, we shouldn't waste
+            //time trying to load a session that has in fact been deleted.
+            if (getEvictionPolicy() == SessionCache.NEVER_EVICT)
+                return null;
+            return getAndEnter(id, enter);
+        }
     }
 
     /**
