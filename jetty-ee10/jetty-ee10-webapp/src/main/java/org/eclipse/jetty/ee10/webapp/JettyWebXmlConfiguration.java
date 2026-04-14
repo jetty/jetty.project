@@ -11,15 +11,11 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee11.websocket.client.config.JettyWebSocketClientConfiguration;
+package org.eclipse.jetty.ee10.webapp;
 
-module org.eclipse.jetty.ee11.websocket.jetty.client
+/**
+ * Looks for XmlConfiguration files in WEB-INF.  Searches in order for the first of jetty8-web.xml, jetty-web.xml or web-jetty.xml
+ */
+public class JettyWebXmlConfiguration extends org.eclipse.jetty.ee.webapp.JettyWebXmlConfiguration
 {
-    requires org.eclipse.jetty.websocket.client;
-
-    requires transitive org.eclipse.jetty.ee11.webapp;
-
-    exports org.eclipse.jetty.ee11.websocket.client.config;
-
-    provides org.eclipse.jetty.ee.webapp.Configuration with JettyWebSocketClientConfiguration;
 }

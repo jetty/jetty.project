@@ -11,15 +11,12 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee11.websocket.client.config.JettyWebSocketClientConfiguration;
+package org.eclipse.jetty.ee10.maven.plugin;
 
-module org.eclipse.jetty.ee11.websocket.jetty.client
+/**
+ * MetaInfConfiguration to take account of overlaid wars expressed as project dependencies and
+ * potential configured via the maven-war-plugin.
+ */
+public class MavenMetaInfConfiguration extends org.eclipse.jetty.ee.maven.plugin.MavenMetaInfConfiguration
 {
-    requires org.eclipse.jetty.websocket.client;
-
-    requires transitive org.eclipse.jetty.ee11.webapp;
-
-    exports org.eclipse.jetty.ee11.websocket.client.config;
-
-    provides org.eclipse.jetty.ee.webapp.Configuration with JettyWebSocketClientConfiguration;
 }

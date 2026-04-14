@@ -11,15 +11,17 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee11.websocket.client.config.JettyWebSocketClientConfiguration;
+package org.eclipse.jetty.ee10.quickstart;
 
-module org.eclipse.jetty.ee11.websocket.jetty.client
+/**
+ * QuickStartConfiguration
+ * <p>
+ * Prepare for quickstart generation, or usage.
+ */
+public class QuickStartConfiguration extends org.eclipse.jetty.ee.quickstart.QuickStartConfiguration
 {
-    requires org.eclipse.jetty.websocket.client;
-
-    requires transitive org.eclipse.jetty.ee11.webapp;
-
-    exports org.eclipse.jetty.ee11.websocket.client.config;
-
-    provides org.eclipse.jetty.ee.webapp.Configuration with JettyWebSocketClientConfiguration;
+    public QuickStartConfiguration()
+    {
+        super();
+    }
 }
