@@ -4,7 +4,8 @@
  + 14494 Review use of CharsetStringBuilder subclasses
 
 12.0.33 - 04 March 2026
- + 14495 Support Transfer-Encoding chunk extensions
+ + 14495 Support Transfer-Encoding chunk extensions - Addresses Addresses CVE-2026-2332
+ + 14798 Fixes for JASPI isMandatory, authType and isAuthenticationRequest params - Addresses CVE-2026-5795 
 
 12.0.32 - 26 January 2026
  + 14260 Improve GZIP performance
