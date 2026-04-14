@@ -67,7 +67,8 @@ public class ChatWebSocketServer
             @Override
             public void onOpen(CoreSession coreSession, Callback callback)
             {
-                LOG.debug("onOpen {}", coreSession);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("onOpen {}", coreSession);
                 coreSession.setMaxTextMessageSize(2 * 1024);
                 super.onOpen(coreSession, Callback.from(() ->
                 {
@@ -83,7 +84,8 @@ public class ChatWebSocketServer
                 {
                     if (handler == this)
                         continue;
-                    LOG.debug("Sending Message{} to {}", message, handler);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Sending Message{} to {}", message, handler);
                     handler.sendText(message, NOOP, false);
                 }
 
@@ -93,7 +95,8 @@ public class ChatWebSocketServer
             @Override
             public void onClosed(CloseStatus closeStatus, Callback callback)
             {
-                LOG.debug("onClosed {}", closeStatus);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("onClosed {}", closeStatus);
                 super.onClosed(closeStatus, Callback.from(() -> members.remove(this), callback));
                 members.remove(this);
             }

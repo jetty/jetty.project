@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10</artifactId>
-    <version>12.1.7-SNAPSHOT</version>
+    <version>12.1.9-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>jetty-ee10-home</artifactId>
@@ -120,22 +120,6 @@
       <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-servlet</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-analysis</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-commons</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-tree</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
@@ -186,8 +170,8 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeGroupIds>jakarta.annotation</includeGroupIds>
+              <includeArtifactIds>jakarta.annotation-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee10-annotations</outputDirectory>
             </configuration>
@@ -199,8 +183,8 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeGroupIds>jakarta.annotation</includeGroupIds>
+              <includeArtifactIds>jakarta.annotation-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee10-annotations</outputDirectory>
@@ -282,7 +266,7 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <!-- needed for JPMS and auto naming as glassfish jar doesn't have the JPMS metadata -->
+              <!-- Prepending the groupId is necessary because Glassfish jars do not have JPMS metadata, see #9301 -->
               <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
@@ -297,6 +281,7 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
+              <!-- Prepending the groupId is necessary because Glassfish jars do not have JPMS metadata, see #9301 -->
               <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
               <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>

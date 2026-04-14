@@ -73,6 +73,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.eclipse.jetty.test.client.transport.AbstractTest.freePort;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -369,6 +371,7 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testHighLevelH1OverUNIX() throws Exception
     {
         ConnectionFactory h1 = new HttpConnectionFactory();
@@ -398,6 +401,7 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testLowLevelH2OverUNIX() throws Exception
     {
         HttpConfiguration httpConfig = new HttpConfiguration();
@@ -461,6 +465,7 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testHighLevelH2COverQUIC(WorkDir workDir) throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();

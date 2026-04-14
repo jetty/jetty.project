@@ -61,7 +61,7 @@ public class BinaryStreamTest
     private JakartaWebSocketClientContainer wsClient;
 
     @BeforeEach
-    public  void startServer() throws Exception
+    public void startServer() throws Exception
     {
         server = new LocalServer();
         server.start();

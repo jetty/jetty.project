@@ -107,7 +107,7 @@ public class InstructionFlusher extends IteratingCallback
     protected void onFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("failed to write buffers on {}", this);
+            LOG.debug("failed to write buffers on {}", this, failure);
 
         try (AutoLock ignored = lock.lock())
         {

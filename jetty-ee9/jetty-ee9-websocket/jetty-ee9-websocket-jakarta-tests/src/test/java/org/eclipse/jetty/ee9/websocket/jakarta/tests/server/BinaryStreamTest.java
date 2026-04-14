@@ -274,7 +274,8 @@ public class BinaryStreamTest
                     output.write(buffer, 0, read);
                     readCount += read;
                 }
-                LOG.debug("Read {} bytes", readCount);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Read {} bytes", readCount);
             }
         }
     }

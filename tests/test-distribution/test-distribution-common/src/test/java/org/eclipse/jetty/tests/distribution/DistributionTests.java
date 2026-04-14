@@ -1350,7 +1350,8 @@ public class DistributionTests extends AbstractJettyHomeTest
                 }
                 catch (UnknownHostException e)
                 {
-                    LOG.debug("Unable to obtain InetAddress.LocalHost", e);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unable to obtain InetAddress.LocalHost", e);
                 }
 
                 for (String hostHeader: hostHeaders)

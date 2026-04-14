@@ -56,7 +56,7 @@ public class EventSocket
     {
         this.session = session;
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onOpen(): {}", this, session);
+            LOG.debug("{} onOpen(): {}", this, session);
         openLatch.countDown();
     }
 
@@ -64,7 +64,7 @@ public class EventSocket
     public void onTextMessage(String message) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onTextMessage(): {}", this, message);
+            LOG.debug("{} onTextMessage(): {}", this, message);
         textMessages.add(message);
     }
 
@@ -72,7 +72,7 @@ public class EventSocket
     public void onBinaryMessage(ByteBuffer message, Callback callback) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onBinaryMessage(): {}", this, message);
+            LOG.debug("{} onBinaryMessage(): {}", this, message);
         binaryMessages.add(BufferUtil.copy(message));
         callback.succeed();
     }
@@ -81,7 +81,7 @@ public class EventSocket
     public void onPingMessage(ByteBuffer payload)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onPingMessage(): {}", this, payload);
+            LOG.debug("{} onPingMessage(): {}", this, payload);
         pingMessages.add(BufferUtil.copy(payload));
         session.sendPong(payload, Callback.NOOP);
     }
@@ -90,7 +90,7 @@ public class EventSocket
     public void onPongMessage(ByteBuffer payload)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onPongMessage(): {}", this, payload);
+            LOG.debug("{} onPongMessage(): {}", this, payload);
         pongMessages.add(BufferUtil.copy(payload));
     }
 
@@ -98,7 +98,7 @@ public class EventSocket
     public void onError(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(cause).log("{}  onError()", this);
+            LOG.debug("{} onError()", this, cause);
         error = cause;
         errorLatch.countDown();
     }
@@ -107,7 +107,7 @@ public class EventSocket
     public void onClose(int statusCode, String reason)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onClose(): {}:{}", this, statusCode, reason);
+            LOG.debug("{} onClose(): {}:{}", this, statusCode, reason);
         this.closeCode = statusCode;
         this.closeReason = reason;
         closeLatch.countDown();

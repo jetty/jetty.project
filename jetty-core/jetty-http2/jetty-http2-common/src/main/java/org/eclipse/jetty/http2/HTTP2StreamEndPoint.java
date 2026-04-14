@@ -153,7 +153,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
         if (closed.compareAndSet(false, true))
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log("closing {}", this);
+                LOG.debug("closing {}", this, cause);
             Stream.Data data = this.data.getAndSet(null);
             if (data != null)
                 data.release();

@@ -58,7 +58,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Isolated("Access static method of FileSystemPool")
 public class MetaInfConfigurationTest
 {
-
     @BeforeEach
     public void beforeEach()
     {

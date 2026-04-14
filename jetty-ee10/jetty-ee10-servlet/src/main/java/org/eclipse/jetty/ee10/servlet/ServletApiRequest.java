@@ -733,7 +733,7 @@ public class ServletApiRequest implements HttpServletRequest
             catch (Throwable t)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(t).log("getParts");
+                    LOG.debug("getParts", t);
 
                 Throwable cause;
                 if (t instanceof ExecutionException ee)

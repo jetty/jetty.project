@@ -57,15 +57,15 @@ public class EE10Activator extends AbstractEEActivator
     public static final String ENVIRONMENT = "ee10";
 
     @Override
-    public ContextFactory newContextFactory(Bundle bundle)
-    {
-        return new EE10ContextFactory(bundle);
-    }
-
-    @Override
     public String getEnvironment()
     {
         return ENVIRONMENT;
+    }
+
+    @Override
+    public ContextFactory newContextFactory(Bundle bundle)
+    {
+        return new EE10ContextFactory(bundle);
     }
 
     @Override

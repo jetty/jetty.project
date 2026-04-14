@@ -452,7 +452,7 @@ class AsyncContentProducer implements ContentProducer
             // when the special content was caused by the interceptor throwing.
             _error = true;
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("interceptor threw exception {}", this);
+                LOG.debug("interceptor threw exception {}", this, x);
             return _transformedContent;
         }
     }

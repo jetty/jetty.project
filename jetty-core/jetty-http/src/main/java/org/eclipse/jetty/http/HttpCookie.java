@@ -561,7 +561,7 @@ public interface HttpCookie
             if (name == null)
                 return this;
             // Sanity checks on the values, expensive but necessary to avoid to store garbage.
-            switch (name.toLowerCase(Locale.ENGLISH))
+            switch (name.toLowerCase(Locale.ROOT))
             {
                 case "expires" -> expires(StringUtil.isBlank(value) ? null : parseExpires(value));
                 case "httponly" -> httpOnly(asBoolean("httponly", value));
@@ -608,10 +608,7 @@ public interface HttpCookie
 
         public Builder maxAge(long maxAge)
         {
-            if (maxAge >= 0)
-                _attributes = lazyAttributePut(_attributes, MAX_AGE_ATTRIBUTE, Long.toString(maxAge));
-            else
-                _attributes = lazyAttributeRemove(_attributes, MAX_AGE_ATTRIBUTE);
+            _attributes = lazyAttributePut(_attributes, MAX_AGE_ATTRIBUTE, Long.toString(maxAge));
             return this;
         }
 
@@ -834,7 +831,7 @@ public interface HttpCookie
     {
         String domain = httpCookie.getDomain();
         if (domain != null)
-            domain = domain.toLowerCase(Locale.ENGLISH);
+            domain = domain.toLowerCase(Locale.ROOT);
         return Objects.hash(httpCookie.getName(), domain, httpCookie.getPath());
     }
 

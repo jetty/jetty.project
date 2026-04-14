@@ -56,8 +56,11 @@ public class ClientWriteThread extends Thread
 
         try
         {
-            LOG.debug("Writing {} messages to {}", messageCount, session);
-            LOG.debug("Artificial Slowness {} ms", slowness);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Writing {} messages to {}", messageCount, session);
+                LOG.debug("Artificial Slowness {} ms", slowness);
+            }
             FutureCallback lastMessage = null;
             while (m.get() < messageCount)
             {

@@ -284,7 +284,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                 {
                     int slot = _threads.offer(this);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("offered to slot " + slot);
+                        LOG.debug("offered to slot {}", slot);
 
                     if (slot < 0)
                         // no slot available
@@ -319,7 +319,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
                     catch (Throwable t)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.atDebug().setCause(t).log("{} task {} failure", ReservedThreadExecutor.this, task);
+                            LOG.debug("{} task {} failure", ReservedThreadExecutor.this, task, t);
                     }
                     finally
                     {
@@ -332,7 +332,7 @@ public class ReservedThreadExecutor extends ContainerLifeCycle implements TryExe
             catch (Throwable t)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(t).log("{} reservedThread {} failure", ReservedThreadExecutor.this, this);
+                    LOG.debug("{} reservedThread {} failure", ReservedThreadExecutor.this, this, t);
             }
             finally
             {

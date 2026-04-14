@@ -1101,9 +1101,11 @@ public class RequestTest
                 "Connection: close\r\n" +
                 "\r\n" +
                 content;
-            LOG.debug("test l={}", l);
+            if (LOG.isDebugEnabled())
+                LOG.debug("test l={}", l);
             String response = _connector.getResponse(request);
-            LOG.debug(response);
+            if (LOG.isDebugEnabled())
+                LOG.debug(response);
             assertThat(response, containsString(" 200 OK"));
             assertEquals(l, length.get());
             content.append("x");

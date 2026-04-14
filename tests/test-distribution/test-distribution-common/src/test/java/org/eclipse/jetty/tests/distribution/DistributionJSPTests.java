@@ -15,8 +15,6 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.ContentResponse;
@@ -211,7 +209,7 @@ public class DistributionJSPTests extends AbstractJettyHomeTest
         {
             assertTrue(run1.awaitForStart());
             assertEquals(0, run1.getExitValue());
-            LOG.atInfo().setMessage(run1.logs().get()).log();
+            LOG.info(run1.logs().get());
             assertTrue(Files.exists(distribution.getJettyBase().resolve("resources/log4j2.xml")));
 
             Path war = distribution.resolveArtifact("org.eclipse.jetty.demos:jetty-servlet5-demo-jsp-webapp:war:" + jettyVersion);

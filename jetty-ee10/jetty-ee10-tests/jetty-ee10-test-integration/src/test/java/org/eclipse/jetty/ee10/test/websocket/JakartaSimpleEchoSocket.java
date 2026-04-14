@@ -46,21 +46,24 @@ public class JakartaSimpleEchoSocket
     @OnClose
     public void onClose(CloseReason close)
     {
-        LOG.debug("Closed: {}, {}", close.getCloseCode().getCode(), close.getReasonPhrase());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Closed: {}, {}", close.getCloseCode().getCode(), close.getReasonPhrase());
         closeLatch.countDown();
     }
 
     @OnMessage
     public void onMessage(String message)
     {
-        LOG.debug("Received: {}", message);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received: {}", message);
         messageLatch.countDown();
     }
 
     @OnOpen
     public void onOpen(Session session)
     {
-        LOG.debug("Opened");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Opened");
         this.session = session;
     }
 }

@@ -288,6 +288,53 @@ Request log files are rolled every day, and retained for customizable number of 
 When Jetty is behind a load balancer, you want to log the remote client IP address, not the load balancer IP address. Refer to xref:protocols/index.adoc#proxy[this section] to configure the load balancer and Jetty to retain the remote client IP address information.
 ====
 
+[[logging-request-slf4j]]
+==== Request Logging to SLF4J
+
+The `requestlog-slf4j` Jetty module provides an alternative to the file-based `requestlog` module.
+Instead of writing request logs to a file, it writes them to the SLF4J logging framework at INFO level.
+
+This is useful when:
+
+* You want request logs to appear in your application's main log stream
+* You're using a centralized logging system (ELK, Splunk, etc.)
+* You prefer console output during development
+* You want your logging framework (Logback, Log4j2) to handle log rotation and formatting
+
+To enable SLF4J request logging:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,requestlog-slf4j
+----
+
+By default, request logs are written to the logger named `org.eclipse.jetty.server.RequestLog` at INFO level.
+You can configure the logger name in `$JETTY_BASE/start.d/requestlog-slf4j.ini`:
+
+----
+jetty.requestlog.slf4j.loggerName=com.example.RequestLog
+----
+
+The format string can be customized the same way as the standard `requestlog` module:
+
+----
+jetty.requestlog.formatString=%{client}a - %u %t "%r" %s %O
+----
+
+[NOTE]
+====
+The `requestlog-slf4j` module delegates to your SLF4J logging configuration.
+To see request logs in your output, ensure that:
+
+* The logger `org.eclipse.jetty.server.RequestLog` (or your custom logger name) is configured at INFO level or lower
+* Your SLF4J binding (Logback, Log4j2, etc.) is properly configured
+
+Example Logback configuration:
+[source,xml]
+----
+<logger name="org.eclipse.jetty.server.RequestLog" level="INFO"/>
+----
+====
+
 [[threadpool]]
 == Thread Pooling
 

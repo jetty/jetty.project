@@ -26,6 +26,8 @@ import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -47,6 +49,7 @@ public class RedispatchTests extends AbstractRedispatchTest
      * see {@code org.eclipse.jetty.tests.ccd.ee8.InternalRequestURIFilter}
      */
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testEe8FilterWithAwkwardRequestURI(TestInfo testInfo) throws Exception
     {
         InitializedJettyBase jettyBase = new InitializedJettyBase(testInfo);

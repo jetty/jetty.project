@@ -132,7 +132,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("could not create stream for {} on {}", endPoint, this);
+                LOG.debug("could not create stream for {} on {}", endPoint, this, x);
             Promise.Invocable<StreamEndPoint> p = Promise.Invocable.from(promise.getInvocationType(), s -> promise.failed(x), t -> promise.failed(x));
             endPoint.disconnect(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x, true, p);
             return;

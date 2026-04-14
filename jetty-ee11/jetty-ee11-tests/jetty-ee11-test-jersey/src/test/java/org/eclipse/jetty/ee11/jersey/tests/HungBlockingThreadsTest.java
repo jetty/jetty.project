@@ -13,14 +13,6 @@
 
 package org.eclipse.jetty.ee11.jersey.tests;
 
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.core.Feature;
-import jakarta.ws.rs.core.FeatureContext;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -30,6 +22,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Feature;
+import jakarta.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -159,15 +160,15 @@ public class HungBlockingThreadsTest
                     .send(result -> {});
             });
         }
-
-        LOG.debug("Awaiting for client to block on all threads");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Awaiting for client to block on all threads");
         assertTrue(latch.await(15, TimeUnit.SECONDS));
-
-        LOG.debug("Shutting down client");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Shutting down client");
         // While the server is hanging in InputStream read, close the client's connections.
         httpClient.stop();
-
-        LOG.debug("Waiting for hung threads");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Waiting for hung threads");
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(threadDump(), not(containsString(Blocker.Shared.class.getName()))));
     }
 

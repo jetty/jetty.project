@@ -491,7 +491,8 @@ public class MavenWebAppContext extends WebAppContext
         }
         catch (ClassNotFoundException e)
         {
-            LOG.debug("o.e.j.cdi.servlet.JettyWeldInitializer not found, no cdi integration available");
+            if (LOG.isDebugEnabled())
+                LOG.debug("o.e.j.cdi.servlet.JettyWeldInitializer not found, no cdi integration available");
         }
         catch (NoSuchMethodException e)
         {

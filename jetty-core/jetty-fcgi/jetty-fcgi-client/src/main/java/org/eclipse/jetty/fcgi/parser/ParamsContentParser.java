@@ -241,7 +241,7 @@ public class ParamsContentParser extends ContentParser
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Exception while invoking listener {}", listener);
+                LOG.debug("Exception while invoking listener {}", listener, x);
         }
     }
 
@@ -254,7 +254,7 @@ public class ParamsContentParser extends ContentParser
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Exception while invoking listener {}", listener);
+                LOG.debug("Exception while invoking listener {}", listener, x);
             return false;
         }
     }

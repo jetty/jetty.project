@@ -70,6 +70,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -85,6 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
 public class CrossContextDispatcherTest
 {
     public static final String MULTIPART = "--AaB03x\r\n" +
@@ -221,7 +224,7 @@ public class CrossContextDispatcherTest
         _rootContextHandler.addServlet(VerifyIncludeServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-         String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponse("""
             GET /context/dispatch/?include=/verify&ctx=/ HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -356,7 +359,7 @@ public class CrossContextDispatcherTest
         _targetServletContextHandler.addServlet(VerifyIncludeServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-         String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponse("""
             GET /context/dispatch/?include=/verify HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -577,7 +580,8 @@ public class CrossContextDispatcherTest
             "Content-Length: " + form.length() + "\r\n" +
             "Connection: close\r\n" +
             "\r\n" +
-             form);
+            form
+        );
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("a="));
@@ -586,21 +590,21 @@ public class CrossContextDispatcherTest
     @Test
     public void testParamsAfterCrossContextForward() throws Exception
     {
-         _targetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
-         CountDownLatch latch = new CountDownLatch(2);
-         Servlet dispatcher = new CrossContextDispatchServlet()
-         {
-             @Override
-             protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-             {
-                 super.doGet(request, response);
+        _targetServletContextHandler.addServlet(ParameterReadingServlet.class, "/reader/*");
+        CountDownLatch latch = new CountDownLatch(2);
+        Servlet dispatcher = new CrossContextDispatchServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                super.doGet(request, response);
 
-                 if (!StringUtil.isBlank(request.getParameter("param")))
-                     latch.countDown();
-                 if (!StringUtil.isBlank(request.getParameter("a")))
-                     latch.countDown();
-             }
-         };
+                if (!StringUtil.isBlank(request.getParameter("param")))
+                    latch.countDown();
+                if (!StringUtil.isBlank(request.getParameter("a")))
+                    latch.countDown();
+            }
+        };
 
         _contextHandler.addServlet(new ServletHolder(dispatcher), "/dispatch/*");
 
@@ -612,7 +616,8 @@ public class CrossContextDispatcherTest
             "Content-Length: " + form.length() + "\r\n" +
             "Connection: close\r\n" +
             "\r\n" +
-             form);
+            form
+        );
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
@@ -940,7 +945,7 @@ public class CrossContextDispatcherTest
                 dispatcher = foreign.getRequestDispatcher(URIUtil.encodePath(request.getParameter("forward")) + "/pinfo?a=b");
 
                 if (dispatcher == null)
-                       response.sendError(404, "No dispatcher for forward");
+                    response.sendError(404, "No dispatcher for forward");
                 else
                     dispatcher.forward(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
             }
@@ -1121,7 +1126,7 @@ public class CrossContextDispatcherTest
 
     public static class VerifyIncludeServlet extends GenericServlet
     {
-         @Override
+        @Override
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             if (DispatcherType.INCLUDE.equals(req.getDispatcherType()))

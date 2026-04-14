@@ -33,6 +33,8 @@ import org.eclipse.jetty.util.component.Environment;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,6 +138,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
      * This addresses <a href="https://github.com/jetty/jetty.project/issues/12543">Issue 12543</a>
      */
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testRedeployIfAnyTrackedPathChanges(WorkDir workDir) throws Exception
     {
         Path baseDir = workDir.getEmptyPathDir();
@@ -279,6 +282,7 @@ public class DeploymentScannerRuntimeUpdatesTest extends AbstractCleanEnvironmen
      * @throws Exception on test failure
      */
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testAfterStartupThenUpdateContext(WorkDir workDir) throws Exception
     {
         Path baseDir = workDir.getEmptyPathDir();

@@ -568,7 +568,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         catch (Throwable x)
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.atDebug().setCause(x).log("Could not perform ERROR dispatch, aborting");
+                                LOG.debug("Could not perform ERROR dispatch, aborting", x);
                             abort(x);
                         }
                         finally
@@ -643,7 +643,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             catch (Throwable failure)
             {
                 if ("org.eclipse.jetty.continuation.ContinuationThrowable".equals(failure.getClass().getName()))
-                    LOG.trace("IGNORED", failure);
+                {
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", failure);
+                }
                 else
                     handleException(failure);
             }
@@ -716,7 +719,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch (Throwable x)
         {
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
             abort(x);
         }
         return false;
@@ -762,7 +766,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (quiet != null || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log(_request.getRequestURI());
+                LOG.debug(_request.getRequestURI(), failure);
         }
         else if (noStack != null)
         {
@@ -985,7 +989,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             catch (Throwable e)
             {
-                LOG.debug("Unable to complete bad message", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to complete bad message", e);
                 abort(e);
             }
         }
@@ -1061,7 +1066,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         catch (Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("Unable to send response");
+                LOG.debug("Unable to send response", failure);
             abort(failure);
             throw failure;
         }
@@ -1183,7 +1188,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Failure invoking listener {}", listener);
+                    LOG.debug("Failure invoking listener {}", listener, x);
             }
         }
     }
@@ -1200,7 +1205,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Failure invoking listener {}", listener);
+                    LOG.debug("Failure invoking listener {}", listener, x);
             }
         }
     }
@@ -1216,7 +1221,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Failure invoking listener {}", listener);
+                    LOG.debug("Failure invoking listener {}", listener, x);
             }
         }
     }
@@ -1429,7 +1434,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         public void failed(final Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Commit failed");
+                LOG.debug("Commit failed", x);
 
             if (x instanceof HttpException httpException)
             {

@@ -84,13 +84,15 @@ public class EndpointViaConfigTest
             finally
             {
                 client.stop();
-                LOG.debug("Stopped - " + client);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Stopped - {}", client);
             }
         }
         finally
         {
             wsb.stop();
-            LOG.debug("Stopped - " + wsb);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Stopped - {}", wsb);
         }
     }
 }

@@ -49,7 +49,7 @@ public class CompletionStreamWrapper extends HttpStream.Wrapper
     public void failed(Throwable x)
     {
         if (Request.LOG.isDebugEnabled())
-            Request.LOG.atDebug().setCause(x).log("failed {}", this);
+            Request.LOG.debug("failed {}", this, x);
         onCompletion(x);
         super.failed(x);
     }

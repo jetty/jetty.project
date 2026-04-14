@@ -134,7 +134,8 @@ public class CertificateValidator
             }
             catch (KeyStoreException kse)
             {
-                LOG.debug("Unable to validate alias: {}", keyAlias, kse);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to validate alias: {}", keyAlias, kse);
                 throw new CertificateException("Unable to validate certificate" +
                     " for alias [" + keyAlias + "]: " + kse.getMessage(), kse);
             }
@@ -182,7 +183,8 @@ public class CertificateValidator
             }
             catch (KeyStoreException kse)
             {
-                LOG.debug("Unable to validate certificate", kse);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to validate certificate", kse);
                 throw new CertificateException("Unable to validate certificate" +
                     (certAlias == null ? "" : " for alias [" + certAlias + "]") + ": " + kse.getMessage(), kse);
             }
@@ -252,7 +254,8 @@ public class CertificateValidator
         }
         catch (GeneralSecurityException gse)
         {
-            LOG.debug("Unable to validate certificate chain", gse);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to validate certificate chain", gse);
             throw new CertificateException("Unable to validate certificate: " + gse.getMessage(), gse);
         }
     }

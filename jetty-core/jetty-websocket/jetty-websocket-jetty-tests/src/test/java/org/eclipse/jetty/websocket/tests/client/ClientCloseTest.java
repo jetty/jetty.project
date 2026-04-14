@@ -441,9 +441,11 @@ public class ClientCloseTest
                 }
                 else if (message.equals("block"))
                 {
-                    LOG.debug("blocking");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("blocking");
                     assertTrue(block.await(5, TimeUnit.MINUTES));
-                    LOG.debug("unblocked");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("unblocked");
                 }
                 else
                 {
@@ -453,7 +455,8 @@ public class ClientCloseTest
             }
             catch (Throwable t)
             {
-                LOG.atDebug().setCause(t).log("send text failure");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("send text failure", t);
                 throw new RuntimeException(t);
             }
         }
@@ -462,7 +465,7 @@ public class ClientCloseTest
         public void onWebSocketError(Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log("onWebSocketError(): ");
+                LOG.debug("onWebSocketError()", cause);
         }
 
         @Override
@@ -482,7 +485,8 @@ public class ClientCloseTest
                     }
                     catch (Throwable x)
                     {
-                        LOG.atDebug().setCause(x).log("OOPS");
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("", x);
                     }
                 }
                 else if (reason.equals("abort"))
@@ -495,7 +499,8 @@ public class ClientCloseTest
                     }
                     catch (Throwable x)
                     {
-                        LOG.trace("IGNORED", x);
+                        if (LOG.isTraceEnabled())
+                            LOG.trace("IGNORED", x);
                     }
                 }
                 else if (reason.startsWith("sleep|"))
@@ -509,7 +514,8 @@ public class ClientCloseTest
                     }
                     catch (InterruptedException x)
                     {
-                        LOG.trace("IGNORED", x);
+                        if (LOG.isTraceEnabled())
+                            LOG.trace("IGNORED", x);
                     }
                 }
                 else

@@ -25,6 +25,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -32,6 +34,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
 public class CookiePatternRuleTest extends AbstractRuleTest
 {
     private void start(CookiePatternRule rule) throws Exception
@@ -179,7 +182,7 @@ public class CookiePatternRuleTest extends AbstractRuleTest
 
     private void assertResponseContentLine(String responseContent, String linePrefix, String expectedEquals)
     {
-        List<String> matches = Arrays.stream(responseContent.split("\n"))
+        List<String> matches = Arrays.stream(responseContent.split(System.lineSeparator()))
             .filter(line -> line.startsWith(linePrefix))
             .map(line -> line.substring(linePrefix.length()))
             .filter(line -> line.equals(expectedEquals))

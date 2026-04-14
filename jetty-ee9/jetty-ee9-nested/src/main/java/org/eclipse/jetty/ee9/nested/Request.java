@@ -867,7 +867,7 @@ public class Request implements HttpServletRequest
         catch (Exception x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Bad Cookie");
+                LOG.debug("Bad Cookie", x);
         }
         return null;
     }
@@ -1681,7 +1681,8 @@ public class Request implements HttpServletRequest
             }
             catch (Exception e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
                 _reader = null;
                 _readerEncoding = null;
             }

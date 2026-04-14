@@ -69,8 +69,10 @@ import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1183,6 +1185,92 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                 assertThat(decoded, is("This line should be flushed\nThis line should be seen afterwards\n"));
             }
         }
+    }
+
+    /**
+     * Test that Vary: Accept-Encoding header is present even when client does not
+     * send Accept-Encoding header, as long as compression is possible for the path/method.
+     * This is important for caching proxies.
+     */
+    @ParameterizedTest
+    @MethodSource("compressions")
+    public void testVaryHeaderWithoutAcceptEncoding(Class<Compression> compressionClass) throws Exception
+    {
+        newCompression(compressionClass);
+        String message = "Hello Jetty!\n".repeat(10);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(compression);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                Content.Sink.write(response, true, message, callback);
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        // Request WITHOUT Accept-Encoding header
+        ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
+            .method(HttpMethod.GET)
+            // Intentionally NOT setting Accept-Encoding header
+            .path("/hello")
+            .send();
+
+        assertThat(response.getStatus(), is(200));
+        // Response should NOT be compressed (no Accept-Encoding sent)
+        assertFalse(response.getHeaders().contains(HttpHeader.CONTENT_ENCODING));
+        // But Vary header SHOULD be present (compression was possible)
+        assertThat(response.getHeaders().get(HttpHeader.VARY), containsString("Accept-Encoding"));
+        // Content should be uncompressed
+        assertThat(response.getContentAsString(), is(message));
+    }
+
+    /**
+     * Test that Vary header is NOT present when method does not support compression.
+     */
+    @Test
+    public void testNoVaryHeaderForExcludedMethod() throws Exception
+    {
+        pool = new ArrayByteBufferPool.Tracking();
+        GzipCompression gzipCompression = new GzipCompression();
+        gzipCompression.setByteBufferPool(pool);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(gzipCompression);
+        // Default config only includes GET and POST for compression
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                Content.Sink.write(response, true, "OK", callback);
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        // OPTIONS request - not included in default compress methods
+        ContentResponse response = client.newRequest(server.getURI())
+            .method(HttpMethod.OPTIONS)
+            .headers(h -> h.put(HttpHeader.ACCEPT_ENCODING, "gzip"))
+            .path("/hello")
+            .send();
+
+        assertThat(response.getStatus(), is(200));
+        // Vary header should NOT be present because OPTIONS is not a compress method
+        assertThat(response.getHeaders().get(HttpHeader.VARY), nullValue());
     }
 
     private void dumpResponse(org.eclipse.jetty.client.Response response)

@@ -479,7 +479,8 @@ public class ComplianceViolationListenerTest
         protected void event(String format, Object... args)
         {
             String str = format.formatted(args);
-            LOG.debug(str);
+            if (LOG.isDebugEnabled())
+                LOG.debug(str);
             events.add(str);
         }
     }

@@ -399,7 +399,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         if (cause != null)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log("Aborted before processing {}", exchange);
+                LOG.debug("Aborted before processing {}", exchange, cause);
             // It may happen that the request is aborted before the exchange
             // is created. Aborting the exchange a second time will result in
             // a no-operation, so we just abort here to cover that edge case.

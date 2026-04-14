@@ -109,7 +109,7 @@ public class ServletWrapperTest
         String rawResponse = localConnector.getResponse(req.toString());
         HttpTester.Response resp = HttpTester.parseResponse(rawResponse);
         assertThat("Response.status", resp.getStatus(), is(200));
-        assertThat(resp.getContent(), is("Serviced!\n"));
+        assertThat(resp.getContent(), is("Serviced!" + System.lineSeparator()));
     }
 
     public static class HelloServlet extends HttpServlet

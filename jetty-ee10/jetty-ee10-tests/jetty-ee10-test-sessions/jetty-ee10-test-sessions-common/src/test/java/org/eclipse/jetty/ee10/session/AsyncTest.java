@@ -51,7 +51,6 @@ import org.eclipse.jetty.session.test.FooInvocationHandler;
 import org.eclipse.jetty.session.test.TestFoo;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

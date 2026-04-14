@@ -64,7 +64,8 @@ public class SlowServerEndpoint
             }
             catch (IOException ignore)
             {
-                LOG.trace("IGNORED", ignore);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", ignore);
             }
         }
     }

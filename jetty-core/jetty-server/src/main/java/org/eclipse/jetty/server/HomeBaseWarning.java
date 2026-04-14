@@ -54,7 +54,8 @@ public class HomeBaseWarning
         }
         catch (IOException e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
             // Can't definitively determine this state
             return;
         }

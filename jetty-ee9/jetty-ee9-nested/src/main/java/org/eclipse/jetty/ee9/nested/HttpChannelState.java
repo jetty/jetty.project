@@ -360,7 +360,7 @@ public class HttpChannelState
         {
             boolean aborted = abortResponse(failure);
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("abort={} {}", aborted, this);
+                LOG.debug("abort={} {}", aborted, this, failure);
             if (aborted)
             {
                 handle = _state == State.WAITING;
@@ -700,9 +700,9 @@ public class HttpChannelState
                             catch (Throwable x)
                             {
                                 if (LOG.isDebugEnabled())
-                                    LOG.atDebug().setCause(x).log("{} while invoking onTimeout listener {}", x.toString(), listener);
+                                    LOG.debug("{} while invoking onTimeout listener {}", x, listener, x);
                                 else
-                                    LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener);
+                                    LOG.warn("{} while invoking onTimeout listener {}", x, listener);
                             }
                         }
                     }
@@ -778,7 +778,7 @@ public class HttpChannelState
         try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("asyncError {}", toStringLocked());
+                LOG.debug("asyncError {}", toStringLocked(), failure);
 
             if (_state == State.WAITING && _requestState == RequestState.ASYNC)
             {
@@ -791,7 +791,7 @@ public class HttpChannelState
                 if (!(failure instanceof QuietException))
                     LOG.warn(failure.toString());
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(failure).log("Async error");
+                    LOG.debug("Async error", failure);
             }
         }
 
@@ -866,7 +866,7 @@ public class HttpChannelState
                 catch (Throwable x)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("{} while invoking onError listener {}", x, listener);
+                        LOG.debug("{} while invoking onError listener {}", x, listener, x);
                     else
                         LOG.warn("{} while invoking onError listener {}", x, listener);
                 }
@@ -888,7 +888,10 @@ public class HttpChannelState
             else if (_requestState != RequestState.COMPLETE)
             {
                 if (QuietException.isQuiet(th))
-                    LOG.debug("unhandled in state {}", _requestState, th);
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("unhandled in state {}", _requestState, th);
+                }
                 else
                     LOG.warn("unhandled in state {}", _requestState, th);
             }

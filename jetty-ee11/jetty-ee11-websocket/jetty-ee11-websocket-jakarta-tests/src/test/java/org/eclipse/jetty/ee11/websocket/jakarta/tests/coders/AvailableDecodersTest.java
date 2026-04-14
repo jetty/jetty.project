@@ -322,7 +322,6 @@ public class AvailableDecodersTest
     public void testCustomDecoderRegisterDuplicate()
     {
         init(BadDualDecoder.class);
-        // System.err.println(availableDecoders);
 
         List<RegisteredDecoder> binaryDecoders = availableDecoders.getBinaryDecoders(Fruit.class);
         assertThat(binaryDecoders.size(), is(1));

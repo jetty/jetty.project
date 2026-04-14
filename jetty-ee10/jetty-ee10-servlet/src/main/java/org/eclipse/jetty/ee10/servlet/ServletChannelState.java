@@ -398,7 +398,7 @@ public class ServletChannelState
         {
             boolean aborted = abortResponse(failure);
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("abort={} {}", aborted, this);
+                LOG.debug("abort={} {}", aborted, this, failure);
             if (aborted)
             {
                 handle = _state == State.WAITING;
@@ -664,7 +664,7 @@ public class ServletChannelState
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("errorHandlingComplete {}", toStringLocked());
+                LOG.debug("errorHandlingComplete {}", toStringLocked(), failure);
 
             handle = _state == State.WAITING;
             if (handle)
@@ -864,7 +864,7 @@ public class ServletChannelState
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("asyncError {}", toStringLocked());
+                LOG.debug("asyncError {}", toStringLocked(), failure);
 
             if (_state == State.WAITING && _requestState == RequestState.ASYNC)
             {
@@ -877,7 +877,7 @@ public class ServletChannelState
                 if (!QuietException.isQuiet(failure))
                     LOG.warn(failure.toString());
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(failure).log("Async error");
+                    LOG.debug("Async error", failure);
             }
         }
 
@@ -984,7 +984,10 @@ public class ServletChannelState
             else if (_requestState != RequestState.COMPLETE)
             {
                 if (QuietException.isQuiet(th))
-                    LOG.debug("unhandled in state {}", _requestState, th);
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("unhandled in state {}", _requestState, th);
+                }
                 else
                     LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
             }

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10-tests</artifactId>
-    <version>12.1.7-SNAPSHOT</version>
+    <version>12.1.9-SNAPSHOT</version>
   </parent>
 
   <artifactId>jetty-ee10-test-integration</artifactId>
@@ -82,6 +82,13 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-servlets</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-test-sci-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -181,6 +188,12 @@
                   <artifactId>jetty-ee10-demo-jetty-websocket-webapp</artifactId>
                   <type>war</type>
                   <destFileName>jetty-ee10-demo-jetty-websocket.war</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.ee10</groupId>
+                  <artifactId>jetty-ee10-test-sci-webapp</artifactId>
+                  <type>war</type>
+                  <destFileName>jetty-ee10-test-sci-webapp.war</destFileName>
                 </artifactItem>
               </artifactItems>
               <stripVersion>true</stripVersion>

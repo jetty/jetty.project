@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests</artifactId>
-    <version>12.1.7-SNAPSHOT</version>
+    <version>12.1.9-SNAPSHOT</version>
   </parent>
   <artifactId>test-distribution</artifactId>
   <packaging>pom</packaging>
@@ -109,7 +109,7 @@
               <jettyVersion>${project.version}</jettyVersion>
               <hazelcast.version>${hazelcast.version}</hazelcast.version>
               <mariadb.docker.version>${mariadb.docker.version}</mariadb.docker.version>
-              <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
+              <distribution.debug.port>${distribution.debug.port}</distribution.debug.port>
               <home.start.timeout>${home.start.timeout}</home.start.timeout>
               <mariadb.version>${mariadb.version}</mariadb.version>
               <maven.offline>true</maven.offline>

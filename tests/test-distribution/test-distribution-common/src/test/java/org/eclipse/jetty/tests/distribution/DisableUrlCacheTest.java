@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -48,8 +49,8 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
     public static Stream<Arguments> tests()
     {
         return Stream.of(
-                Arguments.of("ee10", "Started oeje10w.WebAppContext@"),
-                Arguments.of("ee11", "Started oeje11w.WebAppContext@")
+            Arguments.of("ee10", "Started oeje10w.WebAppContext@"),
+            Arguments.of("ee11", "Started oeje11w.WebAppContext@")
         );
     }
 
@@ -88,13 +89,13 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             Path webappsDir = distribution.getJettyBase().resolve("webapps");
             String warXml =
                 "<?xml version=\"1.0\"  encoding=\"ISO-8859-1\"?>" +
-                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure_10_0.dtd\">" +
-                "<Configure class=\"org.eclipse.jetty." + env + ".webapp.WebAppContext\">" +
-                "   <Set name=\"contextPath\">/test</Set>" +
-                "   <Set name=\"war\"><Property name=\"jetty.webapps\"/>/test.war</Set>" +
-                "   <Set name=\"tempDirectory\"><Property name=\"jetty.base\"/>/work/test</Set>" +
-                "   <Set name=\"tempDirectoryPersistent\">false</Set>" +
-                "</Configure>";
+                    "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure_10_0.dtd\">" +
+                    "<Configure class=\"org.eclipse.jetty." + env + ".webapp.WebAppContext\">" +
+                    "   <Set name=\"contextPath\">/test</Set>" +
+                    "   <Set name=\"war\"><Property name=\"jetty.webapps\"/>%s</Set>".formatted(File.separator + "test.war") +
+                    "   <Set name=\"tempDirectory\"><Property name=\"jetty.base\"/>%s</Set>".formatted(File.separator + "work" + File.separator + "test") +
+                    "   <Set name=\"tempDirectoryPersistent\">false</Set>" +
+                    "</Configure>";
             Path warXmlPath = webappsDir.resolve("test.xml");
             Files.writeString(warXmlPath, warXml, StandardCharsets.UTF_8);
 
@@ -104,7 +105,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
                 org.eclipse.jetty.deploy.LEVEL=DEBUG
                 org.eclipse.jetty.eexx.webapp.LEVEL=DEBUG
                 org.eclipse.jetty.eexx.webapp.WebAppClassLoader.LEVEL=INFO
-                org.eclipse.jetty.exx.servlet.LEVEL=DEBUG
+                org.eclipse.jetty.eexx.servlet.LEVEL=DEBUG
                 """;
             loggingConfig = loggingConfig.replace("eexx", env);
             Files.writeString(loggingFile, loggingConfig, StandardCharsets.UTF_8);

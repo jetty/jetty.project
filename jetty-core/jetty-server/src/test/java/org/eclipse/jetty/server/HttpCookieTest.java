@@ -295,7 +295,6 @@ public class HttpCookieTest
             .comment(null)
             .domain(null)
             .httpOnly(false)
-            .maxAge(-1)
             .secure(false)
             .path(null)
             .build();

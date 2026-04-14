@@ -464,7 +464,7 @@ public class InvokerUtils
             if (!throwOnFailure)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to obtain MethodHandle for " + method, e);
+                    LOG.debug("Unable to obtain MethodHandle for {}", method, e);
                 return null;
             }
 
