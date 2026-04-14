@@ -130,9 +130,8 @@ public class ResourceService extends ContainerLifeCycle
 
     public void setHttpContentFactory(HttpContent.Factory contentFactory)
     {
-        removeBean(_contentFactory);
+        updateBean(_contentFactory, contentFactory);
         _contentFactory = contentFactory;
-        addManaged(_contentFactory);
     }
 
     /**

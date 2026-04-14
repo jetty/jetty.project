@@ -68,7 +68,7 @@ public class PreCompressedHttpContentFactory extends ContainerLifeCycle implemen
         return new CompressedFormatsHttpContent(content, compressedFormats);
     }
 
-    @ManagedAttribute(value = "Configured pre-compressed format extensions that will be probed", readonly = true)
+    @ManagedAttribute(value = "Supported pre-compressed file extensions", readonly = true)
     public List<String> getPreCompressedContentFormats()
     {
         return _preCompressedFormats.stream().map(CompressedContentFormat::toString).collect(toList());

@@ -105,7 +105,7 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
         return _cache.size();
     }
 
-    @ManagedAttribute("Maximum size in bytes of an file to be eligible for caching")
+    @ManagedAttribute("Maximum size in bytes for a file to be eligible for caching")
     public int getMaxCachedFileSize()
     {
         return _maxCachedFileSize;
