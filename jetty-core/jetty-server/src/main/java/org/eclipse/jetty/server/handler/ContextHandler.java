@@ -63,6 +63,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.DumpableAttributes;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -892,17 +893,34 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 throw new IllegalArgumentException("Base Resource is not valid: " + baseResource);
             if (baseResource.isAlias())
             {
-                URI realUri = baseResource.getRealURI();
-                if (realUri == null)
+                if (baseResource instanceof CombinedResource combinedResource)
                 {
-                    LOG.warn("{} Base Resource should not be an alias (100% of requests to context are subject to Security/Alias Checks): {}", getDisplayName(), baseResource);
+                    ResourceFactory resourceFactory = ResourceFactory.of(this);
+                    List<Resource> resources = combinedResource.getResources().stream()
+                        .map(r ->
+                        {
+                            URI realUri = r.getRealURI();
+                            if (realUri != null)
+                                return resourceFactory.newResource(realUri);
+                            return r;
+                        }).toList();
+                    setAttribute("_baseResource", _baseResource);
+                    _baseResource = ResourceFactory.combine(resources);
                 }
                 else
                 {
-                    LOG.info("{} Base Resource is an alias: {} -> {}", getDisplayName(), baseResource, realUri.toASCIIString());
-                    setAttribute("_baseResource", _baseResource);
-                    _baseResource = ResourceFactory.of(this).newResource(realUri);
+                    URI realUri = baseResource.getRealURI();
+                    if (realUri != null)
+                    {
+                        setAttribute("_baseResource", _baseResource);
+                        _baseResource = ResourceFactory.of(this).newResource(realUri);
+                    }
                 }
+
+                if (_baseResource.isAlias())
+                    LOG.warn("{} Base Resource should not be an alias (100% of requests to context are subject to Security/Alias Checks): {}", getDisplayName(), baseResource);
+                else
+                    LOG.info("{} Base Resource is an alias: {} -> {}", getDisplayName(), baseResource, _baseResource);
             }
         }
 
