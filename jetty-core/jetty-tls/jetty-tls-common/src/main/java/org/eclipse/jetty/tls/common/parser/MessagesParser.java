@@ -47,7 +47,7 @@ public class MessagesParser
         return extensionsParser;
     }
 
-    public Message parse(RetainableByteBuffer buffer) throws Exception
+    public Message parse(RetainableByteBuffer buffer)
     {
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (true)

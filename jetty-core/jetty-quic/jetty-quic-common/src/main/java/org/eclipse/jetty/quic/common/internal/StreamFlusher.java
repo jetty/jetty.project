@@ -173,7 +173,7 @@ class StreamFlusher extends CryptoFlusher
                         LOG.debug("generating offset={} {} for stream {} on {}", offset, frame, stream, this);
                     GeneratedFrame generated = getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, maxBytes);
                     if (generated != null)
-                        session.updateSendData(stream, ((StreamFrame)generated.frame()).data().size());
+                        session.updateSendData(stream, ((StreamFrame)generated.frame()).remaining());
                     yield generated;
                 }
                 else
@@ -181,7 +181,7 @@ class StreamFlusher extends CryptoFlusher
                     // A retransmitted frame.
                     if (LOG.isDebugEnabled())
                         LOG.debug("re-generating {} for stream {} on {}", frame, stream, this);
-                    long offset = streamFrame.offset() + (streamFrame.length() - streamFrame.data().size());
+                    long offset = streamFrame.offset() + (streamFrame.length() - streamFrame.remaining());
                     yield getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, maxBytes);
                 }
             }

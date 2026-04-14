@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
@@ -97,18 +100,37 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
         return offset;
     }
 
-    /// @return the data bytes
-    @Override
-    public RetainableByteBuffer data()
-    {
-        return slice;
-    }
-
     /// @return the number of data bytes
     @Override
     public long length()
     {
         return length;
+    }
+
+    public long remaining()
+    {
+        return slice.remaining();
+    }
+
+    public long skip(long skip)
+    {
+        return slice.skip(skip);
+    }
+
+    public StreamFrame slice(long offset, long length)
+    {
+        return new StreamFrame(type(), streamId(), slice.slice(length), offset, isEndData());
+    }
+
+    public void accept(Consumer<RetainableByteBuffer> consumer)
+    {
+        consumer.accept(slice);
+    }
+
+    @Override
+    public <T> T map(Function<RetainableByteBuffer, T> mapper)
+    {
+        return mapper.apply(slice);
     }
 
     /// @return whether this frame is the last in the stream
@@ -134,9 +156,10 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     }
 
     @Override
-    public boolean release()
+    public void close()
     {
-        return data.release();
+        slice.release();
+        data.release();
     }
 
     @Override
@@ -145,7 +168,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
         return "%s[offset=%d,remaining/length=%d/%d,last=%b]".formatted(
             super.toString(),
             offset(),
-            data().size(),
+            remaining(),
             length(),
             isEndStream()
         );
