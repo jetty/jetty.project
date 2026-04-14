@@ -13,9 +13,10 @@
  + 14732 possible race condition in jetty 12.x code
  + 14747 Revert usage of SLF4J2 fluent APIs
  + 14752 Jetty 12.1 Violation of RFC9113 with Host and :authority headers
+ + 14757 Fixes for JASPI isMandatory, authType and isAuthenticationRequest params - Addresses CVE-2026-5795
 
 12.1.7 - 04 March 2026
- + 14165 Integrating Eclipse Soteria with Jetty EE10+ - Addresses CVE-2026-5795
+ + 14165 Integrating Eclipse Soteria with Jetty EE10+
  + 14366 Clarify Deprecation Policy
  + 14373 Response listener that avoids any data copies
  + 14408 Redundant database index created by JDBCSessionDataStore
