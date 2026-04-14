@@ -79,9 +79,6 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         @Override
         public void onPacketSent(Packet.WithFrames packet, long length, RTTData rttData)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("sent [{}] on {}", packet.packetNumber(), this);
-
             long sendNanoTime = NanoTime.now();
             if (sendNanoTime == 0)
                 sendNanoTime = 1;
@@ -92,14 +89,14 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
             rtt = rttData.smoothedRTT();
             latestSendNanoTime = sendNanoTime;
             latestSendBytes = length;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("sent [{}] on {}", packet.packetNumber(), this);
         }
 
         @Override
         public void onPacketsAcknowledged(List<Packet.WithFrames> acked, long totalLength, RTTData rttData)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("acked {} on {}", acked.stream().map(Packet.WithFrames::packetNumber).toList(), this);
-
             boolean exitRecovery = false;
             for (Packet.WithFrames packet : acked)
             {
@@ -121,14 +118,17 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
                 {
                     if (exitRecovery)
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("exiting congestion recovery on {}", this);
                         state = State.CONGESTION_AVOIDANCE;
                         earliestSendNanoTime = 0;
                         congestionRecoveryNanoTime = 0;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("exiting congestion recovery on {}", this);
                     }
                 }
             }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("acked {} on {}", acked.stream().map(Packet.WithFrames::packetNumber).toList(), this);
         }
 
         @Override
@@ -159,12 +159,13 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
                 // If there is persistent congestion, move to slow start.
                 if (isPersistentCongestion(rttData))
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("persistent congestion detected on {}", this);
                     state = State.SLOW_START;
                     // Exit congestion recovery.
                     congestionRecoveryNanoTime = 0;
                     maxInFlight = minInFlight;
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("persistent congestion detected on {}", this);
                 }
                 return;
             }
@@ -178,6 +179,9 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
                 congestionRecoveryNanoTime = 1;
             slowStart = maxInFlight / 2;
             maxInFlight = Math.max(slowStart, minInFlight);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("entering congestion recovery on {}", this);
         }
 
         @Override
