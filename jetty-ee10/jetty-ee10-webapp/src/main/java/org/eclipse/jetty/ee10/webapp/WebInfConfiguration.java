@@ -11,19 +11,17 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee10.annotations
+package org.eclipse.jetty.ee10.webapp;
+
+public class WebInfConfiguration extends org.eclipse.jetty.ee.webapp.WebInfConfiguration
 {
-    requires jakarta.annotation;
-    requires java.naming;
-    requires org.slf4j;
+    public WebInfConfiguration()
+    {
+        super();
+    }
 
-    requires transitive org.eclipse.jetty.annotations;
-    requires transitive org.eclipse.jetty.plus;
-    requires transitive org.eclipse.jetty.ee.annotations;
-    requires transitive org.eclipse.jetty.ee10.plus;
-    requires transitive org.objectweb.asm;
-
-    exports org.eclipse.jetty.ee10.annotations;
-
-    uses jakarta.servlet.ServletContainerInitializer;
+    protected WebInfConfiguration(Builder builder)
+    {
+        super(builder);
+    }
 }

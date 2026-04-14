@@ -11,19 +11,11 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee10.annotations
+package org.eclipse.jetty.ee10.annotations;
+
+/**
+ * Configuration for Annotations
+ */
+public class AnnotationConfiguration extends org.eclipse.jetty.ee.annotations.AnnotationConfiguration
 {
-    requires jakarta.annotation;
-    requires java.naming;
-    requires org.slf4j;
-
-    requires transitive org.eclipse.jetty.annotations;
-    requires transitive org.eclipse.jetty.plus;
-    requires transitive org.eclipse.jetty.ee.annotations;
-    requires transitive org.eclipse.jetty.ee10.plus;
-    requires transitive org.objectweb.asm;
-
-    exports org.eclipse.jetty.ee10.annotations;
-
-    uses jakarta.servlet.ServletContainerInitializer;
 }

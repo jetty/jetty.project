@@ -11,19 +11,7 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee10.annotations
-{
-    requires jakarta.annotation;
-    requires java.naming;
-    requires org.slf4j;
-
-    requires transitive org.eclipse.jetty.annotations;
-    requires transitive org.eclipse.jetty.plus;
-    requires transitive org.eclipse.jetty.ee.annotations;
-    requires transitive org.eclipse.jetty.ee10.plus;
-    requires transitive org.objectweb.asm;
-
-    exports org.eclipse.jetty.ee10.annotations;
-
-    uses jakarta.servlet.ServletContainerInitializer;
-}
+/**
+ * Jetty Annotations : Support for Servlet Annotations
+ */
+package org.eclipse.jetty.ee10.annotations;

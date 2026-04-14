@@ -11,19 +11,11 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee10.annotations
+package org.eclipse.jetty.ee10.webapp;
+
+/**
+ * Looks for XmlConfiguration files in WEB-INF.  Searches in order for the first of jetty8-web.xml, jetty-web.xml or web-jetty.xml
+ */
+public class JettyWebXmlConfiguration extends org.eclipse.jetty.ee.webapp.JettyWebXmlConfiguration
 {
-    requires jakarta.annotation;
-    requires java.naming;
-    requires org.slf4j;
-
-    requires transitive org.eclipse.jetty.annotations;
-    requires transitive org.eclipse.jetty.plus;
-    requires transitive org.eclipse.jetty.ee.annotations;
-    requires transitive org.eclipse.jetty.ee10.plus;
-    requires transitive org.objectweb.asm;
-
-    exports org.eclipse.jetty.ee10.annotations;
-
-    uses jakarta.servlet.ServletContainerInitializer;
 }
