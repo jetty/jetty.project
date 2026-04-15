@@ -39,7 +39,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PermessageDeflateBufferTest
+public class PerMessageDeflateBufferTest
 {
     private Server server;
     private ServerConnector connector;

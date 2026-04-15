@@ -51,7 +51,7 @@ public class UpgradeRequestResponseTest
         }
     }
 
-    public static class PermessageDeflateConfig extends ClientEndpointConfig.Configurator
+    public static class PerMessageDeflateConfig extends ClientEndpointConfig.Configurator
     {
         @Override
         public void beforeRequest(Map<String, List<String>> headers)
@@ -60,7 +60,7 @@ public class UpgradeRequestResponseTest
         }
     }
 
-    @ClientEndpoint(configurator = PermessageDeflateConfig.class)
+    @ClientEndpoint(configurator = PerMessageDeflateConfig.class)
     public static class ClientSocket extends EventSocket
     {
     }
