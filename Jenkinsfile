@@ -53,6 +53,17 @@ pipeline {
             }
           }
         }
+
+        stage("Build / Test - JDK26") {
+          agent { node { label 'linux' } }
+          steps {
+            timeout( time: 210, unit: 'MINUTES' ) {
+              checkout scm
+              mavenBuild( "jdk26", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk26", name: "Static Analysis jdk26", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
+            }
+          }
+        }
       }
     }
   }

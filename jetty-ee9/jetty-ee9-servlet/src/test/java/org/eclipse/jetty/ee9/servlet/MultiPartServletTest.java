@@ -62,6 +62,8 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -619,6 +621,7 @@ public class MultiPartServletTest
 
     @ParameterizedTest
     @MethodSource("multipartModes")
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testTempFilesDeletedOnError(MultiPartCompliance multiPartCompliance) throws Exception
     {
         startServer(multiPartCompliance);

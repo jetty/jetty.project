@@ -13,7 +13,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests.distribution.common</bundle-symbolic-name>
-    <jetty.home>${project.build.directory}/jetty-home</jetty.home>
+    <jetty.home>${project.build.directory}${file.separator}jetty-home</jetty.home>
     <!--    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>-->
     <junit.jupiter.execution.parallel.config.dynamic.factor>0.4</junit.jupiter.execution.parallel.config.dynamic.factor>
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
@@ -452,7 +452,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemPropertyVariables combine.children="append">
-            <jetty.home>${jetty.home}/jetty-home-${project.version}</jetty.home>
+            <jetty.home>${jetty.home}${file.separator}jetty-home-${project.version}</jetty.home>
             <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
             <infinispan.docker.image.name>${infinispan.docker.image.name}</infinispan.docker.image.name>
           </systemPropertyVariables>

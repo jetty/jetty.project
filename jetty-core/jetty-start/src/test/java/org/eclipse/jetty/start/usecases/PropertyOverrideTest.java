@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -21,6 +22,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.start.FS;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -77,17 +80,17 @@ public class PropertyOverrideTest extends AbstractUseCase
 
         // === Validate Resulting XMLs
         List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml"
+            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
+            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar)
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, ordered(expectedXmls));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
+            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, ordered(expectedLibs));
@@ -151,17 +154,17 @@ public class PropertyOverrideTest extends AbstractUseCase
 
         // === Validate Resulting XMLs
         List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml"
+            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
+            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar)
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, ordered(expectedXmls));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
+            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, ordered(expectedLibs));

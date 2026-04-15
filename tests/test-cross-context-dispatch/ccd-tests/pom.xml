@@ -68,7 +68,7 @@
               <jetty.home>${jetty.home}/jetty-home-${project.version}</jetty.home>
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <jettyVersion>${project.version}</jettyVersion>
-              <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
+              <distribution.debug.port>${distribution.debug.port}</distribution.debug.port>
               <home.start.timeout>${home.start.timeout}</home.start.timeout>
             </systemPropertyVariables>
           </configuration>

@@ -146,7 +146,7 @@ public class JettyHomeTester
         if (debugPort > 0)
             commands.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:" + debugPort);
         commands.add("-jar");
-        commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
+        commands.add(config.jettyHome.toAbsolutePath() + File.separator + "start.jar");
 
         args = new ArrayList<>(args);
 
@@ -221,7 +221,7 @@ public class JettyHomeTester
      * Resolve a maven artifact from a String.
      *
      * @param mavenCoordinate The artifact coordinates in the format
-     *        {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}, must not be {@code null}.
+     * {@code <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}, must not be {@code null}.
      * @see org.eclipse.aether.artifact.DefaultArtifact
      */
     public Path resolveArtifact(String mavenCoordinate) throws ArtifactResolutionException
@@ -331,7 +331,7 @@ public class JettyHomeTester
         private Path jettyBase;
         private Path jettyHome;
         private String jettyVersion;
-        private String mavenLocalRepository = System.getProperty("mavenRepoPath", System.getProperty("user.home") + "/.m2/repository");
+        private String mavenLocalRepository = System.getProperty("mavenRepoPath", System.getProperty("user.home") + File.separator + ".m2" + File.separator + "repository");
         private List<String> jvmArgs = new ArrayList<>();
         private Map<String, String> env = new HashMap<>();
 

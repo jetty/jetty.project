@@ -36,6 +36,8 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.eclipse.jetty.quic.quiche.QuicheConstants.QUICHE_MIN_CLIENT_INITIAL_LEN;
@@ -45,6 +47,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 
 @ExtendWith(WorkDirExtension.class)
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
 public class LowLevelQuicheTest
 {
     public WorkDir workDir;

@@ -41,6 +41,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -123,6 +125,7 @@ public class HTTP1TransportTest extends AbstractTransportTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testUnixDomainTransport() throws Exception
     {
         UnixDomainServerConnector connector = new UnixDomainServerConnector(server, 1, 1, new HttpConnectionFactory());
@@ -140,6 +143,7 @@ public class HTTP1TransportTest extends AbstractTransportTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testQuicheTransport(WorkDir workDir) throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();

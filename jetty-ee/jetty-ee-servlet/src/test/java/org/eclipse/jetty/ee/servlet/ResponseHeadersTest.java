@@ -625,7 +625,7 @@ public class ResponseHeadersTest
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat("Response Code", response.getStatus(), is(200));
-        assertThat(response.getContent(), equalTo("Hello\nWorld\n"));
+        assertThat(response.getContent(), equalTo("Hello\nWorld\n".replace("\n", System.lineSeparator())));
     }
 
     @Test

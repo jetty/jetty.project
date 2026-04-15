@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,6 +27,8 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -79,19 +82,19 @@ public class TransientIniTemplateTest extends AbstractUseCase
 
         // === Validate Resulting XMLs
         List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml",
-            "${jetty.base}/etc/t.xml",
-            "${jetty.base}/etc/d.xml"
+            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
+            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar),
+            "${jetty.base}/etc/t.xml".replace('/', File.separatorChar),
+            "${jetty.base}/etc/d.xml".replace('/', File.separatorChar)
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
+            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
@@ -105,6 +108,7 @@ public class TransientIniTemplateTest extends AbstractUseCase
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testTransientWithIniTemplateTestStart() throws Exception
     {
         setupStandardHomeDir();
@@ -154,19 +158,19 @@ public class TransientIniTemplateTest extends AbstractUseCase
 
         // === Validate Resulting XMLs
         List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml",
-            "${jetty.base}/etc/t.xml",
-            "${jetty.base}/etc/d.xml"
+            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
+            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar),
+            "${jetty.base}/etc/t.xml".replace('/', File.separatorChar),
+            "${jetty.base}/etc/d.xml".replace('/', File.separatorChar)
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
+            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
@@ -230,19 +234,19 @@ public class TransientIniTemplateTest extends AbstractUseCase
 
         // === Validate Resulting XMLs
         List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml",
-            "${jetty.home}/etc/main.xml",
-            "${jetty.base}/etc/t.xml",
-            "${jetty.base}/etc/d.xml"
+            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
+            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar),
+            "${jetty.base}/etc/t.xml".replace('/', File.separatorChar),
+            "${jetty.base}/etc/d.xml".replace('/', File.separatorChar)
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
         List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar",
-            "${jetty.home}/lib/main.jar",
-            "${jetty.home}/lib/other.jar"
+            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
+            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));

@@ -109,7 +109,7 @@
               <jettyVersion>${project.version}</jettyVersion>
               <hazelcast.version>${hazelcast.version}</hazelcast.version>
               <mariadb.docker.version>${mariadb.docker.version}</mariadb.docker.version>
-              <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
+              <distribution.debug.port>${distribution.debug.port}</distribution.debug.port>
               <home.start.timeout>${home.start.timeout}</home.start.timeout>
               <mariadb.version>${mariadb.version}</mariadb.version>
               <maven.offline>true</maven.offline>

@@ -23,12 +23,13 @@ import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Isolated("Modifies the Security TLS Provider")
+@DisabledOnJre(value = JRE.JAVA_26, disabledReason = "Conscrypt returns obsolete signature algorithms, see #14856")
 public class ConscryptModuleTest
 {
     @Test

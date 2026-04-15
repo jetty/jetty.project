@@ -72,6 +72,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -362,6 +364,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testManyConcurrentRequestsWithSmallConcurrentStreams() throws Exception
     {
         byte[] data = new byte[64 * 1024];

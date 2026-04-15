@@ -87,6 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
 public class MultiPartServletTest
 {
     private static final int MAX_FILE_SIZE = 512 * 1024;

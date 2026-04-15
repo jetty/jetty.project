@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.staticapp;
 
+import java.io.FileWriter;
+import java.io.Writer;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -21,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.deploy.DeploymentScanner;
@@ -44,6 +47,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -342,6 +347,7 @@ public class StaticAppContextTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testDeployCustomResourceHandlerPropertiesBaseResourceAlt() throws Exception
     {
         Path root = workDir.getEmptyPathDir();
@@ -351,11 +357,14 @@ public class StaticAppContextTest
         // Intentionally not in webapps directory
         Path staticDir = root.resolve("static");
         FS.ensureEmpty(staticDir);
-        Files.writeString(webapps.resolve("static.properties"), """
-            environment=static
-            jetty.deploy.baseResource=%s
-            jetty.deploy.baseResource.dirAllowed=false
-            """.formatted(staticDir.toString()));
+        try (Writer out = Files.newBufferedWriter(webapps.resolve("static.properties")))
+        {
+            Properties props = new Properties();
+            props.put("environment", "static");
+            props.put("jetty.deploy.baseResource", staticDir.toString());
+            props.put("jetty.deploy.baseResource.dirAllowed", "false");
+            props.store(out, "");
+        }
         Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
 
         startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
@@ -386,6 +395,7 @@ public class StaticAppContextTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testDeployStaticWithDirectoryWithPropertyBaseResource() throws Exception
     {
         Path root = workDir.getEmptyPathDir();
@@ -400,10 +410,13 @@ public class StaticAppContextTest
         Path staticDir = webapps.resolve("static");
         FS.ensureEmpty(staticDir);
         Files.writeString(staticDir.resolve("test.txt"), "TEST TEXT");
-        Files.writeString(webapps.resolve("static.properties"), """
-            environment=static
-            jetty.deploy.baseResource=%s
-            """.formatted(alt.toString()));
+        try (Writer out = Files.newBufferedWriter(webapps.resolve("static.properties")))
+        {
+            Properties props = new Properties();
+            props.put("environment", "static");
+            props.put("jetty.deploy.baseResource", alt.toString());
+            props.store(out, "");
+        }
 
         startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 

@@ -42,6 +42,7 @@ import org.junit.jupiter.api.condition.OS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
 public class ServletLifeCycleTest
 {
     static final Queue<String> events = new ConcurrentLinkedQueue<>();

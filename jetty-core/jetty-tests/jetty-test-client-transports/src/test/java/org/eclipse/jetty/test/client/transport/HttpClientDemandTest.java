@@ -68,7 +68,7 @@ public class HttpClientDemandTest extends AbstractTest
     public static Stream<Arguments> bufferingParams()
     {
         String content = "ABCDEF";
-        return Arrays.stream(TransportType.values()).flatMap(transportType ->
+        return transports().stream().flatMap(transportType ->
             Stream.of(
                 Arguments.of(transportType, content, /*consumeBuffer*/false, /*invokeSuper*/false, /*expectedContent*/""),
                 Arguments.of(transportType, content, true, false, ""),

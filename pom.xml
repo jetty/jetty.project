@@ -163,7 +163,7 @@
 
   <properties>
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.15</ant.version>
+    <ant.version>1.10.17</ant.version>
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
@@ -216,7 +216,7 @@
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.7.3</flatten.maven.plugin.version>
-    <groovy.version>4.0.26</groovy.version>
+    <groovy.version>4.0.31</groovy.version>
     <grpc.version>1.80.0</grpc.version>
     <gson.version>2.13.2</gson.version>
     <guava.version>33.5.0-jre</guava.version>
@@ -252,7 +252,7 @@
     <jetty.xhtml.schemas-version>1.4</jetty.xhtml.schemas-version>
     <jettyHomeZip>${project.build.directory}/${jettyHomeZipFileName}</jettyHomeZip>
     <jettyHomeZipFileName>jetty-home.zip</jettyHomeZipFileName>
-    <jffi.version>1.3.14</jffi.version>
+    <jffi.version>1.3.15</jffi.version>
     <jmh.version>1.37</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <jna.version>5.18.1</jna.version>
@@ -268,13 +268,12 @@
     <junit.platform.version>${junit.version}</junit.platform.version>
     <junit.version>6.0.3</junit.version>
     <kerb-simplekdc.version>2.1.1</kerb-simplekdc.version>
-    <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.25.4</log4j2.version>
     <logback.version>1.5.32</logback.version>
     <lucene.version>9.12.3</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <mariadb.version>3.5.7</mariadb.version>
+    <mariadb.version>3.5.8</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.2.2</maven-build-cache.version>
     <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
@@ -308,9 +307,9 @@
     <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <modify-sources-plugin.version>1.0.14</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
-    <mongodb.version>5.6.4</mongodb.version>
+    <mongodb.version>5.6.5</mongodb.version>
     <netty.version>4.2.12.Final</netty.version>
-    <njord.version>0.9.4</njord.version>
+    <njord.version>0.9.5</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -332,7 +331,7 @@
     <osgi.slf4j.import.packages>org.slf4j;version="[2.0,3.0)", org.slf4j.event;version="[2.0,3.0)", org.slf4j.helpers;version="[2.0,3.0)", org.slf4j.spi;version="[2.0,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.14.0</pax.exam.version>
     <pax.url.version>3.0.2</pax.url.version>
-    <plexus-classworlds.version>2.9.0</plexus-classworlds.version>
+    <plexus-classworlds.version>2.10.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.3</plexus-utils.version>
     <plexus-xml.version>4.1.1</plexus-xml.version>
@@ -352,7 +351,7 @@
     <tinybundles.version>4.0.1</tinybundles.version>
     <versions.maven.plugin.version>2.21.0</versions.maven.plugin.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
-    <wildfly.elytron.version>2.8.3.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.8.4.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.9</xmemcached.version>
   </properties>
 
@@ -485,12 +484,12 @@
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-annotation</artifactId>
-        <version>2.17.0</version>
+        <version>2.17.1</version>
       </dependency>
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-cpu</artifactId>
-        <version>2.17.0</version>
+        <version>2.17.1</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
@@ -1229,7 +1228,7 @@
       <dependency>
         <groupId>org.hibernate.models</groupId>
         <artifactId>hibernate-models</artifactId>
-        <version>1.1.0</version>
+        <version>1.1.1</version>
       </dependency>
       <dependency>
         <groupId>org.infinispan.protostream</groupId>
@@ -1513,11 +1512,6 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>com.mycila</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <version>${license.maven.plugin.version}</version>
-        </plugin>
-        <plugin>
           <groupId>eu.maveniverse.maven.plugins</groupId>
           <artifactId>njord</artifactId>
           <version>${njord.version}</version>
@@ -1658,6 +1652,23 @@
               <localRepo>${localRepoPath}</localRepo>
             </filterProperties>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.groovy</groupId>
+              <artifactId>groovy</artifactId>
+              <version>${groovy.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.apache.groovy</groupId>
+              <artifactId>groovy-json</artifactId>
+              <version>${groovy.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.apache.groovy</groupId>
+              <artifactId>groovy-xml</artifactId>
+              <version>${groovy.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -1906,6 +1917,39 @@
         <artifactId>spotless-maven-plugin</artifactId>
         <version>2.46.1</version>
         <configuration>
+          <skip>${spotless.skip}</skip>
+          <!-- Java files license header -->
+          <java>
+            <excludes>
+              <!-- Build output directories -->
+              <exclude>**/target/**</exclude>
+              <!-- Aki Yoshida copyright -->
+              <exclude>**/UnixCrypt.java</exclude>
+            </excludes>
+            <licenseHeader>
+              <file>${maven.multiModuleProjectDirectory}/header-template.txt</file>
+              <delimiter>(package |import |public |class |interface |enum |@)</delimiter>
+            </licenseHeader>
+          </java>
+          <!-- AsciiDoc files license header -->
+          <formats>
+            <format>
+              <includes>
+                <include>**/*.adoc</include>
+              </includes>
+              <excludes>
+                <!-- Build output directories -->
+                <exclude>**/target/**</exclude>
+                <!-- Distribution Text (no header, too noisy) -->
+                <exclude>**/jetty-home/src/main/resources/README.adoc</exclude>
+              </excludes>
+              <licenseHeader>
+                <file>${maven.multiModuleProjectDirectory}/header-template.txt</file>
+                <delimiter>(?=^[^/])</delimiter>
+              </licenseHeader>
+            </format>
+          </formats>
+          <!-- POM formatting -->
           <pom>
             <includes>
               <include>pom.xml</include>
@@ -1938,42 +1982,6 @@
               <goal>check</goal>
             </goals>
             <phase>validate</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <inherited>false</inherited>
-        <configuration>
-          <failIfMissing>true</failIfMissing>
-          <aggregate>true</aggregate>
-          <strictCheck>true</strictCheck>
-        </configuration>
-        <executions>
-          <execution>
-            <id>check-java-headers</id>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <phase>verify</phase>
-            <configuration>
-              <header>header-template.txt</header>
-              <mapping>
-                <java>DOUBLESLASH_STYLE</java>
-                <adoc>DOUBLESLASH_STYLE</adoc>
-              </mapping>
-              <includes>
-                <include>**/*.java</include>
-                <include>**/*.adoc</include>
-              </includes>
-              <excludes>
-                <!-- Aki Yoshida -->
-                <exclude>jetty-core/jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
-                <!-- Distribution Text (no header, too noisy) -->
-                <exclude>jetty-home/src/main/resources/README.adoc</exclude>
-              </excludes>
-            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -2848,9 +2856,9 @@
       <properties>
         <checkstyle.skip>true</checkstyle.skip>
         <enforcer.skip>true</enforcer.skip>
-        <license.skip>true</license.skip>
         <skipTests>true</skipTests>
         <spotbugs.skip>true</spotbugs.skip>
+        <spotless.skip>true</spotless.skip>
       </properties>
     </profile>
     <profile>

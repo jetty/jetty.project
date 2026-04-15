@@ -400,7 +400,7 @@ public class ResourceTest
 
     @Test
     @EnabledOnOs(OS.WINDOWS)
-    @Disabled("Doesn't work because Resource.equals now checks URI equality as well")
+    @Disabled("fails as PathResource now checks both Path and URI equivalence, and the latter fails")
     public void testEqualsWindowsCaseInsensitiveDrive() throws Exception
     {
         URI a = new URI("file:///c:/foo/bar");
