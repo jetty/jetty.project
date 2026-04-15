@@ -99,6 +99,14 @@
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-maven-plugin</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-quickstart</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-annotations</artifactId>
       <optional>true</optional>

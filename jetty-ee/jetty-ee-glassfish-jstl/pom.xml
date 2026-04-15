@@ -34,6 +34,12 @@
     </dependency>
 
     <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.eclipse.jetty.ee</groupId>
       <artifactId>jetty-ee-annotations</artifactId>
       <scope>test</scope>

@@ -132,7 +132,7 @@ public class JakartaWebSocketFrameHandlerOnMessageBinaryTest extends AbstractJak
     {
         assertOnMessageInvocation(new MessageSessionByteBufferSocket(),
             allOf(
-                containsString("onMessage(oeje11wjc.JakartaWebSocketSession@"),
+                containsString("onMessage(oejewjc.JakartaWebSocketSession@"),
                 containsString(MessageSessionByteBufferSocket.class.getName())
             ));
     }

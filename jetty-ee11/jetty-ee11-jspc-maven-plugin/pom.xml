@@ -26,6 +26,11 @@
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-jspc-maven-plugin</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-apache-jsp</artifactId>
     </dependency>

@@ -16,8 +16,16 @@ module org.eclipse.jetty.ee11.websocket.jakarta.server
     requires org.eclipse.jetty.ee11.websocket.servlet;
     requires org.slf4j;
 
-    requires transitive org.eclipse.jetty.ee.websocket.jakarta.server;
     requires transitive org.eclipse.jetty.ee11.webapp;
     requires transitive org.eclipse.jetty.ee11.websocket.jakarta.client;
     requires transitive org.eclipse.jetty.websocket.core.server;
+
+    exports org.eclipse.jetty.ee11.websocket.jakarta.server;
+    exports org.eclipse.jetty.ee11.websocket.jakarta.server.config;
+
+    provides jakarta.servlet.ServletContainerInitializer with
+        org.eclipse.jetty.ee11.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+
+    provides jakarta.websocket.server.ServerEndpointConfig.Configurator with
+        org.eclipse.jetty.ee11.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 }

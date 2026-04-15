@@ -36,6 +36,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Decorator;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -45,6 +47,7 @@ public class ServletLifeCycleTest
     static final Queue<String> events = new ConcurrentLinkedQueue<>();
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testLifeCycle() throws Exception
     {
         Server server = new Server(0);

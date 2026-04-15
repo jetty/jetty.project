@@ -39,6 +39,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * is the main that is executed by jetty:run/start in mode FORKED.
  */
 @ExtendWith(WorkDirExtension.class)
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
 public class TestForkedChild
 {
     File testDir;

@@ -210,7 +210,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
-        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "forward", "ctx"));
         assertThat(content, containsString("REQUEST_URI=/verify/pinfo"));
     }
@@ -251,7 +251,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
-        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include", "ctx"));
     }
 
@@ -295,7 +295,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
-        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "forward"));
         assertThat(content, containsString("REQUEST_URI=/foreign/verify/pinfo"));
     }
@@ -345,7 +345,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
-        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "forward"));
         assertThat(content, containsString("REQUEST_URI=/foreign/verify/%25%20test/pinfo"));
     }
@@ -386,7 +386,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
-        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
     }
 
@@ -431,7 +431,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
-        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
         //verify that the content was consumed
         HttpField connectionField = response.getField(HttpHeader.CONNECTION);
@@ -479,7 +479,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
-        params = params.substring(1, params.length() - 1); //dump leading, trailing [ ]
+        params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
     }
 
@@ -558,7 +558,7 @@ public class CrossContextDispatcherTest
         assertThat(response.get("X-Filter-RequestURL"), is(expectedRequestURL));
 
         String content = response.getContent();
-        List<String> contentLines = List.of(content.split("\\n"));
+        List<String> contentLines = List.of(content.split(System.lineSeparator()));
         assertThat(contentLines, hasItem("REQUEST_URL=" + expectedRequestURL));
     }
 

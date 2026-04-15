@@ -29,6 +29,10 @@
       <artifactId>jetty-annotations</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-annotations</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-plus</artifactId>
     </dependency>

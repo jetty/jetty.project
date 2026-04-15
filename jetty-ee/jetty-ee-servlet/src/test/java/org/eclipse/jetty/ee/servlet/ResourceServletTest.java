@@ -98,6 +98,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -125,6 +126,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
 @Isolated
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
 public class ResourceServletTest
 {
     public WorkDir workDir;

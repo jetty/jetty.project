@@ -84,7 +84,7 @@ public class JakartaWebSocketFrameHandlerOnCloseTest extends AbstractJakartaWebS
     {
         assertOnCloseInvocation(new CloseSessionSocket(),
             allOf(
-                containsString("onClose(oeje11wjc.JakartaWebSocketSession@"),
+                containsString("onClose(oejewjc.JakartaWebSocketSession@"),
                 containsString(CloseSessionSocket.class.getName())
             ));
     }
@@ -121,7 +121,7 @@ public class JakartaWebSocketFrameHandlerOnCloseTest extends AbstractJakartaWebS
     {
         assertOnCloseInvocation(new CloseSessionReasonSocket(),
             allOf(
-                containsString("onClose(oeje11wjc.JakartaWebSocketSession@"),
+                containsString("onClose(oejewjc.JakartaWebSocketSession@"),
                 containsString(CloseSessionReasonSocket.class.getName())
             ));
     }

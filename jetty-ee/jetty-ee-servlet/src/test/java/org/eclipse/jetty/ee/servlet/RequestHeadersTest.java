@@ -165,7 +165,7 @@ public class RequestHeadersTest
             try (InputStream in = http.getInputStream())
             {
                 String resp = IO.toString(in, StandardCharsets.UTF_8);
-                assertThat("Response", resp, is("Locale = " + expectedLocale + "\n"));
+                assertThat("Response", resp, is("Locale = " + expectedLocale + System.lineSeparator()));
             }
         }
         finally

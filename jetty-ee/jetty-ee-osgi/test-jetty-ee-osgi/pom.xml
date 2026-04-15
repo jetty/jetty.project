@@ -91,6 +91,11 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
+      <groupId>jakarta.websocket</groupId>
+      <artifactId>jakarta.websocket-client-api</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
       <scope>runtime</scope>
@@ -132,12 +137,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee</groupId>
-      <artifactId>jetty-ee-webapp</artifactId>
+      <artifactId>jetty-ee-annotations</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee</groupId>
-      <artifactId>jetty-ee-annotations</artifactId>
+      <artifactId>jetty-ee-common</artifactId>
       <scope>runtime</scope>
     </dependency>
     <!-- Jetty Deps -->
@@ -281,35 +286,35 @@
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jakarta-websocket-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee</classifier>
+      <classifier>webbundle-ee10</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee</classifier>
+      <classifier>webbundle-ee10</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee</classifier>
+      <classifier>webbundle-ee10</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee</classifier>
+      <classifier>webbundle-ee10</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet6-demo-jspc-6-1-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee</classifier>
+      <classifier>webbundle-ee11</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>

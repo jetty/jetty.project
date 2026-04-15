@@ -23,6 +23,10 @@
       <artifactId>jetty-osgi</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee.osgi</groupId>
+      <artifactId>jetty-ee-osgi-boot</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-annotations</artifactId>
     </dependency>

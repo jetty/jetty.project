@@ -17,6 +17,7 @@ module org.eclipse.jetty.ee10.plus
     requires org.slf4j;
 
     requires transitive org.eclipse.jetty.ee10.webapp;
+    requires transitive org.eclipse.jetty.ee.plus;
 
     // Only required if using Transaction.
     requires static transitive jakarta.transaction;

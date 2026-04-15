@@ -42,6 +42,10 @@
       <artifactId>jetty-plus</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-plus</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-webapp</artifactId>
     </dependency>

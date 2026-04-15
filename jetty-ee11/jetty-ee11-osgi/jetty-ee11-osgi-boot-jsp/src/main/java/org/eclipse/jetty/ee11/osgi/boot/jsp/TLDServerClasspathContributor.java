@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.jetty.ee11.osgi.boot.OSGiMetaInfConfiguration;
+import org.eclipse.jetty.ee.osgi.boot.OSGiMetaInfConfiguration;
 import org.eclipse.jetty.osgi.ServerClasspathContributor;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;

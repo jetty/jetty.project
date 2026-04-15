@@ -19,6 +19,10 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-cdi</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-annotations</artifactId>
       <scope>compile</scope>

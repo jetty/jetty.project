@@ -19,6 +19,7 @@ module org.eclipse.jetty.ee10.annotations
 
     requires transitive org.eclipse.jetty.annotations;
     requires transitive org.eclipse.jetty.plus;
+    requires transitive org.eclipse.jetty.ee.annotations;
     requires transitive org.eclipse.jetty.ee10.plus;
     requires transitive org.objectweb.asm;
 

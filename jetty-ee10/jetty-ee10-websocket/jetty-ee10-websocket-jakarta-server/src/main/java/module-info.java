@@ -28,7 +28,4 @@ module org.eclipse.jetty.ee10.websocket.jakarta.server
 
     provides jakarta.websocket.server.ServerEndpointConfig.Configurator with
         org.eclipse.jetty.ee10.websocket.jakarta.server.config.ContainerDefaultConfigurator;
-
-    provides  org.eclipse.jetty.ee10.webapp.Configuration with
-        org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
 }

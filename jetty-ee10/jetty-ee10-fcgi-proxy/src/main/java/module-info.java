@@ -13,11 +13,13 @@
 
 module org.eclipse.jetty.ee10.fcgi.proxy
 {
+    requires transitive org.eclipse.jetty.ee.proxy;
     requires transitive org.eclipse.jetty.ee10.proxy;
     requires transitive org.eclipse.jetty.fcgi.client;
     requires transitive org.eclipse.jetty.server;
 
     requires static jakarta.servlet;
+    requires org.eclipse.jetty.ee.fcgi.proxy;
 
     exports org.eclipse.jetty.ee10.fcgi.proxy;
 }

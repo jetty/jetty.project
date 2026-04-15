@@ -30,33 +30,6 @@ import org.osgi.framework.BundleContext;
  * in order for the PackageAdminTracker to find it.
  * </p>
  */
-public class FragmentActivator implements BundleActivator, ServerClasspathContributor.Source
+public class FragmentActivator extends org.eclipse.jetty.ee.osgi.boot.jsp.FragmentActivator
 {
-    ServerClasspathContributor _tldClasspathContributor;
-
-    @Override
-    public void start(BundleContext context) throws Exception
-    {
-        //Register a class that will provide the identity of bundles that 
-        //contain TLDs and therefore need to be scanned.
-        _tldClasspathContributor = new TLDServerClasspathContributor();
-    }
-
-    @Override
-    public void stop(BundleContext context) throws Exception
-    {
-        _tldClasspathContributor = null;
-    }
-
-    @Override
-    public void registerServerClasspathContributors(ServerClasspathContributor.Registry registry)
-    {
-        registry.registerServerClasspathContributor(_tldClasspathContributor);
-    }
-
-    @Override
-    public void unregisterServerClasspathContributors(ServerClasspathContributor.Registry registry)
-    {
-        registry.unregisterServerClasspathContributor(_tldClasspathContributor);
-    }
 }

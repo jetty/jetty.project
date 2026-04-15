@@ -16,7 +16,7 @@ package org.eclipse.jetty.servlet6.embedded;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.ee11.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;

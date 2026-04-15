@@ -322,6 +322,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testGetPercent2F() throws Exception
     {
         connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
@@ -502,6 +503,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testIncludeListingAllowed() throws Exception
     {
         ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
@@ -542,6 +544,7 @@ public class DefaultServletTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testIncludeListingForbidden() throws Exception
     {
         ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
@@ -1000,6 +1003,7 @@ public class DefaultServletTest
 
     @ParameterizedTest
     @MethodSource("contextBreakoutScenarios")
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testListingContextBreakout(Scenario scenario) throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");

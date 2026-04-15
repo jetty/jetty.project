@@ -35,5 +35,8 @@ module org.eclipse.jetty.ee11.servlet
     // Only required if using JDBCLoginService.
     requires static java.sql;
 
+    exports org.eclipse.jetty.ee11.servlet;
+    exports org.eclipse.jetty.ee11.servlet.security;
+
     uses Authenticator.Factory;
 }

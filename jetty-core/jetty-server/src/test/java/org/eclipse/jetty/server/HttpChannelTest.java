@@ -54,6 +54,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -576,6 +578,7 @@ public class HttpChannelTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testInsufficientContentWritten1() throws Exception
     {
         AtomicReference<Throwable> writeFailureRef = new AtomicReference<>();

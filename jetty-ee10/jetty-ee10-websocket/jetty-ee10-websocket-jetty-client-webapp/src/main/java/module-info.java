@@ -11,15 +11,9 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee10.websocket.client.config.JettyWebSocketClientConfiguration;
-
 module org.eclipse.jetty.ee10.websocket.jetty.client
 {
     requires org.eclipse.jetty.websocket.client;
 
     requires transitive org.eclipse.jetty.ee10.webapp;
-
-    exports org.eclipse.jetty.ee10.websocket.client.config;
-
-    provides org.eclipse.jetty.ee10.webapp.Configuration with JettyWebSocketClientConfiguration;
 }
