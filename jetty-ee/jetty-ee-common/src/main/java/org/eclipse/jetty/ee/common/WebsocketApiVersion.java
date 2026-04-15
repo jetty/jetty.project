@@ -73,17 +73,14 @@ public enum WebsocketApiVersion
             String specificationVersion = loadedClass.getPackage().getSpecificationVersion();
             if (specificationVersion == null)
             {
-                LOG.info("getDefinedPackage");
                 specificationVersion = classLoader.getDefinedPackage("jakarta.websocket").getSpecificationVersion();
             }
             if (specificationVersion == null)
             {
-                LOG.info("getModule");
                 specificationVersion = loadedClass.getModule().getDescriptor().version()
                     .map(ModuleDescriptor.Version::toString)
                     .map(version -> version.substring(0, version.lastIndexOf('.')))
                     .orElse(null);
-                LOG.info("Version:" + specificationVersion);
             }
             return WebsocketApiVersion.from(specificationVersion);
         }
