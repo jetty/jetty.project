@@ -16,6 +16,8 @@ package org.eclipse.jetty.ee10.webapp;
 import org.eclipse.jetty.ee.common.WebAppClassLoader;
 import org.eclipse.jetty.ee.servlet.ErrorHandler;
 import org.eclipse.jetty.ee.servlet.SessionHandler;
+import org.eclipse.jetty.ee.webapp.JettyWebXmlConfiguration;
+import org.eclipse.jetty.ee.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;

@@ -125,6 +125,13 @@
           <groupId>org.eclipse.jetty.ee</groupId>
           <artifactId>jetty-ee-maven-plugin</artifactId>
           <version>${jetty.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>jakarta.servlet</groupId>
+              <artifactId>jakarta.servlet-api</artifactId>
+              <version>@ee.jakarta.servlet.api.version@</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

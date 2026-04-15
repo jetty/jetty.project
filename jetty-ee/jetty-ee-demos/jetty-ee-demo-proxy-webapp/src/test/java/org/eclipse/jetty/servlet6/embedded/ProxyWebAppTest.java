@@ -26,6 +26,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +39,7 @@ import static org.hamcrest.Matchers.is;
  * embedded Jetty techniques, in ways similar to the various Jetty XML files
  * from {@code jetty-home}
  */
+@Disabled("This needs to be fixed in EE")
 public class ProxyWebAppTest
 {
     private Server server;

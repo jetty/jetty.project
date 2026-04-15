@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.cdi;
 
 import jakarta.servlet.ServletContainerInitializer;
-import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 
 /**
  * <p>A {@link ServletContainerInitializer} that introspects for a CDI API
@@ -30,7 +29,7 @@ import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
  *     "org.eclipse.jetty.cdi.decorator".</dd>
  * </dl>
  *
- * @see AnnotationConfiguration.ServletContainerInitializerOrdering
+ * @see org.eclipse.jetty.ee.annotations.AnnotationConfiguration.ServletContainerInitializerOrdering
  */
 public class CdiServletContainerInitializer extends org.eclipse.jetty.ee.cdi.CdiServletContainerInitializer
 {

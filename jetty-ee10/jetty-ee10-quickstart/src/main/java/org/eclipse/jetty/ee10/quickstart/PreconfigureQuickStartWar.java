@@ -19,6 +19,7 @@ import java.util.Locale;
 import org.eclipse.jetty.ee.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;

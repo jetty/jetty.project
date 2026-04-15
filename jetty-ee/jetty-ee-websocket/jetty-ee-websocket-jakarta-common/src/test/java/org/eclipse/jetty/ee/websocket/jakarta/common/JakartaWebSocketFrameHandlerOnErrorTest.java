@@ -57,7 +57,7 @@ public class JakartaWebSocketFrameHandlerOnErrorTest extends AbstractJakartaWebS
     {
         assertOnErrorInvocation(new ErrorSessionThrowableSocket(),
             allOf(
-                containsString("onError(oeje11wjc.JakartaWebSocketSession@"),
+                containsString("onError(oejewjc.JakartaWebSocketSession@"),
                 containsString(ErrorSessionThrowableSocket.class.getName()),
                 containsString(EXPECTED_THROWABLE)
             ));
