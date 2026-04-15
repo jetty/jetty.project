@@ -107,6 +107,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
         return length;
     }
 
+    @Override
     public long remaining()
     {
         return slice.remaining();
@@ -117,9 +118,15 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
         return slice.skip(skip);
     }
 
+    @Override
     public StreamFrame slice(long offset, long length)
     {
-        return new StreamFrame(type(), streamId(), slice.slice(length), offset, isEndData());
+        return slice(type(), offset, length);
+    }
+
+    public StreamFrame slice(long type, long offset, long length)
+    {
+        return new StreamFrame(type, streamId(), slice.slice(length), offset, isEndData());
     }
 
     public void accept(Consumer<RetainableByteBuffer> consumer)

@@ -262,7 +262,7 @@ public class FramesGenerator
         if (hasLength)
             generated += VarLenInt.encode(accumulator, dataLength);
 
-        StreamFrame sliced = frame.slice(offset, dataLength);
+        StreamFrame sliced = frame.slice(frameType, offset, dataLength);
         frame.skip(dataLength);
         generated += dataLength;
         sliced.accept(accumulator::add);
