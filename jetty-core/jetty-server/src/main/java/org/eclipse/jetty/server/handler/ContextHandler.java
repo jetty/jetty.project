@@ -145,6 +145,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     private boolean _defaultContextPath = true;
     private boolean _rootContext = true;
     private Resource _baseResource;
+    private Resource _originalBaseResource;
     private ClassLoader _classLoader;
     private Request.Handler _errorHandler;
     private boolean _allowNullPathInContext;
@@ -904,8 +905,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                                 return resourceFactory.newResource(realUri);
                             return r;
                         }).toList();
-                    // The _baseResource attribute stores the old value to be restored in doStop.
-                    setAttribute("_baseResource", _baseResource);
+                    // Remember the original base resource so it can be restored in doStop().
+                    _originalBaseResource = _baseResource;
                     _baseResource = ResourceFactory.combine(resources);
                 }
                 else
@@ -913,8 +914,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                     URI realUri = baseResource.getRealURI();
                     if (realUri != null)
                     {
-                        // The _baseResource attribute stores the old value to be restored in doStop.
-                        setAttribute("_baseResource", _baseResource);
+                        // Remember the original base resource so it can be restored in doStop().
+                        _originalBaseResource = _baseResource;
                         _baseResource = ResourceFactory.of(this).newResource(realUri);
                     }
                 }
@@ -981,8 +982,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         _context.call(super::doStop, null);
         cleanupAfterStop();
         _tempDirectoryCreated = false;
-        if (removeAttribute("_baseResource") instanceof Resource baseResource)
-            _baseResource = baseResource;
+        if (_originalBaseResource != null)
+        {
+            _baseResource = _originalBaseResource;
+            _originalBaseResource = null;
+        }
     }
 
     protected void cleanupAfterStop() throws Exception
