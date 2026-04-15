@@ -29,12 +29,7 @@ public class CdiConfiguration extends AbstractConfiguration
 {
     public CdiConfiguration()
     {
-        this(new Builder());
-    }
-
-    public CdiConfiguration(Builder builder)
-    {
-        super(builder
+        super(new Builder()
             .protectAndExpose("org.eclipse.jetty.ee.cdi.CdiServletContainerInitializer")
             .hide(getCdiHiddenClasses())
             .addDependents(AnnotationConfiguration.class, PlusConfiguration.class));
