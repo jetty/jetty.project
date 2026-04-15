@@ -1,1 +1,0 @@
-This is the "alt.txt" in the /foo/ directory for war "with_dirs"

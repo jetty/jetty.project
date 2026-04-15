@@ -1,1 +1,0 @@
-This is the "main.txt" in the /bar/ directory for war "with_dirs"
