@@ -904,6 +904,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                                 return resourceFactory.newResource(realUri);
                             return r;
                         }).toList();
+                    // The _baseResource attribute stores the old value to be restored in doStop.
                     setAttribute("_baseResource", _baseResource);
                     _baseResource = ResourceFactory.combine(resources);
                 }
@@ -912,6 +913,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                     URI realUri = baseResource.getRealURI();
                     if (realUri != null)
                     {
+                        // The _baseResource attribute stores the old value to be restored in doStop.
                         setAttribute("_baseResource", _baseResource);
                         _baseResource = ResourceFactory.of(this).newResource(realUri);
                     }
