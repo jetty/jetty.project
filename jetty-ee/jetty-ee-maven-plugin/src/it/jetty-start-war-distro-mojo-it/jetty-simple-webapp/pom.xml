@@ -137,7 +137,7 @@
                 <jetty.http.port>0</jetty.http.port>
               </jettyProperties>
               <jettyHomeZip>@jettyHomeZip@</jettyHomeZip>
-              <modules>ee-apache-jsp,ee-glassfish-jstl,ee-testmod,resources</modules>
+              <modules>ee11-apache-jsp,ee11-glassfish-jstl,ee-testmod,resources</modules>
             </configuration>
           </execution>
         </executions>
