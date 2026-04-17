@@ -57,6 +57,7 @@
               org.xml.sax.helpers,
               *</Import-Package>
             <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;==;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee.*;version="[$(version;==;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
+            <_eeprofile>auto</_eeprofile>
           </instructions>
         </configuration>
       </plugin>

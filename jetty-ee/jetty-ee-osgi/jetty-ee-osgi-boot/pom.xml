@@ -94,6 +94,7 @@
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee.webapp.Configuration</Provide-Capability>
             <_nouses>true</_nouses>
+            <_eeprofile>auto</_eeprofile>
           </instructions>
         </configuration>
       </plugin>
