@@ -24,7 +24,8 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ public class ModuleGraphWriterTest
     {
         Path baseDir = workDir.getEmptyPathDir();
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
+        Path homeDir = MavenPaths.findTestResourceDir("dist-home");
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration

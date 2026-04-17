@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.start.Props.Prop;
@@ -47,7 +46,7 @@ public class ConfigSourcesTest
         {
             actualList.add(source.getId());
         }
-        List<String> expectedList = Arrays.asList(expectedOrder);
+        List<String> expectedList = List.of(expectedOrder);
         assertThat("ConfigSources.id order", actualList, contains(expectedList.toArray()));
     }
 

@@ -63,7 +63,7 @@ public abstract class AbstractUseCase
     }
 
     @BeforeEach
-    public void setupTest() throws IOException
+    public void setupTest()
     {
         testdir = workDir.getEmptyPathDir();
         // Create empty base directory for testcase to use
@@ -252,7 +252,7 @@ public abstract class AbstractUseCase
             execResults.baseHome = main.getBaseHome();
 
             StartLog.setStream(originalStream);
-            execResults.output = out.toString(StandardCharsets.UTF_8.name());
+            execResults.output = out.toString(StandardCharsets.UTF_8);
         }
         catch (Exception e)
         {

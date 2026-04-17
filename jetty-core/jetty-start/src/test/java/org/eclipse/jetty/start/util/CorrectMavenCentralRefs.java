@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.start.PathFinder;
 import org.eclipse.jetty.start.PathMatchers;
 import org.eclipse.jetty.start.Utils;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 
 /**
  * Simple utility to scan all of the mod files and correct references
@@ -43,7 +43,7 @@ public class CorrectMavenCentralRefs
 {
     public static void main(String[] args)
     {
-        Path buildRoot = MavenTestingUtils.getProjectDir("..").toPath();
+        Path buildRoot = MavenPaths.projectBase().resolve("../..");
         buildRoot = buildRoot.normalize().toAbsolutePath();
 
         // Test to make sure we are in right directory

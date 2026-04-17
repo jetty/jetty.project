@@ -15,7 +15,7 @@ package org.eclipse.jetty.start;
 
 import java.nio.file.Path;
 
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,7 +25,7 @@ public class JarVersionTest
 {
     private void assertJarVersion(String jarname, String expectedVersion)
     {
-        Path jarfile = MavenTestingUtils.getTestResourcePathFile(jarname);
+        Path jarfile = MavenPaths.findTestResourceFile(jarname);
         assertThat("Jar: " + jarname, JarVersion.getVersion(jarfile), containsString(expectedVersion));
     }
 

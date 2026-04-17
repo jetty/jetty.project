@@ -224,7 +224,7 @@ public class PropertyPassingTest
             --module=empty
             # TESTING THIS (it should expand the ${jetty.base} portion
             test.config=${jetty.base}/etc/config.ini
-            """.replace('/', File.separatorChar);
+            """;
         Files.writeString(ini, iniBody, StandardCharsets.UTF_8);
 
         // Setup command line
@@ -242,7 +242,7 @@ public class PropertyPassingTest
         String output = collectRunOutput(commands);
 
         // Test for values
-        Path expectedPath = base.resolve("etc/config.ini".replace('/', File.separatorChar));
+        Path expectedPath = base.resolve("etc/config.ini");
         assertThat(output, containsString("test.config=" + expectedPath));
     }
 
@@ -269,7 +269,7 @@ public class PropertyPassingTest
             --module=env-config
             # TESTING THIS (it should expand the ${jetty.base} portion
             test.config=${jetty.base}/etc/config.ini
-            """.replace('/', File.separatorChar);
+            """;
         Files.writeString(ini, iniBody, StandardCharsets.UTF_8);
 
         // Setup command line
@@ -287,7 +287,7 @@ public class PropertyPassingTest
         String output = collectRunOutput(commands);
 
         // Test for values
-        Path expectedPath = base.resolve("etc/config.ini".replace('/', File.separatorChar));
+        Path expectedPath = base.resolve("etc/config.ini");
         assertThat(output, containsString("test.config=" + expectedPath));
     }
 

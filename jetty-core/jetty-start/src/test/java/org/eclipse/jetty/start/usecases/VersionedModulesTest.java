@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -37,45 +35,42 @@ public class VersionedModulesTest extends AbstractUseCase
         setupStandardHomeDir();
 
         FS.ensureDirExists(baseDir.resolve("modules"));
-        Files.write(baseDir.resolve("modules/new.mod"),
-            Arrays.asList(
-                "[version]",
-                "9.3",
-                "[ini]",
-                "the-future=is-new"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/old.mod"),
-            Arrays.asList(
-                "[defaults]",
-                "from-module=old"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Arrays.asList(
-                "--modules=main",
-                "--modules=old",
-                "--modules=new"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/new.mod"),
+            """
+            [version]
+            9.3
+            [ini]
+            the-future=is-new
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/old.mod"),
+            """
+            [defaults]
+            from-module=old
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("start.ini"),
+            """
+            --modules=main
+            --modules=old
+            --modules=new
+            """, StandardCharsets.UTF_8);
 
         // === Execute Main
         List<String> runArgs = Collections.emptyList();
         ExecResults results = exec(runArgs, false);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
-            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar)
+        List<String> expectedXmls = List.of(
+            FS.separators("${jetty.home}/etc/base.xml"),
+            FS.separators("${jetty.home}/etc/main.xml")
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
-        List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
+        List<String> expectedLibs = List.of(
+            FS.separators("${jetty.home}/lib/base.jar"),
+            FS.separators("${jetty.home}/lib/main.jar"),
+            FS.separators("${jetty.home}/lib/other.jar")
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));

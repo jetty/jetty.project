@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -21,7 +20,8 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ public class ModuleTest
     {
         Path baseDir = workDir.getEmptyPathDir();
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
+        Path homeDir = MavenPaths.findTestResourceDir("dist-home");
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
@@ -54,8 +54,8 @@ public class ModuleTest
         // Initialize
         BaseHome basehome = new BaseHome(config);
 
-        File file = MavenTestingUtils.getTestResourceFile("dist-home/modules/main.mod");
-        Module module = new Module(basehome, file.toPath());
+        Path file = MavenPaths.findTestResourceFile("dist-home/modules/main.mod");
+        Module module = new Module(basehome, file);
 
         assertThat("Module Name", module.getName(), is("main"));
         assertThat("Module Depends Size", module.getDepends().size(), is(1));

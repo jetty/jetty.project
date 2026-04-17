@@ -15,7 +15,6 @@ package org.eclipse.jetty.start.usecases;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -37,50 +36,43 @@ public class LoopTest extends AbstractUseCase
         // Create loop
         // richard -> harry -> tom -> richard
 
-        Files.write(baseDir.resolve("modules/branch.mod"),
-            Arrays.asList(
-                "[provides]",
-                "branch"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/richard.mod"),
-            Arrays.asList(
-                "[depends]",
-                "harry"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/harry.mod"),
-            Arrays.asList(
-                "[depends]",
-                "tom"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/other.mod"),
-            Arrays.asList(
-                "[provides]",
-                "branch"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/root.mod"),
-            Arrays.asList(
-                "[depends]",
-                "branch"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/tom.mod"),
-            Arrays.asList(
-                "[depends]",
-                "richard"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=root"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/branch.mod"),
+            """
+            [provides]
+            branch
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/richard.mod"),
+            """
+            [depends]
+            harry
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/harry.mod"),
+            """
+            [depends]
+            tom
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/other.mod"),
+            """
+            [provides]
+            branch
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/root.mod"),
+            """
+            [depends]
+            branch
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/tom.mod"),
+            """
+            [depends]
+            richard
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("start.ini"),
+            """
+            --modules=root
+            """, StandardCharsets.UTF_8);
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
+        List<String> prepareArgs = List.of(
             "--testing-mode",
             "--create-startd",
             "--add-modules=tom"
@@ -107,50 +99,43 @@ public class LoopTest extends AbstractUseCase
         // Create loop
         // richard -> dynamic/harry -> tom -> richard
 
-        Files.write(baseDir.resolve("modules/branch.mod"),
-            Arrays.asList(
-                "[provides]",
-                "branch"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/richard.mod"),
-            Arrays.asList(
-                "[depends]",
-                "dynamic/harry"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/dynamic/harry.mod"),
-            Arrays.asList(
-                "[depends]",
-                "tom"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/other.mod"),
-            Arrays.asList(
-                "[provides]",
-                "branch"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/root.mod"),
-            Arrays.asList(
-                "[depends]",
-                "branch"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/tom.mod"),
-            Arrays.asList(
-                "[depends]",
-                "richard"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=root"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/branch.mod"),
+            """
+            [provides]
+            branch
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/richard.mod"),
+            """
+            [depends]
+            dynamic/harry
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/dynamic/harry.mod"),
+            """
+            [depends]
+            tom
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/other.mod"),
+            """
+            [provides]
+            branch
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/root.mod"),
+            """
+            [depends]
+            branch
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/tom.mod"),
+            """
+            [depends]
+            richard
+            """, StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("start.ini"),
+            """
+            --modules=root
+            """, StandardCharsets.UTF_8);
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
+        List<String> prepareArgs = List.of(
             "--testing-mode",
             "--create-startd",
             "--add-modules=tom"
