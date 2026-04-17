@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
@@ -21,6 +20,7 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.toolchain.test.PathMatchers.isRegularFile;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -38,7 +38,7 @@ public class Files0Test extends AbstractUseCase
             """
             [files]
             basehome:modules/demo/demo-config.xml|etc/demo-config.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         FS.touch(baseDir.resolve("modules/demo/demo-config.xml"));
 
         // === Prepare Jetty Base using Main

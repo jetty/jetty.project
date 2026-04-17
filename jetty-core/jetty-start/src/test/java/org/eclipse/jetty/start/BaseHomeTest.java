@@ -14,7 +14,6 @@
 package org.eclipse.jetty.start;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,9 +23,9 @@ import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
@@ -97,7 +96,7 @@ public class BaseHomeTest
         String ref = hb.toShortForm(startIni);
         assertThat("Reference", ref, startsWith("${jetty.home}"));
 
-        String contents = Files.readString(startIni, StandardCharsets.UTF_8);
+        String contents = Files.readString(startIni, UTF_8);
         assertThat("Contents", contents, containsString("Home Ini"));
     }
 
@@ -194,7 +193,7 @@ public class BaseHomeTest
         String ref = hb.toShortForm(startIni);
         assertThat("Reference", ref, startsWith("${jetty.base}"));
 
-        String contents = Files.readString(startIni, StandardCharsets.UTF_8);
+        String contents = Files.readString(startIni, UTF_8);
         assertThat("Contents", contents, containsString("Base Ini"));
     }
 }

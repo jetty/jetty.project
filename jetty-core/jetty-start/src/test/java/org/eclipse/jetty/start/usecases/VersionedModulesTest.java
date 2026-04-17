@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashSet;
@@ -23,6 +22,7 @@ import java.util.Set;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -41,18 +41,18 @@ public class VersionedModulesTest extends AbstractUseCase
             9.3
             [ini]
             the-future=is-new
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/old.mod"),
             """
             [defaults]
             from-module=old
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("start.ini"),
             """
             --modules=main
             --modules=old
             --modules=new
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Execute Main
         List<String> runArgs = Collections.emptyList();

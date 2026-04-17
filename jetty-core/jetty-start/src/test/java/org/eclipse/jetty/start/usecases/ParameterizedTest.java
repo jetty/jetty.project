@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashSet;
@@ -23,6 +22,7 @@ import java.util.Set;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.toolchain.test.PathMatchers.isRegularFile;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -44,7 +44,7 @@ public class ParameterizedTest extends AbstractUseCase
             name1=changed1
             --add-modules=parameterized
             # ignore this
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/parameterized.mod"),
             """
             [depend]
@@ -57,7 +57,7 @@ public class ParameterizedTest extends AbstractUseCase
             name0=value0
             # name1=value1
             # name2=too
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("start.d/tobeupdated.ini"),
             """
             #p=v
@@ -66,7 +66,7 @@ public class ParameterizedTest extends AbstractUseCase
             property0=value0
             #comment
             #property1=value1
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Prepare Jetty Base using Main
         List<String> prepareArgs = List.of(
@@ -131,7 +131,7 @@ public class ParameterizedTest extends AbstractUseCase
             name1=changed1
             --add-modules=parameterized
             # ignore this
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/parameterized.mod"),
             """
             [depend]
@@ -144,7 +144,7 @@ public class ParameterizedTest extends AbstractUseCase
             name0=value0
             # name1=value1
             # name2=too
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("start.d/tobeupdated.ini"),
             """
             #p=v
@@ -153,7 +153,7 @@ public class ParameterizedTest extends AbstractUseCase
             property0=value0
             #comment
             #property1=value1
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Prepare Jetty Base using Main
         List<String> prepareArgs = List.of(
@@ -216,7 +216,7 @@ public class ParameterizedTest extends AbstractUseCase
             name1=changed1
             --add-modules=parameterized
             # ignore this
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/parameterized.mod"),
             """
             [depend]
@@ -229,7 +229,7 @@ public class ParameterizedTest extends AbstractUseCase
             name0=value0
             # name1=value1
             # name2=too
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("start.d/tobeupdated.ini"),
             """
             #p=v
@@ -238,7 +238,7 @@ public class ParameterizedTest extends AbstractUseCase
             property0=value0
             #comment
             #property1=value1
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Prepare Jetty Base using Main
         List<String> prepareArgs = List.of(

@@ -38,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(WorkDirExtension.class) 
 public class ConfigSourcesTest
 {
-
     private void assertIdOrder(ConfigSources sources, String... expectedOrder)
     {
         List<String> actualList = new ArrayList<>();

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
@@ -21,6 +20,7 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
@@ -40,36 +40,36 @@ public class LoopTest extends AbstractUseCase
             """
             [provides]
             branch
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/richard.mod"),
             """
             [depends]
             harry
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/harry.mod"),
             """
             [depends]
             tom
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/other.mod"),
             """
             [provides]
             branch
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/root.mod"),
             """
             [depends]
             branch
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/tom.mod"),
             """
             [depends]
             richard
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("start.ini"),
             """
             --modules=root
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Prepare Jetty Base using Main
         List<String> prepareArgs = List.of(
@@ -103,36 +103,36 @@ public class LoopTest extends AbstractUseCase
             """
             [provides]
             branch
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/richard.mod"),
             """
             [depends]
             dynamic/harry
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/dynamic/harry.mod"),
             """
             [depends]
             tom
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/other.mod"),
             """
             [provides]
             branch
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/root.mod"),
             """
             [depends]
             branch
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/tom.mod"),
             """
             [depends]
             richard
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("start.ini"),
             """
             --modules=root
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Prepare Jetty Base using Main
         List<String> prepareArgs = List.of(

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
@@ -23,6 +22,7 @@ import org.eclipse.jetty.start.StartEnvironment;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -57,7 +57,7 @@ public class EnvironmentsTest extends AbstractUseCase
             lib/envA.jar
             [ini]
             feature.option=envA
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         FS.touch(baseDir.resolve("lib/envB.jar"));
         FS.touch(baseDir.resolve("etc/envB.xml"));
@@ -75,7 +75,7 @@ public class EnvironmentsTest extends AbstractUseCase
             lib/envB.jar
             [ini]
             feature.option=envB
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Execute Main
         List<String> runArgs = List.of(

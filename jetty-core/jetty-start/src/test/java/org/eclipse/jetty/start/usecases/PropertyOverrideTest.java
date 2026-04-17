@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,6 +22,7 @@ import org.eclipse.jetty.start.FS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -46,7 +46,7 @@ public class PropertyOverrideTest extends AbstractUseCase
             main
             [ini-template]
             # jetty.sslContext.keyStorePassword=default
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         FS.ensureDirectoryExists(baseDir.resolve("modules"));
 
@@ -56,13 +56,13 @@ public class PropertyOverrideTest extends AbstractUseCase
             ssl
             [ini]
             %s
-            """.formatted(propRef), StandardCharsets.UTF_8);
+            """.formatted(propRef), UTF_8);
 
         FS.ensureDirectoryExists(baseDir.resolve("start.d"));
         Files.writeString(baseDir.resolve("start.d/main.ini"),
             """
             --modules=ssl-ini
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Execute Main
         List<String> commandLine = List.of(
@@ -118,7 +118,7 @@ public class PropertyOverrideTest extends AbstractUseCase
             main
             [ini-template]
             # jetty.sslContext.keyStorePassword=default
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         FS.ensureDirectoryExists(baseDir.resolve("modules"));
 
@@ -128,14 +128,14 @@ public class PropertyOverrideTest extends AbstractUseCase
             ssl
             [ini]
             %s
-            """.formatted(propRef), StandardCharsets.UTF_8);
+            """.formatted(propRef), UTF_8);
 
         FS.ensureDirectoryExists(baseDir.resolve("start.d"));
         Files.writeString(baseDir.resolve("start.d/main.ini"),
             """
             --modules=ssl-ini
             jetty.sslContext.keyStorePassword=storepwd
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Execute Main
         List<String> commandLine = List.of();

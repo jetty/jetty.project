@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashSet;
@@ -23,6 +22,7 @@ import java.util.Set;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -46,44 +46,44 @@ public class OrderedTest extends AbstractUseCase
             alternate
             [xml]
             etc/alternateA.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/alternateB.mod"),
             """
             [provides]
             alternate
             [xml]
             etc/alternateB.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/convenience.mod"),
             """
             [depends]
             replacement
             something-else
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/dependent.mod"),
             """
             [depends]
             alternate
             [xml]
             etc/dependent.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/original.mod"),
             """
             [ini]
             impl=original
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/replacement.mod"),
             """
             [provides]
             original
             [ini]
             impl=replacement
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/something-else.mod"),
             """
             [depends]
             original
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Execute Main
         List<String> runArgs = List.of(
@@ -116,44 +116,44 @@ public class OrderedTest extends AbstractUseCase
             alternate
             [xml]
             etc/alternateA.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/alternateB.mod"),
             """
             [provides]
             alternate
             [xml]
             etc/alternateB.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/convenience.mod"),
             """
             [depends]
             replacement
             something-else
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/dependent.mod"),
             """
             [depends]
             alternate
             [xml]
             etc/dependent.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/original.mod"),
             """
             [ini]
             impl=original
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/replacement.mod"),
             """
             [provides]
             original
             [ini]
             impl=replacement
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/something-else.mod"),
             """
             [depends]
             original
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Execute Main
         List<String> runArgs = List.of(
@@ -186,44 +186,44 @@ public class OrderedTest extends AbstractUseCase
             alternate
             [xml]
             etc/alternateA.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/alternateB.mod"),
             """
             [provides]
             alternate
             [xml]
             etc/alternateB.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/convenience.mod"),
             """
             [depends]
             replacement
             something-else
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/dependent.mod"),
             """
             [depends]
             alternate
             [xml]
             etc/dependent.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/original.mod"),
             """
             [ini]
             impl=original
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/replacement.mod"),
             """
             [provides]
             original
             [ini]
             impl=replacement
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/something-else.mod"),
             """
             [depends]
             original
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Execute Main
         List<String> runArgs = List.of(
@@ -251,44 +251,44 @@ public class OrderedTest extends AbstractUseCase
             alternate
             [xml]
             etc/alternateA.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/alternateB.mod"),
             """
             [provides]
             alternate
             [xml]
             etc/alternateB.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/convenience.mod"),
             """
             [depends]
             replacement
             something-else
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/dependent.mod"),
             """
             [depends]
             alternate
             [xml]
             etc/dependent.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/original.mod"),
             """
             [ini]
             impl=original
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/replacement.mod"),
             """
             [provides]
             original
             [ini]
             impl=replacement
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/something-else.mod"),
             """
             [depends]
             original
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Execute Main
         List<String> runArgs = List.of(
@@ -339,7 +339,7 @@ public class OrderedTest extends AbstractUseCase
             implA=implA
             [ini-template]
             implA=implA
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/abstractB.mod"),
             """
             [depend]
@@ -350,19 +350,19 @@ public class OrderedTest extends AbstractUseCase
             implB=implB
             [ini-template]
             implB=implB
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/dynamic/implA.mod"),
             """
             [depend]
             provided
             [xml]
             etc/implA.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
         Files.writeString(baseDir.resolve("modules/dynamic/implB.mod"),
             """
             [xml]
             etc/implB.xml
-            """, StandardCharsets.UTF_8);
+            """, UTF_8);
 
         // === Prepare Jetty Base using Main
         List<String> prepareArgs = List.of(

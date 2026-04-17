@@ -187,7 +187,10 @@ public class ModulesTest
         expectedLibs.add("lib/optional.jar");
         expectedLibs.add("lib/base.jar");
 
-        List<String> actualLibs = normalizeLibs(active);
+        List<String> actualLibs = active.stream()
+            .flatMap(m -> m.getLibs().stream())
+            .distinct()
+            .toList();
         assertThat("Resolved Libs: " + actualLibs, actualLibs, contains(expectedLibs.toArray()));
 
         // Assert XML List
@@ -195,7 +198,10 @@ public class ModulesTest
         expectedXmls.add("etc/optional.xml");
         expectedXmls.add("etc/base.xml");
 
-        List<String> actualXmls = normalizeXmls(active);
+        List<String> actualXmls = active.stream()
+            .flatMap(m -> m.getXmls().stream())
+            .distinct()
+            .toList();
         assertThat("Resolved XMLs: " + actualXmls, actualXmls, contains(expectedXmls.toArray()));
     }
 
@@ -348,37 +354,5 @@ public class ModulesTest
 
         Props props = args.getJettyEnvironment().getProperties();
         assertThat(props.getString("bar.name"), is("dynamic"));
-    }
-
-    private List<String> normalizeLibs(List<Module> active)
-    {
-        List<String> libs = new ArrayList<>();
-        for (Module module : active)
-        {
-            for (String lib : module.getLibs())
-            {
-                if (!libs.contains(lib))
-                {
-                    libs.add(lib);
-                }
-            }
-        }
-        return libs;
-    }
-
-    private List<String> normalizeXmls(List<Module> active)
-    {
-        List<String> xmls = new ArrayList<>();
-        for (Module module : active)
-        {
-            for (String xml : module.getXmls())
-            {
-                if (!xmls.contains(xml))
-                {
-                    xmls.add(xml);
-                }
-            }
-        }
-        return xmls;
     }
 }
