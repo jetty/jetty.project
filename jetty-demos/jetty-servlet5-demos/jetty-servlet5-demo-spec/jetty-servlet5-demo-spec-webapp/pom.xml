@@ -60,6 +60,19 @@
         </configuration>
         <executions>
           <execution>
+            <id>ee</id>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Jetty-Environment>ee</Jetty-Environment>
+                <Jetty-ContextFilePath>META-INF/ee11-plugin-context.xml</Jetty-ContextFilePath>
+              </instructions>
+              <manifestLocation>${project.build.outputDirectory}/META-INF-ee</manifestLocation>
+            </configuration>
+          </execution>
+          <execution>
             <id>ee10</id>
             <goals>
               <goal>manifest</goal>
@@ -105,6 +118,21 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
+          <execution>
+            <id>ee-web-bundle-assembly</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/ee-web-bundle.xml</descriptor>
+              </descriptors>
+              <archive>
+                <manifestFile>${project.build.outputDirectory}/META-INF-ee/MANIFEST.MF</manifestFile>
+              </archive>
+            </configuration>
+          </execution>
           <execution>
             <id>ee10-web-bundle-assembly</id>
             <goals>
