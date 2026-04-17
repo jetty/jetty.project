@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -63,8 +64,10 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -321,6 +324,13 @@ public class HttpChannelState implements HttpChannel, Components
         if (LOG.isDebugEnabled())
             LOG.debug("onRequest {} {}", request, this);
 
+        if (!authorityMatches(request.getHttpURI(), request.getHttpFields().get(HttpHeader.HOST)))
+        {
+            HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
+            if (!ComplianceUtils.allows(httpCompliance, HttpCompliance.Violation.MISMATCHED_AUTHORITY, "Authority!=Host", getComplianceViolationListener()))
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
+        }
+
         try (AutoLock ignored = _lock.lock())
         {
             if (_stream == null)
@@ -349,6 +359,34 @@ public class HttpChannelState implements HttpChannel, Components
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
         }
+    }
+
+    private boolean authorityMatches(HttpURI httpURI, String host)
+    {
+        String authority = httpURI.getAuthority();
+        // Either both are null or only one is present.
+        if (authority == null || host == null)
+            return true;
+
+        // Both are present, must match.
+
+        // Direct hit, hosts must be compared ignoring case.
+        if (authority.equalsIgnoreCase(host))
+            return true;
+
+        // Handle default ports: example.com matches example.com:80.
+        String scheme = httpURI.getScheme();
+        int defaultPort = URIUtil.getDefaultPortForScheme(scheme);
+        int uriPort = httpURI.getPort();
+        int effectiveURIPort = uriPort <= 0 ? defaultPort : uriPort;
+        HostPort hostPort = new HostPort(host);
+        int port = hostPort.getPort();
+        int effectiveHostPort = port <= 0 ? defaultPort : port;
+        if (effectiveURIPort != effectiveHostPort)
+            return false;
+
+        // Same effective port, compare hosts ignoring case.
+        return hostPort.getHost().equalsIgnoreCase(httpURI.getHost());
     }
 
     public Request getRequest()
