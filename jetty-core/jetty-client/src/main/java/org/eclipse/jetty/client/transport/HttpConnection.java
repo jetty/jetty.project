@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
@@ -185,7 +186,9 @@ public abstract class HttpConnection implements IConnection, Attachable
             if (!headers.contains(HttpHeader.HOST.asString()))
             {
                 URI uri = request.getURI();
-                if (uri != null)
+                if (HttpMethod.CONNECT.is(request.getMethod()))
+                    request.addHeader(new HttpField(HttpHeader.HOST, path));
+                else if (uri != null)
                     request.addHeader(new HttpField(HttpHeader.HOST, uri.getAuthority()));
                 else
                     request.addHeader(getHttpDestination().getHostField());

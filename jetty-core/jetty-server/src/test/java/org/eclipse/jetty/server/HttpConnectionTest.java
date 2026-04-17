@@ -1322,7 +1322,7 @@ public class HttpConnectionTest
             int offset = 0;
 
             response = _connector.getResponse("CONNECT www.webtide.com:8080 HTTP/1.1\r\n" +
-                "Host: myproxy:8888\r\n" +
+                "Host: www.webtide.com:8080\r\n" +
                 "\r\n", 200, TimeUnit.MILLISECONDS);
             checkContains(response, offset, "HTTP/1.1 200");
         }

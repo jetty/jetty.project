@@ -235,20 +235,14 @@ public class RequestTest
     @Test
     public void testConnectRequestURLDifferentThanHost() throws Exception
     {
-        final AtomicReference<String> resultRequestURL = new AtomicReference<>();
-        final AtomicReference<String> resultRequestURI = new AtomicReference<>();
-
         startServer(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse resp)
             {
-                resultRequestURL.set(request.getRequestURL().toString());
-                resultRequestURI.set(request.getRequestURI());
             }
         });
 
-        // per spec, "Host" is ignored if request-target is authority-form
         String rawResponse = _connector.getResponse(
             """
                 CONNECT myhost:9999 HTTP/1.1\r
@@ -257,9 +251,7 @@ public class RequestTest
                 \r
                 """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat("request.getRequestURL", resultRequestURL.get(), is("http://myhost:9999/"));
-        assertThat("request.getRequestURI", resultRequestURI.get(), is("/"));
+        assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
     }
 
     @Test
