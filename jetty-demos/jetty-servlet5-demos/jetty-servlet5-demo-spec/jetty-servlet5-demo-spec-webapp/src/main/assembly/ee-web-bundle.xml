@@ -21,7 +21,7 @@
       <directory>${basedir}/src/main/templates</directory>
       <outputDirectory>META-INF</outputDirectory>
       <includes>
-        <include>**/ee11-plugin-context.xml</include>
+        <include>**/ee-plugin-context.xml</include>
       </includes>
     </fileSet>
   </fileSets>

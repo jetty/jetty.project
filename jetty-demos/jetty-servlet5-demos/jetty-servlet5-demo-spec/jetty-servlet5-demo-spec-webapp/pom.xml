@@ -67,7 +67,7 @@
             <configuration>
               <instructions>
                 <Jetty-Environment>ee</Jetty-Environment>
-                <Jetty-ContextFilePath>META-INF/ee11-plugin-context.xml</Jetty-ContextFilePath>
+                <Jetty-ContextFilePath>META-INF/ee-plugin-context.xml</Jetty-ContextFilePath>
               </instructions>
               <manifestLocation>${project.build.outputDirectory}/META-INF-ee</manifestLocation>
             </configuration>
