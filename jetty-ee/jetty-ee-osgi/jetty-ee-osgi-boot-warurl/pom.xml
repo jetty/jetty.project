@@ -33,6 +33,7 @@
           <instructions>
             <Bundle-Name>RFC66 War URL</Bundle-Name>
             <Bundle-Activator>org.eclipse.jetty.ee.osgi.boot.warurl.WarUrlActivator</Bundle-Activator>
+            <_noee>true</_noee>
           </instructions>
         </configuration>
       </plugin>
