@@ -26,7 +26,6 @@
             <Bundle-Name>Jetty OSGi ALPN Fragment</Bundle-Name>
             <Import-Package>!javax.*;!org.eclipse.jetty.*</Import-Package>
             <Fragment-Host>system.bundle;extension:=framework</Fragment-Host>
-            <_eeprofile>auto</_eeprofile>
           </instructions>
         </configuration>
       </plugin>

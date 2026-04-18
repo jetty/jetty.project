@@ -124,7 +124,6 @@
             <DynamicImport-Package>org.eclipse.jetty.ee.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
                 org.apache.jasper.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))",
                 org.apache.el.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))"</DynamicImport-Package>
-            <_eeprofile>auto</_eeprofile>
           </instructions>
         </configuration>
       </plugin>

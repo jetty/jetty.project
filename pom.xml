@@ -279,7 +279,7 @@
     <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.2.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
-    <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
+    <maven.bundle.plugin.version>6.0.2</maven.bundle.plugin.version>
     <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
     <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
     <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
@@ -1545,7 +1545,6 @@
                 *</Import-Package>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
-              <_eeprofile>auto</_eeprofile>
             </instructions>
           </configuration>
         </plugin>
