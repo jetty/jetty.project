@@ -18,10 +18,6 @@
   </properties>
   <dependencies>
     <dependency>
-      <groupId>jakarta.annotation</groupId>
-      <artifactId>jakarta.annotation-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>jakarta.transaction</groupId>
       <artifactId>jakarta.transaction-api</artifactId>
       <optional>true</optional>
@@ -159,6 +155,11 @@
       <optional>true</optional>
     </dependency>
     <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
       <scope>provided</scope>
@@ -255,6 +256,7 @@
         <artifactId>maven-invoker-plugin</artifactId>
         <configuration>
           <extraArtifacts>
+            <extraArtifact>org.eclipse.jetty.ee:jetty-ee-bom:${project.version}:pom</extraArtifact>
             <extraArtifact>org.eclipse.jetty:jetty-slf4j-impl:${project.version}</extraArtifact>
             <extraArtifact>org.eclipse.jetty.ee:jetty-ee-apache-jsp:${project.version}</extraArtifact>
             <extraArtifact>org.eclipse.jetty.ee:jetty-ee-glassfish-jstl:${project.version}</extraArtifact>
