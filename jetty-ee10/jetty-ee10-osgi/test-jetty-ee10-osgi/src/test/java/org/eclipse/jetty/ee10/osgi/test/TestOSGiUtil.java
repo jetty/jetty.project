@@ -246,6 +246,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-jndi").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-annotations").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-plus").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-servlets").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee.osgi").artifactId("jetty-ee-osgi-boot").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee.websocket").artifactId("jetty-ee-websocket-servlet").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee10").artifactId("jetty-ee10-servlet").versionAsInProject().start());

@@ -157,6 +157,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlets</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
       <artifactId>jetty-ee-webapp</artifactId>
       <scope>runtime</scope>
     </dependency>
