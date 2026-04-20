@@ -34,6 +34,16 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>jakarta.websocket</groupId>
+      <artifactId>jakarta.websocket-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.websocket</groupId>
+      <artifactId>jakarta.websocket-client-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
       <scope>test</scope>

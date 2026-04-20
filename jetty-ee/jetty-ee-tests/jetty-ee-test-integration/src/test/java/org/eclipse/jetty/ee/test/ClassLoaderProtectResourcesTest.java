@@ -105,7 +105,7 @@ public class ClassLoaderProtectResourcesTest
             """;
         String rawResponse = connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getContent(), containsString("Service Count: %s\n".formatted(expectedHitsFromServlet)));
+        assertThat(response.getContent(), containsString("Service Count: %s%s".formatted(expectedHitsFromServlet, System.lineSeparator())));
     }
 
     private static URI toJarURI(URL url)
@@ -148,7 +148,7 @@ public class ClassLoaderProtectResourcesTest
             """.formatted(resourceName);
         String rawResponse = connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getContent(), containsString("Hits: 0\n"));
+        assertThat(response.getContent(), containsString("Hits: 0" + System.lineSeparator()));
     }
 
     private void protectServerResource(ClassLoader serverClassLoader, String resourceName, WebAppContext webapp) throws IOException, URISyntaxException

@@ -244,6 +244,6 @@ public class JettyClientClassLoaderTest
         assertThat(response.getContentAsString(), containsString("ContextClassLoader: oejec.WebAppClassLoader"));
 
         // Verify that we used WebApps version of WebSocketClient.
-        assertThat(response.getContentAsString(), containsString("ClientClassLoader: oejew.WebAppClassLoader"));
+        assertThat(response.getContentAsString(), containsString("ClientClassLoader: oejec.WebAppClassLoader"));
     }
 }
