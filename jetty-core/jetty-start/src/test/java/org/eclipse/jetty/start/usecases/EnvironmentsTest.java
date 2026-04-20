@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import org.eclipse.jetty.start.StartEnvironment;
@@ -111,12 +112,12 @@ public class EnvironmentsTest extends AbstractUseCase
         List<String> actualProperties = results.getProperties();
         assertThat("Properties", actualProperties, containsInAnyOrder(expectedProperties.toArray()));
 
-        assertThat(results.getEnvironments(), hasSize(2));
+        assertThat(results.getEnvironments(), hasSize(3));
         for (String e : List.of("envA", "envB"))
         {
             StartEnvironment environment = results.getEnvironment(e);
             assertThat(environment, notNullValue());
-            assertThat(environment.getName(), is(e));
+            assertThat(environment.getName(), is(e.toLowerCase(Locale.ROOT)));
             assertThat(environment.getClasspath().getElements(), contains(baseDir.resolve("lib/%s.jar".formatted(e))));
             assertThat(environment.getXmlFiles(), contains(baseDir.resolve("etc/%s.xml".formatted(e))));
             assertThat(environment.getProperties().getProp("feature.option").value, is(e));

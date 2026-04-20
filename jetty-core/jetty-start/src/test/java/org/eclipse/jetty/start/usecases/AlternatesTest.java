@@ -135,6 +135,8 @@ public class AlternatesTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("modules/default.mod"),
             Arrays.asList(
+                "[provides]",
+                "default|default",
                 "[xml]",
                 "etc/d.xml",
                 "[ini]",
@@ -222,6 +224,8 @@ public class AlternatesTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("modules/default.mod"),
             Arrays.asList(
+                "[provides]",
+                "default|default",
                 "[xml]",
                 "etc/d.xml",
                 "[ini]",
@@ -308,6 +312,8 @@ public class AlternatesTest extends AbstractUseCase
             StandardCharsets.UTF_8);
         Files.write(baseDir.resolve("modules/default.mod"),
             Arrays.asList(
+                "[provides]",
+                "default|default",
                 "[xml]",
                 "etc/d.xml",
                 "[ini]",

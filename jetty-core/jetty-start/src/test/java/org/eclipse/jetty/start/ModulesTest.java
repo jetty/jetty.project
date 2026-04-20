@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +23,7 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
@@ -35,6 +35,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(WorkDirExtension.class)
 public class ModulesTest
@@ -46,7 +47,7 @@ public class ModulesTest
     {
         Path baseDir = workDir.getEmptyPathDir();
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
+        Path homeDir = MavenPaths.findTestResourceDir("dist-home");
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
@@ -68,6 +69,7 @@ public class ModulesTest
 
         // Check versions
         String platformProperty = args.getJettyEnvironment().getProperties().getString("java.version.platform");
+        assertNotNull(platformProperty);
         assertThat("java.version.platform", Integer.parseInt(platformProperty), greaterThanOrEqualTo(8));
 
         List<String> moduleNames = new ArrayList<>();
@@ -102,18 +104,17 @@ public class ModulesTest
     public void testLoadShallowModulesOnly() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("jetty home with spaces");
-        // intentionally setup top level resources dir (as this would have many
-        // deep references)
-        File baseDir = MavenTestingUtils.getTestResourcesDir();
+        Path homeDir = MavenPaths.findTestResourceDir("jetty home with spaces");
+        // intentionally setup top level resources dir (as this would have many deep references)
+        Path baseDir = MavenPaths.projectBase().resolve("src/test/resources/");
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
-        config.add(new JettyHomeConfigSource(homeDir.toPath()));
-        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir));
+        config.add(new JettyBaseConfigSource(baseDir));
 
         // Initialize
         BaseHome basehome = new BaseHome(config);
@@ -142,7 +143,7 @@ public class ModulesTest
     {
         Path baseDir = workDir.getEmptyPathDir();
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
+        Path homeDir = MavenPaths.findTestResourceDir("dist-home");
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
@@ -200,12 +201,44 @@ public class ModulesTest
         assertThat("Resolved XMLs: " + actualXmls, actualXmls, contains(expectedXmls.toArray()));
     }
 
+    /**
+     * Test of not-required [depends] lines, where
+     * the referenced [depends] does not exist.
+     * Simple version.
+     */
     @Test
-    public void testResolveNotRequiredModuleNotFound(WorkDir workDir) throws IOException
+    public void testResolveNotRequiredModuleNotFoundSimple(WorkDir workDir) throws IOException
     {
-        Path baseDir = workDir.getEmptyPathDir();
+        Path rootDir = workDir.getEmptyPathDir();
+        Path homeDir = rootDir.resolve("home");
+        Path baseDir = rootDir.resolve("base");
+
+        // Setup home dir
+        FS.ensureDirectoryExists(homeDir);
+        Path modulesDir = homeDir.resolve("modules");
+        FS.ensureDirectoryExists(modulesDir);
+        // The setup of optional dependencies
+        // The prefix of "?" indicates that this dependency is optional (not-required).
+        Files.writeString(modulesDir.resolve("bar.mod"), """
+            # Top level mod
+
+            [depends]
+            foo
+            ?bar-${bar.type}
+            """);
+        Files.writeString(modulesDir.resolve("bar-dive.mod"), """
+            [ini]
+            bar.name=dive
+            """);
+        Files.writeString(modulesDir.resolve("foo.mod"), """
+            # nothing here
+            """);
+
+        // Setup base dir
+        FS.ensureDirectoryExists(baseDir);
+
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
+        // This property references a bar.type that DOES NOT exist.
         String[] cmdLine = new String[]{"bar.type=cannot-find-me"};
 
         // Configuration
@@ -249,12 +282,125 @@ public class ModulesTest
         assertThat(props.getString("bar.name"), is(nullValue()));
     }
 
+    /**
+     * Test of not-required [depends] lines, where
+     * the referenced [depends] does not exist.
+     * Dynamic Implementation version.
+     */
     @Test
-    public void testResolveNotRequiredModuleFound(WorkDir workDir) throws IOException
+    public void testResolveNotRequiredModuleNotFoundImpl(WorkDir workDir) throws IOException
     {
-        Path baseDir = workDir.getEmptyPathDir();
+        Path rootDir = workDir.getEmptyPathDir();
+        Path homeDir = rootDir.resolve("home");
+        Path baseDir = rootDir.resolve("base");
+
+        // Setup home dir
+        FS.ensureDirectoryExists(homeDir);
+        Path modulesDir = homeDir.resolve("modules");
+        FS.ensureDirectoryExists(modulesDir);
+        // The setup of optional dependencies
+        // The prefix of "?" indicates that this dependency is optional (not-required).
+        Files.writeString(modulesDir.resolve("bar.mod"), """
+            # Top level mod
+
+            [depends]
+            foo
+            ?impls/bar-${bar.type}
+            """);
+        Files.writeString(modulesDir.resolve("foo.mod"), """
+            # nothing here
+            """);
+        Path implsDir = modulesDir.resolve("impls");
+        FS.ensureDirectoryExists(implsDir);
+        Files.writeString(modulesDir.resolve("impls/bar-dynamic.mod"), """
+            [ini]
+            bar.name=dynamic
+            """);
+
+        // Setup base dir
+        FS.ensureDirectoryExists(baseDir);
+
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
+        // This property references a bar.type that DOES NOT exist.
+        String[] cmdLine = new String[]{"bar.type=cannot-find-me"};
+
+        // Configuration
+        CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
+        ConfigSources config = new ConfigSources();
+        config.add(cmdLineSource);
+        config.add(new JettyHomeConfigSource(homeDir));
+        config.add(new JettyBaseConfigSource(baseDir));
+
+        // Initialize
+        BaseHome basehome = new BaseHome(config);
+
+        StartArgs args = new StartArgs(basehome);
+        args.parse(config);
+
+        // Test Modules
+        Modules modules = new Modules(basehome, args);
+        modules.registerAll();
+
+        // Enable module
+        modules.enable("bar", TEST_SOURCE);
+
+        // Collect active module list
+        List<Module> active = modules.getEnabled();
+        modules.checkEnabledModules();
+
+        // Assert names are correct, and in the right order
+        List<String> expectedNames = new ArrayList<>();
+        expectedNames.add("foo");
+        expectedNames.add("bar");
+
+        List<String> actualNames = new ArrayList<>();
+        for (Module actual : active)
+        {
+            actualNames.add(actual.getName());
+        }
+
+        assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
+
+        Props props = args.getJettyEnvironment().getProperties();
+        assertThat(props.getString("bar.name"), is(nullValue()));
+    }
+
+    /**
+     * Test of not-required [depends] lines, where
+     * the referenced [depends] DOES exist.
+     * Simple version.
+     */
+    @Test
+    public void testResolveNotRequiredModuleFoundSimple(WorkDir workDir) throws IOException
+    {
+        Path rootDir = workDir.getEmptyPathDir();
+        Path homeDir = rootDir.resolve("home");
+        Path baseDir = rootDir.resolve("base");
+
+        // Setup home dir
+        FS.ensureDirectoryExists(homeDir);
+        Path modulesDir = homeDir.resolve("modules");
+        FS.ensureDirectoryExists(modulesDir);
+        Files.writeString(modulesDir.resolve("bar.mod"), """
+            # Top level mod
+
+            [depends]
+            foo
+            ?bar-${bar.type}
+            """);
+        Files.writeString(modulesDir.resolve("bar-dive.mod"), """
+            [ini]
+            bar.name=dive
+            """);
+        Files.writeString(modulesDir.resolve("foo.mod"), """
+            # nothing here
+            """);
+
+        // Setup base dir
+        FS.ensureDirectoryExists(baseDir);
+
+        // Test Env
+        // This property references a bar.type that exists.
         String[] cmdLine = new String[]{"bar.type=dive"};
 
         // Configuration
@@ -300,13 +446,45 @@ public class ModulesTest
         assertThat(props.getString("bar.name"), is("dive"));
     }
 
+    /**
+     * Test of not-required [depends] lines, where
+     * the referenced [depends] DOES exist.
+     * Dynamic Implementation version.
+     */
     @Test
-    public void testResolveNotRequiredModuleFoundDynamic(WorkDir workDir) throws IOException
+    public void testResolveNotRequiredModuleFoundImpl(WorkDir workDir) throws IOException
     {
-        Path baseDir = workDir.getEmptyPathDir();
+        Path rootDir = workDir.getEmptyPathDir();
+        Path homeDir = rootDir.resolve("home");
+        Path baseDir = rootDir.resolve("base");
+
+        // Setup home dir
+        FS.ensureDirectoryExists(homeDir);
+        Path modulesDir = homeDir.resolve("modules");
+        FS.ensureDirectoryExists(modulesDir);
+        Files.writeString(modulesDir.resolve("bar.mod"), """
+            # Top level mod
+
+            [depends]
+            foo
+            ?impls/bar-${bar.type}
+            """);
+        Files.writeString(modulesDir.resolve("foo.mod"), """
+            # nothing here
+            """);
+        Path implsDir = modulesDir.resolve("impls");
+        FS.ensureDirectoryExists(implsDir);
+        Files.writeString(modulesDir.resolve("impls/bar-dive.mod"), """
+            [ini]
+            bar.name=dive
+            """);
+
+        // Setup base dir
+        FS.ensureDirectoryExists(baseDir);
+
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
-        String[] cmdLine = new String[]{"bar.type=dynamic"};
+        // This property references a bar.type that exists.
+        String[] cmdLine = new String[]{"bar.type=dive"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
@@ -337,7 +515,7 @@ public class ModulesTest
         List<String> expectedNames = new ArrayList<>();
         expectedNames.add("foo");
         expectedNames.add("bar");
-        expectedNames.add("impls/bar-dynamic");
+        expectedNames.add("impls/bar-dive");
 
         List<String> actualNames = new ArrayList<>();
         for (Module actual : active)
@@ -347,39 +525,23 @@ public class ModulesTest
 
         assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
 
-        Props props = args.getJettyEnvironment().getProperties();
-        assertThat(props.getString("bar.name"), is("dynamic"));
+        Props props = args.getEnvironment("jetty").getProperties();
+        assertThat(props.getString("bar.name"), is("dive"));
     }
 
     private List<String> normalizeLibs(List<Module> active)
     {
-        List<String> libs = new ArrayList<>();
-        for (Module module : active)
-        {
-            for (String lib : module.getLibs())
-            {
-                if (!libs.contains(lib))
-                {
-                    libs.add(lib);
-                }
-            }
-        }
-        return libs;
+        return active.stream()
+            .flatMap(m -> m.getLibs().stream())
+            .distinct()
+            .toList();
     }
 
     private List<String> normalizeXmls(List<Module> active)
     {
-        List<String> xmls = new ArrayList<>();
-        for (Module module : active)
-        {
-            for (String xml : module.getXmls())
-            {
-                if (!xmls.contains(xml))
-                {
-                    xmls.add(xml);
-                }
-            }
-        }
-        return xmls;
+        return active.stream()
+            .flatMap(m -> m.getXmls().stream())
+            .distinct()
+            .toList();
     }
 }

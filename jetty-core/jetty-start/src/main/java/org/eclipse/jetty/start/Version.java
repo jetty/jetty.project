@@ -15,12 +15,11 @@ package org.eclipse.jetty.start;
 
 /**
  * Utility class for parsing and comparing version strings.
- * <p>
- * http://www.oracle.com/technetwork/java/javase/namechange-140185.html
+ *
+ * @see <a href="http://www.oracle.com/technetwork/java/javase/namechange-140185.html">legacy versioning history</a>)
  */
 public class Version implements Comparable<Version>
 {
-
     /**
      * Original String version
      */
