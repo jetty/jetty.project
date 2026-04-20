@@ -26,7 +26,7 @@ public enum WebsocketApiVersion
     v2_1("2.1"),
     v2_2("2.2");
 
-    public static WebsocketApiVersion currentVersion = initWebsocketApiVersion();
+    public static final WebsocketApiVersion currentVersion = initWebsocketApiVersion();
 
     private static Logger LOG = LoggerFactory.getLogger(WebsocketApiVersion.class);
     private final String version;
@@ -84,7 +84,7 @@ public enum WebsocketApiVersion
             }
             return WebsocketApiVersion.from(specificationVersion);
         }
-        catch (ClassNotFoundException e)
+        catch (ClassNotFoundException | NoClassDefFoundError e)
         {
             throw new IllegalStateException("Cannot detect websocket API version", e);
         }
