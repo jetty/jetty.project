@@ -286,35 +286,35 @@
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jakarta-websocket-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee10</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee10</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee10</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee10</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet6-demo-jspc-6-1-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee11</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>

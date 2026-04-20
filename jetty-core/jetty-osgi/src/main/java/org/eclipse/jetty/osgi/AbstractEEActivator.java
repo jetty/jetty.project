@@ -31,6 +31,7 @@ import org.eclipse.jetty.osgi.util.FakeURLClassLoader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.osgi.framework.Bundle;
@@ -198,13 +199,15 @@ public abstract class AbstractEEActivator implements BundleActivator, ServerClas
                 if (contextProvider == null)
                 {
                     contextProvider = new BundleContextProvider(server, deployer, getEnvironment(), newContextFactory(_myBundle));
-                    deployer.addBean(contextProvider);
+                    deployer.addBean(contextProvider, true);
+                    LifeCycle.start(contextProvider);
                 }
 
                 if (webAppProvider == null)
                 {
                     webAppProvider = new BundleWebAppProvider(server, deployer, getEnvironment(), newWebAppFactory(_myBundle));
-                    deployer.addBean(webAppProvider);
+                    deployer.addBean(webAppProvider, true);
+                    LifeCycle.start(webAppProvider);
                 }
 
                 //ensure the providers are configured with the extra bundles that must be scanned from the container classpath

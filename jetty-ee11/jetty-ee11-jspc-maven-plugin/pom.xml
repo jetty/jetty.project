@@ -93,6 +93,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>
         <configuration>
+          <junitPackageName>org.eclipse.jetty.maven.its.ee11</junitPackageName>
           <scriptVariables>
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
           </scriptVariables>

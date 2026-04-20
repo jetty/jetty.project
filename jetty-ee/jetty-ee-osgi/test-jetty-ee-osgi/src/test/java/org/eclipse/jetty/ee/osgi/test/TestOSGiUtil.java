@@ -238,9 +238,9 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-annotations").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.compression").artifactId("jetty-compression-common").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.compression").artifactId("jetty-compression-gzip").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-common").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-webapp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-servlet").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-webapp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-servlets").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-jndi").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-plus").versionAsInProject().start());
