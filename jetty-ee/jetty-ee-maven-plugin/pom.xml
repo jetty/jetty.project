@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <name>EECommon :: Jetty Maven Plugin</name>
+  <name>EE :: Jetty Maven Plugin</name>
   <description>Jetty EECommon maven plugins</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>

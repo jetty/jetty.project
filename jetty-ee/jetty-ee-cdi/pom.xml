@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-ee-cdi</artifactId>
   <packaging>jar</packaging>
-  <name>EECommon :: CDI</name>
+  <name>EE :: CDI</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.cdi</bundle-symbolic-name>
   </properties>

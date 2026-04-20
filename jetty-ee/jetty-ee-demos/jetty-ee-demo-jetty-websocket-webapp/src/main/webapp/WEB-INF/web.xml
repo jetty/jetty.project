@@ -5,7 +5,7 @@
   xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd"
   version="6.1">
 
-<display-name>EECommon Demo Jetty Websocket WebApp</display-name>
+<display-name>EE Demo Jetty Websocket WebApp</display-name>
   
   <servlet>
     <servlet-name>WSChat</servlet-name>

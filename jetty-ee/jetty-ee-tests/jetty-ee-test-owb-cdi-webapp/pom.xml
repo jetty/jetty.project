@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee-test-owb-cdi-webapp</artifactId>
   <packaging>war</packaging>
-  <name>EECommon :: Tests :: CDI OWB Demo WebApp</name>
+  <name>EE :: Tests :: CDI OWB Demo WebApp</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.cdi.owb</bundle-symbolic-name>

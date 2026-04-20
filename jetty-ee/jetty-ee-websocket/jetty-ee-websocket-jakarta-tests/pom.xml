@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-websocket-jakarta-tests</artifactId>
-  <name>EECommon :: Websocket :: Jakarta Tests</name>
+  <name>EE :: Websocket :: Jakarta Tests</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jakarta.tests</bundle-symbolic-name>

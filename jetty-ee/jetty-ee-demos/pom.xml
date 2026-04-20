@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.ee.demos</groupId>
   <artifactId>jetty-ee-demos</artifactId>
   <packaging>pom</packaging>
-  <name>EECommon :: Demos</name>
+  <name>EE :: Demos</name>
 
   <modules>
     <module>jetty-ee-demo-jetty-websocket-webapp</module>

@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-common</artifactId>
-  <name>Core :: EE :: Common</name>
+  <name>EE :: Common</name>
   <description>Jetty EE Common Artifact</description>
 
   <properties>

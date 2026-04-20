@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-websocket-jetty-tests</artifactId>
-  <name>EECommon :: Websocket :: Jetty Tests</name>
+  <name>EE :: Websocket :: Jetty Tests</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests</bundle-symbolic-name>
