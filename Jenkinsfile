@@ -182,7 +182,7 @@ def saveHome() {
 }
 
 def isMainBranch() {
-  return (env.BRANCH_NAME == 'jetty-12.1.x')
+  return (env.BRANCH_NAME == 'jetty-13.0.x')
 }
 
 def websiteBuild() {
