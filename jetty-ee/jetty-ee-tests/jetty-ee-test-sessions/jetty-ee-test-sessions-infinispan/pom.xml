@@ -7,7 +7,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-test-sessions-infinispan</artifactId>
-  <name>EECommon :: Tests :: Sessions :: Infinispan</name>
+  <name>EE :: Tests :: Sessions :: Infinispan</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
   </properties>

@@ -175,7 +175,7 @@ public class DeploymentDefaultContextPathTest
 
             Path webXml = root.resolve("WEB-INF/web.xml");
             String webXmlText = WebDescriptor.WEB_APP_ELEMENT + """
-                  <display-name>EECommon Test WebApp</display-name>
+                  <display-name>EE Test WebApp</display-name>
                   <default-context-path>%s</default-context-path>
                 </web-app>
                 """.formatted(defaultContextPath);

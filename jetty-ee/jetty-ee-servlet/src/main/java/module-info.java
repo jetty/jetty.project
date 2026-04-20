@@ -33,6 +33,7 @@ module org.eclipse.jetty.ee.servlet
     requires static java.security.jgss;
     // Only required if using JDBCLoginService.
     requires static java.sql;
+    requires org.eclipse.jetty.ee.common;
 
     exports org.eclipse.jetty.ee.servlet;
     exports org.eclipse.jetty.ee.servlet.listener;

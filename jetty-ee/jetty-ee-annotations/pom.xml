@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-annotations</artifactId>
-  <name>EECommon :: Servlet Annotations</name>
+  <name>EE :: Servlet Annotations</name>
   <description>Annotation support for deploying servlets in jetty.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.annotations</bundle-symbolic-name>

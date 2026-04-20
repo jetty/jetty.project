@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee-home</artifactId>
   <packaging>pom</packaging>
-  <name>EECommon :: Home Assembly</name>
+  <name>EE :: Home Assembly</name>
 
   <properties>
     <assembly-directory>${basedir}/target/jetty-ee-home</assembly-directory>

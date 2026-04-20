@@ -7,7 +7,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>test-jetty-ee-osgi</artifactId>
-  <name>EECommon :: OSGi :: Test</name>
+  <name>EE :: OSGi :: Test</name>
   <description>Jetty OSGi Integration test</description>
   <properties>
     <assembly-directory>target/distribution</assembly-directory>

@@ -9,7 +9,7 @@
 
   <artifactId>jetty-ee-test-integration</artifactId>
   <packaging>jar</packaging>
-  <name>EECommon :: Tests :: Integrations</name>
+  <name>EE :: Tests :: Integrations</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.integrations</bundle-symbolic-name>

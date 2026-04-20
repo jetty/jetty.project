@@ -27,9 +27,8 @@ public enum ServletApiVersion
     v6_0("6.0"),
     v6_1("6.1");
 
-    public static ServletApiVersion currentVersion = initServletApiVersion();
+    public static final ServletApiVersion currentVersion = initServletApiVersion();
 
-    private static Logger LOG = LoggerFactory.getLogger(ServletApiVersion.class);
     private final String version;
     private final int major;
     private final int minor;
@@ -85,7 +84,7 @@ public enum ServletApiVersion
             }
             return ServletApiVersion.from(specificationVersion);
         }
-        catch (ClassNotFoundException e)
+        catch (ClassNotFoundException | NoClassDefFoundError e)
         {
             throw new IllegalStateException("Cannot detect servlet API version", e);
         }

@@ -97,7 +97,7 @@ public class WebDescriptor extends Descriptor
 
     protected static void addDescriptorCatalog(XmlParser xmlParser) throws IllegalStateException
     {
-        String catalogName = "catalog-%s.xml".formatted(ServletContextHandler.ENVIRONMENT.getName());
+        String catalogName = "catalog-ee.xml";
         URL url = WebDescriptor.class.getResource(catalogName);
         if (url == null)
             throw new IllegalStateException("Catalog not found: %s/%s".formatted(WebDescriptor.class.getPackageName(), catalogName));

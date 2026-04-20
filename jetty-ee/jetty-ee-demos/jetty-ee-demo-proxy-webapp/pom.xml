@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-ee-demo-proxy-webapp</artifactId>
   <packaging>war</packaging>
-  <name>EECommon :: Demo :: Proxy WebApp</name>
+  <name>EE :: Demo :: Proxy WebApp</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>
   </properties>

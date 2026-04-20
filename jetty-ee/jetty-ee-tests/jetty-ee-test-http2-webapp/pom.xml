@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee-test-http2-webapp</artifactId>
   <packaging>war</packaging>
-  <name>EECommon :: Tests :: HTTP2 WebApp</name>
+  <name>EE :: Tests :: HTTP2 WebApp</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.http2</bundle-symbolic-name>

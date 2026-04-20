@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee-test-client-transports</artifactId>
   <packaging>jar</packaging>
-  <name>EECommon :: Tests :: HTTP Client Transports</name>
+  <name>EE :: Tests :: HTTP Client Transports</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.test.client.transport</bundle-symbolic-name>
