@@ -163,9 +163,9 @@ public class RequestTest
             Arguments.of(UriCompliance.UNSAFE, "https://user@local:8080/", 200, "local:8080"),
             Arguments.of(UriCompliance.DEFAULT, "https://user:password@local/", 400, "Deprecated User Info"),
             Arguments.of(UriCompliance.LEGACY, "https://user:password@local/", 200, "local"),
-            Arguments.of(UriCompliance.DEFAULT, "https://user@other/", 400, "Deprecated User Info"),
+            Arguments.of(UriCompliance.DEFAULT, "https://user@other/", 400, "Authority!=Host"),
             Arguments.of(UriCompliance.LEGACY, "https://user@other/", 400, "Authority!=Host"),
-            Arguments.of(UriCompliance.DEFAULT, "https://user:password@other/", 400, "Deprecated User Info"),
+            Arguments.of(UriCompliance.DEFAULT, "https://user:password@other/", 400, "Authority!=Host"),
             Arguments.of(UriCompliance.LEGACY, "https://user:password@other/", 400, "Authority!=Host"),
             Arguments.of(UriCompliance.UNSAFE, "https://user:password@other/", 200, "other"),
             Arguments.of(UriCompliance.DEFAULT, "/%2F/", 400, "Ambiguous URI path separator"),
@@ -283,7 +283,6 @@ public class RequestTest
     @Test
     public void testConnectRequestURLDifferentThanHost() throws Exception
     {
-        // per spec, "Host" is ignored if request-target is authority-form
         String request = """
                 CONNECT myhost:9999 HTTP/1.1\r
                 Host: otherhost:8888\r
@@ -291,11 +290,7 @@ public class RequestTest
                 \r
                 """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        String responseBody = response.getContent();
-        assertThat(responseBody, containsString("httpURI=http://myhost:9999/"));
-        assertThat(responseBody, containsString("httpURI.path=/"));
-        assertThat(responseBody, containsString("servername=myhost"));
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
     /**

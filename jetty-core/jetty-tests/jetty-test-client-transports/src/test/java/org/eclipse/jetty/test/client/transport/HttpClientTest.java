@@ -64,7 +64,6 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -311,9 +310,9 @@ public class HttpClientTest extends AbstractTest
                 InputStream input = Request.asInputStream(request);
                 for (byte b : bytes)
                 {
-                    Assertions.assertEquals(b & 0xFF, input.read());
+                    assertEquals(b & 0xFF, input.read());
                 }
-                Assertions.assertEquals(-1, input.read());
+                assertEquals(-1, input.read());
                 callback.succeeded();
                 return true;
             }
@@ -815,7 +814,27 @@ public class HttpClientTest extends AbstractTest
         assertEquals(200, response.getStatus());
         assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1), Matchers.startsWith("[::1]:"));
 
-        Assertions.assertEquals(1, client.getDestinations().size());
+        assertEquals(1, client.getDestinations().size());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testAuthorityHostMismatch(Transport transport) throws Exception
+    {
+        start(transport, new EmptyServerHandler());
+
+        URI uri = newURI(transport);
+        String path = "/";
+        // For HTTP/1.1, use the absolute-form, otherwise the authority
+        // is derived from the Host header and the test will fail.
+        if (transport == Transport.HTTP || transport == Transport.HTTPS)
+            path = uri.toString();
+        ContentResponse response = client.newRequest(uri)
+            .path(path)
+            .headers(h -> h.put(HttpHeader.HOST, "127.0.0.1:" + uri.getPort()))
+            .send();
+
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
     @ParameterizedTest
