@@ -14,11 +14,12 @@
 package org.eclipse.jetty.ee11.osgi.boot;
 
 import org.eclipse.jetty.ee.osgi.boot.EEActivator;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 
 /**
  * EE11Activator
  * <p>
- * Enable deployment of webapps/contexts to E10E
+ * Enable deployment of webapps/contexts to EE11
  */
 public class EE11Activator extends EEActivator
 {
@@ -28,5 +29,11 @@ public class EE11Activator extends EEActivator
     public String getEnvironment()
     {
         return ENVIRONMENT;
+    }
+
+    @Override
+    protected WebAppContext newWebAppContext()
+    {
+        return new org.eclipse.jetty.ee11.webapp.WebAppContext();
     }
 }

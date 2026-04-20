@@ -80,6 +80,11 @@ public class EEActivator extends AbstractEEActivator
         return new EECommonWebAppFactory(bundle);
     }
 
+    protected WebAppContext newWebAppContext()
+    {
+        return new WebAppContext();
+    }
+
     public class EECommonContextFactory implements ContextFactory
     {
         private final Bundle _myBundle;
@@ -193,7 +198,7 @@ public class EEActivator extends AbstractEEActivator
             String jettyHome = (String)provider.getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
             Path jettyHomePath = StringUtil.isBlank(jettyHome) ? null : ResourceFactory.of(provider.getServer()).newResource(jettyHome).getPath();
 
-            WebAppContext webApp = new WebAppContext();
+            WebAppContext webApp = newWebAppContext();
             webApp.setAttribute(BundleMetadata.BUNDLE, metadata.getBundle());
             webApp.setAttribute(OSGiWebappConstants.JETTY_BOOT_BUNDLE_CONTEXT, getBootBundleContext());
             ResourceFactory resourceFactory = ResourceFactory.of(webApp);

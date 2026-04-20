@@ -313,6 +313,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-container-initializer</artifactId>
       <scope>test</scope>
@@ -350,6 +355,11 @@
       <artifactId>jetty-servlet6-demo-jspc-6-1-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle-ee11</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-apache-jsp</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

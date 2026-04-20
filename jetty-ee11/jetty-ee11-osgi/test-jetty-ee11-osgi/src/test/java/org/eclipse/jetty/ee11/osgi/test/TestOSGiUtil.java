@@ -279,7 +279,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("jakarta.servlet.jsp").artifactId("jakarta.servlet.jsp-api").versionAsInProject());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("mortbay-apache-el").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("mortbay-apache-jsp").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.ee11").artifactId("jetty-ee11-apache-jsp").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
         res.add(mavenBundle().groupId("org.glassfish.wasp").artifactId("wasp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
