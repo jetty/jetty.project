@@ -45,7 +45,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
-import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
@@ -76,7 +75,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http.HttpCompliance.Violation.MISMATCHED_AUTHORITY;
 import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 
 /**
@@ -1204,41 +1202,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         public Runnable headerComplete()
         {
-            UriCompliance compliance;
-            if (_uri.hasViolations())
-            {
-                compliance = getHttpConfiguration().getUriCompliance();
-                String badMessage = UriCompliance.checkUriCompliance(compliance, _uri, getHttpChannel().getComplianceViolationListener());
-                if (badMessage != null)
-                    throw new BadMessageException(badMessage);
-            }
+            if (_hostField != null && !_uri.isAbsolute() && StringUtil.isBlank(_hostField.getHostPort().getHost()))
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Blank Host");
 
-            // Check host field matches the authority in the absolute URI or is not blank
-            if (_hostField != null)
-            {
-                if (_uri.isAbsolute())
-                {
-                    if (!_hostField.getValue().equals(_uri.getAuthority()))
-                    {
-                        HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
-                        if (httpCompliance.allows(MISMATCHED_AUTHORITY))
-                            getHttpChannel().getComplianceViolationListener().onComplianceViolation(new ComplianceViolation.Event(httpCompliance, MISMATCHED_AUTHORITY, _uri.asString()));
-                        else
-                            throw new BadMessageException("Authority!=Host");
-                    }
-                }
-                else
-                {
-                    if (StringUtil.isBlank(_hostField.getHostPort().getHost()))
-                        throw new BadMessageException("Blank Host");
-                }
-            }
-
-            // Set the scheme in the URI
+            // Set the scheme in the URI.
             if (!_uri.isAbsolute())
                 _uri.scheme(getEndPoint() instanceof SslConnection.SslEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
 
-            // Set the authority (if not already set) in the URI
+            // Set the authority (if not already set) in the URI.
             if (_uri.getAuthority() == null && !HttpMethod.CONNECT.is(_method))
             {
                 HostPort hostPort = _hostField == null ? getServerAuthority() : _hostField.getHostPort();
