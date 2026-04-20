@@ -242,8 +242,9 @@ public class PropertyPassingTest
         String output = collectRunOutput(commands);
 
         // Test for values
-        Path expectedPath = base.resolve("etc/config.ini");
-        assertThat(output, containsString("test.config=" + expectedPath));
+        // The property is defined as `test.config=${jetty.base}/etc/config.ini`
+        // so we must maintain the slashes for the `/etc/config.ini` portion (even if it is running on windows)
+        assertThat(output, containsString("test.config=%s/etc/config.ini".formatted(base)));
     }
 
     @Test
@@ -287,8 +288,9 @@ public class PropertyPassingTest
         String output = collectRunOutput(commands);
 
         // Test for values
-        Path expectedPath = base.resolve("etc/config.ini");
-        assertThat(output, containsString("test.config=" + expectedPath));
+        // The property is defined as `test.config=${jetty.base}/etc/config.ini`
+        // so we must maintain the slashes for the `/etc/config.ini` portion (even if it is running on windows)
+        assertThat(output, containsString("test.config=%s/etc/config.ini".formatted(base)));
     }
 
     private String getClassPath()
