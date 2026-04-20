@@ -4,7 +4,6 @@
 <Configure id='wac' class="org.eclipse.jetty.ee.webapp.WebAppContext">
 
   <New id="tx" class="org.eclipse.jetty.ee.plus.jndi.Transaction">
-    <Arg>ee</Arg>
     <Arg>
       <New class="org.example.MockUserTransaction"/>
     </Arg>
