@@ -312,7 +312,7 @@ public class PathResource extends Resource
                 throw new IllegalArgumentException("Unable to find jar !/ deep reference in " + uri);
             return path.resolve(ssp.substring(idx + 1));
         }
-        return path.resolve(uri.getPath());
+        return path.resolve(Path.of(uri));
     }
 
     /**
