@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.ee.common.WebAppClassLoader;
 import org.eclipse.jetty.ee.webapp.Configuration;
 import org.eclipse.jetty.ee.webapp.Configurations;
@@ -54,7 +55,11 @@ public class EEActivator extends AbstractEEActivator
 {
     private static final Logger LOG = LoggerFactory.getLogger(EEActivator.class);
 
-    public static final String ENVIRONMENT = "ee";
+    public static final String ENVIRONMENT = switch (ServletApiVersion.getServletApiVersion()){
+        case v6_0 -> "ee10";
+        case v6_1 -> "ee11";
+        default -> null;
+    };
 
     @Override
     public String getEnvironment()
