@@ -126,6 +126,8 @@ public class AlternatesTest extends AbstractUseCase
             """, UTF_8);
         Files.writeString(baseDir.resolve("modules/default.mod"),
             """
+            [provides]
+            default|default
             [xml]
             etc/d.xml
             [ini]
@@ -208,6 +210,8 @@ public class AlternatesTest extends AbstractUseCase
             """, UTF_8);
         Files.writeString(baseDir.resolve("modules/default.mod"),
             """
+            [provides]
+            default|default
             [xml]
             etc/d.xml
             [ini]
@@ -289,6 +293,8 @@ public class AlternatesTest extends AbstractUseCase
             """, UTF_8);
         Files.writeString(baseDir.resolve("modules/default.mod"),
             """
+            [provides]
+            default|default
             [xml]
             etc/d.xml
             [ini]

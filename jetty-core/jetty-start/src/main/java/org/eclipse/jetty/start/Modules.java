@@ -42,9 +42,13 @@ import org.eclipse.jetty.util.TopologicalSort;
  */
 public class Modules implements Iterable<Module>
 {
+    // List of ALL modules in BaseHome.
     private final List<Module> _modules = new ArrayList<>();
+    // Map of Modules by name.
     private final Map<String, Module> _names = new HashMap<>();
+    // Map of provided modules by name.
     private final Map<String, Set<Module>> _provided = new HashMap<>();
+    // Map of provided default module names.
     private final Map<String, String> _providedDefaults = new HashMap<>();
     private final BaseHome _baseHome;
     private final StartArgs _args;
@@ -61,7 +65,6 @@ public class Modules implements Iterable<Module>
             String javaVersion = System.getProperty("java.version");
             if (javaVersion != null)
             {
-                // TODO environment
                 args.setProperty(null, "java.version", javaVersion, "<internal>");
             }
         }
@@ -102,7 +105,11 @@ public class Modules implements Iterable<Module>
             {
                 out.printf("           : %s%n", description);
             }
-            if (module.getEnvironment() != null)
+            if (module.isEnvironmentInherited())
+            {
+                out.println("Environment: " + Module.ENVIRONMENT_INHERITED);
+            }
+            else
             {
                 out.printf("Environment: %s%n", module.getEnvironment());
             }
@@ -165,12 +172,9 @@ public class Modules implements Iterable<Module>
             {
                 out.printf("        JVM: %s%n", jvm);
             }
-            if (module.isEnabled())
+            for (String environmentName : module.getEnabledEnvironments())
             {
-                for (String selection : module.getEnableSources())
-                {
-                    out.printf("    Enabled: %s%n", selection);
-                }
+                out.printf("    Enabled: %s%n", environmentName);
             }
         });
     }
@@ -234,9 +238,11 @@ public class Modules implements Iterable<Module>
             String name = module.getName();
             if (module.isDeprecated())
                 name += " (deprecated)";
-            for (String s : module.getEnableSources())
+            if (module.isEnvironmentInherited())
+                name += " " + Module.ENVIRONMENT_INHERITED;
+            for (String envName : module.getEnabledEnvironments())
             {
-                out.printf("%4s %-25s %s%n", index, name, s);
+                out.printf("%4s %-25s %s%n", index, name, envName);
                 index = "";
                 name = "";
             }
@@ -264,24 +270,11 @@ public class Modules implements Iterable<Module>
             Module module = new Module(_baseHome, file);
             _modules.add(module);
             _names.put(module.getName(), module);
-            module.getProvides().forEach(n ->
+            module.getProvides().forEach(name ->
             {
-                // Syntax can be :
-                // "<name>" - for a simple provider reference
-                // "<name>|default" - for a provider that is also the default implementation
-                String name = n;
-                boolean isDefaultProvider = false;
-                int idx = n.indexOf('|');
-                if (idx > 0)
-                {
-                    name = n.substring(0, idx);
-                    isDefaultProvider = n.substring(idx + 1).equalsIgnoreCase("default");
-                }
                 _provided.computeIfAbsent(name, k -> new HashSet<>()).add(module);
-                if (isDefaultProvider)
-                {
-                    _providedDefaults.computeIfAbsent(name, k -> module.getName());
-                }
+                if (module.isProvidesDefault(name))
+                    _providedDefaults.putIfAbsent(name, module.getName());
             });
 
             return module;
@@ -309,6 +302,10 @@ public class Modules implements Iterable<Module>
             if (delim.get())
                 str.append(',');
             str.append(m.getName());
+            if (m.isEnvironmentInherited())
+                str.append("<env:inherit>");
+            else
+                str.append("(env:").append(m.getEnvironment()).append(")");
             delim.set(true);
         });
         str.append(">");
@@ -316,9 +313,16 @@ public class Modules implements Iterable<Module>
         return str.toString();
     }
 
+    /**
+     * Get a List of ANY enabled Modules.
+     *
+     * @return the List
+     */
     public List<Module> getEnabled()
     {
-        List<Module> enabled = _modules.stream().filter(Module::isEnabled).collect(Collectors.toList());
+        List<Module> enabled = _modules.stream()
+            .filter(Module::isEnabledInAnyEnvironment)
+            .collect(Collectors.toList());
 
         TopologicalSort<Module> sort = new TopologicalSort<>();
         for (Module module : enabled)
@@ -326,7 +330,7 @@ public class Modules implements Iterable<Module>
             Consumer<String> add = name ->
             {
                 Module dependency = _names.get(name);
-                if (dependency != null && dependency.isEnabled())
+                if (dependency != null && dependency.isEnabledInAnyEnvironment())
                     sort.addDependency(module, dependency);
 
                 Set<Module> provided = _provided.get(name);
@@ -334,7 +338,7 @@ public class Modules implements Iterable<Module>
                 {
                     for (Module p : provided)
                     {
-                        if (p.isEnabled())
+                        if (p.isEnabledInAnyEnvironment())
                             sort.addDependency(module, p);
                     }
                 }
@@ -344,7 +348,59 @@ public class Modules implements Iterable<Module>
             module.getBefore().forEach(name ->
             {
                 Module before = _names.get(name);
-                if (before != null && before.isEnabled())
+                if (before != null && before.isEnabledInAnyEnvironment())
+                    sort.addDependency(before, module);
+            });
+        }
+
+        sort.sort(enabled);
+        return enabled;
+    }
+
+    /**
+     * Get a List of enabled Modules that belong to the specified environment name.
+     *
+     * @param environmentName the environment name to limit results to.
+     * @return a List of {@link Module} objects that are enabled in the specified environment name.
+     */
+    public List<Module> getEnabled(String environmentName)
+    {
+        List<Module> enabled = _modules.stream()
+            .filter(m -> m.isEnabledInEnvironment(environmentName))
+            .filter(m ->
+            {
+                if (m.isEnvironmentInherited())
+                    return true;
+                else
+                    return m.getEnvironment().equalsIgnoreCase(environmentName);
+            })
+            .collect(Collectors.toList());
+
+        TopologicalSort<Module> sort = new TopologicalSort<>();
+        for (Module module : enabled)
+        {
+            Consumer<String> add = name ->
+            {
+                Module dependency = _names.get(name);
+                if (dependency != null && dependency.isEnabledInEnvironment(environmentName))
+                    sort.addDependency(module, dependency);
+
+                Set<Module> provided = _provided.get(name);
+                if (provided != null)
+                {
+                    for (Module p : provided)
+                    {
+                        if (p.isEnabledInEnvironment(environmentName))
+                            sort.addDependency(module, p);
+                    }
+                }
+            };
+            module.getDepends().forEach(add);
+            module.getAfter().forEach(add);
+            module.getBefore().forEach(name ->
+            {
+                Module before = _names.get(name);
+                if (before != null && before.isEnabledInEnvironment(environmentName))
                     sort.addDependency(before, module);
             });
         }
@@ -410,20 +466,40 @@ public class Modules implements Iterable<Module>
         if (module == null)
             throw new UsageException(UsageException.ERR_UNKNOWN, "Unknown module='%s'. List available with --list-modules", name);
 
+        if (module.isEnvironmentInherited())
+            throw new UsageException(UsageException.ERR_UNKNOWN, "Unable to directly select module='%s' as it only works when used as a dependency from a module that has an environment");
+
         Set<String> enabled = new HashSet<>();
-        enable(enabled, module, enabledFrom, false);
+        enable(enabled, module, module.getEnvironment(), enabledFrom, false);
         return enabled;
     }
 
-    private void enable(Set<String> newlyEnabled, Module module, String enabledFrom, boolean transitive)
+    /**
+     * Enable module, and then walk the transitive dependencies to enable other required modules.
+     *
+     * @param newlyEnabled the list of newly enabled modules.
+     * @param module the module to enable
+     * @param environmentNameScope the environment name scope (for the initial non-transitive enablement, used for modules with inherited environments)
+     * @param enabledFrom how the module was enabled
+     * @param transitive true if this enablement comes from a transitive walk of dependencies
+     */
+    private void enable(Set<String> newlyEnabled, Module module, String environmentNameScope, String enabledFrom, boolean transitive)
     {
-        StartLog.debug("Enable [%s] from [%s] transitive=%b", module, enabledFrom, transitive);
-
         if (newlyEnabled.contains(module.getName()))
         {
-            StartLog.debug("Already enabled [%s] from %s", module.getName(), module.getEnableSources());
+            if (module.isEnvironmentInherited())
+            {
+                // Trigger inherited enablement within (possibly new) environment name scope
+                module.enable(environmentNameScope, enabledFrom, transitive);
+            }
+            else
+            {
+                StartLog.info("%s already enabled by [%s]", module.getName(), module.getEnabledFromEnvironment(module.getEnvironment()));
+            }
             return;
         }
+
+        StartLog.debug("Enable [%s] in env [%s] from [%s] transitive=%b", module, environmentNameScope, enabledFrom, transitive);
 
         if (module.isDeprecated())
         {
@@ -431,7 +507,7 @@ public class Modules implements Iterable<Module>
             StartLog.warn(reason);
         }
 
-        // Check that this is not already provided by another module!
+        // Check the "provides" list to ensure that it is only provided once.
         for (String name : module.getProvides())
         {
             Set<Module> providers = _provided.get(name);
@@ -439,20 +515,18 @@ public class Modules implements Iterable<Module>
             {
                 for (Module p : providers)
                 {
-                    if (!p.equals(module) && p.isEnabled())
+                    if (p.equals(module))
+                        continue; // skip self
+                    if (p.isEnabledInAnyEnvironment())
                     {
-                        // If the already enabled module is transitive and this enable is not
-                        if (p.isTransitive() && !transitive)
-                            p.clearTransitiveEnable();
-                        else
-                            throw new UsageException("Module %s provides %s, which is already provided by %s enabled in %s", module.getName(), name, p.getName(), p.getEnableSources());
+                        throw new UsageException("Module %s provides %s, which is already provided by %s enabled in %s", module.getName(), name, p.getName(), p.getEnabledFromAllEnvironments());
                     }
                 }
             }
         }
 
         // Enable the module
-        if (module.enable(enabledFrom, transitive))
+        if (module.enable(environmentNameScope, enabledFrom, transitive))
         {
             StartLog.debug("Enabled [%s]", module.getName());
             newlyEnabled.add(module.getName());
@@ -464,14 +538,14 @@ public class Modules implements Iterable<Module>
             if (module.hasDefaultConfig())
             {
                 String source = module.getName() + "[ini]";
-                StartEnvironment environment = _args.getJettyEnvironment();
-                environment = _args.parse(environment, "--module=" + module.getName(), source);
+                StartEnvironment jettyEnvironment = _args.getJettyEnvironment();
+                jettyEnvironment = _args.parse(jettyEnvironment, "--module=" + module.getName(), source);
 
                 for (String line : module.getIniSection())
-                    environment = _args.parse(environment, line, source);
+                    jettyEnvironment = _args.parse(jettyEnvironment, line, source);
 
                 for (Module m : _modules)
-                    m.expandDependencies(environment.getProperties());
+                    m.expandDependencies(jettyEnvironment.getProperties());
             }
         }
 
@@ -483,50 +557,70 @@ public class Modules implements Iterable<Module>
             // Final to allow lambda's below to use name
             final String dependentModule = Module.normalizeModuleName(dependsOnRaw);
 
-            // Look for modules that provide that dependency
-            Set<Module> providers = getAvailableProviders(dependentModule);
+            // Figure out if the referenced dependency is ...
+            //  1. A module that is listed in a [provided] somewhere
+            //  2. A registered real module.
+            //  3. A dynamic module reference. (only if dependency has a '/' character)
 
-            StartLog.debug("Module [%s] depends on [%s] provided by %s", module, dependentModule, providers);
-
-            // If there are no known providers of the module
-            if (providers.isEmpty())
+            // Is it a dynamic module?
+            if (Module.isDynamicDependency(dependentModule))
             {
-                // look for a dynamic module
-                if (dependentModule.contains("/"))
+                Path file = _baseHome.getPath("modules/" + dependentModule + ".mod");
+                if (!isConditional || Files.exists(file))
                 {
-                    Path file = _baseHome.getPath("modules/" + dependentModule + ".mod");
-                    if (!isConditional || Files.exists(file))
-                    {
-                        registerModule(file).expandDependencies(_args.getJettyEnvironment().getProperties());
-                        providers = _provided.get(dependentModule);
-                        if (providers == null || providers.isEmpty())
-                            throw new UsageException("Module %s does not provide %s", _baseHome.toShortForm(file), dependentModule);
-
-                        enable(newlyEnabled, providers.stream().findFirst().get(), "dynamic dependency of " + module.getName(), true);
-                        continue;
-                    }
+                    Module dynamic = registerModule(file);
+                    dynamic.expandDependencies(_args.getJettyEnvironment().getProperties());
+                    enable(newlyEnabled, dynamic, environmentNameScope, "dynamic dependency of " + module.getName(), true);
                 }
-                // is this a conditional module
-                if (isConditional)
-                {
-                    StartLog.debug("Skipping conditional module [%s]: it does not exist", dependentModule);
-                    continue;
-                }
-                // throw an exception (not a dynamic module and a required dependency)
-                throw new UsageException("No module found to provide %s for %s", dependentModule, module);
             }
-
-            // If a provider is already enabled, then add a transitive enable
-            if (providers.stream().anyMatch(Module::isEnabled))
-                providers.stream().filter(m -> m.isEnabled() && !m.equals(module)).forEach(m -> enable(newlyEnabled, m, "transitive provider of " + dependentModule + " for " + module.getName(), true));
             else
             {
-                Optional<Module> dftProvider = findDefaultProvider(providers, dependentModule);
+                // Reference as a named provider.
+                Set<Module> providers = getAvailableProviders(dependentModule);
 
-                if (dftProvider.isPresent())
+                if (providers.isEmpty())
                 {
-                    StartLog.debug("Using [%s] provider as default for [%s]", dftProvider.get(), dependentModule);
-                    enable(newlyEnabled, dftProvider.get(), "transitive provider of " + dependentModule + " for " + module.getName(), true);
+                    // Reference as a previously registered module.
+                    Module dependent = get(dependentModule);
+
+                    if (dependent == null)
+                    {
+                        // is this a conditional module
+                        if (isConditional)
+                        {
+                            StartLog.debug("Skipping conditional module [%s]: it does not exist", dependentModule);
+                            continue;
+                        }
+
+                        // throw an exception (not a dynamic module and a required dependency)
+                        throw new UsageException("No module found for dependency %s from %s", dependentModule, module);
+                    }
+
+                    // Process real dependency.
+                    enable(newlyEnabled, dependent, environmentNameScope, "transitive dependency " + dependentModule + " from " + module.getName(), true);
+                }
+                else
+                {
+                    // Process as a module with a named provider
+                    StartLog.debug("Module [%s] depends on [%s] provided by %s", module, dependentModule, providers);
+
+                    // If a provider is already enabled, then add a transitive enable
+                    if (providers.stream().anyMatch(Module::isEnabledInAnyEnvironment))
+                    {
+                        providers.stream()
+                            .filter(m -> m.isEnabledInAnyEnvironment() && !m.equals(module))
+                            .forEach(m -> enable(newlyEnabled, m, environmentNameScope, "transitive provider of " + dependentModule + " for " + module.getName(), true));
+                    }
+                    else
+                    {
+                        Optional<Module> dftProvider = findDefaultProvider(providers, dependentModule);
+
+                        if (dftProvider.isPresent())
+                        {
+                            StartLog.debug("Using [%s] provider as default for [%s]", dftProvider.get(), dependentModule);
+                            enable(newlyEnabled, dftProvider.get(), environmentNameScope, "transitive provider of " + dependentModule + " for " + module.getName(), true);
+                        }
+                    }
                 }
             }
         }
@@ -538,7 +632,7 @@ public class Modules implements Iterable<Module>
         if (providers.size() == 1)
             return providers.stream().findFirst();
 
-        // If more then one provider impl, is there one specified as "default"?
+        // If more than one provider impl, is there one specified as "default"?
         if (providers.size() > 1)
         {
             // Was it specified with [provides] "name|default" ?
@@ -563,37 +657,6 @@ public class Modules implements Iterable<Module>
         StartLog.debug("Providers of [%s] are %s", name, providers);
         if (providers == null || providers.isEmpty())
             return Set.of();
-
-        providers = new HashSet<>(providers);
-
-        // find all currently provided names by other modules
-        Set<String> provided = new HashSet<>();
-        for (Module m : _modules)
-        {
-            if (m.isEnabled())
-            {
-                provided.add(m.getName());
-                provided.addAll(m.getProvides());
-            }
-        }
-
-        // Remove any that cannot be selected
-        for (Iterator<Module> i = providers.iterator(); i.hasNext(); )
-        {
-            Module provider = i.next();
-            if (!provider.isEnabled())
-            {
-                for (String p : provider.getProvides())
-                {
-                    if (provided.contains(p))
-                    {
-                        StartLog.debug("Removing provider %s because %s already enabled", provider, p);
-                        i.remove();
-                        break;
-                    }
-                }
-            }
-        }
 
         StartLog.debug("Available providers of [%s] are %s", name, providers);
         return providers;
@@ -622,18 +685,42 @@ public class Modules implements Iterable<Module>
         return _modules.stream();
     }
 
+    public List<String> getEnabledEnvironments()
+    {
+        return _modules.stream()
+            .filter(Module::isEnabledInAnyEnvironment)
+            .flatMap(m -> m.getEnabledEnvironments().stream())
+            .distinct()
+            .sorted()
+            .toList();
+    }
+
     public void checkEnabledModules()
     {
+        List<String> enabledEnvironments = getEnabledEnvironments();
+
+        for (String environmentName: enabledEnvironments)
+        {
+            checkEnabledModules(environmentName);
+        }
+    }
+
+    public void checkEnabledModules(String environmentName)
+    {
         StringBuilder unsatisfied = new StringBuilder();
-        _modules.stream().filter(Module::isEnabled).forEach(m ->
+        _modules.stream()
+            .filter(m -> m.isEnabledInEnvironment(environmentName))
+            .forEach(m ->
         {
             // Check dependencies
             m.getDepends().stream()
                 .filter(depends -> !Module.isConditionalDependency(depends))
+                .filter(depends -> get(depends) == null) // unsatisfied dependency
                 .forEach(d ->
                 {
+                    // Ensure referenced dependency is satisfied via a provided name
                     Set<Module> providers = getAvailableProviders(d);
-                    if (providers.stream().noneMatch(Module::isEnabled))
+                    if (providers.stream().noneMatch(Module::isEnabledInAnyEnvironment))
                     {
                         if (!unsatisfied.isEmpty())
                             unsatisfied.append(',');

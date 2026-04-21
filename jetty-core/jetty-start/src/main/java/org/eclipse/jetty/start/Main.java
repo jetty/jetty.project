@@ -422,12 +422,14 @@ public class Main
         List<String> sortedSelectedModules = modules.getSortedNames(selectedModules);
         List<String> unknownModules = new ArrayList<>(selectedModules);
         unknownModules.removeAll(sortedSelectedModules);
-        if (unknownModules.size() >= 1)
+        if (!unknownModules.isEmpty())
         {
             throw new UsageException(UsageException.ERR_UNKNOWN, "Unknown module%s=[%s] List available with --list-modules",
                 unknownModules.size() > 1 ? 's' : "",
                 String.join(", ", unknownModules));
         }
+
+        // The sortedSelectedModules has the list of directly selected module names.
         for (String selectedModule : sortedSelectedModules)
         {
             for (String source : args.getSources(selectedModule))

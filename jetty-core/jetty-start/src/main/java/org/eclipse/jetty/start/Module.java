@@ -15,16 +15,17 @@ package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -32,6 +33,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.util.StringUtil;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Represents a Module metadata, as defined in Jetty.
@@ -43,7 +47,7 @@ import org.eclipse.jetty.start.Props.Prop;
  * <li>Properties set either directly or via a file of properties</li>
  * <li>A set of modules names (or capability names) that this module depends on.</li>
  * <li>A set of capability names that this module provides (including it's own name).</li>
- * <li>Licence details for using the module</li>
+ * <li>License details for using the module</li>
  * </ul>
  * Modules are discovered in the <code>${jetty.home}/modules</code> and
  * <code>${jetty.home}/modules</code> directories. A module may refer to
@@ -55,6 +59,8 @@ import org.eclipse.jetty.start.Props.Prop;
 public class Module implements Comparable<Module>
 {
     private static final String VERSION_UNSPECIFIED = "0.0";
+    public static final String ENVIRONMENT_JETTY = "jetty";
+    public static final String ENVIRONMENT_INHERITED = "<inherit>";
     static Pattern MOD_NAME = Pattern.compile("^(.*)\\.mod", Pattern.CASE_INSENSITIVE);
     static Pattern SET_PROPERTY = Pattern.compile("^(#?)\\s*([^=\\s]+)=(.*)$");
 
@@ -114,14 +120,14 @@ public class Module implements Comparable<Module>
     private final List<String> _files = new ArrayList<>();
 
     /**
-     * List of selections for this Module
+     * List of enabled environments for this Module, mapped to the string of where/how it was enabled.
      */
-    private final Set<String> _enables = new HashSet<>();
+    private final Map<String, String> _enabledEnvironments = new HashMap<>();
 
     /**
-     * List of provides for this Module
+     * List of provides for this Module, mapped to if this is flagged as the default provider or not.
      */
-    private final Set<String> _provides = new HashSet<>();
+    private final Map<String, Boolean> _provides = new HashMap<>();
 
     /**
      * List of tags for this Module
@@ -129,9 +135,9 @@ public class Module implements Comparable<Module>
     private final List<String> _tags = new ArrayList<>();
 
     /**
-     * Boolean true if directly enabled, false if all selections are transitive
+     * Boolean true if directly enabled, false if enabled via transitive reference
      */
-    private boolean _notTransitive;
+    private boolean _enabledDirectly = false;
 
     /**
      * Skip File Validation (default: false)
@@ -167,7 +173,11 @@ public class Module implements Comparable<Module>
      * Module names from {@code [after]} section
      */
     private final Set<String> _after = new HashSet<>();
-    private String _environment;
+
+    /**
+     * The specified environment name that this module belongs to.
+     */
+    private String _environment = ENVIRONMENT_JETTY;
 
     public Module(BaseHome basehome, Path path) throws IOException
     {
@@ -196,10 +206,13 @@ public class Module implements Comparable<Module>
             throw new IllegalArgumentException("Module filename must have .mod extension: " + basehome.toShortForm(path));
         _name = matcher.group(1);
 
-        _provides.add(_name);
-        _dynamic = _name.contains("/");
-
+        _dynamic = isDynamicDependency(_name);
         process(basehome);
+    }
+
+    public static boolean isDynamicDependency(String depends)
+    {
+        return depends.contains("/");
     }
 
     public static boolean isConditionalDependency(String depends)
@@ -214,6 +227,33 @@ public class Module implements Comparable<Module>
         return name;
     }
 
+    /**
+     * True if this environment is inherited based on directly enabled modules
+     * and it's dependencies.
+     *
+     * <p>
+     * Inherited modules can exist in one or more environments
+     * (that are not the default {@code Jetty} environment)
+     * </p>
+     *
+     * @return True if the environment is inherited
+     */
+    public boolean isEnvironmentInherited()
+    {
+        return _environment.equalsIgnoreCase(ENVIRONMENT_INHERITED);
+    }
+
+    /**
+     * Get the environment name that this module belongs to.
+     *
+     * <p>
+     * Important note: Check {@link #isEnvironmentInherited()}
+     * before using this environment name, as inherited
+     * environments act special.
+     * </p>
+     *
+     * @return the name of the environment
+     */
     public String getEnvironment()
     {
         return _environment;
@@ -356,9 +396,9 @@ public class Module implements Comparable<Module>
         return true;
     }
 
-    public void process(BaseHome basehome) throws FileNotFoundException, IOException
+    public void process(BaseHome basehome) throws IOException
     {
-        Pattern section = Pattern.compile("\\s*\\[([^]]*)\\]\\s*");
+        Pattern section = Pattern.compile("\\s*\\[([^]]*)]\\s*");
 
         if (!FS.canReadFile(_path))
         {
@@ -366,7 +406,7 @@ public class Module implements Comparable<Module>
             return;
         }
 
-        try (BufferedReader buf = Files.newBufferedReader(_path, StandardCharsets.UTF_8))
+        try (BufferedReader buf = Files.newBufferedReader(_path, UTF_8))
         {
             String sectionType = "";
             String line;
@@ -398,34 +438,35 @@ public class Module implements Comparable<Module>
                     {
                         switch (sectionType)
                         {
-                            case "":
+                            case "" ->
+                            {
                                 // ignore (this would be entries before first section)
-                                break;
-                            case "DESCRIPTION":
-                                _description.add(line);
-                                break;
-                            case "DEPEND":
-                            case "DEPENDS":
+                            }
+                            case "DESCRIPTION" -> _description.add(line);
+                            case "DEPEND", "DEPENDS" ->
+                            {
                                 if (!_depends.contains(line))
                                     _depends.add(line);
-                                break;
-                            case "DEPRECATED":
-                                _deprecated.add(line);
-                                break;
-                            case "ENV":
-                            case "ENVIRONMENT":
-                                _environment = line;
-                                break;
-                            case "FILE":
-                            case "FILES":
-                                _files.add(line);
-                                break;
-                            case "TAG":
-                            case "TAGS":
-                                _tags.add(line);
-                                break;
-                            case "DEFAULTS": // old name introduced in 9.2.x
-                            case "INI": // new name for 9.3+
+                            }
+                            case "DEPRECATED" -> _deprecated.add(line);
+                            case "ENV", "ENVIRONMENT" ->
+                            {
+                                if (StringUtil.isBlank(line))
+                                    throw new UsageException("Blank [environment] specified in %s".formatted(_path));
+
+                                if (line.equalsIgnoreCase(ENVIRONMENT_INHERITED))
+                                {
+                                    _environment = ENVIRONMENT_INHERITED;
+                                }
+                                else
+                                {
+                                    _environment = line.toLowerCase(Locale.ROOT);
+                                }
+                            }
+                            case "FILE", "FILES" -> _files.add(line);
+                            case "TAG", "TAGS" -> _tags.add(line);
+                            case "DEFAULTS", // old name introduced in 9.2.x
+                                 "INI" -> // new name for 9.3+
                             {
                                 // If a property is specified as `<k>=<v>` it is to be treated as `<k>?=<v>`.
                                 // All other property usages are left as-is (eg: `<k>+=<v>`)
@@ -448,54 +489,30 @@ public class Module implements Comparable<Module>
                                 {
                                     _ini.add(line);
                                 }
-                                break;
                             }
-                            case "INI-TEMPLATE":
-                                _iniTemplate.add(line);
-                                break;
-                            case "LIB":
-                            case "LIBS":
-                                _libs.add(line);
-                                break;
-                            case "JPMS":
-                                _jpms.add(line);
-                                break;
-                            case "LICENSE":
-                            case "LICENSES":
-                            case "LICENCE":
-                            case "LICENCES":
-                                _license.add(line);
-                                break;
-                            case "NAME":
-                                StartLog.warn("Deprecated [name] used in %s", basehome.toShortForm(_path));
-                                _provides.add(line);
-                                break;
-                            case "PROVIDE":
-                            case "PROVIDES":
-                                _provides.add(line);
-                                break;
-                            case "BEFORE":
-                                _before.add(line);
-                                break;
-                            case "OPTIONAL":
-                            case "AFTER":
-                                _after.add(line);
-                                break;
-                            case "EXEC":
-                                _jvmArgs.add(line);
-                                break;
-                            case "VERSION":
+                            case "INI-TEMPLATE" -> _iniTemplate.add(line);
+                            case "LIB", "LIBS" -> _libs.add(line);
+                            case "JPMS" -> _jpms.add(line);
+                            case "LICENSE", "LICENSES", "LICENCE", "LICENCES" -> _license.add(line);
+                            case "NAME" ->
+                            {
+                                StartLog.warn("Deprecated section called [name] used in %s", basehome.toShortForm(_path));
+                                addProvides(line);
+                            }
+                            case "PROVIDE", "PROVIDES" -> addProvides(line);
+                            case "BEFORE" -> _before.add(line);
+                            case "OPTIONAL", "AFTER" -> _after.add(line);
+                            case "EXEC" -> _jvmArgs.add(line);
+                            case "VERSION" ->
+                            {
                                 if (version != null)
                                 {
                                     throw new IOException("[version] already specified");
                                 }
                                 version = new Version(line);
-                                break;
-                            case "XML":
-                                _xmls.add(line);
-                                break;
-                            default:
-                                throw new IOException("Unrecognized module section: [" + sectionType + "]");
+                            }
+                            case "XML" -> _xmls.add(line);
+                            default -> throw new IOException("Unrecognized module section: [" + sectionType + "]");
                         }
                     }
                 }
@@ -508,16 +525,25 @@ public class Module implements Comparable<Module>
         }
     }
 
-    public boolean clearTransitiveEnable()
+    private void addProvides(String rawName)
     {
-        if (_notTransitive)
-            throw new IllegalStateException("Not Transitive");
-        if (isEnabled())
+        // Syntax can be :
+        // "<name>" - for a simple provider reference
+        // "<name>|default" - for a provider that is also the default implementation
+        String name = rawName;
+        boolean isDefaultProvider = false;
+        int idx = name.indexOf('|');
+        if (idx > 0)
         {
-            _enables.clear();
-            return true;
+            name = rawName.substring(0, idx);
+            isDefaultProvider = rawName.substring(idx + 1).equalsIgnoreCase("default");
         }
-        return false;
+
+        Boolean previous = _provides.putIfAbsent(name, isDefaultProvider);
+        if (previous != null && previous != isDefaultProvider)
+        {
+            throw new IllegalStateException("Unable to reset default state of provider [%s]".formatted(name));
+        }
     }
 
     public void setSkipFilesValidation(boolean skipFilesValidation)
@@ -529,25 +555,34 @@ public class Module implements Comparable<Module>
     public String toString()
     {
         StringBuilder str = new StringBuilder();
-        str.append(getName());
-        char sep = '{';
+        str.append(getName()).append('{');
+        boolean delim = false;
         if (isDynamic())
         {
-            str.append(sep).append("dynamic");
-            sep = ',';
+            str.append("dynamic");
+            delim = true;
         }
-        if (isEnabled())
+        if (isEnabledInAnyEnvironment())
         {
-            str.append(sep).append("enabled");
-            sep = ',';
+            if (delim)
+                str.append(',');
+            str.append("envs=[");
+            str.append(String.join(",", getEnabledEnvironments()));
+            str.append("]");
+            delim = true;
         }
+        if (delim)
+            str.append(',');
         if (isTransitive())
         {
-            str.append(sep).append("transitive");
-            sep = ',';
+            str.append("transitive");
         }
-        if (sep != '{')
-            str.append('}');
+        else
+        {
+            str.append("directly-enabled");
+        }
+
+        str.append('}');
         return str.toString();
     }
 
@@ -568,7 +603,15 @@ public class Module implements Comparable<Module>
 
     public Set<String> getProvides()
     {
-        return new HashSet<>(_provides);
+        return new HashSet<>(_provides.keySet());
+    }
+
+    public boolean isProvidesDefault(String name)
+    {
+        Boolean defaultProvider = _provides.get(name);
+        if (defaultProvider == null)
+            return false;
+        return defaultProvider;
     }
 
     public Set<String> getBefore()
@@ -606,47 +649,97 @@ public class Module implements Comparable<Module>
         return _tags.isEmpty() ? "untagged" : _tags.get(0);
     }
 
+    /**
+     * @deprecated use {@link #isEnabledInEnvironment(String)} or {@link #isEnabledInAnyEnvironment()} instead.
+     */
+    @Deprecated(since = "13.0.0", forRemoval = true)
     public boolean isEnabled()
     {
-        return !_enables.isEmpty();
+        return isEnabledInAnyEnvironment();
     }
 
-    public Set<String> getEnableSources()
+    public boolean isEnabledInAnyEnvironment()
     {
-        return new HashSet<>(_enables);
+        return !_enabledEnvironments.isEmpty();
+    }
+
+    public boolean isEnabledInEnvironment(String environmentName)
+    {
+        return _enabledEnvironments.containsKey(environmentName.toLowerCase(Locale.ROOT));
+    }
+
+    public Set<String> getEnabledEnvironments()
+    {
+        return _enabledEnvironments.keySet();
     }
 
     /**
-     * @param source String describing where the module was enabled from
-     * @param transitive True if the enable is transitive
-     * @return true if the module was not previously enabled
+     * No longer used.
+     *
+     * @deprecated use {@link #getEnabledFromAllEnvironments()} instead.
      */
-    public boolean enable(String source, boolean transitive)
+    @Deprecated(since = "13.0.0", forRemoval = true)
+    public Set<String> getEnableSources()
     {
-        boolean updated = _enables.isEmpty();
-        if (transitive)
-        {
-            // Ignore transitive selections if explicitly enabled
-            if (!_notTransitive)
-                _enables.add(source);
-        }
-        else
-        {
-            if (!_notTransitive)
+        return getEnabledFromAllEnvironments();
+    }
+
+    /**
+     * Get the full set of enabled-from strings for all enabled environments on this module.
+     *
+     * @return the set of enabled-from strings.
+     */
+    public Set<String> getEnabledFromAllEnvironments()
+    {
+        return _enabledEnvironments.entrySet()
+            .stream()
+            .map(e ->
             {
-                // Ignore transitive selections if explicitly enabled
-                updated = true;
-                _enables.clear(); // clear any transitive enabling
-            }
-            _notTransitive = true;
-            _enables.add(source);
-        }
-        return updated;
+                if (e.getKey().equals(ENVIRONMENT_JETTY))
+                    return e.getValue();
+                else
+                    return "%s:%s".formatted(e.getKey(), e.getValue());
+            })
+            .collect(Collectors.toSet());
+    }
+
+    /**
+     * Get the specific enabled-from string for the specified environment.
+     *
+     * @param environmentName the environment name
+     * @return the enabled-from string for this environment, or null if the environment isn't enabled.
+     */
+    public String getEnabledFromEnvironment(String environmentName)
+    {
+        return _enabledEnvironments.get(environmentName);
+    }
+
+    /**
+     * Enable this module under the environment name context.
+     *
+     * <p>
+     * The list of enabled environments can be updated based
+     * on the module's own environment name, or if inherited, the provided environment name.
+     * </p>
+     *
+     * @param environmentScope The environment name scope this module was enabled in.
+     * @param enabledFrom the source of this enablement (used for help / listing / debug reasons)
+     * @param transitive True if the enable is transitive
+     * @return {@code true} if this module was not already enabled for the specified environment name.
+     * @see #getEnabledEnvironments()
+     */
+    public boolean enable(String environmentScope, String enabledFrom, boolean transitive)
+    {
+        Objects.requireNonNull(enabledFrom, "Source cannot be null");
+        String environmentName = isEnvironmentInherited() ? environmentScope.toLowerCase(Locale.ROOT) : getEnvironment();
+        if (!transitive)
+            _enabledDirectly = true;
+        return _enabledEnvironments.putIfAbsent(environmentName, enabledFrom) == null;
     }
 
     public boolean isTransitive()
     {
-        return isEnabled() && !_notTransitive;
+        return !_enabledDirectly;
     }
 
     public void writeIniSection(BufferedWriter writer, Props props)

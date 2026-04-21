@@ -32,6 +32,7 @@ import java.util.stream.StreamSupport;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.Main;
+import org.eclipse.jetty.start.Module;
 import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.StartArgs;
 import org.eclipse.jetty.start.StartEnvironment;
@@ -159,15 +160,26 @@ public abstract class AbstractUseCase
 
         public List<String> getXmls()
         {
-            return startArgs.getJettyEnvironment().getXmlFiles().stream()
+            return getXmls(Module.ENVIRONMENT_JETTY);
+        }
+
+        public List<String> getXmls(String environmentName)
+        {
+            return startArgs.getEnvironment(environmentName).getXmlFiles().stream()
                 .map(p -> baseHome.toShortForm(p))
                 .collect(Collectors.toList());
         }
 
         public List<String> getLibs()
         {
-            return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(startArgs.getJettyEnvironment().getClasspath().iterator(), Spliterator.ORDERED), false)
+            return getLibs(Module.ENVIRONMENT_JETTY);
+        }
+
+        public List<String> getLibs(String environmentName)
+        {
+            return startArgs.getEnvironment(environmentName)
+                .getClasspath()
+                .stream()
                 .map(f -> baseHome.toShortForm(f))
                 .collect(Collectors.toList());
         }
@@ -184,7 +196,12 @@ public abstract class AbstractUseCase
 
         public List<String> getProperties()
         {
-            Props props = startArgs.getJettyEnvironment().getProperties();
+            return getProperties(Module.ENVIRONMENT_JETTY);
+        }
+
+        public List<String> getProperties(String environmentName)
+        {
+            Props props = startArgs.getEnvironment(environmentName).getProperties();
 
             Predicate<Props.Prop> propPredicate = (p) ->
             {
@@ -257,6 +274,8 @@ public abstract class AbstractUseCase
         catch (Exception e)
         {
             execResults.exception = e;
+            e.printStackTrace(System.err);
+            System.err.println(out.toString(UTF_8));
         }
         finally
         {

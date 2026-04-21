@@ -92,13 +92,10 @@ public final class Props implements Iterable<Prop>
         ArrayList<String> l = new ArrayList<>();
         for (String s : v.split(","))
         {
-            if (s != null)
+            s = s.trim();
+            if (!s.isEmpty())
             {
-                s = s.trim();
-                if (s.length() > 0)
-                {
-                    l.add(s);
-                }
+                l.add(s);
             }
         }
         return l;
