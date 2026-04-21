@@ -206,9 +206,7 @@ public class Module implements Comparable<Module>
             throw new IllegalArgumentException("Module filename must have .mod extension: " + basehome.toShortForm(path));
         _name = matcher.group(1);
 
-        // _provides.add(_name); // TODO: do we need this still? it pollutes the provides namespace.
         _dynamic = isDynamicDependency(_name);
-
         process(basehome);
     }
 
@@ -564,7 +562,7 @@ public class Module implements Comparable<Module>
             str.append("dynamic");
             delim = true;
         }
-        if (!getEnabledEnvironments().isEmpty())
+        if (isEnabledInAnyEnvironment())
         {
             if (delim)
                 str.append(',');
@@ -657,7 +655,7 @@ public class Module implements Comparable<Module>
     @Deprecated(since = "13.0.0", forRemoval = true)
     public boolean isEnabled()
     {
-        return !_enabledEnvironments.isEmpty();
+        return isEnabledInAnyEnvironment();
     }
 
     public boolean isEnabledInAnyEnvironment()
@@ -678,20 +676,20 @@ public class Module implements Comparable<Module>
     /**
      * No longer used.
      *
-     * @deprecated use {@link #getEnabledEnvironments()} instead.
+     * @deprecated use {@link #getEnabledFromAllEnvironments()} instead.
      */
     @Deprecated(since = "13.0.0", forRemoval = true)
     public Set<String> getEnableSources()
     {
-        return _enabledEnvironments.keySet();
+        return getEnabledFromAllEnvironments();
     }
 
     /**
-     * Get the full list of enabled-from strings for all enabled environments on this module.
+     * Get the full set of enabled-from strings for all enabled environments on this module.
      *
-     * @return the list of enabled-from strings.
+     * @return the set of enabled-from strings.
      */
-    public List<String> getEnabledFromAllEnvironments()
+    public Set<String> getEnabledFromAllEnvironments()
     {
         return _enabledEnvironments.entrySet()
             .stream()
@@ -702,7 +700,7 @@ public class Module implements Comparable<Module>
                 else
                     return "%s:%s".formatted(e.getKey(), e.getValue());
             })
-            .toList();
+            .collect(Collectors.toSet());
     }
 
     /**

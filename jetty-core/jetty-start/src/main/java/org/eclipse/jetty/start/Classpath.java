@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * Class to handle CLASSPATH construction
@@ -178,7 +177,7 @@ public class Classpath implements Iterable<Path>
 
     public Stream<Path> stream()
     {
-        return StreamSupport.stream(spliterator(), false);
+        return elements.stream();
     }
 
     /**
