@@ -17,9 +17,9 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
@@ -643,6 +643,8 @@ public class RedirectCacheTest extends AbstractHttpClientServerTest
         AtomicInteger redirectCount = new AtomicInteger();
         startServer(scenario, new Handler.Abstract()
         {
+            private final AtomicBoolean redirected = new AtomicBoolean();
+
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
@@ -652,8 +654,7 @@ public class RedirectCacheTest extends AbstractHttpClientServerTest
                     String authority = request.getHttpURI().getAuthority();
                     if ("localhost:8080".equals(authority))
                     {
-                        String host = request.getHeaders().get(HttpHeader.HOST);
-                        if (host.startsWith("localhost"))
+                        if (redirected.compareAndSet(false, true))
                         {
                             redirectCount.incrementAndGet();
                             String location = scenario.getScheme() + "://127.0.0.1:" + connector.getLocalPort() + "/path";

@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -224,8 +224,8 @@ public class PropertyPassingTest
             --module=empty
             # TESTING THIS (it should expand the ${jetty.base} portion
             test.config=${jetty.base}/etc/config.ini
-            """.replace('/', File.separatorChar);
-        Files.writeString(ini, iniBody, StandardCharsets.UTF_8);
+            """;
+        Files.writeString(ini, iniBody, UTF_8);
 
         // Setup command line
         List<String> commands = new ArrayList<>();
@@ -242,8 +242,9 @@ public class PropertyPassingTest
         String output = collectRunOutput(commands);
 
         // Test for values
-        Path expectedPath = base.resolve("etc/config.ini".replace('/', File.separatorChar));
-        assertThat(output, containsString("test.config=" + expectedPath));
+        // The property is defined as `test.config=${jetty.base}/etc/config.ini`
+        // so we must maintain the slashes for the `/etc/config.ini` portion (even if it is running on windows)
+        assertThat(output, containsString("test.config=%s/etc/config.ini".formatted(base)));
     }
 
     @Test
@@ -261,7 +262,7 @@ public class PropertyPassingTest
             # configuration option
             # test.config=${jetty.home}/etc/eex-config.ini
             """;
-        Files.writeString(module, moduleBody, StandardCharsets.UTF_8);
+        Files.writeString(module, moduleBody, UTF_8);
         Path ini = base.resolve("start.d/config.ini");
         FS.ensureDirectoryExists(ini.getParent());
         String iniBody = """
@@ -269,8 +270,8 @@ public class PropertyPassingTest
             --module=env-config
             # TESTING THIS (it should expand the ${jetty.base} portion
             test.config=${jetty.base}/etc/config.ini
-            """.replace('/', File.separatorChar);
-        Files.writeString(ini, iniBody, StandardCharsets.UTF_8);
+            """;
+        Files.writeString(ini, iniBody, UTF_8);
 
         // Setup command line
         List<String> commands = new ArrayList<>();
@@ -287,8 +288,9 @@ public class PropertyPassingTest
         String output = collectRunOutput(commands);
 
         // Test for values
-        Path expectedPath = base.resolve("etc/config.ini".replace('/', File.separatorChar));
-        assertThat(output, containsString("test.config=" + expectedPath));
+        // The property is defined as `test.config=${jetty.base}/etc/config.ini`
+        // so we must maintain the slashes for the `/etc/config.ini` portion (even if it is running on windows)
+        assertThat(output, containsString("test.config=%s/etc/config.ini".formatted(base)));
     }
 
     private String getClassPath()

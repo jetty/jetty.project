@@ -16,7 +16,6 @@ package org.eclipse.jetty.start.util;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,7 +32,9 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.start.PathFinder;
 import org.eclipse.jetty.start.PathMatchers;
 import org.eclipse.jetty.start.Utils;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Simple utility to scan all of the mod files and correct references
@@ -43,7 +44,7 @@ public class CorrectMavenCentralRefs
 {
     public static void main(String[] args)
     {
-        Path buildRoot = MavenTestingUtils.getProjectDir("..").toPath();
+        Path buildRoot = MavenPaths.projectBase().resolve("../..");
         buildRoot = buildRoot.normalize().toAbsolutePath();
 
         // Test to make sure we are in right directory
@@ -225,7 +226,7 @@ public class CorrectMavenCentralRefs
     {
         List<String> lines = new ArrayList<>();
 
-        try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8))
+        try (BufferedReader reader = Files.newBufferedReader(path, UTF_8))
         {
             String line;
             while ((line = reader.readLine()) != null)
@@ -239,7 +240,7 @@ public class CorrectMavenCentralRefs
 
     private void saveLines(Path path, List<String> lines) throws IOException
     {
-        try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING))
+        try (BufferedWriter writer = Files.newBufferedWriter(path, UTF_8, StandardOpenOption.TRUNCATE_EXISTING))
         {
             for (String line : lines)
             {

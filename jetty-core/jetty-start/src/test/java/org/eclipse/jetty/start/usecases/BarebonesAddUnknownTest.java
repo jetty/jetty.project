@@ -13,14 +13,12 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
@@ -31,14 +29,13 @@ public class BarebonesAddUnknownTest extends AbstractUseCase
     {
         setupStandardHomeDir();
 
-        Files.write(baseDir.resolve("start.ini"),
-            Collections.singletonList(
-                "--modules=main"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("start.ini"),
+            """
+            --modules=main
+            """, UTF_8);
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
+        List<String> prepareArgs = List.of(
             "--testing-mode",
             "--create-startd",
             "--add-modules=unknown"

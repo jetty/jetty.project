@@ -20,7 +20,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 
@@ -34,7 +34,7 @@ public class MavenMetadataTest
     @Test
     public void testParseExample() throws ParserConfigurationException, SAXException, IOException
     {
-        Path example = MavenTestingUtils.getTestResourcePathFile("example-maven-metadata.xml");
+        Path example = MavenPaths.findTestResourceFile("example-maven-metadata.xml");
         MavenMetadata mavenMetadata = new MavenMetadata(example);
 
         assertThat("Metadata.groupId", mavenMetadata.getGroupId(), is("org.eclipse.jetty"));

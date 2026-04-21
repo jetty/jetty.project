@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -23,7 +22,7 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
@@ -46,7 +45,7 @@ public class ModulesTest
     {
         Path baseDir = workDir.getEmptyPathDir();
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
+        Path homeDir = MavenPaths.findTestResourceDir("dist-home");
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
@@ -102,18 +101,18 @@ public class ModulesTest
     public void testLoadShallowModulesOnly() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("jetty home with spaces");
+        Path homeDir = MavenPaths.findTestResourceDir("jetty home with spaces");
         // intentionally setup top level resources dir (as this would have many
         // deep references)
-        File baseDir = MavenTestingUtils.getTestResourcesDir();
+        Path baseDir = MavenPaths.projectBase().resolve("src/test/resources");
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
-        config.add(new JettyHomeConfigSource(homeDir.toPath()));
-        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+        config.add(new JettyHomeConfigSource(homeDir));
+        config.add(new JettyBaseConfigSource(baseDir));
 
         // Initialize
         BaseHome basehome = new BaseHome(config);
@@ -142,7 +141,7 @@ public class ModulesTest
     {
         Path baseDir = workDir.getEmptyPathDir();
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
+        Path homeDir = MavenPaths.findTestResourceDir("dist-home");
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration
@@ -188,7 +187,10 @@ public class ModulesTest
         expectedLibs.add("lib/optional.jar");
         expectedLibs.add("lib/base.jar");
 
-        List<String> actualLibs = normalizeLibs(active);
+        List<String> actualLibs = active.stream()
+            .flatMap(m -> m.getLibs().stream())
+            .distinct()
+            .toList();
         assertThat("Resolved Libs: " + actualLibs, actualLibs, contains(expectedLibs.toArray()));
 
         // Assert XML List
@@ -196,7 +198,10 @@ public class ModulesTest
         expectedXmls.add("etc/optional.xml");
         expectedXmls.add("etc/base.xml");
 
-        List<String> actualXmls = normalizeXmls(active);
+        List<String> actualXmls = active.stream()
+            .flatMap(m -> m.getXmls().stream())
+            .distinct()
+            .toList();
         assertThat("Resolved XMLs: " + actualXmls, actualXmls, contains(expectedXmls.toArray()));
     }
 
@@ -205,7 +210,7 @@ public class ModulesTest
     {
         Path baseDir = workDir.getEmptyPathDir();
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
+        Path homeDir = MavenPaths.findTestResourceDir("non-required-deps");
         String[] cmdLine = new String[]{"bar.type=cannot-find-me"};
 
         // Configuration
@@ -254,7 +259,7 @@ public class ModulesTest
     {
         Path baseDir = workDir.getEmptyPathDir();
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
+        Path homeDir = MavenPaths.findTestResourceDir("non-required-deps");
         String[] cmdLine = new String[]{"bar.type=dive"};
 
         // Configuration
@@ -305,7 +310,7 @@ public class ModulesTest
     {
         Path baseDir = workDir.getEmptyPathDir();
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("non-required-deps");
+        Path homeDir = MavenPaths.findTestResourceDir("non-required-deps");
         String[] cmdLine = new String[]{"bar.type=dynamic"};
 
         // Configuration
@@ -349,37 +354,5 @@ public class ModulesTest
 
         Props props = args.getJettyEnvironment().getProperties();
         assertThat(props.getString("bar.name"), is("dynamic"));
-    }
-
-    private List<String> normalizeLibs(List<Module> active)
-    {
-        List<String> libs = new ArrayList<>();
-        for (Module module : active)
-        {
-            for (String lib : module.getLibs())
-            {
-                if (!libs.contains(lib))
-                {
-                    libs.add(lib);
-                }
-            }
-        }
-        return libs;
-    }
-
-    private List<String> normalizeXmls(List<Module> active)
-    {
-        List<String> xmls = new ArrayList<>();
-        for (Module module : active)
-        {
-            for (String xml : module.getXmls())
-            {
-                if (!xmls.contains(xml))
-                {
-                    xmls.add(xml);
-                }
-            }
-        }
-        return xmls;
     }
 }
