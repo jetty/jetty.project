@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
@@ -21,8 +20,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Stream;
 
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
@@ -35,8 +35,8 @@ public class PathFinderTest
     public void testFindInis(WorkDir workDir) throws IOException
     {
         Path basePath = workDir.getPath();
-        File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
-        Path homePath = homeDir.toPath().toAbsolutePath();
+        Path homeDir = MavenPaths.findTestResourceDir("hb.1/home");
+        Path homePath = homeDir.toAbsolutePath();
 
         PathFinder finder = new PathFinder();
         finder.setFileMatcher("glob:**/*.ini");
@@ -51,7 +51,7 @@ public class PathFinderTest
         expected.add("${jetty.home}/start.d/logging.ini");
         expected.add("${jetty.home}/start.d/ssl.ini");
         expected.add("${jetty.home}/start.ini");
-        FSTest.toFsSeparators(expected);
+        expected.replaceAll(FS::separators);
 
         BaseHome hb = new BaseHome(new String[]{"jetty.home=" + homePath.toString(), "jetty.base=" + basePath.toString()});
         BaseHomeTest.assertPathList(hb, "Files found", expected, finder);
@@ -61,29 +61,27 @@ public class PathFinderTest
     public void testFindMods(WorkDir workDir) throws IOException
     {
         Path basePath = workDir.getEmptyPathDir();
-        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
-        Path homePath = homeDir.toPath().toAbsolutePath();
+        Path homeDir = MavenPaths.findTestResourceDir("dist-home");
+        Path homePath = homeDir.toAbsolutePath();
 
         List<String> expected = new ArrayList<>();
-        File modulesDir = new File(homeDir, "modules");
-        for (File file : modulesDir.listFiles())
+        Path modulesDir = homeDir.resolve("modules");
+        try (Stream<Path> listStream = Files.list(modulesDir))
         {
-            if (file.getName().endsWith(".mod"))
-            {
-                expected.add("${jetty.home}/modules/" + file.getName());
-            }
+            listStream
+                .filter(Files::isRegularFile)
+                .filter(p -> p.getFileName().toString().endsWith(".mod"))
+                .map(p -> FS.separators("${jetty.home}/modules/" + p.getFileName()))
+                .forEach(expected::add);
         }
-        FSTest.toFsSeparators(expected);
-
-        Path modulesPath = modulesDir.toPath();
 
         PathFinder finder = new PathFinder();
         finder.setFileMatcher(PathMatchers.getMatcher("modules/*.mod"));
-        finder.setBase(modulesPath);
+        finder.setBase(modulesDir);
 
-        Files.walkFileTree(modulesPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), 1, finder);
+        Files.walkFileTree(modulesDir, EnumSet.of(FileVisitOption.FOLLOW_LINKS), 1, finder);
 
-        BaseHome hb = new BaseHome(new String[]{"jetty.home=" + homePath.toString(), "jetty.base=" + basePath.toString()});
+        BaseHome hb = new BaseHome(new String[]{"jetty.home=" + homePath, "jetty.base=" + basePath});
         BaseHomeTest.assertPathList(hb, "Files found", expected, finder);
     }
 }

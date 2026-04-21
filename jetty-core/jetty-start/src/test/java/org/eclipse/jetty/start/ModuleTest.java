@@ -43,7 +43,7 @@ public class ModuleTest
     private BaseHome newBaseHome(Path baseDir) throws IOException
     {
         // Test Env
-        Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");
+        Path homeDir = MavenPaths.findTestResourceDir("dist-home");
         String[] cmdLine = new String[]{"jetty.version=TEST"};
 
         // Configuration

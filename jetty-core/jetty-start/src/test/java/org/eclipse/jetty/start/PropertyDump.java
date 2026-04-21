@@ -21,6 +21,9 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Predicate;
 
+/**
+ * This is used to test changes to "main.class" property.
+ */
 public class PropertyDump
 {
     public static void main(String[] args)

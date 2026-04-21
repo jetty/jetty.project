@@ -15,8 +15,12 @@ package org.eclipse.jetty.start.fileinits;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.config.ConfigSources;
@@ -31,6 +35,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.eclipse.jetty.toolchain.test.PathMatchers.isRegularFile;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -210,21 +216,21 @@ public class MavenLocalRepoFileInitializerTest
         FS.ensureEmpty(snapshotLocalRepoDir);
 
         MavenLocalRepoFileInitializer repo =
-            new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false, "https://oss.sonatype.org/content/repositories/jetty-snapshots/");
-        String ref = "maven://org.eclipse.jetty/jetty-rewrite/12.0.22-SNAPSHOT/jar";
+            new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false, "https://central.sonatype.com/repository/maven-snapshots/");
+        String ref = "maven://org.eclipse.jetty/jetty-rewrite/12.0.34-SNAPSHOT/jar";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
 
         assertThat("coords.groupId", coords.groupId, is("org.eclipse.jetty"));
         assertThat("coords.artifactId", coords.artifactId, is("jetty-rewrite"));
-        assertThat("coords.version", coords.version, is("12.0.22-SNAPSHOT"));
+        assertThat("coords.version", coords.version, is("12.0.34-SNAPSHOT"));
         assertThat("coords.type", coords.type, is("jar"));
         assertThat("coords.classifier", coords.classifier, is(nullValue()));
 
         assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(),
-            is("https://oss.sonatype.org/content/repositories/jetty-snapshots/org/eclipse/jetty/jetty-rewrite/12.0.22-SNAPSHOT/jetty-rewrite-12.0.22-SNAPSHOT.jar"));
+            is("https://central.sonatype.com/repository/maven-snapshots/org/eclipse/jetty/jetty-rewrite/12.0.34-SNAPSHOT/jetty-rewrite-12.0.34-SNAPSHOT.jar"));
 
-        Path destination = baseHome.getBasePath().resolve("jetty-rewrite-12.0.22-SNAPSHOT.jar");
+        Path destination = baseHome.getBasePath().resolve("jetty-rewrite-12.0.34-SNAPSHOT.jar");
         repo.download(coords, destination);
         assertThat(Files.exists(destination), is(true));
         assertThat("Snapshot File size", Files.size(destination), greaterThan(10_000L));
@@ -240,8 +246,8 @@ public class MavenLocalRepoFileInitializerTest
 
         MavenLocalRepoFileInitializer repo =
             new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false,
-                "https://oss.sonatype.org/content/repositories/jetty-snapshots/");
-        String ref = "maven://org.eclipse.jetty.ee10.demos/jetty-ee10-demo-simple-webapp/12.0.22-SNAPSHOT/jar/config";
+                "https://central.sonatype.com/repository/maven-snapshots/");
+        String ref = "maven://org.eclipse.jetty.ee10.demos/jetty-ee10-demo-simple-webapp/12.0.34-SNAPSHOT/jar/config";
         Path baseDir = baseHome.getBasePath();
         repo.create(URI.create(ref), "extract:company/");
 
@@ -258,8 +264,8 @@ public class MavenLocalRepoFileInitializerTest
 
         MavenLocalRepoFileInitializer repo =
             new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false,
-                "https://oss.sonatype.org/content/repositories/jetty-snapshots/");
-        String ref = "maven://org.eclipse.jetty.ee10.demos/jetty-ee10-demo-simple-webapp/12.0.22-SNAPSHOT/jar/config";
+                "https://central.sonatype.com/repository/maven-snapshots/");
+        String ref = "maven://org.eclipse.jetty.ee10.demos/jetty-ee10-demo-simple-webapp/12.0.34-SNAPSHOT/jar/config";
         Path baseDir = baseHome.getBasePath();
         repo.create(URI.create(ref), "extract:/");
 
@@ -267,20 +273,37 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
-    @Tag("external")
     public void testDownloadButOffline()
         throws Exception
     {
         Path snapshotLocalRepoDir = testdir.resolve("snapshot-repo");
         FS.ensureEmpty(snapshotLocalRepoDir);
 
+        // Create a jar file in this "local repo" that doesn't exist on a real maven repo (for testing reasons, don't want false positives)
+        Path jarFile = snapshotLocalRepoDir.resolve("org/eclipse/jetty/eeX/demos/jetty-eeX-demo-simple-webapp/12.99.9/jetty-eeX-demo-simple-webapp-12.99.9-config.jar");
+        FS.ensureDirExists(jarFile.getParent());
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+        URI uri = URI.create("jar:" + jarFile.toUri().toASCIIString());
+        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path dir = root.resolve("modules");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("eeX-demo.mod"), """
+                [description]
+                Test Demo Module (doesn't do anything)
+                """, UTF_8);
+        }
+
         MavenLocalRepoFileInitializer repo =
             new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false,
-                "https://oss.sonatype.org/content/repositories/jetty-snapshots/").offline(true);
-        String ref = "maven://org.eclipse.jetty.ee10.demos/jetty-ee10-demo-simple-webapp/12.0.22-SNAPSHOT/jar/config";
+                "https://central.sonatype.com/repository/maven-snapshots/").offline(true);
+        String ref = "maven://org.eclipse.jetty.eeX.demos/jetty-eeX-demo-simple-webapp/12.99.9/jar/config";
         Path baseDir = baseHome.getBasePath();
         repo.create(URI.create(ref), "extract:/");
 
-        assertThat(Files.exists(baseDir.resolve("modules/ee10-demo-simple.mod")), is(false));
+        assertThat(baseDir.resolve("modules/eeX-demo.mod"), isRegularFile());
     }
 }

@@ -16,7 +16,6 @@ package org.eclipse.jetty.start.usecases;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -65,7 +64,7 @@ public abstract class AbstractUseCase
     }
 
     @BeforeEach
-    public void setupTest() throws IOException
+    public void setupTest()
     {
         testdir = workDir.getEmptyPathDir();
         // Create empty base directory for testcase to use
@@ -111,7 +110,7 @@ public abstract class AbstractUseCase
                 lib/base.jar
                 [xml]
                 etc/base.xml
-                """, StandardCharsets.UTF_8);
+                """, UTF_8);
         Files.writeString(modules.resolve("extra.mod"),
             """
                 [depend]
@@ -122,7 +121,7 @@ public abstract class AbstractUseCase
                 etc/extra.xml
                 [ini]
                 extra.prop=value0
-                """, StandardCharsets.UTF_8);
+                """, UTF_8);
         Files.writeString(modules.resolve("main.mod"),
             """
                 [depend]
@@ -140,7 +139,7 @@ public abstract class AbstractUseCase
                 main.prop=value0
                 [ini-template]
                 # main.prop=valueT
-                """, StandardCharsets.UTF_8);
+                """, UTF_8);
         Files.writeString(modules.resolve("optional.mod"),
             """
                 [lib]
@@ -149,7 +148,7 @@ public abstract class AbstractUseCase
                 etc/optional.xml
                 [ini]
                 optional.prop=value0
-                """, StandardCharsets.UTF_8);
+                """, UTF_8);
     }
 
     public static class ExecResults
@@ -270,7 +269,7 @@ public abstract class AbstractUseCase
             execResults.baseHome = main.getBaseHome();
 
             StartLog.setStream(originalStream);
-            execResults.output = out.toString(StandardCharsets.UTF_8.name());
+            execResults.output = out.toString(UTF_8);
         }
         catch (Exception e)
         {

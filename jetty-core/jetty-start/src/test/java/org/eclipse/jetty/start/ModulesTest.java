@@ -189,7 +189,10 @@ public class ModulesTest
         expectedLibs.add("lib/optional.jar");
         expectedLibs.add("lib/base.jar");
 
-        List<String> actualLibs = normalizeLibs(active);
+        List<String> actualLibs = active.stream()
+            .flatMap(m -> m.getLibs().stream())
+            .distinct()
+            .toList();
         assertThat("Resolved Libs: " + actualLibs, actualLibs, contains(expectedLibs.toArray()));
 
         // Assert XML List
@@ -197,7 +200,10 @@ public class ModulesTest
         expectedXmls.add("etc/optional.xml");
         expectedXmls.add("etc/base.xml");
 
-        List<String> actualXmls = normalizeXmls(active);
+        List<String> actualXmls = active.stream()
+            .flatMap(m -> m.getXmls().stream())
+            .distinct()
+            .toList();
         assertThat("Resolved XMLs: " + actualXmls, actualXmls, contains(expectedXmls.toArray()));
     }
 
