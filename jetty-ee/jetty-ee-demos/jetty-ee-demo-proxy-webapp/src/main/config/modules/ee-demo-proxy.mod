@@ -4,7 +4,7 @@
 Demo Proxy Webapp
 
 [environment]
-ee
+<inherit>
 
 [tags]
 demo

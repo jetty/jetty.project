@@ -4,7 +4,7 @@
 Enables the Jetty Proxy Servlet.
 
 [environment]
-ee
+<inherit>
 
 [depend]
 client

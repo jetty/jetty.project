@@ -4,7 +4,7 @@
 Enables the glassfish version of JSTL for all webapps.
 
 [environment]
-ee
+<inherit>
 
 [depends]
 ee-apache-jsp

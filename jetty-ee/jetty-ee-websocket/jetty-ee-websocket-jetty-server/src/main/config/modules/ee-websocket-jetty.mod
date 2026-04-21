@@ -5,7 +5,7 @@ Enable the Jetty WebSocket API support for deployed web applications.
 websocket
 
 [environment]
-ee
+<inherit>
 
 [depend]
 ee-annotations

@@ -4,7 +4,7 @@
 Demo Jetty WebSocket Webapp
 
 [environment]
-ee
+<inherit>
 
 [tags]
 demo

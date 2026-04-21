@@ -4,7 +4,7 @@
 Enables JASPI basic authentication the /test context path.
 
 [environment]
-ee
+<inherit>
 
 [tags]
 security

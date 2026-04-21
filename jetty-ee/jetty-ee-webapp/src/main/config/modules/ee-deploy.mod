@@ -5,7 +5,7 @@ Scans and deploys `ee` environment web applications.
 deployment
 
 [environment]
-ee
+<inherit>
 
 [before]
 ee10-deploy

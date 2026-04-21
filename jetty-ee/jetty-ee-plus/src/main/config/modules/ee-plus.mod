@@ -2,7 +2,7 @@
 Enables Servlet resource injection. 
 
 [environment]
-ee
+<inherit>
 
 [depend]
 server

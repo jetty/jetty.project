@@ -4,7 +4,7 @@
 Provides a DefaultAuthConfigFactory for jaspi
 
 [environment]
-ee
+<inherit>
 
 [tags]
 security

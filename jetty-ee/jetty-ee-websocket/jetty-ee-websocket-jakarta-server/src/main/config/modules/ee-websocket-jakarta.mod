@@ -2,7 +2,7 @@
 Enable jakarta.websocket APIs for deployed web applications.
 
 [environment]
-ee
+<inherit>
 
 [tags]
 websocket

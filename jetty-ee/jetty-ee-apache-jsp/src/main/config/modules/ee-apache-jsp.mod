@@ -4,7 +4,7 @@
 Enables use of the apache implementation of JSP.
 
 [environment]
-ee
+<inherit>
 
 [depend]
 ee-servlet
