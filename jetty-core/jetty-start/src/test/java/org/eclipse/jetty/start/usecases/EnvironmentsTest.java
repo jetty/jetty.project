@@ -13,10 +13,7 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +22,7 @@ import org.eclipse.jetty.start.StartEnvironment;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -45,41 +43,39 @@ public class EnvironmentsTest extends AbstractUseCase
 
         FS.touch(baseDir.resolve("lib/envA.jar"));
         FS.touch(baseDir.resolve("etc/envA.xml"));
-        Files.write(baseDir.resolve("modules/feature-envA.mod"),
-            Arrays.asList(
-                "[provides]",
-                "feature-envA",
-                "[environment]",
-                "envA",
-                "[depends]",
-                "main",
-                "[xml]",
-                "etc/envA.xml",
-                "[lib]",
-                "lib/envA.jar",
-                "[ini]",
-                "feature.option=envA"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/feature-envA.mod"),
+            """
+            [provides]
+            feature-envA
+            [environment]
+            envA
+            [depends]
+            main
+            [xml]
+            etc/envA.xml
+            [lib]
+            lib/envA.jar
+            [ini]
+            feature.option=envA
+            """, UTF_8);
 
         FS.touch(baseDir.resolve("lib/envB.jar"));
         FS.touch(baseDir.resolve("etc/envB.xml"));
-        Files.write(baseDir.resolve("modules/feature-envB.mod"),
-            Arrays.asList(
-                "[provides]",
-                "feature-envB",
-                "[environment]",
-                "envB",
-                "[depends]",
-                "main",
-                "[xml]",
-                "etc/envB.xml",
-                "[lib]",
-                "lib/envB.jar",
-                "[ini]",
-                "feature.option=envB"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/feature-envB.mod"),
+            """
+            [provides]
+            feature-envB
+            [environment]
+            envB
+            [depends]
+            main
+            [xml]
+            etc/envB.xml
+            [lib]
+            lib/envB.jar
+            [ini]
+            feature.option=envB
+            """, UTF_8);
 
         // === Execute Main
         List<String> runArgs = List.of(
@@ -89,18 +85,18 @@ public class EnvironmentsTest extends AbstractUseCase
 
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
-            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar)
+        List<String> expectedXmls = List.of(
+            FS.separators("${jetty.home}/etc/base.xml"),
+            FS.separators("${jetty.home}/etc/main.xml")
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
-        List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
+        List<String> expectedLibs = List.of(
+            FS.separators("${jetty.home}/lib/base.jar"),
+            FS.separators("${jetty.home}/lib/main.jar"),
+            FS.separators("${jetty.home}/lib/other.jar")
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));

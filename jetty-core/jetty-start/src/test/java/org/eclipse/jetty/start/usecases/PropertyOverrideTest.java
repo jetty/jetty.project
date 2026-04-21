@@ -13,20 +13,16 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.start.FS;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -44,32 +40,29 @@ public class PropertyOverrideTest extends AbstractUseCase
     {
         setupStandardHomeDir();
 
-        Files.write(homeDir.resolve("modules/ssl.mod"),
-            List.of(
-                "[depend]",
-                "main",
-                "[ini-template]",
-                "# jetty.sslContext.keyStorePassword=default"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(homeDir.resolve("modules/ssl.mod"),
+            """
+            [depend]
+            main
+            [ini-template]
+            # jetty.sslContext.keyStorePassword=default
+            """, UTF_8);
 
         FS.ensureDirectoryExists(baseDir.resolve("modules"));
 
-        Files.write(baseDir.resolve("modules/ssl-ini.mod"),
-            List.of(
-                "[depend]",
-                "ssl",
-                "[ini]",
-                propRef
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/ssl-ini.mod"),
+            """
+            [depend]
+            ssl
+            [ini]
+            %s
+            """.formatted(propRef), UTF_8);
 
         FS.ensureDirectoryExists(baseDir.resolve("start.d"));
-        Files.write(baseDir.resolve("start.d/main.ini"),
-            List.of(
-                "--modules=ssl-ini"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("start.d/main.ini"),
+            """
+            --modules=ssl-ini
+            """, UTF_8);
 
         // === Execute Main
         List<String> commandLine = List.of(
@@ -79,18 +72,18 @@ public class PropertyOverrideTest extends AbstractUseCase
         ExecResults results = exec(commandLine, false);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
-            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar)
+        List<String> expectedXmls = List.of(
+            FS.separators("${jetty.home}/etc/base.xml"),
+            FS.separators("${jetty.home}/etc/main.xml")
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, ordered(expectedXmls));
 
         // === Validate Resulting LIBs
-        List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
+        List<String> expectedLibs = List.of(
+            FS.separators("${jetty.home}/lib/base.jar"),
+            FS.separators("${jetty.home}/lib/main.jar"),
+            FS.separators("${jetty.home}/lib/other.jar")
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, ordered(expectedLibs));
@@ -119,52 +112,48 @@ public class PropertyOverrideTest extends AbstractUseCase
     {
         setupStandardHomeDir();
 
-        Files.write(homeDir.resolve("modules/ssl.mod"),
-            List.of(
-                "[depend]",
-                "main",
-                "[ini-template]",
-                "# jetty.sslContext.keyStorePassword=default"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(homeDir.resolve("modules/ssl.mod"),
+            """
+            [depend]
+            main
+            [ini-template]
+            # jetty.sslContext.keyStorePassword=default
+            """, UTF_8);
 
         FS.ensureDirectoryExists(baseDir.resolve("modules"));
 
-        Files.write(baseDir.resolve("modules/ssl-ini.mod"),
-            List.of(
-                "[depend]",
-                "ssl",
-                "[ini]",
-                propRef
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/ssl-ini.mod"),
+            """
+            [depend]
+            ssl
+            [ini]
+            %s
+            """.formatted(propRef), UTF_8);
 
         FS.ensureDirectoryExists(baseDir.resolve("start.d"));
-        Files.write(baseDir.resolve("start.d/main.ini"),
-            List.of(
-                "--modules=ssl-ini",
-                // this should override mod default
-                "jetty.sslContext.keyStorePassword=storepwd"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("start.d/main.ini"),
+            """
+            --modules=ssl-ini
+            jetty.sslContext.keyStorePassword=storepwd
+            """, UTF_8);
 
         // === Execute Main
         List<String> commandLine = List.of();
         ExecResults results = exec(commandLine, false);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
-            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar)
+        List<String> expectedXmls = List.of(
+            FS.separators("${jetty.home}/etc/base.xml"),
+            FS.separators("${jetty.home}/etc/main.xml")
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, ordered(expectedXmls));
 
         // === Validate Resulting LIBs
-        List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
+        List<String> expectedLibs = List.of(
+            FS.separators("${jetty.home}/lib/base.jar"),
+            FS.separators("${jetty.home}/lib/main.jar"),
+            FS.separators("${jetty.home}/lib/other.jar")
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, ordered(expectedLibs));

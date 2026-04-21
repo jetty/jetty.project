@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.eclipse.jetty.toolchain.test.PathMatchers.isRegularFile;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
@@ -35,16 +34,15 @@ public class Files0Test extends AbstractUseCase
 
         FS.ensureDirExists(baseDir.resolve("modules"));
         FS.ensureDirExists(baseDir.resolve("modules/demo"));
-        Files.write(baseDir.resolve("modules/demo.mod"),
-            Arrays.asList(
-                "[files]",
-                "basehome:modules/demo/demo-config.xml|etc/demo-config.xml"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/demo.mod"),
+            """
+            [files]
+            basehome:modules/demo/demo-config.xml|etc/demo-config.xml
+            """, UTF_8);
         FS.touch(baseDir.resolve("modules/demo/demo-config.xml"));
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
+        List<String> prepareArgs = List.of(
             "--testing-mode",
             "--create-startd",
             "--add-modules=demo"
@@ -56,13 +54,13 @@ public class Files0Test extends AbstractUseCase
         ExecResults results = exec(runArgs, false);
 
         // === Validate Downloaded Files
-        List<String> expectedDownloads = Arrays.asList(
+        List<String> expectedDownloads = List.of(
             "basehome:modules/demo/demo-config.xml|etc/demo-config.xml"
         );
         List<String> actualDownloads = results.getDownloads();
         assertThat("Downloads", actualDownloads, containsInAnyOrder(expectedDownloads.toArray()));
 
         // === Validate Specific Jetty Base Files/Dirs Exist
-        PathAssert.assertFileExists("Required File: etc/demo-config.xml", results.baseHome.getPath("etc/demo-config.xml"));
+        assertThat("Required File: etc/demo-config.xml", results.baseHome.getPath("etc/demo-config.xml"), isRegularFile());
     }
 }

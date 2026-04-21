@@ -13,14 +13,11 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
@@ -36,22 +33,22 @@ public class FSTest
     @Test
     public void testCanReadDirectory()
     {
-        File targetDir = MavenTestingUtils.getTargetDir();
-        assertTrue(FS.canReadDirectory(targetDir.toPath()), "Can read dir: " + targetDir);
+        Path targetDir = MavenPaths.targetDir();
+        assertTrue(FS.canReadDirectory(targetDir), "Can read dir: " + targetDir);
     }
 
     @Test
     public void testCanReadDirectoryNotDir()
     {
-        File bogusFile = MavenTestingUtils.getTestResourceFile("bogus.xml");
-        assertFalse(FS.canReadDirectory(bogusFile.toPath()), "Can read dir: " + bogusFile);
+        Path bogusFile = MavenPaths.findTestResourceFile("bogus.xml");
+        assertFalse(FS.canReadDirectory(bogusFile), "Can read dir: " + bogusFile);
     }
 
     @Test
     public void testCanReadFile()
     {
-        File pom = MavenTestingUtils.getProjectFile("pom.xml");
-        assertTrue(FS.canReadFile(pom.toPath()), "Can read file: " + pom);
+        Path pom = MavenPaths.projectFile("pom.xml");
+        assertTrue(FS.canReadFile(pom), "Can read file: " + pom);
     }
 
     @Test
@@ -63,19 +60,5 @@ public class FSTest
         Files.deleteIfExists(bad);
         assertThrows(IOException.class, () -> FS.extractZip(archive, dest));
         assertFalse(Files.exists(bad), "The escaper prevention didn't work, you should not have a /tmp/evil.txt file, but you do.");
-    }
-
-    /**
-     * Utility method used by other test cases
-     *
-     * @param expected the expected String paths to be converted (in place)
-     */
-    public static void toFsSeparators(List<String> expected)
-    {
-        for (int i = 0; i < expected.size(); i++)
-        {
-            String fixed = FS.separators(expected.get(i));
-            expected.set(i, fixed);
-        }
     }
 }

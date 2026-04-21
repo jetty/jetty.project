@@ -13,19 +13,17 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.eclipse.jetty.toolchain.test.PathMatchers.isRegularFile;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -40,41 +38,38 @@ public class ParameterizedTest extends AbstractUseCase
         FS.ensureDirExists(baseDir.resolve("etc"));
         FS.ensureDirExists(baseDir.resolve("start.d"));
         FS.ensureDirExists(baseDir.resolve("modules"));
-        Files.write(baseDir.resolve("etc/commands.txt"),
-            Arrays.asList(
-                "name0=changed0",
-                "name1=changed1",
-                "--add-modules=parameterized",
-                "# ignore this"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/parameterized.mod"),
-            Arrays.asList(
-                "[depend]",
-                "main",
-                "[ini]",
-                "name=value",
-                "name0?=default",
-                "name2?=two",
-                "[ini-template]",
-                "name0=value0",
-                "# name1=value1",
-                "# name2=too"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.d/tobeupdated.ini"),
-            Arrays.asList(
-                "#p=v",
-                "property=value",
-                "#comment",
-                "property0=value0",
-                "#comment",
-                "#property1=value1"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("etc/commands.txt"),
+            """
+            name0=changed0
+            name1=changed1
+            --add-modules=parameterized
+            # ignore this
+            """, UTF_8);
+        Files.writeString(baseDir.resolve("modules/parameterized.mod"),
+            """
+            [depend]
+            main
+            [ini]
+            name=value
+            name0?=default
+            name2?=two
+            [ini-template]
+            name0=value0
+            # name1=value1
+            # name2=too
+            """, UTF_8);
+        Files.writeString(baseDir.resolve("start.d/tobeupdated.ini"),
+            """
+            #p=v
+            property=value
+            #comment
+            property0=value0
+            #comment
+            #property1=value1
+            """, UTF_8);
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
+        List<String> prepareArgs = List.of(
             "--testing-mode",
             "--create-startd",
             "other=value",
@@ -90,18 +85,18 @@ public class ParameterizedTest extends AbstractUseCase
         ExecResults results = exec(runArgs, false);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
-            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar)
+        List<String> expectedXmls = List.of(
+            FS.separators("${jetty.home}/etc/base.xml"),
+            FS.separators("${jetty.home}/etc/main.xml")
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
-        List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
+        List<String> expectedLibs = List.of(
+            FS.separators("${jetty.home}/lib/base.jar"),
+            FS.separators("${jetty.home}/lib/main.jar"),
+            FS.separators("${jetty.home}/lib/other.jar")
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
@@ -119,7 +114,7 @@ public class ParameterizedTest extends AbstractUseCase
         assertThat("Properties", actualProperties, containsInAnyOrder(expectedProperties.toArray()));
 
         // === Validate Specific Jetty Base Files/Dirs Exist
-        PathAssert.assertFileExists("Required File: start.d/parameterized.ini", results.baseHome.getPath("start.d/parameterized.ini"));
+        assertThat("Required File: start.d/parameterized.ini", results.baseHome.getPath("start.d/parameterized.ini"), isRegularFile());
     }
 
     @Test
@@ -130,41 +125,38 @@ public class ParameterizedTest extends AbstractUseCase
         FS.ensureDirExists(baseDir.resolve("etc"));
         FS.ensureDirExists(baseDir.resolve("start.d"));
         FS.ensureDirExists(baseDir.resolve("modules"));
-        Files.write(baseDir.resolve("etc/commands.txt"),
-            Arrays.asList(
-                "name0=changed0",
-                "name1=changed1",
-                "--add-modules=parameterized",
-                "# ignore this"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/parameterized.mod"),
-            Arrays.asList(
-                "[depend]",
-                "main",
-                "[ini]",
-                "name=value",
-                "name0?=default",
-                "name2?=two",
-                "[ini-template]",
-                "name0=value0",
-                "# name1=value1",
-                "# name2=too"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.d/tobeupdated.ini"),
-            Arrays.asList(
-                "#p=v",
-                "property=value",
-                "#comment",
-                "property0=value0",
-                "#comment",
-                "#property1=value1"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("etc/commands.txt"),
+            """
+            name0=changed0
+            name1=changed1
+            --add-modules=parameterized
+            # ignore this
+            """, UTF_8);
+        Files.writeString(baseDir.resolve("modules/parameterized.mod"),
+            """
+            [depend]
+            main
+            [ini]
+            name=value
+            name0?=default
+            name2?=two
+            [ini-template]
+            name0=value0
+            # name1=value1
+            # name2=too
+            """, UTF_8);
+        Files.writeString(baseDir.resolve("start.d/tobeupdated.ini"),
+            """
+            #p=v
+            property=value
+            #comment
+            property0=value0
+            #comment
+            #property1=value1
+            """, UTF_8);
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
+        List<String> prepareArgs = List.of(
             "--testing-mode",
             "--create-startd",
             "other=value",
@@ -178,18 +170,18 @@ public class ParameterizedTest extends AbstractUseCase
         ExecResults results = exec(runArgs, false);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
-            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar)
+        List<String> expectedXmls = List.of(
+            FS.separators("${jetty.home}/etc/base.xml"),
+            FS.separators("${jetty.home}/etc/main.xml")
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
-        List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
+        List<String> expectedLibs = List.of(
+            FS.separators("${jetty.home}/lib/base.jar"),
+            FS.separators("${jetty.home}/lib/main.jar"),
+            FS.separators("${jetty.home}/lib/other.jar")
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
@@ -207,7 +199,7 @@ public class ParameterizedTest extends AbstractUseCase
         assertThat("Properties", actualProperties, containsInAnyOrder(expectedProperties.toArray()));
 
         // === Validate Specific Jetty Base Files/Dirs Exist
-        PathAssert.assertFileExists("Required File: start.d/parameterized.ini", results.baseHome.getPath("start.d/parameterized.ini"));
+        assertThat("Required File: start.d/parameterized.ini", results.baseHome.getPath("start.d/parameterized.ini"), isRegularFile());
     }
 
     @Test
@@ -218,41 +210,38 @@ public class ParameterizedTest extends AbstractUseCase
         FS.ensureDirExists(baseDir.resolve("etc"));
         FS.ensureDirExists(baseDir.resolve("start.d"));
         FS.ensureDirExists(baseDir.resolve("modules"));
-        Files.write(baseDir.resolve("etc/commands.txt"),
-            Arrays.asList(
-                "name0=changed0",
-                "name1=changed1",
-                "--add-modules=parameterized",
-                "# ignore this"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("modules/parameterized.mod"),
-            Arrays.asList(
-                "[depend]",
-                "main",
-                "[ini]",
-                "name=value",
-                "name0?=default",
-                "name2?=two",
-                "[ini-template]",
-                "name0=value0",
-                "# name1=value1",
-                "# name2=too"
-            ),
-            StandardCharsets.UTF_8);
-        Files.write(baseDir.resolve("start.d/tobeupdated.ini"),
-            Arrays.asList(
-                "#p=v",
-                "property=value",
-                "#comment",
-                "property0=value0",
-                "#comment",
-                "#property1=value1"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("etc/commands.txt"),
+            """
+            name0=changed0
+            name1=changed1
+            --add-modules=parameterized
+            # ignore this
+            """, UTF_8);
+        Files.writeString(baseDir.resolve("modules/parameterized.mod"),
+            """
+            [depend]
+            main
+            [ini]
+            name=value
+            name0?=default
+            name2?=two
+            [ini-template]
+            name0=value0
+            # name1=value1
+            # name2=too
+            """, UTF_8);
+        Files.writeString(baseDir.resolve("start.d/tobeupdated.ini"),
+            """
+            #p=v
+            property=value
+            #comment
+            property0=value0
+            #comment
+            #property1=value1
+            """, UTF_8);
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
+        List<String> prepareArgs = List.of(
             "--testing-mode",
             "--create-startd",
             "other=value",
@@ -272,18 +261,18 @@ public class ParameterizedTest extends AbstractUseCase
         ExecResults results = exec(runArgs, false);
 
         // === Validate Resulting XMLs
-        List<String> expectedXmls = Arrays.asList(
-            "${jetty.home}/etc/base.xml".replace('/', File.separatorChar),
-            "${jetty.home}/etc/main.xml".replace('/', File.separatorChar)
+        List<String> expectedXmls = List.of(
+            FS.separators("${jetty.home}/etc/base.xml"),
+            FS.separators("${jetty.home}/etc/main.xml")
         );
         List<String> actualXmls = results.getXmls();
         assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
 
         // === Validate Resulting LIBs
-        List<String> expectedLibs = Arrays.asList(
-            "${jetty.home}/lib/base.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/main.jar".replace('/', File.separatorChar),
-            "${jetty.home}/lib/other.jar".replace('/', File.separatorChar)
+        List<String> expectedLibs = List.of(
+            FS.separators("${jetty.home}/lib/base.jar"),
+            FS.separators("${jetty.home}/lib/main.jar"),
+            FS.separators("${jetty.home}/lib/other.jar")
         );
         List<String> actualLibs = results.getLibs();
         assertThat("Libs", actualLibs, containsInAnyOrder(expectedLibs.toArray()));
@@ -302,6 +291,6 @@ public class ParameterizedTest extends AbstractUseCase
         assertThat("Properties", actualProperties, containsInAnyOrder(expectedProperties.toArray()));
 
         // === Validate Specific Jetty Base Files/Dirs Exist
-        PathAssert.assertFileExists("Required File: start.d/parameterized.ini", results.baseHome.getPath("start.d/parameterized.ini"));
+        assertThat("Required File: start.d/parameterized.ini", results.baseHome.getPath("start.d/parameterized.ini"), isRegularFile());
     }
 }
