@@ -34,7 +34,7 @@
           <instructions>
             <Export-Package>!com.acme*</Export-Package>
             <Web-ContextPath>/test-webapp-resources</Web-ContextPath>
-            <Jetty-Environment>ee</Jetty-Environment>
+            <Jetty-Environment>ee11</Jetty-Environment>
             <_noee>true</_noee>
           </instructions>
         </configuration>

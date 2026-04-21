@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
-import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.ee.common.WebAppClassLoader;
 import org.eclipse.jetty.ee.webapp.Configuration;
 import org.eclipse.jetty.ee.webapp.Configurations;
@@ -144,6 +143,7 @@ public class EEActivator extends AbstractEEActivator
                             Map<String, String> properties = new HashMap<>();
                             properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, metadata.getPath().toUri().toString());
                             properties.put(OSGiServerConstants.JETTY_HOME, (String)server.getAttribute(OSGiServerConstants.JETTY_HOME));
+                            properties.put("environment", ENVIRONMENT);
                             xmlConfiguration.getProperties().putAll(properties);
                             xmlConfiguration.configure(contextHandler);
                             return null;
@@ -321,6 +321,7 @@ public class EEActivator extends AbstractEEActivator
                             Map<String, String> properties = new HashMap<>();
                             properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, metadata.getPath().toUri().toString());
                             properties.put(OSGiServerConstants.JETTY_HOME, (String)server.getAttribute(OSGiServerConstants.JETTY_HOME));
+                            properties.put("environment", ENVIRONMENT);
                             xmlConfiguration.getProperties().putAll(properties);
                             xmlConfiguration.configure(webApp);
                             return null;
