@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-proxy</artifactId>
-  <name>EECommon :: Proxy</name>
+  <name>EE :: Proxy</name>
   <description>Jetty Proxy</description>
 
   <properties>

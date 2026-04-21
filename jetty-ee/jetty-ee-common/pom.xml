@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-common</artifactId>
-  <name>Core :: EE :: Common</name>
+  <name>EE :: Common</name>
   <description>Jetty EE Common Artifact</description>
 
   <properties>
@@ -44,6 +44,11 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <DynamicImport-Package>jakarta.servlet,jakarta.servlet.*</DynamicImport-Package>
+          </instructions>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

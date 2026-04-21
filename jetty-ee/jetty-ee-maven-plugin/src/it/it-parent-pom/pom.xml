@@ -127,6 +127,11 @@
           <version>${jetty.version}</version>
           <dependencies>
             <dependency>
+              <groupId>jakarta.annotation</groupId>
+              <artifactId>jakarta.annotation-api</artifactId>
+              <version>@ee.jakarta.annotation.api.version@</version>
+            </dependency>
+            <dependency>
               <groupId>jakarta.servlet</groupId>
               <artifactId>jakarta.servlet-api</artifactId>
               <version>@ee.jakarta.servlet.api.version@</version>

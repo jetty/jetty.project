@@ -109,6 +109,7 @@ public class TestJettyOSGiClasspathResources
         tiny.readIn(new JarInputStream(Files.newInputStream(warFile.toPath())));
         tiny.setHeader(Constants.BUNDLE_CLASSPATH, "., WEB-INF/classes/");
         tiny.setHeader(Constants.BUNDLE_SYMBOLICNAME, "org.eclipse.jetty.ee11.osgi.webapp.resources.alt");
+        tiny.setHeader(Constants.NOEE, "true");
         InputStream is = tiny.build(TinyBundles.bndBuilder());
         bundleContext.installBundle("dummyAltLocation", is);
 

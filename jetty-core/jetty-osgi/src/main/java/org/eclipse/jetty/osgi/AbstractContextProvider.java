@@ -93,11 +93,17 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle
     {
         if (bundle == null)
             return false;
-        
-        //check environment matches
-        if (getEnvironmentName().equalsIgnoreCase(bundle.getHeaders().get(OSGiWebappConstants.JETTY_ENVIRONMENT)))
+
+        String bundleEnvironment = bundle.getHeaders().get(OSGiWebappConstants.JETTY_ENVIRONMENT);
+        if (bundleEnvironment == null)
+            return false;
+
+        if (getEnvironmentName().equalsIgnoreCase(bundleEnvironment))
             return true;
-        
+
+        if (getEnvironmentName().startsWith(bundleEnvironment))
+            return true;
+
         return false;
     }
 }

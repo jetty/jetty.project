@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee.webapp;
+package org.eclipse.jetty.ee.common;
 
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
-import org.eclipse.jetty.ee.common.WebAppClassLoader;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.IO;

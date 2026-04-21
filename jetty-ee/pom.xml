@@ -39,8 +39,9 @@
   </modules>
 
   <properties>
-
     <ee.jakarta.activation.api.version>2.1.3</ee.jakarta.activation.api.version>
+
+    <ee.jakarta.annotation.api.version>3.0.0</ee.jakarta.annotation.api.version>
     <ee.jakarta.mail.api.version>2.1.3</ee.jakarta.mail.api.version>
     <ee.jakarta.servlet.api.version>6.1.0</ee.jakarta.servlet.api.version>
     <ee.jakarta.servlet.jsp.api.version>4.0.0</ee.jakarta.servlet.jsp.api.version>

@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-websocket-jetty-client-webapp</artifactId>
-  <name>EECommon :: Websocket :: Jetty Client WebApp</name>
+  <name>EE :: Websocket :: Jetty Client WebApp</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.client.webapp</bundle-symbolic-name>

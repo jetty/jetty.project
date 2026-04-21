@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee.plus.jndi;
 import javax.naming.NamingException;
 
 import jakarta.transaction.UserTransaction;
+import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
 
 /**
  * Class to represent a JTA UserTransaction impl.
@@ -32,4 +33,11 @@ public class Transaction extends org.eclipse.jetty.plus.jndi.Transaction
     {
         super(scope, userTransaction);
     }
+
+    public Transaction(UserTransaction userTransaction)
+        throws NamingException
+    {
+        super(EnterpriseEditionVersion.getEnterpriseEditionVersion().name(), userTransaction);
+    }
+
 }

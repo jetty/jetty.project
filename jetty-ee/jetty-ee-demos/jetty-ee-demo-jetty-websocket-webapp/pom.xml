@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-ee-demo-jetty-websocket-webapp</artifactId>
   <packaging>war</packaging>
-  <name>EECommon :: Demo :: Jetty WebApp</name>
+  <name>EE :: Demo :: Jetty WebApp</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jetty.websocket.webapp</bundle-symbolic-name>
   </properties>
@@ -51,7 +51,7 @@
             https://issues.apache.org/jira/browse/FELIX-1571
             -->
             <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
-            <Jetty-Environment>ee</Jetty-Environment>
+            <Jetty-Environment>ee11</Jetty-Environment>
           </instructions>
         </configuration>
       </plugin>

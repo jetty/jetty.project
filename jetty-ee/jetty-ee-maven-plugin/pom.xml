@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <name>EECommon :: Jetty Maven Plugin</name>
+  <name>EE :: Jetty Maven Plugin</name>
   <description>Jetty EECommon maven plugins</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
@@ -256,6 +256,7 @@
         <artifactId>maven-invoker-plugin</artifactId>
         <configuration>
           <extraArtifacts>
+            <extraArtifact>org.eclipse.jetty.ee:jetty-ee-bom:${project.version}:pom</extraArtifact>
             <extraArtifact>org.eclipse.jetty:jetty-slf4j-impl:${project.version}</extraArtifact>
             <extraArtifact>org.eclipse.jetty.ee:jetty-ee-apache-jsp:${project.version}</extraArtifact>
             <extraArtifact>org.eclipse.jetty.ee:jetty-ee-glassfish-jstl:${project.version}</extraArtifact>
@@ -275,6 +276,9 @@
             <pomExclude>jetty-start-gwt-it/pom.xml</pomExclude>
             <!-- bean-validation-webapp-2.25.1.war is not jakarta namespace ready -->
             <pomExclude>jetty-start-war-mojo-it/pom.xml</pomExclude>
+            <!-- ee-webapp.mod from jetty-ee-common conflicts with jetty-ee-webapp causing ClassNotFoundException -->
+            <pomExclude>jetty-start-distro-mojo-it/pom.xml</pomExclude>
+            <pomExclude>jetty-start-war-distro-mojo-it/pom.xml</pomExclude>
           </pomExcludes>
           <scriptVariables>
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>

@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-ee-test-sessions</artifactId>
   <packaging>pom</packaging>
-  <name>EECommon :: Tests :: Sessions</name>
+  <name>EE :: Tests :: Sessions</name>
   <modules>
     <module>jetty-ee-test-sessions-common</module>
     <module>jetty-ee-test-sessions-file</module>

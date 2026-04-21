@@ -11,7 +11,7 @@
   <artifactId>jetty-simple-webapp</artifactId>
   <packaging>war</packaging>
 
-  <name>EECommon :: Simple :: WebApp</name>
+  <name>EE :: Simple :: WebApp</name>
 
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-start-distro-port.txt</jetty.port.file>
@@ -119,7 +119,7 @@
                 <jetty.http.port>0</jetty.http.port>
                 <maven.local.repo>@localRepoPath@</maven.local.repo>
               </jettyProperties>
-              <modules>ee-apache-jsp,ee-glassfish-jstl,ee-testmod,resources</modules>
+              <modules>ee11-apache-jsp,ee11-glassfish-jstl,ee-testmod,resources</modules>
               <jettyOptions>--debug</jettyOptions>
               <jettyHomeZip>@jettyHomeZip@</jettyHomeZip>
             </configuration>

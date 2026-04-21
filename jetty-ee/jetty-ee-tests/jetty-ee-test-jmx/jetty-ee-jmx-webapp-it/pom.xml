@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jetty-ee-jmx-webapp-it</artifactId>
   <packaging>jar</packaging>
-  <name>EECommon :: Tests :: JMX :: WebApp Integration Tests</name>
+  <name>EE :: Tests :: JMX :: WebApp Integration Tests</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jmx.webapp.it</bundle-symbolic-name>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -34,6 +34,11 @@
       <version>${project.version}</version>
       <type>war</type>
       <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>

@@ -8,7 +8,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-websocket-jakarta-tests</artifactId>
-  <name>EECommon :: Websocket :: Jakarta Tests</name>
+  <name>EE :: Websocket :: Jakarta Tests</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jakarta.tests</bundle-symbolic-name>
@@ -17,6 +17,10 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
@@ -52,6 +56,11 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

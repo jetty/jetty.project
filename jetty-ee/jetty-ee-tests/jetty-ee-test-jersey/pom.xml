@@ -9,7 +9,7 @@
   </parent>
   <artifactId>jetty-ee-test-jersey</artifactId>
   <packaging>jar</packaging>
-  <name>EECommon :: Tests :: Jersey</name>
+  <name>EE :: Tests :: Jersey</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jersey.tests</bundle-symbolic-name>

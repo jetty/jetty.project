@@ -10,7 +10,7 @@
 
   <artifactId>jetty-ee-bom</artifactId>
   <packaging>pom</packaging>
-  <name>EECommon :: BOM</name>
+  <name>EE :: BOM</name>
   <description>Jetty EECommon APIs BOM artifact</description>
 
   <dependencyManagement>

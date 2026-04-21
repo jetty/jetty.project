@@ -7,7 +7,7 @@
     <version>13.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>test-jetty-ee-osgi</artifactId>
-  <name>EECommon :: OSGi :: Test</name>
+  <name>EE :: OSGi :: Test</name>
   <description>Jetty OSGi Integration test</description>
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
@@ -286,35 +286,35 @@
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jakarta-websocket-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee10</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee10</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee10</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee10</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet6-demo-jspc-6-1-webapp</artifactId>
       <version>${project.version}</version>
-      <classifier>webbundle-ee11</classifier>
+      <classifier>webbundle-ee</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -9,7 +9,7 @@
 
   <artifactId>jetty-ee-test-integration</artifactId>
   <packaging>jar</packaging>
-  <name>EECommon :: Tests :: Integrations</name>
+  <name>EE :: Tests :: Integrations</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.integrations</bundle-symbolic-name>
@@ -27,6 +27,11 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.websocket</groupId>
+      <artifactId>jakarta.websocket-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

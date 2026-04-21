@@ -103,6 +103,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>
         <configuration>
+          <extraArtifacts>
+            <extraArtifact>org.eclipse.jetty.ee:jetty-ee-bom:${project.version}:pom</extraArtifact>
+          </extraArtifacts>
+          <junitPackageName>org.eclipse.jetty.maven.its.ee10</junitPackageName>
           <scriptVariables>
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
           </scriptVariables>

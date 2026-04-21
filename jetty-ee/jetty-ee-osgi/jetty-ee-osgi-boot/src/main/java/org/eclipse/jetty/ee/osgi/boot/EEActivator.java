@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
 import org.eclipse.jetty.ee.common.WebAppClassLoader;
 import org.eclipse.jetty.ee.webapp.Configuration;
 import org.eclipse.jetty.ee.webapp.Configurations;
@@ -54,7 +55,7 @@ public class EEActivator extends AbstractEEActivator
 {
     private static final Logger LOG = LoggerFactory.getLogger(EEActivator.class);
 
-    public static final String ENVIRONMENT = "ee";
+    public static final String ENVIRONMENT = EnterpriseEditionVersion.getEnterpriseEditionVersion().name();
 
     @Override
     public String getEnvironment()
@@ -78,6 +79,11 @@ public class EEActivator extends AbstractEEActivator
     public ContextFactory newWebAppFactory(Bundle bundle)
     {
         return new EECommonWebAppFactory(bundle);
+    }
+
+    protected WebAppContext newWebAppContext()
+    {
+        return new WebAppContext();
     }
 
     public class EECommonContextFactory implements ContextFactory
@@ -137,6 +143,7 @@ public class EEActivator extends AbstractEEActivator
                             Map<String, String> properties = new HashMap<>();
                             properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, metadata.getPath().toUri().toString());
                             properties.put(OSGiServerConstants.JETTY_HOME, (String)server.getAttribute(OSGiServerConstants.JETTY_HOME));
+                            properties.put("environment", ENVIRONMENT);
                             xmlConfiguration.getProperties().putAll(properties);
                             xmlConfiguration.configure(contextHandler);
                             return null;
@@ -193,7 +200,7 @@ public class EEActivator extends AbstractEEActivator
             String jettyHome = (String)provider.getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
             Path jettyHomePath = StringUtil.isBlank(jettyHome) ? null : ResourceFactory.of(provider.getServer()).newResource(jettyHome).getPath();
 
-            WebAppContext webApp = new WebAppContext();
+            WebAppContext webApp = newWebAppContext();
             webApp.setAttribute(BundleMetadata.BUNDLE, metadata.getBundle());
             webApp.setAttribute(OSGiWebappConstants.JETTY_BOOT_BUNDLE_CONTEXT, getBootBundleContext());
             ResourceFactory resourceFactory = ResourceFactory.of(webApp);
@@ -314,6 +321,7 @@ public class EEActivator extends AbstractEEActivator
                             Map<String, String> properties = new HashMap<>();
                             properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, metadata.getPath().toUri().toString());
                             properties.put(OSGiServerConstants.JETTY_HOME, (String)server.getAttribute(OSGiServerConstants.JETTY_HOME));
+                            properties.put("environment", ENVIRONMENT);
                             xmlConfiguration.getProperties().putAll(properties);
                             xmlConfiguration.configure(webApp);
                             return null;

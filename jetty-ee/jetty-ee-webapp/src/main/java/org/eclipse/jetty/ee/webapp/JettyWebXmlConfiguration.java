@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
+import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
 import org.eclipse.jetty.ee.common.WebAppClassLoader;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.Resources;
@@ -35,7 +36,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     public static final String PROPERTY_WEB_INF = "web-inf";
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
-    public static final String JETTY_EECommon_WEB_XML = "jetty-ee-web.xml";
+    public static final String JETTY_EE_WEB_XML = "jetty-%s-web.xml".formatted(EnterpriseEditionVersion.getEnterpriseEditionVersion().name());
 
     public JettyWebXmlConfiguration()
     {
@@ -94,7 +95,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
      */
     private Resource resolveJettyWebXml(Resource webInf)
     {
-        String xmlFile = JETTY_EECommon_WEB_XML;
+        String xmlFile = JETTY_EE_WEB_XML;
         try
         {
             if (webInf == null || !webInf.isDirectory())

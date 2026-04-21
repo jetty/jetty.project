@@ -68,6 +68,7 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
 import org.eclipse.jetty.ee.servlet.ServletContextResponse.EncodingFrom;
 import org.eclipse.jetty.ee.servlet.ServletContextResponse.OutputType;
 import org.eclipse.jetty.ee.servlet.security.ConstraintAware;
@@ -132,7 +133,7 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
 public class ServletContextHandler extends ContextHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
-    public static final Environment ENVIRONMENT = Environment.ensure("ee", ServletContextHandler.class);
+    public static final Environment ENVIRONMENT = Environment.ensure(EnterpriseEditionVersion.getEnterpriseEditionVersion().name(), ServletContextHandler.class);
     /**
      * @deprecated Use {@link ServletContextHandler#ENVIRONMENT} instead.
      */
