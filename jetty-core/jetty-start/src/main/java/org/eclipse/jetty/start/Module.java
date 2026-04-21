@@ -17,7 +17,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -35,6 +34,8 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.util.StringUtil;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Represents a Module metadata, as defined in Jetty.
@@ -59,7 +60,7 @@ public class Module implements Comparable<Module>
 {
     private static final String VERSION_UNSPECIFIED = "0.0";
     public static final String ENVIRONMENT_JETTY = "jetty";
-    private static final String ENVIRONMENT_INHERITED = "<inherit>";
+    public static final String ENVIRONMENT_INHERITED = "<inherit>";
     static Pattern MOD_NAME = Pattern.compile("^(.*)\\.mod", Pattern.CASE_INSENSITIVE);
     static Pattern SET_PROPERTY = Pattern.compile("^(#?)\\s*([^=\\s]+)=(.*)$");
 
@@ -399,7 +400,7 @@ public class Module implements Comparable<Module>
 
     public void process(BaseHome basehome) throws IOException
     {
-        Pattern section = Pattern.compile("\\s*\\[([^]]*)\\]\\s*");
+        Pattern section = Pattern.compile("\\s*\\[([^]]*)]\\s*");
 
         if (!FS.canReadFile(_path))
         {
@@ -407,9 +408,7 @@ public class Module implements Comparable<Module>
             return;
         }
 
-        String providedSection = null;
-
-        try (BufferedReader buf = Files.newBufferedReader(_path, StandardCharsets.UTF_8))
+        try (BufferedReader buf = Files.newBufferedReader(_path, UTF_8))
         {
             String sectionType = "";
             String line;
@@ -454,17 +453,16 @@ public class Module implements Comparable<Module>
                             case "DEPRECATED" -> _deprecated.add(line);
                             case "ENV", "ENVIRONMENT" ->
                             {
+                                if (StringUtil.isBlank(line))
+                                    throw new UsageException("Blank [environment] specified in %s".formatted(_path));
+
                                 if (line.equalsIgnoreCase(ENVIRONMENT_INHERITED))
                                 {
                                     _environment = ENVIRONMENT_INHERITED;
                                 }
-                                else if (StringUtil.isBlank(line))
-                                {
-                                    _environment = ENVIRONMENT_JETTY;
-                                }
                                 else
                                 {
-                                    _environment = line.trim().toLowerCase(Locale.ROOT);
+                                    _environment = line.toLowerCase(Locale.ROOT);
                                 }
                             }
                             case "FILE", "FILES" -> _files.add(line);
@@ -654,7 +652,7 @@ public class Module implements Comparable<Module>
     }
 
     /**
-     * @deprecated use {@link #isEnabledIn(String)} instead.
+     * @deprecated use {@link #isEnabledInEnvironment(String)} or {@link #isEnabledInAnyEnvironment()} instead.
      */
     @Deprecated(since = "13.0.0", forRemoval = true)
     public boolean isEnabled()
@@ -662,12 +660,12 @@ public class Module implements Comparable<Module>
         return !_enabledEnvironments.isEmpty();
     }
 
-    public boolean isEnabledInAny()
+    public boolean isEnabledInAnyEnvironment()
     {
         return !_enabledEnvironments.isEmpty();
     }
 
-    public boolean isEnabledIn(String environmentName)
+    public boolean isEnabledInEnvironment(String environmentName)
     {
         return _enabledEnvironments.containsKey(environmentName.toLowerCase(Locale.ROOT));
     }
@@ -688,7 +686,12 @@ public class Module implements Comparable<Module>
         return _enabledEnvironments.keySet();
     }
 
-    public List<String> getEnabledFromAll()
+    /**
+     * Get the full list of enabled-from strings for all enabled environments on this module.
+     *
+     * @return the list of enabled-from strings.
+     */
+    public List<String> getEnabledFromAllEnvironments()
     {
         return _enabledEnvironments.entrySet()
             .stream()
@@ -702,7 +705,13 @@ public class Module implements Comparable<Module>
             .toList();
     }
 
-    public String getEnabledFrom(String environmentName)
+    /**
+     * Get the specific enabled-from string for the specified environment.
+     *
+     * @param environmentName the environment name
+     * @return the enabled-from string for this environment, or null if the environment isn't enabled.
+     */
+    public String getEnabledFromEnvironment(String environmentName)
     {
         return _enabledEnvironments.get(environmentName);
     }

@@ -185,10 +185,10 @@ public class ModuleGraphWriter
         out.printf("<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"2\">%n");
         out.printf("  <TR><TD ALIGN=\"LEFT\"><B>%s</B></TD></TR>%n", module.getName());
 
-        if (module.isEnabledInAny())
+        if (module.isEnabledInAnyEnvironment())
         {
             writeModuleDetailHeader(out, "ENABLED");
-            for (String selection : module.getEnabledFromAll())
+            for (String selection : module.getEnabledFromAllEnvironments())
             {
                 writeModuleDetailLine(out, "via: " + selection);
             }

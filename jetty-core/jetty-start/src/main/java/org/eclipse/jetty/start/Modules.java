@@ -107,7 +107,7 @@ public class Modules implements Iterable<Module>
             }
             if (module.isEnvironmentInherited())
             {
-                out.println("Environment: <inherited>");
+                out.println("Environment: " + Module.ENVIRONMENT_INHERITED);
             }
             else
             {
@@ -239,7 +239,7 @@ public class Modules implements Iterable<Module>
             if (module.isDeprecated())
                 name += " (deprecated)";
             if (module.isEnvironmentInherited())
-                name += " <inherited>"; // TODO: list each enabled environment.
+                name += " " + Module.ENVIRONMENT_INHERITED;
             for (String envName : module.getEnabledEnvironments())
             {
                 out.printf("%4s %-25s %s%n", index, name, envName);
@@ -303,7 +303,7 @@ public class Modules implements Iterable<Module>
                 str.append(',');
             str.append(m.getName());
             if (m.isEnvironmentInherited())
-                str.append("<env:inherited>");
+                str.append("<env:inherit>");
             else
                 str.append("(env:").append(m.getEnvironment()).append(")");
             delim.set(true);
@@ -321,7 +321,7 @@ public class Modules implements Iterable<Module>
     public List<Module> getEnabled()
     {
         List<Module> enabled = _modules.stream()
-            .filter(Module::isEnabledInAny)
+            .filter(Module::isEnabledInAnyEnvironment)
             .collect(Collectors.toList());
 
         TopologicalSort<Module> sort = new TopologicalSort<>();
@@ -330,7 +330,7 @@ public class Modules implements Iterable<Module>
             Consumer<String> add = name ->
             {
                 Module dependency = _names.get(name);
-                if (dependency != null && dependency.isEnabledInAny())
+                if (dependency != null && dependency.isEnabledInAnyEnvironment())
                     sort.addDependency(module, dependency);
 
                 Set<Module> provided = _provided.get(name);
@@ -338,7 +338,7 @@ public class Modules implements Iterable<Module>
                 {
                     for (Module p : provided)
                     {
-                        if (p.isEnabledInAny())
+                        if (p.isEnabledInAnyEnvironment())
                             sort.addDependency(module, p);
                     }
                 }
@@ -348,7 +348,7 @@ public class Modules implements Iterable<Module>
             module.getBefore().forEach(name ->
             {
                 Module before = _names.get(name);
-                if (before != null && before.isEnabledInAny())
+                if (before != null && before.isEnabledInAnyEnvironment())
                     sort.addDependency(before, module);
             });
         }
@@ -361,13 +361,12 @@ public class Modules implements Iterable<Module>
      * Get a List of enabled Modules that belong to the specified environment name.
      *
      * @param environmentName the environment name to limit results to.
-     *
      * @return a List of {@link Module} objects that are enabled in the specified environment name.
      */
     public List<Module> getEnabled(String environmentName)
     {
         List<Module> enabled = _modules.stream()
-            .filter(m -> m.isEnabledIn(environmentName))
+            .filter(m -> m.isEnabledInEnvironment(environmentName))
             .filter(m ->
             {
                 if (m.isEnvironmentInherited())
@@ -383,7 +382,7 @@ public class Modules implements Iterable<Module>
             Consumer<String> add = name ->
             {
                 Module dependency = _names.get(name);
-                if (dependency != null && dependency.isEnabledIn(environmentName))
+                if (dependency != null && dependency.isEnabledInEnvironment(environmentName))
                     sort.addDependency(module, dependency);
 
                 Set<Module> provided = _provided.get(name);
@@ -391,7 +390,7 @@ public class Modules implements Iterable<Module>
                 {
                     for (Module p : provided)
                     {
-                        if (p.isEnabledIn(environmentName))
+                        if (p.isEnabledInEnvironment(environmentName))
                             sort.addDependency(module, p);
                     }
                 }
@@ -401,7 +400,7 @@ public class Modules implements Iterable<Module>
             module.getBefore().forEach(name ->
             {
                 Module before = _names.get(name);
-                if (before != null && before.isEnabledIn(environmentName))
+                if (before != null && before.isEnabledInEnvironment(environmentName))
                     sort.addDependency(before, module);
             });
         }
@@ -495,7 +494,7 @@ public class Modules implements Iterable<Module>
             }
             else
             {
-                StartLog.info("%s already enabled by [%s]", module.getName(), module.getEnabledFrom(module.getEnvironment()));
+                StartLog.info("%s already enabled by [%s]", module.getName(), module.getEnabledFromEnvironment(module.getEnvironment()));
             }
             return;
         }
@@ -518,9 +517,9 @@ public class Modules implements Iterable<Module>
                 {
                     if (p.equals(module))
                         continue; // skip self
-                    if (p.isEnabledInAny())
+                    if (p.isEnabledInAnyEnvironment())
                     {
-                        throw new UsageException("Module %s provides %s, which is already provided by %s enabled in %s", module.getName(), name, p.getName(), p.getEnabledFromAll());
+                        throw new UsageException("Module %s provides %s, which is already provided by %s enabled in %s", module.getName(), name, p.getName(), p.getEnabledFromAllEnvironments());
                     }
                 }
             }
@@ -606,10 +605,10 @@ public class Modules implements Iterable<Module>
                     StartLog.debug("Module [%s] depends on [%s] provided by %s", module, dependentModule, providers);
 
                     // If a provider is already enabled, then add a transitive enable
-                    if (providers.stream().anyMatch(Module::isEnabledInAny))
+                    if (providers.stream().anyMatch(Module::isEnabledInAnyEnvironment))
                     {
                         providers.stream()
-                            .filter(m -> m.isEnabledInAny() && !m.equals(module))
+                            .filter(m -> m.isEnabledInAnyEnvironment() && !m.equals(module))
                             .forEach(m -> enable(newlyEnabled, m, environmentNameScope, "transitive provider of " + dependentModule + " for " + module.getName(), true));
                     }
                     else
@@ -689,7 +688,7 @@ public class Modules implements Iterable<Module>
     public List<String> getEnabledEnvironments()
     {
         return _modules.stream()
-            .filter(Module::isEnabledInAny)
+            .filter(Module::isEnabledInAnyEnvironment)
             .flatMap(m -> m.getEnabledEnvironments().stream())
             .distinct()
             .sorted()
@@ -710,7 +709,7 @@ public class Modules implements Iterable<Module>
     {
         StringBuilder unsatisfied = new StringBuilder();
         _modules.stream()
-            .filter(m -> m.isEnabledIn(environmentName))
+            .filter(m -> m.isEnabledInEnvironment(environmentName))
             .forEach(m ->
         {
             // Check dependencies
@@ -721,7 +720,7 @@ public class Modules implements Iterable<Module>
                 {
                     // Ensure referenced dependency is satisfied via a provided name
                     Set<Module> providers = getAvailableProviders(d);
-                    if (providers.stream().noneMatch(Module::isEnabledInAny))
+                    if (providers.stream().noneMatch(Module::isEnabledInAnyEnvironment))
                     {
                         if (!unsatisfied.isEmpty())
                             unsatisfied.append(',');

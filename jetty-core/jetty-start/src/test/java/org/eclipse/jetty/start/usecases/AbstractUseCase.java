@@ -178,8 +178,9 @@ public abstract class AbstractUseCase
 
         public List<String> getLibs(String environmentName)
         {
-            return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(startArgs.getEnvironment(environmentName).getClasspath().iterator(), Spliterator.ORDERED), false)
+            return startArgs.getEnvironment(environmentName)
+                .getClasspath()
+                .stream()
                 .map(f -> baseHome.toShortForm(f))
                 .collect(Collectors.toList());
         }

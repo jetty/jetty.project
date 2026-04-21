@@ -125,12 +125,13 @@ public class BaseBuilder
         {
             for (String name : startArgs.getStartModules())
             {
-                newlyAdded.addAll(modules.enable(name, "--add-module"));
+                String enabledFrom = "--add-module";
+                newlyAdded.addAll(modules.enable(name, enabledFrom));
                 if (!newlyAdded.contains(name))
                 {
-                    List<String> sources = modules.get(name).getEnabledFromAll()
+                    List<String> sources = modules.get(name).getEnabledFromAllEnvironments()
                         .stream()
-                        .filter(s -> !s.contains("--add-module"))
+                        .filter(s -> !s.contains(enabledFrom))
                         .toList();
                     StartLog.info("%s already enabled by [%s]", name, String.join(", ", sources));
                 }
@@ -315,7 +316,7 @@ public class BaseBuilder
 
                 if (module.isDynamic())
                 {
-                    for (String s : module.getEnabledFromAll())
+                    for (String s : module.getEnabledFromAllEnvironments())
                     {
                         StartLog.info("%-15s %s", module.getName(), s);
                     }

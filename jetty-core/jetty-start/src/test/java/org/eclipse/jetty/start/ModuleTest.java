@@ -181,8 +181,8 @@ public class ModuleTest
         assertThat("Module environment inherited", module.isEnvironmentInherited(), is(false));
         assertThat("Module environment", module.getEnvironment(), is("eex"));
         assertThat("Module ini", module.getIniSection().getFirst(), is("test.module?=eex"));
-        assertThat("Module enabled in eeX", module.isEnabledIn("eeX"), is(true));
-        assertThat("Module enabled in jetty", module.isEnabledIn("jetty"), is(false));
+        assertThat("Module enabled in eeX", module.isEnabledInEnvironment("eeX"), is(true));
+        assertThat("Module enabled in jetty", module.isEnabledInEnvironment("jetty"), is(false));
     }
 
     @Test
@@ -212,9 +212,9 @@ public class ModuleTest
         assertThat("Module environment", module.getEnvironment(), is("<inherit>"));
         assertThat("Module ini", module.getIniSection().getFirst(), is("test.module?=eex"));
         assertThat("Module transitive", module.isTransitive(), is(false));
-        assertThat("Module enabled in eeX", module.isEnabledIn("eeX"), is(true));
-        assertThat("Module enabled in ee99", module.isEnabledIn("ee99"), is(true));
-        assertThat("Module enabled in jetty", module.isEnabledIn("jetty"), is(false));
+        assertThat("Module enabled in eeX", module.isEnabledInEnvironment("eeX"), is(true));
+        assertThat("Module enabled in ee99", module.isEnabledInEnvironment("ee99"), is(true));
+        assertThat("Module enabled in jetty", module.isEnabledInEnvironment("jetty"), is(false));
 
         String[] expectedEnvNames = {
             "eex",

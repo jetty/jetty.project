@@ -404,19 +404,20 @@ public class StartArgs
     /**
      * Build up the Classpath and XML file references based on enabled Module list.
      *
-     * @param activeModules the active (selected) modules
+     * @param enabledModules the enabled modules
      * @throws IOException if unable to expand the modules
      */
-    public void expandModules(List<Module> activeModules) throws IOException
+    public void expandModules(List<Module> enabledModules) throws IOException
     {
-        StartLog.debug("Expanding Modules");
-        for (Module module : activeModules)
+        for (Module module : enabledModules)
         {
-            if (!module.isEnabledInAny())
+            if (!module.isEnabledInAnyEnvironment())
             {
                 // skip
                 continue;
             }
+
+            StartLog.debug("Expanding Module %s", module.getName());
 
             // Perform any actions that occur only once, regardless of how many
             // environments the module is enabled in.
