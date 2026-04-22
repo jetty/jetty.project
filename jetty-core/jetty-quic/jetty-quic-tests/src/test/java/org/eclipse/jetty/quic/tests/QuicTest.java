@@ -15,10 +15,10 @@ package org.eclipse.jetty.quic.tests;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -102,7 +102,27 @@ public class QuicTest extends AbstractQuicTest
     }
 
     @Test
-    public void testStreamEcho() throws Exception
+    public void testEmptyNonLastStreamFrame() throws Exception
+    {
+        start(() -> new Session.Listener()
+        {
+
+        });
+
+        Promise.Completable<Session> promise = new Promise.Completable<>();
+        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, promise);
+        Session clientSession = promise.get(5, TimeUnit.SECONDS);
+
+        long streamId = clientSession.newStreamId(true);
+        Stream clientStream = clientSession.newStream(streamId, new Stream.Listener()
+        {
+        });
+        clientStream.data(false, RetainableByteBuffer.EMPTY, Promise.Invocable.noop());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {/*1, 1024, */1024 * 1024/*, 4 * 1024 * 1024*/})
+    public void testEcho(int length) throws Exception
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         start(() -> new Session.Listener()
@@ -167,7 +187,8 @@ public class QuicTest extends AbstractQuicTest
             }
         });
 
-        byte[] bytes = "Hello QUIC".getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = new byte[length];
+        ThreadLocalRandom.current().nextBytes(bytes);
         stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.wrap(bytes)), Promise.Invocable.noop());
 
         stream.demand();

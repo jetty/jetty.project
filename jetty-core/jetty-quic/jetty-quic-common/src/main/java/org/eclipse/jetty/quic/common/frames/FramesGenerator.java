@@ -176,18 +176,18 @@ public class FramesGenerator
         return generated;
     }
 
-    public GeneratedFrame generateCryptoFrame(RetainableByteBuffer.Mutable accumulator, CryptoFrame frame, long offset, final long maxBytes)
+    public GeneratedFrame generateCryptoFrame(RetainableByteBuffer.Mutable accumulator, CryptoFrame frame, long offset, long maxBytes)
     {
         int capacity = VarLenInt.length(frame.type());
         capacity += VarLenInt.length(offset);
 
         // Same logic as generateStreamFrame().
         long estimatedDataLength = Math.min(frame.remaining(), maxBytes - capacity);
-        if (estimatedDataLength <= 0)
+        if (estimatedDataLength < 0)
             return null;
         capacity += VarLenInt.length(estimatedDataLength);
         long dataLength = Math.min(frame.remaining(), maxBytes - capacity);
-        if (dataLength <= 0)
+        if (dataLength < 0)
             return null;
 
         long generated = VarLenInt.encode(accumulator, frame.type());
@@ -239,20 +239,19 @@ public class FramesGenerator
         // length field length (2 bytes), the data length will be 62, which can be encoded
         // as just 1 byte, so 63 data bytes could have been generated, but we don't bother.
         long estimatedDataLength = Math.min(frame.remaining(), maxBytes - capacity);
-        if (estimatedDataLength < 0 || (estimatedDataLength == 0 && !frame.isEndStream()))
+        if (estimatedDataLength < 0)
             return null;
         int dataLengthLength = 0;
         if (hasLength)
             dataLengthLength = VarLenInt.length(estimatedDataLength);
         capacity += dataLengthLength;
         long dataLength = Math.min(frame.remaining(), maxBytes - capacity);
-        if (dataLength < 0 || (dataLength == 0 && !frame.isEndStream()))
+        if (dataLength < 0)
             return null;
 
-        boolean endStream = (frameType & StreamFrame.END_STREAM_MASK) == StreamFrame.END_STREAM_MASK;
         // Clear the endStream bit if the frame cannot be fully generated.
         boolean excessData = frame.remaining() > dataLength;
-        if (endStream && excessData)
+        if (frame.isEndStream() && excessData)
             frameType = frameType & ~StreamFrame.END_STREAM_MASK;
 
         long generated = VarLenInt.encode(accumulator, frameType);

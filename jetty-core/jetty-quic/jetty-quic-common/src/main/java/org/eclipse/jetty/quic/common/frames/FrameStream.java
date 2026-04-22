@@ -64,7 +64,26 @@ public class FrameStream
                 return;
             }
 
-            long offsetEnd = candidate.offset() + candidate.length();
+            long candidateOffset = candidate.offset();
+            if (candidateOffset > offset)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("stalling, data gap on {}", this);
+                return;
+            }
+
+            if (candidateOffset == offset)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("notifying, data {} on {}", candidate, this);
+                frames.poll();
+                offset += candidate.length();
+                notifyFrame(candidate);
+                candidate.close();
+                continue;
+            }
+
+            long offsetEnd = candidateOffset + candidate.length();
             if (offsetEnd <= offset)
             {
                 if (LOG.isDebugEnabled())
@@ -74,33 +93,15 @@ public class FrameStream
                 continue;
             }
 
-            if (candidate.offset() < offset)
-            {
-                long length = offsetEnd - offset;
-                try (Frame.WithData newFrame = candidate.slice(offset, length))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("notifying, data slice {} on {}", newFrame, this);
-                    frames.poll();
-                    candidate.close();
-                    offset += length;
-                    notifyFrame(newFrame);
-                }
-            }
-            else if (candidate.offset() == offset)
+            long length = offsetEnd - offset;
+            try (Frame.WithData newFrame = candidate.slice(offset, length))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("notifying, data {} on {}", candidate, this);
+                    LOG.debug("notifying, data slice {} on {}", newFrame, this);
                 frames.poll();
-                offset += candidate.length();
-                notifyFrame(candidate);
                 candidate.close();
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("stalling, data gap on {}", this);
-                return;
+                offset += length;
+                notifyFrame(newFrame);
             }
         }
     }

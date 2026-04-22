@@ -49,6 +49,7 @@ public interface Stream
     /// @return whether the stream is local or remote
     boolean isLocal();
 
+    // TODO: rename to isTerminated? to include acked and failed?
     /// Returns whether the stream is fully closed, both
     /// [locally][#isLocallyClosed()] and [remotely][#isRemotelyClosed()].
     ///
@@ -352,7 +353,9 @@ public interface Stream
         {
         }
 
-        /// Invoked when the stream has been [closed][Stream#isClosed()].
+        // TODO: invoked when closed or terminated?
+
+        /// Invoked when the stream has been [completed][Stream#isClosed()].
         ///
         /// A stream is closed when either:
         /// * The receiving side read the last frame in the stream,
