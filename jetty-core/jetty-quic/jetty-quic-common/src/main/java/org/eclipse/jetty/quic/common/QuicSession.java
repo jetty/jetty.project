@@ -903,6 +903,11 @@ public abstract class QuicSession extends AbstractSession
                             // and this additional write would cause WritePendingException.
                             data(stream, streamFrame, Promise.Invocable.noop());
                         }
+                        else
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("could not retransmit {}, no stream on {}", streamFrame, this);
+                        }
                     }
                     case StreamMaxDataFrame streamMaxDataFrame ->
                     {
@@ -934,7 +939,7 @@ public abstract class QuicSession extends AbstractSession
     @Override
     public String toString()
     {
-        return "%s[dcid=%s]".formatted(super.toString(), StringUtil.toHexString(getDestinationConnectionId()));
+        return "%s[dcid=%s,streams=%d]".formatted(super.toString(), StringUtil.toHexString(getDestinationConnectionId()), streams.size());
     }
 
     private class PacketProcessor implements Packet.Listener

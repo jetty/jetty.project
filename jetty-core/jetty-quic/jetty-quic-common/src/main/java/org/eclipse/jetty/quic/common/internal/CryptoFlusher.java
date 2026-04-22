@@ -142,67 +142,69 @@ class CryptoFlusher implements Callback
         long packetPayloadMaxBytes = session.getUDPPayloadLength() - packetHeaderLength;
         long maxBytes = Math.min(packetPayloadMaxBytes, congestionWindow);
 
+        List<Frame> framesLeft = new ArrayList<>();
+        List<Frame> framesGenerated = new ArrayList<>();
         RetainableByteBuffer.Mutable framesAccumulator = flusher.getPlaintextBuffer();
         ListIterator<FramesEntry> iterator = processing.listIterator();
         while (iterator.hasNext())
         {
             FramesEntry entry = iterator.next();
-            boolean allFramesProcessed = true;
-            List<Frame> framesGenerated = new ArrayList<>();
             List<Frame> frames = entry.frames();
-            for (int i = 0; i < frames.size(); ++i)
+            for (Frame frame : frames)
             {
-                Frame frame = frames.get(i);
                 if (LOG.isDebugEnabled())
                     LOG.debug("generating {} udp/cwnd={}/{} on {}", frame, packetPayloadMaxBytes, maxBytes, this);
                 GeneratedFrame generated = generateFrame(framesAccumulator, entry.stream(), frame, maxBytes);
                 if (LOG.isDebugEnabled())
                     LOG.debug("generated {} on {}", generated, this);
 
-                if (generated == null && i == 0)
+                if (generated == null)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("could not generate frame {}, flush stalled on {}", frame, this);
-                    allFramesProcessed = false;
-                    break;
+                    framesLeft.add(frame);
                 }
-
-                if (generated != null)
+                else
                 {
                     maxBytes -= generated.length();
                     assert maxBytes >= 0;
 
                     framesGenerated.add(generated.frame());
 
-                    if (!(frame instanceof Frame.WithData dataFrame) || dataFrame.remaining() == 0)
-                        continue;
+                    if (frame instanceof Frame.WithData dataFrame && dataFrame.remaining() > 0)
+                        framesLeft.add(frame);
                 }
-
-                // Only some of, or part of, the frames of the entry could be generated, split the entry.
-                // Non-data frames are either fully generated or not generated at all, while data frames
-                // may be partially generated, so the entry must be split accordingly.
-
-                Callback callback = entry.callback();
-                // The first half does not notify successful completion
-                // until all frames are processed but does notify failures.
-                Callback firstHalfCallback = Callback.from(callback.getInvocationType(), () -> {}, callback::failed);
-
-                FramesEntry firstHalfEntry = new FramesEntry(entry.stream(), framesGenerated, firstHalfCallback);
-                writing.add(firstHalfEntry);
-
-                // Update the current entry with the second half.
-                FramesEntry secondHalfEntry = new FramesEntry(entry.stream(), frames.subList(i, frames.size()), callback);
-                iterator.set(secondHalfEntry);
-
-                allFramesProcessed = false;
-                break;
             }
 
-            if (!allFramesProcessed)
-                break;
-
-            writing.add(new FramesEntry(entry.stream(), framesGenerated, entry.callback()));
-            iterator.remove();
+            if (framesGenerated.isEmpty())
+            {
+                // No frame was generated, keep the entry
+                // as is and try to generate the next entry.
+                framesLeft.clear();
+            }
+            else
+            {
+                if (framesLeft.isEmpty())
+                {
+                    // The entry was fully generated, remove it from the processing list.
+                    writing.add(new FramesEntry(entry.stream(), List.copyOf(framesGenerated), entry.callback()));
+                    framesGenerated.clear();
+                    iterator.remove();
+                }
+                else
+                {
+                    // The entry was partially generated, split it into two entries.
+                    Callback callback = entry.callback();
+                    // The first half does not notify successful completion
+                    // until all frames are processed but does notify failures.
+                    Callback firstHalfCallback = Callback.from(callback.getInvocationType(), () -> {}, callback::failed);
+                    FramesEntry firstHalfEntry = new FramesEntry(entry.stream(), List.copyOf(framesGenerated), firstHalfCallback);
+                    framesGenerated.clear();
+                    writing.add(firstHalfEntry);
+                    // Update the current entry with the second half.
+                    FramesEntry secondHalfEntry = new FramesEntry(entry.stream(), List.copyOf(framesLeft), callback);
+                    framesLeft.clear();
+                    iterator.set(secondHalfEntry);
+                }
+            }
         }
 
         if (writing.isEmpty())
@@ -225,9 +227,7 @@ class CryptoFlusher implements Callback
 
         List<Frame> frames = writing.size() == 1
             ? writing.getFirst().frames()
-            : writing.stream()
-                .flatMap(entry -> entry.frames().stream())
-                .toList();
+            : writing.stream().flatMap(entry -> entry.frames().stream()).toList();
         Packet packet = session.newPacket(encryptionLevel, frames);
         packetGenerator.generate(packetAccumulator, packet, framesAccumulator);
         session.notifyOutgoingPacket(packet, packetAccumulator.remaining());

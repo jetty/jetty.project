@@ -142,4 +142,22 @@ public class FrameStreamTest
         assertEquals(length1 + delta, frame2.offset());
         assertEquals(length2 - delta, frame2.length());
     }
+
+    @Test
+    public void testEmptyInitialOfferIsNotifiedThenEmptyOfferIsAlsoNotNotified()
+    {
+        List<Frame> output = new ArrayList<>();
+        FrameStream stream = new FrameStream(output::add);
+
+        stream.offer(new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(0))));
+
+        assertEquals(1, output.size());
+        assertEquals(0, stream.offset());
+
+        // A second empty initial offer is also notified.
+        stream.offer(new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(0))));
+
+        assertEquals(2, output.size());
+        assertEquals(0, stream.offset());
+    }
 }

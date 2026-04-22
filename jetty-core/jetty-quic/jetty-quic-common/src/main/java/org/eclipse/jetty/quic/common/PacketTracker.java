@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.PingFrame;
+import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
@@ -166,7 +167,7 @@ public class PacketTracker
         PacketEntry packetEntry = new PacketEntry(space, withFrames, length, NanoTime.now());
 
         Tracker tracker = trackers.get(packetEntry.space());
-        tracker.put(packetEntry.packet().packetNumber(), packetEntry);
+        tracker.track(session, packetEntry);
 
         if (LOG.isDebugEnabled())
             LOG.debug("tracked {} on {}", packetEntry, this);
@@ -187,7 +188,7 @@ public class PacketTracker
         Tracker tracker = trackers.get(space);
 
         List<Packet.WithFrames> ackedPackets = new ArrayList<>();
-        long ackedLength = tracker.acknowledgePackets(frame, ackedPackets);
+        long ackedLength = tracker.acknowledgePackets(session, frame, ackedPackets);
 
         if (ackedPackets.isEmpty())
             return;
@@ -246,6 +247,8 @@ public class PacketTracker
 
     void sendProbe(QuicSession session, EncryptionLevel encryptionLevel)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sending probe for {} on {}", session, this);
         session.sendFrames(encryptionLevel, List.of(new PingFrame()), Callback.NOOP);
     }
 
@@ -345,10 +348,19 @@ public class PacketTracker
             this.packetNumberSpace = packetNumberSpace;
         }
 
-        private void put(long packetNumber, PacketEntry entry)
+        private void track(QuicSession session, PacketEntry entry)
         {
-            PacketEntry existing = entries.put(packetNumber, entry);
+            PacketEntry existing = entries.put(entry.packet.packetNumber(), entry);
             assert existing == null;
+            for (Frame frame : entry.packet.frames())
+            {
+                if (frame instanceof StreamFrame streamFrame)
+                {
+                    QuicStream stream = session.getStream(streamFrame.streamId());
+                    if (stream != null)
+                        stream.onStreamFrameSent(streamFrame);
+                }
+            }
         }
 
         private PacketEntry remove(long packetNumber)
@@ -356,7 +368,7 @@ public class PacketTracker
             return entries.remove(packetNumber);
         }
 
-        private long acknowledgePackets(AckFrame ackFrame, List<Packet.WithFrames> output)
+        private long acknowledgePackets(QuicSession session, AckFrame ackFrame, List<Packet.WithFrames> output)
         {
             long[] acknowledged = ackFrame.allAcknowledged();
             long ackedLength = 0;
@@ -374,7 +386,18 @@ public class PacketTracker
                     ackedLength += entry.length();
                     Packet.WithFrames packet = entry.packet();
                     output.add(packet);
-                    packet.frames().forEach(Frame::close);
+
+                    for (Frame frame : packet.frames())
+                    {
+                        if (frame instanceof StreamFrame streamFrame)
+                        {
+                            QuicStream stream = session.getStream(streamFrame.streamId());
+                            if (stream != null)
+                                stream.onStreamFrameAcknowledged(streamFrame);
+                        }
+                    }
+
+                    packet.close();
                 }
             }
             if (LOG.isDebugEnabled())
@@ -393,12 +416,13 @@ public class PacketTracker
 
             long lostLength = 0;
             long lossDelay = calculatePacketLossDelay(rttData);
-            long largestAckedPacketNumber = largestAckedEntry.packet().packetNumber();
+            long largestAckedPacketNumber = largestAckedEntry.packet.packetNumber();
             Iterator<PacketEntry> iterator = entries.values().iterator();
             while (iterator.hasNext())
             {
                 PacketEntry entry = iterator.next();
-                long packetNumber = entry.packet().packetNumber();
+                Packet.WithFrames packet = entry.packet();
+                long packetNumber = packet.packetNumber();
 
                 // If the packet is in-flight, it is not lost.
                 if (packetNumber > largestAckedPacketNumber)
@@ -409,9 +433,9 @@ public class PacketTracker
                 if (largestAckedPacketNumber >= packetNumber + getPacketReorderingThreshold())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("packet lost by number {}>{}+{} {} on {}", largestAckedPacketNumber, packetNumber, getPacketReorderingThreshold(), entry.packet(), this);
+                        LOG.debug("packet lost by number {}>{}+{} {} on {}", largestAckedPacketNumber, packetNumber, getPacketReorderingThreshold(), packet, this);
                     lostLength += entry.length();
-                    output.add(entry.packet());
+                    output.add(packet);
                     iterator.remove();
                     continue;
                 }
@@ -421,9 +445,9 @@ public class PacketTracker
                 if (sentDelay >= lossDelay)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("packet lost by time sentDelay={} lossDelay={} {} on {}", sentDelay, lossDelay, entry.packet(), this);
+                        LOG.debug("packet lost by time sentDelay={} lossDelay={} {} on {}", sentDelay, lossDelay, packet, this);
                     lostLength += entry.length();
-                    output.add(entry.packet());
+                    output.add(packet);
                     iterator.remove();
                     continue;
                 }
@@ -438,6 +462,19 @@ public class PacketTracker
 
             if (LOG.isDebugEnabled())
                 LOG.debug("lost {} packet(s) length={} {}{} on {}", output.size(), lostLength, packetNumberSpace, output.stream().mapToLong(Packet.WithFrames::packetNumber).toArray(), this);
+
+            for (Packet.WithFrames packet : output)
+            {
+                for (Frame frame : packet.frames())
+                {
+                    if (frame instanceof StreamFrame streamFrame)
+                    {
+                        QuicStream stream = session.getStream(streamFrame.streamId());
+                        if (stream != null)
+                            stream.onStreamFrameLost(streamFrame);
+                    }
+                }
+            }
 
             return lostLength;
         }
@@ -497,10 +534,10 @@ public class PacketTracker
             if (probeTimeoutTask == null)
                 return;
 
-            probeTimeoutTask.cancel();
+            boolean cancelled = probeTimeoutTask.cancel();
             probeTimeoutTask = null;
             if (LOG.isDebugEnabled())
-                LOG.debug("cancelled probe timeout on {}", this);
+                LOG.debug("cancelled {} probe timeout on {}", cancelled, this);
         }
 
         @Override
@@ -516,13 +553,13 @@ public class PacketTracker
         {
             if (other == null)
                 return true;
-            return packet().packetNumber() > other.packet().packetNumber();
+            return packet.packetNumber() > other.packet.packetNumber();
         }
 
         @Override
         public String toString()
         {
-            return "%s@%x[%s,#%d,length=%d]".formatted(TypeUtil.toShortName(getClass()), hashCode(), space(), packet().packetNumber(), length());
+            return "%s@%x[%s,#%d,length=%d]".formatted(TypeUtil.toShortName(getClass()), hashCode(), space(), packet.packetNumber(), length());
         }
     }
 }
