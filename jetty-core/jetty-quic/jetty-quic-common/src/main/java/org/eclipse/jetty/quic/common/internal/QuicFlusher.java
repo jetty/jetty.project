@@ -63,7 +63,7 @@ public class QuicFlusher extends IteratingCallback
         this.session = session;
         ByteBufferPool byteBufferPool = session.getByteBufferPool();
         this.framesGenerator = new FramesGenerator(byteBufferPool);
-        this.packetsGenerator = new PacketsGenerator(session.getPacketNumbers(), framesGenerator, session.getTLSEngine().getPacketProtector());
+        this.packetsGenerator = new PacketsGenerator(session.getPacketNumbers(), session.getTLSEngine().getPacketProtector());
         boolean direct = session.getQuicConfiguration().isUseOutputDirectByteBuffers();
         this.plaintextBuffer = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, direct, -1, 0, 0);
         this.encryptedBuffer = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, direct, -1, 0, 0);

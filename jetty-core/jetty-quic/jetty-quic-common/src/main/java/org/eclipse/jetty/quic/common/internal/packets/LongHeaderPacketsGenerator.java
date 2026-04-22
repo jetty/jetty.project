@@ -14,7 +14,6 @@
 package org.eclipse.jetty.quic.common.internal.packets;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.packets.HandshakePacket;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
@@ -28,9 +27,9 @@ public class LongHeaderPacketsGenerator
     private final HandshakePacketGenerator handshakeGenerator;
     private final RetryPacketGenerator retryGenerator;
 
-    public LongHeaderPacketsGenerator(PacketNumbers packetNumbers, FramesGenerator framesGenerator, Encrypter encrypter)
+    public LongHeaderPacketsGenerator(PacketNumbers packetNumbers, Encrypter encrypter)
     {
-        initialGenerator = new InitialPacketGenerator(packetNumbers, framesGenerator, encrypter);
+        initialGenerator = new InitialPacketGenerator(packetNumbers, encrypter);
         handshakeGenerator = new HandshakePacketGenerator(packetNumbers, encrypter);
         retryGenerator = new RetryPacketGenerator();
     }
