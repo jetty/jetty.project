@@ -134,7 +134,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
             }
           }
           // TODO remove when build is more stable
-          if (isMainBranch() {
+          if (isMainBranch()) {
             extraArgs = " -Dmaven.test.failure.ignore=true "
           }
           def dashProfile = ""
