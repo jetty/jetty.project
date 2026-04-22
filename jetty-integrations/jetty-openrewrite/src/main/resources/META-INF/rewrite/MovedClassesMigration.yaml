@@ -1,0 +1,15 @@
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.eclipse.jetty.MovedClassesMigration
+displayName: Migrate moved classes
+description: |
+  Migrate applications using classes which have moved to new packages.
+tags:
+  - jetty
+recipeList:
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.eclipse.jetty.ee.webapp.WebAppClassLoading
+      newFullyQualifiedTypeName: org.eclipse.jetty.ee.common.WebAppClassLoading
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.eclipse.jetty.ee.webapp.WebAppClassLoader
+      newFullyQualifiedTypeName: org.eclipse.jetty.ee.common.WebAppClassLoader

@@ -19,6 +19,7 @@
     <module>jetty-infinispan</module>
     <module>jetty-memcached</module>
     <module>jetty-nosql</module>
+    <module>jetty-openrewrite</module>
   </modules>
 
 </project>
