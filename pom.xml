@@ -2242,11 +2242,11 @@
         <artifactId>extension3</artifactId>
         <version>${njord.version}</version>
       </extension>
-      <!--      <extension>-->
-      <!--        <groupId>org.apache.maven.extensions</groupId>-->
-      <!--        <artifactId>maven-build-cache-extension</artifactId>-->
-      <!--        <version>${maven-build-cache.version}</version>-->
-      <!--      </extension>-->
+      <extension>
+        <groupId>org.apache.maven.extensions</groupId>
+        <artifactId>maven-build-cache-extension</artifactId>
+        <version>${maven-build-cache.version}</version>
+      </extension>
     </extensions>
   </build>
 

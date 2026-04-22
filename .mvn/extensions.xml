@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <extensions>
     <!-- Workstation wide caching: just nuke your local repository and rebuild -->
-<!--    <extension>-->
-<!--        <groupId>eu.maveniverse.maven.mimir</groupId>-->
-<!--        <artifactId>extension3</artifactId>-->
-<!--        <version>0.11.3</version>-->
-<!--    </extension>-->
+    <extension>
+        <groupId>eu.maveniverse.maven.mimir</groupId>
+        <artifactId>extension3</artifactId>
+        <version>0.11.3</version>
+    </extension>
 </extensions>
