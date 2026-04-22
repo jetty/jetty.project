@@ -133,6 +133,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
               extraArgs = " -Dmaven.test.failure.ignore=true "
             }
           }
+          // TODO remove when build is more stable
           if (isMainBranch() {
             extraArgs = " -Dmaven.test.failure.ignore=true "
           }
