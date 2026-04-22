@@ -13,20 +13,29 @@
 
 package org.eclipse.jetty.ee.websocket.jakarta.server;
 
+import java.util.Map;
+
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee.websocket.jakarta.client.JakartaWebSocketClientFrameHandlerFactory;
 import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketContainer;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketFrameHandler;
 import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketFrameHandlerMetadata;
+import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketMessageMetadata;
+import org.eclipse.jetty.ee.websocket.jakarta.common.PutListenerMap;
+import org.eclipse.jetty.ee.websocket.jakarta.common.UpgradeRequest;
 import org.eclipse.jetty.ee.websocket.jakarta.server.internal.JakartaServerUpgradeRequest;
 import org.eclipse.jetty.ee.websocket.jakarta.server.internal.PathParamIdentifier;
+import org.eclipse.jetty.ee.websocket.jakarta.server.internal.ServerEndpointConfigWrapper;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketClientFrameHandlerFactory implements FrameHandlerFactory
 {
@@ -56,11 +65,43 @@ public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketC
     {
         try
         {
-            return newJakartaWebSocketFrameHandler(websocketPojo, new JakartaServerUpgradeRequest(upgradeRequest));
+            return createJakartaWebSocketFrameHandler(websocketPojo, new JakartaServerUpgradeRequest(upgradeRequest));
         }
         catch (DeploymentException e)
         {
             throw new InvalidWebSocketException(e.getMessage(), e);
         }
+    }
+
+    @Override
+    protected JakartaWebSocketFrameHandler newJakartaWebSocketFrameHandler(JakartaWebSocketContainer container,
+                                                                           UpgradeRequest upgradeRequest,
+                                                                           Object endpointInstance,
+                                                                           MethodHolder openHandle, MethodHolder closeHandle, MethodHolder errorHandle,
+                                                                           JakartaWebSocketMessageMetadata textMetadata, JakartaWebSocketMessageMetadata binaryMetadata,
+                                                                           MethodHolder pongHandle,
+                                                                           EndpointConfig endpointConfig)
+    {
+        return new JakartaWebSocketFrameHandler(container, upgradeRequest, endpointInstance, openHandle, closeHandle, errorHandle, textMetadata, binaryMetadata, pongHandle, endpointConfig)
+        {
+            @Override
+            protected EndpointConfig getWrappedEndpointConfig()
+            {
+                if (getEndpointConfig() instanceof ServerEndpointConfig serverEndpointConfig)
+                {
+                    Map<String, Object> listenerMap = new PutListenerMap(serverEndpointConfig.getUserProperties(), this::configListener);
+                    return new ServerEndpointConfigWrapper(serverEndpointConfig)
+                    {
+                        @Override
+                        public Map<String, Object> getUserProperties()
+                        {
+                            return listenerMap;
+                        }
+                    };
+                }
+
+                return super.getWrappedEndpointConfig();
+            }
+        };
     }
 }

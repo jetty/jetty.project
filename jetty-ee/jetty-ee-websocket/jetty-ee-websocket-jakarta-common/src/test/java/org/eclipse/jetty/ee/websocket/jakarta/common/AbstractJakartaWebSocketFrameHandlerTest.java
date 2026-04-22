@@ -72,6 +72,6 @@ public abstract class AbstractJakartaWebSocketFrameHandlerTest
         JakartaWebSocketFrameHandlerFactory factory = container.getFrameHandlerFactory();
         ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket, endpointConfig);
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
-        return factory.newJakartaWebSocketFrameHandler(endpoint, upgradeRequest);
+        return factory.createJakartaWebSocketFrameHandler(endpoint, upgradeRequest);
     }
 }

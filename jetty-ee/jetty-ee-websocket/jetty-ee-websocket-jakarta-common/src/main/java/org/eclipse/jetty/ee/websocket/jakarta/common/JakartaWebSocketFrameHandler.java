@@ -27,7 +27,6 @@ import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.PongMessage;
-import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.ee.websocket.jakarta.common.messages.DecodedBinaryMessageSink;
@@ -191,23 +190,12 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         }
     }
 
-    private EndpointConfig getWrappedEndpointConfig()
+    protected EndpointConfig getWrappedEndpointConfig()
     {
         final Map<String, Object> listenerMap = new PutListenerMap(this.endpointConfig.getUserProperties(), this::configListener);
 
         EndpointConfig wrappedConfig;
-        if (endpointConfig instanceof ServerEndpointConfig)
-        {
-            wrappedConfig = new ServerEndpointConfigWrapper((ServerEndpointConfig)endpointConfig)
-            {
-                @Override
-                public Map<String, Object> getUserProperties()
-                {
-                    return listenerMap;
-                }
-            };
-        }
-        else if (endpointConfig instanceof ClientEndpointConfig)
+        if (endpointConfig instanceof ClientEndpointConfig)
         {
             wrappedConfig = new ClientEndpointConfigWrapper((ClientEndpointConfig)endpointConfig)
             {
@@ -680,7 +668,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         return upgradeRequest;
     }
 
-    private void configListener(String key, Object value)
+    protected void configListener(String key, Object value)
     {
         if (!key.startsWith("org.eclipse.jetty.websocket."))
             return;

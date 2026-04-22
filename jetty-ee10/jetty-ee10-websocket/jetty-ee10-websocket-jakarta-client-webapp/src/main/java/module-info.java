@@ -11,13 +11,7 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee10.websocket.jakarta.client.webapp.JakartaWebSocketShutdownContainer;
-
 module org.eclipse.jetty.ee10.websocket.jakarta.client.webapp
 {
-    requires org.slf4j;
-    requires transitive jakarta.servlet;
-    requires transitive org.eclipse.jetty.ee10.websocket.jakarta.client;
-
-    exports org.eclipse.jetty.ee10.websocket.jakarta.client.webapp;
+    requires transitive org.eclipse.jetty.ee.websocket.jakarta.client.webapp;
 }

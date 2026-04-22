@@ -123,14 +123,13 @@ public abstract class JakartaWebSocketFrameHandlerFactory
 
     public abstract EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass);
 
-    public JakartaWebSocketFrameHandler newJakartaWebSocketFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest) throws DeploymentException
+    public JakartaWebSocketFrameHandler createJakartaWebSocketFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest) throws DeploymentException
     {
         Object endpoint;
         EndpointConfig config;
 
-        if (endpointInstance instanceof ConfiguredEndpoint)
+        if (endpointInstance instanceof ConfiguredEndpoint configuredEndpoint)
         {
-            ConfiguredEndpoint configuredEndpoint = (ConfiguredEndpoint)endpointInstance;
             endpoint = configuredEndpoint.getRawEndpoint();
             config = configuredEndpoint.getConfig();
         }
@@ -178,7 +177,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         // Decorate the endpointInstance while we are still upgrading for access to things like HttpSession.
         components.getObjectFactory().decorate(endpoint);
 
-        return new JakartaWebSocketFrameHandler(
+        return newJakartaWebSocketFrameHandler(
             container,
             upgradeRequest,
             endpoint,
@@ -186,6 +185,24 @@ public abstract class JakartaWebSocketFrameHandlerFactory
             textMetadata, binaryMetadata,
             pongHandle,
             config);
+    }
+
+    protected JakartaWebSocketFrameHandler newJakartaWebSocketFrameHandler(JakartaWebSocketContainer container,
+                                        UpgradeRequest upgradeRequest,
+                                        Object endpointInstance,
+                                        MethodHolder openHandle, MethodHolder closeHandle, MethodHolder errorHandle,
+                                        JakartaWebSocketMessageMetadata textMetadata, JakartaWebSocketMessageMetadata binaryMetadata,
+                                        MethodHolder pongHandle,
+                                        EndpointConfig endpointConfig)
+    {
+        return new JakartaWebSocketFrameHandler(
+            container,
+            upgradeRequest,
+            endpointInstance,
+            openHandle, closeHandle, errorHandle,
+            textMetadata, binaryMetadata,
+            pongHandle,
+            endpointConfig);
     }
 
     public static MessageSink createMessageSink(JakartaWebSocketSession session, JakartaWebSocketMessageMetadata msgMetadata)

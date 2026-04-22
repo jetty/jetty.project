@@ -159,7 +159,7 @@ public abstract class JakartaWebSocketContainer extends ContainerLifeCycle imple
 
     public JakartaWebSocketFrameHandler newFrameHandler(Object websocketPojo, UpgradeRequest upgradeRequest) throws DeploymentException
     {
-        return getFrameHandlerFactory().newJakartaWebSocketFrameHandler(websocketPojo, upgradeRequest);
+        return getFrameHandlerFactory().createJakartaWebSocketFrameHandler(websocketPojo, upgradeRequest);
     }
 
     /**

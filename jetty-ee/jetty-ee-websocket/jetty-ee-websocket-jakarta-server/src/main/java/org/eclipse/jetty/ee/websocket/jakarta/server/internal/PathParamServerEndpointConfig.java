@@ -18,7 +18,6 @@ import java.util.Map;
 
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee.websocket.jakarta.common.PathParamProvider;
-import org.eclipse.jetty.ee.websocket.jakarta.common.ServerEndpointConfigWrapper;
 import org.eclipse.jetty.util.URIUtil;
 
 /**

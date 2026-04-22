@@ -23,7 +23,6 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketContainer;
-import org.eclipse.jetty.ee.websocket.jakarta.common.ServerEndpointConfigWrapper;
 import org.eclipse.jetty.ee.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 
 public class AnnotatedServerEndpointConfig extends ServerEndpointConfigWrapper

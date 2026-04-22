@@ -15,7 +15,7 @@ module org.eclipse.jetty.ee.websocket.jakarta.common
 {
     requires org.slf4j;
 
-    requires transitive jakarta.websocket;
+    requires transitive jakarta.websocket.client;
     requires transitive org.eclipse.jetty.websocket.core.client;
 
     exports org.eclipse.jetty.ee.websocket.jakarta.common;
