@@ -16,7 +16,6 @@ package org.eclipse.jetty.quic.common.internal.packets;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketBuffers;
-import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
@@ -31,14 +30,12 @@ public class InitialPacketGenerator implements PacketGenerator
     private static final Logger LOG = LoggerFactory.getLogger(InitialPacketGenerator.class);
 
     private final PacketNumbers packetNumbers;
-    private final FramesGenerator framesGenerator;
     private final Encrypter encrypter;
     private int payloadMinLength;
 
-    public InitialPacketGenerator(PacketNumbers packetNumbers, FramesGenerator framesGenerator, Encrypter encrypter)
+    public InitialPacketGenerator(PacketNumbers packetNumbers, Encrypter encrypter)
     {
         this.packetNumbers = packetNumbers;
-        this.framesGenerator = framesGenerator;
         this.encrypter = encrypter;
         // RFC-9000[14.1]: UDP payload must be at least 1200 bytes.
         // The minimum InitialPacket header length is 11, considering
@@ -67,17 +64,6 @@ public class InitialPacketGenerator implements PacketGenerator
     {
         if (LOG.isDebugEnabled())
             LOG.debug("generating {}", packet);
-
-        boolean releaseFramesAccumulator = false;
-        if (framesAccumulator == null)
-        {
-            releaseFramesAccumulator = true;
-            RetainableByteBuffer.Mutable payloadAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-            packet.frames().forEach(frame -> framesGenerator.generateFrame(payloadAccumulator, frame, Integer.MAX_VALUE));
-            if (LOG.isDebugEnabled())
-                LOG.debug("generated {} frame bytes for {}", payloadAccumulator.size(), packet);
-            framesAccumulator = payloadAccumulator;
-        }
 
         long framesLength = framesAccumulator.size();
         int payloadMinLength = getPayloadMinimumLength();
@@ -128,8 +114,6 @@ public class InitialPacketGenerator implements PacketGenerator
             LOG.debug("encrypted {} {}", packet, packetBuffers);
 
         headerAccumulator.release();
-        if (releaseFramesAccumulator)
-            framesAccumulator.release();
 
         packetAccumulator.add(packetBuffers.header());
         packetAccumulator.add(packetBuffers.payload());

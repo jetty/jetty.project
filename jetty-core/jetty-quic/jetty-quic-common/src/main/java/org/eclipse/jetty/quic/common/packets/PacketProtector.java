@@ -641,13 +641,6 @@ public class PacketProtector implements Encrypter, Decrypter
                 gcmCipher.updateAAD(headerByteBuffer);
                 headerByteBuffer.flip();
 
-                // RFC-9001[5.4.2]: pad payload if necessary.
-                // Packet protection requires 16 bytes of sample,
-                // offset by 4 bytes from the packet number,
-                // so we must pad up to 4 bytes.
-                if (payload.size() < 4)
-                    payload.putInt(0);
-
                 // Encrypt the payload.
                 // AEAD encryption produces 16 additional bytes.
                 ByteBuffer payloadByteBuffer = payload.getByteBuffer();

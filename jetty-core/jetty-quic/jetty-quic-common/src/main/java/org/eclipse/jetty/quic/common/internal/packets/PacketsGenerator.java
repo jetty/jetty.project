@@ -14,7 +14,6 @@
 package org.eclipse.jetty.quic.common.internal.packets;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.packets.LongHeaderPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
@@ -26,9 +25,9 @@ public class PacketsGenerator
     private final LongHeaderPacketsGenerator longHeaderPacketsGenerator;
     private final ShortHeaderPacketsGenerator shortHeaderPacketsGenerator;
 
-    public PacketsGenerator(PacketNumbers packetNumbers, FramesGenerator framesGenerator, Encrypter encrypter)
+    public PacketsGenerator(PacketNumbers packetNumbers, Encrypter encrypter)
     {
-        longHeaderPacketsGenerator = new LongHeaderPacketsGenerator(packetNumbers, framesGenerator, encrypter);
+        longHeaderPacketsGenerator = new LongHeaderPacketsGenerator(packetNumbers, encrypter);
         shortHeaderPacketsGenerator = new ShortHeaderPacketsGenerator(packetNumbers, encrypter);
     }
 

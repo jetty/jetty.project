@@ -212,6 +212,13 @@ class CryptoFlusher implements Callback
             return false;
         }
 
+        // RFC-9001[5.4.2]: minimally pad the payload.
+        // Packet protection requires 16 bytes of sample,
+        // offset by 4 bytes from the packet number,
+        // so there must be at least 4 bytes of payload.
+        if (framesAccumulator.size() < 4)
+            framesAccumulator.putInt(0);
+
         RetainableByteBuffer.Mutable packetAccumulator = flusher.getEncryptedBuffer();
         PacketsGenerator packetGenerator = flusher.getPacketsGenerator();
         EndPoint endPoint = session.getEndPoint();
