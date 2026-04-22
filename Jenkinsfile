@@ -133,6 +133,9 @@ def mavenBuild(jdk, cmdline, mvnName) {
               extraArgs = " -Dmaven.test.failure.ignore=true "
             }
           }
+          if (isMainBranch() {
+            extraArgs = " -Dmaven.test.failure.ignore=true "
+          }
           def dashProfile = ""
           if(useEclipseDash()) {
             dashProfile = " -Peclipse-dash "
