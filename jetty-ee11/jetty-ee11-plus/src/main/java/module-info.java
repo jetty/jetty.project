@@ -22,6 +22,4 @@ module org.eclipse.jetty.ee11.plus
     // Only required if using Transaction.
     requires static transitive jakarta.transaction;
     requires org.eclipse.jetty.jndi;
-
-    exports org.eclipse.jetty.ee11.plus.jndi;
 }

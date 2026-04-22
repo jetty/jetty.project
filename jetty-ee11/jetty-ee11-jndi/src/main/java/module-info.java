@@ -21,6 +21,4 @@ module org.eclipse.jetty.ee11.jndi
 
     // Only required if using MailSessionReference.
     requires static transitive jakarta.mail;
-
-    exports org.eclipse.jetty.ee11.jndi.factories;
 }

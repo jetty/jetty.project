@@ -18,6 +18,4 @@ module org.eclipse.jetty.ee11.proxy
     requires transitive org.eclipse.jetty.ee.proxy;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.slf4j;
-
-    exports org.eclipse.jetty.ee11.proxy;
 }

@@ -28,6 +28,4 @@ module org.eclipse.jetty.ee11.servlets
     requires static org.eclipse.jetty.server;
     // Only required if using CrossOriginFilter, DoSFilter, etc.
     requires static transitive org.eclipse.jetty.util;
-
-    exports org.eclipse.jetty.ee11.servlets;
 }

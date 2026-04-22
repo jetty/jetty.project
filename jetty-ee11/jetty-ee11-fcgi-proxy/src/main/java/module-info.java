@@ -19,6 +19,4 @@ module org.eclipse.jetty.ee11.fcgi.proxy
 
     requires static jakarta.servlet;
     requires org.eclipse.jetty.ee.fcgi.proxy;
-
-    exports org.eclipse.jetty.ee11.fcgi.proxy;
 }
