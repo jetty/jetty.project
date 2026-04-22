@@ -71,7 +71,7 @@ public class SessionAddMessageHandlerTest
         UpgradeRequest handshakeRequest = new UpgradeRequestAdapter();
 
         JakartaWebSocketFrameHandlerFactory frameHandlerFactory = new JakartaWebSocketClientFrameHandlerFactory(container);
-        frameHandler = frameHandlerFactory.newJakartaWebSocketFrameHandler(ei, handshakeRequest);
+        frameHandler = frameHandlerFactory.createJakartaWebSocketFrameHandler(ei, handshakeRequest);
         frameHandler.onOpen(new CoreSession.Empty(), Callback.NOOP);
 
         // Session

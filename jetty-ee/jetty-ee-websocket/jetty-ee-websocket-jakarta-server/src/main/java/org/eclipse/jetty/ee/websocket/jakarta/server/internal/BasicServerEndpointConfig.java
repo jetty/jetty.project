@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee.websocket.jakarta.server.internal;
 
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.ee.websocket.jakarta.common.ServerEndpointConfigWrapper;
 import org.eclipse.jetty.ee.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 
 public class BasicServerEndpointConfig extends ServerEndpointConfigWrapper

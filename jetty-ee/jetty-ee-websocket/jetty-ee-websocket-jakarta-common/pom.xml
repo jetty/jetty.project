@@ -25,13 +25,13 @@
     </dependency>
     <dependency>
       <groupId>jakarta.websocket</groupId>
-      <artifactId>jakarta.websocket-api</artifactId>
+      <artifactId>jakarta.websocket-client-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.websocket</groupId>
-      <artifactId>jakarta.websocket-client-api</artifactId>
-      <scope>provided</scope>
+      <artifactId>jakarta.websocket-api</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -39,7 +39,6 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>

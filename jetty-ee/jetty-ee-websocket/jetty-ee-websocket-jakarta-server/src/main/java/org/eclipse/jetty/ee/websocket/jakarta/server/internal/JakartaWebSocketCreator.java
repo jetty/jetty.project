@@ -25,7 +25,6 @@ import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee.websocket.jakarta.common.ConfiguredEndpoint;
 import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.ee.websocket.jakarta.common.JakartaWebSocketExtension;
-import org.eclipse.jetty.ee.websocket.jakarta.common.ServerEndpointConfigWrapper;
 import org.eclipse.jetty.ee.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
