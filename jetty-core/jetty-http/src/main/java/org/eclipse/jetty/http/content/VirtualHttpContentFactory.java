@@ -61,7 +61,7 @@ public class VirtualHttpContentFactory extends ContainerLifeCycle implements Htt
         return _resource;
     }
 
-    @ManagedAttribute(value = "Content-Type used for the virtual Resource", readonly = true)
+    @ManagedAttribute(value = "Content-Type used for the virtual resource", readonly = true)
     public String getContentType()
     {
         return _contentType;
