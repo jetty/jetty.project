@@ -19,12 +19,4 @@ module org.eclipse.jetty.ee10.security.jaspi
     requires transitive jakarta.security.auth.message;
     requires transitive org.eclipse.jetty.ee.security.jaspi;
     requires transitive org.eclipse.jetty.ee10.servlet;
-
-    exports org.eclipse.jetty.ee10.security.jaspi;
-    exports org.eclipse.jetty.ee10.security.jaspi.callback;
-    exports org.eclipse.jetty.ee10.security.jaspi.modules;
-    exports org.eclipse.jetty.ee10.security.jaspi.provider;
-
-    provides org.eclipse.jetty.security.Authenticator.Factory with
-        org.eclipse.jetty.ee10.security.jaspi.JaspiAuthenticatorFactory;
 }
