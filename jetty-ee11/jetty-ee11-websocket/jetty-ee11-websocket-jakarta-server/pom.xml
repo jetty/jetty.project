@@ -16,8 +16,16 @@
 
   <dependencies>
     <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>jakarta.websocket</groupId>
       <artifactId>jakarta.websocket-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jakarta-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
@@ -30,15 +38,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee11.websocket</groupId>
       <artifactId>jetty-ee11-websocket-servlet</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 

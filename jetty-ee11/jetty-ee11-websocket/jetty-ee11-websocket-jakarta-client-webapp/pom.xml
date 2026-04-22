@@ -15,9 +15,14 @@
   </properties>
 
   <dependencies>
+
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-jakarta-client-webapp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee11.websocket</groupId>

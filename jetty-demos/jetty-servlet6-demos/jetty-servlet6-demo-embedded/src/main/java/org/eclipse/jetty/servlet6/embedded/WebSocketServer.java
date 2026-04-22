@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.servlet6.embedded;
 
+import org.eclipse.jetty.ee.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.ee.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.ee.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServletFactory;
-import org.eclipse.jetty.ee11.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;

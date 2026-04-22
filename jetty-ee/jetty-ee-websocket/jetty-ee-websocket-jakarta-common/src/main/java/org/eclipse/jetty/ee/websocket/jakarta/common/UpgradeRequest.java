@@ -31,7 +31,7 @@ public interface UpgradeRequest
     URI getRequestURI();
 
     /**
-     * For obtaining {@link jakarta.websocket.server.PathParam} values from the Request context path.
+     * For obtaining {@code jakarta.websocket.server.PathParam} values from the Request context path.
      *
      * @return the path in Context.
      */

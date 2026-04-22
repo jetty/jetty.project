@@ -20,7 +20,7 @@ import java.util.Map;
  * in Jetty to expose Path Param values used during the {@link JakartaWebSocketFrameHandler}
  * resolution of methods.
  * <p>
- * Mostly a feature of the JSR356 Server implementation and its {@code &#064;jakarta.websocket.server.PathParam} annotation.
+ * Mostly a feature of the JSR356 Server implementation and its {@code jakarta.websocket.server.PathParam} annotation.
  * </p>
  */
 public interface PathParamProvider
