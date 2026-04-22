@@ -3,6 +3,7 @@
 .project
 .settings
 .checkstyle
+.factorypath
 
 # maven
 target/
@@ -54,3 +55,5 @@ bin/
 reports/
 
 .launchable
+
+
