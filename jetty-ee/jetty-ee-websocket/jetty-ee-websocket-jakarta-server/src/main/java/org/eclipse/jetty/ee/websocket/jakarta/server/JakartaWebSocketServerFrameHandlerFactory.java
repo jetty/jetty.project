@@ -87,11 +87,10 @@ public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketC
             @Override
             protected EndpointConfig getWrappedEndpointConfig()
             {
-                EndpointConfig endpointConfig = getEndpointConfig();
-                if (endpointConfig instanceof ServerEndpointConfig)
+                if (getEndpointConfig() instanceof ServerEndpointConfig serverEndpointConfig)
                 {
-                    final Map<String, Object> listenerMap = new PutListenerMap(endpointConfig.getUserProperties(), this::configListener);
-                    return new ServerEndpointConfigWrapper((ServerEndpointConfig)endpointConfig)
+                    Map<String, Object> listenerMap = new PutListenerMap(serverEndpointConfig.getUserProperties(), this::configListener);
+                    return new ServerEndpointConfigWrapper(serverEndpointConfig)
                     {
                         @Override
                         public Map<String, Object> getUserProperties()
