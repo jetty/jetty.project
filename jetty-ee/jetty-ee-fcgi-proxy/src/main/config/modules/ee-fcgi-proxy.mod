@@ -2,7 +2,7 @@
 Enables support for EECommon FastCGI proxying.
 
 [environment]
-ee
+<inherit>
 
 [tags]
 fcgi

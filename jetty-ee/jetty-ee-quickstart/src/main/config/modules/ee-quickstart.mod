@@ -4,7 +4,7 @@
 Enables the Jetty Quickstart module for rapid deployment of preconfigured web applications.
 
 [environment]
-ee
+<inherit>
 
 [depend]
 server

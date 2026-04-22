@@ -7,7 +7,7 @@ Puts org.eclipse.jetty.ee.servlets on the server classpath
 for use by all web applications.
 
 [environment]
-ee
+<inherit>
 
 [depend]
 ee-servlet

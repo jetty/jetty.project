@@ -4,7 +4,7 @@
 Enables test setup
 
 [environment]
-ee
+<inherit>
 
 [depend]
 http

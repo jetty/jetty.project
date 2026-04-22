@@ -4,7 +4,6 @@
 This module enables support for Jakarta EE 11 web applications.
 
 [environment]
-ee
 
 [depend]
 ee-webapp

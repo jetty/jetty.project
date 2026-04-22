@@ -14,7 +14,7 @@ CdiDecoratingLister - The webapp may register a decorator on the context attribu
                       "org.eclipse.jetty.ee.cdi.decorator".
 
 [environment]
-ee
+<inherit>
 
 [tag]
 cdi

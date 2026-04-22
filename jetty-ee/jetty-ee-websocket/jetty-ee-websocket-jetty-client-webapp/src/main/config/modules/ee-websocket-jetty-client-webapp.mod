@@ -4,7 +4,7 @@
 Expose the Jetty WebSocket Client classes to deployed web applications.
 
 [environment]
-ee
+<inherit>
 
 [tags]
 websocket

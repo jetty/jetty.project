@@ -5,7 +5,7 @@ Configures Jetty to use the "CdiSpiDecorator" as the default CDI mode.
 This mode uses the CDI SPI to integrate an arbitrary CDI implementation.
 
 [environment]
-ee
+<inherit>
 
 [tag]
 cdi

@@ -4,7 +4,7 @@
 Adds the Jetty EECommon JNDI reference factories
 
 [environment]
-ee
+<inherit>
 
 [depend]
 jndi

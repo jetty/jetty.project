@@ -4,7 +4,7 @@
 Enables Annotation scanning for deployed web applications.
 
 [environment]
-ee
+<inherit>
 
 [depend]
 ee-plus

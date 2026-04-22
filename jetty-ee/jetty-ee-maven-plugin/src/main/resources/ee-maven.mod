@@ -4,7 +4,7 @@
 Enables an un-assembled Maven webapp to run in a Jetty distribution.
 
 [environment]
-ee
+<inherit>
 
 [depends]
 server

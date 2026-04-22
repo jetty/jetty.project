@@ -4,7 +4,7 @@
 Enables JASPI authentication for deployed web applications.
 
 [environment]
-ee
+<inherit>
 
 [tags]
 security

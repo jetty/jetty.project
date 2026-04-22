@@ -4,7 +4,7 @@
 Enables standard Servlet handling.
 
 [environment]
-ee
+<inherit>
 
 [depend]
 server
