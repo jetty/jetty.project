@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_12_0.dtd">
 
-<Configure id="wac" class="org.eclipse.jetty.ee11.webapp.WebAppContext">
+<Configure id="wac" class="org.eclipse.jetty.ee.webapp.WebAppContext">
   <Call id="ResourceFactory" class="org.eclipse.jetty.util.resource.ResourceFactory" name="of">
     <Arg><Ref refid="Server"/></Arg>
     <Call id="realmResource" name="newResource">

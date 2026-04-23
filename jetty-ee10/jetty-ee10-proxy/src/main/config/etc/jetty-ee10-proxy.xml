@@ -5,7 +5,7 @@
   <Ref refid="Contexts">
     <Call name="addHandler">
       <Arg>
-        <New class="org.eclipse.jetty.ee10.servlet.ServletContextHandler">
+        <New class="org.eclipse.jetty.ee.servlet.ServletContextHandler">
           <Set name="contextPath"><Property name="jetty.proxy.contextPath" default="/"/></Set>
           <Call name="insertHandler">
             <Arg>

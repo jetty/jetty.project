@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee.webapp.WebAppContext">
   <Get name="servletContext">
     <Call name="log"><Arg>The jetty-servlet5-demo-jndi webapp is deployed. DO NOT USE IN PRODUCTION!</Arg><Arg></Arg></Call>
   </Get>
