@@ -33,7 +33,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.Props.Prop;
-import org.eclipse.jetty.util.StringUtil;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -451,7 +450,7 @@ public class Module implements Comparable<Module>
                             case "DEPRECATED" -> _deprecated.add(line);
                             case "ENV", "ENVIRONMENT" ->
                             {
-                                if (StringUtil.isBlank(line))
+                                if (line.isBlank())
                                     throw new UsageException("Blank [environment] specified in %s".formatted(_path));
 
                                 if (line.equalsIgnoreCase(ENVIRONMENT_INHERITED))
