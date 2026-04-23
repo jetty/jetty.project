@@ -1,0 +1,27 @@
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.eclipse.jetty.EnterpriseEditionMigration
+displayName: Migrate to common EnterpriseEdition
+description: |
+  Migrate applications using EExx names in Java and XML to the new common EE implementation.
+tags:
+  - jetty
+recipeList:
+  - org.openrewrite.java.ChangePackage:
+      oldPackageName: org.eclipse.jetty.ee11
+      newPackageName: org.eclipse.jetty.ee
+      recursive: true
+  - org.openrewrite.text.FindAndReplace:
+      find: org.eclipse.jetty.ee11
+      replace: org.eclipse.jetty.ee
+      regex: false
+      filePattern: "**/!(pom).xml;"
+  - org.openrewrite.java.ChangePackage:
+      oldPackageName: org.eclipse.jetty.ee10
+      newPackageName: org.eclipse.jetty.ee
+      recursive: true
+  - org.openrewrite.text.FindAndReplace:
+      find: org.eclipse.jetty.ee10
+      replace: org.eclipse.jetty.ee
+      regex: false
+      filePattern: "**/!(pom).xml;"

@@ -1,0 +1,15 @@
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.eclipse.jetty.Jetty12to13Migration
+displayName: Migrate to Jetty 13 from 12
+description: |
+  Migrate applications built on Jetty 12 to the latest Jetty 13 release.
+tags:
+  - jetty
+recipeList:
+  - org.eclipse.jetty.MovedClassesMigration
+  - org.eclipse.jetty.EnterpriseEditionMigration
+  - org.openrewrite.maven.UpgradeDependencyVersion:
+      groupId: org.eclipse.jetty*
+      artifactId: jetty*
+      newVersion: 13.X
