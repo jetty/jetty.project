@@ -50,7 +50,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>${osgi.slf4j.import.packages},jakarta.mail.*;resolution:=optional,*</Import-Package>
+            <Import-Package>!jakarta.servlet,!jakarta.servlet.*,${osgi.slf4j.import.packages},jakarta.mail.*;resolution:=optional,*</Import-Package>
           </instructions>
         </configuration>
       </plugin>

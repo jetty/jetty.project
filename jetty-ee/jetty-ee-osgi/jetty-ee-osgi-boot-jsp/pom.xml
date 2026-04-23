@@ -64,8 +64,6 @@
               com.sun.el.parser;resolution:=optional,
               com.sun.el.util;resolution:=optional,
               jakarta.el;version="[6.0,7.0)",
-              jakarta.servlet;version="[$(version;==;${servletApi.osgiVersion}),$(version;+;${servletApi.osgiVersion}))",
-              jakarta.servlet.resources;version="[$(version;==;${servletApi.osgiVersion}),$(version;+;${servletApi.osgiVersion}))",
               jakarta.servlet.jsp.resources;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
               jakarta.servlet.jsp;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
               jakarta.servlet.jsp.el;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
@@ -123,7 +121,8 @@
               javax.xml.parser;resolution:=optional</Import-Package>
             <DynamicImport-Package>org.eclipse.jetty.ee.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
                 org.apache.jasper.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))",
-                org.apache.el.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))"</DynamicImport-Package>
+                org.apache.el.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))",
+                jakarta.servlet,jakarta.servlet.*</DynamicImport-Package>
             <_noee>true</_noee>
           </instructions>
         </configuration>
