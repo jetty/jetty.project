@@ -11,72 +11,62 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.test.client.transport;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.FormRequestContent;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.FormFields;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-public class FormTest
+public class FormTest extends AbstractTest
 {
     private static final int MAX_FORM_CONTENT_SIZE = 128;
     private static final int MAX_FORM_KEYS = 4;
 
-    private Server server;
-    private LocalConnector connector;
-
-    private void start(ContextHandler handler) throws Exception
-    {
-        server = new Server();
-        connector = new LocalConnector(server);
-        server.addConnector(connector);
-
-        ContextHandlerCollection contextHandlerCollection = new ContextHandlerCollection();
-        contextHandlerCollection.addHandler(handler);
-        server.setHandler(contextHandlerCollection);
-        server.start();
-    }
-
-    @AfterEach
-    public void dispose() throws Exception
-    {
-        LifeCycle.stop(server);
-    }
-
     public static Stream<Arguments> formContentSizeScenarios()
     {
-        return Stream.of(
-            Arguments.of(null, FormFields.MAX_LENGTH_DEFAULT + 1, HttpStatus.BAD_REQUEST_400),
-            Arguments.of(-1, null,  HttpStatus.OK_200),
-            Arguments.of(0, null, HttpStatus.BAD_REQUEST_400),
-            Arguments.of(MAX_FORM_CONTENT_SIZE, FormFields.MAX_LENGTH_DEFAULT + 1, HttpStatus.BAD_REQUEST_400)
-        );
+        List<Arguments> results = new ArrayList<>();
+        transportsNoFCGI().forEach(transportType ->
+        {
+            results.add(arguments(transportType, null, FormFields.MAX_LENGTH_DEFAULT + 1, HttpStatus.BAD_REQUEST_400));
+            results.add(arguments(transportType, -1, null, HttpStatus.OK_200));
+            results.add(arguments(transportType, 0, null, HttpStatus.BAD_REQUEST_400));
+            results.add(arguments(transportType, MAX_FORM_CONTENT_SIZE, FormFields.MAX_LENGTH_DEFAULT + 1, HttpStatus.BAD_REQUEST_400));
+        });
+        return results.stream();
     }
 
     @ParameterizedTest
     @MethodSource("formContentSizeScenarios")
-    public void testMaxFormContentSizeExceeded(Integer maxFormContentSize, Integer contentSize, int expectedStatus) throws Exception
+    public void testMaxFormContentSizeExceeded(TransportType transportType, Integer maxFormContentSize, Integer contentSize, int expectedStatus) throws Exception
     {
         if (contentSize == null)
             contentSize = FormFields.MAX_LENGTH_DEFAULT;
@@ -87,45 +77,46 @@ public class FormTest
             contextHandler.setAttribute(FormFields.MAX_LENGTH_ATTRIBUTE, maxFormContentSize);
         contextHandler.setHandler(new EchoFieldsHandler());
 
-        start(contextHandler);
+        start(transportType, contextHandler);
 
-        String formContent = newContent(contentSize);
-        String rawRequest = """
-            POST /test/ HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            Content-Type: %s\r
-            Content-Length: %d\r
-            \r
-            %s
-            """.formatted(
-                MimeTypes.Type.FORM_ENCODED.asString(),
-                formContent.length(),
-                formContent
-            );
+        BytesRequestContent formContent = new BytesRequestContent(
+            MimeTypes.Type.FORM_ENCODED.asString(),
+            newContent(contentSize));
 
-        String rawResponse = connector.getResponse(rawRequest);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        ContentResponse response = client.newRequest(newURI(transportType).resolve("/test/"))
+            .method(HttpMethod.POST)
+            .body(formContent)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
         assertEquals(expectedStatus, response.getStatus());
     }
 
-    private String newContent(int size)
+    private byte[] newContent(int size)
     {
-        byte[] key = "foo=".getBytes(StandardCharsets.US_ASCII);
+        byte[] key = "foo=".getBytes(US_ASCII);
         byte[] buf = new byte[size + key.length];
         Arrays.fill(buf, (byte)'x');
         System.arraycopy(key, 0, buf, 0, key.length);
-        return new String(buf, StandardCharsets.UTF_8);
+        return buf;
     }
 
-    public static Stream<Integer> formKeysScenarios()
+    public static Stream<Arguments> formKeysScenarios()
     {
-        return Stream.of(null, -1, 0, MAX_FORM_KEYS);
+        List<Arguments> results = new ArrayList<>();
+        transportsNoFCGI().forEach(transportType ->
+        {
+            results.add(arguments(transportType, null));
+            results.add(arguments(transportType, -1));
+            results.add(arguments(transportType, 0));
+            results.add(arguments(transportType, MAX_FORM_KEYS));
+        });
+        return results.stream();
     }
 
     @ParameterizedTest
     @MethodSource("formKeysScenarios")
-    public void testMaxFormKeysExceeded(Integer maxFormKeys) throws Exception
+    public void testMaxFormKeysExceeded(TransportType transportType, Integer maxFormKeys) throws Exception
     {
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/test");
@@ -133,44 +124,33 @@ public class FormTest
             contextHandler.setAttribute(FormFields.MAX_FIELDS_ATTRIBUTE, maxFormKeys);
         contextHandler.setHandler(new EchoFieldsHandler());
 
-        start(contextHandler);
+        start(transportType, contextHandler);
 
         int keys = (maxFormKeys == null || maxFormKeys < 0)
             ? FormFields.MAX_FIELDS_DEFAULT
             : maxFormKeys;
-        // Have at least one key.
+        // always 1 more than configured max.
         keys = keys + 1;
-        StringBuilder form = new StringBuilder();
+
+        Fields fields = new Fields();
         for (int i = 0; i < keys; ++i)
         {
-            if (!form.isEmpty())
-                form.append('&');
-            form.append("key_").append(i);
-            form.append('=');
-            form.append("value_").append(i);
+            fields.add("key_" + i, "value_" + i);
         }
-        String formContent = form.toString();
-        String rawRequest = """
-            POST /test/ HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            Content-Type: %s\r
-            Content-Length: %d\r
-            \r
-            %s
-            """.formatted(
-            MimeTypes.Type.FORM_ENCODED.asString(),
-            formContent.length(),
-            formContent
-        );
+        FormRequestContent formContent = new FormRequestContent(fields);
 
-        String rawResponse = connector.getResponse(rawRequest);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        ContentResponse response = client.newRequest(newURI(transportType).resolve("/test/"))
+            .method(HttpMethod.POST)
+            .body(formContent)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
-    @Test
-    public void testContentTypeWithNonCharsetParameter() throws Exception
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testContentTypeWithNonCharsetParameter(TransportType transportType) throws Exception
     {
         String contentType = MimeTypes.Type.FORM_ENCODED.asString() + "; p=v";
 
@@ -178,34 +158,28 @@ public class FormTest
         contextHandler.setContextPath("/test");
         contextHandler.setHandler(new EchoFieldsHandler());
 
-        start(contextHandler);
+        start(transportType, contextHandler);
 
-        String formContent = "name1=value1";
-        String rawRequest = """
-            POST /test/ HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            Content-Type: %s\r
-            Content-Length: %d\r
-            \r
-            %s
-            """.formatted(
+        BytesRequestContent formContent = new BytesRequestContent(
             contentType,
-            formContent.length(),
-            formContent
-        );
+            "name1=value1".getBytes(UTF_8));
 
-        String rawResponse = connector.getResponse(rawRequest);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        ContentResponse response = client.newRequest(newURI(transportType).resolve("/test/"))
+            .method(HttpMethod.POST)
+            .body(formContent)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
         assertEquals(HttpStatus.OK_200, response.getStatus());
         // confirm contents on response
-        String responseBody = response.getContent();
+        String responseBody = response.getContentAsString();
         assertThat(responseBody, containsString("fields.size=1\n"));
         assertThat(responseBody, containsString("field.name1=value1\n"));
     }
 
-    @Test
-    public void testContentTypeWithIso8859Charset() throws Exception
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testContentTypeWithIso8859Charset(TransportType transportType) throws Exception
     {
         String contentType = MimeTypes.Type.FORM_ENCODED_8859_1.asString();
 
@@ -213,27 +187,21 @@ public class FormTest
         contextHandler.setContextPath("/test");
         contextHandler.setHandler(new EchoFieldsHandler());
 
-        start(contextHandler);
-        String formContent = "name=%e9";
-        String rawRequest = """
-            POST /test/ HTTP/1.1\r
-            Host: local\r
-            Connection: close\r
-            Content-Type: %s\r
-            Content-Length: %d\r
-            \r
-            %s
-            """.formatted(
-            contentType,
-            formContent.length(),
-            formContent
-        );
+        start(transportType, contextHandler);
 
-        String rawResponse = connector.getResponse(rawRequest);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        BytesRequestContent formContent = new BytesRequestContent(
+            contentType,
+            "name=%e9".getBytes(UTF_8));
+
+        ContentResponse response = client.newRequest(newURI(transportType).resolve("/test/"))
+            .method(HttpMethod.POST)
+            .body(formContent)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
         assertEquals(HttpStatus.OK_200, response.getStatus());
         // confirm contents on response
-        String responseBody = response.getContent();
+        String responseBody = response.getContentAsString();
         assertThat(responseBody, containsString("fields.size=1\n"));
         assertThat(responseBody, containsString("field.name=é\n"));
     }
