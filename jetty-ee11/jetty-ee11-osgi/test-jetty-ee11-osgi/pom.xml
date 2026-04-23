@@ -363,6 +363,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee.osgi</groupId>
+      <artifactId>jetty-ee-osgi-boot-jsp</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee11.demos</groupId>
       <artifactId>jetty-ee11-demo-jetty-websocket-webapp</artifactId>
       <version>${project.version}</version>

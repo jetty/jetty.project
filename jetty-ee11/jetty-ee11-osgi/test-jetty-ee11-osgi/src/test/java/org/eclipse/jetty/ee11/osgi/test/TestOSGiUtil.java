@@ -249,6 +249,10 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-servlets").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee.osgi").artifactId("jetty-ee-osgi-boot").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee.websocket").artifactId("jetty-ee-websocket-servlet").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee.websocket").artifactId("jetty-ee-websocket-jakarta-client").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee.websocket").artifactId("jetty-ee-websocket-jakarta-common").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee.websocket").artifactId("jetty-ee-websocket-jakarta-server").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee.websocket").artifactId("jetty-ee-websocket-jetty-server").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee11").artifactId("jetty-ee11-servlet").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee11").artifactId("jetty-ee11-webapp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee11").artifactId("jetty-ee11-servlets").versionAsInProject().start());
@@ -283,7 +287,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
         res.add(mavenBundle().groupId("org.glassfish.wasp").artifactId("wasp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.ee11.osgi").artifactId("jetty-ee11-osgi-boot-jsp").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee.osgi").artifactId("jetty-ee-osgi-boot-jsp").versionAsInProject().noStart());
     }
 
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
