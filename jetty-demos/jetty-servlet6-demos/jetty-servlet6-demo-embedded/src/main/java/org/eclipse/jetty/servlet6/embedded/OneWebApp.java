@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.ee.webapp.Configurations;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 
 public class OneWebApp
@@ -39,7 +39,7 @@ public class OneWebApp
         // PlusConfiguration) to choosing where the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee11.demos",
+        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee.demos",
                 "jetty-ee11-demo-async-rest-webapp", "", "war");
         Path warFile = JettyDemos.find("demo-async-rest/demo-async-rest-webapp/target/demo-async-rest-webapp-@VER@.war", mavenCoordinate);
         webapp.setWar(warFile.toString());

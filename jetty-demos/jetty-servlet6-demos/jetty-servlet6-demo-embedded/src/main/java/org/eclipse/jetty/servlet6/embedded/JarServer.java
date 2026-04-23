@@ -20,9 +20,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
-import org.eclipse.jetty.ee11.servlet.DefaultServlet;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
+import org.eclipse.jetty.ee.servlet.DefaultServlet;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;

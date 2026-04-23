@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.servlet6.embedded;
 
-import org.eclipse.jetty.ee11.proxy.ProxyServlet;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
+import org.eclipse.jetty.ee.proxy.ProxyServlet;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ConnectHandler;

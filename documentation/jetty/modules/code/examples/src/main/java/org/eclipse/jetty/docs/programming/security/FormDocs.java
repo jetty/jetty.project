@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.docs.programming.security;
 
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Fields;

@@ -16,8 +16,8 @@ package org.eclipse.jetty.servlet6.embedded;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.SessionHandler;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.SessionHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.NullSessionDataStore;

@@ -15,9 +15,9 @@ package org.eclipse.jetty.servlet6.embedded;
 
 import java.lang.management.ManagementFactory;
 
-import org.eclipse.jetty.ee11.servlet.DefaultServlet;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
+import org.eclipse.jetty.ee.servlet.DefaultServlet;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
