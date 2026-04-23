@@ -776,11 +776,11 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    public void notifyOutgoingPacket(Packet packet, int length)
+    public void notifyOutgoingPacket(Packet packet)
     {
         try
         {
-            packetListener.onOutgoingPacket(this, packet, length);
+            packetListener.onOutgoingPacket(this, packet);
         }
         catch (Throwable x)
         {
@@ -948,12 +948,6 @@ public abstract class QuicSession extends AbstractSession
         public void onIncomingPacket(Session session, Packet packet)
         {
             process(packet);
-        }
-
-        @Override
-        public void onOutgoingPacket(Session session, Packet packet, long length)
-        {
-            packetTracker.processPacketSent(QuicSession.this, packet, length);
         }
     }
 }

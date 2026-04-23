@@ -55,11 +55,13 @@ class PacketFlusher implements Callback
 
     boolean process() throws Exception
     {
+        boolean dataStalled;
         try (var _ = lock.lock())
         {
             processingPacketEntry = packetEntries.poll();
             if (processingPacketEntry == null)
                 return false;
+            dataStalled = packetEntries.isEmpty();
         }
 
         RetainableByteBuffer.Mutable packetAccumulator = flusher.getEncryptedBuffer();
@@ -69,7 +71,8 @@ class PacketFlusher implements Callback
 
         Packet packet = processingPacketEntry.packet();
         packetGenerator.generate(packetAccumulator, packet, null);
-        session.notifyOutgoingPacket(packet, packetAccumulator.remaining());
+        session.notifyOutgoingPacket(packet);
+        session.getPacketTracker().processPacketSent(session, packet, packetAccumulator.size(), dataStalled);
         if (LOG.isDebugEnabled())
             LOG.debug("writing packet {} {} to {} on {}", packet, packetAccumulator, endPoint, this);
         endPoint.write(flusher, session.getRemoteSocketAddress(), packetAccumulator.getByteBuffer());

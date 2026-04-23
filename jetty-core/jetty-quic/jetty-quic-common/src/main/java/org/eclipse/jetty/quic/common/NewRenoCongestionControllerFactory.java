@@ -51,7 +51,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
     {
         private static final Logger LOG = LoggerFactory.getLogger(NewRenoCongestionController.class);
 
-        private final Map<Long, Long> packets = new HashMap<>();
+        private final Map<Long, Entry> packets = new HashMap<>();
         private final NewRenoCongestionControllerFactory factory;
         private final long minInFlight;
         private State state = State.SLOW_START;
@@ -59,10 +59,10 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         private long maxInFlight;
         private long slowStart;
         private long rtt;
-        private long earliestSendNanoTime;
         private long latestSendNanoTime;
         private long latestSendBytes;
         private long congestionRecoveryNanoTime;
+        private boolean persistentCongestion;
 
         private NewRenoCongestionController(NewRenoCongestionControllerFactory factory)
         {
@@ -77,12 +77,10 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         }
 
         @Override
-        public void onPacketSent(Packet.WithFrames packet, long length, RTTData rttData)
+        public void onPacketSent(Packet.WithFrames packet, long length, boolean dataStalled, RTTData rttData)
         {
             long sendNanoTime = NanoTime.now();
-            if (sendNanoTime == 0)
-                sendNanoTime = 1;
-            packets.put(packet.packetNumber(), sendNanoTime);
+            packets.put(packet.packetNumber(), new Entry(length, dataStalled, sendNanoTime));
 
             // RFC-9002[B.4].
             inFlight += length;
@@ -95,57 +93,75 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         }
 
         @Override
-        public void onPacketsAcknowledged(List<Packet.WithFrames> acked, long totalLength, RTTData rttData)
+        public void onPacketsAcknowledged(List<Packet.WithFrames> acked, RTTData rttData)
         {
-            boolean exitRecovery = false;
             for (Packet.WithFrames packet : acked)
             {
-                long sendNanoTime = packets.remove(packet.packetNumber());
-                // RFC-9002[7.3.2]: exit congestion recovery when a packet
-                // sent during the congestion recovery period is acknowledged.
-                if (state == State.CONGESTION_RECOVERY && !exitRecovery)
-                    exitRecovery = NanoTime.isBefore(congestionRecoveryNanoTime, sendNanoTime);
-            }
+                Entry entry = packets.remove(packet.packetNumber());
+                if (entry == null)
+                    continue;
 
-            inFlight -= totalLength;
-            rtt = rttData.smoothedRTT();
+                inFlight = Math.max(0, inFlight - entry.length());
 
-            switch (state)
-            {
-                case SLOW_START -> maxInFlight += totalLength;
-                case CONGESTION_AVOIDANCE -> maxInFlight += (factory.udpPayloadMaxLength * totalLength) / maxInFlight;
-                case CONGESTION_RECOVERY ->
+                switch (state)
                 {
-                    if (exitRecovery)
+                    case SLOW_START ->
                     {
-                        state = State.CONGESTION_AVOIDANCE;
-                        earliestSendNanoTime = 0;
-                        congestionRecoveryNanoTime = 0;
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("exiting congestion recovery on {}", this);
+                        if (!entry.dataStalled())
+                            maxInFlight += entry.length();
+                        if (maxInFlight >= slowStart)
+                        {
+                            // RFC-9002[B.5]: exit slow start.
+                            state = State.CONGESTION_AVOIDANCE;
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("exiting slow start on {}", this);
+                        }
+                    }
+                    case CONGESTION_AVOIDANCE ->
+                    {
+                        if (!entry.dataStalled())
+                            maxInFlight += (factory.udpPayloadMaxLength * entry.length()) / maxInFlight;
+                    }
+                    case CONGESTION_RECOVERY ->
+                    {
+                        // RFC-9002[7.3.2]: exit congestion recovery when a packet
+                        // sent during the congestion recovery period is acknowledged.
+                        if (NanoTime.isBefore(congestionRecoveryNanoTime, entry.sendNanoTime()))
+                        {
+                            state = State.CONGESTION_AVOIDANCE;
+                            congestionRecoveryNanoTime = 0;
+                            if (!entry.dataStalled())
+                                maxInFlight += (factory.udpPayloadMaxLength * entry.length()) / maxInFlight;
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("exiting congestion recovery on {}", this);
+                        }
                     }
                 }
             }
+
+            persistentCongestion = false;
+            rtt = rttData.smoothedRTT();
 
             if (LOG.isDebugEnabled())
                 LOG.debug("acked {} on {}", acked.stream().map(Packet.WithFrames::packetNumber).toList(), this);
         }
 
         @Override
-        public void onPacketsLost(List<Packet.WithFrames> lost, long totalLength, RTTData rttData)
+        public void onPacketsLost(List<Packet.WithFrames> lost, RTTData rttData)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("lost {} on {}", lost.stream().map(Packet.WithFrames::packetNumber).toList(), this);
 
-            long minSendNanoTime = lost.stream()
-                .mapToLong(Packet.WithFrames::packetNumber)
-                .map(packets::remove)
-                .min()
-                .orElse(0L);
+            for (Packet.WithFrames packet : lost)
+            {
+                Entry entry = packets.remove(packet.packetNumber());
+                if (entry != null)
+                    inFlight = Math.max(0, inFlight - entry.length());
+            }
 
-            inFlight -= totalLength;
+            rtt = rttData.smoothedRTT();
 
-            if (state == State.SLOW_START && isPersistentCongestion(rttData))
+            if (state == State.SLOW_START && persistentCongestion)
             {
                 // In slow start from congestion recovery,
                 // but still in persistent congestion.
@@ -159,8 +175,9 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
                 // If there is persistent congestion, move to slow start.
                 if (isPersistentCongestion(rttData))
                 {
-                    state = State.SLOW_START;
                     // Exit congestion recovery.
+                    state = State.SLOW_START;
+                    persistentCongestion = true;
                     congestionRecoveryNanoTime = 0;
                     maxInFlight = minInFlight;
 
@@ -173,10 +190,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
             // Either in slow start or congestion avoidance,
             // move to congestion recovery.
             state = State.CONGESTION_RECOVERY;
-            earliestSendNanoTime = minSendNanoTime;
             congestionRecoveryNanoTime = NanoTime.now();
-            if (congestionRecoveryNanoTime == 0)
-                congestionRecoveryNanoTime = 1;
             slowStart = maxInFlight / 2;
             maxInFlight = Math.max(slowStart, minInFlight);
 
@@ -200,7 +214,8 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         {
             if (rtt == 0)
                 return 0;
-            long delay = latestSendBytes * rtt / maxInFlight;
+            // RFC-9002[7.7]: pace a little faster using N=1.25=(5/4).
+            long delay = (latestSendBytes * rtt * 4) / (maxInFlight * 5);
             long elapsed = NanoTime.since(latestSendNanoTime);
             return Math.max(0, delay - elapsed);
         }
@@ -208,7 +223,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         private boolean isPersistentCongestion(RTTData rttData)
         {
             long persistentCongestionDuration = (rttData.smoothedRTT() + 4 * rttData.variationRTT() + factory.ackMaxDelay) * 3;
-            return earliestSendNanoTime != 0 && NanoTime.since(earliestSendNanoTime) > persistentCongestionDuration;
+            return NanoTime.since(congestionRecoveryNanoTime) > persistentCongestionDuration;
         }
 
         @Override
@@ -222,6 +237,10 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
             SLOW_START,
             CONGESTION_AVOIDANCE,
             CONGESTION_RECOVERY
+        }
+
+        private record Entry(long length, boolean dataStalled, long sendNanoTime)
+        {
         }
     }
 }

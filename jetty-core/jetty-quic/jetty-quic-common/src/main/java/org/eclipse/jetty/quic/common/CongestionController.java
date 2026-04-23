@@ -29,22 +29,21 @@ public interface CongestionController
     ///
     /// @param packet the packet being sent
     /// @param length the length in bytes of the packet being sent
+    /// @param dataStalled whether there is more data to send
     /// @param rttData the round trip time data
-    void onPacketSent(Packet.WithFrames packet, long length, RTTData rttData);
+    void onPacketSent(Packet.WithFrames packet, long length, boolean dataStalled, RTTData rttData);
 
     /// Method invoked when acknowledgments are received.
     ///
     /// @param packets the packets being acknowledged
-    /// @param totalLength the length in bytes of the packets being acknowledged
     /// @param rttData the round trip time data
-    void onPacketsAcknowledged(List<Packet.WithFrames> packets, long totalLength, RTTData rttData);
+    void onPacketsAcknowledged(List<Packet.WithFrames> packets, RTTData rttData);
 
     /// Method invoked when packets are lost.
     ///
     /// @param packets the packets being lost
-    /// @param totalLength the length in bytes of the packets being lost
     /// @param rttData the round trip time data
-    void onPacketsLost(List<Packet.WithFrames> packets, long totalLength, RTTData rttData);
+    void onPacketsLost(List<Packet.WithFrames> packets, RTTData rttData);
 
     /// Method invoked when there are no packets to send.
     void onIdle();
