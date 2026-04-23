@@ -20,6 +20,4 @@ module org.eclipse.jetty.ee11.webapp
     requires transitive org.eclipse.jetty.ee11.servlet;
     requires transitive org.eclipse.jetty.xml;
     requires transitive org.eclipse.jetty.ee.webapp;
-
-    exports org.eclipse.jetty.ee11.webapp;
 }

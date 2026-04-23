@@ -35,7 +35,7 @@ import org.eclipse.jetty.ee.servlet.ServletMapping;
 import org.eclipse.jetty.ee.webapp.Configuration;
 import org.eclipse.jetty.ee.webapp.Configurations;
 import org.eclipse.jetty.ee.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.maven.Overlay;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;

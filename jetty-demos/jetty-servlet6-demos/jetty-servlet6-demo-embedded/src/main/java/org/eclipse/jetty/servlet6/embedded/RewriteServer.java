@@ -15,7 +15,7 @@ package org.eclipse.jetty.servlet6.embedded;
 
 import java.util.Arrays;
 
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
 import org.eclipse.jetty.rewrite.RewriteCustomizer;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;

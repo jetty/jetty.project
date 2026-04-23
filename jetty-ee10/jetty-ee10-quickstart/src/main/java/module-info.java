@@ -21,6 +21,4 @@ module org.eclipse.jetty.ee10.quickstart
     requires transitive org.eclipse.jetty.ee.servlet;
     requires transitive org.eclipse.jetty.ee.webapp;
     requires org.eclipse.jetty.ee10.plus;
-
-    exports org.eclipse.jetty.ee10.quickstart;
 }

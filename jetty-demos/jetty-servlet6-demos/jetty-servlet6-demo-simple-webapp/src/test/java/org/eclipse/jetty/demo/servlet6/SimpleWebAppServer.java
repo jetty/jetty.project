@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.ee.webapp.Configurations;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 
 public class SimpleWebAppServer

@@ -15,9 +15,9 @@ package org.eclipse.jetty.docs.programming.security;
 
 import java.security.Principal;
 
-import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee11.webapp.WebAppContext;
+import org.eclipse.jetty.ee.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.SecurityHandler;

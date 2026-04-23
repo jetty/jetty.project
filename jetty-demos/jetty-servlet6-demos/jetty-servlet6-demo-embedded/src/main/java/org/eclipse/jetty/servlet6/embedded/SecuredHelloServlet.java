@@ -16,10 +16,10 @@ package org.eclipse.jetty.servlet6.embedded;
 import java.io.FileNotFoundException;
 import java.util.Collections;
 
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee.servlet.ServletHolder;
+import org.eclipse.jetty.ee.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.LoginService;
