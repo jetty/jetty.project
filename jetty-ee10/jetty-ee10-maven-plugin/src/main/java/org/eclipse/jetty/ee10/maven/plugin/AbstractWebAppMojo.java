@@ -114,7 +114,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected String[] excludedGoals;
     
     /**
-     * An instance of org.eclipse.jetty.ee10.webapp.WebAppContext that represents the webapp.
+     * An instance of org.eclipse.jetty.ee.webapp.WebAppContext that represents the webapp.
      * Use any of its setters to configure the webapp. This is the preferred and most
      * flexible method of configuration, rather than using the (deprecated) individual
      * parameters like "tmpDirectory", "contextPath" etc.

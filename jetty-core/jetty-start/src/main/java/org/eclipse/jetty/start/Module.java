@@ -33,7 +33,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.Props.Prop;
-import org.eclipse.jetty.util.StringUtil;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -208,6 +207,10 @@ public class Module implements Comparable<Module>
 
         _dynamic = isDynamicDependency(_name);
         process(basehome);
+        // Every module implicitly provides its own name, so that it can be
+        // found as a provider when another module depends on it by name.
+        // Use putIfAbsent to not overwrite an explicit [provides] name|default.
+        _provides.putIfAbsent(_name, false);
     }
 
     public static boolean isDynamicDependency(String depends)
@@ -451,7 +454,7 @@ public class Module implements Comparable<Module>
                             case "DEPRECATED" -> _deprecated.add(line);
                             case "ENV", "ENVIRONMENT" ->
                             {
-                                if (StringUtil.isBlank(line))
+                                if (line.isBlank())
                                     throw new UsageException("Blank [environment] specified in %s".formatted(_path));
 
                                 if (line.equalsIgnoreCase(ENVIRONMENT_INHERITED))

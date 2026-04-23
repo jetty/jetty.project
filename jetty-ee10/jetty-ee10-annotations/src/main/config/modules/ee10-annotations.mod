@@ -7,6 +7,7 @@ Enables Annotation scanning for deployed web applications.
 ee10
 
 [depend]
+ee-annotations
 ee10-plus
 annotations
 

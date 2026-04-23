@@ -7,6 +7,7 @@ Enables the Jetty Proxy Servlet.
 ee11
 
 [depend]
+ee-proxy
 client
 ee11-servlet
 

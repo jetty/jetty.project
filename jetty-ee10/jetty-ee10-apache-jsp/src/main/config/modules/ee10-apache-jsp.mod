@@ -7,6 +7,7 @@ Enables use of the apache implementation of JSP.
 ee10
 
 [depend]
+ee-apache-jsp
 ee10-servlet
 ee10-annotations
 

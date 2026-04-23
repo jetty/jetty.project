@@ -5,6 +5,7 @@ Enables Servlet resource injection.
 ee11
 
 [depend]
+ee-plus
 server
 jndi
 plus

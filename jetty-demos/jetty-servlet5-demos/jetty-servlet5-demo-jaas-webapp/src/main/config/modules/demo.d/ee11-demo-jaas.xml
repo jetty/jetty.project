@@ -4,7 +4,7 @@
 <!-- =============================================================== -->
 <!-- Configure the demo-jaas webapp                                  -->
 <!-- =============================================================== -->
-<Configure id='wac' class="org.eclipse.jetty.ee11.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee.webapp.WebAppContext">
 
   <Set name="contextPath">/ee11-test-jaas</Set>
   <Set name="war"><Property name="jetty.webapps" default="." />/ee11-demo-jaas.war

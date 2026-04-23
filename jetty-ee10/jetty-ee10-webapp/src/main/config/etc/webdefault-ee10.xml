@@ -34,7 +34,7 @@
   <!-- ensure webapp classloader can be released on undeploy                -->
   <!-- ==================================================================== -->  
   <listener>
-   <listener-class>org.eclipse.jetty.ee10.servlet.listener.IntrospectorCleaner</listener-class>
+   <listener-class>org.eclipse.jetty.ee.servlet.listener.IntrospectorCleaner</listener-class>
   </listener>
   
 
@@ -132,7 +132,7 @@
  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet>
     <servlet-name>default</servlet-name>
-    <servlet-class>org.eclipse.jetty.ee10.servlet.DefaultServlet</servlet-class>
+    <servlet-class>org.eclipse.jetty.ee.servlet.DefaultServlet</servlet-class>
     <init-param>
       <param-name>acceptRanges</param-name>
       <param-value>true</param-value>
@@ -190,7 +190,7 @@
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet id="jsp">
     <servlet-name>jsp</servlet-name>
-    <servlet-class>org.eclipse.jetty.ee10.jsp.JettyJspServlet</servlet-class>
+    <servlet-class>org.eclipse.jetty.ee.jsp.JettyJspServlet</servlet-class>
     <init-param>
       <param-name>xpoweredBy</param-name>
       <param-value>false</param-value>
