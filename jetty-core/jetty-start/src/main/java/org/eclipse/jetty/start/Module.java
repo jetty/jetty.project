@@ -207,6 +207,10 @@ public class Module implements Comparable<Module>
 
         _dynamic = isDynamicDependency(_name);
         process(basehome);
+        // Every module implicitly provides its own name, so that it can be
+        // found as a provider when another module depends on it by name.
+        // Use putIfAbsent to not overwrite an explicit [provides] name|default.
+        _provides.putIfAbsent(_name, false);
     }
 
     public static boolean isDynamicDependency(String depends)

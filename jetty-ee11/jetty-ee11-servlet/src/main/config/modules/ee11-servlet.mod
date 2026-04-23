@@ -7,6 +7,7 @@ Enables standard Servlet handling.
 ee11
 
 [depend]
+ee-servlet
 server
 sessions
 

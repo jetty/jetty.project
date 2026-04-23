@@ -102,7 +102,7 @@ public class ModuleTest
         assertThat("Module environment inherited", module.isEnvironmentInherited(), is(false));
         assertThat("Module environment", module.getEnvironment(), is(Module.ENVIRONMENT_JETTY));
         assertThat("Module ini", module.getIniSection().getFirst(), is("test.module?=test"));
-        assertThat("Module provides", module.getProvides(), is(empty()));
+        assertThat("Module provides", module.getProvides(), containsInAnyOrder("test-env-unspecified"));
     }
 
     @Test

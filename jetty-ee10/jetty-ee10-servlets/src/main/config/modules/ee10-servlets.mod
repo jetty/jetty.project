@@ -10,6 +10,7 @@ for use by all web applications.
 ee10
 
 [depend]
+ee-servlets
 ee10-servlet
 
 [lib]
