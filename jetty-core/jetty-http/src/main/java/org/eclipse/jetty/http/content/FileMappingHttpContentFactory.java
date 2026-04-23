@@ -25,10 +25,14 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FileMappingHttpContentFactory implements HttpContent.Factory
+@ManagedObject
+public class FileMappingHttpContentFactory extends ContainerLifeCycle implements HttpContent.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileMappingHttpContentFactory.class);
     private static final int DEFAULT_MIN_FILE_SIZE = 1024 * 1024;
@@ -62,6 +66,7 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
     public FileMappingHttpContentFactory(HttpContent.Factory factory, int minFileSize, int maxBufferSize)
     {
         _factory = Objects.requireNonNull(factory);
+        installBean(factory, true);
         _minFileSize = minFileSize == -1 ? DEFAULT_MIN_FILE_SIZE : minFileSize;
         _maxBufferSize = maxBufferSize == -1 ? DEFAULT_MAX_BUFFER_SIZE : maxBufferSize;
     }
@@ -87,6 +92,18 @@ public class FileMappingHttpContentFactory implements HttpContent.Factory
             }
         }
         return content;
+    }
+
+    @ManagedAttribute(value = "The minimum size of a file before trying to use memory mapping", readonly = true)
+    public int getMinFileSize()
+    {
+        return _minFileSize;
+    }
+
+    @ManagedAttribute(value = "The maximum size of the memory mapped buffers", readonly = true)
+    public int getMaxBufferSize()
+    {
+        return _maxBufferSize;
     }
 
     private static class SingleBufferFileMappedHttpContent extends HttpContent.Wrapper

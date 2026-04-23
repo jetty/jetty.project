@@ -317,7 +317,9 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
                 if (_useFileMappedBuffer)
                     contentFactory = new FileMappingHttpContentFactory(contentFactory);
                 contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css", bufferPool);
-                contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+
+                CompressedContentFormat[] precompressedFormats = _resourceService.getPrecompressedFormats();
+                contentFactory = new PreCompressedHttpContentFactory(contentFactory, precompressedFormats);
 
                 int maxCacheSize = getInitInt("maxCacheSize", -2);
                 int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
