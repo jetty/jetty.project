@@ -522,6 +522,13 @@ public class Module implements Comparable<Module>
         {
             version = new Version(VERSION_UNSPECIFIED);
         }
+
+        // Generate a module tag for the environment that it belongs to.
+        // Useful for seeing modules that belong to a specific environment in --list-modules
+        if (!isDynamic() && !isEnvironmentInherited())
+        {
+            getTags().add("environment [%s]".formatted(getEnvironment()));
+        }
     }
 
     private void addProvides(String rawName)
