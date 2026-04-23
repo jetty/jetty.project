@@ -44,7 +44,7 @@ public class PacketTrackerTest
         // Send packet.
         Packet packet = new InitialPacket(QuicVersion.V1, new byte[0], new byte[0], new byte[0], 0, List.of(new PingFrame()));
         EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
-        packetTracker.processPacketSent(null, packet, 1024);
+        packetTracker.processPacketSent(null, packet, 1024, false);
 
         // PTO scheduled.
         assertThat(packetTracker.hasProbeTimeoutTask(encryptionLevel), is(true));
@@ -65,7 +65,7 @@ public class PacketTrackerTest
         // Send packet.
         Packet.WithFrames packet = new OneRTTPacket(0, new byte[0], false, false, List.of(new PingFrame()));
         EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
-        packetTracker.processPacketSent(null, packet, 1024);
+        packetTracker.processPacketSent(null, packet, 1024, false);
 
         // PTO scheduled.
         assertThat(packetTracker.hasProbeTimeoutTask(encryptionLevel), is(true));
@@ -78,7 +78,7 @@ public class PacketTrackerTest
 
         // Send the probe.
         Packet.WithFrames probe = new OneRTTPacket(1, new byte[0], false, false, List.of(new PingFrame()));
-        packetTracker.processPacketSent(null, probe, 128);
+        packetTracker.processPacketSent(null, probe, 128, false);
 
         // PTO scheduled.
         assertThat(packetTracker.hasProbeTimeoutTask(encryptionLevel), is(true));
@@ -100,7 +100,7 @@ public class PacketTrackerTest
         // Send packet.
         Packet.WithFrames packet = new OneRTTPacket(0, new byte[0], false, false, List.of(new PingFrame()));
         EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
-        packetTracker.processPacketSent(null, packet, 1024);
+        packetTracker.processPacketSent(null, packet, 1024, false);
 
         // PTO scheduled.
         assertThat(packetTracker.hasProbeTimeoutTask(encryptionLevel), is(true));
@@ -127,16 +127,16 @@ public class PacketTrackerTest
         // Send and ack packet 1 to warm up.
         Packet.WithFrames packet1 = new OneRTTPacket(1, new byte[0], false, false, List.of(new PingFrame()));
         EncryptionLevel encryptionLevel = EncryptionLevel.from(packet1);
-        packetTracker.processPacketSent(null, packet1, 512);
+        packetTracker.processPacketSent(null, packet1, 512, false);
         packetTracker.processAckFrameReceived(null, encryptionLevel, new AckFrame(packet1.packetNumber(), 0, 0, List.of()));
 
         // Send packet 2.
         Packet.WithFrames packet2 = new OneRTTPacket(2, new byte[0], false, false, List.of(new PingFrame()));
-        packetTracker.processPacketSent(null, packet2, 1024);
+        packetTracker.processPacketSent(null, packet2, 1024, false);
 
         // Send packet 3.
         Packet.WithFrames packet3 = new OneRTTPacket(3, new byte[0], false, false, List.of(new PingFrame()));
-        packetTracker.processPacketSent(null, packet3, 768);
+        packetTracker.processPacketSent(null, packet3, 768, false);
 
         // Simulate round-trip time.
         Thread.sleep(100);
@@ -168,16 +168,16 @@ public class PacketTrackerTest
         // Send and ack packet 1 to warm up.
         Packet.WithFrames packet1 = new OneRTTPacket(1, new byte[0], false, false, List.of(new PingFrame()));
         EncryptionLevel encryptionLevel = EncryptionLevel.from(packet1);
-        packetTracker.processPacketSent(null, packet1, 512);
+        packetTracker.processPacketSent(null, packet1, 512, false);
         packetTracker.processAckFrameReceived(null, encryptionLevel, new AckFrame(packet1.packetNumber(), 0, 0, List.of()));
 
         // Send packet 2.
         Packet.WithFrames packet2 = new OneRTTPacket(2, new byte[0], false, false, List.of(new PingFrame()));
-        packetTracker.processPacketSent(null, packet2, 1024);
+        packetTracker.processPacketSent(null, packet2, 1024, false);
 
         // Send packet 3.
         Packet.WithFrames packet3 = new OneRTTPacket(3, new byte[0], false, false, List.of(new PingFrame()));
-        packetTracker.processPacketSent(null, packet3, 768);
+        packetTracker.processPacketSent(null, packet3, 768, false);
 
         // Simulate round-trip time.
         Thread.sleep(100);
@@ -191,7 +191,7 @@ public class PacketTrackerTest
 
         // Send packet 4.
         Packet.WithFrames packet4 = new OneRTTPacket(4, new byte[0], false, false, List.of(new PingFrame()));
-        packetTracker.processPacketSent(null, packet4, 256);
+        packetTracker.processPacketSent(null, packet4, 256, false);
 
         // PTO not scheduled for packet 4 because LTO is active.
         assertThat(packetTracker.hasProbeTimeoutTask(encryptionLevel), is(false));
@@ -221,7 +221,7 @@ public class PacketTrackerTest
         // Send and ack packet 1 to warm up.
         Packet.WithFrames packet1 = new OneRTTPacket(1, new byte[0], false, false, List.of(new PingFrame()));
         EncryptionLevel encryptionLevel = EncryptionLevel.from(packet1);
-        packetTracker.processPacketSent(null, packet1, 512);
+        packetTracker.processPacketSent(null, packet1, 512, false);
         packetTracker.processAckFrameReceived(null, encryptionLevel, new AckFrame(packet1.packetNumber(), 0, 0, List.of()));
 
         long packetNumberBegin = packet1.packetNumber() + 1;
@@ -230,7 +230,7 @@ public class PacketTrackerTest
         {
             // Send packet.
             Packet.WithFrames packet = new OneRTTPacket(packetNumber, new byte[0], false, false, List.of(new PingFrame()));
-            packetTracker.processPacketSent(null, packet, 512 + packetNumber);
+            packetTracker.processPacketSent(null, packet, 512 + packetNumber, false);
         }
 
         // Simulate round-trip time.
@@ -313,17 +313,17 @@ public class PacketTrackerTest
         private final List<Packet.WithFrames> lost = new ArrayList<>();
 
         @Override
-        public void onPacketSent(Packet.WithFrames packet, long length, RTTData rttData)
+        public void onPacketSent(Packet.WithFrames packet, long length, boolean dataStalled, RTTData rttData)
         {
         }
 
         @Override
-        public void onPacketsAcknowledged(List<Packet.WithFrames> packets, long totalLength, RTTData rttData)
+        public void onPacketsAcknowledged(List<Packet.WithFrames> packets, RTTData rttData)
         {
         }
 
         @Override
-        public void onPacketsLost(List<Packet.WithFrames> packets, long totalLength, RTTData rttData)
+        public void onPacketsLost(List<Packet.WithFrames> packets, RTTData rttData)
         {
             lost.addAll(packets);
         }

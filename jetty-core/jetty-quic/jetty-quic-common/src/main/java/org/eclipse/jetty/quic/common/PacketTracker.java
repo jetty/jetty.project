@@ -151,7 +151,7 @@ public class PacketTracker
     }
 
     /// First entry point: when a packet is sent.
-    void processPacketSent(QuicSession session, Packet packet, long length)
+    public void processPacketSent(QuicSession session, Packet packet, long length, boolean dataStalled)
     {
         // RFC-9002[A.5].
 
@@ -164,7 +164,7 @@ public class PacketTracker
 
         EncryptionLevel encryptionLevel = EncryptionLevel.from(withFrames);
         PacketNumberSpace space = PacketNumberSpace.from(encryptionLevel);
-        PacketEntry packetEntry = new PacketEntry(space, withFrames, length, NanoTime.now());
+        PacketEntry packetEntry = new PacketEntry(space, withFrames, length, dataStalled, NanoTime.now());
 
         Tracker tracker = trackers.get(packetEntry.space());
         tracker.track(session, packetEntry);
@@ -172,7 +172,7 @@ public class PacketTracker
         if (LOG.isDebugEnabled())
             LOG.debug("tracked {} on {}", packetEntry, this);
 
-        congestionController.onPacketSent(packetEntry.packet(), packetEntry.length(), rttData);
+        congestionController.onPacketSent(packetEntry.packet(), packetEntry.length(), dataStalled, rttData);
 
         tracker.tryScheduleProbeTimeout(session, packetEntry, calculateProbeTimeout(packetEntry, rttData));
     }
@@ -203,13 +203,12 @@ public class PacketTracker
             probeTimeoutBackoff = 0;
         tracker.cancelProbeTimeout();
 
-        List<Packet.WithFrames> lostPackets = new ArrayList<>();
-        long lostLength = tracker.detectLostPackets(session, rttData, lostPackets);
+        List<Packet.WithFrames> lostPackets = tracker.detectLostPackets(session, rttData);
 
-        congestionController.onPacketsAcknowledged(ackedPackets, ackedLength, rttData);
+        congestionController.onPacketsAcknowledged(ackedPackets, rttData);
         if (!lostPackets.isEmpty())
         {
-            congestionController.onPacketsLost(lostPackets, lostLength, rttData);
+            congestionController.onPacketsLost(lostPackets, rttData);
             retransmit(session, lostPackets);
         }
 
@@ -405,7 +404,7 @@ public class PacketTracker
             return ackedLength;
         }
 
-        private long detectLostPackets(QuicSession session, RTTData rttData, List<Packet.WithFrames> output)
+        private List<Packet.WithFrames> detectLostPackets(QuicSession session, RTTData rttData)
         {
             // RFC-9002[A.10].
 
@@ -414,6 +413,7 @@ public class PacketTracker
             // there always is at least one acked entry.
             assert largestAckedEntry != null;
 
+            List<Packet.WithFrames> output = new ArrayList<>();
             long lostLength = 0;
             long lossDelay = calculatePacketLossDelay(rttData);
             long largestAckedPacketNumber = largestAckedEntry.packet.packetNumber();
@@ -476,7 +476,7 @@ public class PacketTracker
                 }
             }
 
-            return lostLength;
+            return output;
         }
 
         private void tryScheduleLossTimeout(QuicSession session, long timeoutNanos)
@@ -494,11 +494,10 @@ public class PacketTracker
         private void processLossTimeout(QuicSession session)
         {
             lossTimeoutTask = null;
-            List<Packet.WithFrames> lostPackets = new ArrayList<>();
-            long lostLength = detectLostPackets(session, rttData, lostPackets);
+            List<Packet.WithFrames> lostPackets = detectLostPackets(session, rttData);
             if (!lostPackets.isEmpty())
             {
-                congestionController.onPacketsLost(lostPackets, lostLength, rttData);
+                congestionController.onPacketsLost(lostPackets, rttData);
                 retransmit(session, lostPackets);
             }
             tryScheduleProbeTimeout(session);
@@ -547,7 +546,7 @@ public class PacketTracker
         }
     }
 
-    private record PacketEntry(PacketNumberSpace space, Packet.WithFrames packet, long length, long sendNanoTime)
+    private record PacketEntry(PacketNumberSpace space, Packet.WithFrames packet, long length, boolean dataStalled, long sendNanoTime)
     {
         public boolean largerThan(PacketEntry other)
         {

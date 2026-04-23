@@ -88,7 +88,7 @@ public sealed interface Packet extends AutoCloseable permits DiscardPacket, Long
         {
         }
 
-        default void onOutgoingPacket(Session session, Packet packet, long length)
+        default void onOutgoingPacket(Session session, Packet packet)
         {
         }
 
@@ -113,9 +113,9 @@ public sealed interface Packet extends AutoCloseable permits DiscardPacket, Long
             }
 
             @Override
-            public void onOutgoingPacket(Session session, Packet packet, long length)
+            public void onOutgoingPacket(Session session, Packet packet)
             {
-                getWrapped().onOutgoingPacket(session, packet, length);
+                getWrapped().onOutgoingPacket(session, packet);
             }
         }
     }
