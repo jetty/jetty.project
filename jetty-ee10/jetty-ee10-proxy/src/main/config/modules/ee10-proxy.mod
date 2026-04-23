@@ -7,7 +7,7 @@ Enables the Jetty Proxy Servlet.
 ee10
 
 [depend]
-ee-proxy
+ee/common-proxy
 client
 ee10-servlet
 

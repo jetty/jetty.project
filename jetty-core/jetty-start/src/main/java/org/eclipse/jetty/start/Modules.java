@@ -212,6 +212,9 @@ public class Modules implements Iterable<Module>
         {
             if (module.isDeprecated() && !showDeprecated)
                 return;
+            if (module.isDynamic())
+                return;
+
             if (!wild && !module.getPrimaryTag().equals(tag.get()))
             {
                 tag.set(module.getPrimaryTag());
@@ -238,11 +241,9 @@ public class Modules implements Iterable<Module>
             String name = module.getName();
             if (module.isDeprecated())
                 name += " (deprecated)";
-            if (module.isEnvironmentInherited())
-                name += " " + Module.ENVIRONMENT_INHERITED;
             for (String envName : module.getEnabledEnvironments())
             {
-                out.printf("%4s %-25s %s%n", index, name, envName);
+                out.printf("%4s %-25s %s %s%n", index, name, envName, module.isEnvironmentInherited() ? "<inherit>" : "");
                 index = "";
                 name = "";
             }
@@ -568,8 +569,12 @@ public class Modules implements Iterable<Module>
                 Path file = _baseHome.getPath("modules/" + dependentModule + ".mod");
                 if (!isConditional || Files.exists(file))
                 {
-                    Module dynamic = registerModule(file);
-                    dynamic.expandDependencies(_args.getJettyEnvironment().getProperties());
+                    Module dynamic = get(dependentModule);
+                    if (dynamic == null)
+                    {
+                        dynamic = registerModule(file);
+                        dynamic.expandDependencies(_args.getJettyEnvironment().getProperties());
+                    }
                     enable(newlyEnabled, dynamic, environmentNameScope, "dynamic dependency of " + module.getName(), true);
                 }
             }
@@ -715,7 +720,8 @@ public class Modules implements Iterable<Module>
             // Check dependencies
             m.getDepends().stream()
                 .filter(depends -> !Module.isConditionalDependency(depends))
-                .filter(depends -> get(depends) == null) // unsatisfied dependency
+                // filter unsatisfied dependencies (likely from a provided or dynamic)
+                .filter(depends -> _names.get(depends) == null)
                 .forEach(d ->
                 {
                     // Ensure referenced dependency is satisfied via a provided name

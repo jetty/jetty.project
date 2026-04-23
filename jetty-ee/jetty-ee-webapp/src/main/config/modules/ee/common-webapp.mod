@@ -9,7 +9,7 @@ This module provides common configuration of Java Servlet web applications over 
 <inherit>
 
 [depend]
-ee-servlet
+ee/common-servlet
 
 [xml]
 etc/jetty-ee-webapp.xml

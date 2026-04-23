@@ -7,7 +7,7 @@ This module enables support for Jakarta EE 9 web applications.
 ee9
 
 [depend]
-ee-webapp
+ee/common-webapp
 ee9-servlet
 ee9-security
 

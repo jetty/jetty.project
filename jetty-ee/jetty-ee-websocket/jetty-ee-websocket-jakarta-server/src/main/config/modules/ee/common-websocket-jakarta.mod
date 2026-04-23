@@ -10,7 +10,7 @@ websocket
 [depend]
 websocket-core-client
 websocket-core-server
-ee-annotations
+ee/common-annotations
 
 [lib]
 lib/ee-websocket/jetty-ee-websocket-servlet-${jetty.version}.jar

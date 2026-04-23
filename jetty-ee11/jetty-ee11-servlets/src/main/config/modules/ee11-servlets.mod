@@ -10,7 +10,7 @@ for use by all web applications.
 ee11
 
 [depend]
-ee-servlets
+ee/common-servlets
 ee11-servlet
 
 [lib]

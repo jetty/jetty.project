@@ -10,7 +10,7 @@ Provides a DefaultAuthConfigFactory for jaspi
 security
 
 [depend]
-ee-security
+ee/common-security
 
 [provide]
 auth-config-factory

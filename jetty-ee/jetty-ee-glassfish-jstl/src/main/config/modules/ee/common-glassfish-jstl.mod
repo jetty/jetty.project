@@ -7,7 +7,7 @@ Enables the glassfish version of JSTL for all webapps.
 <inherit>
 
 [depends]
-ee-apache-jsp
+ee/common-apache-jsp
 
 [lib]
 lib/ee-glassfish-jstl/@jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api@

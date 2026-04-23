@@ -3,6 +3,9 @@ Configures the ByteBufferPool used by ServerConnectors.
 The bucket sizes increase linearly.
 Use module "bytebufferpool-quadratic" for a pool that holds more coarse sized buffers.
 
+[tags]
+bytebufferpool
+
 [provides]
 bytebufferpool|default
 

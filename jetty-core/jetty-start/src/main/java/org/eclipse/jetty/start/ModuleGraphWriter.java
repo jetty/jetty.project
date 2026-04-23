@@ -170,7 +170,7 @@ public class ModuleGraphWriter
     private void writeModuleNode(PrintWriter out, Module module, boolean resolved)
     {
         String color = colorModuleBg;
-        if (module.isEnabled())
+        if (module.isEnabledInAnyEnvironment())
         {
             // specifically enabled by config
             color = colorEnabledBg;

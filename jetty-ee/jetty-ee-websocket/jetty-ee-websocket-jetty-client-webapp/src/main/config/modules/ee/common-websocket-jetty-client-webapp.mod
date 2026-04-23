@@ -11,7 +11,7 @@ websocket
 
 [depend]
 client
-ee-annotations
+ee/common-annotations
 websocket-jetty-client
 
 [lib]
