@@ -8,9 +8,9 @@ Enables the Jetty Quickstart module for rapid deployment of preconfigured web ap
 
 [depend]
 server
-ee-annotations
-ee-webapp
-ee-plus
+ee/common-annotations
+ee/common-webapp
+ee/common-plus
 
 [lib]
 lib/jetty-ee-quickstart-${jetty.version}.jar

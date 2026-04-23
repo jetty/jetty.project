@@ -7,7 +7,7 @@ Enables use of the apache implementation of JSP.
 ee11
 
 [depend]
-ee-apache-jsp
+ee/common-apache-jsp
 ee11-servlet
 ee11-annotations
 

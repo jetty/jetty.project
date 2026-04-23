@@ -11,7 +11,7 @@ demo
 webapp
 
 [depends]
-ee-deploy
+ee/common-deploy
 
 [files]
 basehome:modules/demo.d/ee-demo-proxy.properties|webapps/ee-demo-proxy.properties

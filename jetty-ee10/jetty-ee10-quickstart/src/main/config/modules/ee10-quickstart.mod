@@ -7,7 +7,7 @@ Enables the Jetty Quickstart module for rapid deployment of preconfigured web ap
 ee10
 
 [depend]
-ee-quickstart
+ee/common-quickstart
 server
 ee10-annotations
 ee10-webapp

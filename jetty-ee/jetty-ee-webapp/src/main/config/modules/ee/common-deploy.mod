@@ -16,7 +16,7 @@ static-deploy
 
 [depend]
 deployment-scanner
-ee-webapp
+ee/common-webapp
 
 [xml]
 etc/jetty-ee-deploy.xml

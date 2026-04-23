@@ -14,7 +14,7 @@ cdi
 cdi-mode
 
 [depend]
-ee-cdi
+ee/common-cdi
 
 [ini]
 jetty.cdi.mode=CdiSpiDecorator

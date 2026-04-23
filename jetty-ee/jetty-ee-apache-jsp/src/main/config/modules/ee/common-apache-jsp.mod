@@ -7,8 +7,8 @@ Enables use of the apache implementation of JSP.
 <inherit>
 
 [depend]
-ee-servlet
-ee-annotations
+ee/common-servlet
+ee/common-annotations
 
 [lib]
 lib/ee-apache-jsp/@jakarta.el:jakarta.el-api@

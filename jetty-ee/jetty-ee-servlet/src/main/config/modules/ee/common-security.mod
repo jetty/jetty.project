@@ -9,5 +9,5 @@ Adds servlet standard security handling to the classpath.
 [depend]
 server
 security
-ee-servlet
+ee/common-servlet
 

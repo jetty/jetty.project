@@ -8,8 +8,8 @@ Enables Servlet resource injection.
 server
 jndi
 plus
-ee-security
-ee-webapp
+ee/common-security
+ee/common-webapp
 
 [lib]
 lib/jetty-ee-plus-${jetty.version}.jar

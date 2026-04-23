@@ -7,7 +7,7 @@ Template configuration file to apply to all web applications deployed in the EEC
 deployment
 
 [depend]
-ee-deploy
+ee/common-deploy
 
 [files]
 basehome:modules/deployment.d/ee-environment.properties|environments/ee-environment.properties

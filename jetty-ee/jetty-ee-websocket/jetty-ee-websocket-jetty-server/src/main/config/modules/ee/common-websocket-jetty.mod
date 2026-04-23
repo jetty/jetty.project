@@ -8,7 +8,7 @@ websocket
 <inherit>
 
 [depend]
-ee-annotations
+ee/common-annotations
 websocket-jetty
 
 [lib]

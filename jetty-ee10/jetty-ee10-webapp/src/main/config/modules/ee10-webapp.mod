@@ -7,7 +7,7 @@ This module enables support for Jakarta EE 10 web applications.
 ee10
 
 [depend]
-ee-webapp
+ee/common-webapp
 ee10-servlet
 ee10-security
 

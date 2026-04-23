@@ -8,7 +8,7 @@ Enables the Jetty Proxy Servlet.
 
 [depend]
 client
-ee-servlet
+ee/common-servlet
 
 [lib]
 lib/jetty-ee-proxy-${jetty.version}.jar

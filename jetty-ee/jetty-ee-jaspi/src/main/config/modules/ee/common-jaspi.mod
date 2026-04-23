@@ -10,7 +10,7 @@ Enables JASPI authentication for deployed web applications.
 security
 
 [depend]
-ee-security
+ee/common-security
 auth-config-factory
 
 [lib]

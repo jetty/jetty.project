@@ -7,7 +7,7 @@ This module enables support for Jakarta EE 11 web applications.
 ee11
 
 [depend]
-ee-webapp
+ee/common-webapp
 ee11-servlet
 ee11-security
 

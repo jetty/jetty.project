@@ -11,9 +11,9 @@ demo
 webapp
 
 [depends]
-ee-deploy
+ee/common-deploy
 ext
-ee-websocket-jetty
+ee/common-websocket-jetty
 
 [files]
 basehome:modules/demo.d/ee-demo-jetty-websocket.xml|webapps/ee-demo-jetty-websocket.xml

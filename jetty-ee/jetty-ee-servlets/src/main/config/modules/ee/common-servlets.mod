@@ -10,7 +10,7 @@ for use by all web applications.
 <inherit>
 
 [depend]
-ee-servlet
+ee/common-servlet
 
 [lib]
 lib/jetty-ee-servlets-${jetty.version}.jar

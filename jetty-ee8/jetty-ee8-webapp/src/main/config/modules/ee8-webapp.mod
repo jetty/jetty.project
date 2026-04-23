@@ -8,7 +8,7 @@ Without this, only Jetty-specific handlers may be deployed.
 ee8
 
 [depend]
-ee-webapp
+ee/common-webapp
 ee8-servlet
 ee8-security
 

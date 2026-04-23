@@ -7,7 +7,7 @@ Enables Annotation scanning for deployed web applications.
 <inherit>
 
 [depend]
-ee-plus
+ee/common-plus
 annotations
 
 [lib]
