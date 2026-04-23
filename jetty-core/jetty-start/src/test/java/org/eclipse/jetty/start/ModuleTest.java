@@ -22,7 +22,6 @@ import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
@@ -102,7 +101,7 @@ public class ModuleTest
         assertThat("Module environment inherited", module.isEnvironmentInherited(), is(false));
         assertThat("Module environment", module.getEnvironment(), is(Module.ENVIRONMENT_JETTY));
         assertThat("Module ini", module.getIniSection().getFirst(), is("test.module?=test"));
-        assertThat("Module provides", module.getProvides(), containsInAnyOrder("test-env-unspecified"));
+        assertThat("Module provides", module.getProvides(), is(empty()));
     }
 
     @Test
@@ -128,6 +127,7 @@ public class ModuleTest
         assertThat("Module environment inherited", module.isEnvironmentInherited(), is(false));
         assertThat("Module environment", module.getEnvironment(), is("zedzed"));
         assertThat("Module ini", module.getIniSection().getFirst(), is("test.module?=zed"));
+        assertThat("Module provides", module.getProvides(), is(empty()));
     }
 
     @Test
@@ -153,6 +153,7 @@ public class ModuleTest
         assertThat("Module environment inherited", module.isEnvironmentInherited(), is(true));
         assertThat("Module environment", module.getEnvironment(), is("<inherit>"));
         assertThat("Module ini", module.getIniSection().getFirst(), is("test.module?=inh"));
+        assertThat("Module provides", module.getProvides(), is(empty()));
     }
 
     @Test
@@ -183,6 +184,7 @@ public class ModuleTest
         assertThat("Module ini", module.getIniSection().getFirst(), is("test.module?=eex"));
         assertThat("Module enabled in eeX", module.isEnabledInEnvironment("eeX"), is(true));
         assertThat("Module enabled in jetty", module.isEnabledInEnvironment("jetty"), is(false));
+        assertThat("Module provides", module.getProvides(), is(empty()));
     }
 
     @Test
@@ -212,6 +214,7 @@ public class ModuleTest
         assertThat("Module environment", module.getEnvironment(), is("<inherit>"));
         assertThat("Module ini", module.getIniSection().getFirst(), is("test.module?=eex"));
         assertThat("Module transitive", module.isTransitive(), is(false));
+        assertThat("Module provides", module.getProvides(), is(empty()));
         assertThat("Module enabled in eeX", module.isEnabledInEnvironment("eeX"), is(true));
         assertThat("Module enabled in ee99", module.isEnabledInEnvironment("ee99"), is(true));
         assertThat("Module enabled in jetty", module.isEnabledInEnvironment("jetty"), is(false));
