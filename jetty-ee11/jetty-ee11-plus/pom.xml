@@ -70,7 +70,7 @@
           <instructions>
             <Import-Package>${osgi.slf4j.import.packages},jakarta.transaction.*;version="2.0.0",*</Import-Package>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
-            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee11.webapp.Configuration</Provide-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee.webapp.Configuration</Provide-Capability>
           </instructions>
         </configuration>
       </plugin>
