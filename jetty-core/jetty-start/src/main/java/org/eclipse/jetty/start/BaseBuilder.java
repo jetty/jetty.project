@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -131,9 +132,11 @@ public class BaseBuilder
                 {
                     List<String> sources = modules.get(name).getEnabledFromAllEnvironments()
                         .stream()
+                        .filter(Objects::nonNull)
                         .filter(s -> !s.contains(enabledFrom))
                         .toList();
-                    StartLog.info("%s already enabled by [%s]", name, String.join(", ", sources));
+                    if (!sources.isEmpty())
+                        StartLog.info("%s already enabled by [%s]", name, String.join(", ", sources));
                 }
             }
         }
@@ -281,7 +284,7 @@ public class BaseBuilder
         // only for those modules that are enabled.
         newlyAdded.stream()
             .map(modules::get)
-            .filter(Module::isEnabled)
+            .filter(Module::isEnabledInAnyEnvironment)
             .forEach(module ->
             {
                 String ini = null;
