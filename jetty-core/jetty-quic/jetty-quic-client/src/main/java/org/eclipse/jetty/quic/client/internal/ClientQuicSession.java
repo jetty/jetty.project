@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
@@ -39,7 +38,6 @@ import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketTracker;
 import org.eclipse.jetty.quic.common.QuicSession;
-import org.eclipse.jetty.quic.common.StreamId;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
@@ -65,8 +63,6 @@ public class ClientQuicSession extends QuicSession
     public static final ByteBuffer NO_EARLY_DATA = ByteBuffer.allocate(0);
     private static final Logger LOG = LoggerFactory.getLogger(ClientQuicSession.class);
 
-    private final AtomicLong biStreamIds = new AtomicLong();
-    private final AtomicLong uniStreamIds = new AtomicLong();
     private final Map<String, Object> context;
     private SocketAddress serverSocketAddress;
     private byte[] originalDestinationConnectionId;
@@ -75,7 +71,7 @@ public class ClientQuicSession extends QuicSession
 
     public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, ClientQuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, ClientTLSEngine clientTLSEngine, EndPoint endPoint, Map<String, Object> context)
     {
-        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), quicConfiguration, connection, packetTracker, packetNumbers, clientTLSEngine, sessionListener(context), endPoint);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), quicConfiguration, connection, packetTracker, packetNumbers, clientTLSEngine, sessionListener(context), endPoint, true);
         this.context = context;
     }
 
@@ -226,13 +222,6 @@ public class ClientQuicSession extends QuicSession
         }
 
         return new InitialPacket(getQuicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, getPacketNumbers().nextPacketNumber(EncryptionLevel.INITIAL), frames);
-    }
-
-    @Override
-    public long newStreamId(boolean bidirectional)
-    {
-        AtomicLong streamIds = bidirectional ? biStreamIds : uniStreamIds;
-        return StreamId.newStreamId(streamIds.getAndIncrement(), bidirectional, true);
     }
 
     @Override
