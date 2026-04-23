@@ -1,0 +1,28 @@
+name: Merged PR Label Check
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  check-labels:
+    if: github.event.pull_request.merged == true && github.event.pull_request.labels[0] == null
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post Comment
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const mergedBy = pr.merged_by ? pr.merged_by.login : pr.user.login;
+            const body = `Hi @${mergedBy}, this PR was merged without any labels. Please add at least one label (e.g., Bug, Enhancement, Documentation).`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: body
+            });

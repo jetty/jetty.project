@@ -143,6 +143,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
     private Sweeper destinationSweeper;
+    private RedirectCache redirectCache;
 
     /**
      * Creates a HttpClient instance that can perform HTTP/1.1 requests to non-TLS and TLS destinations.
@@ -274,6 +275,8 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         requestListeners.clear();
         authenticationStore.clearAuthentications();
         authenticationStore.clearAuthenticationResults();
+        if (redirectCache != null)
+            redirectCache.clear();
 
         super.doStop();
     }
@@ -334,6 +337,25 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         if (isStarted())
             throw new IllegalStateException();
         this.authenticationStore = authenticationStore;
+    }
+
+    /**
+     * @return the redirect cache, or {@code null} if redirect caching is disabled
+     */
+    public RedirectCache getRedirectCache()
+    {
+        return redirectCache;
+    }
+
+    /**
+     * @param cache the redirect cache, or {@code null} to disable redirect caching
+     */
+    public void setRedirectCache(RedirectCache cache)
+    {
+        if (isStarted())
+            throw new IllegalStateException();
+        updateBean(redirectCache, cache);
+        redirectCache = cache;
     }
 
     /**

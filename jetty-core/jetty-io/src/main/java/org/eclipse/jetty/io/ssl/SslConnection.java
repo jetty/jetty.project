@@ -636,7 +636,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             try (AutoLock ignored = _lock.lock())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(failure).log("onFillableFail {}", SslConnection.this);
+                    LOG.debug("onFillableFail {}", SslConnection.this, failure);
 
                 _fillState = FillState.IDLE;
                 if (_flushState == FlushState.WAIT_FOR_FILL)
@@ -987,7 +987,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log(SslConnection.this.toString());
+                    LOG.debug("{}", SslConnection.this, x);
                 close(x);
                 throw x;
             }
@@ -1016,7 +1016,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             if (_handshake.compareAndSet(HandshakeState.HANDSHAKE, HandshakeState.FAILED))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(failure).log("handshake failed {}", SslConnection.this);
+                    LOG.debug("handshake failed {}", SslConnection.this, failure);
                 if (!(failure instanceof SSLHandshakeException))
                     failure = new SSLHandshakeException(failure.getMessage()).initCause(failure);
                 notifyHandshakeFailed(_sslEngine, failure);
@@ -1032,7 +1032,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
-                LOG.trace("IGNORED", x);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", x);
             }
         }
 
@@ -1048,12 +1049,14 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 if (handshakeStatus == HandshakeStatus.NOT_HANDSHAKING && isRequireCloseMessage())
                     throw x;
-                LOG.trace("IGNORED", x);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", x);
                 return x;
             }
             catch (Throwable x)
             {
-                LOG.trace("IGNORED", x);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", x);
                 return x;
             }
         }
@@ -1319,7 +1322,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 }
                                 catch (IOException e)
                                 {
-                                    LOG.debug("Incomplete flush?", e);
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("Incomplete flush?", e);
                                     close(e);
                                     write = BufferUtil.EMPTY_BUFFER;
                                     _flushState = FlushState.WRITING;
@@ -1350,7 +1354,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log(SslConnection.this.toString());
+                    LOG.debug("{}", SslConnection.this, x);
                 close(x);
                 throw x;
             }
@@ -1448,7 +1452,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Unable to close outbound");
+                    LOG.debug("Unable to close outbound", x);
             }
         }
 
@@ -1473,7 +1477,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
-                LOG.trace("IGNORED", x);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", x);
                 return true;
             }
         }
@@ -1517,7 +1522,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
-                LOG.trace("IGNORED", x);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", x);
                 return true;
             }
         }
@@ -1606,13 +1612,13 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 {
                     _failure = x;
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("{} stored {} exception", this, context);
+                        LOG.debug("{} stored {} exception", this, context, x);
                 }
                 else
                 {
                     ExceptionUtil.addSuppressedIfNotAssociated(_failure, x);
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("{} suppressed {} exception", this, context);
+                        LOG.debug("{} suppressed {} exception", this, context, x);
                 }
                 return _failure;
             }
@@ -1681,7 +1687,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 try (AutoLock ignored = _lock.lock())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(x).log("IncompleteWriteCB failed {}", SslConnection.this);
+                        LOG.debug("IncompleteWriteCB failed {}", SslConnection.this, x);
 
                     lockedDiscardEncryptedOutputBuffer();
 

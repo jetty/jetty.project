@@ -54,7 +54,7 @@ public class FrameEcho implements FrameHandler
     public void onError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(cause).log(this + " onError ");
+            LOG.debug("{} onError()", this, cause);
         callback.succeeded();
     }
 

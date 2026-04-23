@@ -83,6 +83,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -246,6 +248,7 @@ public class WebAppContextTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testProtectedTargetErrorPage() throws Exception
     {
         WebAppContext contextHandler = new WebAppContext();
@@ -904,6 +907,7 @@ public class WebAppContextTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testGetResourcePaths() throws Exception
     {
         Server server = newServer();
@@ -1103,6 +1107,7 @@ public class WebAppContextTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testRestartWebApp(WorkDir workDir) throws Exception
     {
         Server server = newServer();

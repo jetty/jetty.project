@@ -245,7 +245,8 @@ public class ConnectorServer extends AbstractLifeCycle
         }
         catch (Throwable ex)
         {
-            LOG.trace("IGNORED", ex);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", ex);
         }
 
         RMIClientSocketFactory csf = _sslContextFactory == null ? null : new SslRMIClientSocketFactory();
@@ -270,7 +271,8 @@ public class ConnectorServer extends AbstractLifeCycle
             }
             catch (Exception ex)
             {
-                LOG.trace("IGNORED", ex);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", ex);
             }
             finally
             {

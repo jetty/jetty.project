@@ -154,10 +154,13 @@ public class JaspiAuthenticator extends LoginAuthenticator
     @Override
     public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
     {
-        JaspiMessageInfo info = new JaspiMessageInfo(request, response, callback);
-        request.setAttribute("org.eclipse.jetty.ee10.security.jaspi.info", info);
-
-        return validateRequest(info);
+        boolean isDeferred = AuthenticationState.getAuthenticationState(request) instanceof AuthenticationState.Deferred;
+        boolean isAuthenticationRequest = isDeferred && !AuthenticationState.Deferred.isDeferred(response);
+        boolean isMandatory = !isDeferred || isAuthenticationRequest;
+        JaspiMessageInfo messageInfo = new JaspiMessageInfo(request, response, callback);
+        messageInfo.setMandatory(isMandatory);
+        messageInfo.setAuthenticationRequest(isAuthenticationRequest);
+        return validateRequest(messageInfo);
     }
 
     public AuthenticationState validateRequest(JaspiMessageInfo messageInfo) throws ServerAuthException
@@ -171,8 +174,21 @@ public class JaspiAuthenticator extends LoginAuthenticator
             String authContextId = authConfig.getAuthContextID(messageInfo);
             ServerAuthContext authContext = authConfig.getAuthContext(authContextId, _serviceSubject, _authProperties);
             Subject clientSubject = new Subject();
+            AuthStatus authStatus;
+            CallerPrincipalCallback principalCallback;
+            GroupPrincipalCallback groupPrincipalCallback;
 
-            AuthStatus authStatus = authContext.validateRequest(messageInfo, clientSubject, _serviceSubject);
+            try
+            {
+                _callbackHandler.clear();
+                authStatus = authContext.validateRequest(messageInfo, clientSubject, _serviceSubject);
+                principalCallback = _callbackHandler.getThreadCallerPrincipalCallback();
+                groupPrincipalCallback = _callbackHandler.getThreadGroupPrincipalCallback();
+            }
+            finally
+            {
+                _callbackHandler.clear();
+            }
 
             if (authStatus == AuthStatus.SEND_CONTINUE)
                 return AuthenticationState.CHALLENGE;
@@ -183,13 +199,12 @@ public class JaspiAuthenticator extends LoginAuthenticator
             {
                 Set<UserIdentity> ids = clientSubject.getPrivateCredentials(UserIdentity.class);
                 UserIdentity userIdentity;
-                if (ids.size() > 0)
+                if (!ids.isEmpty())
                 {
                     userIdentity = ids.iterator().next();
                 }
                 else
                 {
-                    CallerPrincipalCallback principalCallback = _callbackHandler.getThreadCallerPrincipalCallback();
                     if (principalCallback == null)
                     {
                         return null;
@@ -214,7 +229,6 @@ public class JaspiAuthenticator extends LoginAuthenticator
                             principal = new UserPrincipal(principalName, null);
                         }
                     }
-                    GroupPrincipalCallback groupPrincipalCallback = _callbackHandler.getThreadGroupPrincipalCallback();
                     String[] groups = groupPrincipalCallback == null ? null : groupPrincipalCallback.getGroups();
                     userIdentity = _identityService.newUserIdentity(clientSubject, principal, groups);
                 }
@@ -224,7 +238,10 @@ public class JaspiAuthenticator extends LoginAuthenticator
                 if (cached != null)
                     return cached;
 
-                return new UserAuthenticationSucceeded(getAuthenticationType(), userIdentity);
+                String authType = messageInfo.getAuthenticationType();
+                if (authType == null)
+                    authType = getAuthenticationType();
+                return new UserAuthenticationSucceeded(authType, userIdentity);
             }
             if (authStatus == AuthStatus.SEND_SUCCESS)
             {

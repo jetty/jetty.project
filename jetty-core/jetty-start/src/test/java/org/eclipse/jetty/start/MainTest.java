@@ -15,7 +15,6 @@ package org.eclipse.jetty.start;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -26,6 +25,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
@@ -75,11 +75,11 @@ public class MainTest
         Main main = new Main();
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[0]));
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             PrintStream out = new PrintStream(baos, true, StandardCharsets.UTF_8))
+             PrintStream out = new PrintStream(baos, true, UTF_8))
         {
             main.listConfig(out, args);
             out.flush();
-            output = List.of(baos.toString(StandardCharsets.UTF_8).split(System.lineSeparator()));
+            output = List.of(baos.toString(UTF_8).split(System.lineSeparator()));
         }
 
         // Test a System Property that comes from JVM
@@ -113,7 +113,7 @@ public class MainTest
         List<String> output;
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             PrintStream out = new PrintStream(baos, true, StandardCharsets.UTF_8))
+             PrintStream out = new PrintStream(baos, true, UTF_8))
         {
             PrintStream originalStream = StartLog.setStream(new PrintStream(out));
             try
@@ -122,7 +122,7 @@ public class MainTest
                 StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[0]));
                 main.start(args);
                 out.flush();
-                output = List.of(baos.toString(StandardCharsets.UTF_8).split(System.lineSeparator()));
+                output = List.of(baos.toString(UTF_8).split(System.lineSeparator()));
             }
             finally
             {

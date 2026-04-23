@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.start.usecases;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.eclipse.jetty.toolchain.test.PathMatchers.isRegularFile;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
@@ -39,25 +38,24 @@ public class BasehomeWithfilesTest extends AbstractUseCase
         FS.ensureDirExists(baseDir.resolve("modules/withfiles/four/sub"));
         FS.ensureDirExists(baseDir.resolve("modules/withfiles/four/sub/dir"));
 
-        Files.write(baseDir.resolve("modules/withfiles.mod"),
-            Arrays.asList(
-                "[files]",
-                "basehome:modules/withfiles/test.txt|one/renamed.txt",
-                "basehome:modules/withfiles/test.txt|two/",
-                "three/",
-                "basehome:modules/withfiles/test.txt|three",
-                "basehome:modules/withfiles",
-                "basehome:modules/withfiles/four/|five/",
-                "six/",
-                "basehome:modules/withfiles/four/sub|six"
-            ),
-            StandardCharsets.UTF_8);
+        Files.writeString(baseDir.resolve("modules/withfiles.mod"),
+            """
+            [files]
+            basehome:modules/withfiles/test.txt|one/renamed.txt
+            basehome:modules/withfiles/test.txt|two/
+            three/
+            basehome:modules/withfiles/test.txt|three
+            basehome:modules/withfiles
+            basehome:modules/withfiles/four/|five/
+            six/
+            basehome:modules/withfiles/four/sub|six
+            """, UTF_8);
         FS.touch(baseDir.resolve("modules/withfiles/four/sub/dir/test.txt"));
         FS.touch(baseDir.resolve("modules/withfiles/four/test.txt"));
         FS.touch(baseDir.resolve("modules/withfiles/test.txt"));
 
         // === Prepare Jetty Base using Main
-        List<String> prepareArgs = Arrays.asList(
+        List<String> prepareArgs = List.of(
             "--testing-mode",
             "--create-startd",
             "--add-modules=withfiles"
@@ -69,7 +67,7 @@ public class BasehomeWithfilesTest extends AbstractUseCase
         ExecResults results = exec(runArgs, false);
 
         // === Validate Downloaded Files
-        List<String> expectedDownloads = Arrays.asList(
+        List<String> expectedDownloads = List.of(
             "basehome:modules/withfiles/test.txt|one/renamed.txt",
             "basehome:modules/withfiles/test.txt|two/",
             "basehome:modules/withfiles/test.txt|three",
@@ -81,12 +79,12 @@ public class BasehomeWithfilesTest extends AbstractUseCase
         assertThat("Downloads", actualDownloads, containsInAnyOrder(expectedDownloads.toArray()));
 
         // === Validate Specific Jetty Base Files/Dirs Exist
-        PathAssert.assertFileExists("Required File: test.txt", results.baseHome.getPath("test.txt"));
-        PathAssert.assertFileExists("Required File: one/renamed.txt", results.baseHome.getPath("one/renamed.txt"));
-        PathAssert.assertFileExists("Required File: two/test.txt", results.baseHome.getPath("two/test.txt"));
-        PathAssert.assertFileExists("Required File: three/test.txt", results.baseHome.getPath("three/test.txt"));
-        PathAssert.assertFileExists("Required File: four/sub/dir/test.txt", results.baseHome.getPath("four/sub/dir/test.txt"));
-        PathAssert.assertFileExists("Required File: five/sub/dir/test.txt", results.baseHome.getPath("five/sub/dir/test.txt"));
-        PathAssert.assertFileExists("Required File: six/sub/dir/test.txt", results.baseHome.getPath("six/sub/dir/test.txt"));
+        assertThat("Required File: test.txt", results.baseHome.getPath("test.txt"), isRegularFile());
+        assertThat("Required File: one/renamed.txt", results.baseHome.getPath("one/renamed.txt"), isRegularFile());
+        assertThat("Required File: two/test.txt", results.baseHome.getPath("two/test.txt"), isRegularFile());
+        assertThat("Required File: three/test.txt", results.baseHome.getPath("three/test.txt"), isRegularFile());
+        assertThat("Required File: four/sub/dir/test.txt", results.baseHome.getPath("four/sub/dir/test.txt"), isRegularFile());
+        assertThat("Required File: five/sub/dir/test.txt", results.baseHome.getPath("five/sub/dir/test.txt"), isRegularFile());
+        assertThat("Required File: six/sub/dir/test.txt", results.baseHome.getPath("six/sub/dir/test.txt"), isRegularFile());
     }
 }

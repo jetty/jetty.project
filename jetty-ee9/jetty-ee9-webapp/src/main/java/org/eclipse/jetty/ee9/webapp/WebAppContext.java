@@ -457,7 +457,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             catch (MalformedURLException e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
                 if (mue == null)
                     mue = e;
             }

@@ -47,7 +47,12 @@ public class MimeTypesTest
             // Make sure that a deep path doesn't interfere
             Arguments.of("org/eclipse/jetty/Logo.png", "image/png"),
             // Make sure that path that looks like a filename doesn't interfere
-            Arguments.of("org/eclipse.jpg/jetty/Logo.png", "image/png")
+            Arguments.of("org/eclipse.jpg/jetty/Logo.png", "image/png"),
+            // Test of an undefined mime-type extensions (the extension ".bogus" shouldn't exist in mime.properties)
+            Arguments.of("foo.bogus", null),
+            // Test of dotfiles (that start with ".")
+            Arguments.of(".gitconfig", null),
+            Arguments.of(".bashrc", null)
         );
     }
 

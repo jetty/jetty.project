@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.ComplianceUtils;
 import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -63,8 +64,10 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -321,6 +324,13 @@ public class HttpChannelState implements HttpChannel, Components
         if (LOG.isDebugEnabled())
             LOG.debug("onRequest {} {}", request, this);
 
+        if (!authorityMatches(request.getHttpURI(), request.getHttpFields().get(HttpHeader.HOST)))
+        {
+            HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
+            if (!ComplianceUtils.allows(httpCompliance, HttpCompliance.Violation.MISMATCHED_AUTHORITY, "Authority!=Host", getComplianceViolationListener()))
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
+        }
+
         try (AutoLock ignored = _lock.lock())
         {
             if (_stream == null)
@@ -349,6 +359,34 @@ public class HttpChannelState implements HttpChannel, Components
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
         }
+    }
+
+    private boolean authorityMatches(HttpURI httpURI, String host)
+    {
+        String authority = httpURI.getAuthority();
+        // Either both are null or only one is present.
+        if (authority == null || host == null)
+            return true;
+
+        // Both are present, must match.
+
+        // Direct hit, hosts must be compared ignoring case.
+        if (authority.equalsIgnoreCase(host))
+            return true;
+
+        // Handle default ports: example.com matches example.com:80.
+        String scheme = httpURI.getScheme();
+        int defaultPort = URIUtil.getDefaultPortForScheme(scheme);
+        int uriPort = httpURI.getPort();
+        int effectiveURIPort = uriPort <= 0 ? defaultPort : uriPort;
+        HostPort hostPort = new HostPort(host);
+        int port = hostPort.getPort();
+        int effectiveHostPort = port <= 0 ? defaultPort : port;
+        if (effectiveURIPort != effectiveHostPort)
+            return false;
+
+        // Same effective port, compare hosts ignoring case.
+        return hostPort.getHost().equalsIgnoreCase(httpURI.getHost());
     }
 
     public Request getRequest()
@@ -400,7 +438,7 @@ public class HttpChannelState implements HttpChannel, Components
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(t).log("onIdleTimeout {}", this);
+                LOG.debug("onIdleTimeout {}", this, t);
 
             // Either too early or too late.
             if (_stream == null || _request == null)
@@ -478,7 +516,7 @@ public class HttpChannelState implements HttpChannel, Components
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("onFailure remote={} {}", remote, this);
+                LOG.debug("onFailure remote={} {}", remote, this, x);
 
             // If the channel doesn't have a stream, then the error is ignored.
             stream = _stream;
@@ -532,7 +570,7 @@ public class HttpChannelState implements HttpChannel, Components
                     try
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.atDebug().setCause(x).log("invoking failure listeners {} {}", HttpChannelState.this, onFailure);
+                            LOG.debug("invoking failure listeners {} {}", HttpChannelState.this, onFailure, x);
                         onFailure.accept(x);
                     }
                     catch (Throwable throwable)
@@ -720,7 +758,8 @@ public class HttpChannelState implements HttpChannel, Components
             listener.onRequestEnd(_request);
 
             // This is THE ONLY PLACE the stream is succeeded or failed.
-            LOG.atDebug().setCause(failure).log("completing the stream of {}", this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("completing the stream of {}", this, failure);
             if (failure == null)
                 stream.succeeded();
             else
@@ -1454,7 +1493,7 @@ public class HttpChannelState implements HttpChannel, Components
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("write failed {}", this);
+                LOG.debug("write failed {}", this, x);
             Callback callback;
             HttpChannelState httpChannel;
             try (AutoLock ignored = _request._lock.lock())
@@ -1659,7 +1698,7 @@ public class HttpChannelState implements HttpChannel, Components
                     else if (failure != null && unconsumed != null)
                         ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(failure).log("consumeAvailable: {} {}", unconsumed == null, httpChannelState);
+                        LOG.debug("consumeAvailable: {} {}", unconsumed == null, httpChannelState, failure);
                 }
 
                 // Pending writes are also failures
@@ -1911,7 +1950,7 @@ public class HttpChannelState implements HttpChannel, Components
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("ErrorWrite failed: {}", this);
+                LOG.debug("ErrorWrite failed: {}", this, x);
             Throwable failure;
             HttpChannelState httpChannelState;
             try (AutoLock ignored = _request._lock.lock())

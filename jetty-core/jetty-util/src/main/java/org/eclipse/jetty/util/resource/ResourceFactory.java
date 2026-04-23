@@ -350,7 +350,8 @@ public interface ResourceFactory
             {
                 // We have an input string that has what looks like a scheme, but isn't a URI.
                 // Eg: "C:\path\to\resource.txt"
-                LOG.trace("ignored", x);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("ignored", x);
             }
         }
 
@@ -364,7 +365,8 @@ public interface ResourceFactory
         }
         catch (InvalidPathException | URISyntaxException x)
         {
-            LOG.trace("ignored", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("ignored", x);
         }
 
         // If we reached this here, that means the input string cannot be used as
@@ -545,7 +547,7 @@ public interface ResourceFactory
                     URI uri = URIUtil.toURI(rawDir);
                     // Load rawDir as a Resource
                     Resource dir = newResource(uri);
-                    if (dir.isDirectory())
+                    if (Resources.isDirectory(dir))
                     {
                         // Loop through resource entries for content that will match glob.
                         List<Resource> expanded = dir.list();
@@ -559,12 +561,12 @@ public interface ResourceFactory
                     URI uri = URIUtil.toURI(reference);
                     if ("jar".equals(uri.getScheme()) && unwrap)
                     {
-                        list.add(newResource(URIUtil.unwrapContainer(uri)));
+                        uri = URIUtil.unwrapContainer(uri);
                     }
-                    else
-                    {
-                        list.add(newResource(uri));
-                    }
+
+                    Resource resource = newResource(uri);
+                    if (resource != null)
+                        list.add(resource);
                 }
             }
             catch (Exception e)

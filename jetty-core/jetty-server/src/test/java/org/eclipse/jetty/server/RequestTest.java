@@ -286,7 +286,6 @@ public class RequestTest
     @Test
     public void testConnectRequestURLDifferentThanHost() throws Exception
     {
-        // per spec, "Host" is ignored if request-target is authority-form
         String request = """
                 CONNECT myhost:9999 HTTP/1.1\r
                 Host: otherhost:8888\r
@@ -294,11 +293,7 @@ public class RequestTest
                 \r
                 """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        String responseBody = response.getContent();
-        assertThat(responseBody, containsString("httpURI=http://myhost:9999/"));
-        assertThat(responseBody, containsString("httpURI.path=/"));
-        assertThat(responseBody, containsString("servername=myhost"));
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
     /**

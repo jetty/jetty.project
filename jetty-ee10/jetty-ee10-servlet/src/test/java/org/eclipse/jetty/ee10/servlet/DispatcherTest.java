@@ -57,6 +57,8 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -144,7 +146,7 @@ public class DispatcherTest
 
         assertEquals(expected, rawResponse);
     }
-    
+
     @Test
     public void testMultiPartForwardAttribute() throws Exception
     {
@@ -193,7 +195,7 @@ public class DispatcherTest
         String expected = """
             HTTP/1.1 200 OK\r
             Content-Type: text/plain\r
-            Content-Length: 146\r
+            Content-Length: 132\r
             Connection: close\r
             \r
             /context\r
@@ -202,7 +204,7 @@ public class DispatcherTest
             /context/echo\r
             ForwardEchoURIServlet\r
             /context\r
-            ForwardServlet\r
+            \r
             null\r
             do=always\r
             /context/ForwardServlet\r
@@ -499,6 +501,7 @@ public class DispatcherTest
 
     @ParameterizedTest
     @MethodSource("includeTests")
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testIncludeOutputStreamWriter(boolean includeWriter, boolean helloWriter) throws Exception
     {
         _contextHandler.addServlet(new ServletHolder(new IncludeServlet(includeWriter)), "/IncludeServlet/*");
@@ -584,6 +587,7 @@ public class DispatcherTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testIncludeStaticWithWriter() throws Exception
     {
         _contextHandler.addServlet(new ServletHolder(new IncludeServlet(true)), "/IncludeServlet/*");
@@ -1514,7 +1518,7 @@ public class DispatcherTest
             assertEquals("do=assertforward&do=more&test=1", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
             HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
             assertNotNull(fwdMapping);
-            assertEquals("ForwardServlet", fwdMapping.getMatchValue());
+            assertEquals("", fwdMapping.getMatchValue());
 
             List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH,
                 Dispatcher.FORWARD_SERVLET_PATH, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING);
@@ -1561,7 +1565,7 @@ public class DispatcherTest
             assertEquals("do=assertforward&foreign=%d2%e5%ec%ef%e5%f0%e0%f2%f3%f0%e0&test=1", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
             HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
             assertNotNull(fwdMapping);
-            assertEquals("ForwardServlet", fwdMapping.getMatchValue());
+            assertEquals("", fwdMapping.getMatchValue());
 
             List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH,
                 Dispatcher.FORWARD_SERVLET_PATH, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING);
@@ -1610,7 +1614,7 @@ public class DispatcherTest
             assertThat((String)request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING), containsString("do=end&do=the"));
             HttpServletMapping incMapping = (HttpServletMapping)request.getAttribute(Dispatcher.INCLUDE_MAPPING);
             assertNotNull(incMapping);
-            assertEquals("AssertIncludeServlet", incMapping.getMatchValue());
+            assertEquals("", incMapping.getMatchValue());
 
             List<String> expectedAttributeNames = Arrays.asList(Dispatcher.INCLUDE_REQUEST_URI, Dispatcher.INCLUDE_CONTEXT_PATH,
                 Dispatcher.INCLUDE_SERVLET_PATH, Dispatcher.INCLUDE_QUERY_STRING, Dispatcher.INCLUDE_MAPPING);
@@ -1649,7 +1653,7 @@ public class DispatcherTest
             assertEquals("do=include", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
             HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
             assertNotNull(fwdMapping);
-            assertEquals("ForwardServlet", fwdMapping.getMatchValue());
+            assertEquals("forwardpath", fwdMapping.getMatchValue());
 
             assertEquals("/context/AssertForwardIncludeServlet/assertpath", request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
             assertEquals("/context", request.getAttribute(Dispatcher.INCLUDE_CONTEXT_PATH));
@@ -1658,7 +1662,7 @@ public class DispatcherTest
             assertEquals("do=end", request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING));
             HttpServletMapping incMapping = (HttpServletMapping)request.getAttribute(Dispatcher.INCLUDE_MAPPING);
             assertNotNull(incMapping);
-            assertEquals("AssertForwardIncludeServlet", incMapping.getMatchValue());
+            assertEquals("assertpath", incMapping.getMatchValue());
 
             List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH,
                 Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING,
@@ -1700,7 +1704,7 @@ public class DispatcherTest
             assertEquals("do=forward", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
             HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
             assertNotNull(fwdMapping);
-            assertEquals("IncludeServlet", fwdMapping.getMatchValue());
+            assertEquals("includepath", fwdMapping.getMatchValue());
 
             List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH,
                 Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING);

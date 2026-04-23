@@ -136,7 +136,8 @@ public class BrowserDebugTool
         @Override
         public void configure(JettyWebSocketServletFactory factory)
         {
-            LOG.debug("Configuring WebSocketServerFactory ...");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Configuring WebSocketServerFactory ...");
 
             // Setup the desired Socket to use for all incoming upgrade requests
             factory.addMapping("/", new BrowserSocketCreator());
@@ -160,7 +161,8 @@ public class BrowserDebugTool
         @Override
         public Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp)
         {
-            LOG.debug("Creating BrowserSocket");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Creating BrowserSocket");
 
             if (req.getSubProtocols() != null)
             {
@@ -190,11 +192,13 @@ public class BrowserDebugTool
             }
 
             resp.setExtensions(negotiated);
-
-            LOG.debug("User-Agent: {}", ua);
-            LOG.debug("Sec-WebSocket-Extensions (Request) : {}", rexts);
-            LOG.debug("Sec-WebSocket-Protocol (Request): {}", req.getHeader("Sec-WebSocket-Protocol"));
-            LOG.debug("Sec-WebSocket-Protocol (Response): {}", resp.getAcceptedSubProtocol());
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("User-Agent: {}", ua);
+                LOG.debug("Sec-WebSocket-Extensions (Request) : {}", rexts);
+                LOG.debug("Sec-WebSocket-Protocol (Request): {}", req.getHeader("Sec-WebSocket-Protocol"));
+                LOG.debug("Sec-WebSocket-Protocol (Response): {}", resp.getAcceptedSubProtocol());
+            }
 
             req.getExtensions();
             return new BrowserSocket(ua, rexts);

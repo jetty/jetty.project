@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
@@ -239,7 +240,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         catch (Exception x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Unable to fill from endpoint {}", endPoint);
+                LOG.debug("Unable to fill from endpoint {}", endPoint, x);
             close(x);
             return false;
         }
@@ -407,6 +408,18 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         }
 
         @Override
+        protected HttpVersion getHttpVersion()
+        {
+            return null;
+        }
+
+        @Override
+        protected boolean requiresHostHeader()
+        {
+            return true;
+        }
+
+        @Override
         protected Iterator<HttpChannel> getHttpChannels()
         {
             return Collections.<HttpChannel>singleton(channel).iterator();
@@ -528,7 +541,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         public void onFailure(int request, Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(failure).log("onFailure request={}", request);
+                LOG.debug("onFailure request={}", request, failure);
             failAndClose(failure);
         }
     }

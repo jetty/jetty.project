@@ -49,13 +49,14 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Resource service, used by DefaultServlet and ResourceHandler
  */
-public class ResourceService
+public class ResourceService extends ContainerLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceService.class);
     private static final int NO_CONTENT_LENGTH = -1;
@@ -129,7 +130,9 @@ public class ResourceService
 
     public void setHttpContentFactory(HttpContent.Factory contentFactory)
     {
+        removeBean(_contentFactory);
         _contentFactory = contentFactory;
+        addManaged(_contentFactory);
     }
 
     /**

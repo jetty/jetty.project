@@ -149,7 +149,8 @@ public class ResponseCompleteTest
                                     {
                                         handleLatch.countDown();
                                         failureLatch.await();
-                                        LOG.debug("consumeAvailable allowed to continue");
+                                        if (LOG.isDebugEnabled())
+                                            LOG.debug("consumeAvailable allowed to continue");
                                         return super.consumeAvailable();
                                     }
                                     catch (InterruptedException e)
@@ -172,7 +173,8 @@ public class ResponseCompleteTest
                     response.setStatus(200);
                     getServer().getThreadPool().execute(() ->
                     {
-                        LOG.debug("handle.threadPool.execute() -> callback.failed() being called");
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("handle.threadPool.execute() -> callback.failed() being called");
                         callback.failed(new Exception("Test-Threaded"));
                     });
                     handleLatch.await();
@@ -192,8 +194,8 @@ public class ResponseCompleteTest
 
             Thread.sleep(1000); // ensure we are fully out of the HandlerInvoker.run()
             failureLatch.countDown();
-
-            LOG.debug("Reading response");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Reading response");
             String rawResponse = IO.toString(input, UTF_8);
             assertThat("Raw Response Length", rawResponse.length(), greaterThan(0));
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);

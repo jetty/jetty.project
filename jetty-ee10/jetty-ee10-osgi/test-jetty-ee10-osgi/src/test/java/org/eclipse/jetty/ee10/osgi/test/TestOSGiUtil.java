@@ -161,6 +161,7 @@ public class TestOSGiUtil
     {
         //enables a dump of the status of all deployed bundles
         res.add(systemProperty("bundle.debug").value(Boolean.toString(Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))));
+        res.add(systemProperty("java.io.tmpdir").value(System.getProperty("java.io.tmpdir")));
 
         //add locations to look for jars to deploy
         String mavenRepoPath = System.getProperty("mavenRepoPath");

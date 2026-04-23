@@ -1,4 +1,4 @@
- //
+//
 // ========================================================================
 // Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
@@ -215,6 +215,8 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
                     throw _failure;
 
                 if (_inputDemand)
+                    return Action.IDLE;
+                if (!_outputDemand)
                     return Action.IDLE;
 
                 if (_needContent)

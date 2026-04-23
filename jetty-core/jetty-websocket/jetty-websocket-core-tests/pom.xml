@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>jetty-websocket</artifactId>
-    <version>12.1.8-SNAPSHOT</version>
+    <version>12.1.9-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-websocket-core-tests</artifactId>
   <name>Core :: Websocket :: Tests</name>
@@ -49,6 +49,11 @@
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

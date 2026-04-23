@@ -14,6 +14,7 @@
 package org.eclipse.jetty.tests.distribution;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -23,6 +24,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
@@ -346,12 +348,14 @@ public class DeployerTest extends AbstractJettyHomeTest
                 Files.writeString(root.resolve("test.txt"), testFileContent, StandardOpenOption.CREATE);
             }
 
-            Files.writeString(jettyBase.resolve("webapps/test-%s.properties".formatted(env)),
-                """
-                    environment=%s
-                    jetty.deploy.contextPath=/test
-                    jetty.deploy.baseResource=%s
-                    """.formatted(env, outputJar.toString()));
+            try (Writer out = Files.newBufferedWriter(jettyBase.resolve("webapps/test-%s.properties".formatted(env))))
+            {
+                Properties props = new Properties();
+                props.put("environment", env);
+                props.put("jetty.deploy.contextPath", "/test");
+                props.put("jetty.deploy.baseResource", outputJar.toString());
+                props.store(out, "");
+            }
 
             int httpPort = Tester.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort))

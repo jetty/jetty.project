@@ -271,7 +271,7 @@ public class ErrorHandler implements Request.Handler
                     if (showStacks)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Disable stacks for " + e);
+                            LOG.debug("Disable stacks for {}", String.valueOf(e));
 
                         showStacks = false;
                         continue;

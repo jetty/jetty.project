@@ -21,15 +21,15 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 
 public class TestEnv
 {
     public static void copyTestDir(String testResourceDir, Path destDir) throws IOException
     {
         FS.ensureDirExists(destDir);
-        Path srcDir = MavenTestingUtils.getTestResourcePathDir(testResourceDir);
-        IO.copyDir(srcDir.toFile(), destDir.toFile());
+        Path srcDir = MavenPaths.findTestResourceDir(testResourceDir);
+        IO.copyDir(srcDir, destDir);
     }
 
     public static void makeFile(Path dir, String relFilePath, String... contents) throws IOException

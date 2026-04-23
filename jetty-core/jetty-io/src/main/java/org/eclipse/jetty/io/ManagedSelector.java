@@ -216,7 +216,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     {
         LOG.info("Caught select() failure, trying to recover: {}", failure.toString());
         if (LOG.isDebugEnabled())
-            LOG.atDebug().setCause(failure).log("");
+            LOG.debug("", failure);
 
         Selector newSelector = _selectorManager.newSelector();
         for (SelectionKey oldKey : selector.keys())
@@ -238,7 +238,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 catch (Throwable t)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(t).log("Could not transfer {}", channel);
+                        LOG.debug("Could not transfer {}", channel, t);
                     IO.close(channel);
                 }
             }
@@ -431,7 +431,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
         catch (Throwable x)
         {
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
             return -1;
         }
     }
@@ -444,7 +445,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
         catch (Throwable x)
         {
-            LOG.trace("IGNORED", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", x);
             return -1;
         }
     }
@@ -780,7 +782,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (InterruptedException x)
             {
-                LOG.trace("IGNORED", x);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", x);
             }
             return keys;
         }
@@ -878,7 +881,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Could not register channel after accept {}", channel);
+                    LOG.debug("Could not register channel after accept {}", channel, x);
                 failed(x);
             }
         }
@@ -894,7 +897,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Could not process accepted channel {}", channel);
+                    LOG.debug("Could not process accepted channel {}", channel, x);
                 failed(x);
             }
         }
@@ -1062,7 +1065,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 IO.close(_connect.channel);
                 LOG.warn("Could not create EndPoint {}: {}", _connect.channel, String.valueOf(failure));
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(failure).log("");
+                    LOG.debug("", failure);
                 _connect.failed(failure);
             }
         }

@@ -66,7 +66,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
             catch (Throwable t)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(t).log("Extension Error During Close");
+                    LOG.debug("Extension Error During Close", t);
             }
         }
     }

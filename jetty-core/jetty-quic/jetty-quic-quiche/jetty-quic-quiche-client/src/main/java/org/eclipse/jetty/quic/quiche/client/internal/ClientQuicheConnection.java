@@ -229,7 +229,7 @@ public class ClientQuicheConnection extends QuicheConnection
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("receive failure on {}", this);
+                LOG.debug("receive failure on {}", this, x);
             buffer.release();
             fail(ErrorCode.INTERNAL_ERROR.code(), "receive_failure", x);
         }

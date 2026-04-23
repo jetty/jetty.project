@@ -61,6 +61,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -366,9 +367,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             catch (MalformedURLException e)
             {
-                LOG.trace("IGNORED", e);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", e);
                 if (mue == null)
                     mue = e;
+            }
+            catch (Throwable t)
+            {
+                if (mue == null)
+                    mue = new MalformedURLException(pathInContext);
             }
         }
 
@@ -879,12 +886,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         name = String.format("%s@%x", name, hashCode());
 
         dumpObjects(out, indent,
+            Dumpable.named("environment", ServletContextHandler.ENVIRONMENT.getName()),
             new ClassLoaderDump(getClassLoader()),
             new DumpableCollection("Protected classes " + name, protectedClasses),
             new DumpableCollection("Hidden classes " + name, hiddenClasses),
             new DumpableCollection("Configurations " + name, _configurations),
             new DumpableCollection("Handler attributes " + name, asAttributeMap().entrySet()),
             new DumpableCollection("Context attributes " + name, getContext().asAttributeMap().entrySet()),
+            Dumpable.named("maxFormKeys ", getMaxFormKeys()),
+            Dumpable.named("maxFormContentSize ", getMaxFormContentSize()),
             new DumpableCollection("EventListeners " + this, getEventListeners()),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );
@@ -1190,7 +1200,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public void resolveMetaData() throws Exception
     {
-        LOG.debug("metadata resolve {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("metadata resolve {}", this);
 
         //Ensure origins is fresh
         _metadata._origins.clear();
@@ -1223,7 +1234,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             p.process(this, _metadata.getWebDescriptor());
             for (WebDescriptor wd : _metadata.getOverrideDescriptors())
             {
-                LOG.debug("process {} {} {}", this, p, wd);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("process {} {} {}", this, p, wd);
                 p.process(this, wd);
             }
         }
@@ -1244,7 +1256,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             {
                 for (DescriptorProcessor p : _metadata._descriptorProcessors)
                 {
-                    LOG.debug("process {} {}", this, fd);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("process {} {}", this, fd);
                     p.process(this, fd);
                 }
             }
@@ -1257,7 +1270,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             {
                 for (DiscoveredAnnotation a : annotations)
                 {
-                    LOG.debug("apply {}", a);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("apply {}", a);
                     a.apply();
                 }
             }
@@ -1437,21 +1451,32 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            if (path == null)
-                return null;
-
-            // Assumption is that the resource base has been properly setup.
-            // Spec requirement is that the WAR file is interrogated first.
-            // If a WAR file is mounted, or is extracted to a temp directory,
-            // then the first entry of the resource base must be the WAR file.
-            Resource resource = WebAppContext.this.getResource(path);
-            if (Resources.missing(resource))
-                return null;
-
-            for (Resource r: resource)
+            try
             {
-                // return first entry
-                return r.getURI().toURL();
+                if (path == null)
+                    return null;
+
+                // Assumption is that the resource base has been properly setup.
+                // Spec requirement is that the WAR file is interrogated first.
+                // If a WAR file is mounted, or is extracted to a temp directory,
+                // then the first entry of the resource base must be the WAR file.
+                Resource resource = WebAppContext.this.getResource(path);
+                if (Resources.missing(resource))
+                    return null;
+
+                for (Resource r : resource)
+                {
+                    // return first entry
+                    return r.getURI().toURL();
+                }
+            }
+            catch (MalformedURLException e)
+            {
+                throw e;
+            }
+            catch (Throwable e)
+            {
+                throw (MalformedURLException)new MalformedURLException(path).initCause(e);
             }
 
             // A Resource was returned, but did not exist

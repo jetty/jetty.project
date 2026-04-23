@@ -77,7 +77,8 @@ public class ChatWebSocketClient
                             value = value.trim();
                             handler.sendText("[" + value + ": changed name from " + name + "]", Callback.NOOP, false);
                             name = value;
-                            LOG.debug("name changed: " + name);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("name changed: {}", name);
                         }
                         break;
 
@@ -95,9 +96,14 @@ public class ChatWebSocketClient
                 return;
             }
         }
-        LOG.debug("sending {}...", line);
+        if (LOG.isDebugEnabled())
+            LOG.debug("sending {}...", line);
 
-        handler.sendText(Callback.from(() -> LOG.debug("message sent"), (cause) -> LOG.warn("message send failure", cause)), false, name, ": ", line);
+        handler.sendText(Callback.from(() ->
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("message sent");
+        }, (cause) -> LOG.warn("message send failure", cause)), false, name, ": ", line);
     }
 
     public static void main(String[] args)

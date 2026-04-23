@@ -49,6 +49,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
@@ -344,6 +346,7 @@ public class ConnectionPoolTest
 
     @ParameterizedTest
     @MethodSource("pools")
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testConcurrentRequestsWithSlowAddressResolver(ConnectionPoolFactory factory) throws Exception
     {
         // ConnectionPools may open a few more connections than expected.

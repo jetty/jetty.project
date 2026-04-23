@@ -527,13 +527,14 @@ public abstract class WriteFlusher
                     if (LOG.isDebugEnabled())
                     {
                         LOG.debug("ignored: {} {}", cause, this);
-                        LOG.trace("IGNORED", cause);
+                        if (LOG.isTraceEnabled())
+                            LOG.trace("IGNORED", cause);
                     }
                     return false;
 
                 case PENDING:
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(cause).log("failed: {}", this);
+                        LOG.debug("failed: {}", this, cause);
 
                     PendingState pending = (PendingState)current;
                     if (updateState(pending, new FailedState(cause)))
@@ -546,7 +547,7 @@ public abstract class WriteFlusher
                 case FLUSHING:
                 case COMPLETING:
                     if (LOG.isDebugEnabled())
-                        LOG.atDebug().setCause(cause).log("failed: {}", this);
+                        LOG.debug("failed: {}", this, cause);
                     if (updateState(current, new FailedState(cause)))
                         return true;
                     break;

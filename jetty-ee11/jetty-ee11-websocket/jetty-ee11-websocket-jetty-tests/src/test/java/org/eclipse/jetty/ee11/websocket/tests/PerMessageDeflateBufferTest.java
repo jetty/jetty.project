@@ -55,7 +55,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PermessageDeflateBufferTest
+public class PerMessageDeflateBufferTest
 {
     private Server server;
     private ServerConnector connector;

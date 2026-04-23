@@ -55,7 +55,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PermessageDeflateBufferTest
+public class PerMessageDeflateBufferTest
 {
     private Server server;
     private ServerConnector connector;
@@ -190,6 +190,7 @@ public class PermessageDeflateBufferTest
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/incomingFail");
         ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest(uri);
         clientUpgradeRequest.addExtensions("permessage-deflate");
+
         EventSocket socket = new EventSocket();
         Session session = client.connect(socket, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
 

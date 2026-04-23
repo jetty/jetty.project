@@ -229,6 +229,7 @@ public class ResourceServlet extends HttpServlet
     {
         ServletContextHandler contextHandler = initContextHandler(getServletContext());
         _resourceService = new ServletResourceService(contextHandler);
+        contextHandler.addManaged(_resourceService);
         _resourceService.setWelcomeFactory(_resourceService);
         Resource baseResource = contextHandler.getBaseResource();
 
@@ -408,6 +409,13 @@ public class ResourceServlet extends HttpServlet
             LOG.debug("  .resourceService = {}", _resourceService);
             LOG.debug("  .welcomeServletMode = {}", _welcomeServletMode);
         }
+    }
+
+    @Override
+    public void destroy()
+    {
+        ServletContextHandler contextHandler = initContextHandler(getServletContext());
+        contextHandler.removeBean(_resourceService);
     }
 
     private ByteBufferPool.Sized getByteBufferPool(ContextHandler contextHandler)
@@ -835,7 +843,7 @@ public class ResourceServlet extends HttpServlet
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log("writeHttpError(coreRequest={}, coreResponse={}, callback={}, cause={})", coreRequest, coreResponse, callback, cause);
+                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={})", coreRequest, coreResponse, callback, cause);
 
             int statusCode = HttpStatus.INTERNAL_SERVER_ERROR_500;
             String reason = null;
@@ -851,7 +859,7 @@ public class ResourceServlet extends HttpServlet
         protected void writeHttpError(Request coreRequest, Response coreResponse, Callback callback, int statusCode, String reason, Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(cause).log("writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={}, reason={}, cause={})", coreRequest, coreResponse, callback, statusCode, reason, cause);
+                LOG.debug("writeHttpError(coreRequest={}, coreResponse={}, callback={}, statusCode={}, reason={})", coreRequest, coreResponse, callback, statusCode, reason, cause);
             HttpServletRequest request = getServletRequest(coreRequest);
             HttpServletResponse response = getServletResponse(coreResponse);
             try
@@ -1024,7 +1032,7 @@ public class ResourceServlet extends HttpServlet
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("AsyncContextCallback failed {}", _asyncContext);
+                    LOG.debug("AsyncContextCallback failed {}", _asyncContext, x);
                 // It is known that this callback is only failed if the response is already committed,
                 // thus we can only abort the response here.
                 _response.sendError(-1);
@@ -1038,7 +1046,7 @@ public class ResourceServlet extends HttpServlet
                 _asyncContext.complete();
             }
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Async get failed");
+                LOG.debug("Async get failed", x);
         }
     }
 }

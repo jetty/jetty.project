@@ -142,11 +142,8 @@ public class WebDescriptor extends Descriptor
             _majorVersion = 2;
             _minorVersion = 3;
 
-            if (_dtd != null && _dtd.indexOf("web-app_2_2") >= 0)
-            {
-                _majorVersion = 2;
+            if (_dtd != null && _dtd.contains("web-app_2_2"))
                 _minorVersion = 2;
-            }
         }
         else
         {

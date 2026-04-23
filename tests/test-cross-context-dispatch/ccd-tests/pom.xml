@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests.ccd</groupId>
     <artifactId>test-cross-context-dispatch</artifactId>
-    <version>12.1.8-SNAPSHOT</version>
+    <version>12.1.9-SNAPSHOT</version>
   </parent>
   <artifactId>ccd-tests</artifactId>
   <packaging>jar</packaging>
@@ -68,7 +68,7 @@
               <jetty.home>${jetty.home}/jetty-home-${project.version}</jetty.home>
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <jettyVersion>${project.version}</jettyVersion>
-              <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
+              <distribution.debug.port>${distribution.debug.port}</distribution.debug.port>
               <home.start.timeout>${home.start.timeout}</home.start.timeout>
             </systemPropertyVariables>
           </configuration>

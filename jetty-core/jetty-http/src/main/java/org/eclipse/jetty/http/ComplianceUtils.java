@@ -82,7 +82,7 @@ public final class ComplianceUtils
         if (complianceListener == null)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().log("Unable to notify null ComplianceViolation.Listener of {}", event);
+                LOG.debug("Unable to notify null ComplianceViolation.Listener of {}", event);
             return;
         }
 
@@ -93,7 +93,7 @@ public final class ComplianceUtils
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Failure while notifying listener {} of event {}", complianceListener, event);
+                LOG.debug("Failure while notifying listener {} of event {}", complianceListener, event, x);
         }
     }
 

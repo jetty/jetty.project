@@ -96,7 +96,8 @@ public class NativeHelper
 
     private static Path extractFromResourcePath(String libName, ClassLoader classLoader) throws IOException
     {
-        Path target = Path.of(System.getProperty("java.io.tmpdir")).resolve(libName);
+        long pid = ProcessHandle.current().pid();
+        Path target = Path.of(System.getProperty("java.io.tmpdir")).resolve("jetty-" + pid).resolve(libName);
         Files.createDirectories(target.getParent());
         try (InputStream is = classLoader.getResourceAsStream(libName);
              OutputStream os = Files.newOutputStream(target))

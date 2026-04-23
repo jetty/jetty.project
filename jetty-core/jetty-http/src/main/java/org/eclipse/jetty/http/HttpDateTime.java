@@ -185,7 +185,7 @@ public class HttpDateTime
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Ignore: Unable to parse Date/Time");
+                LOG.debug("Ignore: Unable to parse Date/Time", x);
         }
 
         // RFC 6265 - Section 5.1.1 - Step 3

@@ -240,11 +240,13 @@ public class PathResource extends Resource
         }
         catch (DirectoryIteratorException e)
         {
-            LOG.debug("Directory list failure", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Directory list failure", e);
         }
         catch (IOException e)
         {
-            LOG.debug("Directory list access failure", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Directory list access failure", e);
         }
         return List.of(); // empty
     }
@@ -291,8 +293,26 @@ public class PathResource extends Resource
 
         URI uri = getURI();
         URI resolvedUri = URIUtil.addPath(uri, subUriPath);
-        Path path = Paths.get(resolvedUri);
-        return newResource(path, resolvedUri);
+        Path newPath = resolveSchemeSpecificPath(resolvedUri);
+        return newResource(newPath, resolvedUri);
+    }
+
+    private Path resolveSchemeSpecificPath(URI uri)
+    {
+        // Resolve from this PathResource to maintain FileSystem tracking.
+        // Do NOT use Path.of() or Paths.of() as that requires the JDK to track FileSystem objects.
+        // (Not all FileSystemProvider's track the FileSystems they create. Currently only ZipFileSystemProvider does)
+
+        String scheme = Objects.requireNonNull(uri.getScheme(), "scheme cannot be null");
+        if (scheme.equals("jar"))
+        {
+            String ssp = uri.getSchemeSpecificPart();
+            int idx = ssp.indexOf("!/");
+            if (idx == -1)
+                throw new IllegalArgumentException("Unable to find jar !/ deep reference in " + uri);
+            return path.resolve(ssp.substring(idx + 1));
+        }
+        return path.resolve(uri.getPath());
     }
 
     /**
@@ -333,7 +353,8 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
-            LOG.trace("IGNORED", e);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", e);
             return Instant.EPOCH;
         }
     }
@@ -455,7 +476,10 @@ public class PathResource extends Resource
             catch (Exception e)
             {
                 if (e instanceof IOException)
-                    LOG.trace("IGNORED", e);
+                {
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", e);
+                }
                 else
                     LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
                 // Not possible to serve this resource.

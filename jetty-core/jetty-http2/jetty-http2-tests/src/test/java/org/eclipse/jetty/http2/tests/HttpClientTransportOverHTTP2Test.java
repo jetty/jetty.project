@@ -250,6 +250,30 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     }
 
     @Test
+    public void testRequestDoesNotContainHostHeader() throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+            .onRequestBegin(request ->
+            {
+                if (request.getHeaders().contains(HttpHeader.HOST))
+                    request.abort(new Exception("Host header should not be present"));
+            })
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
     public void testDelayDemandAfterHeaders() throws Exception
     {
         start(new Handler.Abstract()

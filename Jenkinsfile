@@ -40,6 +40,17 @@ pipeline {
           }
         }
 
+        stage("Build / Test - JDK26") {
+          agent { node { label 'linux' } }
+          steps {
+            timeout( time: 210, unit: 'MINUTES' ) {
+              checkout scm
+              mavenBuild( "jdk26", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk26", name: "Static Analysis jdk26", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
+            }
+          }
+        }
+
         stage("Build / Test - JDK22 Javadoc") {
           agent { node { label 'linux-light' } }
           steps {
@@ -51,7 +62,7 @@ pipeline {
                 configFileProvider(
                         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
                          configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
-                  sh "mvn -e -DsettingsPath=$GLOBAL_MVN_SETTINGS clean verify -DskipTests javadoc:jar -Peclipse-release -Dgpg.skip=true"
+                  sh "mvn -e -DsettingsPath=$GLOBAL_MVN_SETTINGS clean verify -DskipTests javadoc:jar -B -Peclipse-release -Dgpg.skip=true"
                   sh "mvn -e -DsettingsPath=$GLOBAL_MVN_SETTINGS clean install -DskipTests javadoc:aggregate -B -Pjavadoc-aggregate"
                 }
               }

@@ -103,7 +103,10 @@ public class AbstractTest
 
     public static Collection<TransportType> transports()
     {
-        return EnumSet.allOf(TransportType.class);
+        EnumSet<TransportType> transportTypes = EnumSet.allOf(TransportType.class);
+        if (System.getProperty("os.name").startsWith("Windows"))
+            transportTypes.remove(TransportType.H3_QUICHE);
+        return transportTypes;
     }
 
     public static Collection<TransportType> transportsNoFCGI()

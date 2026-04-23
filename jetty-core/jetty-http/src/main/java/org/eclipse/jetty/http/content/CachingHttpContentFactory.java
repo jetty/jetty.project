@@ -38,6 +38,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +52,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  * <p>
  * No eviction is done by this {@link HttpContent.Factory}, once an entry is in the cache it is always
- * assumed to be valid. This class can be extended to implement the validation behaviours on
+ * assumed to be valid. This class can be extended to implement the validation behaviors on
  * {@link CachingHttpContent} which allow entries to be evicted once they become invalid.
  * </p>
  * <br>
@@ -61,7 +64,8 @@ import org.slf4j.LoggerFactory;
  * </ul>
  * @see ValidatingCachingHttpContentFactory
  */
-public class CachingHttpContentFactory implements HttpContent.Factory
+@ManagedObject
+public class CachingHttpContentFactory extends ContainerLifeCycle implements HttpContent.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(CachingHttpContentFactory.class);
     private static final int DEFAULT_MAX_CACHED_FILE_SIZE = 128 * 1024 * 1024;
@@ -80,6 +84,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     public CachingHttpContentFactory(HttpContent.Factory authority, ByteBufferPool.Sized bufferPool)
     {
         _authority = authority;
+        installBean(_authority, true);
         _bufferPool = bufferPool != null ? bufferPool : ByteBufferPool.SIZED_NON_POOLING;
     }
 
@@ -88,16 +93,19 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         return _cache;
     }
 
+    @ManagedAttribute(value = "Current total size in bytes of cached content", readonly = true)
     public long getCachedSize()
     {
         return _cachedSize.get();
     }
 
+    @ManagedAttribute(value = "Current number of cached files", readonly = true)
     public int getCachedFiles()
     {
         return _cache.size();
     }
 
+    @ManagedAttribute("Maximum size in bytes for a file to be eligible for caching")
     public int getMaxCachedFileSize()
     {
         return _maxCachedFileSize;
@@ -109,6 +117,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         shrinkCache();
     }
 
+    @ManagedAttribute("Maximum total size in bytes allowed for the cache")
     public long getMaxCacheSize()
     {
         return _maxCacheSize;
@@ -121,16 +130,17 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     }
 
     /**
-     * Get the max number of cached files..
+     * Get the max number of cached files.
      * @return the max number of cached files.
      */
+    @ManagedAttribute("Maximum number of entries allowed in the cache")
     public int getMaxCachedFiles()
     {
         return _maxCachedFiles;
     }
 
     /**
-     * Set the max number of cached files..
+     * Set the max number of cached files.
      * @param maxCachedFiles the max number of cached files.
      */
     public void setMaxCachedFiles(int maxCachedFiles)
@@ -218,6 +228,10 @@ public class CachingHttpContentFactory implements HttpContent.Factory
         if (httpContent.getResource().isDirectory())
             return false;
 
+        // Content with unknown length is not cacheable.
+        if (httpContent.getContentLengthValue() < 0L)
+            return false;
+
         if (_maxCachedFiles <= 0)
             return false;
 
@@ -249,21 +263,14 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             try
             {
                 CachingHttpContent cachingContent = (httpContent == null) ? newNotFoundContent(key) : newCachedContent(key, httpContent);
-                long contentLengthValue = cachingContent.getContentLengthValue();
-                if (contentLengthValue < 0L)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Content at path '{}' with unknown length is not cacheable: {}", path, httpContent);
-                    return null;
-                }
                 added.set(true);
-                _cachedSize.addAndGet(contentLengthValue);
+                _cachedSize.addAndGet(cachingContent.getContentLengthValue());
                 return cachingContent;
             }
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("Content at path '{}' is not cacheable: {}", path, httpContent);
+                    LOG.debug("Content at path '{}' is not cacheable: {}", path, httpContent, x);
                 return null;
             }
         });
@@ -274,7 +281,9 @@ public class CachingHttpContentFactory implements HttpContent.Factory
             shrinkCache();
         }
 
-        return (cachingHttpContent instanceof NotFoundHttpContent) ? null : cachingHttpContent;
+        if (cachingHttpContent instanceof NotFoundHttpContent)
+            return null;
+        return cachingHttpContent != null ? cachingHttpContent : httpContent;
     }
 
     protected CachingHttpContent newCachedContent(String p, HttpContent httpContent)

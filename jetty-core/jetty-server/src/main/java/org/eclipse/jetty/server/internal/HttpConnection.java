@@ -75,7 +75,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http.HttpCompliance.Violation.MISMATCHED_AUTHORITY;
 import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 
 /**
@@ -478,7 +477,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("caught exception {} {}", this, _httpChannel);
+                    LOG.debug("caught exception {} {}", this, _httpChannel, x);
                 if (_requestBuffer != null)
                     releaseRequestBuffer();
             }
@@ -591,7 +590,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("Unable to fill from endpoint {}", getEndPoint());
+                LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
             _parser.atEOF();
             return -1;
         }
@@ -726,7 +725,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         {
             Runnable task = _httpChannel.onFailure(x);
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("demand failed {}", task);
+                LOG.debug("demand failed {}", task, x);
             ThreadPool.executeImmediately(getConnector().getExecutor(), task);
         }
 
@@ -1338,33 +1337,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
         public Runnable headerComplete()
         {
-            // Check host field matches the authority in the absolute URI or is not blank
-            if (_hostField != null)
-            {
-                if (_uri.isAbsolute())
-                {
-                    if (!_hostField.getValue().equals(_uri.getAuthority()))
-                    {
-                        HttpCompliance httpCompliance = getHttpChannel().getConnectionMetaData().getHttpConfiguration().getHttpCompliance();
-                        ComplianceViolation.Listener complianceListener = getHttpChannel().getComplianceViolationListener();
-                        if (!ComplianceUtils.allows(httpCompliance, MISMATCHED_AUTHORITY, "Authority!=Host", complianceListener))
-                        {
-                            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
-                        }
-                    }
-                }
-                else
-                {
-                    if (StringUtil.isBlank(_hostField.getHostPort().getHost()))
-                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Blank Host");
-                }
-            }
+            if (_hostField != null && !_uri.isAbsolute() && StringUtil.isBlank(_hostField.getHostPort().getHost()))
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Blank Host");
 
-            // Set the scheme in the URI
+            // Set the scheme in the URI.
             if (!_uri.isAbsolute())
                 _uri.scheme(getEndPoint().getSslSessionData() != null ? HttpScheme.HTTPS : HttpScheme.HTTP);
 
-            // Set the authority (if not already set) in the URI
+            // Set the authority (if not already set) in the URI.
             if (_uri.getAuthority() == null && !HttpMethod.CONNECT.is(_method))
             {
                 HostPort hostPort = _hostField == null ? getServerAuthority() : _hostField.getHostPort();
@@ -1607,8 +1587,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
             @SuppressWarnings("ReferenceEquality")
             boolean isPriorKnowledgeH2C = _upgrade == PREAMBLE_UPGRADE_H2C;
-            if (!isPriorKnowledgeH2C  && !_connectionUpgrade)
-                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400);
+            if (!isPriorKnowledgeH2C && !_connectionUpgrade)
+                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Invalid h2c upgrade headers");
 
             // Find the upgrade factory.
             ConnectionFactory.Upgrading factory = getConnector().getConnectionFactories().stream()
@@ -1723,12 +1703,12 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             HttpStreamOverHTTP1 stream = _stream.getAndSet(null);
             if (stream == null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(x).log("ignored");
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", x);
                 return;
             }
             if (LOG.isDebugEnabled())
-                LOG.atDebug().setCause(x).log("aborting");
+                LOG.debug("aborting", x);
             abort(x);
             _httpChannel.setHttpStream(null);
             if (!_handling.compareAndSet(true, false))

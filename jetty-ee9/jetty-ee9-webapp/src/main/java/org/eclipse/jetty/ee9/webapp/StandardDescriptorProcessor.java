@@ -349,7 +349,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 catch (Exception e)
                 {
                     LOG.warn("Cannot parse load-on-startup {}. Please use integer", s);
-                    LOG.trace("IGNORED", e);
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED", e);
                 }
             }
 
@@ -1025,7 +1026,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case WebFragment:
                 {
                     //a web-fragment set the value, all web-fragments must have the same value
-                    if (!context.getMimeTypes().getMimeByExtension("." + extension).equals(mimeType))
+                    if (!mimeType.equals(context.getMimeTypes().getMimeForExtension(extension)))
                         throw new IllegalStateException("Conflicting mime-type " + mimeType + " for extension " + extension + " in " + descriptor.getURI());
                     break;
                 }

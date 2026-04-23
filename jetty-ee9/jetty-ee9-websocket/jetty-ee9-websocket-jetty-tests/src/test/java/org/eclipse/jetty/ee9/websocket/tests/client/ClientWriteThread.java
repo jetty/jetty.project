@@ -58,8 +58,12 @@ public class ClientWriteThread extends Thread
 
         try
         {
-            LOG.debug("Writing {} messages to {}", messageCount, session);
-            LOG.debug("Artificial Slowness {} ms", slowness);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Writing {} messages to {}", messageCount, session);
+                LOG.debug("Artificial Slowness {} ms", slowness);
+            }
+
             FutureWriteCallback lastMessage = null;
             RemoteEndpoint remote = session.getRemote();
             while (m.get() < messageCount)

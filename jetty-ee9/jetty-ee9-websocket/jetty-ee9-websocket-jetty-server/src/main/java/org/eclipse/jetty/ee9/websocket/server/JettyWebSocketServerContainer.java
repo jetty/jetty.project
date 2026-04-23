@@ -162,7 +162,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             catch (Throwable t)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(t).log("Could not create WebSocket endpoint");
+                    LOG.debug("Could not create WebSocket endpoint", t);
                 cb.failed(t);
                 return null;
             }
@@ -215,7 +215,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             catch (Throwable t)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.atDebug().setCause(t).log("Could not create WebSocket endpoint");
+                    LOG.debug("Could not create WebSocket endpoint", t);
                 cb.failed(t);
                 return null;
             }

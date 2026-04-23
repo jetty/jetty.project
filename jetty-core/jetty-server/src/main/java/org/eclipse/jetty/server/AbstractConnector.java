@@ -291,10 +291,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 if (!_endpoints.isEmpty())
                     return false;
 
-                for (Thread a : _acceptors)
+                try (AutoLock ignore = _lock.lock())
                 {
-                    if (a != null)
-                        return false;
+                    for (Thread a : _acceptors)
+                    {
+                        if (a != null)
+                            return false;
+                    }
                 }
 
                 return true;
@@ -580,9 +583,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _acceptorPriorityDelta = acceptorPriorityDelta;
         if (old != acceptorPriorityDelta && isStarted())
         {
-            for (Thread thread : _acceptors)
+            try (AutoLock ignore = _lock.lock())
             {
-                thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, thread.getPriority() - old + acceptorPriorityDelta)));
+                for (Thread thread : _acceptors)
+                {
+                    if (thread != null)
+                        thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, thread.getPriority() - old + acceptorPriorityDelta)));
+                }
             }
         }
     }
@@ -644,13 +651,15 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             }
             catch (Throwable x)
             {
-                LOG.trace("IGNORED", x);
+                if (LOG.isTraceEnabled())
+                    LOG.trace("IGNORED", x);
             }
             return false;
         }
         else
         {
-            LOG.trace("IGNORED", ex);
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", ex);
             return false;
         }
     }

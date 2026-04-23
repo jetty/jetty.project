@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.start.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
@@ -24,7 +23,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 
 /**
  * Utility class to rebuild the src/test/resources/dist-home from the active build tree.
@@ -38,8 +37,8 @@ public class RebuildTestResources
 
     public static void main(String[] args)
     {
-        File realDistHome = MavenTestingUtils.getProjectDir("../jetty-home/target/jetty-home");
-        File outputDir = MavenTestingUtils.getTestResourceDir("dist-home");
+        Path realDistHome = MavenPaths.projectBase().resolve("../jetty-home/target/jetty-home");
+        Path outputDir = MavenPaths.findTestResourceDir("dist-home");
         try
         {
             new RebuildTestResources(realDistHome, outputDir).rebuild();
@@ -114,10 +113,10 @@ public class RebuildTestResources
     private final Path destDir;
     private final Path srcDir;
 
-    public RebuildTestResources(File realDistHome, File outputDir) throws IOException
+    public RebuildTestResources(Path realDistHome, Path outputDir) throws IOException
     {
-        this.srcDir = realDistHome.toPath().toRealPath();
-        this.destDir = outputDir.toPath();
+        this.srcDir = realDistHome.toRealPath();
+        this.destDir = outputDir;
     }
 
     private void copyLibs() throws IOException

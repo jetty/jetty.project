@@ -35,6 +35,16 @@ public class TestMessageHandler extends MessageHandler
     public CountDownLatch errorLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
 
+    public TestMessageHandler()
+    {
+        this(true);
+    }
+
+    public TestMessageHandler(boolean autoDemand)
+    {
+        super(autoDemand);
+    }
+
     @Override
     public void onOpen(CoreSession coreSession, Callback callback)
     {
