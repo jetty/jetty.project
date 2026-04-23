@@ -21,7 +21,7 @@
       <Set name="dynamic" property="jetty.server.contexts.dynamic"/>
       <Call name="addHandler">
         <Arg>
-          <New id="context" class="org.eclipse.jetty.ee11.servlet.ServletContextHandler">
+          <New id="context" class="org.eclipse.jetty.ee.servlet.ServletContextHandler">
             <Set name="contextPath">/hello</Set>
             <Call name="addServlet">
               <Arg>org.eclipse.jetty.servlet6.embedded.HelloServlet</Arg>

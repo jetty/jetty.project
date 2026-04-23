@@ -82,7 +82,7 @@
         <configuration>
           <instructions>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)", osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.ee11.webapp.Configuration)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
-            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee11.webapp.Configuration</Provide-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee.webapp.Configuration</Provide-Capability>
           </instructions>
         </configuration>
       </plugin>
