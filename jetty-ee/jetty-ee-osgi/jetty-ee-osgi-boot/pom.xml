@@ -67,15 +67,8 @@
           <instructions>
             <Bundle-SymbolicName>org.eclipse.jetty.ee.osgi.boot;singleton:=true</Bundle-SymbolicName>
             <Bundle-Activator>org.eclipse.jetty.ee.osgi.boot.EEActivator</Bundle-Activator>
-            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", jakarta.servlet,jakarta.servlet.*</DynamicImport-Package>
-            <Import-Package>!jakarta.servlet,!jakarta.servlet.*,${osgi.slf4j.import.packages},
-              jakarta.mail;version="2.0";resolution:=optional,
-              jakarta.mail.event;version="2.0";resolution:=optional,
-              jakarta.mail.internet;version="2.0";resolution:=optional,
-              jakarta.mail.search;version="2.0";resolution:=optional,
-              jakarta.mail.util;version="2.0";resolution:=optional,
-              jakarta.transaction;version="2.0.0";resolution:=optional,
-              jakarta.transaction.xa;version="2.0.0";resolution:=optional,
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", jakarta.*</DynamicImport-Package>
+            <Import-Package>!jakarta.*,${osgi.slf4j.import.packages},
               org.objectweb.asm;version="$(version;=;${asm.version})";resolution:=optional,
               org.osgi.framework,
               org.osgi.service.cm;version="${osgi-service-cm-version}",

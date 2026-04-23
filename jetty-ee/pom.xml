@@ -256,8 +256,8 @@
         <artifactId>maven-bundle-plugin</artifactId>
         <configuration>
           <instructions>
-            <DynamicImport-Package>jakarta.servlet,jakarta.servlet.*</DynamicImport-Package>
-            <Import-Package>!jakarta.servlet,!jakarta.servlet.*,${osgi.slf4j.import.packages},*</Import-Package>
+            <DynamicImport-Package>jakarta.*</DynamicImport-Package>
+            <Import-Package>!jakarta.*,${osgi.slf4j.import.packages},*</Import-Package>
           </instructions>
         </configuration>
       </plugin>

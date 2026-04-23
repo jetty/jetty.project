@@ -176,6 +176,7 @@
 
     -->
     <bndlib.version>6.4.1</bndlib.version>
+    <bndlib.build.version>7.2.3</bndlib.build.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <brotli4j.version>1.22.0</brotli4j.version>
     <build-helper.maven.plugin.version>3.6.1</build-helper.maven.plugin.version>
@@ -1529,6 +1530,13 @@
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <version>${maven.bundle.plugin.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>biz.aQute.bnd</groupId>
+              <artifactId>biz.aQute.bndlib</artifactId>
+              <version>${bndlib.build.version}</version>
+            </dependency>
+          </dependencies>
           <configuration>
             <supportedProjectTypes>
               <supportedProjectType>jar</supportedProjectType>
@@ -1545,7 +1553,6 @@
                 *</Import-Package>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
-              <_noee>true</_noee>
             </instructions>
           </configuration>
         </plugin>

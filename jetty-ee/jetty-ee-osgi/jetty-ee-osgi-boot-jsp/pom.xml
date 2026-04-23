@@ -56,22 +56,13 @@
             <Bundle-Name>Jetty-OSGi-Jasper Integration</Bundle-Name>
             <Bundle-Classpath/>
             <Fragment-Host>org.eclipse.jetty.ee.osgi.boot</Fragment-Host>
-            <Import-Package>${osgi.slf4j.import.packages},
+            <Import-Package>!jakarta.*,${osgi.slf4j.import.packages},
               org.eclipse.jdt.*;resolution:=optional,
               org.eclipse.jdt.core.compiler.*;resolution:=optional,
               com.sun.el;resolution:=optional,
               com.sun.el.lang;resolution:=optional,
               com.sun.el.parser;resolution:=optional,
               com.sun.el.util;resolution:=optional,
-              jakarta.el;version="[6.0,7.0)",
-              jakarta.servlet.jsp.resources;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
-              jakarta.servlet.jsp;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
-              jakarta.servlet.jsp.el;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
-              jakarta.servlet.jsp.tagext;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
-              jakarta.servlet.jsp.jstl.core;version="2.0";resolution:=optional,
-              jakarta.servlet.jsp.jstl.fmt;version="2.0";resolution:=optional,
-              jakarta.servlet.jsp.jstl.sql;version="2.0";resolution:=optional,
-              jakarta.servlet.jsp.jstl.tlv;version="2.0";resolution:=optional,
               org.apache.el;version="[$(version;==;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))";resolution:=optional,
               org.apache.el.lang;version="[$(version;==;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))";resolution:=optional,
               org.apache.el.stream;version="[$(version;==;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))";resolution:=optional,
@@ -122,7 +113,7 @@
             <DynamicImport-Package>org.eclipse.jetty.ee.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
                 org.apache.jasper.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))",
                 org.apache.el.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))",
-                jakarta.servlet,jakarta.servlet.*</DynamicImport-Package>
+                jakarta.*</DynamicImport-Package>
             <_noee>true</_noee>
           </instructions>
         </configuration>

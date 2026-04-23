@@ -79,7 +79,7 @@ public class TestJettyOSGiBootWithBundle
         File etcFolder = new File("src/test/config/etc");
         bundle.addResource("jettyhome/etc/jetty-http-boot-with-bundle.xml", new FileInputStream(new File(etcFolder, "jetty-http-boot-with-bundle.xml")));
         bundle.addResource("jettyhome/etc/jetty-with-custom-class.xml", new FileInputStream(new File(etcFolder, "jetty-with-custom-class.xml")));
-        options.add(CoreOptions.streamBundle(bundle.build()).startLevel(1));
+        options.add(CoreOptions.streamBundle(bundle.build(TinyBundles.rawBuilder())).startLevel(1));
         options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[0]);
     }
