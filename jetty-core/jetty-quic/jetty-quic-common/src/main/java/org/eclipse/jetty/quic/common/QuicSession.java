@@ -89,10 +89,16 @@ public abstract class QuicSession extends AbstractSession
     private final RetryPacketGenerator retryPacketGenerator = new RetryPacketGenerator();
     private final Map<EncryptionLevel, FrameStream> cryptoStreams = new HashMap<>();
     private final Map<Long, QuicStream> streams = new ConcurrentHashMap<>();
+    private final AtomicLong biStreamIds = new AtomicLong();
+    private final AtomicLong uniStreamIds = new AtomicLong();
     private final AtomicLong biRemoteStreamCount = new AtomicLong();
     private final AtomicLong biRemoteStreamMaxCount = new AtomicLong();
     private final AtomicLong uniRemoteStreamCount = new AtomicLong();
     private final AtomicLong uniRemoteStreamMaxCount = new AtomicLong();
+    private final AtomicLong terminatedBiLocalStream = new AtomicLong(-1);
+    private final AtomicLong terminatedUniLocalStream = new AtomicLong(-1);
+    private final AtomicLong terminatedBiRemoteStream = new AtomicLong(-1);
+    private final AtomicLong terminatedUniRemoteStream = new AtomicLong(-1);
     private final AtomicLong sendData = new AtomicLong();
     private final AtomicLong sendMaxData = new AtomicLong();
     private final Scheduler scheduler;
@@ -102,6 +108,7 @@ public abstract class QuicSession extends AbstractSession
     private final PacketNumbers packetNumbers;
     private final TLSEngine tlsEngine;
     private final EndPoint endPoint;
+    private final boolean client;
     private final PacketsParser parser;
     private final QuicFlusher flusher;
     private Packet.Listener packetListener;
@@ -113,7 +120,7 @@ public abstract class QuicSession extends AbstractSession
     private TransportParameters transportParameters;
     private boolean writeStalled;
 
-    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint)
+    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint, boolean client)
     {
         super(executor, quicConfiguration, listener);
         this.scheduler = scheduler;
@@ -123,6 +130,7 @@ public abstract class QuicSession extends AbstractSession
         this.packetNumbers = packetNumbers;
         this.tlsEngine = tlsEngine;
         this.endPoint = endPoint;
+        this.client = client;
         this.parser = new PacketsParser(tlsEngine.getPacketProtector(), packetNumbers, new FramesParser());
         this.flusher = new QuicFlusher(this);
         this.packetListener = new PacketProcessor();
@@ -284,7 +292,11 @@ public abstract class QuicSession extends AbstractSession
     }
 
     @Override
-    public abstract long newStreamId(boolean bidirectional);
+    public long newStreamId(boolean bidirectional)
+    {
+        AtomicLong streamIds = bidirectional ? biStreamIds : uniStreamIds;
+        return StreamId.newStreamId(streamIds.getAndIncrement(), bidirectional, client);
+    }
 
     @Override
     public Stream newStream(long streamId, Stream.Listener listener)
@@ -319,14 +331,31 @@ public abstract class QuicSession extends AbstractSession
         QuicStream stream;
         try (var _ = lock.lock())
         {
-            // TODO: check close state.
+            // TODO: check session close state.
 
             stream = streams.get(streamId);
             if (stream != null)
                 return stream;
 
-            // Create a new stream, if allowed.
+            // A local stream id cannot create a new remote stream.
+            // For example, a client can only receive a frame on a
+            // client-initiated stream that the client created.
+            if (StreamId.isLocal(streamId, client))
+            {
+                AtomicLong streamIds = StreamId.isBidirectional(streamId) ? biStreamIds : uniStreamIds;
+                if (streamId > streamIds.get())
+                    throw new QuicException(ErrorCode.STREAM_STATE_ERROR, "invalid_stream_id");
+                else
+                    return null;
+            }
+
             boolean bidirectional = StreamId.isBidirectional(streamId);
+            AtomicLong terminatedStreamId = bidirectional ? terminatedBiRemoteStream : terminatedUniRemoteStream;
+            boolean terminated = streamId <= terminatedStreamId.get();
+            if (terminated)
+                return null;
+
+            // Create a new stream, if allowed.
             AtomicLong remoteStreamCount = bidirectional ? biRemoteStreamCount : uniRemoteStreamCount;
             AtomicLong remoteStreamMaxCount = bidirectional ? biRemoteStreamMaxCount : uniRemoteStreamMaxCount;
             long max = remoteStreamMaxCount.get();
@@ -338,7 +367,7 @@ public abstract class QuicSession extends AbstractSession
             stream = new QuicStream(this, streamId, false);
             streams.put(streamId, stream);
             if (LOG.isDebugEnabled())
-                LOG.debug("created remote {} on {}", stream, this);
+                LOG.debug("created remote {} for {} on {}", stream, frame, this);
         }
 
         stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
@@ -370,9 +399,17 @@ public abstract class QuicSession extends AbstractSession
 
     boolean remove(QuicStream stream)
     {
-        boolean removed = streams.remove(stream.getId()) != null;
+        long streamId = stream.getId();
+        boolean removed = streams.remove(streamId) != null;
         if (LOG.isDebugEnabled())
             LOG.debug("removed {} {} from {}", removed, stream, this);
+        if (removed)
+        {
+            AtomicLong terminated = stream.isBidirectional()
+                ? stream.isLocal() ? terminatedBiLocalStream : terminatedBiRemoteStream
+                : stream.isLocal() ? terminatedUniLocalStream : terminatedUniRemoteStream;
+            Atomics.updateMax(terminated, streamId);
+        }
         return removed;
     }
 
@@ -397,7 +434,7 @@ public abstract class QuicSession extends AbstractSession
         sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
-    void data(QuicStream stream, StreamFrame frame, Promise.Invocable<Stream> promise)
+    public void data(QuicStream stream, StreamFrame frame, Promise.Invocable<Stream> promise)
     {
         flusher.sendFrames(stream, List.of(frame), Promise.Invocable.toCallback(promise, stream));
     }
@@ -615,7 +652,15 @@ public abstract class QuicSession extends AbstractSession
     private void processFrameWithStreamId(Frame.WithStreamId frame)
     {
         QuicStream stream = getOrCreateRemoteStream(frame);
-        stream.processFrame(frame);
+        if (stream != null)
+        {
+            stream.processFrame(frame);
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("dropping frame {} for terminated stream #{} on {}", frame, frame.streamId(), this);
+        }
     }
 
     public void updateSendMaxData(QuicStream stream, long newValue)
