@@ -20,12 +20,10 @@ import org.eclipse.jetty.quic.util.VarLenInt;
 
 public class PaddingFrameParser implements FrameParser
 {
-    private static final Frame PADDING_FRAME = new PaddingFrame();
-
     @Override
     public Frame parse(RetainableByteBuffer buffer)
     {
         VarLenInt.decodeLong(buffer.getByteBuffer());
-        return PADDING_FRAME;
+        return PaddingFrame.INSTANCE;
     }
 }

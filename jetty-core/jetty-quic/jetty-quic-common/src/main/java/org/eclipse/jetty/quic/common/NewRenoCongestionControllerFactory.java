@@ -47,7 +47,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         return new NewRenoCongestionController(this);
     }
 
-    private static class NewRenoCongestionController implements CongestionController
+    protected static class NewRenoCongestionController implements CongestionController
     {
         private static final Logger LOG = LoggerFactory.getLogger(NewRenoCongestionController.class);
 
@@ -64,7 +64,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         private long congestionRecoveryNanoTime;
         private boolean persistentCongestion;
 
-        private NewRenoCongestionController(NewRenoCongestionControllerFactory factory)
+        public NewRenoCongestionController(NewRenoCongestionControllerFactory factory)
         {
             this.factory = factory;
             // RFC-9002[7.2]: minimum window.
@@ -89,7 +89,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
             latestSendBytes = length;
 
             if (LOG.isDebugEnabled())
-                LOG.debug("sent [{}] on {}", packet.packetNumber(), this);
+                LOG.debug("sent [{}] length={} dataStalled={} on {}", packet.packetNumber(), length, dataStalled, this);
         }
 
         @Override

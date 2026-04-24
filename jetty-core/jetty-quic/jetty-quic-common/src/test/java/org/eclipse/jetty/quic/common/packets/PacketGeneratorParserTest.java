@@ -258,7 +258,7 @@ public class PacketGeneratorParserTest
         byte[] source = new byte[0];
         byte[] token = new byte[0];
         int packetNumber = 2;
-        PingFrame frame = new PingFrame();
+        PingFrame frame = PingFrame.INSTANCE;
         InitialPacket generated = new InitialPacket(QuicVersion.V1, destination, source, token, packetNumber, List.of(frame));
 
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();

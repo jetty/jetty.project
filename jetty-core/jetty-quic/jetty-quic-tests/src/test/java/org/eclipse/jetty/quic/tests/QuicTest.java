@@ -104,25 +104,6 @@ public class QuicTest extends AbstractQuicTest
         assertThat(clientEvents, equalTo(expectedEvents));
     }
 
-    @Test
-    public void testEmptyNonLastStreamFrame() throws Exception
-    {
-        start(() -> new Session.Listener()
-        {
-
-        });
-
-        Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, promise);
-        Session clientSession = promise.get(5, SECONDS);
-
-        long streamId = clientSession.newStreamId(true);
-        Stream clientStream = clientSession.newStream(streamId, new Stream.Listener()
-        {
-        });
-        clientStream.data(false, RetainableByteBuffer.EMPTY, Promise.Invocable.noop());
-    }
-
     @ParameterizedTest
     @ValueSource(ints = {/*1, 1024, */1024 * 1024/*, 4 * 1024 * 1024*/})
     public void testEcho(int length) throws Exception

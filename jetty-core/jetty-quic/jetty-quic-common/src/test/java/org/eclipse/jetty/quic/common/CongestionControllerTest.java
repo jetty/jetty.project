@@ -37,7 +37,7 @@ public class CongestionControllerTest
     @MethodSource("controllers")
     public void testDuplicateAck(CongestionController cc)
     {
-        List<Frame> frames = List.of(new PingFrame());
+        List<Frame> frames = List.of(PingFrame.INSTANCE);
         Packet.WithFrames packet = new OneRTTPacket(0, new byte[0], false, false, frames);
         RTTData rttData = new RTTData(0, 0, MILLISECONDS.toNanos(10), MILLISECONDS.toNanos(2));
 

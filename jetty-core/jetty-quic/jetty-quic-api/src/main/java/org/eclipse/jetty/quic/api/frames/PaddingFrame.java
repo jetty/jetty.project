@@ -15,7 +15,9 @@ package org.eclipse.jetty.quic.api.frames;
 
 public final class PaddingFrame extends Frame.Abstract
 {
-    public PaddingFrame()
+    public static final Frame INSTANCE = new PaddingFrame();
+
+    private PaddingFrame()
     {
         super(0x00);
     }

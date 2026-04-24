@@ -21,12 +21,10 @@ import org.eclipse.jetty.quic.util.VarLenInt;
 /// A parser for QUIC PING frames.
 public class PingFrameParser implements FrameParser
 {
-    private static final PingFrame PING_FRAME = new PingFrame();
-
     @Override
     public Frame parse(RetainableByteBuffer buffer)
     {
         VarLenInt.decodeLong(buffer.getByteBuffer());
-        return PING_FRAME;
+        return PingFrame.INSTANCE;
     }
 }

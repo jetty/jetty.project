@@ -72,22 +72,44 @@ class StreamFlusher extends CryptoFlusher
         }
     }
 
-    boolean process() throws Exception
+    @Override
+    boolean drain(List<FramesEntry> output)
     {
-        // RFC-9002[7.7].
-        // Acknowledgments are processed immediately,
-        // without pacing or congestion window checks.
-        if (acknowledger.processAcknowledgements())
-            return true;
+        acknowledger.drain(output);
+        return super.drain(output);
+    }
 
+    @Override
+    boolean process(List<FramesEntry> entries, boolean probeMode) throws Exception
+    {
         // Update the flow control windows.
         processMaxData();
 
-        // TODO: if there are no entries to flush, likely
-        //  we just sent a packet, so pacing delay > 0,
-        //  and we would schedule an unnecessary task.
+        if (probeMode)
+            return super.process(entries, true);
 
-        // No more acknowledgments to send, check pacing.
+        // TODO: Current state:
+        //  * For non 1-RTT, we put acks and packet in the same list, and send immediately.
+        //    This currently has the problem that an ack may be delayed (it's after a crypto frame)
+        //    but there is no cwnd check (there should be, but it's only few packets).
+        //    The order can be solved storing the ack frames aside, and draining them before the data.
+        //  * For 1-RTT, we put acks separated from data, and may send delayed (max_ack_delay).
+        //    We must not pace acks, but must pace data.
+        //    So if we are paced, but have acks, must send the acks and wait for the pacer.
+        //    We can fake the pacer by giving a cwnd=0, which would stall the data.
+        //    This requires splitting the acks from the frames, unfortunately.
+        //    Unless, we know that the acks are always first; the moment we see a non-ack we know.
+        //    We are not paced, but cwnd may be 0.
+        //    If there are no acks, stall.
+        //    If there are acks, process everything passing cwnd=0.
+        //  The main processing can do:
+        //  * generate acks, keep track of their length (but don't decrement cwnd yet)
+        //  * if there is data to send and udp/cwnd space (considering the acks length)
+        //    then update the space and generate the data frames.
+        //  * otherwise, there is no space, we only send the acks.
+
+
+        // Check pacing.
         CongestionController congestionController = getQuicSession().getCongestionController();
         long pacingDelay = congestionController.getPacingDelay();
         if (LOG.isDebugEnabled())
@@ -98,22 +120,11 @@ class StreamFlusher extends CryptoFlusher
                 LOG.debug("delayed by pacing, flush stalled on {}", this);
             Runnable task = () -> getQuicSession().getExecutor().execute(getQuicFlusher()::iterate);
             getQuicSession().getScheduler().schedule(task, pacingDelay, TimeUnit.NANOSECONDS);
-            return false;
+            // Simulate a zero congestion window to stall data flush.
+            return process(entries, false, 0);
         }
 
-        // We can send packets according to pacing, check the congestion window.
-        long congestionWindow = congestionController.getCongestionWindow();
-        if (LOG.isDebugEnabled())
-            LOG.debug("congestion window {} bytes on {}", congestionWindow, this);
-        if (congestionWindow <= 0)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("zero congestion window, flush stalled on {}", this);
-            return false;
-        }
-
-        // Finally, process frames to send.
-        return process(congestionWindow);
+        return super.process(entries, false);
     }
 
     private void processMaxData()
@@ -147,7 +158,7 @@ class StreamFlusher extends CryptoFlusher
                     if (session.stall())
                     {
                         // TODO: optimize immediate generation if there is room.
-                        sendFrames(null, List.of(new DataBlockedFrame(session.getSendData(null))), NOOP/*TODO: failures*/);
+                        sendFrames(List.of(new DataBlockedFrame(session.getSendData(null))), NOOP/*TODO: failures*/);
                     }
                     yield null;
                 }
@@ -158,7 +169,7 @@ class StreamFlusher extends CryptoFlusher
                     if (stream.stall())
                     {
                         // TODO: optimize immediate generation if there is room.
-                        sendFrames(null, List.of(new StreamDataBlockedFrame(stream.getId(), session.getSendData(stream))), NOOP/*TODO: failures*/);
+                        sendFrames(List.of(new StreamDataBlockedFrame(stream.getId(), session.getSendData(stream))), NOOP/*TODO: failures*/);
                     }
                     yield null;
                 }
@@ -207,7 +218,6 @@ class StreamFlusher extends CryptoFlusher
     private class Acknowledger implements Runnable
     {
         private final List<Entry> packetNumbers = new ArrayList<>();
-        private final List<FramesEntry> processing = new ArrayList<>(1);
         private long largestPacketNumber;
         private Scheduler.Task ackDelayTask;
 
@@ -234,6 +244,9 @@ class StreamFlusher extends CryptoFlusher
                     ackDelayTask = session.getScheduler().schedule(task, session.getQuicConfiguration().getAcknowledgmentMaxDelay(), TimeUnit.MILLISECONDS);
                 }
 
+                if (drain && ackDelayTask != null)
+                    ackDelayTask.cancel();
+
                 largestPacketNumber = Math.max(largestPacketNumber, packetNumber);
                 packetNumbers.add(new Entry(NanoTime.now(), packetNumber, callback));
             }
@@ -258,7 +271,7 @@ class StreamFlusher extends CryptoFlusher
                 getQuicFlusher().iterate();
         }
 
-        boolean processAcknowledgements() throws Exception
+        void drain(List<FramesEntry> output)
         {
             List<Entry> numbers;
             try (var _ = lock())
@@ -268,10 +281,10 @@ class StreamFlusher extends CryptoFlusher
             }
 
             if (numbers.isEmpty())
-                return false;
+                return;
 
             if (LOG.isDebugEnabled())
-                LOG.debug("flushing {} acks on {}", numbers.size(), this);
+                LOG.debug("draining {} acks on {}", numbers.size(), this);
 
             long exponent = getQuicSession().getQuicConfiguration().getAcknowledgmentDelayExponent();
 
@@ -281,9 +294,9 @@ class StreamFlusher extends CryptoFlusher
                 long ackDelayMicros = TimeUnit.NANOSECONDS.toMicros(NanoTime.since(entry.nanoTime));
                 AckFrame frame = new AckFrame(entry.packetNumber(), AckFrame.encodeAckDelay(ackDelayMicros, exponent), 0, List.of());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("flushing {} on {}", frame, this);
-                processing.add(new FramesEntry(null, List.of(frame), entry.callback));
-                return process(processing, Long.MAX_VALUE);
+                    LOG.debug("draining {} on {}", frame, this);
+                output.add(new FramesEntry(null, List.of(frame), entry.callback, false));
+                return;
             }
 
             // RFC-9000[19.3, 19.3.1].
@@ -346,10 +359,9 @@ class StreamFlusher extends CryptoFlusher
             long encodedAckDelay = AckFrame.encodeAckDelay(ackDelayMicros, exponent);
             AckFrame frame = new AckFrame(largest.packetNumber(), encodedAckDelay, firstRangeLength, ackRanges != null ? ackRanges : List.of());
             if (LOG.isDebugEnabled())
-                LOG.debug("flushing {} on {}", frame, this);
+                LOG.debug("draining {} on {}", frame, this);
 
-            processing.add(new FramesEntry(null, List.of(frame), combinedCallback));
-            return process(processing, Long.MAX_VALUE);
+            output.add(new FramesEntry(null, List.of(frame), combinedCallback, false));
         }
 
         @Override
