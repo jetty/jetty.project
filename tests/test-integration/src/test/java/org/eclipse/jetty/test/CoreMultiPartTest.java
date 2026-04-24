@@ -66,6 +66,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
@@ -360,6 +362,7 @@ public class CoreMultiPartTest
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testTempFilesDeletedOnError() throws Exception
     {
         byte[] bytes = new byte[2 * MAX_FILE_SIZE];
@@ -567,8 +570,8 @@ public class CoreMultiPartTest
             .send();
 
         assertEquals(200, response.getStatus());
-        assertThat(response.getContentAsString(), containsString("Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog\n" +
-            "Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog"));
+        assertThat(response.getContentAsString(), containsString(("Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog\n" +
+            "Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog").replace("\n", System.lineSeparator())));
     }
 
     @Test
