@@ -19,11 +19,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FormRequestContent;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
@@ -41,6 +43,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,13 +86,16 @@ public class FormTest extends AbstractTest
             MimeTypes.Type.FORM_ENCODED.asString(),
             newContent(contentSize));
 
-        ContentResponse response = client.newRequest(newURI(transportType).resolve("/test/"))
+        AtomicReference<Result> resultRef = new AtomicReference<>();
+
+        client.newRequest(newURI(transportType).resolve("/test/"))
             .method(HttpMethod.POST)
             .body(formContent)
             .timeout(5, TimeUnit.SECONDS)
-            .send();
+            .send(resultRef::set);
 
-        assertEquals(expectedStatus, response.getStatus());
+        await().atMost(6, TimeUnit.SECONDS).until(() -> resultRef.get() != null);
+        assertEquals(expectedStatus, resultRef.get().getResponse().getStatus());
     }
 
     private byte[] newContent(int size)
