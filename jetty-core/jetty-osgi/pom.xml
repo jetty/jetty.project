@@ -70,7 +70,7 @@
         <configuration>
           <instructions>
             <Bundle-Activator>org.eclipse.jetty.osgi.JettyBootstrapActivator</Bundle-Activator>
-            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",org.apache.jasper,org.apache.jasper.*,org.apache.el,org.apache.el.*,org.apache.tomcat,org.apache.tomcat.*</DynamicImport-Package>
             <_nouses>true</_nouses>
           </instructions>
         </configuration>

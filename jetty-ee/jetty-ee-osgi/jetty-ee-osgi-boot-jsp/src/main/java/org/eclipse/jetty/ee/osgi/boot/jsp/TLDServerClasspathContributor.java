@@ -31,9 +31,13 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
 {
     /**
      * Name of a class that belongs to the jstl bundle. From that class
-     * we locate the corresponding bundle.
+     * we locate the corresponding bundle. Try multiple known locations
+     * to support both Tomcat 11.x (wasp/ee11) and Tomcat 10.x (apache taglibs/ee10).
      */
-    private static String JSTL_BUNDLE_CLASS = "org.glassfish.wasp.taglibs.standard.tag.el.core.WhenTag";
+    private static final String[] JSTL_BUNDLE_CLASSES = {
+        "org.glassfish.wasp.taglibs.standard.tag.el.core.WhenTag",
+        "org.apache.taglibs.standard.tag.rt.core.WhenTag"
+    };
 
     @Override
     public List<Bundle> getScannableBundles()
@@ -94,16 +98,17 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
      */
     public Bundle findJstlBundle()
     {
-        Class<?> jstlClass = null;
-
-        try
+        for (String jstlBundleClass : JSTL_BUNDLE_CLASSES)
         {
-            jstlClass = getClass().getClassLoader().loadClass(JSTL_BUNDLE_CLASS);
-            return FrameworkUtil.getBundle(jstlClass);
-        }
-        catch (ClassNotFoundException e)
-        {
-            //no jstl do nothing
+            try
+            {
+                Class<?> jstlClass = getClass().getClassLoader().loadClass(jstlBundleClass);
+                return FrameworkUtil.getBundle(jstlClass);
+            }
+            catch (ClassNotFoundException e)
+            {
+                //try next
+            }
         }
 
         return null;

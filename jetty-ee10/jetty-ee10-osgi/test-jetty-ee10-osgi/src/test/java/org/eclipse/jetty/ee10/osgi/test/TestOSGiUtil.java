@@ -288,6 +288,7 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee.osgi").artifactId("jetty-ee-osgi-boot-jsp").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.ee10.osgi").artifactId("jetty-ee10-osgi-boot-jsp").versionAsInProject().noStart());
     }
 
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
