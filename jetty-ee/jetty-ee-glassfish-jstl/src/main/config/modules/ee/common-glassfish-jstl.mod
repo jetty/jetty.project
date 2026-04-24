@@ -10,5 +10,4 @@ Enables the glassfish version of JSTL for all webapps.
 ee/common-apache-jsp
 
 [lib]
-lib/ee-glassfish-jstl/@jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api@
 lib/ee-glassfish-jstl/@org.glassfish.wasp:wasp@

@@ -15,7 +15,6 @@ auth-config-factory
 
 [lib]
 lib/jetty-ee-jaspi-${jetty.version}.jar
-lib/ee-jaspi/@jakarta.authentication:jakarta.authentication-api@
 
 [xml]
 etc/jaspi/jetty-ee-jaspi-authmoduleconfig.xml
