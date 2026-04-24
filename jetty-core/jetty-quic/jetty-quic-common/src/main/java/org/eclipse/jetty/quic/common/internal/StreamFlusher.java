@@ -88,27 +88,6 @@ class StreamFlusher extends CryptoFlusher
         if (probeMode)
             return super.process(entries, true);
 
-        // TODO: Current state:
-        //  * For non 1-RTT, we put acks and packet in the same list, and send immediately.
-        //    This currently has the problem that an ack may be delayed (it's after a crypto frame)
-        //    but there is no cwnd check (there should be, but it's only few packets).
-        //    The order can be solved storing the ack frames aside, and draining them before the data.
-        //  * For 1-RTT, we put acks separated from data, and may send delayed (max_ack_delay).
-        //    We must not pace acks, but must pace data.
-        //    So if we are paced, but have acks, must send the acks and wait for the pacer.
-        //    We can fake the pacer by giving a cwnd=0, which would stall the data.
-        //    This requires splitting the acks from the frames, unfortunately.
-        //    Unless, we know that the acks are always first; the moment we see a non-ack we know.
-        //    We are not paced, but cwnd may be 0.
-        //    If there are no acks, stall.
-        //    If there are acks, process everything passing cwnd=0.
-        //  The main processing can do:
-        //  * generate acks, keep track of their length (but don't decrement cwnd yet)
-        //  * if there is data to send and udp/cwnd space (considering the acks length)
-        //    then update the space and generate the data frames.
-        //  * otherwise, there is no space, we only send the acks.
-
-
         // Check pacing.
         CongestionController congestionController = getQuicSession().getCongestionController();
         long pacingDelay = congestionController.getPacingDelay();
