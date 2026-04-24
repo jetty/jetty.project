@@ -12,4 +12,3 @@ annotations
 
 [lib]
 lib/jetty-ee-annotations-${jetty.version}.jar
-lib/ee-annotations/@jakarta.annotation:jakarta.annotation-api@

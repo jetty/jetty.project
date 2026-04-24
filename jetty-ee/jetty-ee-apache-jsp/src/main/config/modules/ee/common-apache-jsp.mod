@@ -11,8 +11,6 @@ ee/common-servlet
 ee/common-annotations
 
 [lib]
-lib/ee-apache-jsp/@jakarta.el:jakarta.el-api@
-lib/ee-apache-jsp/@jakarta.servlet.jsp:jakarta.servlet.jsp-api@
 lib/ee-apache-jsp/@org.eclipse.jdt:ecj@
 lib/ee-apache-jsp/@org.mortbay.jasper:mortbay-apache-el@
 lib/ee-apache-jsp/@org.mortbay.jasper:mortbay-apache-jsp@
