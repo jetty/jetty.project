@@ -3,15 +3,15 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
-    <artifactId>jetty-servlet5-demos</artifactId>
+    <artifactId>jetty-servlet6-demos</artifactId>
     <version>13.0.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
-  <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
+  <artifactId>jetty-servlet6-demo-spec-webapp</artifactId>
   <packaging>war</packaging>
-  <name>Servlet 5 :: Demo :: Servlet Spec :: WebApp</name>
+  <name>Servlet 6 :: Demo :: Servlet Spec :: WebApp</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.servlet5.spec.webapp</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet6.spec.webapp</bundle-symbolic-name>
   </properties>
 
   <dependencies>
@@ -50,8 +50,8 @@
             <supportedProjectType>war</supportedProjectType>
           </supportedProjectTypes>
           <instructions>
-            <Bundle-Description>Test Webapp for Servlet 5.0 Features</Bundle-Description>
-            <Import-Package>jakarta.annotation.*;version="2.0.0", jakarta.transaction*;version="2.0.0", jakarta.servlet*;version="5.0.0", org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.webapp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.eclipse.jetty.plus.jndi;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.example;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", *</Import-Package>
+            <Bundle-Description>Test Webapp for Servlet 6.0 Features</Bundle-Description>
+            <Import-Package>jakarta.annotation.*;version="2.0.0", jakarta.transaction*;version="2.0.0", jakarta.servlet*;version="6.0.0", org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.webapp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.eclipse.jetty.plus.jndi;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.example;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", *</Import-Package>
             <_nouses/>
             <Export-Package>org.example.test;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}";-noimport:=true</Export-Package>
             <Web-ContextPath>/</Web-ContextPath>
@@ -60,16 +60,42 @@
         </configuration>
         <executions>
           <execution>
-            <id>ee9</id>
+            <id>ee</id>
             <goals>
               <goal>manifest</goal>
             </goals>
             <configuration>
               <instructions>
-                <Jetty-Environment>ee9</Jetty-Environment>
-                <Jetty-ContextFilePath>META-INF/ee9-plugin-context.xml</Jetty-ContextFilePath>
+                <Jetty-Environment>ee</Jetty-Environment>
+                <Jetty-ContextFilePath>META-INF/ee-plugin-context.xml</Jetty-ContextFilePath>
               </instructions>
-              <manifestLocation>${project.build.outputDirectory}/META-INF-ee9</manifestLocation>
+              <manifestLocation>${project.build.outputDirectory}/META-INF-ee</manifestLocation>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ee10</id>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Jetty-Environment>ee10</Jetty-Environment>
+                <Jetty-ContextFilePath>META-INF/ee10-plugin-context.xml</Jetty-ContextFilePath>
+              </instructions>
+              <manifestLocation>${project.build.outputDirectory}/META-INF-ee10</manifestLocation>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ee11</id>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Jetty-Environment>ee11</Jetty-Environment>
+                <Jetty-ContextFilePath>META-INF/ee11-plugin-context.xml</Jetty-ContextFilePath>
+              </instructions>
+              <manifestLocation>${project.build.outputDirectory}/META-INF-ee11</manifestLocation>
             </configuration>
           </execution>
         </executions>
@@ -80,17 +106,47 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
-            <id>ee9-web-bundle-assembly</id>
+            <id>ee-web-bundle-assembly</id>
             <goals>
               <goal>single</goal>
             </goals>
             <phase>package</phase>
             <configuration>
               <descriptors>
-                <descriptor>src/main/assembly/ee9-web-bundle.xml</descriptor>
+                <descriptor>src/main/assembly/ee-web-bundle.xml</descriptor>
               </descriptors>
               <archive>
-                <manifestFile>${project.build.outputDirectory}/META-INF-ee9/MANIFEST.MF</manifestFile>
+                <manifestFile>${project.build.outputDirectory}/META-INF-ee/MANIFEST.MF</manifestFile>
+              </archive>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ee10-web-bundle-assembly</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/ee10-web-bundle.xml</descriptor>
+              </descriptors>
+              <archive>
+                <manifestFile>${project.build.outputDirectory}/META-INF-ee10/MANIFEST.MF</manifestFile>
+              </archive>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ee11-web-bundle-assembly</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/ee11-web-bundle.xml</descriptor>
+              </descriptors>
+              <archive>
+                <manifestFile>${project.build.outputDirectory}/META-INF-ee11/MANIFEST.MF</manifestFile>
               </archive>
             </configuration>
           </execution>

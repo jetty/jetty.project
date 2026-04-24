@@ -62,6 +62,8 @@
             <Export-Package>org.eclipse.jetty.ee.apache.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", org.eclipse.jetty.ee.jsp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
             <Provide-Capability>osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=org.apache.juli.logging.Log</Provide-Capability>
+            <Import-Package>!jakarta.*,!org.apache.jasper.*,!org.apache.juli.*,!org.apache.tomcat.*,*</Import-Package>
+            <DynamicImport-Package>jakarta.*,org.apache.jasper.*,org.apache.juli.*,org.apache.tomcat.*</DynamicImport-Package>
             <_nouses>true</_nouses>
           </instructions>
         </configuration>

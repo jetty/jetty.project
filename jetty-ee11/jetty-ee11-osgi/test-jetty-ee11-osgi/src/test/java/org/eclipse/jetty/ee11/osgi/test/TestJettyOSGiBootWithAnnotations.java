@@ -25,7 +25,6 @@ import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MultiPart;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -80,12 +79,11 @@ public class TestJettyOSGiBootWithAnnotations
         res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-container-initializer").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-mock-resources").versionAsInProject());
         //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet5-demo-spec-webapp").classifier("webbundle-ee11").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet6-demo-spec-webapp").classifier("webbundle-ee11").versionAsInProject());
         return res;
     }
 
     @Test
-    @Ignore("Ignore for now")
     public void testIndex() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))

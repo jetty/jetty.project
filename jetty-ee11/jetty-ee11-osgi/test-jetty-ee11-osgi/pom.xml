@@ -345,14 +345,14 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
+      <artifactId>jetty-servlet6-demo-jspc-6-1-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle-ee11</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet6-demo-jspc-6-1-webapp</artifactId>
+      <artifactId>jetty-servlet6-demo-spec-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle-ee11</classifier>
       <scope>test</scope>

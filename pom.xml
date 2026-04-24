@@ -169,6 +169,7 @@
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asm.version>9.9.1</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
+    <bndlib.build.version>7.2.3</bndlib.build.version>
     <!--
     DO NOT UPGRADE this except tinybundle upgrade:
     org.osgi.framework.BundleException: Could not resolve module: org.ops4j.pax.tinybundles [98]
@@ -176,7 +177,6 @@
 
     -->
     <bndlib.version>6.4.1</bndlib.version>
-    <bndlib.build.version>7.2.3</bndlib.build.version>
     <bouncycastle.version>1.84</bouncycastle.version>
     <brotli4j.version>1.22.0</brotli4j.version>
     <build-helper.maven.plugin.version>3.6.1</build-helper.maven.plugin.version>
@@ -1530,13 +1530,6 @@
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <version>${maven.bundle.plugin.version}</version>
-          <dependencies>
-            <dependency>
-              <groupId>biz.aQute.bnd</groupId>
-              <artifactId>biz.aQute.bndlib</artifactId>
-              <version>${bndlib.build.version}</version>
-            </dependency>
-          </dependencies>
           <configuration>
             <supportedProjectTypes>
               <supportedProjectType>jar</supportedProjectType>
@@ -1555,6 +1548,13 @@
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
             </instructions>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>biz.aQute.bnd</groupId>
+              <artifactId>biz.aQute.bndlib</artifactId>
+              <version>${bndlib.build.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

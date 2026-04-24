@@ -51,24 +51,24 @@
   <!-- =========================================================== -->
   <!-- Set up the list of default configuration classes            -->
   <!-- =========================================================== -->
-  <Call class="org.eclipse.jetty.ee10.webapp.Configurations" name="setKnown">
+  <Call class="org.eclipse.jetty.ee.webapp.Configurations" name="setKnown">
     <Arg>
       <Array type="String">
-        <Item>org.eclipse.jetty.ee10.webapp.FragmentConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.webapp.WebXmlConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.webapp.WebAppConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.webapp.ServletsConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.webapp.JspConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.webapp.JaasConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.webapp.JndiConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.webapp.JmxConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.osgi.annotations.AnnotationConfiguration</Item>
-        <Item>org.eclipse.jetty.ee10.osgi.boot.OSGiMetaInfConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.webapp.FragmentConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.webapp.JettyWebXmlConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.webapp.WebXmlConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.webapp.WebAppConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.webapp.ServletsConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.webapp.JspConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.webapp.JaasConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.webapp.JndiConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.plus.webapp.PlusConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.plus.webapp.EnvConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.webapp.JmxConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.websocket.server.config.JettyWebSocketConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.websocket.jakarta.server.config.JakartaWebSocketConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.osgi.annotations.AnnotationConfiguration</Item>
+        <Item>org.eclipse.jetty.ee.osgi.boot.OSGiMetaInfConfiguration</Item>
       </Array>
     </Arg>
   </Call>
