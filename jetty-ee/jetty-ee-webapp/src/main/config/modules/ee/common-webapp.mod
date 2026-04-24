@@ -16,13 +16,3 @@ etc/jetty-ee-webapp.xml
 
 [lib]
 lib/jetty-ee-webapp-${jetty.version}.jar
-
-[ini-template]
-# tag::ini-template[]
-## Customize protected and hidden classes for this web application context.
-#jetty.webapp.addProtectedClasses+=,org.example.
-#jetty.webapp.addHiddenClasses+=,org.example.
-
-## Default ContextHandler class for ee environment deployments
-# jetty.deploy.defaultContextHandlerClass=org.eclipse.jetty.ee.webapp.WebAppContext
-# end::ini-template[]

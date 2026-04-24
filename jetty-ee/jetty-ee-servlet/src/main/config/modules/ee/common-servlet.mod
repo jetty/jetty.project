@@ -11,6 +11,5 @@ server
 sessions
 
 [lib]
-lib/@jakarta.servlet:jakarta.servlet-api@
 lib/jetty-ee-servlet-${jetty.version}.jar
 lib/jetty-ee-common-${jetty.version}.jar

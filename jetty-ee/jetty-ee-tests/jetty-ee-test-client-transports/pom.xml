@@ -133,6 +133,12 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>skip-flaky-modules</id>
+      <properties>
+        <skipTests>true</skipTests>
+      </properties>
+    </profile>
   </profiles>
 
 </project>
