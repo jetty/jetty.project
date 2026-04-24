@@ -22,4 +22,4 @@ ee11-demo-mock-resources
 [files]
 basehome:modules/demo.d/ee11-demo-spec.xml|webapps/ee11-demo-spec.xml
 basehome:modules/demo.d/ee11-demo-spec.properties|webapps/ee11-demo-spec.properties
-maven://org.eclipse.jetty.demos/jetty-servlet5-demo-spec-webapp/${jetty.version}/war|webapps/ee11-demo-spec.war
+maven://org.eclipse.jetty.demos/jetty-servlet6-demo-spec-webapp/${jetty.version}/war|webapps/ee11-demo-spec.war

@@ -46,7 +46,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <DynamicImport-Package>jakarta.servlet,jakarta.servlet.*</DynamicImport-Package>
+            <DynamicImport-Package>jakarta.*</DynamicImport-Package>
           </instructions>
         </configuration>
       </plugin>

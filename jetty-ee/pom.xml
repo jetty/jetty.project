@@ -249,4 +249,19 @@
     </dependencies>
   </dependencyManagement>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <configuration>
+          <instructions>
+            <DynamicImport-Package>jakarta.*</DynamicImport-Package>
+            <Import-Package>!jakarta.*,${osgi.slf4j.import.packages},*</Import-Package>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>

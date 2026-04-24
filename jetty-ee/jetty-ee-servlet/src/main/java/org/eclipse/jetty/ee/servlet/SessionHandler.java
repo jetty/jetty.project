@@ -38,6 +38,7 @@ import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.server.Handler;
@@ -276,39 +277,64 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         }
     }
 
-    public static class SessionAccessor implements HttpSession.Accessor
+    /**
+     * Servlet 6.1+ session API wrapper that supports {@code HttpSession.Accessor}.
+     * This subclass is only loaded when Servlet 6.1+ is on the classpath, ensuring
+     * that Servlet 6.0 (EE 10) environments don't trigger loading of the
+     * {@code HttpSession.Accessor} interface.
+     */
+    public static class Servlet61SessionApi extends ServletSessionApi
     {
-        private final ManagedSession _session;
-        private final String _originalId;
-
-        public SessionAccessor(ManagedSession session)
+        public static Servlet61SessionApi wrapSession(ManagedSession session)
         {
-            _session = session;
-            _originalId = _session.getId();
+            return new Servlet61SessionApi(session);
+        }
+
+        Servlet61SessionApi(ManagedSession session)
+        {
+            super(session);
         }
 
         @Override
-        public void access(Consumer<HttpSession> sessionConsumer) throws IllegalStateException
+        public Accessor getAccessor()
         {
-            if (_session == null)
-                throw new IllegalStateException("No session");
+            return new SessionAccessor(getSession());
+        }
 
-            if (!_session.isValid())
-                throw new IllegalStateException("Invalid session");
+        public static class SessionAccessor implements HttpSession.Accessor
+        {
+            private final ManagedSession _session;
+            private final String _originalId;
 
-            if (!_originalId.equals(_session.getId()))
-                throw new IllegalStateException("Session id changed");
-
-            //update the last accessed time, but ignore any updated session cookie
-            _session.access(System.currentTimeMillis());
-
-            try
+            public SessionAccessor(ManagedSession session)
             {
-                sessionConsumer.accept(_session.getApi());
+                _session = session;
+                _originalId = _session.getId();
             }
-            finally
+
+            @Override
+            public void access(Consumer<HttpSession> sessionConsumer) throws IllegalStateException
             {
-                _session.release();
+                if (_session == null)
+                    throw new IllegalStateException("No session");
+
+                if (!_session.isValid())
+                    throw new IllegalStateException("Invalid session");
+
+                if (!_originalId.equals(_session.getId()))
+                    throw new IllegalStateException("Session id changed");
+
+                //update the last accessed time, but ignore any updated session cookie
+                _session.access(System.currentTimeMillis());
+
+                try
+                {
+                    sessionConsumer.accept(_session.getApi());
+                }
+                finally
+                {
+                    _session.release();
+                }
             }
         }
     }
@@ -329,15 +355,9 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         
         private final ManagedSession _session;
         
-        private ServletSessionApi(ManagedSession session)
+        ServletSessionApi(ManagedSession session)
         {
             _session = session;           
-        }
-
-        @Override
-        public Accessor getAccessor()
-        {
-           return new SessionAccessor(_session);
         }
 
         @Override
@@ -553,6 +573,8 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
     public Session.API newSessionAPIWrapper(ManagedSession session)
     {
+        if (ServletApiVersion.getServletApiVersion().ordinal() >= ServletApiVersion.v6_1.ordinal())
+            return Servlet61SessionApi.wrapSession(session);
         return ServletSessionApi.wrapSession(session);
     }
 

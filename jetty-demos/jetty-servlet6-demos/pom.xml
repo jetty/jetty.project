@@ -17,6 +17,7 @@
     <module>jetty-servlet6-demo-jspc-webapp</module>
     <module>jetty-servlet6-demo-jspc-6-1-webapp</module>
     <module>jetty-servlet6-demo-simple-webapp</module>
+    <module>jetty-servlet6-demo-spec</module>
     <module>jetty-servlet6-demo-spec-6-1-webapp</module>
   </modules>
 

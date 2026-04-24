@@ -699,8 +699,8 @@ public class SessionHandlerTest
         final AtomicReference<ManagedSession> managedSession = new AtomicReference<>();
         final AtomicReference<HttpSession.Accessor> accessor = new AtomicReference<>();
         sessionHandler.newSession(null, null, managedSession::set);
-        //Wrap as an HttpSession
-        SessionHandler.ServletSessionApi servletSessionApi = SessionHandler.ServletSessionApi.wrapSession(managedSession.get());
+        //Wrap as an HttpSession via the production path (version-aware dispatch)
+        SessionHandler.Servlet61SessionApi servletSessionApi = SessionHandler.Servlet61SessionApi.wrapSession(managedSession.get());
         //invalidate the session
         servletSessionApi.invalidate();
         //test that the accessor can't be called after the session is invalidated
@@ -712,7 +712,7 @@ public class SessionHandlerTest
         //test session invalid after acquiring Accessor
         sessionHandler.newSession(null, null, managedSession::set);
         //Wrap as an HttpSession
-        servletSessionApi = SessionHandler.ServletSessionApi.wrapSession(managedSession.get());
+        servletSessionApi = SessionHandler.Servlet61SessionApi.wrapSession(managedSession.get());
         //Acquire Accessor
         accessor.set(servletSessionApi.getAccessor());
         //Invalidate session
@@ -725,7 +725,7 @@ public class SessionHandlerTest
         //test session is valid
         sessionHandler.newSession(null, null, managedSession::set);
         //Wrap as an HttpSession
-        servletSessionApi = SessionHandler.ServletSessionApi.wrapSession(managedSession.get());
+        servletSessionApi = SessionHandler.Servlet61SessionApi.wrapSession(managedSession.get());
         accessor.set(servletSessionApi.getAccessor());
         final AtomicReference<String> id = new AtomicReference<>();
         //use the Accessor
@@ -743,7 +743,7 @@ public class SessionHandlerTest
         //test invalidating the session via the Accessor
         sessionHandler.newSession(null, null, managedSession::set);
         //Wrap as an HttpSession
-        servletSessionApi = SessionHandler.ServletSessionApi.wrapSession(managedSession.get());
+        servletSessionApi = SessionHandler.Servlet61SessionApi.wrapSession(managedSession.get());
         accessor.set(servletSessionApi.getAccessor());
         accessor.get().access(HttpSession::invalidate);
         assertThrows(IllegalStateException.class, () -> accessor.get().access((s) ->
@@ -753,7 +753,7 @@ public class SessionHandlerTest
         //test using Accessor after id change
         sessionHandler.newSession(null, null, managedSession::set);
         //Wrap as an HttpSession
-        servletSessionApi = SessionHandler.ServletSessionApi.wrapSession(managedSession.get());
+        servletSessionApi = SessionHandler.Servlet61SessionApi.wrapSession(managedSession.get());
         //Acquire the Accessor
         accessor.set(servletSessionApi.getAccessor());
         //Renew the session id

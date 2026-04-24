@@ -54,13 +54,13 @@ public class Activator implements BundleActivator
         // server.setDumpAfterStart(true);
 
         String[] list = new String[]{
-            "org.eclipse.jetty.ee11.osgi.boot.OSGiWebInfConfiguration",
-            "org.eclipse.jetty.ee11.webapp.WebXmlConfiguration",
-            "org.eclipse.jetty.ee11.webapp.MetaInfConfiguration",
-            "org.eclipse.jetty.ee11.webapp.FragmentConfiguration",
-            "org.eclipse.jetty.ee11.webapp.JettyWebXmlConfiguration"
+            "org.eclipse.jetty.ee.osgi.boot.OSGiWebInfConfiguration",
+            "org.eclipse.jetty.ee.webapp.WebXmlConfiguration",
+            "org.eclipse.jetty.ee.webapp.MetaInfConfiguration",
+            "org.eclipse.jetty.ee.webapp.FragmentConfiguration",
+            "org.eclipse.jetty.ee.webapp.JettyWebXmlConfiguration"
         };
-        server.setAttribute("org.eclipse.jetty.ee11.webapp.configuration", list);
+        server.setAttribute("org.eclipse.jetty.ee.webapp.configuration", list);
 
         Dictionary serverProps = new Hashtable();
         //define the unique name of the server instance

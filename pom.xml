@@ -169,6 +169,7 @@
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asm.version>9.9.1</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
+    <bndlib.build.version>7.2.3</bndlib.build.version>
     <!--
     DO NOT UPGRADE this except tinybundle upgrade:
     org.osgi.framework.BundleException: Could not resolve module: org.ops4j.pax.tinybundles [98]
@@ -1545,9 +1546,15 @@
                 *</Import-Package>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
-              <_noee>true</_noee>
             </instructions>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>biz.aQute.bnd</groupId>
+              <artifactId>biz.aQute.bndlib</artifactId>
+              <version>${bndlib.build.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

@@ -2,12 +2,8 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
 
 <Configure id="wac" class="org.eclipse.jetty.ee.webapp.WebAppContext">
-  <Set name="contextPath">/ee11-test-spec</Set>
-  <Set name="war"><Property name="jetty.webapps" />/ee11-demo-spec.war
-  </Set>
-  <Set name="configurationDiscovered">true</Set>
 
-  <New id="tx" class="org.eclipse.jetty.ee11.plus.jndi.Transaction">
+  <New id="tx" class="org.eclipse.jetty.ee.plus.jndi.Transaction">
     <Arg><Property name="environment" default="ee11"/></Arg>
     <Arg>
       <New class="org.example.MockUserTransaction" />

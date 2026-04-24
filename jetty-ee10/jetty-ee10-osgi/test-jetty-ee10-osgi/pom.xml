@@ -337,16 +337,26 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
+      <artifactId>jetty-servlet6-demo-jspc-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle-ee10</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet6-demo-jspc-webapp</artifactId>
+      <artifactId>jetty-servlet6-demo-spec-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle-ee10</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-apache-jsp</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee.osgi</groupId>
+      <artifactId>jetty-ee-osgi-boot-jsp</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
