@@ -15,7 +15,9 @@ package org.eclipse.jetty.quic.api.frames;
 
 public final class PingFrame extends Frame.Abstract
 {
-    public PingFrame()
+    public static final PingFrame INSTANCE = new PingFrame();
+
+    private PingFrame()
     {
         super(0x01);
     }

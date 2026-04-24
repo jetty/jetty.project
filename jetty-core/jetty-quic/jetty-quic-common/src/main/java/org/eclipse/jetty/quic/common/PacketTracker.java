@@ -22,10 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
-import org.eclipse.jetty.quic.api.frames.PingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.common.packets.Packet;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -247,8 +245,8 @@ public class PacketTracker
     void sendProbe(QuicSession session, EncryptionLevel encryptionLevel)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("sending probe for {} on {}", session, this);
-        session.sendFrames(encryptionLevel, List.of(new PingFrame()), Callback.NOOP);
+            LOG.debug("sending probe backoff={} for {} on {}", getProbeTimeoutBackoff(), session, this);
+        session.sendProbe(encryptionLevel);
     }
 
     void retransmit(QuicSession session, List<Packet.WithFrames> lostPackets)

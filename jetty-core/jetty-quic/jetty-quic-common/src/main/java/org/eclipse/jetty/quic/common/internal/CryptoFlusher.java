@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.quic.common.internal;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -24,6 +22,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.api.frames.PingFrame;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStream;
@@ -42,12 +41,14 @@ class CryptoFlusher implements Callback
     private static final Logger LOG = LoggerFactory.getLogger(CryptoFlusher.class);
 
     private final AutoLock lock = new AutoLock();
-    private final Deque<FramesEntry> entries = new ArrayDeque<>();
+    private final List<FramesEntry> entries = new ArrayList<>();
+    private final List<FramesEntry> ccEntries = new ArrayList<>();
     private final List<FramesEntry> processing = new ArrayList<>();
     private final List<FramesEntry> writing = new ArrayList<>();
     private final QuicFlusher flusher;
     private final EncryptionLevel encryptionLevel;
     private long cryptoOffset;
+    private boolean sendProbe;
 
     CryptoFlusher(QuicFlusher flusher, EncryptionLevel encryptionLevel)
     {
@@ -83,8 +84,17 @@ class CryptoFlusher implements Callback
     void sendAcknowledgment(Packet.WithFrames packet, Callback callback)
     {
         // RFC-9000[13.2.1]: initial and handshake packets must be acknowledged immediately.
-        AckFrame frame = new AckFrame(packet.packetNumber(), 0, 0, List.of());
-        if (sendFrames(List.of(frame), callback))
+        boolean flush;
+        try (var _ = lock())
+        {
+            // TODO: check if closed/failed, etc.
+            AckFrame frame = new AckFrame(packet.packetNumber(), 0, 0, List.of());
+            FramesEntry entry = new FramesEntry(null, List.of(frame), callback, false);
+            flush = entries.add(entry);
+            if (LOG.isDebugEnabled())
+                LOG.debug("offered={} {} on {}", flush, entry, this);
+        }
+        if (flush)
             getQuicFlusher().iterate();
     }
 
@@ -98,29 +108,27 @@ class CryptoFlusher implements Callback
         try (var _ = lock())
         {
             // TODO: check if closed/failed, etc.
-            FramesEntry entry = new FramesEntry(stream, frames, callback);
-            boolean result = entries.add(entry);
+            FramesEntry entry = new FramesEntry(stream, frames, callback, true);
+            boolean result = ccEntries.add(entry);
             if (LOG.isDebugEnabled())
                 LOG.debug("offered={} {} on {}", result, entry, this);
             return result;
         }
     }
 
-    boolean process() throws Exception
-    {
-        // This class performs immediate processing of frame entries,
-        // without taking into account pacing or congestion window,
-        // which are taken into account by subclass StreamFlusher.
-        return process(Long.MAX_VALUE);
-    }
-
-    boolean process(long congestionWindow) throws Exception
+    boolean sendProbe()
     {
         try (var _ = lock())
         {
-            processing.addAll(entries);
-            entries.clear();
+            // TODO: check if closed/failed, etc.
+            sendProbe = true;
+            return true;
         }
+    }
+
+    boolean process() throws Exception
+    {
+        boolean probeMode = drain(processing);
 
         if (processing.isEmpty())
         {
@@ -129,32 +137,162 @@ class CryptoFlusher implements Callback
             return false;
         }
 
-        return process(processing, congestionWindow);
+        boolean processed = process(processing, probeMode);
+
+        try (var _ = lock())
+        {
+            sendProbe = false;
+            for (int i = 0; i < processing.size(); ++i)
+            {
+                FramesEntry entry = processing.get(i);
+                if (entry.congestionControlled())
+                {
+                    if (i > 0)
+                        entries.addAll(0, processing.subList(0, i));
+                    ccEntries.addAll(0, processing.subList(i, processing.size()));
+                    processing.clear();
+                    break;
+                }
+            }
+        }
+
+        return processed;
     }
 
-    boolean process(List<FramesEntry> processing, long congestionWindow) throws Exception
+    boolean drain(List<FramesEntry> output)
+    {
+        try (var _ = lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("draining {} non-cc entries on {}", entries.size(), this);
+            output.addAll(entries);
+            entries.clear();
+
+            if (sendProbe)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("draining probe on {}", this);
+                output.add(new FramesEntry(null, List.of(PingFrame.INSTANCE), Callback.NOOP, true));
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("draining {} cc entries on {}", ccEntries.size(), this);
+            output.addAll(ccEntries);
+            ccEntries.clear();
+
+            return sendProbe;
+        }
+    }
+
+    boolean process(List<FramesEntry> entries, boolean probeMode) throws Exception
+    {
+        long congestionWindow = getQuicSession().getCongestionController().getCongestionWindow();
+        if (LOG.isDebugEnabled())
+            LOG.debug("congestion window {} bytes on {}", congestionWindow, this);
+        return process(entries, probeMode, congestionWindow);
+    }
+
+    boolean process(List<FramesEntry> processing, boolean probeMode, long congestionWindow) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} entries on {}", processing.size(), this);
 
         QuicSession session = getQuicSession();
         int packetHeaderLength = session.estimatePacketHeaderLength(encryptionLevel);
-        long packetPayloadMaxBytes = session.getUDPPayloadLength() - packetHeaderLength;
-        long maxBytes = Math.min(packetPayloadMaxBytes, congestionWindow);
+        long udpPayloadBytes = session.getUDPPayloadLength() - packetHeaderLength;
+        // When sending a probe, leave at least 1 byte for the PingFrame.
+        if (probeMode)
+            udpPayloadBytes -= 1;
 
         List<Frame> framesLeft = new ArrayList<>();
         List<Frame> framesGenerated = new ArrayList<>();
         RetainableByteBuffer.Mutable framesAccumulator = flusher.getPlaintextBuffer();
+
         ListIterator<FramesEntry> iterator = processing.listIterator();
+
+        // Loop over non-congestion-controlled entries.
         while (iterator.hasNext())
         {
             FramesEntry entry = iterator.next();
+            if (entry.congestionControlled())
+            {
+                // Finished with the non-congestion-controlled entries.
+                iterator.previous();
+                break;
+            }
+
+            List<Frame> frames = entry.frames();
+            for (int i = 0; i < frames.size(); ++i)
+            {
+                Frame frame = frames.get(i);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("generating left={} {} on {}", udpPayloadBytes, frame, this);
+                GeneratedFrame generated = generateFrame(framesAccumulator, entry.stream(), frame, udpPayloadBytes);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("generated {} on {}", generated, this);
+
+                if (generated == null)
+                {
+                    // Could not fit more in the datagram, bail out.
+                    for (int j = i; j < frames.size(); ++j)
+                    {
+                        framesLeft.add(frames.get(j));
+                    }
+                    break;
+                }
+                else
+                {
+                    udpPayloadBytes -= generated.length();
+                    assert udpPayloadBytes >= 0;
+                    framesGenerated.add(generated.frame());
+                }
+            }
+
+            assert !framesGenerated.isEmpty();
+
+            if (framesLeft.isEmpty())
+            {
+                // The entry was fully generated, remove it from the processing list.
+                writing.add(new FramesEntry(entry.stream(), List.copyOf(framesGenerated), entry.callback(), false));
+                framesGenerated.clear();
+                iterator.remove();
+            }
+            else
+            {
+                // The entry was partially generated, split it into two entries.
+                Callback callback = entry.callback();
+                // The first half does not notify successful completion
+                // until all frames are processed but does notify failures.
+                Callback firstHalfCallback = Callback.from(callback.getInvocationType(), () -> {}, callback::failed);
+                FramesEntry firstHalfEntry = new FramesEntry(entry.stream(), List.copyOf(framesGenerated), firstHalfCallback, false);
+                framesGenerated.clear();
+                writing.add(firstHalfEntry);
+                // Update the current entry with the second half.
+                FramesEntry secondHalfEntry = new FramesEntry(entry.stream(), List.copyOf(framesLeft), callback, false);
+                framesLeft.clear();
+                iterator.set(secondHalfEntry);
+                break;
+            }
+        }
+
+        // When sending a probe, restore the space for the PingFrame
+        // and don't limit with the congestion window.
+        if (probeMode)
+            udpPayloadBytes += 1;
+        else
+            udpPayloadBytes = Math.min(udpPayloadBytes, congestionWindow);
+
+        // Loop over congestion-controlled entries.
+        while (iterator.hasNext())
+        {
+            FramesEntry entry = iterator.next();
+
             List<Frame> frames = entry.frames();
             for (Frame frame : frames)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("generating {} udp/cwnd={}/{} on {}", frame, packetPayloadMaxBytes, maxBytes, this);
-                GeneratedFrame generated = generateFrame(framesAccumulator, entry.stream(), frame, maxBytes);
+                    LOG.debug("generating left={} {} on {}", udpPayloadBytes, frame, this);
+                GeneratedFrame generated = generateFrame(framesAccumulator, entry.stream(), frame, udpPayloadBytes);
                 if (LOG.isDebugEnabled())
                     LOG.debug("generated {} on {}", generated, this);
 
@@ -164,8 +302,8 @@ class CryptoFlusher implements Callback
                 }
                 else
                 {
-                    maxBytes -= generated.length();
-                    assert maxBytes >= 0;
+                    udpPayloadBytes -= generated.length();
+                    assert udpPayloadBytes >= 0;
 
                     framesGenerated.add(generated.frame());
 
@@ -185,7 +323,7 @@ class CryptoFlusher implements Callback
                 if (framesLeft.isEmpty())
                 {
                     // The entry was fully generated, remove it from the processing list.
-                    writing.add(new FramesEntry(entry.stream(), List.copyOf(framesGenerated), entry.callback()));
+                    writing.add(new FramesEntry(entry.stream(), List.copyOf(framesGenerated), entry.callback(), entry.congestionControlled()));
                     framesGenerated.clear();
                     iterator.remove();
                 }
@@ -196,11 +334,11 @@ class CryptoFlusher implements Callback
                     // The first half does not notify successful completion
                     // until all frames are processed but does notify failures.
                     Callback firstHalfCallback = Callback.from(callback.getInvocationType(), () -> {}, callback::failed);
-                    FramesEntry firstHalfEntry = new FramesEntry(entry.stream(), List.copyOf(framesGenerated), firstHalfCallback);
+                    FramesEntry firstHalfEntry = new FramesEntry(entry.stream(), List.copyOf(framesGenerated), firstHalfCallback, entry.congestionControlled());
                     framesGenerated.clear();
                     writing.add(firstHalfEntry);
                     // Update the current entry with the second half.
-                    FramesEntry secondHalfEntry = new FramesEntry(entry.stream(), List.copyOf(framesLeft), callback);
+                    FramesEntry secondHalfEntry = new FramesEntry(entry.stream(), List.copyOf(framesLeft), callback, entry.congestionControlled());
                     framesLeft.clear();
                     iterator.set(secondHalfEntry);
                 }
@@ -300,7 +438,7 @@ class CryptoFlusher implements Callback
         return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getEncryptionLevel());
     }
 
-    record FramesEntry(QuicStream stream, List<Frame> frames, Callback callback) implements QuicFlusher.Entry
+    record FramesEntry(QuicStream stream, List<Frame> frames, Callback callback, boolean congestionControlled) implements QuicFlusher.Entry
     {
     }
 }

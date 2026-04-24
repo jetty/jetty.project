@@ -147,6 +147,19 @@ public class QuicFlusher extends IteratingCallback
             iterate();
     }
 
+    public void sendProbe(EncryptionLevel encryptionLevel)
+    {
+        boolean flush = switch (encryptionLevel)
+        {
+            case INITIAL -> initialFlusher.sendProbe();
+            case HANDSHAKE -> handshakeFlusher.sendProbe();
+            case ONE_RTT -> oneRTTFlusher.sendProbe();
+            default -> throw new UnsupportedOperationException();
+        };
+        if (flush)
+            iterate();
+    }
+
     /// Sends the given list of stream frames at [EncryptionLevel#ONE_RTT].
     ///
     /// @param stream the stream

@@ -423,7 +423,7 @@ public abstract class QuicSession extends AbstractSession
     @Override
     public void ping(Promise.Invocable<Session> promise)
     {
-        List<Frame> frames = List.of(new PingFrame());
+        List<Frame> frames = List.of(PingFrame.INSTANCE);
         sendFrames(EncryptionLevel.ONE_RTT, frames, Promise.Invocable.toCallback(promise, this));
     }
 
@@ -466,6 +466,11 @@ public abstract class QuicSession extends AbstractSession
     void sendFrames(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback)
     {
         flusher.sendFrames(encryptionLevel, frames, callback);
+    }
+
+    void sendProbe(EncryptionLevel encryptionLevel)
+    {
+        flusher.sendProbe(encryptionLevel);
     }
 
     @Override

@@ -35,6 +35,15 @@ public class AbstractQuicTest
 
     protected void start(Session.Listener.Factory sessionListenerFactory) throws Exception
     {
+        prepareServer(sessionListenerFactory);
+        server.start();
+
+        prepareClient();
+        client.start();
+    }
+
+    protected void prepareServer(Session.Listener.Factory sessionListenerFactory)
+    {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
@@ -47,8 +56,10 @@ public class AbstractQuicTest
 
         connector = new QuicServerConnector(server, sslServer, serverQuicConfiguration, sessionListenerFactory);
         server.addConnector(connector);
-        server.start();
+    }
 
+    protected void prepareClient()
+    {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         ClientConnector clientConnector = new ClientConnector();
@@ -56,7 +67,6 @@ public class AbstractQuicTest
         clientConnector.setByteBufferPool(new ArrayByteBufferPool.Tracking());
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
         client = new QuicClient(new QuicClientQuicConfiguration(), clientConnector);
-        client.start();
     }
 
     @AfterEach
