@@ -313,11 +313,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-container-initializer</artifactId>
       <scope>test</scope>

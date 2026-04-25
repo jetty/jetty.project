@@ -72,14 +72,9 @@
               org.w3c.dom.ls;resolution:=optional,
               javax.xml.parser;resolution:=optional</Import-Package>
             <DynamicImport-Package>org.eclipse.jetty.ee.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
-                org.apache.jasper,
-                org.apache.jasper.*,
-                org.apache.el,
-                org.apache.el.*,
-                org.apache.tomcat,
-                org.apache.tomcat.*,
-                org.apache.taglibs.*,
-                org.glassfish.wasp.*,
+                org.apache.jasper.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))",
+                org.apache.el.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))",
+                org.apache.taglibs.standard.*,
                 jakarta.*</DynamicImport-Package>
             <_noee>true</_noee>
           </instructions>

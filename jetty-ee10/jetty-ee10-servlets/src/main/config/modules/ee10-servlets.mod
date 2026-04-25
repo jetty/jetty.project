@@ -2,7 +2,7 @@
 
 [description]
 Adds Jetty EE10 utility servlets and filters available to a webapp.
-Puts org.eclipse.jetty.ee10.servlets on the server classpath
+Puts org.eclipse.jetty.ee.servlets on the server classpath
 (CrossOriginFilter, DosFilter, MultiPartFilter, QoSFilter, etc.)
 for use by all web applications.
 

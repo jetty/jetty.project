@@ -7,10 +7,11 @@ Adds the Jetty EE11 JNDI reference factories
 ee11
 
 [depend]
+ee/common-jndi
 jndi
 
 [lib]
 lib/jetty-ee11-jndi-${jetty.version}.jar
 
 [ini]
-jetty.webapp.addHiddenClasses+=,-org.eclipse.jetty.ee11.jndi.factories.
+jetty.webapp.addHiddenClasses+=,-org.eclipse.jetty.ee.jndi.factories.

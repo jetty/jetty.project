@@ -49,6 +49,20 @@ public class AbstractJettyHomeTest
         return environment + "-" + module;
     }
 
+    /**
+     * Returns the shared EE package prefix for the given environment.
+     * ee10 and ee11 classes now live in {@code org.eclipse.jetty.ee.*},
+     * while ee8 and ee9 retain their own packages.
+     */
+    public static String toEEPackage(String env)
+    {
+        return switch (env)
+        {
+            case "ee10", "ee11" -> "ee";
+            default -> env;
+        };
+    }
+
     protected void startHttpClient() throws Exception
     {
         startHttpClient(false);

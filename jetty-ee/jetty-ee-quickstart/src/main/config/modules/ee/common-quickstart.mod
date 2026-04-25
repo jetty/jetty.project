@@ -17,10 +17,3 @@ lib/jetty-ee-quickstart-${jetty.version}.jar
 
 [xml]
 etc/jetty-ee-quickstart.xml
-
-[ini-template]
-
-# Modes are AUTO, GENERATE, QUICKSTART
-# jetty.quickstart.mode=AUTO
-# jetty.quickstart.origin=origin
-# jetty.quickstart.xml=

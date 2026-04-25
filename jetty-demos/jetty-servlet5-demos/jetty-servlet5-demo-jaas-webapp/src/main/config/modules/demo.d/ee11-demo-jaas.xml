@@ -12,7 +12,7 @@
   <Set name="extractWAR">true</Set>
 
   <Set name="securityHandler">
-    <New class="org.eclipse.jetty.ee11.servlet.security.ConstraintSecurityHandler">
+    <New class="org.eclipse.jetty.ee.servlet.security.ConstraintSecurityHandler">
      <Set name="loginService">
        <New class="org.eclipse.jetty.security.jaas.JAASLoginService">
          <Set name="name">Demo JAAS Realm</Set>

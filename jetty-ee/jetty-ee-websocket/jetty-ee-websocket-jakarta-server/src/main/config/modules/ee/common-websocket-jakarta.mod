@@ -13,7 +13,7 @@ websocket-core-server
 ee/common-annotations
 
 [lib]
-lib/ee-websocket/jetty-ee-websocket-servlet-${jetty.version}.jar
-lib/ee-websocket/jetty-ee-websocket-jakarta-client-${jetty.version}.jar
-lib/ee-websocket/jetty-ee-websocket-jakarta-common-${jetty.version}.jar
-lib/ee-websocket/jetty-ee-websocket-jakarta-server-${jetty.version}.jar
+lib/jetty-ee-websocket-servlet-${jetty.version}.jar
+lib/jetty-ee-websocket-jakarta-client-${jetty.version}.jar
+lib/jetty-ee-websocket-jakarta-common-${jetty.version}.jar
+lib/jetty-ee-websocket-jakarta-server-${jetty.version}.jar

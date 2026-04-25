@@ -122,7 +122,7 @@ public class TestOSGiUtil
 
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigLine));
         options.add(systemProperty("jetty.http.port").value("0"));
-        options.add(systemProperty(OSGiServerConstants.JETTY_HOME_BUNDLE).value("org.eclipse.jetty.ee10.osgi.boot"));
+        options.add(systemProperty(OSGiServerConstants.JETTY_HOME_BUNDLE).value("org.eclipse.jetty.ee.osgi.boot"));
         options.add(systemProperty("jetty.base").value(etc.getParent().toString()));
         return options;
     }

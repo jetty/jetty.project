@@ -5,7 +5,7 @@
          version="6.0">
   <servlet>
     <servlet-name>logservlet</servlet-name>
-    <servlet-class>org.eclipse.jetty.ee10.log4j2.LogServlet</servlet-class>
+    <servlet-class>org.eclipse.jetty.ee.log4j2.LogServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
 
@@ -15,6 +15,6 @@
   </servlet-mapping>
 
   <listener>
-    <listener-class>org.eclipse.jetty.ee10.log4j2.LogContextListener</listener-class>
+    <listener-class>org.eclipse.jetty.ee.log4j2.LogContextListener</listener-class>
   </listener>
 </web-app>

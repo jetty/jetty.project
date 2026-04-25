@@ -14,6 +14,18 @@
   <name>EE11 :: Tests :: Simple Session WebApp</name>
 
   <dependencies>
+
+    <dependency>
+
+      <groupId>org.eclipse.jetty.ee</groupId>
+
+      <artifactId>jetty-ee-test-simple-session-webapp</artifactId>
+
+      <version>${project.version}</version>
+
+      <type>war</type>
+
+    </dependency>
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
