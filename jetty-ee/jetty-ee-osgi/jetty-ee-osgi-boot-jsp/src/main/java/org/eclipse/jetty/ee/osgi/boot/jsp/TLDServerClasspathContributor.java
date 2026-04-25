@@ -30,13 +30,13 @@ import org.osgi.framework.FrameworkUtil;
 public class TLDServerClasspathContributor implements ServerClasspathContributor
 {
     /**
-     * Name of a class that belongs to the jstl bundle. From that class
-     * we locate the corresponding bundle. Try multiple known locations
-     * to support both Tomcat 11.x (wasp/ee11) and Tomcat 10.x (apache taglibs/ee10).
+     * Names of classes that belong to jstl bundles. From that class
+     * we locate the corresponding bundle. Wasp is used for EE11,
+     * Glassfish JSTL is used for EE10.
      */
     private static final String[] JSTL_BUNDLE_CLASSES = {
-        "org.glassfish.wasp.taglibs.standard.tag.el.core.WhenTag",
-        "org.apache.taglibs.standard.tag.rt.core.WhenTag"
+        "org.glassfish.wasp.taglibs.standard.tag.el.core.WhenTag",  // Wasp (EE11)
+        "org.apache.taglibs.standard.tag.el.core.WhenTag"            // Glassfish JSTL (EE10)
     };
 
     @Override
@@ -98,6 +98,7 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
      */
     public Bundle findJstlBundle()
     {
+<<<<<<< HEAD
         for (String jstlBundleClass : JSTL_BUNDLE_CLASSES)
         {
             try
@@ -111,6 +112,20 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
             }
         }
 
+=======
+        for (String className : JSTL_BUNDLE_CLASSES)
+        {
+            try
+            {
+                Class<?> jstlClass = getClass().getClassLoader().loadClass(className);
+                return FrameworkUtil.getBundle(jstlClass);
+            }
+            catch (ClassNotFoundException ignored)
+            {
+                //try next class
+            }
+        }
+>>>>>>> 0fbc7fd28e8 (way more fixes even for distribution tests)
         return null;
     }
 }

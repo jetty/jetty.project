@@ -297,7 +297,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE=false
                 # To enable DEBUG:oejepP.JavadocTransparentProxy
                 org.eclipse.jetty.%s.proxy.ProxyServlet$Transparent.JavadocTransparentProxy.LEVEL=DEBUG
-                """.formatted(env);
+                """.formatted(toEEPackage(env));
 
             Files.writeString(loggingProps, loggingConfig, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
 
@@ -961,10 +961,10 @@ public class DistributionTests extends AbstractJettyHomeTest
             Files.writeString(proxyXML, """
                 <?xml version="1.0"?>
                 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
-                <Configure class="org.eclipse.jetty.$ENV.servlet.ServletContextHandler">
+                <Configure class="org.eclipse.jetty.$EEPKG.servlet.ServletContextHandler">
                   <Set name="contextPath">/proxy</Set>
                   <Call name="addServlet">
-                    <Arg>org.eclipse.jetty.$ENV.fcgi.proxy.FastCGIProxyServlet</Arg>
+                    <Arg>org.eclipse.jetty.$EEPKG.fcgi.proxy.FastCGIProxyServlet</Arg>
                     <Arg>*.txt</Arg>
                     <Call name="setInitParameter">
                       <Arg>proxyTo</Arg>
@@ -976,7 +976,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                     </Call>
                   </Call>
                 </Configure>
-                """.replace("$ENV", env).replace("$P", String.valueOf(fcgiPort)), StandardOpenOption.CREATE);
+                """.replace("$EEPKG", toEEPackage(env)).replace("$P", String.valueOf(fcgiPort)), StandardOpenOption.CREATE);
 
             Path proxyProps = jettyBase.resolve("webapps").resolve("proxy.properties");
             Files.writeString(proxyProps,
@@ -1245,7 +1245,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                   <Set name="contextPath">/demo</Set>
                   <Set name="war">%s</Set>
                 </Configure>
-                """.formatted(env, destWar.toString());
+                """.formatted(toEEPackage(env), destWar.toString());
             Files.writeString(jettyBase.resolve("webapps/demo.xml"), xml, StandardCharsets.UTF_8);
 
             // Specify Environment Properties for this raw XML based deployable

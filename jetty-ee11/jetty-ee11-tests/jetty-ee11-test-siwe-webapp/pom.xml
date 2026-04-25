@@ -18,6 +18,18 @@
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>compile</scope>
     </dependency>
+
+    <dependency>
+
+      <groupId>org.eclipse.jetty.ee</groupId>
+
+      <artifactId>jetty-ee-test-siwe-webapp</artifactId>
+
+      <version>${project.version}</version>
+
+      <type>war</type>
+
+    </dependency>
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>

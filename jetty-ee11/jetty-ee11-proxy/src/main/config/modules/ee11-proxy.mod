@@ -23,7 +23,7 @@ etc/jetty-ee11-proxy.xml
 # jetty.proxy.contextPath=/
 
 ## The proxy Servlet class.
-# jetty.proxy.servletClass=org.eclipse.jetty.ee11.proxy.ProxyServlet$Transparent
+# jetty.proxy.servletClass=org.eclipse.jetty.ee.proxy.ProxyServlet$Transparent
 
 ## The proxy Servlet mapping.
 # jetty.proxy.servletMapping=/*

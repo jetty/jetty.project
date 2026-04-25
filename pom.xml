@@ -997,6 +997,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-jndi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee</groupId>
         <artifactId>jetty-ee-test-resources</artifactId>
         <version>${project.version}</version>
       </dependency>

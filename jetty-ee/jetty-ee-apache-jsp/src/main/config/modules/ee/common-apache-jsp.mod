@@ -11,8 +11,5 @@ ee/common-servlet
 ee/common-annotations
 
 [lib]
-lib/ee-apache-jsp/@org.eclipse.jdt:ecj@
-lib/ee-apache-jsp/@org.mortbay.jasper:mortbay-apache-el@
-lib/ee-apache-jsp/@org.mortbay.jasper:mortbay-apache-jsp@
 lib/jetty-ee-apache-jsp-${jetty.version}.jar
 

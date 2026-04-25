@@ -9,7 +9,7 @@
 
   <servlet>
     <servlet-name>JavadocTransparentProxy</servlet-name>
-    <servlet-class>org.eclipse.jetty.ee10.proxy.ProxyServlet$Transparent</servlet-class>
+    <servlet-class>org.eclipse.jetty.ee.proxy.ProxyServlet$Transparent</servlet-class>
     <init-param>
       <param-name>proxyTo</param-name>
       <param-value>https://javadoc.jetty.org/</param-value>

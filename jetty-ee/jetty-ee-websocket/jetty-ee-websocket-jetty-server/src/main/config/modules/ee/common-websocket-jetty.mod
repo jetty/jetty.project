@@ -12,6 +12,6 @@ ee/common-annotations
 websocket-jetty
 
 [lib]
-lib/ee-websocket/jetty-ee-websocket-jetty-server-${jetty.version}.jar
-lib/ee-websocket/jetty-ee-websocket-servlet-${jetty.version}.jar
+lib/jetty-ee-websocket-jetty-server-${jetty.version}.jar
+lib/jetty-ee-websocket-servlet-${jetty.version}.jar
 

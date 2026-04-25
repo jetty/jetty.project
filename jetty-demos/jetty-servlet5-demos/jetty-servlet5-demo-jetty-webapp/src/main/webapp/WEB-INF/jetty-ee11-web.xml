@@ -14,7 +14,7 @@ org.eclipse.jetty.ee.webapp.WebAppContext object
       <Arg>
         <Array type="String">
 	  <Item>org.eclipse.jetty.util.</Item>
-	  <Item>org.eclipse.jetty.ee11.servlets.</Item>
+	  <Item>org.eclipse.jetty.ee.servlets.</Item>
 	</Array>
       </Arg>
     </Call>

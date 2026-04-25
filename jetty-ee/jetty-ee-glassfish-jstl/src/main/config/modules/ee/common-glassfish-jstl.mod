@@ -8,6 +8,3 @@ Enables the glassfish version of JSTL for all webapps.
 
 [depends]
 ee/common-apache-jsp
-
-[lib]
-lib/ee-glassfish-jstl/@org.glassfish.wasp:wasp@

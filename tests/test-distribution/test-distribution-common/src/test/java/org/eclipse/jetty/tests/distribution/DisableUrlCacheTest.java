@@ -49,8 +49,8 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
     public static Stream<Arguments> tests()
     {
         return Stream.of(
-            Arguments.of("ee10", "Started oeje10w.WebAppContext@"),
-            Arguments.of("ee11", "Started oeje11w.WebAppContext@")
+            Arguments.of("ee10", "Started oejew.WebAppContext@"),
+            Arguments.of("ee11", "Started oejew.WebAppContext@")
         );
     }
 
@@ -90,7 +90,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             String warXml =
                 "<?xml version=\"1.0\"  encoding=\"ISO-8859-1\"?>" +
                     "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://jetty.org/configure_10_0.dtd\">" +
-                    "<Configure class=\"org.eclipse.jetty." + env + ".webapp.WebAppContext\">" +
+                    "<Configure class=\"org.eclipse.jetty." + toEEPackage(env) + ".webapp.WebAppContext\">" +
                     "   <Set name=\"contextPath\">/test</Set>" +
                     "   <Set name=\"war\"><Property name=\"jetty.webapps\"/>%s</Set>".formatted(File.separator + "test.war") +
                     "   <Set name=\"tempDirectory\"><Property name=\"jetty.base\"/>%s</Set>".formatted(File.separator + "work" + File.separator + "test") +
@@ -103,11 +103,10 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
             String loggingConfig = """
                 org.eclipse.jetty.LEVEL=INFO
                 org.eclipse.jetty.deploy.LEVEL=DEBUG
-                org.eclipse.jetty.eexx.webapp.LEVEL=DEBUG
-                org.eclipse.jetty.eexx.webapp.WebAppClassLoader.LEVEL=INFO
-                org.eclipse.jetty.eexx.servlet.LEVEL=DEBUG
+                org.eclipse.jetty.ee.webapp.LEVEL=DEBUG
+                org.eclipse.jetty.ee.webapp.WebAppClassLoader.LEVEL=INFO
+                org.eclipse.jetty.ee.servlet.LEVEL=DEBUG
                 """;
-            loggingConfig = loggingConfig.replace("eexx", env);
             Files.writeString(loggingFile, loggingConfig, StandardCharsets.UTF_8);
 
 
@@ -135,7 +134,7 @@ public class DisableUrlCacheTest extends AbstractJettyHomeTest
                 // Wait for reload to start context
                 assertTrue(run2.awaitConsoleLogsFor(logToSearch, START_TIMEOUT, TimeUnit.SECONDS));
                 // wait for deployer to complete so context is Started
-                assertTrue(run2.awaitConsoleLogsFor("Started oej%sw.WebAppContext@".formatted(env.substring(1)), START_TIMEOUT, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor(logToSearch, START_TIMEOUT, TimeUnit.SECONDS));
 
                 // Is webapp still there?
                 response = client.GET("http://localhost:" + port + "/test/log/");

@@ -20,7 +20,7 @@
   
   <servlet>
     <servlet-name>Ping</servlet-name>
-    <servlet-class>org.eclipse.jetty.ee10.test.jmx.PingServlet</servlet-class>
+    <servlet-class>org.eclipse.jetty.ee.test.jmx.PingServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
 

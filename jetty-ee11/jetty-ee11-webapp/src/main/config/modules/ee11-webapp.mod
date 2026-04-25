@@ -24,5 +24,5 @@ lib/jetty-ee11-webapp-${jetty.version}.jar
 #jetty.webapp.addHiddenClasses+=,org.example.
 
 ## Default ContextHandler class for ee11 environment deployments
-# jetty.deploy.defaultContextHandlerClass=org.eclipse.jetty.ee11.webapp.WebAppContext
+# jetty.deploy.defaultContextHandlerClass=org.eclipse.jetty.ee.webapp.WebAppContext
 # end::ini-template[]

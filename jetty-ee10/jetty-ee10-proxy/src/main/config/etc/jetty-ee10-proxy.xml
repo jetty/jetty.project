@@ -13,7 +13,7 @@
             </Arg>
           </Call>
           <Call id="proxyHolder" name="addServlet">
-            <Arg><Property name="jetty.proxy.servletClass" default="org.eclipse.jetty.ee10.proxy.ProxyServlet$Transparent"/></Arg>
+            <Arg><Property name="jetty.proxy.servletClass" default="org.eclipse.jetty.ee.proxy.ProxyServlet$Transparent"/></Arg>
             <Arg><Property name="jetty.proxy.servletMapping" default="/*"/></Arg>
             <Call name="setInitParameter">
               <Arg>proxyTo</Arg>
