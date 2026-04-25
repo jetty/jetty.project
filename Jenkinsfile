@@ -6,9 +6,9 @@ pipeline {
   options {
     skipDefaultCheckout()
     durabilityHint('PERFORMANCE_OPTIMIZED')
-    //buildDiscarder logRotator( numToKeepStr: '60' )
+    buildDiscarder logRotator( numToKeepStr: '60' )
     disableRestartFromStage()
-    disableConcurrentBuilds(abortPrevious: true)
+    //disableConcurrentBuilds(abortPrevious: true)
   }
   stages {
     stage("Parallel Stage") {
@@ -134,7 +134,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
             }
           }
           // TODO remove when build is more stable
-          if (isMainBranch()) {
+          if (isIgnoreFailure()) {
             extraArgs = " -Dmaven.test.failure.ignore=true "
           }
           def dashProfile = ""
@@ -165,7 +165,7 @@ def useBuildCache() {
   if (env.BRANCH_NAME ==~ /PR-\d+/) {
     labelNoBuildCache = pullRequest.labels.contains("build-no-cache")
   }
-  def noBuildCache = (env.BRANCH_NAME == 'jetty-13.x') || labelNoBuildCache;
+  def noBuildCache = (env.BRANCH_NAME == 'jetty-13.0.x') || labelNoBuildCache;
   return !noBuildCache;
   // want to skip build cache
   // return false
@@ -186,6 +186,10 @@ def saveHome() {
 }
 
 def isMainBranch() {
+  return (env.BRANCH_NAME == 'jetty-13.0.x')
+}
+
+def isIgnoreFailure() {
   return (env.BRANCH_NAME == 'jetty-13.0.x')
 }
 
