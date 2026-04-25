@@ -75,6 +75,7 @@
                 org.apache.jasper.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))",
                 org.apache.el.*;version="[$(version;===;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))",
                 org.apache.taglibs.standard.*,
+                org.glassfish.wasp,org.glassfish.wasp.*,
                 jakarta.*</DynamicImport-Package>
             <_noee>true</_noee>
           </instructions>

@@ -67,7 +67,7 @@
           <instructions>
             <Bundle-SymbolicName>org.eclipse.jetty.ee.osgi.boot;singleton:=true</Bundle-SymbolicName>
             <Bundle-Activator>org.eclipse.jetty.ee.osgi.boot.EEActivator</Bundle-Activator>
-            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", jakarta.*, org.apache.jasper, org.apache.jasper.*, org.apache.el, org.apache.el.*, org.apache.tomcat, org.apache.tomcat.*</DynamicImport-Package>
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", jakarta.*, org.apache.jasper, org.apache.jasper.*, org.apache.el, org.apache.el.*, org.apache.tomcat, org.apache.tomcat.*, org.glassfish.wasp, org.glassfish.wasp.*</DynamicImport-Package>
             <Import-Package>!jakarta.*,${osgi.slf4j.import.packages},
               org.objectweb.asm;version="$(version;=;${asm.version})";resolution:=optional,
               org.osgi.framework,
