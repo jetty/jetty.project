@@ -14,22 +14,26 @@
 package org.eclipse.jetty.tests.distribution.jettysh;
 
 /**
- * An OS Image of Ubuntu Linux 22.04,
- * Adding JDK17 toolchain.
+ * An OS Image of Ubuntu Linux 24.04,
+ * Adding JDK25 toolchain.
  * it comes with start-stop-daemon installed
  */
-public class ImageOSUbuntuJammyJDK17 extends ImageOS
+public class ImageOSUbuntuJammyJDK25 extends ImageOS
 {
-    public ImageOSUbuntuJammyJDK17()
+    public ImageOSUbuntuJammyJDK25()
     {
-        super("ubuntu-22.04-jdk17-jetty12",
+        super("ubuntu-24.04-jdk25-jetty13",
             builder ->
                 builder
-                    .from("ubuntu:22.04")
+                    .from("ubuntu:24.04")
                     .run("apt update ; " +
                         "apt -y upgrade ; " +
-                        "apt install -y openjdk-17-jdk-headless ; " +
+                        "apt install -y openjdk-25-jdk-headless ; " +
                         "apt install -y curl vim net-tools ")
+                    // not sure how to do this with the dsl 
+                    //("--from=eclipse-temurin:25 /opt/java/openjdk", "/opt/java/jdk25")
+                    //.env("JAVA_HOME", "/opt/java/jdk25")
+                    //.env("PATH", "$PATH:${JAVA_HOME}/bin/")
                     .env("TEST_DIR", "/var/test")
                     .env("JETTY_HOME", "$TEST_DIR/jetty-home")
                     .env("JETTY_BASE", "$TEST_DIR/jetty-base")

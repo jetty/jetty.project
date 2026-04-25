@@ -16,18 +16,18 @@ package org.eclipse.jetty.tests.distribution.jettysh;
 /**
  * An OS Image of linux specific for running on Amazon AWS.
  * This is based on Amazon Linux 2 (which is based on Alpine 3).
- * Amazon Corretto JDK 17 is installed.
+ * Amazon Corretto JDK 25 is installed.
  * This image does NOT come with start-stop-daemon installed.
  * Instead of apt, it uses yum (the redhat package manager)
  */
-public class ImageOSAmazonCorretto17 extends ImageOS
+public class ImageOSAmazonCorretto25 extends ImageOS
 {
-    public ImageOSAmazonCorretto17()
+    public ImageOSAmazonCorretto25()
     {
-        super("amazoncorretto-jdk17-jetty12",
+        super("amazoncorretto-jdk25-jetty13",
             builder ->
                 builder
-                    .from("amazoncorretto:17")
+                    .from("amazoncorretto:25")
                     .run("yum update -y ; " +
                         "yum install -y curl tar gzip vim shadow-utils net-tools")
                     .env("TEST_DIR", "/var/test")
