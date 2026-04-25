@@ -98,7 +98,6 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
      */
     public Bundle findJstlBundle()
     {
-<<<<<<< HEAD
         for (String jstlBundleClass : JSTL_BUNDLE_CLASSES)
         {
             try
@@ -106,26 +105,11 @@ public class TLDServerClasspathContributor implements ServerClasspathContributor
                 Class<?> jstlClass = getClass().getClassLoader().loadClass(jstlBundleClass);
                 return FrameworkUtil.getBundle(jstlClass);
             }
-            catch (ClassNotFoundException e)
-            {
-                //try next
-            }
-        }
-
-=======
-        for (String className : JSTL_BUNDLE_CLASSES)
-        {
-            try
-            {
-                Class<?> jstlClass = getClass().getClassLoader().loadClass(className);
-                return FrameworkUtil.getBundle(jstlClass);
-            }
             catch (ClassNotFoundException ignored)
             {
                 //try next class
             }
         }
->>>>>>> 0fbc7fd28e8 (way more fixes even for distribution tests)
         return null;
     }
 }
