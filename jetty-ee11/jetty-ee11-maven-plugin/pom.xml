@@ -246,7 +246,6 @@
         <artifactId>maven-invoker-plugin</artifactId>
         <configuration>
           <extraArtifacts>
-            <extraArtifact>org.eclipse.jetty.ee:jetty-ee-bom:${project.version}:bom</extraArtifact>
             <extraArtifact>org.eclipse.jetty:jetty-slf4j-impl:${project.version}</extraArtifact>
             <extraArtifact>org.eclipse.jetty.ee11:jetty-ee11-apache-jsp:${project.version}</extraArtifact>
             <extraArtifact>org.eclipse.jetty.ee11:jetty-ee11-glassfish-jstl:${project.version}</extraArtifact>
