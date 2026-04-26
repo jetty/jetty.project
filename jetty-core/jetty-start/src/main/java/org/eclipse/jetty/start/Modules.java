@@ -520,7 +520,13 @@ public class Modules implements Iterable<Module>
                         continue; // skip self
                     if (p.isEnabledInAnyEnvironment())
                     {
-                        throw new UsageException("Module %s provides %s, which is already provided by %s enabled in %s", module.getName(), name, p.getName(), p.getEnabledFromAllEnvironments());
+                        // If the already enabled module is transitive and this enable is not,
+                        // allow the explicit module to replace the transitive default provider.
+                        // (Ported from jetty-12.1.x Modules.java)
+                        if (p.isTransitive() && !transitive)
+                            p.clearTransitiveEnablement();
+                        else
+                            throw new UsageException("Module %s provides %s, which is already provided by %s enabled in %s", module.getName(), name, p.getName(), p.getEnabledFromAllEnvironments());
                     }
                 }
             }

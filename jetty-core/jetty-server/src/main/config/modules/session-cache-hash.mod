@@ -10,7 +10,7 @@ if the configuration properties need to be changed from their defaults.
 session
 
 [provides]
-session-cache
+session-cache|default
 
 [depends]
 sessions

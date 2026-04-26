@@ -748,6 +748,18 @@ public class Module implements Comparable<Module>
         return !_enabledDirectly;
     }
 
+    /**
+     * Clear the enablement of a transitively enabled module.
+     * Used when an explicitly requested module replaces a transitive default provider.
+     * Ported from jetty-12.1.x Module.java.
+     */
+    public void clearTransitiveEnablement()
+    {
+        if (_enabledDirectly)
+            throw new IllegalStateException("Not Transitive");
+        _enabledEnvironments.clear();
+    }
+
     public void writeIniSection(BufferedWriter writer, Props props)
     {
         PrintWriter out = new PrintWriter(writer);

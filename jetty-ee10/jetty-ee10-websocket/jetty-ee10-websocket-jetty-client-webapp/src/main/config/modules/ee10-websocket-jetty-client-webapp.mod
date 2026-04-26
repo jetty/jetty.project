@@ -10,6 +10,7 @@ ee10
 websocket
 
 [depend]
+ee/common-websocket-jetty-client-webapp
 client
 ee10-annotations
 websocket-jetty-client

@@ -997,6 +997,16 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-cdi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee</groupId>
+        <artifactId>jetty-ee-fcgi-proxy</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee</groupId>
         <artifactId>jetty-ee-jndi</artifactId>
         <version>${project.version}</version>
       </dependency>

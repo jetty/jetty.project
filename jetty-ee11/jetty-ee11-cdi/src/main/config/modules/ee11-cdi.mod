@@ -29,4 +29,5 @@ ee11-deploy
 etc/cdi/jetty-ee11-cdi.xml
 
 [lib]
+lib/jetty-ee-cdi-${jetty.version}.jar
 lib/jetty-ee11-cdi-${jetty.version}.jar

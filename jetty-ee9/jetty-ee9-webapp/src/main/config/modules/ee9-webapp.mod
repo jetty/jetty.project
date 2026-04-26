@@ -7,7 +7,6 @@ This module enables support for Jakarta EE 9 web applications.
 ee9
 
 [depend]
-ee/common-webapp
 ee9-servlet
 ee9-security
 
@@ -15,6 +14,7 @@ ee9-security
 etc/jetty-ee9-webapp.xml
 
 [lib]
+lib/jetty-ee-common-${jetty.version}.jar
 lib/jetty-ee9-webapp-${jetty.version}.jar
 
 [ini-template]

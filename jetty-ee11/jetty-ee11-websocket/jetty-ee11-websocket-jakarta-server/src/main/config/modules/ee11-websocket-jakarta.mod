@@ -8,6 +8,7 @@ ee11
 websocket
 
 [depend]
+ee/common-websocket-jakarta
 websocket-core-client
 websocket-core-server
 ee11-annotations
