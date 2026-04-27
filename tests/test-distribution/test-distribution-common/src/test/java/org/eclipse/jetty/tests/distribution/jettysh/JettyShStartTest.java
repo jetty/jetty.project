@@ -126,7 +126,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
             // System.err.println("== jetty.sh start ==");
             Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
-            assertThat(result.getExitCode(), is(0));
+            assertThat("output: " + result.getStdout() + ", err: " + result.getStderr(), result.getExitCode(), is(0));
             /*
              * Example successful output
              * ----
