@@ -217,11 +217,16 @@ public class StartArgs
 
     public List<StartEnvironment> getNonJettyEnvironments()
     {
-        return environments.entrySet().stream()
-            .filter(e -> !e.getKey().equals(Module.ENVIRONMENT_JETTY))
-            .map(Map.Entry::getValue)
+        // Iterate the environments in topological order, so that
+        // [before] directives between deploy modules are respected.
+        StartEnvironment jettyEnvironment = getJettyEnvironment();
+        return getAllModules().getEnabled().stream()
+            .map(Module::getEnvironment)
+            .filter(Objects::nonNull)
+            .map(this::getEnvironment)
+            .filter(e -> e != jettyEnvironment)
+            .distinct()
             .toList();
-
     }
 
     public Collection<StartEnvironment> getEnvironments()

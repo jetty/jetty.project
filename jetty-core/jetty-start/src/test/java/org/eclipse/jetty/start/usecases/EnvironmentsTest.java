@@ -119,4 +119,67 @@ public class EnvironmentsTest extends AbstractUseCase
             assertThat(environment.getProperties().getProp("feature.option").value, is(e));
         }
     }
+
+    /**
+     * Test returns environments in topological order, respecting [before] directives between modules
+     * of different environments.
+     */
+    @Test
+    public void testEnvironmentTopologicalOrdering() throws Exception
+    {
+        setupStandardHomeDir();
+
+        FS.ensureDirExists(baseDir.resolve("etc"));
+        FS.ensureDirExists(baseDir.resolve("lib"));
+        FS.ensureDirExists(baseDir.resolve("modules"));
+
+        // envB-deploy has [before] envA-deploy, so envB should appear before envA
+        // in the topological ordering of environments.
+        FS.touch(baseDir.resolve("lib/envA.jar"));
+        FS.touch(baseDir.resolve("etc/envA-deploy.xml"));
+        Files.writeString(baseDir.resolve("modules/envA-deploy.mod"),
+            """
+            [provides]
+            envA-deploy
+            [environment]
+            envA
+            [depends]
+            main
+            [xml]
+            etc/envA-deploy.xml
+            [lib]
+            lib/envA.jar
+            """, UTF_8);
+
+        FS.touch(baseDir.resolve("lib/envB.jar"));
+        FS.touch(baseDir.resolve("etc/envB-deploy.xml"));
+        Files.writeString(baseDir.resolve("modules/envB-deploy.mod"),
+            """
+            [provides]
+            envB-deploy
+            [environment]
+            envB
+            [before]
+            envA-deploy
+            [depends]
+            main
+            [xml]
+            etc/envB-deploy.xml
+            [lib]
+            lib/envB.jar
+            """, UTF_8);
+
+        List<String> runArgs = List.of(
+            "--modules=envA-deploy,envB-deploy"
+        );
+        ExecResults results = exec(runArgs, false);
+
+        // === Validate that environments are returned in topological order
+        // envB-deploy has [before] envA-deploy, so envB must come first.
+        List<String> envOrder = results.startArgs.getNonJettyEnvironments().stream()
+            .map(StartEnvironment::getName)
+            .toList();
+        assertThat("Environment ordering should respect [before] directives",
+            envOrder, contains("envb", "enva"));
+    }
 }
