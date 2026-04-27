@@ -14,6 +14,3 @@ ee/common-plus
 
 [lib]
 lib/jetty-ee-quickstart-${jetty.version}.jar
-
-[xml]
-etc/jetty-ee-quickstart.xml

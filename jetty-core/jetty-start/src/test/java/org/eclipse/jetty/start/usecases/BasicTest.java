@@ -408,4 +408,34 @@ public class BasicTest extends AbstractUseCase
         assertThat("System.getProperty(jetty.base)", System.getProperty("jetty.base"), is(results.baseHome.getBase()));
         assertThat("System.getProperty(jetty.base)", System.getProperty("jetty.base"), is(not(startsWith("file:"))));
     }
+
+    @Test
+    public void testExplicitProviderReplacesTransitiveDefault() throws Exception
+    {
+        Path homePath = MavenPaths.findTestResourceDir("providers-home");
+
+        // server depends on logging, which transitively enables logging-a (because default).
+        // Explicitly adding logging-b should replace logging-a.
+        Files.writeString(baseDir.resolve("start.ini"),
+            """
+            --modules=server,logging-b
+            """, UTF_8);
+
+        List<String> runArgs = new ArrayList<>();
+        runArgs.add("jetty.home=" + homePath);
+        runArgs.add("--create-files");
+        ExecResults results = exec(runArgs, true);
+
+        assertThat("No exception expected", results.exception, is(org.hamcrest.Matchers.nullValue()));
+
+        List<String> expectedXmls = List.of(FS.separators("${jetty.home}/etc/logging-b.xml"));
+        List<String> actualXmls = results.getXmls();
+        assertThat("XML Resolution Order", actualXmls, contains(expectedXmls.toArray()));
+
+        Set<String> expectedProperties = new HashSet<>();
+        expectedProperties.add("logging.prop=b");
+        expectedProperties.add("logging.b=true");
+        List<String> actualProperties = results.getProperties();
+        assertThat("Properties", actualProperties, containsInAnyOrder(expectedProperties.toArray()));
+    }
 }

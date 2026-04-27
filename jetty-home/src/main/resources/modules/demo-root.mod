@@ -3,15 +3,12 @@
 [description]
 Demo root context.
 
-[environment]
-core
-
 [tags]
 demo
 webapp
 
 [depends]
-core-deploy
+static-deploy
 
 [files]
 webapps/root/
