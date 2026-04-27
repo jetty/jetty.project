@@ -22,7 +22,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +31,8 @@ public abstract class QuicConnection extends AbstractConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicConnection.class);
 
-    private final AutoLock lock = new AutoLock();
     private final Callback fillableCallback = new FillableCallback();
-    private final Queue<Runnable> tasks = new ArrayDeque<>();
+    private final Queue<Invocable.Task> tasks = new ArrayDeque<>();
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private boolean useInputDirectByteBuffers = true;
@@ -72,6 +71,16 @@ public abstract class QuicConnection extends AbstractConnection
     }
 
     public abstract void disconnect(QuicSession session, ConnectionCloseFrame frame, Throwable failure);
+
+    void offerTask(Invocable.Task task)
+    {
+        tasks.offer(task);
+    }
+
+    protected Invocable.Task pollTask()
+    {
+        return tasks.poll();
+    }
 
     private class FillableCallback implements Callback
     {

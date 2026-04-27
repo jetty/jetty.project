@@ -51,6 +51,7 @@ import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,23 +150,24 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     }
 
     @Override
-    protected void processPacket(Packet packet)
+    protected List<Invocable.Task> processPacket(Packet packet)
     {
         try
         {
-            switch (packet)
+            return switch (packet)
             {
                 case InitialPacket initialPacket -> processInitialPacket(initialPacket);
                 default -> super.processPacket(packet);
-            }
+            };
         }
         catch (Throwable x)
         {
             fail(x);
+            return List.of();
         }
     }
 
-    private void processInitialPacket(InitialPacket packet) throws Exception
+    private List<Invocable.Task> processInitialPacket(InitialPacket packet) throws Exception
     {
         if (packet.frames().getFirst() instanceof CryptoFrame)
         {
@@ -188,7 +190,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("dropping {} on {}", packet, this);
-                return;
+                return List.of();
             }
             boolean valid = getQuicConfiguration().getTokenFactory().isTokenValid(getRemoteSocketAddress(), originalDestinationConnectionId, token);
             if (LOG.isDebugEnabled())
@@ -196,7 +198,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
             if (!valid)
                 throw new QuicException(ErrorCode.INVALID_TOKEN_ERROR, "invalid_token");
         }
-        super.processPacket(packet);
+        return super.processPacket(packet);
     }
 
     @Override

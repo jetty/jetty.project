@@ -118,7 +118,6 @@ class StreamFlusher extends CryptoFlusher
         for (MaxDataEntry entry : maxDataProcessing)
         {
             session.updateSendMaxData(entry.stream(), entry.maxData());
-            session.notifyMaxData(entry.stream(), entry.maxData());
         }
         maxDataProcessing.clear();
     }

@@ -33,6 +33,9 @@ import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +47,7 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     private final ClientConnector connector;
     private final QuicClientQuicConfiguration quicConfiguration;
     private final Map<String, Object> context;
+    private final AdaptiveExecutionStrategy strategy;
     private ClientQuicSession session;
 
     public ClientQuicConnection(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, EndPoint endPoint, Map<String, Object> context)
@@ -52,24 +56,12 @@ public class ClientQuicConnection extends QuicConnection implements Callback
         this.connector = connector;
         this.quicConfiguration = quicConfiguration;
         this.context = context;
+        this.strategy = new AdaptiveExecutionStrategy(this::produce, getExecutor());
     }
 
     public QuicClientQuicConfiguration getClientQuicConfiguration()
     {
         return quicConfiguration;
-    }
-
-    @Override
-    public long getBytesIn()
-    {
-        return bytesIn.get();
-    }
-
-    @Override
-    public long getBytesOut()
-    {
-        // TODO
-        return 0;
     }
 
     @Override
@@ -89,9 +81,17 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     }
 
     @Override
+    public void onClose(Throwable cause)
+    {
+        LifeCycle.stop(strategy);
+        super.onClose(cause);
+    }
+
+    @Override
     public void succeeded()
     {
         super.onOpen();
+        LifeCycle.start(strategy);
         fillInterested();
     }
 
@@ -102,8 +102,32 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     }
 
     @Override
+    public long getBytesIn()
+    {
+        return bytesIn.get();
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        // TODO
+        return 0;
+    }
+
+    @Override
     public void onFillable()
     {
+        strategy.produce();
+    }
+
+    private Runnable produce()
+    {
+        Invocable.Task task = pollTask();
+        if (LOG.isDebugEnabled())
+            LOG.debug("produced task {}", task);
+        if (task != null)
+            return task;
+
         RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
         try
         {
@@ -118,17 +142,26 @@ public class ClientQuicConnection extends QuicConnection implements Callback
                 {
                     buffer.release();
                     getEndPoint().shutdownOutput();
-                    return;
+                    return null;
                 }
                 if (filled == 0)
                 {
                     buffer.release();
                     fillInterested();
-                    return;
+                    return null;
                 }
 
                 bytesIn.addAndGet(filled);
                 session.process(address, buffer);
+
+                task = pollTask();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("produced task {}", task);
+                if (task == null)
+                    continue;
+
+                buffer.release();
+                return task;
             }
         }
         catch (Throwable x)
@@ -138,6 +171,7 @@ public class ClientQuicConnection extends QuicConnection implements Callback
             buffer.release();
             // TODO
             // fail(x);
+            return null;
         }
     }
 

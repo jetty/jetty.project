@@ -16,6 +16,7 @@ package org.eclipse.jetty.quic.common;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicMarkableReference;
@@ -33,7 +34,9 @@ import org.eclipse.jetty.quic.common.frames.FrameStream;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -271,6 +274,11 @@ public class QuicStream extends AbstractStream
     public void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise)
     {
         // TODO
+    }
+
+    public Invocable.Task processFrames(List<Frame.WithStreamId> frames)
+    {
+        return new FramesTask(frames);
     }
 
     /// Main entry point to process incoming frames received by [QuicSession].
@@ -575,6 +583,37 @@ public class QuicStream extends AbstractStream
         public String toString()
         {
             return asString(state.get());
+        }
+    }
+
+    private class FramesTask implements Invocable.Task
+    {
+        private final List<Frame.WithStreamId> frames;
+
+        private FramesTask(List<Frame.WithStreamId> frames)
+        {
+            this.frames = frames;
+        }
+
+        @Override
+        public void run()
+        {
+            for (Frame.WithStreamId frame : frames)
+            {
+                processFrame(frame);
+            }
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return getListener().getInvocationType();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x%s".formatted(TypeUtil.toShortName(getClass()), hashCode(), frames);
         }
     }
 }

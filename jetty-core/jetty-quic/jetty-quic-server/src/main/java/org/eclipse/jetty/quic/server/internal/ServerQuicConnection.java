@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
@@ -159,9 +160,15 @@ public class ServerQuicConnection extends QuicConnection
 
     private Runnable produce()
     {
+        Invocable.Task task = pollTask();
+        if (LOG.isDebugEnabled())
+            LOG.debug("produced task {}", task);
+        if (task != null)
+            return task;
+
         boolean interested = isFillInterested();
         if (LOG.isDebugEnabled())
-            LOG.debug("produce() fillInterested={}", interested);
+            LOG.debug("producing fillInterested={}", interested);
         if (interested)
             return null;
 
@@ -211,7 +218,11 @@ public class ServerQuicConnection extends QuicConnection
                 if (LOG.isDebugEnabled())
                     LOG.debug("packet dcid {} on {}", dstConnectionId, this);
 
-                Runnable task = process(dstConnectionId, address, buffer);
+                process(dstConnectionId, address, buffer);
+
+                task = pollTask();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("produced task {}", task);
                 if (task == null)
                     continue;
 
@@ -229,7 +240,7 @@ public class ServerQuicConnection extends QuicConnection
         }
     }
 
-    private Runnable process(ConnectionId dstConnectionId, SocketAddress remoteAddress, RetainableByteBuffer buffer) throws Exception
+    private void process(ConnectionId dstConnectionId, SocketAddress remoteAddress, RetainableByteBuffer buffer) throws Exception
     {
         ServerQuicSession session = sessions.get(dstConnectionId);
         if (session == null)
@@ -243,7 +254,7 @@ public class ServerQuicConnection extends QuicConnection
                 if (LOG.isDebugEnabled())
                     LOG.debug("dropping datagram {} on {}", BufferUtil.toDetailString(byteBuffer), this);
                 BufferUtil.clear(byteBuffer);
-                return null;
+                return;
             }
 
             // Create the session.
@@ -268,7 +279,7 @@ public class ServerQuicConnection extends QuicConnection
                 // negotiation packet and then throw the session away.
                 session.packet(versionNegotiationPacket, Callback.from(session::dispose));
                 BufferUtil.clear(byteBuffer);
-                return null;
+                return;
             }
 
             // Configure the session.
@@ -301,15 +312,7 @@ public class ServerQuicConnection extends QuicConnection
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} for {} on {}", buffer, session, this);
 
-        // TODO: this is where we want to parallelize session processing
-        //  by returning a task that can be run by the ExecutionStrategy.
-        //  However, do we want to do that? It would add complexity to
-        //  buffer reuse, and perhaps not worth it, as we parallelize
-        //  later by stream.
-        //  buffer.retain();
-        //  return () -> session.process(buffer); // What InvocationType?
         session.process(remoteAddress, buffer);
-        return null;
     }
 
     private ServerQuicSession newSession()

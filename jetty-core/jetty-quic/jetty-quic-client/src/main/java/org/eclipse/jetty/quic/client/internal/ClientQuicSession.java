@@ -55,6 +55,7 @@ import org.eclipse.jetty.tls.ServerHelloMessage;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -225,20 +226,29 @@ public class ClientQuicSession extends QuicSession
     }
 
     @Override
-    protected void processPacket(Packet packet)
+    protected List<Invocable.Task> processPacket(Packet packet)
     {
         try
         {
-            switch (packet)
+            return switch (packet)
             {
-                case RetryPacket retryPacket -> processRetryPacket(retryPacket);
-                case VersionNegotiationPacket versionNegotiationPacket -> processVersionNegotiationPacket(versionNegotiationPacket);
+                case RetryPacket retryPacket ->
+                {
+                    processRetryPacket(retryPacket);
+                    yield List.of();
+                }
+                case VersionNegotiationPacket versionNegotiationPacket ->
+                {
+                    processVersionNegotiationPacket(versionNegotiationPacket);
+                    yield List.of();
+                }
                 default -> super.processPacket(packet);
-            }
+            };
         }
         catch (Throwable x)
         {
             fail(x);
+            return List.of();
         }
     }
 

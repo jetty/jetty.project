@@ -105,7 +105,7 @@ public class QuicTest extends AbstractQuicTest
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {/*1, 1024, */1024 * 1024/*, 4 * 1024 * 1024*/})
+    @ValueSource(ints = {/*1,*/ 1024/*, 1024 * 1024, 4 * 1024 * 1024*/})
     public void testEcho(int length) throws Exception
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();

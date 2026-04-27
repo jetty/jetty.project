@@ -14,7 +14,6 @@
 package org.eclipse.jetty.quic.api;
 
 import java.util.EventListener;
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.Content;
@@ -25,6 +24,7 @@ import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /// A stream represents a unidirectional or bidirectional exchange
 /// of data within a [Session].
@@ -61,7 +61,7 @@ public interface Stream
     /// A locally closed stream will not send further data.
     ///
     /// A stream becomes locally closed when either it has sent
-    /// [the last data][#data(boolean, List, Promise.Invocable)],
+    /// [the last data][#data(boolean, RetainableByteBuffer, Promise.Invocable)],
     /// or sent a [reset frame][#reset(long, Promise.Invocable)].
     ///
     /// @return whether the stream is locally closed
@@ -205,7 +205,7 @@ public interface Stream
     /// is available [#onDataAvailable(Stream, boolean)] is invoked.
     ///
     /// @see Stream
-    interface Listener extends EventListener
+    interface Listener extends EventListener, Invocable
     {
         /// Callback method invoked when receiving a frame that causes
         /// the creation of a new stream.
@@ -384,6 +384,13 @@ public interface Stream
         /// @param failure the stream failure
         default void onFailure(Stream stream, Throwable failure)
         {
+        }
+
+        /// @return the [InvocationType] for the code implemented by this listener
+        @Override
+        default InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
         }
     }
 }
