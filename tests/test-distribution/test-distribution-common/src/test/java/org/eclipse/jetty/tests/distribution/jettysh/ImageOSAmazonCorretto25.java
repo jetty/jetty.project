@@ -29,7 +29,7 @@ public class ImageOSAmazonCorretto25 extends ImageOS
                 builder
                     .from("amazoncorretto:25")
                     .run("yum update -y ; " +
-                        "yum install -y curl tar gzip vim shadow-utils net-tools")
+                        "yum install -y tar gzip vim shadow-utils net-tools")
                     .env("TEST_DIR", "/var/test")
                     .env("JETTY_HOME", "$TEST_DIR/jetty-home")
                     .env("JETTY_BASE", "$TEST_DIR/jetty-base")
