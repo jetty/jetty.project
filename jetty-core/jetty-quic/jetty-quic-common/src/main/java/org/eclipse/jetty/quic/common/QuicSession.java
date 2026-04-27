@@ -15,9 +15,11 @@ package org.eclipse.jetty.quic.common;
 
 import java.net.SocketAddress;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,6 +79,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -566,7 +569,11 @@ public abstract class QuicSession extends AbstractSession
 
         if (packet instanceof InitialPacket || Arrays.equals(getSourceConnectionId(), packet.destinationConnectionId()))
         {
-            processPacket(packet);
+            List<Invocable.Task> tasks = processPacket(packet);
+            for (Invocable.Task task : tasks)
+            {
+                connection.offerTask(task);
+            }
         }
         else
         {
@@ -577,50 +584,97 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    protected void processPacket(Packet packet)
+    protected List<Invocable.Task> processPacket(Packet packet)
     {
         try
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("processing {} on {}", packet, this);
 
-            switch (packet)
+            return switch (packet)
             {
                 case InitialPacket initialPacket ->
                 {
-                    processFrames(initialPacket);
+                    yield processFrames(initialPacket);
                 }
                 case HandshakePacket handshakePacket ->
                 {
                     getTLSEngine().getPacketProtector().discardKeys(EncryptionLevel.INITIAL);
-                    processFrames(handshakePacket);
+                    yield processFrames(handshakePacket);
                 }
                 case ZeroRTTPacket zeroRTTPacket ->
                 {
                     // TODO:
-                    processFrames(zeroRTTPacket);
+                    yield processFrames(zeroRTTPacket);
                 }
                 case OneRTTPacket oneRTTPacket ->
                 {
                     // TODO: handle here keyPhase shift?
-                    processFrames(oneRTTPacket);
+                    yield processFrames(oneRTTPacket);
                 }
                 // RetryPacket and VersionNegotiationPacket only handled by clients.
                 default -> throw new UnsupportedOperationException();
-            }
+            };
         }
         catch (Throwable x)
         {
             fail(x);
+            return List.of();
         }
     }
 
-    private void processFrames(Packet.WithFrames packet)
+    private List<Invocable.Task> processFrames(Packet.WithFrames packet)
     {
-        for (Frame frame : packet.frames())
+        // Group the frames by stream id.
+        List<Frame> noStreamFrames = null;
+        LinkedHashMap<Long, List<Frame.WithStreamId>> groups = null;
+        List<Frame> frames = packet.frames();
+        for (Frame frame : frames)
         {
-            processFrame(packet, frame);
+            if (frame instanceof Frame.WithStreamId wid)
+            {
+                if (groups == null)
+                    groups = new LinkedHashMap<>();
+                groups.computeIfAbsent(wid.streamId(), _ -> new ArrayList<>()).add(wid);
+            }
+            else
+            {
+                if (noStreamFrames == null)
+                    noStreamFrames = new ArrayList<>();
+                noStreamFrames.add(frame);
+            }
         }
+
+        if (noStreamFrames != null)
+        {
+            for (Frame frame : noStreamFrames)
+            {
+                processFrame(packet,  frame);
+            }
+        }
+
+        if (groups == null)
+            return List.of();
+
+        if (groups.size() == 1)
+        {
+            Map.Entry<Long, List<Frame.WithStreamId>> entry = groups.firstEntry();
+            Invocable.Task task = processStreamFrames(entry.getValue());
+            return task == null ? List.of() : List.of(task);
+        }
+
+        List<Invocable.Task> tasks = null;
+        for (Map.Entry<Long, List<Frame.WithStreamId>> entry : groups.entrySet())
+        {
+            Invocable.Task task = processStreamFrames(entry.getValue());
+            if (task != null)
+            {
+                if (tasks == null)
+                    tasks = new  ArrayList<>();
+                tasks.add(task);
+            }
+        }
+        return tasks == null ? List.of() : tasks;
     }
 
     protected void processFrame(Packet.WithFrames packet, Frame frame)
@@ -639,8 +693,8 @@ public abstract class QuicSession extends AbstractSession
             {
                 // Serialize processing of maxData frames through the flusher.
                 flusher.processMaxData(maxDataFrame);
+                // TODO: notify Session.Listener (before or after queuing to the flusher?)
             }
-            case Frame.WithStreamId withStreamId -> processFrameWithStreamId(withStreamId);
             default ->
             {
                 // TODO: notify Session.Listener
@@ -648,24 +702,22 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    public void processAckFrame(EncryptionLevel encryptionLevel, AckFrame frame)
+    private void processAckFrame(EncryptionLevel encryptionLevel, AckFrame frame)
     {
         packetNumbers.onAckFrameReceived(encryptionLevel, frame);
         flusher.onAckFrameReceived(encryptionLevel, frame);
     }
 
-    private void processFrameWithStreamId(Frame.WithStreamId frame)
+    private Invocable.Task processStreamFrames(List<Frame.WithStreamId> frames)
     {
+        Frame.WithStreamId frame = frames.getFirst();
         QuicStream stream = getOrCreateRemoteStream(frame);
         if (stream != null)
-        {
-            stream.processFrame(frame);
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("dropping frame {} for terminated stream #{} on {}", frame, frame.streamId(), this);
-        }
+            return stream.processFrames(frames);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("dropping frame {} for terminated stream #{} on {}", frame, frame.streamId(), this);
+        return null;
     }
 
     public void updateSendMaxData(QuicStream stream, long newValue)
@@ -836,14 +888,6 @@ public abstract class QuicSession extends AbstractSession
         {
             LOG.info("failure while notifying listener {}", packetListener, x);
         }
-    }
-
-    public void notifyMaxData(QuicStream stream, long maxData)
-    {
-        if (stream == null)
-            notifyMaxData(new MaxDataFrame(maxData));
-        else
-            stream.processFrame(new StreamMaxDataFrame(stream.getId(), maxData));
     }
 
     protected void generateRetryPacket(RetainableByteBuffer.Mutable retryAccumulator, RetryPacket retryPacket)
