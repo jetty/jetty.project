@@ -283,6 +283,14 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-cdi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-fcgi-proxy</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
       <artifactId>jetty-ee-jndi</artifactId>
     </dependency>
     <dependency>

@@ -10,6 +10,7 @@ proxy
 
 [depends]
 fcgi
+ee/common-fcgi-proxy
 
 [lib]
 lib/jetty-ee10-fcgi-proxy-${jetty.version}.jar

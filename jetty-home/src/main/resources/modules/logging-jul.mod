@@ -13,7 +13,7 @@ resources
 
 [provides]
 logging
-java-util-logging
+java-util-logging|default
 
 [files]
 maven://org.slf4j/slf4j-jdk14/${slf4j.version}|lib/logging/slf4j-jdk14-${slf4j.version}.jar

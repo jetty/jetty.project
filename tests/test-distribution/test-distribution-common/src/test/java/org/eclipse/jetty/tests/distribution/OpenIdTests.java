@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -20,12 +21,15 @@ import java.util.stream.Stream;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.util.Fields;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -56,7 +60,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
     private static final String lastName = "Doe";
     private static final String email = "jetty@jetty.org";
 
-    private final KeycloakContainer keycloakContainer = new KeycloakContainer()
+    private static final KeycloakContainer keycloakContainer = new KeycloakContainer("quay.io/keycloak/keycloak:26.4")
     {
         @Override
         protected Logger logger()
@@ -64,10 +68,10 @@ public class OpenIdTests extends AbstractJettyHomeTest
             return KEYCLOACK_LOGGER;
         }
     };
-    private String userId;
+    private static String userId;
 
-    @BeforeEach
-    public void startKeycloak()
+    @BeforeAll
+    public static void startKeycloak()
     {
         keycloakContainer.start();
         // init keycloak
@@ -77,6 +81,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
             jettyRealm.setId("jetty");
             jettyRealm.setRealm("jetty");
             jettyRealm.setEnabled(true);
+            jettyRealm.setSslRequired("none");
             keycloak.realms().create(jettyRealm);
 
             ClientRepresentation clientRepresentation = new ClientRepresentation();
@@ -106,8 +111,8 @@ public class OpenIdTests extends AbstractJettyHomeTest
         }
     }
 
-    @AfterEach
-    public void stopKeycloak()
+    @AfterAll
+    public static void stopKeycloak()
     {
         if (keycloakContainer.isRunning())
             keycloakContainer.stop();
@@ -164,7 +169,23 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 String uri = "http://localhost:" + port + "/test";
                 // Initially not authenticated
-                startHttpClient();
+                // Keycloak 26.4+ sets Secure flag on cookies even over HTTP;
+                // use a cookie store that sends secure cookies over plain HTTP.
+                startHttpClient(() ->
+                {
+                    HttpClient httpClient = new HttpClient();
+                    httpClient.setHttpCookieStore(new HttpCookieStore.Default()
+                    {
+                        @Override
+                        public List<HttpCookie> match(URI uri)
+                        {
+                            return all().stream()
+                                .filter(c -> !c.isExpired())
+                                .toList();
+                        }
+                    });
+                    return httpClient;
+                });
                 ContentResponse contentResponse = client.GET(uri + "/");
                 assertThat(contentResponse.getStatus(), is(HttpStatus.OK_200));
                 assertThat(contentResponse.getContentAsString(), containsString("not authenticated"));
@@ -176,9 +197,36 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 String html = contentResponse.getContentAsString();
                 // need this attribute  <form ***** action="***"
                 String postUrl = html.substring(html.indexOf("action=\"")).substring(0, html.substring(html.indexOf("action=\"")).indexOf("\"", 9)).substring(8);
+                // Decode HTML entities in the URL.
+                postUrl = postUrl.replace("&amp;", "&");
                 Fields fields = new Fields();
                 fields.put("username", userName);
                 fields.add("password", password);
+                // Extract hidden input fields required by newer Keycloak versions.
+                String searchToken = "type=\"hidden\"";
+                int searchIdx = html.indexOf(searchToken);
+                while (searchIdx >= 0)
+                {
+                    // Find the enclosing <input ... /> or <input ... >
+                    int tagStart = html.lastIndexOf("<input", searchIdx);
+                    int tagEnd = html.indexOf(">", searchIdx);
+                    String inputTag = html.substring(tagStart, tagEnd + 1);
+                    int nameStart = inputTag.indexOf("name=\"");
+                    if (nameStart >= 0)
+                    {
+                        nameStart += 6;
+                        String hiddenName = inputTag.substring(nameStart, inputTag.indexOf("\"", nameStart));
+                        String hiddenValue = "";
+                        int valueStart = inputTag.indexOf("value=\"");
+                        if (valueStart >= 0)
+                        {
+                            valueStart += 7;
+                            hiddenValue = inputTag.substring(valueStart, inputTag.indexOf("\"", valueStart));
+                        }
+                        fields.add(hiddenName, hiddenValue);
+                    }
+                    searchIdx = html.indexOf(searchToken, searchIdx + 1);
+                }
                 contentResponse = client.FORM(postUrl, fields);
                 assertThat(contentResponse.getStatus(), is(HttpStatus.OK_200));
                 assertThat(contentResponse.getContentAsString(), containsString("success"));

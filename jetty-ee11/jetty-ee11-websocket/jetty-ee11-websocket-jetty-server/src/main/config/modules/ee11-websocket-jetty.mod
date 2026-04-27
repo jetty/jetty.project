@@ -8,6 +8,7 @@ websocket
 ee11
 
 [depend]
+ee/common-websocket-jetty
 ee11-annotations
 websocket-jetty
 

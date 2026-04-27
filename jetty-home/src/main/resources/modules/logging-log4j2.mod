@@ -13,7 +13,7 @@ resources
 
 [provides]
 logging
-log4j
+log4j|default
 
 [files]
 basehome:modules/logging/log4j2
