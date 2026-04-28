@@ -16,12 +16,15 @@ package org.eclipse.jetty.session;
 import java.util.Collections;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -387,6 +390,43 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertFalse(store.exists("1234"));
     }
 
+    /** Test that during a call to getAndEnter that the activation
+     * listeners are called if the session was loaded from the session data store.
+     *
+     * @throws Exception on unspecified problem
+     */
+    @Test
+    public void testGetAndEnter() throws Exception
+    {
+        Server server = new Server();
+
+        TestableSessionManager sessionManager = new TestableSessionManager();
+        sessionManager.setServer(server);
+        AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
+        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionManager);
+
+        TestableSessionDataStore store = new TestableSessionDataStore(true);
+        cache.setSessionDataStore(store);
+        sessionManager.setSessionCache(cache);
+        server.addBean(sessionManager);
+        sessionManager.setServer(server);
+        server.start();
+
+        //add data for a session to the store
+        long now = System.currentTimeMillis();
+        SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
+        data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
+        data.setAttribute("foo", "bar");
+        store.store("1234", data);
+
+        ManagedSession session = cache.getAndEnter("1234", true);
+        assertNotNull(session);
+        assertTrue(session.isResident());
+        assertTrue(cache.contains("1234"));
+        assertTrue(session.isValid());
+        assertTrue(sessionManager._sessionActivationListenersCalled.contains("1234"));
+    }
+
     /**
      * Test releasing use of a session 
      * @throws Exception if there is an unspecified problem
@@ -438,6 +478,99 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertFalse(session.isResident());
         assertFalse(cache.contains("1234"));
         assertTrue(store.exists("1234"));
+    }
+
+    @Test
+    public void testRaceOnEviction() throws Exception
+    {
+        //Evict if session has not been accessed for 2 seconds or more
+        int evictionSeconds = 2;
+
+        //Use EVICT_ON_INACTIVITY and saveOnInactiveEviction to force a save during eviction
+        Server server = new Server();
+        TestableSessionManager sessionManager = new TestableSessionManager();
+        sessionManager.setServer(server);
+        SessionCacheFactory cacheFactory = newSessionCacheFactory(evictionSeconds, false, true, false, false);
+        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionManager);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        TestableSessionDataStore store = new TestableSessionDataStore()
+        {
+            @Override
+            public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
+            {
+                //wait on a latch before proceeding with save to ensure request is inbound
+                latch.await();
+                super.doStore(id, data, lastSaveTime);
+            }
+        };
+
+        cache.setSessionDataStore(store);
+        sessionManager.setSessionCache(cache);
+        server.addBean(sessionManager);
+        sessionManager.setServer(server);
+        server.start();
+
+        //Make a session that is inactive
+        long now = System.currentTimeMillis();
+        SessionData data = store.newSessionData("1234",
+            now - TimeUnit.MINUTES.toMillis(60),
+            now - TimeUnit.MINUTES.toMillis(40),
+            now - TimeUnit.MINUTES.toMillis(50),
+            0);
+        final ManagedSession session = cache.newSession(data);
+        cache.add("1234", session); //increments usage count
+        session.release(); //decrements the usage count
+
+        assertTrue(session.isResident());
+        assertTrue(session.isValid());
+        assertTrue(session.isIdleLongerThan(evictionSeconds));
+
+        final CountDownLatch evictorRunning = new CountDownLatch(1);
+        //Make a thread to run the checkInactiveSession on it to evict it
+        Thread evictorThread = new Thread(() ->
+        {
+            evictorRunning.countDown();
+            cache.checkInactiveSession(session);
+        });
+        evictorThread.start(); //start thread, will block on the latch
+
+        //Make another thread to call getAndEnter for the same session id
+        AtomicReference<Exception> requestorException = new AtomicReference<Exception>();
+        Thread requestorThread = new Thread(() ->
+        {
+            try
+            {
+                //only proceed if the evictor has started
+                evictorRunning.await();
+                Thread.sleep(500); //small sleep to ensure evictor has begun eviction
+
+                //verify we can get an evicted session back and it is in the cache
+                ManagedSession requestedSession = cache.getAndEnter("1234", true);
+                assertNotNull(requestedSession);
+                assertTrue(requestedSession.isResident());
+                //check original session object is now not resident
+                assertFalse(session.isResident());
+            }
+            catch (Exception e)
+            {
+                requestorException.set(e);
+            }
+        });
+        requestorThread.start();
+
+        //wait a little to ensure requestorThread will be waiting to lock the session
+        //that is being evicted
+        Thread.sleep(1000);
+
+        //Release the latch so the session datastore completes, releases the lock on the
+        //session and the requestorThread can check it isn't resident, then do a reload
+        //of the session data to create a new object
+        latch.countDown();
+
+        //Double check that the cache contains the session, although the pertinent check is
+        //done in the rquestorThread
+        assertTrue(cache.contains("1234"));
     }
 
     /**
