@@ -64,10 +64,8 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -352,34 +350,6 @@ public class HttpChannelState implements HttpChannel, Components
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
         }
-    }
-
-    private boolean authorityMatches(HttpURI httpURI, String host)
-    {
-        String authority = httpURI.getAuthority();
-        // Either both are null or only one is present.
-        if (authority == null || host == null)
-            return true;
-
-        // Both are present, must match.
-
-        // Direct hit, hosts must be compared ignoring case.
-        if (authority.equalsIgnoreCase(host))
-            return true;
-
-        // Handle default ports: example.com matches example.com:80.
-        String scheme = httpURI.getScheme();
-        int defaultPort = URIUtil.getDefaultPortForScheme(scheme);
-        int uriPort = httpURI.getPort();
-        int effectiveURIPort = uriPort <= 0 ? defaultPort : uriPort;
-        HostPort hostPort = new HostPort(host);
-        int port = hostPort.getPort();
-        int effectiveHostPort = port <= 0 ? defaultPort : port;
-        if (effectiveURIPort != effectiveHostPort)
-            return false;
-
-        // Same effective port, compare hosts ignoring case.
-        return hostPort.getHost().equalsIgnoreCase(httpURI.getHost());
     }
 
     public Request getRequest()
@@ -808,6 +778,7 @@ public class HttpChannelState implements HttpChannel, Components
                 }
 
                 ComplianceViolation.Listener listener = getComplianceViolationListener();
+                listener.onRequestBegin(customized);
 
                 HttpURI uri = customized.getHttpURI();
                 if (uri.hasViolations())
@@ -817,15 +788,7 @@ public class HttpChannelState implements HttpChannel, Components
                 }
 
                 HttpCompliance httpCompliance = httpConfiguration.getHttpCompliance();
-                if (!authorityMatches(customized.getHttpURI(), customized.getHeaders().get(HttpHeader.HOST)))
-                {
-                    if (!ComplianceUtils.allows(httpCompliance, HttpCompliance.Violation.MISMATCHED_AUTHORITY, "Authority!=Host", listener))
-                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
-                }
-
                 ComplianceUtils.verify(customized.getHttpURI(), customized.getHeaders(), httpCompliance, listener);
-
-                listener.onRequestBegin(customized);
 
                 if (!server.handle(customized, response, request._callback))
                     Response.writeError(customized, response, request._callback, HttpStatus.NOT_FOUND_404);
