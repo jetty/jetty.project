@@ -61,6 +61,7 @@ public class QuicStream extends AbstractStream
     {
         super(streamId, local);
         this.session = session;
+        this.readStalled = true;
     }
 
     @Override
@@ -342,7 +343,7 @@ public class QuicStream extends AbstractStream
             chunk.retain();
             dataQueue.offer(chunk);
             if (LOG.isDebugEnabled())
-                LOG.debug("data {} notify={} onDataAvailable() on {}", chunk, process, this);
+                LOG.debug("offer data notify={} {} on {}", process, chunk, this);
         }
 
         if (process)
@@ -365,7 +366,17 @@ public class QuicStream extends AbstractStream
                 readDemand = false;
                 readStalled = false;
             }
+            if (LOG.isDebugEnabled())
+                LOG.debug("notifying data on {}", this);
             notifyDataAvailable(immediate);
+        }
+    }
+
+    private int dataQueueSize()
+    {
+        try (var _ = lock.lock())
+        {
+            return dataQueue.size();
         }
     }
 
@@ -434,7 +445,7 @@ public class QuicStream extends AbstractStream
     @Override
     public String toString()
     {
-        return "%s[%s,demand=%b,data/max=%d/%d]".formatted(super.toString(), closeState, hasDemand(), getSendData(), getSendMaxData());
+        return "%s[%s,dataQueue=%d,demand=%b,data/max=%d/%d]".formatted(super.toString(), closeState, dataQueueSize(), hasDemand(), getSendData(), getSendMaxData());
     }
 
     private class Sender implements Promise.Invocable<Stream>

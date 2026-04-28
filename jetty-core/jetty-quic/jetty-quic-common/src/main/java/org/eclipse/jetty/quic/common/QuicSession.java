@@ -439,6 +439,8 @@ public abstract class QuicSession extends AbstractSession
 
     public void data(QuicStream stream, StreamFrame frame, Promise.Invocable<Stream> promise)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sending data {} on {} on {}", frame, stream, this);
         flusher.sendFrames(stream, List.of(frame), Promise.Invocable.toCallback(promise, stream));
     }
 

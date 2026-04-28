@@ -105,7 +105,7 @@ public class QuicTest extends AbstractQuicTest
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {/*1,*/ 1024/*, 1024 * 1024, 4 * 1024 * 1024*/})
+    @ValueSource(ints = {1, 1024, 1024 * 1024, 4 * 1024 * 1024})
     public void testEcho(int length) throws Exception
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
@@ -177,7 +177,7 @@ public class QuicTest extends AbstractQuicTest
 
         stream.demand();
 
-        assertTrue(dataLatch.await(5, SECONDS));
+        assertTrue(dataLatch.await(15, SECONDS));
         assertEquals(ByteBuffer.wrap(bytes), accumulator.getByteBuffer());
 
         Session serverSession = serverSessionRef.get();
