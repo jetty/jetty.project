@@ -143,12 +143,16 @@ public final class ComplianceUtils
      */
     public static void verify(HttpCompliance httpCompliance, MetaData.Request request, ComplianceViolation.Listener listener)
     {
+        verify(request.getHttpURI(), request.getHttpFields(), httpCompliance, listener);
+    }
+
+    public static void verify(HttpURI httpURI, HttpFields requestHeaders, HttpCompliance httpCompliance, ComplianceViolation.Listener listener)
+    {
         boolean seenContentLength = false;
         boolean seenTransferEncoding = false;
         boolean seenHostHeader = false;
 
-        HttpFields fields = request.getHttpFields();
-        for (HttpField httpField : fields)
+        for (HttpField httpField : requestHeaders)
         {
             if (httpField.getHeader() == null)
                 continue;

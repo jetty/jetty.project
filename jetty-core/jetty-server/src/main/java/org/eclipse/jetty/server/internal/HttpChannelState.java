@@ -324,13 +324,6 @@ public class HttpChannelState implements HttpChannel, Components
         if (LOG.isDebugEnabled())
             LOG.debug("onRequest {} {}", request, this);
 
-        if (!authorityMatches(request.getHttpURI(), request.getHttpFields().get(HttpHeader.HOST)))
-        {
-            HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
-            if (!ComplianceUtils.allows(httpCompliance, HttpCompliance.Violation.MISMATCHED_AUTHORITY, "Authority!=Host", getComplianceViolationListener()))
-                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
-        }
-
         try (AutoLock ignored = _lock.lock())
         {
             if (_stream == null)
@@ -792,29 +785,12 @@ public class HttpChannelState implements HttpChannel, Components
 
             try
             {
-                String pathInContext = Request.getPathInContext(request);
-                if (pathInContext != null && !pathInContext.startsWith("/"))
-                {
-                    String method = request.getMethod();
-                    if (!HttpMethod.PRI.is(method) && !HttpMethod.CONNECT.is(method) && !HttpMethod.OPTIONS.is(method))
-                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad URI path");
-                }
-
-                HttpURI uri = request.getHttpURI();
-                if (uri.hasViolations())
-                {
-                    HttpConfiguration httpConfiguration = getConnectionMetaData().getHttpConfiguration();
-                    UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
-                    ComplianceViolation.Listener listener = getComplianceViolationListener();
-                    ComplianceUtils.verify(uriCompliance, uri, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
-                }
-
                 // Customize before processing.
-                HttpConfiguration configuration = getHttpConfiguration();
+                HttpConfiguration httpConfiguration = getHttpConfiguration();
 
                 Request customized = request;
                 HttpFields.Mutable responseHeaders = response.getHeaders();
-                for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
+                for (HttpConfiguration.Customizer customizer : httpConfiguration.getCustomizers())
                 {
                     Request next = customizer.customize(customized, responseHeaders);
                     customized = next == null ? customized : next;
@@ -822,6 +798,34 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (customized != request && server.getRequestLog() != null)
                     request.setLoggedRequest(customized);
+
+                String pathInContext = Request.getPathInContext(customized);
+                if (pathInContext != null && !pathInContext.startsWith("/"))
+                {
+                    String method = customized.getMethod();
+                    if (!HttpMethod.PRI.is(method) && !HttpMethod.CONNECT.is(method) && !HttpMethod.OPTIONS.is(method))
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad URI path");
+                }
+
+                ComplianceViolation.Listener listener = getComplianceViolationListener();
+
+                HttpURI uri = customized.getHttpURI();
+                if (uri.hasViolations())
+                {
+                    UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
+                    ComplianceUtils.verify(uriCompliance, uri, listener, msg -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
+                }
+
+                HttpCompliance httpCompliance = httpConfiguration.getHttpCompliance();
+                if (!authorityMatches(customized.getHttpURI(), customized.getHeaders().get(HttpHeader.HOST)))
+                {
+                    if (!ComplianceUtils.allows(httpCompliance, HttpCompliance.Violation.MISMATCHED_AUTHORITY, "Authority!=Host", listener))
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
+                }
+
+                ComplianceUtils.verify(customized.getHttpURI(), customized.getHeaders(), httpCompliance, listener);
+
+                listener.onRequestBegin(customized);
 
                 if (!server.handle(customized, response, request._callback))
                     Response.writeError(customized, response, request._callback, HttpStatus.NOT_FOUND_404);
@@ -867,8 +871,6 @@ public class HttpChannelState implements HttpChannel, Components
 
     private class LastWriteCallback implements Callback
     {
-        private Throwable _failure;
-
         /**
          * Called only as {@link Callback} by last write from {@link ChannelCallback#succeeded}
          */
