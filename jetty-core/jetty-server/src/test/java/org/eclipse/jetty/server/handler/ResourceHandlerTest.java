@@ -228,7 +228,7 @@ public class ResourceHandlerTest
                     Host: local\r
                     Connection: close\r
                     \r
-                    """.replace("@PREFIX", prefix),
+                    """.replace("@PREFIX@", prefix),
                     HttpStatus.NOT_FOUND_404
             );
 
@@ -237,7 +237,7 @@ public class ResourceHandlerTest
                     Host: local\r
                     Connection: close\r
                     \r
-                    """.replace("@PREFIX", prefix),
+                    """.replace("@PREFIX@", prefix),
                     HttpStatus.NOT_FOUND_404,
                     (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
@@ -268,8 +268,8 @@ public class ResourceHandlerTest
                     Connection: close\r
                     \r
                     """.replace("@PREFIX@", prefix),
-                    HttpStatus.NOT_FOUND_404,
-                    (response) -> assertThat(response.getContent(), not(containsString("Hello Index")))
+                    HttpStatus.OK_200,
+                    (response) -> assertThat(response.getContent(), containsString("Hello Index"))
             );
 
             scenarios.addScenario("""
