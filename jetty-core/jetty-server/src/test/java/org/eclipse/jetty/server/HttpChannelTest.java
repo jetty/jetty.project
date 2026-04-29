@@ -100,6 +100,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -134,6 +135,7 @@ public class HttpChannelTest
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         task.run();
         assertThat(stream.isComplete(), is(false));
@@ -204,6 +206,7 @@ public class HttpChannelTest
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -232,6 +235,7 @@ public class HttpChannelTest
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/?read=10"), HttpVersion.HTTP_1_1, fields, 0);
 
+        channel.initialize();
         Runnable todo = channel.onRequest(request);
         new Thread(todo).start(); // handling will block for content
 
@@ -283,6 +287,7 @@ public class HttpChannelTest
         stream.addContent(body, true);
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
+        channel.initialize();
         Runnable todo = channel.onRequest(request);
         todo.run();
 
@@ -326,6 +331,7 @@ public class HttpChannelTest
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -368,6 +374,7 @@ public class HttpChannelTest
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         if (task != null)
             task.run();
@@ -419,6 +426,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -450,6 +458,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         Runnable task = channel.onRequest(request);
 
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
@@ -489,6 +498,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         Runnable task = channel.onRequest(request);
 
         try (StacklessLogging ignored = new StacklessLogging(SerializedInvoker.class))
@@ -530,6 +540,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         Runnable task = channel.onRequest(request);
 
         try (StacklessLogging ignored = new StacklessLogging(SerializedInvoker.class))
@@ -563,6 +574,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         Runnable task = channel.onRequest(request);
 
         task.run();
@@ -639,6 +651,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -671,6 +684,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
@@ -750,6 +764,7 @@ public class HttpChannelTest
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
         stream.addContent(body, true);
 
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -792,6 +807,7 @@ public class HttpChannelTest
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -835,6 +851,7 @@ public class HttpChannelTest
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -870,6 +887,7 @@ public class HttpChannelTest
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
         assertThat(stream.addContent(body, true), nullValue());
 
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -884,6 +902,7 @@ public class HttpChannelTest
         fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
         stream = new MockHttpStream(channel);
+        channel.initialize();
         task = channel.onRequest(request);
         task.run();
 
@@ -933,6 +952,7 @@ public class HttpChannelTest
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
         assertThat(stream.addContent(BufferUtil.toBuffer(parts[0]), false), nullValue());
 
+        channel.initialize();
         Runnable task = channel.onRequest(request);
 
         List<String> history = new ArrayList<>();
@@ -1074,6 +1094,7 @@ public class HttpChannelTest
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
+        channel.initialize();
         Runnable onRequest = channel.onRequest(request);
         onRequest.run();
 
@@ -1158,6 +1179,7 @@ public class HttpChannelTest
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields);
 
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -1194,6 +1216,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 10);
+        channel.initialize();
         Runnable onRequest = channel.onRequest(request);
         onRequest.run();
 
@@ -1264,6 +1287,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         Runnable onRequest = channel.onRequest(request);
         onRequest.run();
 
@@ -1362,6 +1386,7 @@ public class HttpChannelTest
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields);
 
+        channel.initialize();
         Runnable todo = channel.onRequest(request);
         todo.run();
         assertFalse(stream.isComplete());
@@ -1484,6 +1509,7 @@ public class HttpChannelTest
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         Runnable task = channel.onRequest(request);
 
         // Process the request
