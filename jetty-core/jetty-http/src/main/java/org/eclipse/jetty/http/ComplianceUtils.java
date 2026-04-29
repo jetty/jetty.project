@@ -15,7 +15,9 @@ package org.eclipse.jetty.http;
 
 import java.util.function.Function;
 
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,15 +142,30 @@ public final class ComplianceUtils
      * @param request the request to check
      * @param listener the notification method for violations.  (Tip: use the Request specific Listener from the {@code HttpChannelState})
      * @throws HttpException.RuntimeException if there is a violation that wasn't allowed
+     * @deprecated use {@link #verify(HttpURI, HttpFields, HttpCompliance, ComplianceViolation.Listener)} instead,
+     * as this method works on {@link MetaData.Request} values that may be changed by request customizers.
      */
+    @Deprecated(since = "12.1.9", forRemoval = true)
     public static void verify(HttpCompliance httpCompliance, MetaData.Request request, ComplianceViolation.Listener listener)
+    {
+        verify(request.getHttpURI(), request.getHttpFields(), httpCompliance, listener);
+    }
+
+    /**
+     * Check the provided {@link HttpURI} and request headers against configured {@link HttpCompliance}.
+     *
+     * @param httpURI the request {@link HttpURI}
+     * @param requestHeaders the request headers
+     * @param httpCompliance the {@link HttpCompliance} to use
+     * @param listener the violation listener to notify
+     */
+    public static void verify(HttpURI httpURI, HttpFields requestHeaders, HttpCompliance httpCompliance, ComplianceViolation.Listener listener)
     {
         boolean seenContentLength = false;
         boolean seenTransferEncoding = false;
         boolean seenHostHeader = false;
 
-        HttpFields fields = request.getHttpFields();
-        for (HttpField httpField : fields)
+        for (HttpField httpField : requestHeaders)
         {
             if (httpField.getHeader() == null)
                 continue;
@@ -201,6 +218,40 @@ public final class ComplianceUtils
                     seenHostHeader = true;
                 }
             }
+
+            if (!authorityMatches(httpURI, requestHeaders.get(HttpHeader.HOST)))
+            {
+                if (!ComplianceUtils.allows(httpCompliance, HttpCompliance.Violation.MISMATCHED_AUTHORITY, "Authority!=Host", listener))
+                    throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
+            }
         }
+    }
+
+    private static boolean authorityMatches(HttpURI httpURI, String host)
+    {
+        String authority = httpURI.getAuthority();
+        // Either both are null or only one is present.
+        if (authority == null || host == null)
+            return true;
+
+        // Both are present, must match.
+
+        // Direct hit, hosts must be compared ignoring case.
+        if (authority.equalsIgnoreCase(host))
+            return true;
+
+        // Handle default ports: example.com matches example.com:80.
+        String scheme = httpURI.getScheme();
+        int defaultPort = URIUtil.getDefaultPortForScheme(scheme);
+        int uriPort = httpURI.getPort();
+        int effectiveURIPort = uriPort <= 0 ? defaultPort : uriPort;
+        HostPort hostPort = new HostPort(host);
+        int port = hostPort.getPort();
+        int effectiveHostPort = port <= 0 ? defaultPort : port;
+        if (effectiveURIPort != effectiveHostPort)
+            return false;
+
+        // Same effective port, compare hosts ignoring case.
+        return hostPort.getHost().equalsIgnoreCase(httpURI.getHost());
     }
 }

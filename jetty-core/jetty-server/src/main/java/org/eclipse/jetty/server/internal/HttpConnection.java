@@ -1370,15 +1370,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             Runnable handle = _httpChannel.onRequest(_request);
             _requests.incrementAndGet();
 
-            Request request = _httpChannel.getRequest();
-            _httpChannel.getComplianceViolationListener().onRequestBegin(request);
-
-            if (_complianceViolations != null && !_complianceViolations.isEmpty())
-            {
-                _httpChannel.getRequest().setAttribute(ComplianceViolation.CapturingListener.VIOLATIONS_ATTR_KEY, _complianceViolations);
-                _complianceViolations = null;
-            }
-
             boolean persistent;
             switch (_request.getHttpVersion())
             {

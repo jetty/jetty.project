@@ -64,10 +64,8 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -324,13 +322,6 @@ public class HttpChannelState implements HttpChannel, Components
         if (LOG.isDebugEnabled())
             LOG.debug("onRequest {} {}", request, this);
 
-        if (!authorityMatches(request.getHttpURI(), request.getHttpFields().get(HttpHeader.HOST)))
-        {
-            HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
-            if (!ComplianceUtils.allows(httpCompliance, HttpCompliance.Violation.MISMATCHED_AUTHORITY, "Authority!=Host", getComplianceViolationListener()))
-                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
-        }
-
         try (AutoLock ignored = _lock.lock())
         {
             if (_stream == null)
@@ -359,34 +350,6 @@ public class HttpChannelState implements HttpChannel, Components
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
         }
-    }
-
-    private boolean authorityMatches(HttpURI httpURI, String host)
-    {
-        String authority = httpURI.getAuthority();
-        // Either both are null or only one is present.
-        if (authority == null || host == null)
-            return true;
-
-        // Both are present, must match.
-
-        // Direct hit, hosts must be compared ignoring case.
-        if (authority.equalsIgnoreCase(host))
-            return true;
-
-        // Handle default ports: example.com matches example.com:80.
-        String scheme = httpURI.getScheme();
-        int defaultPort = URIUtil.getDefaultPortForScheme(scheme);
-        int uriPort = httpURI.getPort();
-        int effectiveURIPort = uriPort <= 0 ? defaultPort : uriPort;
-        HostPort hostPort = new HostPort(host);
-        int port = hostPort.getPort();
-        int effectiveHostPort = port <= 0 ? defaultPort : port;
-        if (effectiveURIPort != effectiveHostPort)
-            return false;
-
-        // Same effective port, compare hosts ignoring case.
-        return hostPort.getHost().equalsIgnoreCase(httpURI.getHost());
     }
 
     public Request getRequest()
@@ -792,29 +755,12 @@ public class HttpChannelState implements HttpChannel, Components
 
             try
             {
-                String pathInContext = Request.getPathInContext(request);
-                if (pathInContext != null && !pathInContext.startsWith("/"))
-                {
-                    String method = request.getMethod();
-                    if (!HttpMethod.PRI.is(method) && !HttpMethod.CONNECT.is(method) && !HttpMethod.OPTIONS.is(method))
-                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad URI path");
-                }
-
-                HttpURI uri = request.getHttpURI();
-                if (uri.hasViolations())
-                {
-                    HttpConfiguration httpConfiguration = getConnectionMetaData().getHttpConfiguration();
-                    UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
-                    ComplianceViolation.Listener listener = getComplianceViolationListener();
-                    ComplianceUtils.verify(uriCompliance, uri, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
-                }
-
                 // Customize before processing.
-                HttpConfiguration configuration = getHttpConfiguration();
+                HttpConfiguration httpConfiguration = getHttpConfiguration();
 
                 Request customized = request;
                 HttpFields.Mutable responseHeaders = response.getHeaders();
-                for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
+                for (HttpConfiguration.Customizer customizer : httpConfiguration.getCustomizers())
                 {
                     Request next = customizer.customize(customized, responseHeaders);
                     customized = next == null ? customized : next;
@@ -822,6 +768,27 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (customized != request && server.getRequestLog() != null)
                     request.setLoggedRequest(customized);
+
+                String pathInContext = Request.getPathInContext(customized);
+                if (pathInContext != null && !pathInContext.startsWith("/"))
+                {
+                    String method = customized.getMethod();
+                    if (!HttpMethod.PRI.is(method) && !HttpMethod.CONNECT.is(method) && !HttpMethod.OPTIONS.is(method))
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad URI path");
+                }
+
+                ComplianceViolation.Listener listener = getComplianceViolationListener();
+                listener.onRequestBegin(customized);
+
+                HttpURI uri = customized.getHttpURI();
+                if (uri.hasViolations())
+                {
+                    UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
+                    ComplianceUtils.verify(uriCompliance, uri, listener, msg -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
+                }
+
+                HttpCompliance httpCompliance = httpConfiguration.getHttpCompliance();
+                ComplianceUtils.verify(customized.getHttpURI(), customized.getHeaders(), httpCompliance, listener);
 
                 if (!server.handle(customized, response, request._callback))
                     Response.writeError(customized, response, request._callback, HttpStatus.NOT_FOUND_404);
@@ -867,8 +834,6 @@ public class HttpChannelState implements HttpChannel, Components
 
     private class LastWriteCallback implements Callback
     {
-        private Throwable _failure;
-
         /**
          * Called only as {@link Callback} by last write from {@link ChannelCallback#succeeded}
          */
