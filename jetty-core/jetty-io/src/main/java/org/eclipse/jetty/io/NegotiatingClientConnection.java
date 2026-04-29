@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class NegotiatingClientConnection extends AbstractConnection.NonBlocking
+public abstract class NegotiatingClientConnection extends AbstractConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(NegotiatingClientConnection.class);
 
