@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee11.servlet;
 import java.io.IOException;
 import java.util.EnumSet;
 
+import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -112,6 +113,48 @@ public class ServletWrapperTest
         assertThat(resp.getContent(), is("Serviced!" + System.lineSeparator()));
     }
 
+    @Test
+    public void testAsyncDispatchZeroArgWithServletRequestWrapper() throws Exception
+    {
+        ServletHolder servletHolder = context.addServlet(AsyncDispatchWithWrapperServlet.class, "/async");
+        servletHolder.setAsyncSupported(true);
+
+        server.setHandler(context);
+        server.start();
+
+        StringBuilder req = new StringBuilder();
+        req.append("GET /async?testname=zero HTTP/1.1\r\n");
+        req.append("Host: local\r\n");
+        req.append("Connection: close\r\n");
+        req.append("\r\n");
+
+        String rawResponse = localConnector.getResponse(req.toString());
+        HttpTester.Response resp = HttpTester.parseResponse(rawResponse);
+        assertThat("Response.status", resp.getStatus(), is(200));
+        assertThat(resp.getContent(), is("ASYNC:testname=zero" + System.lineSeparator()));
+    }
+
+    @Test
+    public void testAsyncDispatchToPathWithServletRequestWrapper() throws Exception
+    {
+        context.addServlet(AsyncDispatchToPathServlet.class, "/start");
+        context.addServlet(AsyncTargetServlet.class, "/target");
+
+        server.setHandler(context);
+        server.start();
+
+        StringBuilder req = new StringBuilder();
+        req.append("GET /start HTTP/1.1\r\n");
+        req.append("Host: local\r\n");
+        req.append("Connection: close\r\n");
+        req.append("\r\n");
+
+        String rawResponse = localConnector.getResponse(req.toString());
+        HttpTester.Response resp = HttpTester.parseResponse(rawResponse);
+        assertThat("Response.status", resp.getStatus(), is(200));
+        assertThat(resp.getContent(), is("TARGET:foo=bar" + System.lineSeparator()));
+    }
+
     public static class HelloServlet extends HttpServlet
     {
         @Override
@@ -177,6 +220,46 @@ public class ServletWrapperTest
         public NoopRequestWrapper(HttpServletRequest request)
         {
             super(request);
+        }
+    }
+
+    // Reproduces the TCK AsyncTests dispatchZeroArgTest2 shape: startAsync with a plain
+    // ServletRequestWrapper, then dispatch back to the same URI. getParameter must still work.
+    public static class AsyncDispatchWithWrapperServlet extends HttpServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            if (req.getDispatcherType() == DispatcherType.ASYNC)
+            {
+                String name = req.getParameter("testname");
+                res.getWriter().println("ASYNC:testname=" + name);
+                return;
+            }
+            AsyncContext ac = req.startAsync(new ServletRequestWrapper(req), new ServletResponseWrapper(res));
+            ac.dispatch();
+        }
+    }
+
+    // Reproduces the TCK AsyncTests dispatchContextPathTest2 shape: startAsync with a plain
+    // ServletRequestWrapper, then dispatch to a different path with query parameters.
+    public static class AsyncDispatchToPathServlet extends HttpServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            AsyncContext ac = req.startAsync(new ServletRequestWrapper(req), new ServletResponseWrapper(res));
+            ac.dispatch(req.getServletContext(), "/target?foo=bar");
+        }
+    }
+
+    public static class AsyncTargetServlet extends HttpServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            String foo = req.getParameter("foo");
+            res.getWriter().println("TARGET:foo=" + foo);
         }
     }
 }
