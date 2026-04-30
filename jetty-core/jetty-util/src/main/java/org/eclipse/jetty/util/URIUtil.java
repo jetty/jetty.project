@@ -322,10 +322,10 @@ public final class URIUtil
     @SuppressWarnings("Duplicates")
     public static String encodeSpecific(String str, String charsToEncode)
     {
-        if ((str == null) || (str.length() == 0))
+        if ((str == null) || str.isEmpty())
             return null;
 
-        if ((charsToEncode == null) || (charsToEncode.length() == 0))
+        if ((charsToEncode == null) || charsToEncode.isEmpty())
             return str;
 
         char[] find = charsToEncode.toCharArray();
@@ -366,10 +366,10 @@ public final class URIUtil
     @SuppressWarnings("Duplicates")
     public static String decodeSpecific(String str, String charsToDecode)
     {
-        if ((str == null) || (str.length() == 0))
+        if ((str == null) || str.isEmpty())
             return null;
 
-        if ((charsToDecode == null) || (charsToDecode.length() == 0))
+        if ((charsToDecode == null) || charsToDecode.isEmpty())
             return str;
 
         int idx = str.indexOf('%');
@@ -389,33 +389,29 @@ public final class URIUtil
             char c = str.charAt(i);
             if (c == '%')
             {
-                if ((i + 2) < len)
+                if ((i + 2) >= len)
+                    throw new IllegalArgumentException("Bad URI % encoding");
+
+                char u = str.charAt(i + 1);
+                char l = str.charAt(i + 2);
+                char result = (char)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(l)));
+                boolean decoded = false;
+                for (char f : find)
                 {
-                    char u = str.charAt(i + 1);
-                    char l = str.charAt(i + 2);
-                    char result = (char)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(l)));
-                    boolean decoded = false;
-                    for (char f : find)
+                    if (f == result)
                     {
-                        if (f == result)
-                        {
-                            ret.append(result);
-                            decoded = true;
-                            break;
-                        }
+                        ret.append(result);
+                        decoded = true;
+                        break;
                     }
-                    if (decoded)
-                    {
-                        i += 2;
-                    }
-                    else
-                    {
-                        ret.append(c);
-                    }
+                }
+                if (decoded)
+                {
+                    i += 2;
                 }
                 else
                 {
-                    throw new IllegalArgumentException("Bad URI % encoding");
+                    ret.append(c);
                 }
             }
             else
@@ -506,34 +502,34 @@ public final class URIUtil
                 switch (c)
                 {
                     case '%':
+                        if ((i + 2) >= end)
+                            throw new IllegalArgumentException("Bad URI % encoding");
+
                         if (builder == null)
                         {
                             builder = new Utf8StringBuilder(length);
                             builder.append(path, offset, i - offset);
                         }
-                        if ((i + 2) < end)
+
+                        char u = path.charAt(i + 1);
+                        if (u == 'u')
                         {
-                            char u = path.charAt(i + 1);
-                            if (u == 'u')
-                            {
-                                // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
-                                int[] codePoints = {(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16))};
-                                String str = new String(codePoints, 0, 1);
-                                byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
-                                for (byte b: bytes)
-                                    builder.append(b);
-                                i += 5;
-                            }
-                            else
-                            {
-                                byte b = (byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2))));
+                            if ((i + 5) >= end)
+                                throw new IllegalArgumentException("Bad URI %u encoding");
+
+                            // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
+                            int[] codePoints = {(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16))};
+                            String str = new String(codePoints, 0, 1);
+                            byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+                            for (byte b: bytes)
                                 builder.append(b);
-                                i += 2;
-                            }
+                            i += 5;
                         }
                         else
                         {
-                            throw new IllegalArgumentException("Bad URI % encoding");
+                            byte b = (byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2))));
+                            builder.append(b);
+                            i += 2;
                         }
 
                         break;
@@ -547,7 +543,8 @@ public final class URIUtil
 
                         while (++i < end)
                         {
-                            if (path.charAt(i) == '/')
+                            c = path.charAt(i);
+                            if (c == '/')
                             {
                                 builder.append('/');
                                 break;
@@ -733,46 +730,46 @@ public final class URIUtil
             switch (c)
             {
                 case '%':
+                    if ((i + 2) >= end)
+                        throw new IllegalArgumentException("Bad URI % encoding");
+
                     if (builder == null)
                     {
                         builder = new Utf8StringBuilder(encodedPath.length());
                         builder.append(encodedPath, 0, i);
                     }
-                    if ((i + 2) < end)
+
+                    char u = encodedPath.charAt(i + 1);
+                    if (u == 'u')
                     {
-                        char u = encodedPath.charAt(i + 1);
-                        if (u == 'u')
+                        if ((i + 5) >= end)
+                            throw new IllegalArgumentException("Bad URI %u encoding");
+
+                        // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
+                        int code = TypeUtil.parseInt(encodedPath, i + 2, 4, 16);
+                        if (isSafeElseEncode(code, builder))
                         {
-                            // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
-                            int code = TypeUtil.parseInt(encodedPath, i + 2, 4, 16);
-                            if (isSafeElseEncode(code, builder))
+                            char[] chars = Character.toChars(code);
+                            for (char ch : chars)
                             {
-                                char[] chars = Character.toChars(code);
-                                for (char ch : chars)
-                                {
-                                    builder.append(ch);
-                                    if (slash && ch == '.')
-                                        normal = false;
-                                    slash = false;
-                                }
-                            }
-                            i += 5;
-                        }
-                        else
-                        {
-                            int code = TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(encodedPath.charAt(i + 2));
-                            if (isSafeElseEncode(code, builder))
-                            {
-                                builder.append((byte)(0xff & code));
-                                if (slash && code == '.')
+                                builder.append(ch);
+                                if (slash && ch == '.')
                                     normal = false;
+                                slash = false;
                             }
-                            i += 2;
                         }
+                        i += 5;
                     }
                     else
                     {
-                        throw new IllegalArgumentException("Bad URI % encoding");
+                        int code = TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(encodedPath.charAt(i + 2));
+                        if (isSafeElseEncode(code, builder))
+                        {
+                            builder.append((byte)(0xff & code));
+                            if (slash && code == '.')
+                                normal = false;
+                        }
+                        i += 2;
                     }
                     break;
 
@@ -785,7 +782,8 @@ public final class URIUtil
 
                     while (++i < end)
                     {
-                        if (encodedPath.charAt(i) == '/')
+                        c = encodedPath.charAt(i);
+                        if (c == '/')
                         {
                             builder.append('/');
                             break;
@@ -837,13 +835,13 @@ public final class URIUtil
      */
     public static String addEncodedPaths(String p1, String p2)
     {
-        if (p1 == null || p1.length() == 0)
+        if (p1 == null || p1.isEmpty())
         {
             if (p1 != null && p2 == null)
                 return p1;
             return p2;
         }
-        if (p2 == null || p2.length() == 0)
+        if (p2 == null || p2.isEmpty())
             return p1;
 
         int split = p1.indexOf(';');
@@ -894,13 +892,13 @@ public final class URIUtil
      */
     public static String addPaths(String p1, String p2)
     {
-        if (p1 == null || p1.length() == 0)
+        if (p1 == null || p1.isEmpty())
         {
             if (p1 != null && p2 == null)
                 return p1;
             return p2;
         }
-        if (p2 == null || p2.length() == 0)
+        if (p2 == null || p2.isEmpty())
             return p1;
 
         boolean p1EndsWithSlash = p1.endsWith("/");
@@ -1270,7 +1268,7 @@ public final class URIUtil
      */
     public static String compactPath(String path)
     {
-        if (path == null || path.length() == 0)
+        if (path == null || path.isEmpty())
             return path;
 
         int state = 0;
@@ -1491,7 +1489,7 @@ public final class URIUtil
      * @param port the URI port
      * @deprecated Use {@link #appendSchemeHostPort(StringBuilder, String, String, int)}
      */
-    @Deprecated
+    @Deprecated(since = "12.0.7", forRemoval = true)
     public static void appendSchemeHostPort(StringBuffer url, String scheme, String server, int port)
     {
         scheme = normalizeScheme(scheme);
@@ -1512,7 +1510,7 @@ public final class URIUtil
     {
         if (path == null)
             return null;
-        if ("".equals(path) || "/".equals(path))
+        if (path.isEmpty() || "/".equals(path))
             return path;
 
         int offset = 0;
@@ -1660,7 +1658,7 @@ public final class URIUtil
     {
         Objects.requireNonNull(uri, "URI");
 
-        if (path == null || "".equals(path))
+        if (path == null || path.isEmpty())
             return uri;
 
         // collapse any "//" paths in the path portion
@@ -1681,7 +1679,7 @@ public final class URIUtil
         path = encodePathSafeEncoding(path);
         pathLen = path.length();
 
-        if (base.length() == 0)
+        if (base.isEmpty())
             return URI.create(path);
 
         StringBuilder buf = new StringBuilder(base.length() + pathLen * 3);
@@ -1848,7 +1846,7 @@ public final class URIUtil
             }
             catch (Exception e)
             {
-                LOG.warn("Invalid Resource Reference: " + reference);
+                LOG.warn("Invalid Resource Reference: {}", reference);
                 throw e;
             }
         }
@@ -2092,13 +2090,6 @@ public final class URIUtil
         return scheme == null ? null : StringUtil.asciiToLowerCase(scheme);
     }
 
-    private static boolean isHexDigit(char c)
-    {
-        return (((c >= 'a') && (c <= 'f')) || // ALPHA (lower)
-            ((c >= 'A') && (c <= 'F')) ||  // ALPHA (upper)
-            ((c >= '0') && (c <= '9')));
-    }
-
     /**
      * Validate an IPv4 or IPv6 address.
      * @param inetAddress the address to validate
@@ -2108,7 +2099,7 @@ public final class URIUtil
     {
         try
         {
-            InetAddress address = InetAddress.getByName(inetAddress);
+            InetAddress ignored = InetAddress.getByName(inetAddress);
         }
         catch (Throwable e)
         {

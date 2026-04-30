@@ -358,6 +358,12 @@ public class HttpURITest
         uri = HttpURI.from("/path/../info");
         assertEquals("/info", uri.getCanonicalPath());
 
+        uri = HttpURI.from("/path;/./info");
+        assertEquals("/path/info", uri.getCanonicalPath());
+
+        uri = HttpURI.from("/path;/../info");
+        assertEquals("/info", uri.getCanonicalPath());
+
         uri = HttpURI.from("/./path/info.");
         assertEquals("/path/info.", uri.getCanonicalPath());
 
@@ -400,11 +406,17 @@ public class HttpURITest
                 {"http://host/path/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
                 {"http://host/path/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
                 {"//host/path/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
+                {"//host/path;/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
                 {"//host/path/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                {"//host/path;/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
                 {"/path/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
+                {"/path;/../info", "/info", "/info", EnumSet.noneOf(Violation.class)},
                 {"/path/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+                {"/path;/./info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
                 {"path/../info", "info", "info", EnumSet.noneOf(Violation.class)},
+                {"path;/../info", "info", "info", EnumSet.noneOf(Violation.class)},
                 {"path/./info", "path/info", "path/info", EnumSet.noneOf(Violation.class)},
+                {"path;/./info", "path/info", "path/info", EnumSet.noneOf(Violation.class)},
 
                 // encoded paths
                 {"/f%6f%6F/bar", "/foo/bar", "/foo/bar", EnumSet.noneOf(Violation.class)},
