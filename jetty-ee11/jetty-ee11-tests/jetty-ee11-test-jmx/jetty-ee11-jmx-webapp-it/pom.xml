@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee11</groupId>
     <artifactId>jetty-ee11-test-jmx</artifactId>
-    <version>12.1.9-SNAPSHOT</version>
+    <version>12.1.9</version>
   </parent>
   <artifactId>jetty-ee11-jmx-webapp-it</artifactId>
   <packaging>jar</packaging>
