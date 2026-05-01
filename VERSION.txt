@@ -1,3 +1,5 @@
+jetty-12.1.10-SNAPSHOT
+
 12.1.9 - 30 April 2026
  + 8876 Jetty 12 - JMX-ify HttpContent.Factory implementations
  + 12110 Request Authority checks needed
