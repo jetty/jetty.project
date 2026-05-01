@@ -347,6 +347,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void releaseNetworkBuffer()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("releaseNetworkBuffer() released buffer {}", networkBuffer);
         if (networkBuffer == null)
             throw new IllegalStateException();
 
@@ -460,6 +462,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         try (AutoLock ignored = lock.lock())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("fillAndParse() {} {}", state, this);
             switch (state)
             {
                 case IDLE -> state = State.FILLING_AND_PARSING;
@@ -487,9 +491,12 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 while (true)
                 {
                     // Parse and handle frames
+                    boolean moreDemand = true;
                     while (networkBuffer.hasRemaining())
                     {
                         Frame.Parsed frame = parser.parse(networkBuffer.getByteBuffer());
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("fillAndParse() parsed frame: {}", frame);
                         if (frame == null)
                             break;
 
@@ -498,16 +505,26 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                         if (meetDemand())
                             onFrame(frame);
 
-                        if (!moreDemand())
-                            return;
+                        moreDemand = moreDemand();
+                        if (!moreDemand)
+                            break;
+                    }
+
+                    if  (!moreDemand)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("fillAndParse() no more demand, breaking out of parsing loop");
+                        break;
                     }
 
                     // buffer must be empty here because parser is fully consuming
                     assert (!networkBuffer.hasRemaining());
 
+                    // If there is more demand we can fill the network buffer.
                     if (!getEndPoint().isOpen())
                     {
                         releaseNetworkBuffer();
+                        coreSession.onEof();
                         return;
                     }
 
@@ -582,6 +599,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                         }
                         default -> throw new IllegalStateException(state.name());
                     }
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("fillAndParse() finally block state={}, fillingAndParsing={}, close={}, registerFillInterested={}, {}", state, fillingAndParsing, close, registerFillInterested, this);
                 }
                 if (close)
                     doOnClose(closeCause);
