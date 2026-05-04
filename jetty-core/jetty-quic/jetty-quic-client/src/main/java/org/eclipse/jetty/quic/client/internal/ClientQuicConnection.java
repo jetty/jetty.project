@@ -15,13 +15,13 @@ package org.eclipse.jetty.quic.client.internal;
 
 import java.net.SocketAddress;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.CongestionController;
@@ -77,6 +77,8 @@ public class ClientQuicConnection extends QuicConnection implements Callback
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         ClientTLSEngine tlsEngine = new ClientTLSEngine(protector);
         session = new ClientQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, getEndPoint(), context);
+        session.setIdleTimeout(getEndPoint().getIdleTimeout());
+        LifeCycle.start(session);
         session.connect(this);
     }
 
@@ -112,6 +114,12 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     {
         // TODO
         return 0;
+    }
+
+    @Override
+    public boolean onIdleExpired(TimeoutException timeoutException)
+    {
+        return session.onIdleTimeout(timeoutException);
     }
 
     @Override
@@ -176,8 +184,11 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     }
 
     @Override
-    public void disconnect(QuicSession session, ConnectionCloseFrame frame, Throwable failure)
+    public void terminate(QuicSession session)
     {
-        // TODO
+        if (LOG.isDebugEnabled())
+            LOG.debug("terminate {} on {}", session, this);
+        assert this.session == session;
+        getEndPoint().close();
     }
 }

@@ -44,8 +44,11 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
     protected AbstractSession(Executor executor, QuicConfiguration configuration, Session.Listener listener)
     {
         this.executor = executor;
+        installBean(executor);
         this.configuration = configuration;
+        installBean(configuration);
         this.listener = listener;
+        installBean(listener);
     }
 
     public Executor getExecutor()
@@ -97,7 +100,7 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
     {
         if (LOG.isDebugEnabled())
             LOG.debug("closing {} {}", frame, this);
-        // Propagate inwards.
+        // Propagate upwards.
         notifyLocalClose(frame, promise);
     }
 
@@ -270,11 +273,24 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         }
     }
 
-    protected void notifyClose(ConnectionCloseFrame frame)
+    protected void notifyConnectionClose(ConnectionCloseFrame frame)
     {
         try
         {
             listener.onClose(this, frame);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    protected void notifyFailure(Throwable failure)
+    {
+        try
+        {
+            listener.onFailure(this, failure);
         }
         catch (Throwable x)
         {

@@ -85,13 +85,13 @@ public interface Session
     /// [ConnectionCloseFrame#ConnectionCloseFrame(long, String)].
     ///
     /// Differently from [#disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)],
-    /// this method performs close actions inwards, towards the application,
+    /// this method performs close actions upwards, towards the application,
     /// that may perform additional actions such as writing to the network
     /// (for example, close frames for a protocol on top of QUIC).
     ///
-    /// After finishing the inward actions,
+    /// After finishing the upward actions,
     /// [#disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)] should be
-    /// called to perform close actions outwards and eventually send
+    /// called to perform close actions downwards and eventually send
     /// the QUIC close frame and finally disconnect at the network level,
     /// if necessary.
     ///
@@ -103,7 +103,7 @@ public interface Session
     /// and failure cause, if any.
     ///
     /// Differently from [#close(ConnectionCloseFrame, Promise.Invocable)],
-    /// this method performs disconnect actions outwards, towards the
+    /// this method performs disconnect actions downwards, towards the
     /// network: typically cleanup actions and eventually sends the
     /// given QUIC close frame and finally disconnect at the network level,
     /// if necessary.
@@ -136,6 +136,7 @@ public interface Session
         /// This event may not be emitted for all QUIC implementations.
         ///
         /// @param session the QUIC session
+        /// @param transportParameters the local [TransportParameters] to modify
         default void onPrepare(Session session, TransportParameters transportParameters)
         {
         }
@@ -145,7 +146,7 @@ public interface Session
         /// This event may not be emitted for all QUIC implementations.
         ///
         /// @param session the QUIC session
-        /// @param parameters the QUIC transport parameters
+        /// @param parameters the QUIC transport parameters received from the remote peer
         default void onTransportParameters(Session session, TransportParameters parameters)
         {
         }
@@ -222,6 +223,14 @@ public interface Session
         /// @param session the QUIC session
         /// @param frame the CONNECTION_CLOSE frame
         default void onClose(Session session, ConnectionCloseFrame frame)
+        {
+        }
+
+        /// Callback method invoked when a failure has been detected.
+        ///
+        /// @param session the QUIC session
+        /// @param failure the failure
+        default void onFailure(Session session, Throwable failure)
         {
         }
 

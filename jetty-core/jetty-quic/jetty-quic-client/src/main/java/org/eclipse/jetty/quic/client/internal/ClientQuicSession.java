@@ -66,7 +66,6 @@ public class ClientQuicSession extends QuicSession
 
     private final Map<String, Object> context;
     private SocketAddress serverSocketAddress;
-    private byte[] originalDestinationConnectionId;
     private boolean retryPacketProcessed;
     private byte[] retryToken;
 
@@ -153,7 +152,7 @@ public class ClientQuicSession extends QuicSession
         tlsConfiguration.setInputKeyMaterial(dstConnectionId);
         // Store the original destination connection id,
         // to be used later for RetryPacket processing.
-        originalDestinationConnectionId = dstConnectionId;
+        setOriginalDestinationConnectionId(dstConnectionId);
         setDestinationConnectionId(dstConnectionId);
 
         ByteBuffer earlyData = (ByteBuffer)context.get(QuicClient.EARLY_DATA_KEY);
@@ -328,7 +327,7 @@ public class ClientQuicSession extends QuicSession
         // Verify the integrity of the RetryPacket.
         RetainableByteBuffer.Mutable retryAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), false, -1, 0, 0);
         generateRetryPacket(retryAccumulator, packet);
-        if (!getTLSEngine().getPacketProtector().verifyRetryIntegrity(retryAccumulator, originalDestinationConnectionId))
+        if (!getTLSEngine().getPacketProtector().verifyRetryIntegrity(retryAccumulator, getOriginalDestinationConnectionId()))
         {
             // RFC-9000[17.2.5.2]: discard retry packets that do not verify.
             if (LOG.isDebugEnabled())

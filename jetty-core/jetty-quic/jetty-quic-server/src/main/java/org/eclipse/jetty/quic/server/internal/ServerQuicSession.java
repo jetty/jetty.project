@@ -15,13 +15,11 @@ package org.eclipse.jetty.quic.server.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
-import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
@@ -48,9 +46,7 @@ import org.eclipse.jetty.tls.CertificateVerifyMessage;
 import org.eclipse.jetty.tls.ClientHelloMessage;
 import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.Message;
-import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +57,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     private static final Logger LOG = LoggerFactory.getLogger(ServerQuicSession.class);
 
     private long expireNanoTime = Long.MAX_VALUE;
-    private byte[] originalDestinationConnectionId;
+    private boolean retryPacketSent;
 
     public ServerQuicSession(Connector connector, QuicServerQuicConfiguration configuration, ServerQuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, ServerTLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint)
     {
@@ -116,15 +112,6 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     }
 
     @Override
-    public boolean onIdleTimeout(TimeoutException timeout)
-    {
-        boolean result = super.onIdleTimeout(timeout);
-        if (!result)
-            notIdle();
-        return result;
-    }
-
-    @Override
     public long getExpireNanoTime()
     {
         return expireNanoTime;
@@ -156,7 +143,12 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         {
             return switch (packet)
             {
-                case InitialPacket initialPacket -> processInitialPacket(initialPacket);
+                case InitialPacket initialPacket ->
+                {
+                    if (processInitialPacket(initialPacket))
+                        yield super.processPacket(packet);
+                    yield List.of();
+                }
                 default -> super.processPacket(packet);
             };
         }
@@ -167,7 +159,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         }
     }
 
-    private List<Invocable.Task> processInitialPacket(InitialPacket packet) throws Exception
+    private boolean processInitialPacket(InitialPacket packet) throws Exception
     {
         if (packet.frames().getFirst() instanceof CryptoFrame)
         {
@@ -178,27 +170,36 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
                     LOG.debug("no token in {} on {}", packet, this);
 
                 // Store the odcid to be used for the next InitialPacket and for the RetryPacket.
-                originalDestinationConnectionId = packet.destinationConnectionId();
+                byte[] origDstConnectionId = packet.destinationConnectionId();
+                setOriginalDestinationConnectionId(origDstConnectionId);
 
-                token = getQuicConfiguration().getTokenFactory().newRetryToken(getRemoteSocketAddress(), originalDestinationConnectionId);
-                RetryPacket retryPacket = new RetryPacket(packet.quicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, null);
+                token = getQuicConfiguration().getTokenFactory().newRetryToken(getRemoteSocketAddress(), origDstConnectionId);
+                // RFC-9000[17.2.5.1]: retry.dst=pkt.src; retry.src!=pkt.dst.
+                RetryPacket retryPacket = new RetryPacket(packet.quicVersion(), packet.sourceConnectionId(), getSourceConnectionId(), token, null);
                 RetainableByteBuffer.Mutable retryAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), false, -1, 0, 0);
                 generateRetryPacket(retryAccumulator, retryPacket);
-                byte[] integrity = getTLSEngine().getPacketProtector().createRetryIntegrity(retryAccumulator, originalDestinationConnectionId);
+                byte[] integrity = getTLSEngine().getPacketProtector().createRetryIntegrity(retryAccumulator, origDstConnectionId);
+                retryPacketSent = true;
                 retryPacket = retryPacket.withIntegrity(integrity);
                 packet(retryPacket, Callback.NOOP);
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("dropping {} on {}", packet, this);
-                return List.of();
+                return false;
             }
-            boolean valid = getQuicConfiguration().getTokenFactory().isTokenValid(getRemoteSocketAddress(), originalDestinationConnectionId, token);
+
+            TransportParameters transportParameters = getTLSEngine().getTLSConfiguration().getTransportParameters();
+            if (retryPacketSent)
+                transportParameters.put(TransportParameters.Ids.RETRY_SOURCE_CONNECTION_ID, getSourceConnectionId());
+            notifyPrepare(transportParameters);
+
+            boolean valid = getQuicConfiguration().getTokenFactory().isTokenValid(getRemoteSocketAddress(), getOriginalDestinationConnectionId(), token);
             if (LOG.isDebugEnabled())
                 LOG.debug("token {} in {} on {}", valid ? "valid" : "invalid", packet, this);
             if (!valid)
                 throw new QuicException(ErrorCode.INVALID_TOKEN_ERROR, "invalid_token");
         }
-        return super.processPacket(packet);
+        return true;
     }
 
     @Override
@@ -246,7 +247,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
             byte[] token = getQuicConfiguration().getTokenFactory().newToken(getRemoteSocketAddress());
             frames.add(new NewTokenFrame(token));
             // TODO: send also NewConnectionIdFrames.
-            frames(frames, Callback.from(Callback.NOOP, this::fail));
+            frames(frames, Callback.from(() -> {}, this::fail));
         }
         catch (Throwable x)
         {
@@ -256,112 +257,6 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 
     private void handshakeFailure(Throwable failure)
     {
-        // TODO: notifyFailure()?
-        // RFC-9000[20.1]: convert TLS alerts into CRYPTO_ERRORs.
-        long code = ErrorCode.INTERNAL_ERROR.code();
-        if (failure instanceof TLSException tls)
-            code = ErrorCode.CRYPTO_ERROR.code() + tls.getAlert().code();
-        disconnect(new ConnectionCloseFrame(code, failure.getMessage(), 0x06), failure, Promise.Invocable.noop()/*TODO*/);
+        fail(failure);
     }
-
-    /*
-    @Override
-    public long newStreamId(boolean bidirectional)
-    {
-        return StreamId.newStreamId(streamIds.getAndIncrement(), bidirectional, false);
-    }
-
-    Runnable process(SocketAddress remoteAddress, ByteBuffer cipherBuffer)
-    {
-        try
-        {
-            feed(remoteAddress, cipherBuffer);
-
-            if (isConnectionEstablished())
-            {
-                if (!isOpen())
-                {
-                    if (!validateConnection())
-                        return null;
-                    open();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("opened {}", this);
-                }
-                // Return a task because we want 1 thread per active session.
-                return getProducerTask();
-            }
-            else
-            {
-                flush();
-                return null;
-            }
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("process failure for {}", this, x);
-            ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.CONNECTION_REFUSED_ERROR.code(), "session_failure");
-            disconnect(frame, x, Promise.Invocable.noop());
-            return null;
-        }
-    }
-
-    private boolean validateConnection()
-    {
-        if (getConnection().getSslContextFactory().getNeedClientAuth() && getPeerCertificates() == null)
-        {
-            ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.CONNECTION_REFUSED_ERROR.code(), "missing_peer_certificates");
-            disconnect(frame, new SSLHandshakeException(frame.reason()), Promise.Invocable.noop());
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public void feed(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
-    {
-        // While the connection ID remains the same,
-        // the remote address may change so store it again.
-        this.remoteAddress = remoteAddress;
-        notIdle();
-        super.feed(remoteAddress, cipherBuffer);
-    }
-
-    Runnable getProducerTask()
-    {
-        return producer;
-    }
-
-    @Override
-    public void flush()
-    {
-        notIdle();
-        super.flush();
-    }
-
-    private class StreamsProducerTask extends Invocable.Task.Abstract
-    {
-        private StreamsProducerTask()
-        {
-            // Must be EITHER so that its invocation is not deferred,
-            // since this task may process a stream that would unblock
-            // stalled threads.
-            // NON_BLOCKING could have worked too, but EITHER provides
-            // parallelization of session processing which is a plus.
-            super(InvocationType.EITHER);
-        }
-
-        @Override
-        public void run()
-        {
-            produce();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "%s@%x".formatted(TypeUtil.toShortName(getClass()), hashCode());
-        }
-    }
-*/
 }

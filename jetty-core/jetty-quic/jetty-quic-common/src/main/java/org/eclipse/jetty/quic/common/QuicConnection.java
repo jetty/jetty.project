@@ -20,7 +20,6 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -70,7 +69,7 @@ public abstract class QuicConnection extends AbstractConnection
         fillInterested(fillableCallback);
     }
 
-    public abstract void disconnect(QuicSession session, ConnectionCloseFrame frame, Throwable failure);
+    public abstract void terminate(QuicSession session);
 
     void offerTask(Invocable.Task task)
     {

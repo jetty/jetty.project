@@ -231,7 +231,7 @@ public abstract class QuicheSession extends AbstractSession
             {
                 LifeCycle.stop(this);
                 emitDisconnect();
-                // Propagate outwards.
+                // Propagate downwards.
                 getConnection().disconnect(this, frame, failure);
             }));
     }
@@ -642,7 +642,7 @@ public abstract class QuicheSession extends AbstractSession
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("remote close {} on {}", closeInfo, QuicheSession.this);
-                notifyClose(new ConnectionCloseFrame(closeInfo.error(), closeInfo.reason()));
+                notifyConnectionClose(new ConnectionCloseFrame(closeInfo.error(), closeInfo.reason()));
             }
 
             if (LOG.isDebugEnabled())

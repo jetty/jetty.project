@@ -77,6 +77,8 @@ public class ConnectionCloseFrameParser implements FrameParser
                     {
                         if (reasonLength > reasonMaxLength)
                             throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_reason_length", appError ? 0x1D : 0x1C);
+                        if (reasonLength == 0)
+                            return result();
                         state = State.REASON;
                     }
                 }

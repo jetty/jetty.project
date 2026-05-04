@@ -14,11 +14,13 @@
 package org.eclipse.jetty.quic.common;
 
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
@@ -73,6 +76,7 @@ import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -81,9 +85,13 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
+/// A logical connection with a remote peer.
 public abstract class QuicSession extends AbstractSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
@@ -112,10 +120,13 @@ public abstract class QuicSession extends AbstractSession
     private final TLSEngine tlsEngine;
     private final EndPoint endPoint;
     private final boolean client;
+    private final StreamTimeouts streamTimeouts;
     private final PacketsParser parser;
     private final QuicFlusher flusher;
+    private CloseState closeState = CloseState.NOT_CLOSED;
     private Packet.Listener packetListener;
     private QuicVersion quicVersion;
+    private byte[] origDstConnectionId;
     private byte[] dstConnectionId;
     private byte[] srcConnectionId;
     private long idleTimeout;
@@ -127,15 +138,26 @@ public abstract class QuicSession extends AbstractSession
     {
         super(executor, quicConfiguration, listener);
         this.scheduler = scheduler;
+        installBean(scheduler);
         this.byteBufferPool = byteBufferPool;
+        installBean(byteBufferPool);
         this.connection = connection;
+        installBean(connection);
         this.packetTracker = packetTracker;
+        installBean(packetTracker);
         this.packetNumbers = packetNumbers;
+        installBean(packetNumbers);
         this.tlsEngine = tlsEngine;
+        installBean(tlsEngine);
         this.endPoint = endPoint;
+        installBean(endPoint);
         this.client = client;
+        this.streamTimeouts = new StreamTimeouts(scheduler);
+        installBean(streamTimeouts);
         this.parser = new PacketsParser(tlsEngine.getPacketProtector(), packetNumbers, new FramesParser());
+        installBean(parser);
         this.flusher = new QuicFlusher(this);
+        installBean(flusher);
         this.packetListener = new PacketProcessor();
         this.dstConnectionId = BufferUtil.EMPTY_BYTES;
         this.srcConnectionId = tlsEngine.newRandomBytes(8);
@@ -191,6 +213,16 @@ public abstract class QuicSession extends AbstractSession
         this.quicVersion = quicVersion;
     }
 
+    public byte[] getOriginalDestinationConnectionId()
+    {
+        return origDstConnectionId;
+    }
+
+    protected void setOriginalDestinationConnectionId(byte[] origDstConnectionId)
+    {
+        this.origDstConnectionId = origDstConnectionId;
+    }
+
     public byte[] getDestinationConnectionId()
     {
         return dstConnectionId;
@@ -225,11 +257,45 @@ public abstract class QuicSession extends AbstractSession
 
     public boolean onIdleTimeout(TimeoutException timeout)
     {
-        // TODO
+        ThreadPool.executeImmediately(getExecutor(), () ->
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("idle timeout expired on {}", this);
+
+            // RFC-9000[10]: QUIC idle timeouts are fatal and cannot be ignored.
+            // We use a keep-alive mechanism to avoid that idle timouts fire.
+            notifyFailure(timeout);
+
+            // RFC-9000[10.1]: the idle timeout should close the
+            // connection silently, but we send a ConnectionCloseFrame
+            // to inform the other peer that the connection is broken.
+            disconnect(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "idle_timeout"), timeout, Promise.Invocable.noop());
+        });
         return false;
     }
 
     public abstract int getUDPPayloadLength();
+
+    private boolean isOpen()
+    {
+        try (var _ = lock.lock())
+        {
+            return closeState == CloseState.NOT_CLOSED;
+        }
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        // TODO: handle external stop.
+        //  streamTimeouts.destroy().
+        super.doStop();
+    }
+
+    void scheduleTimeout(QuicStream stream)
+    {
+        streamTimeouts.schedule(stream);
+    }
 
     /// Returns an estimate (by excess) of the packet header length.
     ///
@@ -273,8 +339,9 @@ public abstract class QuicSession extends AbstractSession
     ///
     /// @param frame the frame to send
     /// @param callback the [Callback] that gets notified when the frame has been sent
-    protected void crypto(EncryptionLevel encryptionLevel, CryptoFrame frame, Callback callback)
+    private void crypto(EncryptionLevel encryptionLevel, CryptoFrame frame, Callback callback)
     {
+        // TODO: check closeState.
         flusher.sendFrames(encryptionLevel, List.of(frame), callback);
     }
 
@@ -450,7 +517,7 @@ public abstract class QuicSession extends AbstractSession
         sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
 
-    void reset(QuicStream stream, ResetFrame frame, Promise.Invocable<Stream> promise)
+    public void reset(QuicStream stream, ResetFrame frame, Promise.Invocable<Stream> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, stream);
         sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
@@ -470,18 +537,79 @@ public abstract class QuicSession extends AbstractSession
 
     void sendFrames(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback)
     {
-        flusher.sendFrames(encryptionLevel, frames, callback);
+        if (isOpen())
+            flusher.sendFrames(encryptionLevel, frames, callback);
+        else
+            callback.failed(new ClosedChannelException());
     }
 
     void sendProbe(EncryptionLevel encryptionLevel)
     {
-        flusher.sendProbe(encryptionLevel);
+        if (isOpen())
+            flusher.sendProbe(encryptionLevel);
     }
 
     @Override
     public void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<Session> promise)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("disconnecting {} on {}", frame, this);
 
+        boolean disconnect;
+        try (var _ = lock.lock())
+        {
+            disconnect = switch (closeState)
+            {
+                case NOT_CLOSED ->
+                {
+                    closeState = CloseState.CLOSING;
+
+                    // RFC-9000[10.2]: closing and draining states
+                    // should persist for 3 times the current PTO.
+                    RTTData rttData = getPacketTracker().getRTTData();
+                    long pto = rttData.smoothedRTT() + 4 * rttData.variationRTT();
+                    getScheduler().schedule(this::terminate, 3 * pto, NANOSECONDS);
+
+                    yield true;
+                }
+                case CLOSING ->
+                {
+                    yield true;
+                }
+                case DRAINING, CLOSED ->
+                {
+                    // RFC-9002[10.2.2]: an endpoint in the
+                    // draining state must not send any packets.
+                    yield false;
+                }
+            };
+        }
+
+        if (disconnect)
+        {
+            // TODO: tear down all the streams.
+
+            Callback callback = Promise.Invocable.toCallback(promise, this);
+            // TODO: hardcoded EncryptionLevel
+            flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), Callback.from(callback, this::disconnectComplete));
+        }
+        else
+        {
+            promise.succeeded(this);
+        }
+    }
+
+    private void disconnectComplete()
+    {
+        notifyDisconnect();
+        dispose();
+    }
+
+    private void terminate()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("terminating {}", this);
+        getQuicConnection().terminate(this);
     }
 
     @Override
@@ -697,6 +825,7 @@ public abstract class QuicSession extends AbstractSession
                 flusher.processMaxData(maxDataFrame);
                 // TODO: notify Session.Listener (before or after queuing to the flusher?)
             }
+            case ConnectionCloseFrame connectionCloseFrame -> processConnectionCloseFrame(connectionCloseFrame);
             default ->
             {
                 // TODO: notify Session.Listener
@@ -708,6 +837,50 @@ public abstract class QuicSession extends AbstractSession
     {
         packetNumbers.onAckFrameReceived(encryptionLevel, frame);
         flusher.onAckFrameReceived(encryptionLevel, frame);
+    }
+
+    private void processConnectionCloseFrame(ConnectionCloseFrame frame)
+    {
+        boolean process;
+        boolean disconnect = false;
+        try (var _ = lock.lock())
+        {
+            process = switch (closeState)
+            {
+                case NOT_CLOSED ->
+                {
+                    closeState = CloseState.DRAINING;
+
+                    // RFC-9000[10.2]: closing and draining states
+                    // should persist for 3 times the current PTO.
+                    RTTData rttData = getPacketTracker().getRTTData();
+                    long pto = rttData.smoothedRTT() + 4 * rttData.variationRTT();
+                    getScheduler().schedule(this::terminate, 3 * pto, NANOSECONDS);
+
+                    disconnect = true;
+                    yield true;
+                }
+                case CLOSING ->
+                {
+                    closeState = CloseState.DRAINING;
+                    yield true;
+                }
+                case DRAINING, CLOSED -> false;
+            };
+        }
+
+        if (process)
+        {
+            // TODO: tear down all the streams.
+
+            notifyConnectionClose(frame);
+            if (disconnect)
+            {
+                // TODO: hardcoded EncryptionLevel
+                ConnectionCloseFrame reply = new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), null, 0x1C);
+                flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(reply), Callback.from(this::disconnectComplete));
+            }
+        }
     }
 
     private Invocable.Task processStreamFrames(List<Frame.WithStreamId> frames)
@@ -1023,11 +1196,29 @@ public abstract class QuicSession extends AbstractSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failure on {}", this, x);
-        // TODO: initiate inward close? or outward?
+
+        ConnectionCloseFrame frame = switch (x)
+        {
+            case TLSException tls ->
+            {
+                // RFC-9000[20.1]: convert TLS alerts into CRYPTO_ERRORs.
+                long code = ErrorCode.CRYPTO_ERROR.code() + tls.getAlert().code();
+                yield new ConnectionCloseFrame(code, x.getMessage(), 0x06);
+            }
+            case QuicException quic ->
+                new ConnectionCloseFrame(quic.getErrorCode().code(), quic.getMessage(), quic.getFrameType());
+            default -> new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), x.getMessage(), 0x00);
+        };
+
+        notifyFailure(x);
+
+        disconnect(frame, x, Promise.Invocable.noop());
     }
 
     public void dispose()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("disposing {}", this);
         // TODO: dispose all components, that may have allocated a buffer or such
         //  For example TranscriptHash.dispose()
     }
@@ -1035,7 +1226,7 @@ public abstract class QuicSession extends AbstractSession
     @Override
     public String toString()
     {
-        return "%s[dcid=%s,streams=%d]".formatted(super.toString(), StringUtil.toHexString(getDestinationConnectionId()), streams.size());
+        return "%s[%s,dcid=%s,streams=%d]".formatted(super.toString(), closeState, StringUtil.toHexString(getDestinationConnectionId()), streams.size());
     }
 
     private class PacketProcessor implements Packet.Listener
@@ -1045,5 +1236,34 @@ public abstract class QuicSession extends AbstractSession
         {
             process(packet);
         }
+    }
+
+    private class StreamTimeouts extends CyclicTimeouts<QuicStream>
+    {
+        private StreamTimeouts(Scheduler scheduler)
+        {
+            super(scheduler);
+        }
+
+        @Override
+        protected Iterator<QuicStream> iterator()
+        {
+            return streams.values().iterator();
+        }
+
+        @Override
+        protected boolean onExpired(QuicStream stream)
+        {
+            getExecutor().execute(() -> stream.onIdleTimeout(new TimeoutException("Idle timeout " + stream.getIdleTimeout() + " ms elapsed")));
+            return false;
+        }
+    }
+
+    private enum CloseState
+    {
+        NOT_CLOSED,
+        CLOSING,
+        DRAINING,
+        CLOSED
     }
 }
