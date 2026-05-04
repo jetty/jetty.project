@@ -310,7 +310,8 @@ public class ServerQuicConnection extends QuicConnection
 
             // RFC-9000[18.2].
             TransportParameters transportParameters = tlsConfiguration.getTransportParameters();
-            transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, Math.max(idleTimeout, 0L));
+            if (idleTimeout > 0)
+                transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, idleTimeout);
             transportParameters.put(TransportParameters.Ids.ORIGINAL_DESTINATION_CONNECTION_ID, dstConnectionId.bytes());
             // TODO
 //            transportParameters.put(TransportParameters.Ids.PREFERRED_ADDRESS, null);
@@ -339,7 +340,7 @@ public class ServerQuicConnection extends QuicConnection
         ServerTLSConfiguration tlsConfiguration = new ServerTLSConfiguration(getServerQuicConfiguration(), getSslContextFactory());
         ServerTLSEngine tlsEngine = new ServerTLSEngine(protector, tlsConfiguration);
         Session.Listener listener = getSessionListenerFactory().newListener();
-        return new ServerQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, listener, getEndPoint());
+        return new ServerQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, listener);
     }
 
     public void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers)

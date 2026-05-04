@@ -89,6 +89,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /// A logical connection with a remote peer.
@@ -118,7 +119,6 @@ public abstract class QuicSession extends AbstractSession
     private final PacketTracker packetTracker;
     private final PacketNumbers packetNumbers;
     private final TLSEngine tlsEngine;
-    private final EndPoint endPoint;
     private final boolean client;
     private final StreamTimeouts streamTimeouts;
     private final PacketsParser parser;
@@ -133,8 +133,9 @@ public abstract class QuicSession extends AbstractSession
     private SocketAddress remoteSocketAddress;
     private TransportParameters transportParameters;
     private boolean writeStalled;
+    private Scheduler.Task keepAliveTask;
 
-    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, EndPoint endPoint, boolean client)
+    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, boolean client)
     {
         super(executor, quicConfiguration, listener);
         this.scheduler = scheduler;
@@ -149,8 +150,6 @@ public abstract class QuicSession extends AbstractSession
         installBean(packetNumbers);
         this.tlsEngine = tlsEngine;
         installBean(tlsEngine);
-        this.endPoint = endPoint;
-        installBean(endPoint);
         this.client = client;
         this.streamTimeouts = new StreamTimeouts(scheduler);
         installBean(streamTimeouts);
@@ -161,6 +160,7 @@ public abstract class QuicSession extends AbstractSession
         this.packetListener = new PacketProcessor();
         this.dstConnectionId = BufferUtil.EMPTY_BYTES;
         this.srcConnectionId = tlsEngine.newRandomBytes(8);
+        this.keepAliveTask = () -> false;
     }
 
     public Scheduler getScheduler()
@@ -200,7 +200,7 @@ public abstract class QuicSession extends AbstractSession
 
     public EndPoint getEndPoint()
     {
-        return endPoint;
+        return getQuicConnection().getEndPoint();
     }
 
     public QuicVersion getQuicVersion()
@@ -244,6 +244,22 @@ public abstract class QuicSession extends AbstractSession
         return getTLSEngine().getApplicationProtocol();
     }
 
+    public boolean isKeepAliveEnabled()
+    {
+        return keepAliveTask != null;
+    }
+
+    public void setKeepAliveEnabled(boolean keepAlive)
+    {
+        if (keepAliveTask != null)
+            keepAliveTask.cancel();
+
+        if (keepAlive)
+            scheduleKeepAlive();
+        else
+            keepAliveTask = null;
+    }
+
     @Override
     public long getIdleTimeout()
     {
@@ -253,7 +269,29 @@ public abstract class QuicSession extends AbstractSession
     public void setIdleTimeout(long idleTimeout)
     {
         this.idleTimeout = idleTimeout;
+        scheduleKeepAlive();
     }
+
+    private void scheduleKeepAlive()
+    {
+        long timeout = getIdleTimeout();
+        if (timeout > 0 && isKeepAliveEnabled())
+        {
+            keepAliveTask.cancel();
+            keepAliveTask = getScheduler().schedule(() -> getExecutor().execute(this::sendKeepAlive), timeout / 2, MILLISECONDS);
+        }
+    }
+
+    private void sendKeepAlive()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sending keepalive on {}", this);
+        // TODO: hardcoded EncryptionLevel
+        sendProbe(EncryptionLevel.ONE_RTT);
+        scheduleKeepAlive();
+    }
+
+    protected abstract void notIdle();
 
     public boolean onIdleTimeout(TimeoutException timeout)
     {
@@ -289,6 +327,10 @@ public abstract class QuicSession extends AbstractSession
     {
         // TODO: handle external stop.
         //  streamTimeouts.destroy().
+
+        if (keepAliveTask != null)
+            keepAliveTask.cancel();
+
         super.doStop();
     }
 
@@ -609,6 +651,12 @@ public abstract class QuicSession extends AbstractSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("terminating {}", this);
+
+        try (var _ = lock.lock())
+        {
+            closeState = CloseState.CLOSED;
+        }
+
         getQuicConnection().terminate(this);
     }
 
@@ -691,14 +739,26 @@ public abstract class QuicSession extends AbstractSession
             }
         }
 
-        // The packet was fully decrypted and parsed, ack it now.
-        // Processing of frames by a different layer (such as the
-        // TLS layer or the application layer) is independent of
-        // acknowledgments at the transport layer.
-        acknowledge(packet);
-
         if (packet instanceof InitialPacket || Arrays.equals(getSourceConnectionId(), packet.destinationConnectionId()))
         {
+            // Reset the idle timeout only on the receiving side, because:
+            // - Computing when to reset the idle timeout on the sending side is complicated:
+            //   must take into account only ack-eliciting packets, and only if they are sent
+            //   after another packet has been received.
+            // - Sending would trigger an ack within an RTT, which is much smaller (milliseconds)
+            //   than the idle timeout (typically, seconds). In the rare case of sending when
+            //   the idle timeout is about to expire, well - too bad.
+            // - QUIC idle timeouts being fatal are likely disabled by the keepalive mechanism
+            //   so the rare case above should never happen: the keepalive triggers an ack
+            //   well within the idle timeout; in case of no ack, the connection is broken.
+            notIdle();
+
+            // The packet was fully decrypted and parsed, ack it now.
+            // Processing of frames by a different layer (such as the
+            // TLS layer or the application layer) is independent of
+            // acknowledgments at the transport layer.
+            acknowledge(packet);
+
             List<Invocable.Task> tasks = processPacket(packet);
             for (Invocable.Task task : tasks)
             {
@@ -970,6 +1030,17 @@ public abstract class QuicSession extends AbstractSession
         //  Apply Quic transport params to the various components.
 
         this.transportParameters = transportParameters;
+
+        // RFC-9000[10.1]: the idle timeout is the minimum of the two advertised values.
+        Long remoteIdleTimeout = transportParameters.get(TransportParameters.Ids.MAX_IDLE_TIMEOUT);
+        if (remoteIdleTimeout != null && remoteIdleTimeout > 0)
+        {
+            long localIdleTimeout = getIdleTimeout();
+            if (localIdleTimeout > 0)
+                setIdleTimeout(Math.min(localIdleTimeout, remoteIdleTimeout));
+            else
+                setIdleTimeout(remoteIdleTimeout);
+        }
 
         Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_DATA);
         if (maxData != null)

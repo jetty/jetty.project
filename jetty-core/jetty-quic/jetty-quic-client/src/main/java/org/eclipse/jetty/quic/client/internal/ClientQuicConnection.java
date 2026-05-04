@@ -76,7 +76,7 @@ public class ClientQuicConnection extends QuicConnection implements Callback
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, false), new QuicMessagesGenerator(byteBufferPool, true));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         ClientTLSEngine tlsEngine = new ClientTLSEngine(protector);
-        session = new ClientQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, getEndPoint(), context);
+        session = new ClientQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, context);
         session.setIdleTimeout(getEndPoint().getIdleTimeout());
         LifeCycle.start(session);
         session.connect(this);

@@ -213,6 +213,13 @@ public interface Session
         /// @param failure the idle timeout failure
         /// @return `true` to close the session, `false` to ignore the idle timeout
         /// @see #getIdleTimeout()
+        // TODO: remove this method, as QUIC idle timeout cannot be ignored:
+        //  when they happen, they are fatal.
+        //  The solution is to not make them happen via a keep-alive mechanism
+        //  or by setting them to 0, and have the upper layer configured with
+        //  an idle timeout, which will then trigger the upper protocol close.
+        //  If QUIC detects an idle timeout, for the upper layer is a fatal failure,
+        //  and the upper layer cannot return "false" to indicate to ignore the idle timeout.
         default boolean onIdleTimeout(Session session, TimeoutException failure)
         {
             return true;
