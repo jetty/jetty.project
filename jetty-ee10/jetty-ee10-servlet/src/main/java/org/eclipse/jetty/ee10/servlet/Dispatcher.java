@@ -858,22 +858,19 @@ public class Dispatcher implements RequestDispatcher
         @Override
         protected Fields getParameters()
         {
-            // The AsyncRequest may have been dispatched to the same URI as the request that it is
-            //wrapping. If so, We should not re-extract the parameters, just use what is there.
-            if (getRequest() instanceof HttpServletRequest httpServletRequest)
+            // If we're dispatching back to the same URI that the wrapped request already
+            // parsed, reuse its parameters. Only safe for Jetty's own request types.
+            ServletRequest wrapped = getRequest();
+            if (wrapped instanceof ParameterRequestWrapper || wrapped instanceof ServletApiRequest)
             {
-                HttpURI requestURI = HttpURI.build(httpServletRequest.getRequestURI()).query(httpServletRequest.getQueryString());
+                HttpServletRequest http = (HttpServletRequest)wrapped;
+                HttpURI requestURI = HttpURI.build(http.getRequestURI()).query(http.getQueryString());
                 if (requestURI.equals(_uri))
                 {
-                    if (getRequest() instanceof ParameterRequestWrapper parameterRequestWrapper)
+                    if (wrapped instanceof ParameterRequestWrapper parameterRequestWrapper)
                         return parameterRequestWrapper.getParameters();
-                    else if (getRequest() instanceof ServletApiRequest servletApiRequest)
-                        return servletApiRequest.getParameters();
-                    else
-                        return super.getParameters();
+                    return ((ServletApiRequest)wrapped).getParameters();
                 }
-                else
-                    return super.getParameters();
             }
             return super.getParameters();
         }
