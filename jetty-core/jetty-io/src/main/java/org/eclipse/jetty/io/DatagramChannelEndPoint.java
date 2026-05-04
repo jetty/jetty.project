@@ -60,6 +60,18 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
     }
 
     @Override
+    public void fillInterested(Callback callback)
+    {
+        getFillInterest().register(callback);
+    }
+
+    @Override
+    public boolean tryFillInterested(Callback callback)
+    {
+        return getFillInterest().tryRegister(callback);
+    }
+
+    @Override
     public SocketAddress receive(ByteBuffer buffer) throws IOException
     {
         if (isInputShutdown())

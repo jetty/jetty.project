@@ -20,9 +20,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.quic.api.Session;
+import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.server.internal.ServerQuicConnection;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
@@ -272,8 +274,49 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
     }
 
     @Test
-    public void testIdleTimeoutWithKeepAliveRemotePeerDoesNotRespond()
+    public void testIdleTimeoutWithKeepAliveRemotePeerDoesNotRespond() throws Exception
     {
+        long clientIdleTimeout = 1000;
 
+        start(() -> new Session.Listener()
+        {
+            @Override
+            public void onOpen(Session session)
+            {
+                ((QuicSession)session).setIdleTimeout(0);
+                ((QuicSession)session).setKeepAliveEnabled(false);
+            }
+        });
+        client.getClientConnector().setIdleTimeout(Duration.ofMillis(clientIdleTimeout));
+
+        CountDownLatch clientFailureLatch = new CountDownLatch(1);
+        Promise.Completable<Session> promise = new Promise.Completable<>();
+        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        {
+            @Override
+            public void onFailure(Session session, Throwable failure)
+            {
+                clientFailureLatch.countDown();
+            }
+        }, promise);
+        Session clientSession = promise.get(5, SECONDS);
+        QuicSession clientQuicSession = (QuicSession)clientSession;
+        clientQuicSession.setPacketListener(new Packet.Listener.Wrapper(clientQuicSession.getPacketListener())
+        {
+            @Override
+            public void onIncomingPacket(Session session, Packet packet)
+            {
+                // Drop packets arriving from the server,
+                // they should be acks for keepalive probes.
+                if (packet instanceof Packet.WithFrames pwf)
+                {
+                    if (pwf.frames().stream().allMatch(f -> f instanceof AckFrame))
+                        return;
+                }
+                super.onIncomingPacket(session, packet);
+            }
+        });
+
+        assertTrue(clientFailureLatch.await(2 * clientIdleTimeout, MILLISECONDS));
     }
 }
