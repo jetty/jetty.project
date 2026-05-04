@@ -71,8 +71,6 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
         if (peer == null)
             return null;
 
-        notIdle();
-
         int filled = buffer.remaining();
         if (LOG.isDebugEnabled())
             LOG.debug("filled {} {}", filled, BufferUtil.toDetailString(buffer));
@@ -105,9 +103,6 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
         {
             throw new EofException(e);
         }
-
-        if (flushed > 0)
-            notIdle();
 
         return flushedAll;
     }

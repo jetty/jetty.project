@@ -172,7 +172,7 @@ class CryptoFlusher implements Callback
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("draining probe on {}", this);
-                output.add(new FramesEntry(null, List.of(PingFrame.INSTANCE), Callback.NOOP, true));
+                output.add(new FramesEntry(null, List.of(PingFrame.INSTANCE), Callback.NOOP, false));
             }
 
             if (LOG.isDebugEnabled())

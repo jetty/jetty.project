@@ -20,8 +20,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
@@ -69,9 +69,9 @@ public class ClientQuicSession extends QuicSession
     private boolean retryPacketProcessed;
     private byte[] retryToken;
 
-    public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, ClientQuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, ClientTLSEngine clientTLSEngine, EndPoint endPoint, Map<String, Object> context)
+    public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, ClientQuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, ClientTLSEngine clientTLSEngine, Map<String, Object> context)
     {
-        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), quicConfiguration, connection, packetTracker, packetNumbers, clientTLSEngine, sessionListener(context), endPoint, true);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), quicConfiguration, connection, packetTracker, packetNumbers, clientTLSEngine, sessionListener(context), true);
         this.context = context;
     }
 
@@ -102,6 +102,20 @@ public class ClientQuicSession extends QuicSession
     public ClientTLSEngine getTLSEngine()
     {
         return (ClientTLSEngine)super.getTLSEngine();
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeout)
+    {
+        super.setIdleTimeout(idleTimeout);
+        getEndPoint().setIdleTimeout(idleTimeout);
+    }
+
+    @Override
+    protected void notIdle()
+    {
+        if (getEndPoint() instanceof AbstractEndPoint e)
+            e.notIdle();
     }
 
     /// Establishes a connection to the server, starting the QUIC TLS handshake.
@@ -143,7 +157,9 @@ public class ClientQuicSession extends QuicSession
 
         TransportParameters transportParameters = new TransportParameters();
         getQuicConfiguration().configure(transportParameters);
-        transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, getIdleTimeout());
+        long idleTimeout = getIdleTimeout();
+        if (idleTimeout > 0)
+            transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, idleTimeout);
         transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, getSourceConnectionId());
         notifyPrepare(transportParameters);
         tlsConfiguration.setTransportParameters(transportParameters);
