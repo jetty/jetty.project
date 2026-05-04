@@ -17,6 +17,7 @@ import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicMarkableReference;
@@ -31,6 +32,8 @@ import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.common.frames.FrameStream;
+import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Promise;
@@ -39,6 +42,8 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 public class QuicStream extends AbstractStream
 {
@@ -80,6 +85,13 @@ public class QuicStream extends AbstractStream
     public boolean isRemotelyClosed()
     {
         return closeState.isRemotelyClosed();
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeout)
+    {
+        super.setIdleTimeout(idleTimeout);
+        session.scheduleTimeout(this);
     }
 
     void onStreamFrameSent(StreamFrame frame)
@@ -245,9 +257,16 @@ public class QuicStream extends AbstractStream
     @Override
     public void reset(long appErrorCode, Promise.Invocable<Stream> promise)
     {
+        // Remote unidirectional (receive-only) stream: cannot be reset.
+        if (!isBidirectional() && !isLocal())
+        {
+            promise.failed(new UnsupportedOperationException("cannot reset remote unidirectional stream"));
+            return;
+        }
+
         if (closeState.initLocalClose())
         {
-            session.reset(this, new ResetFrame(getId(), appErrorCode, sendData.get()), Promise.Invocable.from(promise, () ->
+            session.reset(this, new ResetFrame(getId(), appErrorCode, -1), Promise.Invocable.from(promise, () ->
             {
                 if (closeState.localClose())
                     removeAndNotifyClose();
@@ -255,7 +274,7 @@ public class QuicStream extends AbstractStream
         }
         else
         {
-            promise.failed(new IllegalStateException("stream_locally_closed"));
+            promise.failed(new IllegalStateException("stream already locally closed"));
         }
     }
 
@@ -277,6 +296,30 @@ public class QuicStream extends AbstractStream
         // TODO
     }
 
+    void onIdleTimeout(TimeoutException failure)
+    {
+        notifyIdleTimeout(failure, Promise.Invocable.from(NON_BLOCKING, (timeout, x) ->
+        {
+            boolean confirmed = x != null || timeout;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("idle timeout {} ms {} on {}", getIdleTimeout(), confirmed ? "confirmed" : "ignored", this);
+
+            if (confirmed)
+            {
+                stopSending(ErrorCode.NO_ERROR.code(), Promise.Invocable.from(NON_BLOCKING, (s, xx) ->
+                {
+                    if (xx == null)
+                        s.reset(ErrorCode.NO_ERROR.code(), Promise.Invocable.noop());
+                }));
+            }
+            else
+            {
+                notIdle();
+            }
+        }));
+    }
+
     public Invocable.Task processFrames(List<Frame.WithStreamId> frames)
     {
         return new FramesTask(frames);
@@ -285,14 +328,23 @@ public class QuicStream extends AbstractStream
     /// Main entry point to process incoming frames received by [QuicSession].
     public void processFrame(Frame.WithStreamId frame)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {} on {}", frame, this);
+
         notIdle();
         switch (frame)
         {
             case ResetFrame resetFrame ->
             {
+                if (isLocal() && !isBidirectional())
+                {
+                    // RFC-9000[19.4]: local unidirectional stream receiving a reset produces a connection error.
+                    throw new QuicException(ErrorCode.STREAM_STATE_ERROR, "local_unidirectional_stream_reset", frame.type());
+                }
+
                 // TODO: frameStream.reset(resetFrame);
             }
-            case StopSendingFrame stopSendingFrame -> notifyStopSendingFrame(stopSendingFrame);
+            case StopSendingFrame stopSendingFrame -> processStopSendingFrame(stopSendingFrame);
             case StreamDataBlockedFrame streamDataBlockedFrame -> notifyDataBlockedFrame(streamDataBlockedFrame);
             case StreamFrame streamFrame -> frameStream.offer(streamFrame);
             case StreamMaxDataFrame streamMaxDataFrame -> notifyMaxDataFrame(streamMaxDataFrame);
@@ -307,6 +359,13 @@ public class QuicStream extends AbstractStream
             case StreamFrame streamFrame -> processStreamFrame(streamFrame);
             default -> throw new AssertionError("unexpected_frame");
         }
+    }
+
+    private void processStopSendingFrame(StopSendingFrame frame)
+    {
+        notifyStopSendingFrame(frame);
+        // RFC-9000[3.5]: receiving a STOP_SENDING requires sending a RESET_STREAM.
+        reset(frame.applicationErrorCode(), Promise.Invocable.noop());
     }
 
     private void processResetFrame(ResetFrame resetFrame)
@@ -434,6 +493,20 @@ public class QuicStream extends AbstractStream
         try
         {
             listener.onMaxData(this, frame);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    private void notifyIdleTimeout(TimeoutException failure, Promise.Invocable<Boolean> promise)
+    {
+        Listener listener = getListener();
+        try
+        {
+            listener.onIdleTimeout(this, failure, promise);
         }
         catch (Throwable x)
         {
@@ -609,9 +682,16 @@ public class QuicStream extends AbstractStream
         @Override
         public void run()
         {
-            for (Frame.WithStreamId frame : frames)
+            try
             {
-                processFrame(frame);
+                for (Frame.WithStreamId frame : frames)
+                {
+                    processFrame(frame);
+                }
+            }
+            catch (Throwable x)
+            {
+                session.fail(x);
             }
         }
 

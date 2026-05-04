@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 
-public class AbstractQuicTest
+public class AbstractQuicTest extends AbstractTest
 {
     protected Server server;
     protected QuicServerConnector connector;

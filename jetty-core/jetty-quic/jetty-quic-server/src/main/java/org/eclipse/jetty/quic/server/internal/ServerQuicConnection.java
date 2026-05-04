@@ -19,6 +19,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -26,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
@@ -120,6 +122,13 @@ public class ServerQuicConnection extends QuicConnection
     public SslContextFactory.Server getSslContextFactory()
     {
         return sslContextFactory;
+    }
+
+    public Collection<Session> getSessions()
+    {
+        return sessions.values().stream()
+            .map(Session.class::cast)
+            .collect(Collectors.toSet());
     }
 
     @Override
@@ -291,6 +300,9 @@ public class ServerQuicConnection extends QuicConnection
             session.initialize(dstConnectionId.bytes());
             // Start and store the session.
             LifeCycle.start(session);
+            // Store the session under both the client original dcid and the server scid.
+            // The client may use both, for example in case of retransmissions.
+            sessions.put(dstConnectionId, session);
             sessions.put(new ConnectionId(session.getSourceConnectionId()), session);
 
             ServerTLSConfiguration tlsConfiguration = session.getTLSEngine().getTLSConfiguration();
@@ -303,7 +315,6 @@ public class ServerQuicConnection extends QuicConnection
             // TODO
 //            transportParameters.put(TransportParameters.Ids.PREFERRED_ADDRESS, null);
             transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, session.getSourceConnectionId());
-            session.notifyPrepare(transportParameters);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("created new {} on {}", session, this);
@@ -383,12 +394,16 @@ public class ServerQuicConnection extends QuicConnection
     }
 
     @Override
-    public void disconnect(QuicSession session, ConnectionCloseFrame frame, Throwable failure)
+    public void terminate(QuicSession session)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("disconnect {} {} on {}", frame, session, this);
-        byte[] dstConnectionId = session.getDestinationConnectionId();
-        sessions.remove(new ConnectionId(dstConnectionId));
+            LOG.debug("terminate {} on {}", session, this);
+
+        byte[] srcConnectionId = session.getSourceConnectionId();
+        sessions.remove(new ConnectionId(srcConnectionId));
+        byte[] origDstConnectionId = session.getOriginalDestinationConnectionId();
+        sessions.remove(new ConnectionId(origDstConnectionId));
+
         // Do nothing else, as the current architecture only has one
         // listening DatagramChannelEndPoint, so it must not be closed.
     }

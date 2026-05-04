@@ -148,6 +148,11 @@ public class PacketTracker
         return probeTimeoutBackoff;
     }
 
+    public RTTData getRTTData()
+    {
+        return rttData;
+    }
+
     /// First entry point: when a packet is sent.
     public void processPacketSent(QuicSession session, Packet packet, long length, boolean dataStalled)
     {

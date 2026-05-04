@@ -22,6 +22,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.api.frames.ResetFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.common.CongestionController;
@@ -161,6 +162,7 @@ class StreamFlusher extends CryptoFlusher
                     if (LOG.isDebugEnabled())
                         LOG.debug("generating offset={} {} for stream {} on {}", offset, frame, stream, this);
                     GeneratedFrame generated = getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, maxBytes);
+                    // Update the send data now, even if the frame could be lost.
                     if (generated != null)
                         session.updateSendData(stream, ((StreamFrame)generated.frame()).remaining());
                     yield generated;
@@ -172,6 +174,23 @@ class StreamFlusher extends CryptoFlusher
                         LOG.debug("re-generating {} for stream {} on {}", frame, stream, this);
                     long offset = streamFrame.offset() + (streamFrame.length() - streamFrame.remaining());
                     yield getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, maxBytes);
+                }
+            }
+            case ResetFrame resetFrame->
+            {
+                if (resetFrame.finalSize() < 0)
+                {
+                    long finalSize = getQuicSession().getSendData(stream);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("generating finalSize={} {} for stream {} on {}", finalSize, frame, stream, this);
+                    yield getFramesGenerator().generateResetStreamFrame(framesAccumulator, resetFrame, finalSize, maxBytes);
+                }
+                else
+                {
+                    // A retransmitted frame.
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("re-generating {} for stream {} on {}", frame, stream, this);
+                    yield getFramesGenerator().generateResetStreamFrame(framesAccumulator, resetFrame, resetFrame.finalSize(), maxBytes);
                 }
             }
             default -> super.generateFrame(framesAccumulator, stream, frame, maxBytes);

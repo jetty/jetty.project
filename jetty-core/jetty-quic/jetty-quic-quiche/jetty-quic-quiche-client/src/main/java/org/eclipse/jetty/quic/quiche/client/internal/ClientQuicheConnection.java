@@ -286,7 +286,7 @@ public class ClientQuicheConnection extends QuicheConnection
         if (LOG.isDebugEnabled())
             LOG.debug("closing {}", this);
 
-        // Propagate the close inwards.
+        // Propagate the close upwards.
         session.close(frame, promise);
     }
 

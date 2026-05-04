@@ -184,7 +184,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
     }
 
     /**
-     * <p>Performs an inward close upon sending a {@code CONNECTION_CLOSE} frame.</p>
+     * <p>Performs an upward close upon sending a {@code CONNECTION_CLOSE} frame.</p>
      * <p>This method closes all the {@link Connection}s associated with the
      * {@link StreamEndPoint}s managed by this class.
      * In turn, the {@link Connection} typically closes its associated
@@ -203,7 +203,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
     }
 
     /**
-     * <p>Performs an inward close upon receiving a {@code CONNECTION_CLOSE} frame.</p>
+     * <p>Performs an upward close upon receiving a {@code CONNECTION_CLOSE} frame.</p>
      * <p>The behavior is identical to {@link #close(ConnectionCloseFrame, Promise.Invocable)}.</p>
      *
      * @param frame the frame carrying the error code and reason
@@ -217,19 +217,19 @@ public abstract class ProtocolSession extends ContainerLifeCycle
 
     private void closeAndDisconnect(ConnectionCloseFrame frame, Promise.Invocable<ProtocolSession> promise)
     {
-        // Perform the close inwards, by closing the
+        // Perform the close upwards, by closing the
         // Connection associated to the StreamEndPoint.
         for (StreamEndPoint streamEndPoint : getStreamEndPoints())
         {
             closeStreamEndPoint(streamEndPoint, null);
         }
 
-        // Start propagating outwards.
+        // Start propagating downwards.
         disconnect(frame, null, promise);
     }
 
     /**
-     * <p>Performs an outward disconnection.</p>
+     * <p>Performs a downward disconnection.</p>
      *
      * @param frame the frame carrying the error code and reason
      * @param failure the failure that caused the disconnect, or {@code null}
@@ -248,7 +248,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
             // This is a session failure, there is no need to disconnect the StreamEndPoint's stream.
             streamEndPoint.disconnect(frame.errorCode(), failure, false, Promise.Invocable.noop());
         }
-        // Continue the propagation outwards.
+        // Continue the propagation downwards.
         getSession().disconnect(frame, failure, Promise.Invocable.toPromise(promise, s -> this));
     }
 

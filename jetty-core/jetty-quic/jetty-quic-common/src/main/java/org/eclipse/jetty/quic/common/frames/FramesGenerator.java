@@ -77,7 +77,6 @@ public class FramesGenerator
         {
             case PADDING, PING, HANDSHAKE_DONE -> generateNoContentFrame(accumulator, frame, maxBytes);
             case ACK -> generateAckFrame(accumulator, (AckFrame)frame, maxBytes);
-            case RESET_STREAM -> generateResetStreamFrame(accumulator, (ResetFrame)frame, maxBytes);
             case STOP_SENDING -> generateStopSendingFrame(accumulator, (StopSendingFrame)frame, maxBytes);
             case NEW_TOKEN -> generateNewTokenFrame(accumulator, (NewTokenFrame)frame, maxBytes);
             case MAX_DATA -> generateMaxDataFrame(accumulator, (MaxDataFrame)frame, maxBytes);
@@ -143,22 +142,24 @@ public class FramesGenerator
         return generated;
     }
 
-    private long generateResetStreamFrame(RetainableByteBuffer.Mutable accumulator, ResetFrame frame, long maxBytes)
+    public GeneratedFrame generateResetStreamFrame(RetainableByteBuffer.Mutable accumulator, ResetFrame frame, long finalSize, long maxBytes)
     {
-        long limit = accumulator.size();
-        int generated = VarLenInt.encode(accumulator, frame.type());
-        if (maxBytes - generated < 0)
-            return rollback(accumulator, limit);
-        generated += VarLenInt.encode(accumulator, frame.streamId());
-        if (maxBytes - generated < 0)
-            return rollback(accumulator, limit);
-        generated += VarLenInt.encode(accumulator, frame.applicationErrorCode());
-        if (maxBytes - generated < 0)
-            return rollback(accumulator, limit);
-        generated += VarLenInt.encode(accumulator, frame.finalSize());
-        if (maxBytes - generated < 0)
-            return rollback(accumulator, limit);
-        return generated;
+        long frameType = frame.type();
+        int capacity = VarLenInt.length(frameType);
+        long streamId = frame.streamId();
+        capacity += VarLenInt.length(streamId);
+        long error = frame.applicationErrorCode();
+        capacity += VarLenInt.length(error);
+        capacity += VarLenInt.length(finalSize);
+        if (capacity > maxBytes)
+            return null;
+
+        VarLenInt.encode(accumulator, frameType);
+        VarLenInt.encode(accumulator, streamId);
+        VarLenInt.encode(accumulator, error);
+        VarLenInt.encode(accumulator, finalSize);
+
+        return new GeneratedFrame(new ResetFrame(streamId, error, finalSize), capacity);
     }
 
     private long generateStopSendingFrame(RetainableByteBuffer.Mutable accumulator, StopSendingFrame frame, long maxBytes)

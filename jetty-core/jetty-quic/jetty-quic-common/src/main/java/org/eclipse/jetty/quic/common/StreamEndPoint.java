@@ -204,7 +204,7 @@ public class StreamEndPoint implements EndPoint
             return;
         }
 
-        // Propagate outwards.
+        // Propagate downwards.
         stream.disconnect(appError, failure, Promise.Invocable.toPromise(promise, s -> this));
     }
 

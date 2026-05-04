@@ -212,6 +212,10 @@ public interface Stream
         ///
         /// The default implementation of this method calls [Stream#demand()].
         ///
+        /// Application should not try to cast the given frame to a specific
+        /// subclass, as the frame will be notified also to the more specific
+        /// callback method.
+        ///
         /// @param stream the newly created stream
         /// @param frame the frame that caused the creation of the stream
         default void onNewStream(Stream stream, Frame.WithStreamId frame)

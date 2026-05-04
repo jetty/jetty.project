@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.quic.api.Session;
 
 public final class ConnectionCloseFrame extends Frame.Abstract
@@ -49,7 +51,7 @@ public final class ConnectionCloseFrame extends Frame.Abstract
     {
         super(frameType);
         this.errorCode = errorCode;
-        this.reason = reason;
+        this.reason = Objects.requireNonNullElse(reason, "");
         this.causeFrameType = causeFrameType;
     }
 
