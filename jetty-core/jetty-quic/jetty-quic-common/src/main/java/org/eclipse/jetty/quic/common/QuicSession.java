@@ -278,7 +278,7 @@ public abstract class QuicSession extends AbstractSession
         if (timeout > 0 && isKeepAliveEnabled())
         {
             keepAliveTask.cancel();
-            keepAliveTask = getScheduler().schedule(() -> getExecutor().execute(this::sendKeepAlive), timeout / 2, MILLISECONDS);
+            keepAliveTask = getScheduler().schedule(() -> getExecutor().execute(this::sendKeepAlive), timeout * 2 / 3, MILLISECONDS);
         }
     }
 
