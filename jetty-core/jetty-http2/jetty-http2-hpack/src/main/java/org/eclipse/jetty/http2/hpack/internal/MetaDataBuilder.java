@@ -228,6 +228,25 @@ public class MetaDataBuilder
         }
     }
 
+    public void streamException(Throwable t)
+    {
+        HpackException.StreamException streamException;
+        if (t instanceof HpackException.StreamException stream)
+        {
+            streamException = stream;
+        }
+        else
+        {
+            streamException = new HpackException.StreamException(_request, _response, t.getMessage());
+            streamException.initCause(t);
+        }
+
+        if (_streamException == null)
+            _streamException = streamException;
+        else
+            _streamException.addSuppressed(streamException);
+    }
+
     public void streamException(String messageFormat, Object... args)
     {
         HpackException.StreamException stream = new HpackException.StreamException(_request, _response, messageFormat, args);
