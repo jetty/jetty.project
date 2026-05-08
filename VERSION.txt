@@ -1,3 +1,21 @@
+jetty-12.1.10-SNAPSHOT
+
+12.1.9 - 30 April 2026
+ + 8876 Jetty 12 - JMX-ify HttpContent.Factory implementations
+ + 12110 Request Authority checks needed
+ + 14196 Using passivation with eviction: HttpServletRequest.getSession() may return null due to race-condition
+ + 14541 Jetty HTTP Client - setMaxRequestHeadersSize resulting in  java.lang.OutOfMemoryError
+ + 14564 Jetty 12.1.x TLS connections hang after several requests with internal HTTPS self-requests
+ + 14646 Regression in Jetty 12.1: Invalid UTF-8 exception for application/x-www-form-urlencoded; charset=iso-8859-1
+ + 14805 HTTP/3 server crashes on `quiche_header_info`
+ + 14821 Websocket IllegalStateException ('Demand already fulfilled') since Jetty 12.1
+ + 14824 FileSystemPool doesn't always own its filesystems
+ + 14846 NPE in MimeTypes$Mutable.getMimeByExtension on startup with web-fragment with mime mapping
+ + 14853 CombinedResource.getRealURI() returns null when multiple members exist, causing 404 for all static resources
+ + 14870 Refactor compliance checks
+ + 14913 Upgrade to Quiche version 0.28.0
+ + 14972 Jetty 12.1.8 jetty-home has `lib/*-config.jar` files
+
 
 12.1.8 - 31 March 2026
  + 10906 Is there a ConsoleRequestLog (JettySlf4jRequestLog) module?
