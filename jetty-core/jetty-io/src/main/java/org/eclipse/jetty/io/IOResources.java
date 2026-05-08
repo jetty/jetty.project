@@ -115,6 +115,7 @@ public class IOResources
             {
                 if (buffer == null)
                     buffer = bufferPool.acquire(false);
+                buffer.getByteBuffer().position(0);
                 int read = inputStream.read(buffer.getByteBuffer().array());
                 if (read == -1)
                     break;

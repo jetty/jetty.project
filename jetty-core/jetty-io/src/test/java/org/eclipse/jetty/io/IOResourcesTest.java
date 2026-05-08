@@ -13,24 +13,31 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,11 +54,31 @@ public class IOResourcesTest
     private ArrayByteBufferPool.Tracking trackingPool;
     private ByteBufferPool.Sized bufferPool;
 
+    @BeforeAll
+    public static void prepareTestJar() throws IOException {
+        Path testJarPath = MavenTestingUtils.getTargetPath("IOResourcesTest.jar");
+
+        // an entry of size slightly exceeding the buffer size, which triggers
+        // org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity.shouldAggregate()
+        byte[] uncompressedData = new byte[IO.DEFAULT_BUFFER_SIZE + 128];
+        new Random(3312).nextBytes(uncompressedData);
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(testJarPath.toFile()))) {
+            ZipEntry entry = new ZipEntry("file.dat");
+            entry.setMethod(ZipEntry.DEFLATED);
+            entry.setSize(IO.DEFAULT_BUFFER_SIZE + 128);
+
+            zos.putNextEntry(entry);
+            zos.write(uncompressedData);
+            zos.closeEntry();
+        }
+    }
+
     @BeforeEach
     public void setUp()
     {
         trackingPool = new ArrayByteBufferPool.Tracking();
-        bufferPool = new ByteBufferPool.Sized(trackingPool, false, 1);
+        bufferPool = new ByteBufferPool.Sized(trackingPool, false, -1);
     }
 
     @AfterEach
@@ -144,6 +171,7 @@ public class IOResourcesTest
     public static Stream<Resource> all() throws Exception
     {
         Path testResourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
+        Path testJarPath = MavenTestingUtils.getTargetPath("IOResourcesTest.jar");
 
         URI resourceUri = testResourcePath.toUri();
         return Stream.of(
@@ -152,6 +180,7 @@ public class IOResourcesTest
             ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("zero")),
             ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("one")),
             new URLResourceFactory().newResource(resourceUri),
+            new URLResourceFactory().newResource(String.format("jar:%s!/file.dat", testJarPath.toUri().toString())),
             new TestContentSourceFactoryResource(resourceUri, Files.readAllBytes(testResourcePath))
         );
     }
@@ -162,6 +191,7 @@ public class IOResourcesTest
     {
         RetainableByteBuffer retainableByteBuffer = IOResources.toRetainableByteBuffer(resource, bufferPool);
         assertThat(retainableByteBuffer.remaining(), is((int)resource.length()));
+        assertThat(retainableByteBuffer.size(), is(resource.length()));
         retainableByteBuffer.release();
     }
 
