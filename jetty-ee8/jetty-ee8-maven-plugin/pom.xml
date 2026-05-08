@@ -232,6 +232,11 @@
           <goals>
             <goal>clean</goal>
           </goals>
+          <extraArtifacts>
+            <extraArtifact>com.fasterxml.jackson.core:jackson-core:${jackson.version}:jar</extraArtifact>
+            <extraArtifact>com.fasterxml.jackson.core:jackson-databind:${jackson.version}:jar</extraArtifact>
+            <extraArtifact>com.fasterxml.jackson.core:jackson-annotations:${jackson.version}:jar</extraArtifact>
+          </extraArtifacts>
         </configuration>
         <executions>
           <execution>
