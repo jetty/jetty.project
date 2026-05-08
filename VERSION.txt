@@ -1,3 +1,7 @@
+12.0.35 - 30 April 2026
+ + 14745 NPE in HttpChannelState.completeStream() when _request is null during multipart cleanup
+ + 14870 Refactor compliance checks
+
 12.0.34 - 01 April 2026
  + 14332 Fix idleTimeout for websocket
  + 14431 ServletContainerInitializers are always excluded when used with absolute-ordering
