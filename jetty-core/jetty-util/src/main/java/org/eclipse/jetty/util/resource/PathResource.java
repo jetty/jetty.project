@@ -293,58 +293,58 @@ public class PathResource extends Resource
 
         URI uri = getURI();
         URI resolvedUri = URIUtil.addPath(uri, subUriPath);
-        Path newPath = resolveSchemeSpecificPath(resolvedUri);
-        return newResource(newPath, resolvedUri);
-    }
 
-    /**
-     * Resolve the input URI against this PathResource, avoiding the use of various JDK
-     * specific static Path lookup methods that bypass the FileSystem tracking that is
-     * important to PathResource.
-     *
-     * @return the Path object.
-     */
-    private Path resolveSchemeSpecificPath(URI uri)
-    {
-        /* IMPORTANT NOTE: The following static JDK methods should NOT be used in this method.
-         * - java.nio.file.Path.of(String, String ...)
-         * - java.nio.file.Path.of(URI)
-         * - java.nio.file.Paths.get(String, String ...)
-         * - java.nio.file.Paths.get(URI)
-         */
+        // IMPORTANT NOTE: The following static JDK methods should
+        // NOT be used in this method, as they do not use this PathResource
+        // to resolve against (this can skip various java-resource requirements
+        // such as using the same FileSystem object)
+        //
+        // - java.nio.file.Path.of(String, String ...)
+        // - java.nio.file.Path.of(URI)
+        // - java.nio.file.Paths.get(String, String ...)
+        // - java.nio.file.Paths.get(URI)
+        //
+        // Example: The Jetty Resource layer can open a new FileSystem java-resource for
+        // each call to ResourceFactory.newResource(), and that specific FileSystem
+        // instance must be used for subsequent calls to Resource.resolve().
 
-        String scheme = Objects.requireNonNull(uri.getScheme(), "scheme cannot be null");
-        return switch (scheme)
+        String scheme = Objects.requireNonNull(resolvedUri.getScheme(), "scheme cannot be null");
+        Path newPath = switch (scheme)
         {
             case "jar" ->
             {
-                String ssp = uri.getSchemeSpecificPart();
+                // Logic here mimics what is found in ZipFileSystemProvider.getPath(uri)
+                String ssp = resolvedUri.getSchemeSpecificPart();
                 int idx = ssp.indexOf("!/");
                 if (idx == -1)
-                    throw new IllegalArgumentException("Unable to find jar !/ deep reference in " + uri);
-                yield path.resolve(ssp.substring(idx + 1));
+                    throw new IllegalArgumentException("Unable to find jar !/ deep reference in " + resolvedUri);
+                yield path.getFileSystem().getPath(ssp.substring(idx + 1));
             }
             case "file" ->
             {
-                /* We want to use Path.resolve(String) to find the new path.
-                 * Ideally we could just use the URI.getPath() directly, which would be a fully qualified path string.
-                 * However, on Microsoft Windows, this becomes problem, as the uri parameter could be `file:///E:/path/to/test.txt`
-                 * Which would mean the URI.getPath() would return `/E:/path/to/test.txt`, which is invalid for Path.resolve(String).
-                 */
-                String inputPath = uri.getPath();
+                // We want to use Path.resolve(String) to find the new path.
+                // Ideally we could just use the URI.getPath() directly, which would be a fully qualified path string.
+                // However, on Microsoft Windows, this becomes problem, as the uri parameter could be `file:///E:/path/to/test.txt`
+                // Which would mean the URI.getPath() would return `/E:/path/to/test.txt`, which is invalid for Path.resolve(String).
+
+                String inputPath = resolvedUri.getPath();
+
                 // is this a Microsoft Windows URI path?
+                // Microsoft Windows restricts drive letters to "A" thru "Z" (case-insensitive).
+                // In reality, we should never see drives "A" or "B" as those reserved for floppy drives.
+                // Any system that has more logical drive than this limit are using hard-links to mount
+                // those extra drives, so this check is sane.
                 if (inputPath.matches("^/[a-zA-Z]:/.*"))
                     inputPath = inputPath.substring(1); // strip first char to make it valid for Path.resolve(String)
                 yield path.getFileSystem().getPath(inputPath);
             }
             default ->
             {
-                // Resolve from this PathResource to maintain FileSystem tracking.
-                // Do NOT use Path.of() or Paths.of() as that requires the JDK to track FileSystem objects.
-                // (Not all FileSystemProvider's track the FileSystems they create. Currently only ZipFileSystemProvider does)
-                yield path.resolve(uri.getPath());
+                // Resolve from this PathResource's FileSystem instance.
+                yield path.resolve(resolvedUri.getPath());
             }
         };
+        return newResource(newPath, resolvedUri);
     }
 
     /**
