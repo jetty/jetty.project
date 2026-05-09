@@ -266,7 +266,11 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * Resolve an existing Resource.
+     * Resolve an existing Resource against this Resource.
+     * <p>
+     *     This call will maintain any java-resources opened for this PathResource
+     *     that resulted from a call to {@code ResourceFactory.newResource()}.
+     * </p>
      *
      * @param subUriPath the encoded subUriPath
      * @return a Resource representing the requested subUriPath, which may not {@link #exists() exist},
