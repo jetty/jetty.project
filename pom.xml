@@ -176,7 +176,7 @@
     -->
     <bndlib.version>6.4.1</bndlib.version>
     <bouncycastle.version>1.84</bouncycastle.version>
-    <brotli4j.version>1.22.0</brotli4j.version>
+    <brotli4j.version>1.23.0</brotli4j.version>
     <build-helper.maven.plugin.version>3.6.1</build-helper.maven.plugin.version>
     <build-support.version>1.5</build-support.version>
     <buildnumber.maven.plugin.version>3.3.0</buildnumber.maven.plugin.version>
@@ -266,7 +266,7 @@
     <junit.version>6.0.3</junit.version>
     <kerb-simplekdc.version>2.1.1</kerb-simplekdc.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <log4j2.version>2.25.4</log4j2.version>
+    <log4j2.version>2.26.0</log4j2.version>
     <logback.version>1.5.32</logback.version>
     <lucene.version>9.12.3</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
@@ -305,7 +305,7 @@
     <modify-sources-plugin.version>1.0.14</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.6.5</mongodb.version>
-    <netty.version>4.2.12.Final</netty.version>
+    <netty.version>4.2.13.Final</netty.version>
     <njord.version>0.9.5</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
@@ -481,12 +481,12 @@
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-annotation</artifactId>
-        <version>2.17.1</version>
+        <version>2.18.0</version>
       </dependency>
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-cpu</artifactId>
-        <version>2.17.1</version>
+        <version>2.18.0</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
