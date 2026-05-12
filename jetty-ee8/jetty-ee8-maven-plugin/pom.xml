@@ -237,7 +237,6 @@
           <goals>
             <goal>clean</goal>
           </goals>
-          <streamLogs>true</streamLogs>
         </configuration>
         <executions>
           <execution>
