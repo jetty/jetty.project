@@ -831,7 +831,8 @@ public class PathResourceTest
             // Attempt to reference the tmp directory
             Path tmp = Path.of(System.getProperty("java.io.tmpdir"));
             String tmpURI = tmp.toUri().toASCIIString();
-            Resource ulike = resourceBase.resolve(tmpURI);
+            // Attempt to use this reference in the resolve() call.
+            Resource ulike = resourceBase.resolve(tmpURI); // NOTE: this can throw InvalidPathException as a valid result
             assertNotNull(ulike);
             assertFalse(Resources.exists(ulike));
             String ulikeURI = ulike.getURI().toASCIIString();
@@ -839,6 +840,12 @@ public class PathResourceTest
                 ulikeURI, not(is(tmpURI)));
             assertThat("Resulting Resource should still contain references to the base",
                 ulikeURI, containsString(resourceBase.getURI().toASCIIString()));
+        }
+        catch (InvalidPathException ignore)
+        {
+            // Valid path for some OS's.
+            // Eg: on Microsoft Windows, the Resource.resolve(tmpURI) could throw this as
+            // there can be an illegal character.
         }
     }
 
