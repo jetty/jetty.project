@@ -268,7 +268,7 @@ public abstract class Resource implements Iterable<Resource>
     /**
      * Resolve an existing Resource against this Resource.
      * <p>
-     *     This call will maintain any java-resources opened for this PathResource
+     *     This call will maintain any java-resources opened for this {@link Resource}
      *     that resulted from a call to {@code ResourceFactory.newResource()}.
      * </p>
      *
