@@ -2458,6 +2458,7 @@
       <id>ci</id>
       <properties>
         <home.start.timeout>120</home.start.timeout>
+        <invoker.mergeUserSettings>true</invoker.mergeUserSettings>
         <!-- need a good default value if running this profile locally with empty repo -->
         <maven.repo.uri>https://repo.maven.apache.org/maven2/</maven.repo.uri>
         <!-- Defines a SpotBugs effort. Use "Max" to maximize the scan depth -->
