@@ -218,13 +218,18 @@
           <setupIncludes>
             <setupInclude>it-parent-pom/pom.xml</setupInclude>
           </setupIncludes>
+          <extraArtifacts>
+            <extraArtifact>org.eclipse.jetty:jetty-slf4j-impl:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty:jetty-server:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty:jetty-deploy:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty:jetty-home:${project.version}:zip</extraArtifact>
+          </extraArtifacts>
           <scriptVariables>
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
             <!--            <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>-->
             <servletApiVersion>${jetty.servlet.api.version}</servletApiVersion>
           </scriptVariables>
-          <settingsFile>src/it/settings.xml</settingsFile>
           <pomExcludes>
             <!-- enable when normalization of METAINF_RESOURCES is fixed -->
             <pomExclude>jetty-effective-web-xml-it/pom.xml</pomExclude>
