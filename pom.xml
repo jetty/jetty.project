@@ -220,7 +220,7 @@
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>3.0</hamcrest.version>
     <hazelcast.version>5.6.0</hazelcast.version>
-    <hibernate.search.version>8.3.0.Final</hibernate.search.version>
+    <hibernate.search.version>8.3.1.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
     <infinispan.docker.image.version>15.2.1.Final</infinispan.docker.image.version>
     <infinispan.protostream.version>6.0.6</infinispan.protostream.version>
@@ -266,7 +266,7 @@
     <junit.version>6.0.3</junit.version>
     <kerb-simplekdc.version>2.1.1</kerb-simplekdc.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <log4j2.version>2.25.4</log4j2.version>
+    <log4j2.version>2.26.0</log4j2.version>
     <logback.version>1.5.32</logback.version>
     <lucene.version>9.12.3</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
@@ -305,7 +305,7 @@
     <modify-sources-plugin.version>1.0.14</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.6.5</mongodb.version>
-    <netty.version>4.2.12.Final</netty.version>
+    <netty.version>4.2.13.Final</netty.version>
     <njord.version>0.9.5</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
@@ -328,7 +328,7 @@
     <osgi.slf4j.import.packages>org.slf4j;version="[2.0,3.0)", org.slf4j.event;version="[2.0,3.0)", org.slf4j.helpers;version="[2.0,3.0)", org.slf4j.spi;version="[2.0,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.14.0</pax.exam.version>
     <pax.url.version>3.0.3</pax.url.version>
-    <plexus-classworlds.version>2.10.0</plexus-classworlds.version>
+    <plexus-classworlds.version>2.11.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.3</plexus-utils.version>
     <plexus-xml.version>4.1.1</plexus-xml.version>
@@ -481,12 +481,12 @@
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-annotation</artifactId>
-        <version>2.17.1</version>
+        <version>2.18.1</version>
       </dependency>
       <dependency>
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-cpu</artifactId>
-        <version>2.17.1</version>
+        <version>2.18.1</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
