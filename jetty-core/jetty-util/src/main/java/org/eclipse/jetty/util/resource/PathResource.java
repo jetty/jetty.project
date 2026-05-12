@@ -303,7 +303,7 @@ public class PathResource extends Resource
         //
         // These JDK methods do not use this PathResource to resolve against, and
         // can skip various java-resource requirements that are in-place for this instance.
-        // Example: a `jar:file://path/to/foo.jar!/deep/` base Resource was created via a call to
+        // Example: a `jar:file:///path/to/foo.jar!/deep/` base Resource was created via a call to
         // ResourceFactory.newResource() and now has a java-resource of type java.nio.file.FileSystem
         // tied to it, all subsequent calls to PathResource.resolve() calls MUST use
         // this FileSystem to resolve against.
@@ -313,12 +313,12 @@ public class PathResource extends Resource
         {
             case "jar" ->
             {
-                // Logic here mimics what is found in ZipFileSystemProvider.getPath(uri)
+                // Grab the portion of the raw URI that represents the path.
                 String ssp = resolvedUri.getSchemeSpecificPart();
                 int idx = ssp.indexOf("!/");
                 if (idx == -1)
                     throw new IllegalArgumentException("Unable to find jar !/ deep reference in " + resolvedUri);
-                yield path.getFileSystem().getPath(ssp.substring(idx + 1));
+                yield path.resolve(ssp.substring(idx + 1));
             }
             case "file" ->
             {
@@ -327,7 +327,7 @@ public class PathResource extends Resource
             }
             default ->
             {
-                // Resolve from this PathResource's FileSystem instance.
+                // Resolve from this PathResource instance.
                 yield path.resolve(resolvedUri.getPath());
             }
         };

@@ -41,8 +41,10 @@ import org.junit.jupiter.api.parallel.Isolated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -796,5 +798,88 @@ public class PathResourceTest
         for (Resource r : resource)
             count++;
         assertEquals(1, count);
+    }
+
+    @Test
+    public void testResolvePastParent(WorkDir workDir)
+    {
+        Path parent = workDir.getEmptyPathDir();
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resourceBase = resourceFactory.newResource(parent);
+            assertTrue(Resources.isReadableDirectory(resourceBase));
+            assertThrows(IllegalArgumentException.class, () ->
+                resourceBase.resolve("../../test.txt")
+            );
+        }
+    }
+
+    /**
+     * Test resolve(String) with an input that looks like another URI
+     */
+    @Test
+    public void testResolveWithURILike(WorkDir workDir)
+    {
+        Path parent = workDir.getEmptyPathDir();
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resourceBase = resourceFactory.newResource(parent);
+            assertTrue(Resources.isReadableDirectory(resourceBase));
+
+            // Attempt to reference the tmp directory
+            Path tmp = Path.of(System.getProperty("java.io.tmpdir"));
+            String tmpURI = tmp.toUri().toASCIIString();
+            Resource ulike = resourceBase.resolve(tmpURI);
+            assertNotNull(ulike);
+            assertFalse(Resources.exists(ulike));
+            String ulikeURI = ulike.getURI().toASCIIString();
+            assertThat("Resulting Resource shouldn't be just the input string",
+                ulikeURI, not(is(tmpURI)));
+            assertThat("Resulting Resource should still contain references to the base",
+                ulikeURI, containsString(resourceBase.getURI().toASCIIString()));
+        }
+    }
+
+    /**
+     * Test a jar:file:// resource that has characters that fall into
+     * the URI reserved character space.
+     * Use resolve(String) in both encoded and decoded form to access the file.
+     */
+    @Test
+    public void testResolveEncodedURIJarContents(WorkDir workDir) throws IOException
+    {
+        Path testPath = workDir.getEmptyPathDir();
+        Path fooJar = testPath.resolve("foo.jar");
+
+        String fooContents = "Contents of foo(bar).txt";
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+        URI fooJarUri = URIUtil.uriJarPrefix(fooJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(fooJarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Files.writeString(root.resolve("foo(bar).txt"), fooContents, UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resourceBase = resourceFactory.newJarFileResource(fooJar.toUri());
+            assertTrue(Resources.isReadableDirectory(resourceBase));
+
+            // resolve using decoded form
+            Resource txt = resourceBase.resolve("foo(bar).txt");
+            assertTrue(Resources.isReadableFile(txt));
+            String contents = IO.toString(txt.newInputStream(), UTF_8);
+            assertThat(contents, is(fooContents));
+
+            // resolve using encoded form
+            txt = resourceBase.resolve("foo%28bar%29.txt");
+            assertTrue(Resources.isReadableFile(txt));
+            contents = IO.toString(txt.newInputStream(), UTF_8);
+            assertThat(contents, is(fooContents));
+        }
     }
 }
