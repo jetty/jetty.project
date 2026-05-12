@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>12.1.9-SNAPSHOT</version>
+    <version>12.1.10-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
@@ -254,6 +254,9 @@
           </setupIncludes>
           <extraArtifacts>
             <extraArtifact>org.eclipse.jetty:jetty-slf4j-impl:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty:jetty-server:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty:jetty-deploy:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty:jetty-home:${project.version}:zip</extraArtifact>
           </extraArtifacts>
           <pomExcludes>
             <!-- enable again when springboot is migrated to jakarta -->
