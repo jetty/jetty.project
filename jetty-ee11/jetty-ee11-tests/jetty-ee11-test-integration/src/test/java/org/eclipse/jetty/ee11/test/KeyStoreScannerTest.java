@@ -26,6 +26,7 @@ import java.util.Calendar;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -152,7 +153,7 @@ public class KeyStoreScannerTest
         }
 
         // The good keystore is removed, now the bad keystore now causes an exception.
-        assertThrows(Throwable.class, this::getCertificateFromServer);
+        assertThrows(SSLHandshakeException.class, this::getCertificateFromServer);
     }
 
     @Test
@@ -173,7 +174,7 @@ public class KeyStoreScannerTest
         }
 
         // The good keystore is removed, having no keystore causes an exception.
-        assertThrows(Throwable.class, this::getCertificateFromServer);
+        assertThrows(SSLHandshakeException.class, this::getCertificateFromServer);
 
         // Switch to use keystore2 which has a later expiry date.
         useKeystore("newKeyStore");
@@ -236,7 +237,6 @@ public class KeyStoreScannerTest
 
         // Change the target file of the symlink to the newKeyStore which has a later expiry date.
         Files.copy(newKeyStoreSrc, target, StandardCopyOption.REPLACE_EXISTING);
-        System.err.println("### Triggering scan");
         keyStoreScanner.scan(5000);
 
         // The scanner should have detected the updated keystore, expiry should be renewed.
