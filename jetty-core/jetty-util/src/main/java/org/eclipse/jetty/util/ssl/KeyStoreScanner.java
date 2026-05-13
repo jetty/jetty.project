@@ -110,7 +110,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
             LOG.debug("fileRemoved {} - keystoreFile.toReal {}", filename, getRealKeyStorePath());
 
         if (keystoreFile.toString().equals(filename))
-            reload();
+            unload();
     }
 
     @ManagedOperation(value = "Scan for changes in the SSL Keystore", impact = "ACTION")
@@ -133,6 +133,13 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         }
     }
 
+    private void unload()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("unloading keystore file {}", keystoreFile);
+        sslContextFactory.unload(scf -> {});
+    }
+
     @ManagedOperation(value = "Reload the SSL Keystore", impact = "ACTION")
     public void reload()
     {
@@ -141,9 +148,7 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
 
         try
         {
-            sslContextFactory.reload(scf ->
-            {
-            });
+            sslContextFactory.reload(scf -> {});
         }
         catch (Throwable t)
         {
