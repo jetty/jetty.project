@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -1263,6 +1264,127 @@ public class StreamResetTest extends AbstractTest
         // Verify that we only sent 1 RST_STREAM frame.
         await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
             assertEquals(1L, outFrames.stream().filter(f -> f instanceof ResetFrame).count(), outFrames.toString()));
+    }
+
+    @Test
+    public void testResetAfterLastDataDoesNotDiscardData() throws Exception
+    {
+        int length1 = 128;
+        int length2 = 256;
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(length1), false))
+                    .thenCompose(s -> s.data(new DataFrame(s.getId(), ByteBuffer.allocate(length2), true)))
+                    .thenAccept(s -> s.reset(new ResetFrame(s.getId(), ErrorCode.STREAM_CLOSED_ERROR.code)));
+                return null;
+            }
+        });
+
+        Session client = newClientSession(new Session.Listener() {});
+        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
+        HeadersFrame requestFrame = new HeadersFrame(request, null, true);
+        CountDownLatch clientResetLatch = new CountDownLatch(1);
+        Stream clientStream = client.newStream(requestFrame, new Stream.Listener()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                // Do not demand.
+            }
+
+            @Override
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
+            {
+                clientResetLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+
+        // The reset is ignored by the implementation, since all data has been received.
+        assertFalse(clientResetLatch.await(1, TimeUnit.SECONDS));
+        // The data must not be discarded.
+        assertEquals(length1 + length2, ((HTTP2Stream)clientStream).getDataLength());
+
+        // Read and discard the data.
+        clientStream.demand();
+
+        await().atMost(5, TimeUnit.SECONDS).until(clientStream::isClosed, is(true));
+    }
+
+    @Test
+    public void testResetAfterLastDataDoesNotDiscardDataButStopsRequestContentUpload() throws Exception
+    {
+        int length1 = 128;
+        int length2 = 256;
+        AtomicInteger dataCount = new AtomicInteger();
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                stream.demand();
+                return new Stream.Listener()
+                {
+                    @Override
+                    public void onDataAvailable(Stream stream)
+                    {
+                        dataCount.incrementAndGet();
+                        Stream.Data data = stream.readData();
+                        if (data == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        data.release();
+                        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(length1), false))
+                            .thenCompose(s -> s.data(new DataFrame(s.getId(), ByteBuffer.allocate(length2), true)))
+                            .thenAccept(s -> s.reset(new ResetFrame(s.getId(), ErrorCode.STREAM_CLOSED_ERROR.code)));
+                        stream.demand();
+                    }
+                };
+            }
+        });
+
+        Session client = newClientSession(new Session.Listener() {});
+        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
+        HeadersFrame requestFrame = new HeadersFrame(request, null, false);
+        CountDownLatch clientResetLatch = new CountDownLatch(1);
+        Stream clientStream = client.newStream(requestFrame, new Stream.Listener()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                // Do not demand.
+            }
+
+            @Override
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
+            {
+                clientResetLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+
+        // Do not send the whole request body.
+        clientStream.data(new DataFrame(clientStream.getId(), ByteBuffer.allocate(length1), false));
+
+        // The reset is notified because the request content is not complete.
+        assertTrue(clientResetLatch.await(5, TimeUnit.SECONDS));
+        // The response content must not be discarded.
+        assertEquals(length1 + length2, ((HTTP2Stream)clientStream).getDataLength());
+
+        // Finish to send the request content, it must not be sent.
+        CompletableFuture<Stream> cfData2 = clientStream.data(new DataFrame(clientStream.getId(), ByteBuffer.allocate(length2), true));
+        assertTrue(cfData2.isCompletedExceptionally());
+
+        // Read and discard the data.
+        clientStream.demand();
+
+        await().atMost(5, TimeUnit.SECONDS).until(clientStream::isClosed, is(true));
+
+        // The second request content chunk must not arrive to the server.
+        assertEquals(1, dataCount.get());
     }
 
     private void waitUntilTCPCongested(Supplier<SelectableChannelEndPoint> selectableChannelEndPointRef)

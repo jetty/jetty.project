@@ -63,7 +63,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     private final Deque<Data> dataQueue = new ArrayDeque<>(1);
     private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
-    private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
     private final long creationNanoTime = NanoTime.now();
@@ -71,6 +70,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     private final int streamId;
     private final MetaData.Request request;
     private final boolean local;
+    private CloseState closeState = CloseState.NOT_CLOSED;
     private Callback sendCallback;
     private Throwable failure;
     private boolean localReset;
@@ -79,6 +79,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     private long dataLength;
     private boolean dataDemand;
     private boolean dataStalled;
+    private boolean dataLast;
     private boolean committed;
     private long idleTimeout;
     private long expireNanoTime = Long.MAX_VALUE;
@@ -267,19 +268,39 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public boolean isClosed()
     {
-        return closeState.get() == CloseState.CLOSED;
+        try (AutoLock ignored = lock.lock())
+        {
+            return closeState == CloseState.CLOSED;
+        }
     }
 
     @Override
     public boolean isRemotelyClosed()
     {
-        CloseState state = closeState.get();
-        return state == CloseState.REMOTELY_CLOSED || state == CloseState.CLOSING || state == CloseState.CLOSED;
+        try (AutoLock ignored = lock.lock())
+        {
+            return switch (closeState)
+            {
+                case REMOTELY_CLOSED, CLOSING, CLOSED -> true;
+                default -> false;
+            };
+        }
     }
 
     public boolean isLocallyClosed()
     {
-        return closeState.get() == CloseState.LOCALLY_CLOSED;
+        try (AutoLock ignored = lock.lock())
+        {
+            return closeState == CloseState.LOCALLY_CLOSED;
+        }
+    }
+
+    public boolean isLastDataReceived()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            return dataLast;
+        }
     }
 
     public void commit()
@@ -465,7 +486,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         DataFrame frame = data.frame();
 
         // SPEC: remotely closed streams must be replied with a reset.
-        if (isRemotelyClosed())
+        if (isLastDataReceived())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Data {} for already closed {}", data, this);
@@ -505,6 +526,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 // Retain the data because it is stored for later use.
                 data.retain();
                 dataQueue.offer(data);
+                dataLast = data.frame().isEndStream();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Data {} notifying onDataAvailable() {} for {}", data, process, this);
                 return process;
@@ -621,20 +643,47 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void onReset(ResetFrame frame, Callback callback)
     {
-        int flowControlLength;
+        boolean reset = false;
+        boolean closed = false;
+        int flowControlLength = 0;
         try (AutoLock ignored = lock.lock())
         {
-            remoteReset = true;
-            failure = new EofException("reset");
-            flowControlLength = drain();
+            boolean lastDataReceived = isLastDataReceived();
+            if (remoteReset || closeState == CloseState.CLOSED ||
+                (isLocallyClosed() && lastDataReceived))
+            {
+                // Ignore the reset if already reset/closed,
+                // or all the data has been sent and received.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Reset ignored {} for {}", frame, this);
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Reset {} for {}", frame, this);
+                reset = remoteReset = true;
+                failure = new EofException("reset");
+                if (!lastDataReceived)
+                    flowControlLength = drain();
+                closed = doClose();
+            }
         }
-        close();
-        boolean removed = session.removeStream(this);
-        session.dataConsumed(this, flowControlLength);
-        if (removed)
-            notifyReset(frame, callback);
-        else
-            callback.succeeded();
+
+        if (closed)
+            onClose();
+
+        if (reset)
+        {
+            boolean removed = session.removeStream(this);
+            session.dataConsumed(this, flowControlLength);
+            if (removed)
+            {
+                notifyReset(frame, callback);
+                return;
+            }
+        }
+
+        callback.succeeded();
     }
 
     private void onPush(PushPromiseFrame frame, Callback callback)
@@ -712,88 +761,67 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private boolean updateCloseAfterReceived()
     {
-        while (true)
+        boolean closed;
+        try (AutoLock ignored = lock.lock())
         {
-            CloseState current = closeState.get();
-            switch (current)
+            closed = switch (closeState)
             {
                 case NOT_CLOSED ->
                 {
-                    if (closeState.compareAndSet(current, CloseState.REMOTELY_CLOSED))
-                        return false;
+                    closeState = CloseState.REMOTELY_CLOSED;
+                    yield false;
                 }
                 case LOCALLY_CLOSING ->
                 {
-                    if (closeState.compareAndSet(current, CloseState.CLOSING))
-                    {
-                        updateStreamCount(0, 1);
-                        return false;
-                    }
+                    closeState = CloseState.CLOSING;
+                    updateStreamCount(0, 1);
+                    yield false;
                 }
-                case LOCALLY_CLOSED ->
-                {
-                    close();
-                    return true;
-                }
-                default ->
-                {
-                    return false;
-                }
-            }
+                case LOCALLY_CLOSED -> doClose();
+                default -> false;
+            };
         }
+        if (closed)
+            onClose();
+        return closed;
     }
 
     private boolean updateCloseBeforeSend()
     {
-        while (true)
+        try (AutoLock ignored = lock.lock())
         {
-            CloseState current = closeState.get();
-            switch (current)
+            switch (closeState)
             {
-                case NOT_CLOSED ->
-                {
-                    if (closeState.compareAndSet(current, CloseState.LOCALLY_CLOSING))
-                        return false;
-                }
+                case NOT_CLOSED -> closeState = CloseState.LOCALLY_CLOSING;
                 case REMOTELY_CLOSED ->
                 {
-                    if (closeState.compareAndSet(current, CloseState.CLOSING))
-                    {
-                        updateStreamCount(0, 1);
-                        return false;
-                    }
-                }
-                default ->
-                {
-                    return false;
+                    closeState = CloseState.CLOSING;
+                    updateStreamCount(0, 1);
                 }
             }
+            return false;
         }
     }
 
     private boolean updateCloseAfterSend()
     {
-        while (true)
+        boolean closed;
+        try (AutoLock ignored = lock.lock())
         {
-            CloseState current = closeState.get();
-            switch (current)
+            closed = switch (closeState)
             {
                 case NOT_CLOSED, LOCALLY_CLOSING ->
                 {
-                    if (closeState.compareAndSet(current, CloseState.LOCALLY_CLOSED))
-                        return false;
+                    closeState = CloseState.LOCALLY_CLOSED;
+                    yield false;
                 }
-                case REMOTELY_CLOSED, CLOSING ->
-                {
-                    close();
-                    return true;
-                }
-                default ->
-                {
-                    return false;
-                }
-            }
+                case REMOTELY_CLOSED, CLOSING -> doClose();
+                default -> false;
+            };
         }
+        if (closed)
+            onClose();
+        return closed;
     }
 
     public int getSendWindow()
@@ -821,12 +849,23 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Close for {}", this);
-        CloseState oldState = closeState.getAndSet(CloseState.CLOSED);
-        if (oldState != CloseState.CLOSED)
-        {
-            int deltaClosing = oldState == CloseState.CLOSING ? -1 : 0;
-            updateStreamCount(-1, deltaClosing);
+        if (doClose())
             onClose();
+    }
+
+    private boolean doClose()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            CloseState oldState = closeState;
+            closeState = CloseState.CLOSED;
+            boolean closed = oldState != CloseState.CLOSED;
+            if (closed)
+            {
+                int deltaClosing = oldState == CloseState.CLOSING ? -1 : 0;
+                updateStreamCount(-1, deltaClosing);
+            }
+            return closed;
         }
     }
 

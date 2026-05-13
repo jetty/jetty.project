@@ -680,7 +680,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void failed(Throwable x)
     {
-        if (HttpMethod.CONNECT.is(_requestMetaData.getMethod()))
+        if (_requestMetaData != null && HttpMethod.CONNECT.is(_requestMetaData.getMethod()))
         {
             // It was a tunnel attempt, but it failed.
             if (LOG.isDebugEnabled())

@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.client.transport;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.Request;
@@ -21,9 +23,11 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Promise;
 
 public class HttpResponse implements Response
 {
+    private final AtomicReference<Throwable> failed = new AtomicReference<>();
     private final HttpFields.Mutable headers = HttpFields.build();
     private final Request request;
     private HttpVersion version;
@@ -119,6 +123,18 @@ public class HttpResponse implements Response
     public CompletableFuture<Boolean> abort(Throwable cause)
     {
         return request.abort(cause);
+    }
+
+    @Override
+    public CompletableFuture<Boolean> fail(Throwable cause)
+    {
+        if (failed.compareAndSet(null, Objects.requireNonNull(cause)))
+        {
+            Promise.Completable<Boolean> promise = new Promise.Completable<>();
+            ((HttpRequest)request).getConversation().abortResponse(cause, promise);
+            return promise;
+        }
+        return CompletableFuture.completedFuture(false);
     }
 
     @Override

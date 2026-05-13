@@ -2201,7 +2201,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                 {
                     // Since nothing else will arrive from the other peer, reset
                     // the streams for which the other peer did not send all frames.
-                    Predicate<Stream> failIf = stream -> !stream.isRemotelyClosed();
+                    Predicate<Stream> failIf = stream -> !((HTTP2Stream)stream).isLastDataReceived();
                     failStreams(failIf, reason, false, Callback.from(this::tryRunZeroStreamsAction));
                 }));
             }

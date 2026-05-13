@@ -263,7 +263,7 @@ public abstract class HttpSender
         {
             if (failure != null)
             {
-                if (exchange.responseComplete(failure))
+                if (!getHttpChannel().isLastDataReceived() && exchange.responseComplete(failure))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Response failure from request {} {}", request, exchange);

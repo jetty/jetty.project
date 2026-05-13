@@ -720,7 +720,8 @@ public class IdleTimeoutTest extends AbstractTest
                 public void onHeaders(Stream stream, HeadersFrame frame)
                 {
                     responses.incrementAndGet();
-                }
+                    // Read the response body to avoid leaks.
+                    Stream.Listener.super.onHeaders(stream, frame);                }
             });
             Stream stream = promise.get(5, TimeUnit.SECONDS);
             ByteBuffer data = ByteBuffer.allocate(10);
@@ -742,6 +743,8 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 responses.incrementAndGet();
                 extraLatch.countDown();
+                // Read the response body to avoid leaks.
+                Stream.Listener.super.onHeaders(stream, frame);
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
