@@ -45,11 +45,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -801,7 +803,7 @@ public class PathResourceTest
     }
 
     @Test
-    public void testResolvePastParent(WorkDir workDir)
+    public void testResolvePastParentFails(WorkDir workDir)
     {
         Path parent = workDir.getEmptyPathDir();
 
@@ -838,14 +840,16 @@ public class PathResourceTest
             String ulikeURI = ulike.getURI().toASCIIString();
             assertThat("Resulting Resource shouldn't be just the input string",
                 ulikeURI, not(is(tmpURI)));
-            assertThat("Resulting Resource should still contain references to the base",
-                ulikeURI, containsString(resourceBase.getURI().toASCIIString()));
+            String substring = ulikeURI.substring(resourceBase.getURI().toASCIIString().length());
+            assertThat(substring, startsWith(tmp.toUri().getScheme() + ":"));
+            assertThat(substring, endsWith(tmp.toUri().getPath()));
         }
-        catch (InvalidPathException ignore)
+        catch (InvalidPathException invalidPathException)
         {
             // Valid path for some OS's.
             // Eg: on Microsoft Windows, the Resource.resolve(tmpURI) could throw this as
             // there can be an illegal character.
+            assertThat(invalidPathException.getMessage(), containsString("Illegal Character"));
         }
     }
 
@@ -879,14 +883,20 @@ public class PathResourceTest
             // resolve using decoded form
             Resource txt = resourceBase.resolve("foo(bar).txt");
             assertTrue(Resources.isReadableFile(txt));
-            String contents = IO.toString(txt.newInputStream(), UTF_8);
-            assertThat(contents, is(fooContents));
+            try (InputStream in = txt.newInputStream())
+            {
+                String contents = IO.toString(in, UTF_8);
+                assertThat(contents, is(fooContents));
+            }
 
             // resolve using encoded form
             txt = resourceBase.resolve("foo%28bar%29.txt");
             assertTrue(Resources.isReadableFile(txt));
-            contents = IO.toString(txt.newInputStream(), UTF_8);
-            assertThat(contents, is(fooContents));
+            try (InputStream in = txt.newInputStream())
+            {
+                String contents = IO.toString(in, UTF_8);
+                assertThat(contents, is(fooContents));
+            }
         }
     }
 }
