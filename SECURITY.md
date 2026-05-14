@@ -28,7 +28,7 @@ The following checklist is used to handle security issues:
 - [ ] Identify a CWE Definition and add it to the advisory description.
 - [ ] Identify vulnerable version(s), including current and past versions that are affected (for example, 12.1.0 through 12.1.9, etc.)
 - [ ] Identify and document workaround(s), if applicable, in the comments of the security advisory.
-- [ ] Open a [GitLab @ Eclipse CVE Assignment Issue](https://gitlab.eclipse.org/security/cve-assignement/-/issues/new) to have a CVE allocated.   
+- [ ] Open a [GitLab @ Eclipse CVE Assignment Issue](https://gitlab.eclipse.org/security/cve-assignment/-/issues/new) to have a CVE allocated.   
       The issue should be opened under the "Eclipse Projects Security" > "cve-assignment" > "Issues" section, with the "This issue is confidential" checkbox checked.   
       Follow the template for what details are necessary to file the CVE Assignment.
 - [ ] Add a comment in the issue asking the Eclipse team to add @jerdfelt, @jmcconnell, @olamy and @sbordet as assignees (otherwise only the issue opener will be able to see the issue).
