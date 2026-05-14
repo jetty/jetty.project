@@ -1565,7 +1565,7 @@ public class HttpChannelState implements HttpChannel, Components
             // Can we set the content length?
             HttpFields.Mutable mutableHeaders = _httpFields.getMutableHttpFields();
             httpChannel._committedContentLength = mutableHeaders.getLongField(HttpHeader.CONTENT_LENGTH);
-            if (!MetaData.isTunnel(_request.getMethod(), _status) && last && httpChannel._committedContentLength < 0L)
+            if (last && httpChannel._committedContentLength < 0L && !MetaData.isTunnel(_request.getMethod(), _status))
             {
                 httpChannel._committedContentLength = _contentBytesWritten;
                 mutableHeaders.put(HttpHeader.CONTENT_LENGTH, httpChannel._committedContentLength);
