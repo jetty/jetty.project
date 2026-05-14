@@ -26,11 +26,11 @@ The following checklist is used to handle security issues:
 - [ ] If the vulnerability cannot be confirmed, then close the security advisory, else continue.
 - [ ] Generate a CVE score and add it to the advisory description.
 - [ ] Identify a CWE Definition and add it to the advisory description.
-- [ ] Identify vulnerable version(s), including current and past versions that are affected (for example, 9.4.0 through 9.4.35, 10.0.0.alpha1 through 10.0.0.beta3, etc.)
+- [ ] Identify vulnerable version(s), including current and past versions that are affected (for example, 12.1.0 through 12.1.9, etc.)
 - [ ] Identify and document workaround(s), if applicable, in the comments of the security advisory.
-- [ ] Open a [Gitlab@Eclipse CVE Assignment](https://gitlab.eclipse.org/security/cve-assignement/-/issues/new) to have a CVE allocated.   
-      The issue should be opened under the "Eclipse Foundation" > "EMO Team" > "EMO" section as a "cve" description, with the "This issue is confidential" checkbox checked.   
-      Follow the template for what details are necessary to file for a CVE.
+- [ ] Open a [GitLab @ Eclipse CVE Assignment Issue](https://gitlab.eclipse.org/security/cve-assignement/-/issues/new) to have a CVE allocated.   
+      The issue should be opened under the "Eclipse Projects Security" > "cve-assignment" > "Issues" section, with the "This issue is confidential" checkbox checked.   
+      Follow the template for what details are necessary to file the CVE Assignment.
 - [ ] Add a comment in the issue asking the Eclipse team to add @jerdfelt, @jmcconnell, @olamy and @sbordet as assignees (otherwise only the issue opener will be able to see the issue).
 - [ ] Once the CVE is allocated, update the Security Advisory with the number.
 - [ ] Build and test fix(es) locally and in the CI environment.
@@ -44,7 +44,10 @@ The following checklist is used to handle security issues:
 - [ ] If testing is OK, then the release is promoted.
 - [ ] Interested parties are notified of the availability of the release on Maven Central.
 - [ ] Publish security advisory from GitHub.
-- [ ] Add a comment to the GitLab issue opened at Eclipse asking to publish the CVE.
+- [ ] Open a [GitLab @ Eclipse CVE Publication Issue](https://gitlab.eclipse.org/security/cve-assignment/-/issues/new?description_template=CVE%20Publication%20Request) to request CVE publication.
+      This issue uses the "CVE Publication Request" template available in the "Description" drop-down list.   
+      Follow the template for what details are necessary to file the CVE Publication Request.
+- [ ] Add a comment in the issue asking the Eclipse team to add @jerdfelt, @jmcconnell, @olamy and @sbordet as assignees (otherwise only the issue opener will be able to see the issue).
 - [ ] Edit VERSION.txt and so that the CVE number is now recorded against merged PR.
 - [ ] Edit the release(s) on GitHub to identify the CVE number that was addressed/resolved.
 - [ ] Update downstream images (Docker, etc.).
