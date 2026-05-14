@@ -35,6 +35,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -44,7 +45,6 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -59,6 +59,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.condition.OS.LINUX;
+import static org.junit.jupiter.api.condition.OS.MAC;
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 @ExtendWith(WorkDirExtension.class)
 @Isolated
@@ -818,9 +821,28 @@ public class PathResourceTest
     }
 
     /**
+     * Test resolve(String) with an input that looks like a fully qualified path with drive letter.
+     */
+    @Test
+    @EnabledOnOs(WINDOWS)
+    public void testResolveWithWindowsDrive(WorkDir workDir)
+    {
+        Path parent = workDir.getEmptyPathDir();
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resourceBase = resourceFactory.newResource(parent);
+            assertTrue(Resources.isReadableDirectory(resourceBase));
+
+            assertThrows(InvalidPathException.class, () -> resourceBase.resolve("C:\\foo"));
+        }
+    }
+
+    /**
      * Test resolve(String) with an input that looks like another URI
      */
     @Test
+    @EnabledOnOs({LINUX, MAC})
     public void testResolveWithURILike(WorkDir workDir)
     {
         Path parent = workDir.getEmptyPathDir();
@@ -830,26 +852,16 @@ public class PathResourceTest
             Resource resourceBase = resourceFactory.newResource(parent);
             assertTrue(Resources.isReadableDirectory(resourceBase));
 
-            // Attempt to reference the tmp directory
-            Path tmp = Path.of(System.getProperty("java.io.tmpdir"));
-            String tmpURI = tmp.toUri().toASCIIString();
-            // Attempt to use this reference in the resolve() call.
-            Resource ulike = resourceBase.resolve(tmpURI); // NOTE: this can throw InvalidPathException as a valid result
+            String suburi = "file:///tmp";
+            Resource ulike = resourceBase.resolve(suburi);
             assertNotNull(ulike);
             assertFalse(Resources.exists(ulike));
             String ulikeURI = ulike.getURI().toASCIIString();
             assertThat("Resulting Resource shouldn't be just the input string",
-                ulikeURI, not(is(tmpURI)));
+                ulikeURI, not(is(suburi)));
             String substring = ulikeURI.substring(resourceBase.getURI().toASCIIString().length());
-            assertThat(substring, startsWith(tmp.toUri().getScheme() + ":"));
-            assertThat(substring, endsWith(tmp.toUri().getPath()));
-        }
-        catch (InvalidPathException invalidPathException)
-        {
-            // Valid path for some OS's.
-            // Eg: on Microsoft Windows, the Resource.resolve(tmpURI) could throw this as
-            // there can be an illegal character.
-            assertThat(invalidPathException.getMessage(), containsString("Illegal Character"));
+            assertThat(substring, startsWith("file:"));
+            assertThat(substring, endsWith("/tmp"));
         }
     }
 
