@@ -323,6 +323,7 @@ public class PathResource extends Resource
             case "file" ->
             {
                 // The "file" scheme is the only safe scheme to use Path.of() with.
+                // For example, on NTFS you can have a URI of `file:///E:/foo/test.txt`.
                 yield Path.of(resolvedUri);
             }
             default ->
