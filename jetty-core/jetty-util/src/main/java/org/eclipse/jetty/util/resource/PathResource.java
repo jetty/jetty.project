@@ -293,26 +293,46 @@ public class PathResource extends Resource
 
         URI uri = getURI();
         URI resolvedUri = URIUtil.addPath(uri, subUriPath);
-        Path newPath = resolveSchemeSpecificPath(resolvedUri);
-        return newResource(newPath, resolvedUri);
-    }
 
-    private Path resolveSchemeSpecificPath(URI uri)
-    {
-        // Resolve from this PathResource to maintain FileSystem tracking.
-        // Do NOT use Path.of() or Paths.of() as that requires the JDK to track FileSystem objects.
-        // (Not all FileSystemProvider's track the FileSystems they create. Currently only ZipFileSystemProvider does)
+        // IMPORTANT NOTE: The following static JDK methods are problematic for non-file schemes.
+        //
+        // - java.nio.file.Path.of(String, String ...)
+        // - java.nio.file.Path.of(URI)
+        // - java.nio.file.Paths.get(String, String ...)
+        // - java.nio.file.Paths.get(URI)
+        //
+        // These JDK methods do not use this PathResource to resolve against, and
+        // can skip various java-resource requirements that are in-place for this instance.
+        // Example: a `jar:file:///path/to/foo.jar!/deep/` base Resource was created via a call to
+        // ResourceFactory.newResource() and now has a java-resource of type java.nio.file.FileSystem
+        // tied to it, all subsequent calls to PathResource.resolve() calls MUST use
+        // this FileSystem to resolve against.
 
-        String scheme = Objects.requireNonNull(uri.getScheme(), "scheme cannot be null");
-        if (scheme.equals("jar"))
+        String scheme = Objects.requireNonNull(resolvedUri.getScheme(), "scheme cannot be null");
+        Path newPath = switch (scheme)
         {
-            String ssp = uri.getSchemeSpecificPart();
-            int idx = ssp.indexOf("!/");
-            if (idx == -1)
-                throw new IllegalArgumentException("Unable to find jar !/ deep reference in " + uri);
-            return path.resolve(ssp.substring(idx + 1));
-        }
-        return path.resolve(uri.getPath());
+            case "jar" ->
+            {
+                // Grab the portion of the raw URI that represents the path.
+                String ssp = resolvedUri.getSchemeSpecificPart();
+                int idx = ssp.indexOf("!/");
+                if (idx == -1)
+                    throw new IllegalArgumentException("Unable to find jar !/ deep reference in " + resolvedUri);
+                yield path.resolve(ssp.substring(idx + 1));
+            }
+            case "file" ->
+            {
+                // The "file" scheme is the only safe scheme to use Path.of() with.
+                // For example, on NTFS you can have a URI of `file:///E:/foo/test.txt`.
+                yield Path.of(resolvedUri);
+            }
+            default ->
+            {
+                // Resolve from this PathResource instance.
+                yield path.resolve(resolvedUri.getPath());
+            }
+        };
+        return newResource(newPath, resolvedUri);
     }
 
     /**

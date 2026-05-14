@@ -46,8 +46,10 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>A {@link ResourceFactory.LifeCycle} tied to a Jetty {@link org.eclipse.jetty.util.component.Container}</h2>
  * <pre>
+ * {@code
  *     ResourceFactory.LifeCycle resourceFactory = ResourceFactory.of(container);
  *     Resource resource = resourceFactory.newResource(ref);
+ * }
  * </pre>
  * <p>
  *     The use of {@link ResourceFactory#of(Container)} results in a {@link ResourceFactory.LifeCycle} that is tied
@@ -59,9 +61,11 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>A {@link ResourceFactory.Closeable} that exists within a {@code try-with-resources} call</h2>
  * <pre>
+ * {@code
  *     try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable()) {
  *         Resource resource = resourceFactory.newResource(ref);
  *     }
+ * }
  * </pre>
  * <p>
  *     The use of {@link ResourceFactory#closeable()} results in a {@link ResourceFactory} that only exists for
@@ -71,8 +75,10 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>A {@code ResourceFactory} that lives at the JVM level</h2>
  * <pre>
+ * {@code
  *     ResourceFactory resourceFactory = ResourceFactory.root();
  *     Resource resource = resourceFactory.newResource(ref);
+ * }
  * </pre>
  * <p>
  *     The use of {@link ResourceFactory#root()} results in a {@link ResourceFactory} that exists for
@@ -111,12 +117,14 @@ import org.slf4j.LoggerFactory;
  *     registered scheme.
  * </p>
  * <pre>
+ * {@code
  *     URLResourceFactory urlResourceFactory = new URLResourceFactory();
  *     urlResourceFactory.setConnectTimeout(1000);
  *     ResourceFactory.registerResourceFactory("https", urlResourceFactory);
  *
  *     URI web = URI.create("https://jetty.org/");
  *     Resource resource = ResourceFactory.root().newResource(web);
+ * }
  * </pre>
  */
 public interface ResourceFactory
@@ -265,7 +273,7 @@ public interface ResourceFactory
      * <p>Construct a Resource from a search of ClassLoaders.</p>
      *
      * <p>
-     * Convenience method {@code .newClassLoaderResource(resource, true)}
+     * Convenience method for {@code newClassLoaderResource(resource, true)}
      * </p>
      *
      * @param resource string representation of resource to find in a classloader
@@ -398,7 +406,7 @@ public interface ResourceFactory
      *
      * @param uris the URIs
      * @return the Resource for the provided URIs, or null if all
-     *  of the provided URIs do not exist
+     *  the provided URIs do not exist
      * @throws IllegalArgumentException if list of URIs is empty or null
      */
     default Resource newResource(List<URI> uris)
