@@ -316,7 +316,7 @@ public class BasicTest extends AbstractUseCase
         // === Execute Main
         List<String> runArgs = new ArrayList<>();
         runArgs.add("--create-files");
-        runArgs.add("java.version=1.8.0_31");
+        runArgs.add("java.version=21.0.1");
 
         // Modules
         runArgs.add("--modules=optional,extra");
@@ -355,6 +355,11 @@ public class BasicTest extends AbstractUseCase
 
         // === Validate Specific Jetty Base Files/Dirs Exist
         assertThat("Required Directory: maindir/", results.baseHome.getPath("maindir/"), isDirectory());
+
+        // Test arglines output
+        runArgs.add("--arglines");
+        results = exec(runArgs, true);
+        System.out.println(results.output);
     }
 
     @Test

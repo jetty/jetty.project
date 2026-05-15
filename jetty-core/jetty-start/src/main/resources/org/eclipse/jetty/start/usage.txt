@@ -58,6 +58,26 @@ Report Commands:
                    stop.port=<port> property and the --stop command must
                    be executed with the same property.
 
+  --arglines
+                   Prints the arguments as a java @arguments output, then exits.
+                   This may be used to generate command lines into scripts:
+                   Example:
+                     $ java -jar start.jar --arglines > jetty.args
+                     $ java @jetty.args
+
+  --arglines=<part>(,<part>)*
+                   Prints the arguments as a java @arguments output, then exits.
+                   This may be used to generate command lines into scripts.
+                   The valid parts are:
+                     o  "opts" - the JVM options (e.g. -D, -X and -XX flags)
+                     o  "path" - the JVM class-path and/or the JPMS module-path
+                     o  "main" - the main class to run
+                     o  "args" - the arguments passed to the main class
+                     o  "envs" - the generated XML files to create the environments
+                   Example:
+                     $ java -jar start.jar --arglines=path,main,args,envs > jetty.args
+                     $ java -Xmx4g @jetty.args
+
   --dry-run
                    Prints the command line that start.jar generates,
                    in a format usable by a POSIX compliant shell, then exits.
