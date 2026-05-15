@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -32,6 +33,7 @@ import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.HTTP2Cipher;
@@ -64,6 +66,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.server.ServerWebSocketContainer;
@@ -81,6 +84,8 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -507,6 +512,30 @@ public class WebSocketOverHTTP2Test
 
         assertThat(networkConnectionLimit.getPendingNetworkConnectionCount(), equalTo(0));
         assertThat(networkConnectionLimit.getNetworkConnectionCount(), equalTo(1));
+    }
+
+    @Test
+    public void testWebSocketOverHTTP2ConnectResponseDoesNotHaveContentLength() throws Exception
+    {
+        startServer(container -> container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket()));
+        startClient(clientConnector -> List.of(new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector))));
+
+        EventSocket clientEndpoint = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
+        AtomicReference<org.eclipse.jetty.client.Response> responseRef = new AtomicReference<>();
+        wsClient.connect(clientEndpoint, uri, new JettyUpgradeListener()
+        {
+            @Override
+            public void onHandshakeResponse(org.eclipse.jetty.client.Request request, org.eclipse.jetty.client.Response response)
+            {
+                responseRef.set(response);
+            }
+        }).get(5, TimeUnit.SECONDS);
+
+        var response = await().atMost(5, TimeUnit.SECONDS).until(responseRef::get, notNullValue());
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getHeaders().getField(HttpHeader.CONTENT_LENGTH), nullValue());
     }
 
     private static void awaitConnections(int connections, NetworkConnectionLimit networkConnectionLimit)
