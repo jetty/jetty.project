@@ -163,7 +163,7 @@
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asm.version>9.9.1</asm.version>
+    <asm.version>9.10</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
     <bndlib.version>6.4.1</bndlib.version>
     <bouncycastle.version>1.84</bouncycastle.version>
@@ -280,7 +280,7 @@
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.7.0</mongodb.version>
     <netty.version>4.2.13.Final</netty.version>
-    <njord.version>0.9.5</njord.version>
+    <njord.version>0.9.6</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
