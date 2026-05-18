@@ -50,6 +50,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.ssl.SslConnection;
@@ -1496,7 +1497,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("abort due to pending read {} {} ", this, getEndPoint());
-                abort(new IOException("Pending read in onCompleted"));
+                abort(new QuietException.IOException("Pending read in onCompleted"));
                 _httpChannel.recycle();
                 _parser.reset();
                 _generator.reset();
