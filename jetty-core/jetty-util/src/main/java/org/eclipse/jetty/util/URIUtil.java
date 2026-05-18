@@ -1887,6 +1887,9 @@ public final class URIUtil
         else if (scheme.equalsIgnoreCase("file"))
         {
             String rawUri = uri.toASCIIString();
+            if (rawUri.startsWith("file:/") && !rawUri.startsWith("file://"))
+                rawUri = "file:///" + rawUri.substring("file:/".length());
+
             if (rawUri.endsWith("/")) // skip directories
                 return uri;
             if (hasInternalReference)
