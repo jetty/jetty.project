@@ -310,9 +310,12 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     }
 
     @Override
-    protected void doStart()
-        throws Exception
+    protected void doStart() throws Exception
     {
+        // LoginAuthenticator and SessionAuthentication rely on being within a ContextHandler.
+        if (ContextHandler.getCurrentContextHandler() == null)
+            throw new IllegalStateException("SecurityHandler must be deployed within a ContextHandler");
+
         // complicated resolution of login and identity service to handle
         // many different ways these can be constructed and injected.
 
