@@ -199,6 +199,16 @@ public interface Invocable
         return new ReadyTask(type, task);
     }
 
+    /// Wraps the given [Runnable] as a [Task], if it is not already a [Task].
+    ///
+    /// @param task the [Runnable] to possibly wrap
+    /// @return a [Task], either the [Runnable] itself as a [Task], or a [Task] that wraps it
+    /// @see #getInvocationType(Object)
+    static Task wrap(Runnable task)
+    {
+        return task instanceof Task t ? t : new ReadyTask(getInvocationType(task), task);
+    }
+
     /**
      * Tests if the current thread has been tagged as non-blocking.
      *

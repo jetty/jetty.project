@@ -34,7 +34,6 @@ import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,24 +106,13 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     @Override
     public boolean onIdleExpired(TimeoutException timeoutException)
     {
-        return session.onIdleTimeout(timeoutException);
+        session.onIdleTimeout(timeoutException);
+        return false;
     }
 
     @Override
-    protected Runnable produce()
+    protected Runnable doProduce()
     {
-        Invocable.Task task = pollTask();
-        if (LOG.isDebugEnabled())
-            LOG.debug("produced task {} on {}", task, this);
-        if (task != null)
-            return task;
-
-        boolean interested = isFillInterested();
-        if (LOG.isDebugEnabled())
-            LOG.debug("producing fillInterested={} on {}", interested, this);
-        if (interested)
-            return null;
-
         RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
         try
         {
@@ -151,7 +139,7 @@ public class ClientQuicConnection extends QuicConnection implements Callback
                 bytesIn.addAndGet(filled);
                 session.process(address, buffer);
 
-                task = pollTask();
+                Task task = pollTask();
                 if (LOG.isDebugEnabled())
                     LOG.debug("produced task {} on {}", task, this);
                 if (task == null)

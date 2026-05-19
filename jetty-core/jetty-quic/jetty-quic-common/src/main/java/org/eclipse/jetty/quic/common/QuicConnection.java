@@ -22,12 +22,18 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class QuicConnection extends AbstractConnection
 {
+    private static final Logger LOG = LoggerFactory.getLogger(QuicConnection.class);
+
+    private final AutoLock lock = new AutoLock();
     private final Callback fillableCallback = new FillableCallback();
     private final Queue<Invocable.Task> tasks = new ArrayDeque<>();
     private final Scheduler scheduler;
@@ -90,18 +96,45 @@ public abstract class QuicConnection extends AbstractConnection
         strategy.produce();
     }
 
-    protected abstract Runnable produce();
+    private Runnable produce()
+    {
+        Invocable.Task task = pollTask();
+        if (LOG.isDebugEnabled())
+            LOG.debug("produced task {} on {}", task, this);
+        if (task != null)
+            return task;
+
+        boolean interested = isFillInterested();
+        if (LOG.isDebugEnabled())
+            LOG.debug("producing fillInterested={} on {}", interested, this);
+        if (interested)
+            return null;
+
+        return doProduce();
+    }
+
+    protected abstract Runnable doProduce();
 
     public abstract void terminate(QuicSession session);
 
-    void offerTask(Invocable.Task task)
+    void offerTask(Invocable.Task task, boolean dispatch)
     {
-        tasks.offer(task);
+        try (var _ = lock.lock())
+        {
+            tasks.offer(task);
+        }
+        if (dispatch)
+            strategy.dispatch();
+        else
+            strategy.produce();
     }
 
     protected Invocable.Task pollTask()
     {
-        return tasks.poll();
+        try (var _ = lock.lock())
+        {
+            return tasks.poll();
+        }
     }
 
     private class FillableCallback implements Callback
