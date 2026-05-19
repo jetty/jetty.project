@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.Invocable.Task;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
@@ -145,20 +145,8 @@ public class ServerQuicConnection extends QuicConnection
     }
 
     @Override
-    protected Runnable produce()
+    protected Runnable doProduce()
     {
-        Invocable.Task task = pollTask();
-        if (LOG.isDebugEnabled())
-            LOG.debug("produced task {} on {}", task, this);
-        if (task != null)
-            return task;
-
-        boolean interested = isFillInterested();
-        if (LOG.isDebugEnabled())
-            LOG.debug("producing fillInterested={} on {}", interested, this);
-        if (interested)
-            return null;
-
         RetainableByteBuffer buffer = getByteBufferPool().acquire(getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
         try
         {
@@ -207,7 +195,7 @@ public class ServerQuicConnection extends QuicConnection
 
                 process(dstConnectionId, address, buffer);
 
-                task = pollTask();
+                Task task = pollTask();
                 if (LOG.isDebugEnabled())
                     LOG.debug("produced task {} on {}", task, this);
                 if (task == null)

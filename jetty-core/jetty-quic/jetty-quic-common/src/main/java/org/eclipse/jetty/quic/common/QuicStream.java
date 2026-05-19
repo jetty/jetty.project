@@ -320,8 +320,13 @@ public class QuicStream extends AbstractStream
         }));
     }
 
-    public Invocable.Task processFrames(List<Frame.WithStreamId> frames)
+    Invocable.Task processFrames(List<Frame.WithStreamId> frames)
     {
+        // Frame processing does not need to go through SerializedInvoker,
+        // because StreamFrames are naturally serialized by their offset.
+        // If the Stream.Listener InvocationType is BLOCKING, frame tasks
+        // may be executed out of order, but that is not different from
+        // receiving them out of order from the network.
         return new FramesTask(frames);
     }
 

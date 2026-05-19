@@ -85,7 +85,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -293,9 +292,9 @@ public abstract class QuicSession extends AbstractSession
 
     protected abstract void notIdle();
 
-    public boolean onIdleTimeout(TimeoutException timeout)
+    public void onIdleTimeout(TimeoutException timeout)
     {
-        ThreadPool.executeImmediately(getExecutor(), () ->
+        offerTask(new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("idle timeout expired on {}", this);
@@ -308,8 +307,7 @@ public abstract class QuicSession extends AbstractSession
             // connection silently, but we send a ConnectionCloseFrame
             // to inform the other peer that the connection is broken.
             disconnect(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "idle_timeout"), timeout, Promise.Invocable.noop());
-        });
-        return false;
+        }), false);
     }
 
     public abstract int getUDPPayloadLength();
@@ -692,6 +690,7 @@ public abstract class QuicSession extends AbstractSession
     @Override
     public void offerTask(Runnable task, boolean dispatch)
     {
+        connection.offerTask(Invocable.wrap(task), dispatch);
     }
 
     public void process(SocketAddress remoteSocketAddress, RetainableByteBuffer buffer) throws Exception
@@ -762,7 +761,7 @@ public abstract class QuicSession extends AbstractSession
             List<Invocable.Task> tasks = processPacket(packet);
             for (Invocable.Task task : tasks)
             {
-                connection.offerTask(task);
+                offerTask(task, false);
             }
         }
         else
