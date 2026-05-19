@@ -999,14 +999,14 @@ public class URIUtilTest
     {
         List<Arguments> cases = new ArrayList<>();
 
-        String expected = "jar:file:/path/company-1.0.jar!/";
-        cases.add(Arguments.of("file:/path/company-1.0.jar", "jar:file:///path/company-1.0.jar!/"));
+        String expected = "jar:file:///path/company-1.0.jar!/";
+        cases.add(Arguments.of("file:/path/company-1.0.jar", expected));
         cases.add(Arguments.of("jar:file:/path/company-1.0.jar", expected));
         cases.add(Arguments.of("jar:file:/path/company-1.0.jar!/", expected));
         cases.add(Arguments.of("jar:file:/path/company-1.0.jar!/META-INF/services", expected + "META-INF/services"));
 
-        expected = "jar:file:/opt/jetty/webapps/app.war!/";
-        cases.add(Arguments.of("file:/opt/jetty/webapps/app.war", "jar:file:///opt/jetty/webapps/app.war!/"));
+        expected = "jar:file:///opt/jetty/webapps/app.war!/";
+        cases.add(Arguments.of("file:/opt/jetty/webapps/app.war", expected));
         cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war", expected));
         cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war!/", expected));
         cases.add(Arguments.of("jar:file:/opt/jetty/webapps/app.war!/WEB-INF/classes", expected + "WEB-INF/classes"));
