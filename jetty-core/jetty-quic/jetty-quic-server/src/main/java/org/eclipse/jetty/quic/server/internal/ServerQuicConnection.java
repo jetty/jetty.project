@@ -90,7 +90,6 @@ public class ServerQuicConnection extends QuicConnection
     private final QuicServerQuicConfiguration quicConfiguration;
     private final Session.Listener.Factory sessionListenerFactory;
     private final SessionTimeouts sessionTimeouts;
-    private final AdaptiveExecutionStrategy strategy;
     private int destinationConnectionIdLength;
 
     public ServerQuicConnection(Connector connector, SslContextFactory.Server sslContextFactory, QuicServerQuicConfiguration quicConfiguration, EndPoint endPoint, Session.Listener.Factory sessionListenerFactory)
@@ -101,7 +100,6 @@ public class ServerQuicConnection extends QuicConnection
         this.quicConfiguration = quicConfiguration;
         this.sessionListenerFactory = sessionListenerFactory;
         this.sessionTimeouts = new SessionTimeouts(connector.getScheduler());
-        this.strategy = new AdaptiveExecutionStrategy(this::produce, getExecutor());
     }
 
     public Connector getConnector()
@@ -131,30 +129,9 @@ public class ServerQuicConnection extends QuicConnection
             .collect(Collectors.toSet());
     }
 
-    @Override
-    public void onOpen()
-    {
-        super.onOpen();
-        LifeCycle.start(strategy);
-        fillInterested();
-    }
-
-    @Override
-    public void onClose(Throwable cause)
-    {
-        LifeCycle.stop(strategy);
-        super.onClose(cause);
-    }
-
     public void schedule(ServerQuicSession session)
     {
         sessionTimeouts.schedule(session);
-    }
-
-    @Override
-    public void onFillable()
-    {
-        strategy.produce();
     }
 
     public int getDestinationConnectionIdLength()
@@ -167,17 +144,18 @@ public class ServerQuicConnection extends QuicConnection
         this.destinationConnectionIdLength = destinationConnectionIdLength;
     }
 
-    private Runnable produce()
+    @Override
+    protected Runnable produce()
     {
         Invocable.Task task = pollTask();
         if (LOG.isDebugEnabled())
-            LOG.debug("produced task {}", task);
+            LOG.debug("produced task {} on {}", task, this);
         if (task != null)
             return task;
 
         boolean interested = isFillInterested();
         if (LOG.isDebugEnabled())
-            LOG.debug("producing fillInterested={}", interested);
+            LOG.debug("producing fillInterested={} on {}", interested, this);
         if (interested)
             return null;
 
@@ -190,7 +168,7 @@ public class ServerQuicConnection extends QuicConnection
                 SocketAddress address = getEndPoint().receive(byteBuffer);
                 int filled = address == EndPoint.EOF ? -1 : buffer.remaining();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("filled {} bytes from {} on {}", filled, address, getEndPoint());
+                    LOG.debug("filled {} bytes from {} on {}", filled, address, this);
 
                 if (filled < 0)
                 {
@@ -231,7 +209,7 @@ public class ServerQuicConnection extends QuicConnection
 
                 task = pollTask();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("produced task {}", task);
+                    LOG.debug("produced task {} on {}", task, this);
                 if (task == null)
                     continue;
 
@@ -242,7 +220,7 @@ public class ServerQuicConnection extends QuicConnection
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("produce() failure", x);
+                LOG.debug("failed to produce on {}", this, x);
             buffer.release();
             fail(x);
             return null;
