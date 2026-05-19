@@ -1869,6 +1869,7 @@ public final class URIUtil
     {
         Objects.requireNonNull(uri, "URI");
         String scheme = Objects.requireNonNull(uri.getScheme(), "URI scheme");
+        uri = URIUtil.correctURI(uri);
 
         boolean hasInternalReference = uri.getRawSchemeSpecificPart().indexOf("!/") > 0;
 
@@ -1887,9 +1888,6 @@ public final class URIUtil
         else if (scheme.equalsIgnoreCase("file"))
         {
             String rawUri = uri.toASCIIString();
-            if (rawUri.startsWith("file:/") && !rawUri.startsWith("file://"))
-                rawUri = "file:///" + rawUri.substring("file:/".length());
-
             if (rawUri.endsWith("/")) // skip directories
                 return uri;
             if (hasInternalReference)
