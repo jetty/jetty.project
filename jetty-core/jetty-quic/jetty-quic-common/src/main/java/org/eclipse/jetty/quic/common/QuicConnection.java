@@ -21,19 +21,18 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 
 public abstract class QuicConnection extends AbstractConnection
 {
-    private static final Logger LOG = LoggerFactory.getLogger(QuicConnection.class);
-
     private final Callback fillableCallback = new FillableCallback();
     private final Queue<Invocable.Task> tasks = new ArrayDeque<>();
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
+    private final AdaptiveExecutionStrategy strategy;
     private boolean useInputDirectByteBuffers = true;
 
     public QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint)
@@ -41,6 +40,7 @@ public abstract class QuicConnection extends AbstractConnection
         super(endPoint, executor);
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
+        this.strategy = new AdaptiveExecutionStrategy(this::produce, getExecutor());
     }
 
     public Scheduler getScheduler()
@@ -64,10 +64,33 @@ public abstract class QuicConnection extends AbstractConnection
     }
 
     @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        LifeCycle.start(strategy);
+        fillInterested();
+    }
+
+    @Override
+    public void onClose(Throwable cause)
+    {
+        LifeCycle.stop(strategy);
+        super.onClose(cause);
+    }
+
+    @Override
     public void fillInterested()
     {
         fillInterested(fillableCallback);
     }
+
+    @Override
+    public void onFillable()
+    {
+        strategy.produce();
+    }
+
+    protected abstract Runnable produce();
 
     public abstract void terminate(QuicSession session);
 

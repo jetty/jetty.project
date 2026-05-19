@@ -88,6 +88,7 @@ public sealed interface Packet extends AutoCloseable permits DiscardPacket, Long
         {
         }
 
+        // TODO: maybe remove this method? not really useful
         default void onOutgoingPacket(Session session, Packet packet)
         {
         }

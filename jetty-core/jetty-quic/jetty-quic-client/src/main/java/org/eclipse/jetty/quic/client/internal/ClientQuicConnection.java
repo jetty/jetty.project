@@ -35,7 +35,6 @@ import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +46,6 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     private final ClientConnector connector;
     private final QuicClientQuicConfiguration quicConfiguration;
     private final Map<String, Object> context;
-    private final AdaptiveExecutionStrategy strategy;
     private ClientQuicSession session;
 
     public ClientQuicConnection(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, EndPoint endPoint, Map<String, Object> context)
@@ -56,7 +54,6 @@ public class ClientQuicConnection extends QuicConnection implements Callback
         this.connector = connector;
         this.quicConfiguration = quicConfiguration;
         this.context = context;
-        this.strategy = new AdaptiveExecutionStrategy(this::produce, getExecutor());
     }
 
     public QuicClientQuicConfiguration getClientQuicConfiguration()
@@ -83,18 +80,9 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     }
 
     @Override
-    public void onClose(Throwable cause)
-    {
-        LifeCycle.stop(strategy);
-        super.onClose(cause);
-    }
-
-    @Override
     public void succeeded()
     {
         super.onOpen();
-        LifeCycle.start(strategy);
-        fillInterested();
     }
 
     @Override
@@ -123,18 +111,19 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     }
 
     @Override
-    public void onFillable()
-    {
-        strategy.produce();
-    }
-
-    private Runnable produce()
+    protected Runnable produce()
     {
         Invocable.Task task = pollTask();
         if (LOG.isDebugEnabled())
-            LOG.debug("produced task {}", task);
+            LOG.debug("produced task {} on {}", task, this);
         if (task != null)
             return task;
+
+        boolean interested = isFillInterested();
+        if (LOG.isDebugEnabled())
+            LOG.debug("producing fillInterested={} on {}", interested, this);
+        if (interested)
+            return null;
 
         RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
         try
@@ -144,7 +133,7 @@ public class ClientQuicConnection extends QuicConnection implements Callback
                 SocketAddress address = getEndPoint().receive(buffer.getByteBuffer());
                 int filled = address == EndPoint.EOF ? -1 : buffer.remaining();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("filled {} bytes from {} on {}", filled, address, getEndPoint());
+                    LOG.debug("filled {} bytes from {} on {}", filled, address, this);
 
                 if (filled < 0)
                 {
@@ -164,7 +153,7 @@ public class ClientQuicConnection extends QuicConnection implements Callback
 
                 task = pollTask();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("produced task {}", task);
+                    LOG.debug("produced task {} on {}", task, this);
                 if (task == null)
                     continue;
 
@@ -175,7 +164,7 @@ public class ClientQuicConnection extends QuicConnection implements Callback
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("failed to produce on {}", getEndPoint(), x);
+                LOG.debug("failed to produce on {}", this, x);
             buffer.release();
             // TODO
             // fail(x);
