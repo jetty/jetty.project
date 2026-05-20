@@ -303,7 +303,7 @@
     <pax.exam.debug.remote>false</pax.exam.debug.remote>
     <pax.exam.version>4.14.0</pax.exam.version>
     <pax.url.version>3.0.3</pax.url.version>
-    <plexus-classworlds.version>2.11.0</plexus-classworlds.version>
+    <plexus-classworlds.version>2.12.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.3</plexus-utils.version>
     <plexus-xml.version>4.1.1</plexus-xml.version>
