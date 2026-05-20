@@ -237,7 +237,7 @@
     <jboss.logging.processor.version>3.0.4.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.6.3.Final</jboss.logging.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
-    <jetty-quiche-native.version>0.28.0</jetty-quiche-native.version>
+    <jetty-quiche-native.version>0.29.0</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
@@ -263,7 +263,7 @@
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
     <junit.platform.version>${junit.version}</junit.platform.version>
-    <junit.version>6.0.3</junit.version>
+    <junit.version>6.1.0</junit.version>
     <kerb-simplekdc.version>2.1.1</kerb-simplekdc.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.26.0</log4j2.version>
@@ -328,7 +328,7 @@
     <osgi.slf4j.import.packages>org.slf4j;version="[2.0,3.0)", org.slf4j.event;version="[2.0,3.0)", org.slf4j.helpers;version="[2.0,3.0)", org.slf4j.spi;version="[2.0,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.14.0</pax.exam.version>
     <pax.url.version>3.0.3</pax.url.version>
-    <plexus-classworlds.version>2.11.0</plexus-classworlds.version>
+    <plexus-classworlds.version>2.12.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.3</plexus-utils.version>
     <plexus-xml.version>4.1.1</plexus-xml.version>
