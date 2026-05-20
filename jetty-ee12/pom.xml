@@ -37,10 +37,9 @@
   </modules>
 
   <properties>
-
     <ee12.jakarta.activation.api.version>2.1.3</ee12.jakarta.activation.api.version>
     <ee12.jakarta.mail.api.version>2.1.3</ee12.jakarta.mail.api.version>
-    <ee12.jakarta.servlet.api.version>6.1.0</ee12.jakarta.servlet.api.version>
+    <!-- ee12.jakarta.servlet.api.version>6.2.0-M2</ee12.jakarta.servlet.api.version -->
     <ee12.jakarta.servlet.jsp.api.version>4.0.0</ee12.jakarta.servlet.jsp.api.version>
     <ee12.jakarta.servlet.jsp.jstl.impl.version>4.0.0</ee12.jakarta.servlet.jsp.jstl.impl.version>
     <ee12.jakarta.xml.bind.api.version>4.0.5</ee12.jakarta.xml.bind.api.version>
@@ -54,6 +53,7 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- EE12-UPDATE
       <dependency>
         <groupId>jakarta.platform</groupId>
         <artifactId>jakarta.jakartaee-bom</artifactId>
@@ -61,6 +61,7 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+       -->
       <dependency>
         <groupId>org.eclipse.jetty.ee</groupId>
         <artifactId>jetty-ee-bom</artifactId>
@@ -82,6 +83,102 @@
         <groupId>jakarta.xml.bind</groupId>
         <artifactId>jakarta.xml.bind-api</artifactId>
         <version>${ee12.jakarta.xml.bind.api.version}</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.annotation</groupId>
+        <artifactId>jakarta.annotation-api</artifactId>
+        <version>3.0.0</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.activation</groupId>
+        <artifactId>jakarta.activation-api</artifactId>
+        <version>2.2.0-M2</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.mail</groupId>
+        <artifactId>jakarta.mail-api</artifactId>
+        <version>2.2.0-M1</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.interceptor</groupId>
+        <artifactId>jakarta.interceptor-api</artifactId>
+        <version>2.2.0</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>2.0.1</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.enterprise</groupId>
+        <artifactId>jakarta.enterprise.cdi-api</artifactId>
+        <version>5.0.0.Beta1</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.enterprise</groupId>
+        <artifactId>jakarta.enterprise.lang-model</artifactId>
+        <version>5.0.0.Beta1</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.el</groupId>
+        <artifactId>jakarta.el-api</artifactId>
+        <version>6.1.0-M2</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.annotation</groupId>
+        <artifactId>jakarta.annotation-api</artifactId>
+        <version>3.0.0</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.authentication</groupId>
+        <artifactId>jakarta.authentication-api</artifactId>
+        <version>3.1.0</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.transaction</groupId>
+        <artifactId>jakarta.transaction-api</artifactId>
+        <version>2.0.1</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-api</artifactId>
+        <version>2.3.0-M2</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.websocket</groupId>
+        <artifactId>jakarta.websocket-client-api</artifactId>
+        <version>2.3.0-M2</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.servlet</groupId>
+        <artifactId>jakarta.servlet-api</artifactId>
+        <version>6.2.0-M2</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.servlet.jsp</groupId>
+        <artifactId>jakarta.servlet.jsp-api</artifactId>
+        <version>4.1.0-M2</version>
+      </dependency>
+      <!-- EE12-UPDATE : Remove once jakarta-ee12-bom exists -->
+      <dependency>
+        <groupId>jakarta.servlet.jsp.jstl</groupId>
+        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+        <version>3.1.0-M1</version>
       </dependency>
       <!-- Jetty EE12 Dependencies -->
       <dependency>
