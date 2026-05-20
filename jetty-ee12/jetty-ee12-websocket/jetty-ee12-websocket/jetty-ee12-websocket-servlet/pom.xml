@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.ee12.websocket</groupId>
+    <artifactId>jetty-ee12-websocket</artifactId>
+    <version>13.0.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>jetty-ee12-websocket-servlet</artifactId>
+  <name>EE12 :: Websocket :: Servlet</name>
+
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.servlet</bundle-symbolic-name>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee.websocket</groupId>
+      <artifactId>jetty-ee-websocket-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee12</groupId>
+      <artifactId>jetty-ee12-servlet</artifactId>
+    </dependency>
+  </dependencies>
+</project>

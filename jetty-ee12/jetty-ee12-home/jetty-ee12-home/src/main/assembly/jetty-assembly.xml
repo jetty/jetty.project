@@ -1,0 +1,20 @@
+<assembly>
+  <id>binary-assembly</id>
+  <formats>
+    <format>tar.gz</format>
+    <format>zip</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <fileSets>
+    <fileSet>
+      <directory>${assembly-directory}</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>**</include>
+      </includes>
+      <excludes>
+        <exclude>**/META-INF/**</exclude>
+      </excludes>
+    </fileSet>
+  </fileSets>
+</assembly>

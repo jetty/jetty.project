@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.ee12</groupId>
+    <artifactId>jetty-ee12</artifactId>
+    <version>13.0.0-SNAPSHOT</version>
+  </parent>
+  <groupId>org.eclipse.jetty.ee12.demos</groupId>
+  <artifactId>jetty-ee12-demos</artifactId>
+  <packaging>pom</packaging>
+  <name>EE12 :: Demos</name>
+
+  <modules>
+    <module>jetty-ee12-demo-jetty-websocket-webapp</module>
+    <module>jetty-ee12-demo-proxy-webapp</module>
+  </modules>
+
+  <properties>
+    <sonar.skip>true</sonar.skip>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <!-- otherwise javadoc jars for these demos will not be created due to top level pom exclusions on "org.example" -->
+          <excludePackageNames>bogus.*</excludePackageNames>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

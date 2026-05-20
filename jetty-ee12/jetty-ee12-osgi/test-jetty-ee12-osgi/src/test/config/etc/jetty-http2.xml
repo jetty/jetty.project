@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
+  <Call name="addConnectionFactory">
+    <Arg>
+      <New class="org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory">
+        <Arg name="config"><Ref refid="sslHttpConfig"/></Arg>
+        <Set name="maxConcurrentStreams" property="jetty.http2.maxConcurrentStreams"/>
+        <Set name="initialStreamRecvWindow" property="jetty.http2.initialStreamRecvWindow"/>
+        <Set name="initialSessionRecvWindow" property="jetty.http2.initialSessionRecvWindow"/>
+        <Set name="maxSettingsKeys"><Property name="jetty.http2.maxSettingsKeys" default="64"/></Set>
+        <Set name="rateControlFactory">
+          <New class="org.eclipse.jetty.http2.WindowRateControl$Factory">
+            <Arg type="int"><Property name="jetty.http2.rateControl.maxEventsPerSecond" default="50"/></Arg>
+          </New>
+        </Set>
+      </New>
+    </Arg>
+  </Call>
+
+  <Ref refid="sslContextFactory">
+    <Set name="CipherComparator">
+      <Get class="org.eclipse.jetty.http2.HTTP2Cipher" name="COMPARATOR"/>
+    </Set>
+    <Set name="useCipherSuitesOrder">true</Set>
+  </Ref>
+
+</Configure>

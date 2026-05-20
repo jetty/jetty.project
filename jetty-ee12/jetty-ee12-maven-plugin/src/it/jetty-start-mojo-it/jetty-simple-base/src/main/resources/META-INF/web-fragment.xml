@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<web-fragment
+    xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-fragment_3_1.xsd"
+    version="3.1">
+
+  <name>FragmentA</name>
+
+  <ordering>
+    <after><others/></after>
+  </ordering>
+
+  <servlet>
+    <servlet-name>Ping</servlet-name>
+    <servlet-class>org.eclipse.jetty.its.jetty_start_mojo_it.PingServlet</servlet-class>
+    <init-param>
+      <param-name>extra1</param-name><param-value>123</param-value>
+    </init-param>
+    <init-param>
+      <param-name>extra2</param-name><param-value>345</param-value>
+    </init-param>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>Ping</servlet-name>
+    <url-pattern>/ping</url-pattern>
+  </servlet-mapping>
+
+
+</web-fragment>

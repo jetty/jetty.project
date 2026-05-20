@@ -1,0 +1,23 @@
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Create a deployer for WebAppContexts and ContextHandlers        -->
+<!-- =============================================================== -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addBean">
+    <Arg>
+      <New id="Deployer" class="org.eclipse.jetty.deploy.StandardDeployer">
+        <Arg name="contexts"><Ref refid="Contexts"/></Arg>
+
+        <!-- Add a customize step to the deployment lifecycle -->
+        <!-- uncomment and replace DebugBinding with your extended ContextHandlerLifeCycle.Binding class
+        <Call name="insertLifeCycleNode">
+          <Arg>deployed</Arg>
+          <Arg>starting</Arg>
+          <Arg>customise</Arg>
+        </Call>
+         -->
+      </New>
+    </Arg>
+  </Call>
+</Configure>
