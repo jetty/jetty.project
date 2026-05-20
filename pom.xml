@@ -125,6 +125,7 @@
     <module>build</module>
     <module>jetty-core</module>
     <module>jetty-ee</module>
+    <module>jetty-ee12</module>
     <module>jetty-ee11</module>
     <module>jetty-ee10</module>
     <module>jetty-ee9</module>
