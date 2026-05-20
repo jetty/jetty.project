@@ -1869,7 +1869,6 @@ public final class URIUtil
     {
         Objects.requireNonNull(uri, "URI");
         String scheme = Objects.requireNonNull(uri.getScheme(), "URI scheme");
-        uri = URIUtil.correctURI(uri);
 
         boolean hasInternalReference = uri.getRawSchemeSpecificPart().indexOf("!/") > 0;
 
