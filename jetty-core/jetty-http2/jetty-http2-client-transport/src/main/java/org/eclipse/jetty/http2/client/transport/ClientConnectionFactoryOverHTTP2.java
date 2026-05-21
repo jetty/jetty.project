@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.client.transport;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.Map;
 
@@ -104,12 +105,20 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
                     // This code is run when the client receives the server preface reply.
                     // Upgrade the connection to setup HTTP/2 frame listeners that will
                     // handle the HTTP/2 response to the upgrade request.
-                    promise.succeeded(connection);
-                    connection.upgrade(context);
-                    // The connection can be used only after the upgrade that
-                    // creates stream #1 corresponding to the HTTP/1.1 upgrade
-                    // request, otherwise other requests can steal id #1.
-                    destination.accept(connection);
+
+                    if (connection.upgrade(context))
+                    {
+                        // The connection can be used only after the upgrade that
+                        // creates stream #1 corresponding to the HTTP/1.1 upgrade
+                        // request, otherwise other requests can steal id #1.
+                        destination.accept(connection);
+                        promise.succeeded(connection);
+                    }
+                    else
+                    {
+                        connection.close();
+                        promise.failed(new ClosedChannelException());
+                    }
                 }
 
                 @Override
