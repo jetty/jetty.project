@@ -1271,6 +1271,217 @@ public class HttpParserTest
         assertTrue(_early);
     }
 
+    // CVE-2026-2332: HTTP request smuggling via CRLF inside quoted chunk extension value
+    @Test
+    public void testChunkExtQuotedStringWithEmbeddedCRLF()
+    {
+        // Attempt to smuggle a second request by embedding CRLF inside a quoted chunk extension.
+        // The parser must reject this (earlyEOF), not treat the embedded CRLF as end-of-line.
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "POST /target HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "5;ext=\"smuggled\r\n" +
+                "GET /evil HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "\"\r\n" +
+                "hello\r\n" +
+                "0\r\n" +
+                "\r\n");
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        // badMessage() calls earlyEOF() (not handler.badMessage()) when headers are already
+        // complete (_headerComplete == true), which is the case here since we are in CHUNK_PARAMS.
+        // See HttpParser.badMessage(BadMessageException).
+        assertTrue(_early);
+        assertNull(_bad);
+    }
+
+    @Test
+    public void testChunkExtQuotedStringWithEmbeddedLFOnly()
+    {
+        // Bare LF inside a quoted chunk extension must also be rejected.
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "POST /target HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "5;ext=\"bad\nvalue\"\r\n" +
+                "hello\r\n" +
+                "0\r\n" +
+                "\r\n");
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        // badMessage() calls earlyEOF() (not handler.badMessage()) when headers are already
+        // complete (_headerComplete == true), which is the case here since we are in CHUNK_PARAMS.
+        // See HttpParser.badMessage(BadMessageException).
+        assertTrue(_early);
+        assertNull(_bad);
+    }
+
+    @Test
+    public void testChunkExtQuotedStringNormal()
+    {
+        // A well-formed quoted chunk extension must be accepted.
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET /chunk HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "a;ext=\"safe value\"\r\n" +
+                "0123456789\r\n" +
+                "0\r\n" +
+                "\r\n");
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        assertNull(_bad);
+        assertEquals("0123456789", _content);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testChunkExtQuotedStringWithEscapedQuote()
+    {
+        // A quoted-pair (backslash-escaped quote) inside a chunk extension must be accepted.
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET /chunk HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "a;ext=\"val\\\"ue\"\r\n" +
+                "0123456789\r\n" +
+                "0\r\n" +
+                "\r\n");
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        assertNull(_bad);
+        assertEquals("0123456789", _content);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testChunkExtQuotedStringWithBareCR()
+    {
+        // A bare CR not followed by LF is illegal in HTTP (next() recurses on CR; the following
+        // non-LF byte triggers BadMessageException("Bad EOL") at the _cr-check in next()).
+        // The request must be rejected even though the CR appears inside a quoted extension.
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET /chunk HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "a;ext=\"val\rend\"\r\n" +
+                "0123456789\r\n" +
+                "0\r\n" +
+                "\r\n");
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        // badMessage() calls earlyEOF() (not handler.badMessage()) when headers are already
+        // complete (_headerComplete == true). See HttpParser.badMessage(BadMessageException).
+        assertTrue(_early);
+        assertNull(_bad);
+    }
+
+    @Test
+    public void testChunkExtQuotedStringSmuggleOnSecondChunk()
+    {
+        // Smuggling attempt in the quoted extension of the second chunk (not the first).
+        // The state machine must track quote state independently per chunk line.
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "POST /target HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "5;ext=\"normal\"\r\n" +
+                "hello\r\n" +
+                "5;ext=\"smuggled\r\n" +
+                "GET /evil HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "\"\r\n" +
+                "world\r\n" +
+                "0\r\n" +
+                "\r\n");
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        // badMessage() calls earlyEOF() (not handler.badMessage()) when headers are already
+        // complete (_headerComplete == true), which is the case here since we are in CHUNK_PARAMS.
+        // See HttpParser.badMessage(BadMessageException).
+        assertTrue(_early);
+        assertNull(_bad);
+    }
+
+    @Test
+    public void testChunkExtQuotedStringSmuggleOnTerminalChunk()
+    {
+        // Smuggling attempt in the quoted extension of the zero-length terminal chunk.
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "POST /target HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "5\r\n" +
+                "hello\r\n" +
+                "0;ext=\"smuggled\r\n" +
+                "GET /evil HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "\"\r\n" +
+                "\r\n");
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        // badMessage() calls earlyEOF() (not handler.badMessage()) when headers are already
+        // complete (_headerComplete == true), which is the case here since we are in CHUNK_PARAMS.
+        // See HttpParser.badMessage(BadMessageException).
+        assertTrue(_early);
+        assertNull(_bad);
+    }
+
+    @Test
+    public void testChunkExtMultipleExtensionsSmuggleInSecond()
+    {
+        // Smuggling attempt in the second of multiple semicolon-separated chunk extensions.
+        // Quote tracking must survive across extension parameters on the same chunk line.
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "POST /target HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "5;a=1;b=\"smuggled\r\n" +
+                "GET /evil HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n" +
+                "\"\r\n" +
+                "hello\r\n" +
+                "0\r\n" +
+                "\r\n");
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        // badMessage() calls earlyEOF() (not handler.badMessage()) when headers are already
+        // complete (_headerComplete == true), which is the case here since we are in CHUNK_PARAMS.
+        // See HttpParser.badMessage(BadMessageException).
+        assertTrue(_early);
+        assertNull(_bad);
+    }
+
     @Test
     public void testMultiParse()
     {

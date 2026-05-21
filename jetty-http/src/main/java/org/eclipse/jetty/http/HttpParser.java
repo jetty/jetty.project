@@ -177,6 +177,8 @@ public class HttpParser
     private long _contentPosition;
     private int _chunkLength;
     private int _chunkPosition;
+    private boolean _chunkExtInQuote;
+    private boolean _chunkExtQuotedPair;
     private boolean _headResponse;
     private boolean _cr;
     private ByteBuffer _contentChunk;
@@ -1805,6 +1807,11 @@ public class HttpParser
                     switch (t.getType())
                     {
                         case LF:
+                            boolean chunkExtWasInQuote = _chunkExtInQuote;
+                            _chunkExtInQuote = false;
+                            _chunkExtQuotedPair = false;
+                            if (chunkExtWasInQuote)
+                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad chunk encoding: LF in quoted chunk extension");
                             if (_chunkLength == 0)
                             {
                                 setState(State.TRAILER);
@@ -1815,7 +1822,23 @@ public class HttpParser
                                 setState(State.CHUNK);
                             break;
                         default:
-                            break; // TODO review
+                            if (_chunkExtQuotedPair)
+                            {
+                                // consuming the escaped character inside a quoted-pair
+                                _chunkExtQuotedPair = false;
+                            }
+                            else if (_chunkExtInQuote)
+                            {
+                                if (t.getChar() == '"')
+                                    _chunkExtInQuote = false;
+                                else if (t.getChar() == '\\')
+                                    _chunkExtQuotedPair = true;
+                            }
+                            else if (t.getChar() == '"')
+                            {
+                                _chunkExtInQuote = true;
+                            }
+                            break;
                     }
                     break;
                 }
@@ -1904,6 +1927,8 @@ public class HttpParser
         _headerBytes = 0;
         _host = false;
         _headerComplete = false;
+        _chunkExtInQuote = false;
+        _chunkExtQuotedPair = false;
     }
 
     protected void setState(State state)
