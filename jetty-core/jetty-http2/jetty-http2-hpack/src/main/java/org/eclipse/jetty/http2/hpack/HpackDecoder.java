@@ -267,9 +267,7 @@ public class HpackDecoder
         }
         catch (Throwable t)
         {
-            HpackException.SessionException failure = new HpackException.SessionException("HPACK decoding failure: %s", t.getMessage());
-            failure.initCause(t);
-            throw failure;
+            throw new HpackException.SessionException(t, "HPACK decoding failure: %s", t.getMessage());
         }
     }
 
@@ -289,27 +287,22 @@ public class HpackDecoder
                 // and/or of a type that may be looked up multiple times.
                 switch (header)
                 {
-                    case C_STATUS:
+                    case C_STATUS ->
+                    {
                         if (indexed)
                             field = new HttpField.IntValueHttpField(header, name, value);
                         else
                             field = new HttpField(header, name, value);
-                        break;
-
-                    case C_AUTHORITY:
-                        field = new AuthorityHttpField(value);
-                        break;
-
-                    case CONTENT_LENGTH:
+                    }
+                    case C_AUTHORITY -> field = new AuthorityHttpField(value);
+                    case CONTENT_LENGTH ->
+                    {
                         if ("0".equals(value))
                             field = LOWER_CASE_CONTENT_LENGTH_0;
                         else
                             field = new HttpField.LongValueHttpField(header, name, value);
-                        break;
-
-                    default:
-                        field = new HttpField(header, name, value);
-                        break;
+                    }
+                    default -> field = new HttpField(header, name, value);
                 }
             }
             catch (Throwable t)
@@ -337,9 +330,7 @@ public class HpackDecoder
         }
         catch (EncodingException e)
         {
-            HpackException.CompressionException compressionException = new HpackException.CompressionException(e.getMessage());
-            compressionException.initCause(e);
-            throw compressionException;
+            throw new HpackException.CompressionException(e, e.getMessage());
         }
         finally
         {
@@ -359,9 +350,7 @@ public class HpackDecoder
         }
         catch (EncodingException e)
         {
-            HpackException.CompressionException compressionException = new HpackException.CompressionException(e.getMessage());
-            compressionException.initCause(e);
-            throw compressionException;
+            throw new HpackException.CompressionException(e, e.getMessage());
         }
         finally
         {
