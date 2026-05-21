@@ -16,6 +16,7 @@ package org.eclipse.jetty.security;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +35,7 @@ public class DefaultIdentityServiceTest
 
         try
         {
-            server.setHandler(securityHandler);
+            server.setHandler(new ContextHandler(securityHandler, "/"));
             server.start();
 
             // The DefaultIdentityService should have been created by default.
