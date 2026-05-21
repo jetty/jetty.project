@@ -505,11 +505,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                         if (meetDemand())
                             onFrame(frame);
 
+                        // If there is no more demand we need to break into the outermost loop not return.
                         moreDemand = moreDemand();
                         if (!moreDemand)
                             break;
                     }
 
+                    // Continue to fill the network buffer only if there is more demand.
                     if  (!moreDemand)
                     {
                         if (LOG.isDebugEnabled())
@@ -520,7 +522,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     // buffer must be empty here because parser is fully consuming
                     assert (!networkBuffer.hasRemaining());
 
-                    // If there is more demand we can fill the network buffer.
                     if (!getEndPoint().isOpen())
                     {
                         releaseNetworkBuffer();
