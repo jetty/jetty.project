@@ -64,4 +64,14 @@ public class SessionCloseTest extends AbstractQuicTest
     {
 
     }
+
+    @Test
+    public void testClientStopClosesAllConnections()
+    {
+    }
+
+    @Test
+    public void testServerStopClosesAllConnections()
+    {
+    }
 }

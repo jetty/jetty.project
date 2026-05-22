@@ -123,6 +123,21 @@ public abstract class AbstractStream implements Stream, CyclicTimeouts.Expirable
         }
     }
 
+    protected void notifyFailure(Throwable failure)
+    {
+        Stream.Listener listener = getListener();
+        try
+        {
+            if (listener != null)
+                listener.onFailure(this, failure);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+        }
+    }
+
     @Override
     public String toString()
     {

@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
@@ -63,7 +62,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable.Task;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,10 +72,6 @@ import org.slf4j.LoggerFactory;
 ///
 /// This class manages a map of [ServerQuicSession]s,
 /// one for each connection id sent by clients.
-///
-/// To process multiple sessions concurrently,
-/// this class uses an [AdaptiveExecutionStrategy] so that
-/// a dedicated task processes each active session.
 public class ServerQuicConnection extends QuicConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerQuicConnection.class);
@@ -124,9 +118,7 @@ public class ServerQuicConnection extends QuicConnection
 
     public Collection<Session> getSessions()
     {
-        return sessions.values().stream()
-            .map(Session.class::cast)
-            .collect(Collectors.toSet());
+        return List.copyOf(sessions.values());
     }
 
     public void schedule(ServerQuicSession session)

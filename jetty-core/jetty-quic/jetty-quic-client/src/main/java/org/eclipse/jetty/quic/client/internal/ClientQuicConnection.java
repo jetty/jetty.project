@@ -37,6 +37,13 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/// The client-specific implementation of [QuicConnection].
+///
+/// There is one instance of this class for each `DatagramChannel`
+/// opened by the client to connect to a server.
+///
+/// This class has therefore a 1-to-1 relationship with a
+/// [ClientQuicSession].
 public class ClientQuicConnection extends QuicConnection implements Callback
 {
     private static final Logger LOG = LoggerFactory.getLogger(ClientQuicConnection.class);

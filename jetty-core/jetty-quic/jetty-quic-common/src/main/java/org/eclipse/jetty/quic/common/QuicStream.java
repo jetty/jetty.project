@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -146,7 +147,9 @@ public class QuicStream extends AbstractStream
             chunk = dataQueue.poll();
             if (chunk == null)
                 return null;
-            if (chunk.isLast())
+            if (Content.Chunk.isFailure(chunk, true))
+                dataQueue.offer(chunk);
+            else if (chunk.isLast())
                 dataQueue.offer(Content.Chunk.EOF);
         }
 
@@ -183,7 +186,7 @@ public class QuicStream extends AbstractStream
         if (process)
         {
             // Data is immediately available.
-            processData(true);
+            processDataAvailable(true);
         }
     }
 
@@ -205,7 +208,7 @@ public class QuicStream extends AbstractStream
                 throw new WritePendingException();
 
             // If already locally closed, fail the write.
-            if (last && !closeState.initLocalClose())
+            if (last && !closeState.localClosing())
                 throw new IllegalStateException("stream_locally_closed");
 
             session.data(this, new StreamFrame(getId(), data, last), sender);
@@ -264,7 +267,7 @@ public class QuicStream extends AbstractStream
             return;
         }
 
-        if (closeState.initLocalClose())
+        if (closeState.localClosing())
         {
             session.reset(this, new ResetFrame(getId(), appErrorCode, -1), Promise.Invocable.from(promise, () ->
             {
@@ -375,25 +378,20 @@ public class QuicStream extends AbstractStream
 
     private void processResetFrame(ResetFrame resetFrame)
     {
-        boolean terminated = closeState.remoteClose();
-        // TODO: queue a failure chunk, and notify through that, rather than onReset()?
-        notifyResetFrame(resetFrame);
-        if (terminated)
-            removeAndNotifyClose();
-    }
+        if (!closeState.remoteClosing())
+            return;
 
-    private void notifyResetFrame(ResetFrame frame)
-    {
-        Listener listener = getListener();
-        try
+        // TODO: store finalSize?
+
+        boolean process;
+        try (var _ = lock.lock())
         {
-            listener.onReset(this, frame);
+            process = dataQueue.isEmpty() && readDemand;
+            dataQueue.offer(Content.Chunk.from(new EofException("reset"), true));
         }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("failure while notifying listener {}", listener, x);
-        }
+
+        if (process)
+            processDataAvailable(false);
     }
 
     private void processStreamFrame(StreamFrame frame)
@@ -402,19 +400,22 @@ public class QuicStream extends AbstractStream
         try (var _ = lock.lock())
         {
             process = dataQueue.isEmpty() && readDemand;
-            Content.Chunk chunk = frame.map(data -> Content.Chunk.from(data, frame.isEndStream()));
+            boolean last = frame.isEndStream();
+            Content.Chunk chunk = frame.map(data -> Content.Chunk.from(data, last));
             // Retain the chunk because it is stored for later use.
             chunk.retain();
             dataQueue.offer(chunk);
+            if (last)
+                closeState.remoteClosing();
             if (LOG.isDebugEnabled())
                 LOG.debug("offer data notify={} {} on {}", process, chunk, this);
         }
 
         if (process)
-            processData(false);
+            processDataAvailable(false);
     }
 
-    private void processData(boolean immediate)
+    private void processDataAvailable(boolean immediate)
     {
         while (true)
         {
@@ -431,9 +432,28 @@ public class QuicStream extends AbstractStream
                 readStalled = false;
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("notifying data on {}", this);
+                LOG.debug("notifying data available on {}", this);
             notifyDataAvailable(immediate);
         }
+    }
+
+    void processFailure(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing failure on {}", this, failure);
+
+        if (!closeState.remoteClosing())
+            return;
+
+        boolean process;
+        try (var _ = lock.lock())
+        {
+            process = dataQueue.isEmpty() && readDemand;
+            dataQueue.offer(Content.Chunk.from(failure, true));
+        }
+
+        if (process)
+            processDataAvailable(false);
     }
 
     private int dataQueueSize()
@@ -568,7 +588,7 @@ public class QuicStream extends AbstractStream
                 if (sendPromise.compareAndSet(promise, null, last, true))
                     break;
             }
-            if (closeState.fail())
+            if (closeState.localClose())
                 removeAndNotifyClose();
             promise.failed(x);
         }
@@ -586,20 +606,21 @@ public class QuicStream extends AbstractStream
         private static final int LOCALLY_CLOSED = 0x02;
         private static final int LOCALLY_COMPLETE = 0x04;
         private static final int LOCALLY_TERMINATED = LOCALLY_CLOSING | LOCALLY_CLOSED | LOCALLY_COMPLETE;
-        private static final int REMOTELY_CLOSED = 0x08;
-        private static final int FAILED = 0x10;
-        private static final int TERMINATED = LOCALLY_TERMINATED | REMOTELY_CLOSED;
+        private static final int REMOTELY_CLOSING = 0x08;
+        private static final int REMOTELY_CLOSED = 0x10;
+        private static final int REMOTELY_TERMINATED = REMOTELY_CLOSING | REMOTELY_CLOSED;
+        private static final int TERMINATED = LOCALLY_TERMINATED | REMOTELY_TERMINATED;
 
         private final AtomicInteger state = new AtomicInteger();
 
-        /// @return whether the local close was initiated
-        private boolean initLocalClose()
+        /// @return whether the local closing was initiated
+        private boolean localClosing()
         {
             int previous = state.getAndUpdate(s -> s | LOCALLY_CLOSING);
             int current = previous | LOCALLY_CLOSING;
             if (LOG.isDebugEnabled())
                 LOG.debug("update {} -> {} on {}", asString(previous), asString(current), QuicStream.this);
-            return (previous & (LOCALLY_CLOSING | FAILED)) == 0;
+            return (previous & LOCALLY_CLOSING) == 0;
         }
 
         /// @return whether the local close was terminal.
@@ -609,9 +630,19 @@ public class QuicStream extends AbstractStream
         }
 
         /// @return whether the local complete was terminal.
-        public boolean localComplete()
+        private boolean localComplete()
         {
             return update(LOCALLY_COMPLETE);
+        }
+
+        /// @return whether the remote closing was initiated
+        private boolean remoteClosing()
+        {
+            int previous = state.getAndUpdate(s -> s | REMOTELY_CLOSING);
+            int current = previous | REMOTELY_CLOSING;
+            if (LOG.isDebugEnabled())
+                LOG.debug("update {} -> {} on {}", asString(previous), asString(current), QuicStream.this);
+            return (previous & REMOTELY_CLOSING) == 0;
         }
 
         private boolean remoteClose()
@@ -630,12 +661,12 @@ public class QuicStream extends AbstractStream
 
         private boolean isLocallyClosed()
         {
-            return (state.get() & (LOCALLY_CLOSED | FAILED)) != 0;
+            return (state.get() & LOCALLY_CLOSED) != 0;
         }
 
         private boolean isRemotelyClosed()
         {
-            return (state.get() & (REMOTELY_CLOSED | FAILED)) != 0;
+            return (state.get() & REMOTELY_CLOSED) != 0;
         }
 
         private boolean isTerminated()
@@ -643,15 +674,9 @@ public class QuicStream extends AbstractStream
             return isTerminal(state.get());
         }
 
-        public boolean fail()
-        {
-            int previous = state.getAndUpdate(s -> s | FAILED);
-            return !isTerminal(previous);
-        }
-
         private static boolean isTerminal(int current)
         {
-            return current == TERMINATED || (current & FAILED) != 0;
+            return current == TERMINATED;
         }
 
         private static String asString(int state)
@@ -664,8 +689,13 @@ public class QuicStream extends AbstractStream
                 case LOCALLY_CLOSED | LOCALLY_COMPLETE, LOCALLY_TERMINATED -> "TERMINATED";
                 default -> "OPEN";
             };
-            String remote = (state & REMOTELY_CLOSED) == 0 ? "OPEN" : "CLOSED";
-            return "CloseState[local=%s,remote=%s,failed=%b]".formatted(local, remote, (state & FAILED) != 0);
+            String remote = switch (state & REMOTELY_TERMINATED)
+            {
+                case REMOTELY_CLOSING -> "CLOSING";
+                case REMOTELY_CLOSED, REMOTELY_TERMINATED -> "CLOSED";
+                default -> "OPEN";
+            };
+            return "CloseState[local=%s,remote=%s]".formatted(local, remote);
         }
 
         @Override
@@ -703,7 +733,8 @@ public class QuicStream extends AbstractStream
         @Override
         public InvocationType getInvocationType()
         {
-            return getListener().getInvocationType();
+            Listener listener = getListener();
+            return listener == null ? NON_BLOCKING : listener.getInvocationType();
         }
 
         @Override
