@@ -19,7 +19,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
+import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
@@ -32,8 +35,12 @@ import org.junit.jupiter.api.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -318,5 +325,117 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
         });
 
         assertTrue(clientFailureLatch.await(2 * clientIdleTimeout, MILLISECONDS));
+    }
+
+    @Test
+    public void testClientIdleTimeoutFailsAllStreams() throws Exception
+    {
+        long idleTimeout = 1000;
+
+        AtomicReference<Session> serverSessionRef = new AtomicReference<>();
+        CountDownLatch serverCloseLatch = new CountDownLatch(1);
+        prepareServer(() -> new Session.Listener()
+        {
+            @Override
+            public void onOpen(Session session)
+            {
+                serverSessionRef.set(session);
+                // Reset the idle timeout on the server
+                // so that only the client idle times out.
+                ((QuicSession)session).setIdleTimeout(0);
+            }
+
+            @Override
+            public void onClose(Session session, ConnectionCloseFrame frame)
+            {
+                serverCloseLatch.countDown();
+            }
+        });
+        connector.setIdleTimeout(0);
+        server.start();
+        prepareClient();
+        client.getClientConnector().setIdleTimeout(Duration.ofMillis(idleTimeout));
+        client.start();
+
+        CountDownLatch clientFailureLatch = new CountDownLatch(1);
+        CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
+        Promise.Completable<Session> promise = new Promise.Completable<>();
+        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        {
+            @Override
+            public void onPrepare(Session session, TransportParameters parameters)
+            {
+                parameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, idleTimeout);
+            }
+
+            @Override
+            public void onFailure(Session session, Throwable failure)
+            {
+                if (failure instanceof TimeoutException)
+                    clientFailureLatch.countDown();
+            }
+
+            @Override
+            public void onDisconnect(Session session)
+            {
+                clientDisconnectLatch.countDown();
+            }
+        }, promise);
+        Session clientSession = promise.get(5, SECONDS);
+        ((QuicSession)clientSession).setKeepAliveEnabled(false);
+
+        CountDownLatch clientStreamFailureLatch = new CountDownLatch(2);
+        CountDownLatch clientStreamCloseLatch = new CountDownLatch(2);
+        long streamId1 = clientSession.newStreamId(true);
+        Stream clientStream1 = clientSession.newStream(streamId1, new Stream.Listener()
+        {
+            @Override
+            public void onDataAvailable(Stream stream)
+            {
+                Content.Chunk chunk = stream.read();
+                assertTrue(Content.Chunk.isFailure(chunk), "unexpected chunk: " + chunk);
+                clientStreamFailureLatch.countDown();
+            }
+
+            @Override
+            public void onClose(Stream stream)
+            {
+                clientStreamCloseLatch.countDown();
+            }
+        });
+        clientStream1.data(true, RetainableByteBuffer.EMPTY, Promise.Invocable.from(NON_BLOCKING, (s, _) -> s.demand()));
+        long streamId2 = clientSession.newStreamId(true);
+        Stream clientStream2 = clientSession.newStream(streamId2, new Stream.Listener()
+        {
+            @Override
+            public void onDataAvailable(Stream stream)
+            {
+                Content.Chunk chunk = stream.read();
+                assertTrue(Content.Chunk.isFailure(chunk), "unexpected chunk: " + chunk);
+                clientStreamFailureLatch.countDown();
+            }
+
+            @Override
+            public void onClose(Stream stream)
+            {
+                clientStreamCloseLatch.countDown();
+            }
+        });
+        clientStream2.data(true, RetainableByteBuffer.EMPTY, Promise.Invocable.from(NON_BLOCKING, (s, _) -> s.demand()));
+
+        Session serverSession = await().atMost(5, SECONDS).until(serverSessionRef::get, notNullValue());
+        await().atMost(5, SECONDS).until(serverSession::getStreams, hasSize(2));
+
+        assertTrue(clientStreamFailureLatch.await(2 * idleTimeout, MILLISECONDS));
+        assertTrue(clientStreamCloseLatch.await(5, SECONDS));
+
+        // The client sent a CONNECTION_CLOSE frame to the server.
+        assertTrue(serverCloseLatch.await(5, SECONDS));
+        // The server streams are remotely closed, but not locally closed.
+        assertThat(serverSession.getStreams(), hasSize(2));
+
+        // Wait for the server-side session to be closed, typically 3 PTOs.
+        ServerQuicConnection connection = (ServerQuicConnection)((QuicSession)serverSession).getQuicConnection();
+        await().atMost(15, SECONDS).until(connection::getSessions, hasSize(0));
     }
 }

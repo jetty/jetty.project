@@ -165,7 +165,7 @@ public interface Session
         /// @return a new [Stream.Listener] that handles events for the newly created stream
         default Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
         {
-            return null;
+            return Stream.Listener.DEFAULT;
         }
 
         /// Callback method invoked when a MAX_STREAMS frame is received.

@@ -546,20 +546,6 @@ public class QuicheStream extends AbstractStream
         }
     }
 
-    private void notifyFailure(Throwable failure)
-    {
-        Stream.Listener listener = getListener();
-        try
-        {
-            if (listener != null)
-                listener.onFailure(this, failure);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure while notifying listener {}", listener, x);
-        }
-    }
-
     @Override
     public String toString()
     {

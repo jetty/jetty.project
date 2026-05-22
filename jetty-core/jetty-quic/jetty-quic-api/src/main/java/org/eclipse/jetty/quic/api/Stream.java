@@ -207,6 +207,8 @@ public interface Stream
     /// @see Stream
     interface Listener extends EventListener, Invocable
     {
+        Listener DEFAULT = new Listener() {};
+
         /// Callback method invoked when receiving a frame that causes
         /// the creation of a new stream.
         ///
@@ -371,6 +373,9 @@ public interface Stream
         default void onClose(Stream stream)
         {
         }
+
+        // TODO: onIdleTimeout and onFailure should be removed, as we notify failures through read().
+        //  Unless we want to give an option to ignore the idle timeout at stream level?
 
         /// Invoked when the stream is idle for longer than the idle timeout.
         ///

@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -33,6 +32,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
@@ -84,12 +84,14 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.Invocable.ReadyTask;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 /// A logical connection with a remote peer.
 public abstract class QuicSession extends AbstractSession
@@ -99,7 +101,7 @@ public abstract class QuicSession extends AbstractSession
     private final AutoLock lock = new AutoLock();
     private final RetryPacketGenerator retryPacketGenerator = new RetryPacketGenerator();
     private final Map<EncryptionLevel, FrameStream> cryptoStreams = new HashMap<>();
-    private final Map<Long, QuicStream> streams = new ConcurrentHashMap<>();
+    private final Map<Long, QuicStream> streams = new HashMap<>();
     private final AtomicLong biStreamIds = new AtomicLong();
     private final AtomicLong uniStreamIds = new AtomicLong();
     private final AtomicLong biRemoteStreamCount = new AtomicLong();
@@ -294,20 +296,25 @@ public abstract class QuicSession extends AbstractSession
 
     public void onIdleTimeout(TimeoutException timeout)
     {
-        offerTask(new Invocable.ReadyTask(Invocable.InvocationType.NON_BLOCKING, () ->
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("idle timeout expired on {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("idle timeout expired on {}", this);
 
-            // RFC-9000[10]: QUIC idle timeouts are fatal and cannot be ignored.
-            // We use a keep-alive mechanism to avoid that idle timouts fire.
+        // RFC-9000[10]: QUIC idle timeouts are fatal and cannot be ignored.
+        // We use a keep-alive mechanism to avoid that idle timouts fire.
+        if (!updateToClosing())
+            return;
+
+        // Serialize failure and disconnect events.
+        // Dispatch the task to free the scheduler thread.
+        offerTask(new ReadyTask(NON_BLOCKING, () ->
+        {
             notifyFailure(timeout);
 
             // RFC-9000[10.1]: the idle timeout should close the
             // connection silently, but we send a ConnectionCloseFrame
             // to inform the other peer that the connection is broken.
-            disconnect(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "idle_timeout"), timeout, Promise.Invocable.noop());
-        }), false);
+            serializedDisconnect(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "idle_timeout"), timeout, Promise.Invocable.noop());
+        }), true);
     }
 
     public abstract int getUDPPayloadLength();
@@ -418,20 +425,28 @@ public abstract class QuicSession extends AbstractSession
 
     private QuicStream createLocalStream(long streamId)
     {
-        QuicStream stream = new QuicStream(this, streamId, true);
-        if (streams.putIfAbsent(streamId, stream) == null)
+        QuicStream stream;
+        try (var _ = lock.lock())
         {
-            stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
-            Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE);
-            if (maxData != null)
-                stream.updateSendMaxData(maxData);
+            if (streams.containsKey(streamId))
+                throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "duplicate_local_stream");
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("created local {} on {}", stream, this);
+            if (closeState != CloseState.NOT_CLOSED)
+                throw new QuicException(ErrorCode.NO_ERROR, "session_closed");
 
-            return stream;
+            stream = new QuicStream(this, streamId, true);
+            streams.put(streamId, stream);
         }
-        throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "duplicate_local_stream");
+
+        stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
+        Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE);
+        if (maxData != null)
+            stream.updateSendMaxData(maxData);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("created local {} on {}", stream, this);
+
+        return stream;
     }
 
     private QuicStream getOrCreateRemoteStream(Frame.WithStreamId frame)
@@ -441,8 +456,6 @@ public abstract class QuicSession extends AbstractSession
         QuicStream stream;
         try (var _ = lock.lock())
         {
-            // TODO: check session close state.
-
             stream = streams.get(streamId);
             if (stream != null)
                 return stream;
@@ -465,6 +478,9 @@ public abstract class QuicSession extends AbstractSession
             if (terminated)
                 return null;
 
+            if (closeState != CloseState.NOT_CLOSED)
+                return null;
+
             // Create a new stream, if allowed.
             AtomicLong remoteStreamCount = bidirectional ? biRemoteStreamCount : uniRemoteStreamCount;
             AtomicLong remoteStreamMaxCount = bidirectional ? biRemoteStreamMaxCount : uniRemoteStreamMaxCount;
@@ -476,8 +492,6 @@ public abstract class QuicSession extends AbstractSession
 
             stream = new QuicStream(this, streamId, false);
             streams.put(streamId, stream);
-            if (LOG.isDebugEnabled())
-                LOG.debug("created remote {} for {} on {}", stream, frame, this);
         }
 
         stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
@@ -485,6 +499,9 @@ public abstract class QuicSession extends AbstractSession
         Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL);
         if (maxData != null)
             stream.updateSendMaxData(maxData);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("created remote {} for {} on {}", stream, frame, this);
 
         Stream.Listener listener = notifyNewStream(frame);
         stream.setListener(listener);
@@ -496,23 +513,34 @@ public abstract class QuicSession extends AbstractSession
     @Override
     public QuicStream getStream(long streamId)
     {
-        return streams.get(streamId);
+        try (var _ = lock.lock())
+        {
+            return streams.get(streamId);
+        }
     }
 
     @Override
     public Collection<Stream> getStreams()
     {
-        return streams.values().stream()
-            .map(Stream.class::cast)
-            .toList();
+        try (var _ = lock.lock())
+        {
+            return List.copyOf(streams.values());
+        }
     }
 
     boolean remove(QuicStream stream)
     {
         long streamId = stream.getId();
-        boolean removed = streams.remove(streamId) != null;
+
+        boolean removed;
+        try (var _ = lock.lock())
+        {
+            removed = streams.remove(streamId) != null;
+        }
+
         if (LOG.isDebugEnabled())
             LOG.debug("removed {} {} from {}", removed, stream, this);
+
         if (removed)
         {
             AtomicLong terminated = stream.isBidirectional()
@@ -520,6 +548,7 @@ public abstract class QuicSession extends AbstractSession
                 : stream.isLocal() ? terminatedUniLocalStream : terminatedUniRemoteStream;
             Atomics.updateMax(terminated, streamId);
         }
+
         return removed;
     }
 
@@ -595,6 +624,14 @@ public abstract class QuicSession extends AbstractSession
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting {} on {}", frame, this);
 
+        if (updateToClosing())
+            offerTask(new ReadyTask(NON_BLOCKING, () -> serializedDisconnect(frame, failure, promise)), false);
+        else
+            promise.succeeded(this);
+    }
+
+    private boolean updateToClosing()
+    {
         boolean disconnect;
         try (var _ = lock.lock())
         {
@@ -614,7 +651,8 @@ public abstract class QuicSession extends AbstractSession
                 }
                 case CLOSING ->
                 {
-                    yield true;
+                    // The closing was already initiated.
+                    yield false;
                 }
                 case DRAINING, CLOSED ->
                 {
@@ -624,19 +662,25 @@ public abstract class QuicSession extends AbstractSession
                 }
             };
         }
+        return disconnect;
+    }
 
-        if (disconnect)
-        {
-            // TODO: tear down all the streams.
+    private void serializedDisconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<Session> promise)
+    {
+        // This method should be called by a Task submitted to the connection's execution strategy,
+        // to serialize notification of failure and/or disconnect events with read events.
 
-            Callback callback = Promise.Invocable.toCallback(promise, this);
-            // TODO: hardcoded EncryptionLevel
-            flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), Callback.from(callback, this::disconnectComplete));
-        }
-        else
+        // Tear down all the streams.
+        List<QuicStream> streamsToFail;
+        try (var _ = lock.lock())
         {
-            promise.succeeded(this);
+            streamsToFail = List.copyOf(streams.values());
         }
+        streamsToFail.forEach(stream -> stream.processFailure(failure));
+
+        Callback callback = Promise.Invocable.toCallback(promise, this);
+        // TODO: hardcoded EncryptionLevel
+        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), Callback.from(callback, this::disconnectComplete));
     }
 
     private void disconnectComplete()
@@ -725,6 +769,13 @@ public abstract class QuicSession extends AbstractSession
 
     private void process(Packet packet)
     {
+        // TODO: grab the lock and check for closeState.
+        //  If CLOSING, respond with the CC frame that was sent,
+        //  and use a backoff threshold 1,2,4,8,etc. to respond.
+        //  CC frames are not retransmitted §13.3, so this is
+        //  their "retransmission" mechanism.
+
+
         packetNumbers.onPacketReceived(packet);
 
         // Minimally process first packets to set
@@ -900,11 +951,30 @@ public abstract class QuicSession extends AbstractSession
 
     private void processConnectionCloseFrame(ConnectionCloseFrame frame)
     {
-        boolean process;
-        boolean disconnect = false;
+        if (!updateToDraining())
+            return;
+
+        // Tear down all the streams.
+        List<QuicStream> streamsToFail;
         try (var _ = lock.lock())
         {
-            process = switch (closeState)
+            streamsToFail = List.copyOf(streams.values());
+        }
+        Throwable failure = new EofException("close");
+        streamsToFail.forEach(stream -> stream.processFailure(failure));
+
+        notifyConnectionClose(frame);
+
+        // RFC-9000[10.2]: in the draining state we must not send
+        // any frames, so just perform the after-complete actions.
+        disconnectComplete();
+    }
+
+    private boolean updateToDraining()
+    {
+        try (var _ = lock.lock())
+        {
+            return switch (closeState)
             {
                 case NOT_CLOSED ->
                 {
@@ -916,29 +986,15 @@ public abstract class QuicSession extends AbstractSession
                     long pto = rttData.smoothedRTT() + 4 * rttData.variationRTT();
                     getScheduler().schedule(this::terminate, 3 * pto, NANOSECONDS);
 
-                    disconnect = true;
                     yield true;
                 }
                 case CLOSING ->
                 {
                     closeState = CloseState.DRAINING;
-                    yield true;
+                    yield false;
                 }
                 case DRAINING, CLOSED -> false;
             };
-        }
-
-        if (process)
-        {
-            // TODO: tear down all the streams.
-
-            notifyConnectionClose(frame);
-            if (disconnect)
-            {
-                // TODO: hardcoded EncryptionLevel
-                ConnectionCloseFrame reply = new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), null, 0x1C);
-                flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(reply), Callback.from(this::disconnectComplete));
-            }
         }
     }
 
@@ -1296,7 +1352,11 @@ public abstract class QuicSession extends AbstractSession
     @Override
     public String toString()
     {
-        return "%s[%s,dcid=%s,streams=%d]".formatted(super.toString(), closeState, StringUtil.toHexString(getDestinationConnectionId()), streams.size());
+        try (var _ = lock.tryLock())
+        {
+            String held = lock.isHeldByCurrentThread() ? "" : "?";
+            return "%s[%s:%s,dcid=%s,streams=%d]".formatted(super.toString(), held, closeState, StringUtil.toHexString(getDestinationConnectionId()), streams.size());
+        }
     }
 
     private class PacketProcessor implements Packet.Listener
@@ -1318,7 +1378,12 @@ public abstract class QuicSession extends AbstractSession
         @Override
         protected Iterator<QuicStream> iterator()
         {
-            return streams.values().iterator();
+            List<QuicStream> result;
+            try (var _ = lock.lock())
+            {
+                result = List.copyOf(streams.values());
+            }
+            return result.iterator();
         }
 
         @Override
