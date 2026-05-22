@@ -286,8 +286,6 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             return;
         }
 
-        Throwable failure = Objects.requireNonNullElse(requestFailure, responseFailure);
-
         if (LOG.isDebugEnabled())
             LOG.debug("Failing {}: req={}/rsp={}", this, abortRequest, abortResponse);
 
@@ -309,7 +307,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Aborting while queued {}", this);
-            notifyFailureComplete(failure);
+            notifyFailureComplete(Objects.requireNonNullElse(requestFailure, responseFailure));
             promise.succeeded(true);
             return;
         }
@@ -319,7 +317,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             // Case #2: exchange was not yet associated.
             if (LOG.isDebugEnabled())
                 LOG.debug("Aborting before association {}", this);
-            notifyFailureComplete(failure);
+            notifyFailureComplete(requestFailure);
             promise.succeeded(true);
             return;
         }
@@ -327,7 +325,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         // Case #3: exchange was already associated.
         if (LOG.isDebugEnabled())
             LOG.debug("Aborting while active {}", this);
-        channel.abort(this, requestFailure, responseFailure, promise);
+        channel.abort(this, abortRequest ? requestFailure : null, abortResponse ? responseFailure : null, promise);
     }
 
     private void notifyFailureComplete(Throwable failure)
