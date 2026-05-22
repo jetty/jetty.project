@@ -721,7 +721,8 @@ public class IdleTimeoutTest extends AbstractTest
                 {
                     responses.incrementAndGet();
                     // Read the response body to avoid leaks.
-                    Stream.Listener.super.onHeaders(stream, frame);                }
+                    Stream.Listener.super.onHeaders(stream, frame);
+                }
             });
             Stream stream = promise.get(5, TimeUnit.SECONDS);
             ByteBuffer data = ByteBuffer.allocate(10);

@@ -485,7 +485,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     {
         DataFrame frame = data.frame();
 
-        // SPEC: remotely closed streams must be replied with a reset.
+        // SPEC: data received after the last data must be replied with a reset.
         if (isLastDataReceived())
         {
             if (LOG.isDebugEnabled())

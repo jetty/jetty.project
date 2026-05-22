@@ -866,13 +866,13 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         AtomicReference<Throwable> onContentSourceErrorRef = new AtomicReference<>();
         AtomicReference<Result> resultRef = new AtomicReference<>();
 
-        org.eclipse.jetty.client.Request jettyRequest = httpClient.newRequest("localhost", connector.getLocalPort());
-        jettyRequest.send(new Response.Listener()
+        var clientRequest = httpClient.newRequest("localhost", connector.getLocalPort());
+        clientRequest.send(new Response.Listener()
         {
             @Override
             public void onBegin(Response response)
             {
-                response.abort(new ArrayStoreException("nothing is ever going to throw ArrayStoreException in our code"));
+                response.abort(new ArrayStoreException());
             }
 
             @Override

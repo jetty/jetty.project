@@ -78,7 +78,7 @@ public interface Response
     HttpFields getTrailers();
 
     /**
-     * Attempts to abort both the request and the response.
+     * Attempts to fail both the request and the response.
      *
      * @param cause the abort cause, must not be null
      * @return whether the abort succeeded

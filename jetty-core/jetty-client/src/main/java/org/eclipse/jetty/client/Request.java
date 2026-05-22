@@ -532,7 +532,7 @@ public interface Request
     void send(Response.CompleteListener listener);
 
     /**
-     * Attempts to abort both the request and the response.
+     * Attempts to fail both the request and the response.
      *
      * @param cause the abort cause, must not be null
      * @return whether the abort succeeded
