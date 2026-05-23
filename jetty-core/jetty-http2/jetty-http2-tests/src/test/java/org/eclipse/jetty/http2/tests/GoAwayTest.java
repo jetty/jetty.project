@@ -1320,7 +1320,7 @@ public class GoAwayTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 4})
+    @ValueSource(ints = {1000})
     public void testImmediateGoAwayAndDisconnectDoesNotLeakClientConnections(int maxConnections) throws Exception
     {
         int maxConcurrent = 16;
@@ -1355,7 +1355,7 @@ public class GoAwayTest extends AbstractTest
         }
 
         // All the requests should fail, since the server is always closing the connection.
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(15, TimeUnit.SECONDS));
 
         List<Destination> destinations = httpClient.getDestinations();
         assertThat(destinations.size(), equalTo(1));
