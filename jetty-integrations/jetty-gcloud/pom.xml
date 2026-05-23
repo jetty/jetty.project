@@ -18,7 +18,7 @@
 
   <properties>
     <gcloud.version>2.40.0</gcloud.version>
-    <protobuf.version>4.34.1</protobuf.version>
+    <protobuf.version>4.35.0</protobuf.version>
   </properties>
 
 </project>
