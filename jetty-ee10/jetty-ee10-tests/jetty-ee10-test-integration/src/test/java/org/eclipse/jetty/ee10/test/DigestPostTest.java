@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.ee10.test;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.Socket;
+import java.net.InetSocketAddress;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,62 +26,344 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AuthenticationStore;
-import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.DigestAuthentication;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.RolePrincipal;
 import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DigestPostTest
 {
-    private static final String NC = "00000001";
+    private static final String MESSAGE = """
+        0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789
+        9876543210 9876543210 9876543210 9876543210 9876543210 9876543210 9876543210 9876543210
+        1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890
+        0987654321 0987654321 0987654321 0987654321 0987654321 0987654321 0987654321 0987654321
+        abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz
+        ABCDEFGHIJKLMNOPQRSTUVWXYZ ABCDEFGHIJKLMNOPQRSTUVWXYZ ABCDEFGHIJKLMNOPQRSTUVWXYZ
+        Now is the time for all good men to come to the aid of the party.
+        How now brown cow.
+        The quick brown fox jumped over the lazy dog.
+        """;
 
-    public static final String __message =
-        "0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 \n" +
-            "9876543210 9876543210 9876543210 9876543210 9876543210 9876543210 9876543210 9876543210 \n" +
-            "1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 1234567890 \n" +
-            "0987654321 0987654321 0987654321 0987654321 0987654321 0987654321 0987654321 0987654321 \n" +
-            "abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz \n" +
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ ABCDEFGHIJKLMNOPQRSTUVWXYZ ABCDEFGHIJKLMNOPQRSTUVWXYZ \n" +
-            "Now is the time for all good men to come to the aid of the party.\n" +
-            "How now brown cow.\n" +
-            "The quick brown fox jumped over the lazy dog.\n";
+    private final String _user = "testuser";
+    private final String _password = "password";
+    private final String _realm = "testrealm";
+    private final String nc = "00000001";
+    private final String cnonce = "CLIENT_NONCE";
+    private Server _server;
+    private ServerConnector _connector;
+    private PostServlet _servlet;
+    private DigestAuthenticator _authenticator;
 
-    public static volatile String _received = null;
-    private static Server _server;
+    @BeforeEach
+    public void startServer() throws Exception
+    {
+        _server = new Server();
+        _connector = new ServerConnector(_server);
+        _server.addConnector(_connector);
+
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SECURITY);
+        context.setContextPath("/test");
+        _servlet = new PostServlet();
+        context.addServlet(_servlet, "/");
+
+        TestLoginService realm = new TestLoginService(_realm);
+        realm.putUser(_user, new Password(_password), new String[]{"testRole"});
+        _server.addBean(realm);
+
+        ConstraintSecurityHandler security = (ConstraintSecurityHandler)context.getSecurityHandler();
+        _authenticator = new DigestAuthenticator();
+        security.setAuthenticator(_authenticator);
+        security.setLoginService(realm);
+
+        Constraint constraint = new Constraint.Builder()
+            .name("SecureTest")
+            .roles("testRole")
+            .build();
+        ConstraintMapping mapping = new ConstraintMapping();
+        mapping.setConstraint(constraint);
+        mapping.setPathSpec("/*");
+
+        security.setConstraintMappings(Collections.singletonList(mapping));
+
+        _server.setHandler(new Handler.Sequence(context, new DefaultHandler()));
+
+        _server.start();
+    }
+
+    @AfterEach
+    public void dispose() throws Exception
+    {
+        _server.stop();
+    }
+
+    @Test
+    public void testServerDirectlyHTTP10() throws Exception
+    {
+        try (SocketChannel socket1 = SocketChannel.open(new InetSocketAddress("localhost", _connector.getLocalPort())))
+        {
+            _servlet._received = null;
+            String request = """
+                POST /test/ HTTP/1.0
+                Host: localhost
+                Content-Length: %d
+                
+                %s\
+                """.formatted(MESSAGE.length(), MESSAGE);
+            socket1.write(UTF_8.encode(request));
+
+            HttpTester.Response response = HttpTester.parseResponse(socket1);
+
+            assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
+            assertNull(_servlet._received);
+
+            String authenticate = response.get(HttpHeader.WWW_AUTHENTICATE);
+            String nonce = nonceFrom(authenticate);
+            assertNotNull(nonce);
+
+            String rsp = newResponse("POST", "/test/", nonce);
+            String digest = """
+                Digest username="%s", realm="%s", nonce="%s", uri="/test/", algorithm=%s, response="%s", qop=auth, nc=%s, cnonce="%s"\
+                """.formatted(_user, _realm, nonce, _authenticator.getAlgorithm(), rsp, nc, cnonce);
+
+            try (SocketChannel socket2 = SocketChannel.open(new InetSocketAddress("localhost", _connector.getLocalPort())))
+            {
+                _servlet._received = null;
+                request = """
+                    POST /test/ HTTP/1.0
+                    Host: localhost
+                    Content-Length: %d
+                    Authorization: %s
+                    
+                    %s\
+                    """.formatted(MESSAGE.length(), digest, MESSAGE);
+                socket2.write(UTF_8.encode(request));
+
+                response = HttpTester.parseResponse(socket2);
+
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(MESSAGE, _servlet._received);
+            }
+        }
+    }
+
+    @Test
+    public void testServerDirectlyHTTP11() throws Exception
+    {
+        try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", _connector.getLocalPort())))
+        {
+            _servlet._received = null;
+            String request = """
+                POST /test/ HTTP/1.1
+                Host: localhost
+                Content-Length: %d
+                
+                %s\
+                """.formatted(MESSAGE.length(), MESSAGE);
+            socket.write(UTF_8.encode(request));
+
+            HttpTester.Response response = HttpTester.parseResponse(socket);
+
+            assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
+            assertNull(_servlet._received);
+
+            String authenticate = response.get(HttpHeader.WWW_AUTHENTICATE);
+            String nonce = nonceFrom(authenticate);
+            assertNotNull(nonce);
+
+            String rsp = newResponse("POST", "/test/", nonce);
+            String digest = """
+                Digest username="%s", realm="%s", nonce="%s", uri="/test/", algorithm=%s, response="%s", qop=auth, nc=%s, cnonce="%s"\
+                """.formatted(_user, _realm, nonce, _authenticator.getAlgorithm(), rsp, nc, cnonce);
+
+            _servlet._received = null;
+            request = """
+                POST /test/ HTTP/1.1
+                Host: localhost
+                Content-Length: %d
+                Authorization: %s
+                
+                %s\
+                """.formatted(MESSAGE.length(), digest, MESSAGE);
+            socket.write(UTF_8.encode(request));
+
+            response = HttpTester.parseResponse(socket);
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(MESSAGE, _servlet._received);
+        }
+    }
+
+    @Test
+    public void testUserStar() throws Exception
+    {
+        try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", _connector.getLocalPort())))
+        {
+            _servlet._received = null;
+            String request = """
+                POST /test/ HTTP/1.1
+                Host: localhost
+                Content-Length: %d
+                
+                %s\
+                """.formatted(MESSAGE.length(), MESSAGE);
+            socket.write(UTF_8.encode(request));
+
+            HttpTester.Response response = HttpTester.parseResponse(socket);
+
+            assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
+            assertNull(_servlet._received);
+
+            String authenticate = response.get(HttpHeader.WWW_AUTHENTICATE);
+            String nonce = nonceFrom(authenticate);
+            assertNotNull(nonce);
+
+            String encodedUser = "UTF-8''" + _user.replace("e", "%65");
+            String rsp = newResponse("POST", "/test/", nonce);
+            String digest = """
+                Digest username*="%s", realm="%s", nonce="%s", uri="/test/", algorithm=%s, response="%s", qop=auth, nc=%s, cnonce="%s"\
+                """.formatted(encodedUser, _realm, nonce, _authenticator.getAlgorithm(), rsp, nc, cnonce);
+
+            _servlet._received = null;
+            request = """
+                POST /test/ HTTP/1.1
+                Host: localhost
+                Content-Length: %d
+                Authorization: %s
+                
+                %s\
+                """.formatted(MESSAGE.length(), digest, MESSAGE);
+            socket.write(UTF_8.encode(request));
+
+            response = HttpTester.parseResponse(socket);
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(MESSAGE, _servlet._received);
+        }
+    }
+
+    @Test
+    public void testServerWithHttpClientStringContent() throws Exception
+    {
+        try (HttpClient client = new HttpClient())
+        {
+            String uri = "http://localhost:" + _connector.getLocalPort() + "/test/";
+            AuthenticationStore authStore = client.getAuthenticationStore();
+            authStore.addAuthentication(new DigestAuthentication(URI.create(uri), _realm, _user, _password));
+            client.start();
+
+            _servlet._received = null;
+            ContentResponse response = client.newRequest(uri)
+                .method(HttpMethod.POST)
+                .body(new StringRequestContent(MESSAGE))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+            assertEquals(MESSAGE, _servlet._received);
+            assertEquals(200, response.getStatus());
+        }
+    }
+
+    @Test
+    public void testServerWithHttpClientPathContent() throws Exception
+    {
+        try (HttpClient client = new HttpClient())
+        {
+            String uri = "http://localhost:" + _connector.getLocalPort() + "/test/";
+            AuthenticationStore authStore = client.getAuthenticationStore();
+            authStore.addAuthentication(new DigestAuthentication(URI.create(uri), _realm, _user, _password));
+            client.start();
+
+            _servlet._received = null;
+            Path path = MavenPaths.findTestResourceFile("message.txt");
+            ContentResponse response = client.newRequest(uri)
+                .method(HttpMethod.POST)
+                .body(new PathRequestContent(path))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+            assertEquals(Files.readString(path), _servlet._received);
+            assertEquals(200, response.getStatus());
+        }
+    }
+
+    private String newResponse(String method, String uri, String nonce) throws Exception
+    {
+        MessageDigest md = MessageDigest.getInstance(_authenticator.getAlgorithm());
+
+        // Calculate A1 digest.
+        String a1 = _user + ":" + _realm + ":" + _password;
+        byte[] ha1 = md.digest(a1.getBytes(UTF_8));
+
+        // Calculate A2 digest.
+        String a2 = method + ":" + uri;
+        byte[] ha2 = md.digest(a2.getBytes(UTF_8));
+
+        String rsp = TypeUtil.toString(ha1, 16) + ":" + nonce + ":" + nc +
+            ":" + cnonce + ":auth:" + TypeUtil.toString(ha2, 16);
+        return TypeUtil.toString(md.digest(rsp.getBytes(UTF_8)), 16);
+    }
+
+    private String nonceFrom(String authenticate)
+    {
+        Pattern pattern = Pattern.compile("nonce=\"([^\"]+)\"");
+        Matcher matcher = pattern.matcher(authenticate);
+        if (matcher.find())
+            return matcher.group(1);
+        return null;
+    }
+
+    public static class PostServlet extends HttpServlet
+    {
+        public String _received;
+
+        @Override
+        public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException
+        {
+            String received = IO.toString(request.getInputStream());
+            _received = received;
+
+            response.setStatus(200);
+            response.getWriter().println("Received " + received.length() + " bytes");
+        }
+    }
 
     public static class TestLoginService extends AbstractLoginService
     {
@@ -92,12 +375,12 @@ public class DigestPostTest
             setName(name);
         }
 
-        public void putUser(String username, Credential credential, String[] rolenames)
+        public void putUser(String username, Credential credential, String[] roleNames)
         {
             UserPrincipal userPrincipal = new UserPrincipal(username, credential);
             users.put(username, userPrincipal);
-            if (rolenames != null)
-                roles.put(username, Arrays.stream(rolenames).map(RolePrincipal::new).collect(Collectors.toList()));
+            if (roleNames != null)
+                roles.put(username, Arrays.stream(roleNames).map(RolePrincipal::new).toList());
         }
 
         @Override
@@ -111,266 +394,5 @@ public class DigestPostTest
         {
             return users.get(username);
         }
-    }
-
-    @BeforeAll
-    public static void setUpServer()
-    {
-        try
-        {
-            _server = new Server();
-            _server.setConnectors(new Connector[]{new ServerConnector(_server)});
-
-            ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SECURITY);
-            context.setContextPath("/test");
-            context.addServlet(PostServlet.class, "/");
-
-            TestLoginService realm = new TestLoginService("test");
-            realm.putUser("testuser", new Password("password"), new String[]{"test"});
-            _server.addBean(realm);
-
-            ConstraintSecurityHandler security = (ConstraintSecurityHandler)context.getSecurityHandler();
-            security.setAuthenticator(new DigestAuthenticator());
-            security.setLoginService(realm);
-
-            Constraint constraint = new Constraint.Builder()
-                .name("SecureTest")
-                .roles("test")
-                .build();
-            ConstraintMapping mapping = new ConstraintMapping();
-            mapping.setConstraint(constraint);
-            mapping.setPathSpec("/*");
-
-            security.setConstraintMappings(Collections.singletonList(mapping));
-
-            _server.setHandler(new Handler.Sequence(context, new DefaultHandler()));
-
-            _server.start();
-        }
-        catch (final Exception e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    @AfterAll
-    public static void tearDownServer() throws Exception
-    {
-        _server.stop();
-    }
-
-    @Test
-    public void testServerDirectlyHTTP10() throws Exception
-    {
-        Socket socket = new Socket("127.0.0.1", ((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
-        byte[] bytes = __message.getBytes(StandardCharsets.UTF_8);
-
-        _received = null;
-        socket.getOutputStream().write(
-            ("POST /test/ HTTP/1.0\r\n" +
-                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                "Content-Length: " + bytes.length + "\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
-        socket.getOutputStream().write(bytes);
-        socket.getOutputStream().flush();
-
-        String result = IO.toString(socket.getInputStream());
-
-        assertTrue(result.startsWith("HTTP/1.1 401 Unauthorized"));
-        assertNull(_received);
-
-        int n = result.indexOf("nonce=");
-        String nonce = result.substring(n + 7, result.indexOf('"', n + 7));
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] b = md.digest(String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())).getBytes(StandardCharsets.ISO_8859_1));
-        String cnonce = encode(b);
-        String digest = "Digest username=\"testuser\" realm=\"test\" nonce=\"" + nonce + "\" uri=\"/test/\" algorithm=MD5 response=\"" +
-            newResponse("POST", "/test/", cnonce, "testuser", "test", "password", nonce, "auth") +
-            "\" qop=auth nc=" + NC + " cnonce=\"" + cnonce + "\"";
-
-        socket = new Socket("127.0.0.1", ((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
-
-        _received = null;
-        socket.getOutputStream().write(
-            ("POST /test/ HTTP/1.0\r\n" +
-                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                "Content-Length: " + bytes.length + "\r\n" +
-                "Authorization: " + digest + "\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
-        socket.getOutputStream().write(bytes);
-        socket.getOutputStream().flush();
-
-        result = IO.toString(socket.getInputStream());
-
-        assertTrue(result.startsWith("HTTP/1.1 200 OK"));
-        assertEquals(__message, _received);
-    }
-
-    @Test
-    public void testServerDirectlyHTTP11() throws Exception
-    {
-        Socket socket = new Socket("127.0.0.1", ((NetworkConnector)_server.getConnectors()[0]).getLocalPort());
-        byte[] bytes = __message.getBytes(StandardCharsets.UTF_8);
-
-        _received = null;
-        socket.getOutputStream().write(
-            ("POST /test/ HTTP/1.1\r\n" +
-                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                "Content-Length: " + bytes.length + "\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
-        socket.getOutputStream().write(bytes);
-        socket.getOutputStream().flush();
-
-        Thread.sleep(100);
-
-        byte[] buf = new byte[4096];
-        int len = socket.getInputStream().read(buf);
-        String result = new String(buf, 0, len, StandardCharsets.UTF_8);
-
-        assertTrue(result.startsWith("HTTP/1.1 401 Unauthorized"));
-        assertNull(_received);
-
-        int n = result.indexOf("nonce=");
-        String nonce = result.substring(n + 7, result.indexOf('"', n + 7));
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] b = md.digest(String.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())).getBytes(StandardCharsets.ISO_8859_1));
-        String cnonce = encode(b);
-        String digest = "Digest username=\"testuser\" realm=\"test\" nonce=\"" + nonce + "\" uri=\"/test/\" algorithm=MD5 response=\"" +
-            newResponse("POST", "/test/", cnonce, "testuser", "test", "password", nonce, "auth") +
-            "\" qop=auth nc=" + NC + " cnonce=\"" + cnonce + "\"";
-
-        _received = null;
-        socket.getOutputStream().write(
-            ("POST /test/ HTTP/1.0\r\n" +
-                "Host: 127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "\r\n" +
-                "Content-Length: " + bytes.length + "\r\n" +
-                "Authorization: " + digest + "\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
-        socket.getOutputStream().write(bytes);
-        socket.getOutputStream().flush();
-
-        result = IO.toString(socket.getInputStream());
-
-        assertTrue(result.startsWith("HTTP/1.1 200 OK"));
-        assertEquals(__message, _received);
-    }
-
-    @Test
-    public void testServerWithHttpClientStringContent() throws Exception
-    {
-        String srvUrl = "http://127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "/test/";
-        HttpClient client = new HttpClient();
-
-        try
-        {
-            AuthenticationStore authStore = client.getAuthenticationStore();
-            authStore.addAuthentication(new DigestAuthentication(new URI(srvUrl), "test", "testuser", "password"));
-            client.start();
-
-            Request request = client.newRequest(srvUrl);
-            request.method(HttpMethod.POST);
-            request.body(new BytesRequestContent(__message.getBytes(StandardCharsets.UTF_8)));
-            _received = null;
-            request = request.timeout(5, TimeUnit.SECONDS);
-            ContentResponse response = request.send();
-            assertEquals(__message, _received);
-            assertEquals(200, response.getStatus());
-        }
-        finally
-        {
-            client.stop();
-        }
-    }
-
-    @Test
-    public void testServerWithHttpClientStreamContent() throws Exception
-    {
-        String srvUrl = "http://127.0.0.1:" + ((NetworkConnector)_server.getConnectors()[0]).getLocalPort() + "/test/";
-        HttpClient client = new HttpClient();
-        try
-        {
-            AuthenticationStore authStore = client.getAuthenticationStore();
-            authStore.addAuthentication(new DigestAuthentication(new URI(srvUrl), "test", "testuser", "password"));
-            client.start();
-
-            String sent = IO.toString(new FileInputStream("src/test/resources/message.txt"));
-
-            Request request = client.newRequest(srvUrl);
-            request.method(HttpMethod.POST);
-            request.body(new StringRequestContent(sent));
-            _received = null;
-            request = request.timeout(5, TimeUnit.SECONDS);
-            ContentResponse response = request.send();
-
-            assertEquals(200, response.getStatus());
-            assertEquals(sent, _received);
-        }
-        finally
-        {
-            client.stop();
-        }
-    }
-
-    public static class PostServlet extends HttpServlet
-    {
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws IOException
-        {
-            String received = IO.toString(request.getInputStream());
-            _received = received;
-
-            response.setStatus(200);
-            response.getWriter().println("Received " + received.length() + " bytes");
-        }
-    }
-
-    protected String newResponse(String method, String uri, String cnonce, String principal, String realm, String credentials, String nonce, String qop)
-        throws Exception
-    {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-
-        // calc A1 digest
-        md.update(principal.getBytes(StandardCharsets.ISO_8859_1));
-        md.update((byte)':');
-        md.update(realm.getBytes(StandardCharsets.ISO_8859_1));
-        md.update((byte)':');
-        md.update(credentials.getBytes(StandardCharsets.ISO_8859_1));
-        byte[] ha1 = md.digest();
-        // calc A2 digest
-        md.reset();
-        md.update(method.getBytes(StandardCharsets.ISO_8859_1));
-        md.update((byte)':');
-        md.update(uri.getBytes(StandardCharsets.ISO_8859_1));
-        byte[] ha2 = md.digest();
-
-        md.update(TypeUtil.toString(ha1, 16).getBytes(StandardCharsets.ISO_8859_1));
-        md.update((byte)':');
-        md.update(nonce.getBytes(StandardCharsets.ISO_8859_1));
-        md.update((byte)':');
-        md.update(NC.getBytes(StandardCharsets.ISO_8859_1));
-        md.update((byte)':');
-        md.update(cnonce.getBytes(StandardCharsets.ISO_8859_1));
-        md.update((byte)':');
-        md.update(qop.getBytes(StandardCharsets.ISO_8859_1));
-        md.update((byte)':');
-        md.update(TypeUtil.toString(ha2, 16).getBytes(StandardCharsets.ISO_8859_1));
-        byte[] digest = md.digest();
-
-        // check digest
-        return encode(digest);
-    }
-
-    private static String encode(byte[] data)
-    {
-        StringBuilder buffer = new StringBuilder();
-        for (byte datum : data)
-        {
-            buffer.append(Integer.toHexString((datum & 0xf0) >>> 4));
-            buffer.append(Integer.toHexString(datum & 0x0f));
-        }
-        return buffer.toString();
     }
 }

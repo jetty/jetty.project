@@ -67,6 +67,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
@@ -496,7 +497,7 @@ public class ConstraintTest
         assertEquals(1, mappings.size());
         ConstraintMapping mapping = mappings.get(0);
         Constraint constraint = mapping.getConstraint();
-        assertSame(constraint.getAuthorization(), Constraint.Authorization.FORBIDDEN);
+        assertSame(Constraint.Authorization.FORBIDDEN, constraint.getAuthorization());
     }
 
     /**
@@ -514,7 +515,7 @@ public class ConstraintTest
         assertFalse(mappings.isEmpty());
         assertEquals(1, mappings.size());
         ConstraintMapping mapping = mappings.get(0);
-        assertNotSame(mapping.getConstraint().getAuthorization(), Constraint.Authorization.ALLOWED);
+        assertNotSame(Constraint.Authorization.ALLOWED, mapping.getConstraint().getAuthorization());
         assertNotNull(mapping.getConstraint().getRoles());
         assertEquals("R1", mapping.getConstraint().getRoles().stream().findFirst().orElse(null));
         assertThat(mapping.getConstraint().getTransport(), not(is(Constraint.Transport.SECURE)));
@@ -566,7 +567,7 @@ public class ConstraintTest
         assertEquals(2, mappings.size());
         assertNotNull(mappings.get(0).getMethodOmissions());
         assertEquals("GET", mappings.get(0).getMethodOmissions()[0]);
-        assertNotSame(mappings.get(0).getConstraint().getAuthorization(), Constraint.Authorization.ALLOWED);
+        assertNotSame(Constraint.Authorization.ALLOWED, mappings.get(0).getConstraint().getAuthorization());
         assertEquals("R1", mappings.get(0).getConstraint().getRoles().stream().findFirst().orElse(null));
         assertEquals("GET", mappings.get(1).getMethod());
         assertNull(mappings.get(1).getMethodOmissions());
@@ -593,13 +594,13 @@ public class ConstraintTest
         assertEquals(2, mappings.size());
         assertNotNull(mappings.get(0).getMethodOmissions());
         assertEquals("TRACE", mappings.get(0).getMethodOmissions()[0]);
-        assertNotSame(mappings.get(0).getConstraint().getAuthorization(), Constraint.Authorization.ALLOWED);
+        assertNotSame(Constraint.Authorization.ALLOWED, mappings.get(0).getConstraint().getAuthorization());
         assertEquals("R1", mappings.get(0).getConstraint().getRoles().stream().findFirst().orElse(null));
         assertEquals("TRACE", mappings.get(1).getMethod());
         assertNull(mappings.get(1).getMethodOmissions());
         assertThat(mappings.get(1).getConstraint().getTransport(), not(is(Constraint.Transport.SECURE)));
         Constraint constraint = mappings.get(1).getConstraint();
-        assertSame(constraint.getAuthorization(), Constraint.Authorization.FORBIDDEN);
+        assertSame(Constraint.Authorization.FORBIDDEN, constraint.getAuthorization());
     }
 
     @Test
@@ -923,45 +924,20 @@ public class ConstraintTest
 
     private String digest(String nonce, String password, String nc) throws Exception
     {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] ha1;
-        // calc A1 digest
-        md.update("user".getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update("TestRealm".getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update(password.getBytes(ISO_8859_1));
-        ha1 = md.digest();
-        // calc A2 digest
-        md.reset();
-        md.update("GET".getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update("/ctx/auth/info".getBytes(ISO_8859_1));
-        byte[] ha2 = md.digest();
+        DigestAuthenticator authenticator = (DigestAuthenticator)_security.getAuthenticator();
+        MessageDigest md = MessageDigest.getInstance(authenticator.getAlgorithm());
 
-        // calc digest
-        // request-digest = <"> < KD ( H(A1), unq(nonce-value) ":"
-        // nc-value ":" unq(cnonce-value) ":" unq(qop-value) ":" H(A2) )
-        // <">
-        // request-digest = <"> < KD ( H(A1), unq(nonce-value) ":" H(A2)
-        // ) > <">
+        // Calculate A1 digest.
+        String a1 = "user:TestRealm:" + password;
+        byte[] ha1 = md.digest(a1.getBytes(UTF_8));
 
-        md.update(TypeUtil.toString(ha1, 16).getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update(nonce.getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update(nc.getBytes(ISO_8859_1));
-        md.update((byte)':');
-        String cnonce = "1234567890";
-        md.update(cnonce.getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update("auth".getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update(TypeUtil.toString(ha2, 16).getBytes(ISO_8859_1));
-        byte[] digest = md.digest();
+        // Calculate A2 digest.
+        String a2 = "GET:/ctx/auth/info";
+        byte[] ha2 = md.digest(a2.getBytes(UTF_8));
 
-        // check digest
-        return TypeUtil.toString(digest, 16);
+        String rsp = TypeUtil.toString(ha1, 16) + ":" + nonce + ":" + nc +
+            ":1234567890:auth:" + TypeUtil.toString(ha2, 16);
+        return TypeUtil.toString(md.digest(rsp.getBytes(UTF_8)), 16);
     }
 
     @Test
@@ -987,61 +963,61 @@ public class ConstraintTest
         assertTrue(matcher.find());
         String nonce = matcher.group(1);
 
-        //wrong password
-        String digest = digest(nonce, "WRONG", "1");
+        // Wrong password.
+        String digest = digest(nonce, "WRONG", "00000001");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
-            "nc=1, " +
+            "nc=00000001, " +
             "nonce=\"" + nonce + "\", " +
             "response=\"" + digest + "\"\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
 
-        // right password
-        digest = digest(nonce, "password", "2");
+        // Right password.
+        digest = digest(nonce, "password", "00000002");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
-            "nc=2, " +
+            "nc=00000002, " +
             "nonce=\"" + nonce + "\", " +
             "response=\"" + digest + "\"\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
-        // once only
-        digest = digest(nonce, "password", "2");
+        // Replay of request with nc=00000002.
+        digest = digest(nonce, "password", "00000002");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
-            "nc=2, " +
+            "nc=00000002, " +
             "nonce=\"" + nonce + "\", " +
             "response=\"" + digest + "\"\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
 
-        // increasing
-        digest = digest(nonce, "password", "4");
+        // Next request.
+        digest = digest(nonce, "password", "00000004");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
-            "nc=4, " +
+            "nc=00000004, " +
             "nonce=\"" + nonce + "\", " +
             "response=\"" + digest + "\"\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
-        // out of order
-        digest = digest(nonce, "password", "3");
+        // Out of order request.
+        digest = digest(nonce, "password", "00000003");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
-            "nc=3, " +
+            "nc=00000003, " +
             "nonce=\"" + nonce + "\", " +
             "response=\"" + digest + "\"\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
-        // stale
-        digest = digest(nonce, "password", "5");
+        // Beyond max nonce count.
+        digest = digest(nonce, "password", "00000006");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
-            "nc=5, " +
+            "nc=00000006, " +
             "nonce=\"" + nonce + "\", " +
             "response=\"" + digest + "\"\r\n" +
             "\r\n");
