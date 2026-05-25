@@ -172,6 +172,12 @@ public class PathResource extends Resource
             String uriString = uri.toASCIIString();
             if (!uriString.endsWith("/"))
                 uri = URIUtil.correctURI(URI.create(uriString + "/"));
+            else
+                uri = URIUtil.correctURI(uri);
+        }
+        else
+        {
+            uri = URIUtil.correctURI(uri);
         }
 
         this.path = path;

@@ -900,9 +900,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                     List<Resource> resources = combinedResource.getResources().stream()
                         .map(r ->
                         {
-                            URI realUri = r.getRealURI();
-                            if (realUri != null)
-                                return resourceFactory.newResource(realUri);
+                            if (r.isAlias())
+                            {
+                                URI realUri = r.getRealURI();
+                                if (realUri != null)
+                                    return resourceFactory.newResource(realUri);
+                            }
                             return r;
                         }).toList();
                     // Remember the original base resource so it can be restored in doStop().
