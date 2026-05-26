@@ -1497,7 +1497,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("abort due to pending read {} {} ", this, getEndPoint());
-                abort(new QuietException.IOException("Pending read in onCompleted"));
+                abort(new QuietException.Exception("Pending read in onCompleted"));
                 _httpChannel.recycle();
                 _parser.reset();
                 _generator.reset();

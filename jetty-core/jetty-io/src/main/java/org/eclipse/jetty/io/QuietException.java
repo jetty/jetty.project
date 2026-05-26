@@ -75,27 +75,4 @@ public interface QuietException
             super(cause);
         }
     }
-
-    class IOException extends java.io.IOException implements QuietException
-    {
-        public IOException()
-        {
-            super();
-        }
-
-        public IOException(String message)
-        {
-            super(message);
-        }
-
-        public IOException(String message, Throwable cause)
-        {
-            super(message, cause);
-        }
-
-        public IOException(Throwable cause)
-        {
-            super(cause);
-        }
-    }
 }
