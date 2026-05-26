@@ -1798,7 +1798,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("ErrorWrite succeeded: {}", this);
-            boolean needLastWrite = false;
+            boolean needLastWrite;
             MetaData.Response responseMetaData = null;
             HttpChannelState httpChannelState;
             Throwable failure;
@@ -1808,11 +1808,7 @@ public class HttpChannelState implements HttpChannel, Components
                 failure = _failure;
 
                 // Did the ErrorHandler do the last write?
-                if (httpChannelState._streamSendState == StreamSendState.SENDING)
-                {
-                    needLastWrite = true;
-                    httpChannelState._streamSendState = StreamSendState.LAST_SENDING;
-                }
+                needLastWrite = httpChannelState.lockedLastStreamSend();
                 if (needLastWrite && _errorResponse.getResponseHttpFields().commit())
                     responseMetaData = _errorResponse.lockedPrepareResponse(httpChannelState, true);
             }
