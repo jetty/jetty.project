@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.NanoTime;
 
 public class MetaDataBuilder
@@ -228,13 +229,31 @@ public class MetaDataBuilder
         }
     }
 
+    public void streamException(Throwable t)
+    {
+        HpackException.StreamException streamException;
+        if (t instanceof HpackException.StreamException stream)
+        {
+            streamException = stream;
+        }
+        else
+        {
+            streamException = new HpackException.StreamException(t, _request, _response, t.getMessage());
+        }
+
+        if (_streamException == null)
+            _streamException = streamException;
+        else
+            ExceptionUtil.addSuppressedIfNotAssociated(_streamException, streamException);
+    }
+
     public void streamException(String messageFormat, Object... args)
     {
         HpackException.StreamException stream = new HpackException.StreamException(_request, _response, messageFormat, args);
         if (_streamException == null)
             _streamException = stream;
         else
-            _streamException.addSuppressed(stream);
+            ExceptionUtil.addSuppressedIfNotAssociated(_streamException, stream);
     }
 
     protected boolean checkPseudoHeader(HttpHeader header, Object value)

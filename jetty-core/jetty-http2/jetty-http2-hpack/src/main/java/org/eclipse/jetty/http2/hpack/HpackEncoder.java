@@ -296,9 +296,7 @@ public class HpackEncoder
         }
         catch (Throwable x)
         {
-            HpackException.SessionException failure = new HpackException.SessionException("Could not hpack encode %s", metadata);
-            failure.initCause(x);
-            throw failure;
+            throw new HpackException.SessionException(x, "Could not hpack encode %s", metadata);
         }
     }
 
