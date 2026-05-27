@@ -166,7 +166,7 @@
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asm.version>9.10</asm.version>
+    <asm.version>9.10.1</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
     <!--
     DO NOT UPGRADE this except tinybundle upgrade:
@@ -220,7 +220,7 @@
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>3.0</hamcrest.version>
     <hazelcast.version>5.7.0</hazelcast.version>
-    <hibernate.search.version>8.3.1.Final</hibernate.search.version>
+    <hibernate.search.version>8.4.0.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
     <infinispan.docker.image.version>15.2.1.Final</infinispan.docker.image.version>
     <infinispan.protostream.version>6.0.7</infinispan.protostream.version>
@@ -263,16 +263,16 @@
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
     <junit.platform.version>${junit.version}</junit.platform.version>
-    <junit.version>6.0.3</junit.version>
+    <junit.version>6.1.0</junit.version>
     <kerb-simplekdc.version>2.1.1</kerb-simplekdc.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.26.0</log4j2.version>
-    <logback.version>1.5.32</logback.version>
+    <logback.version>1.5.33</logback.version>
     <lucene.version>9.12.3</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.8</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven-build-cache.version>1.2.2</maven-build-cache.version>
+    <maven-build-cache.version>1.2.3</maven-build-cache.version>
     <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.2.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
@@ -299,13 +299,13 @@
     <maven.retryFailedDeploymentCount>10</maven.retryFailedDeploymentCount>
     <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
     <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
-    <maven.surefire.plugin.version>3.5.5</maven.surefire.plugin.version>
+    <maven.surefire.plugin.version>3.5.6</maven.surefire.plugin.version>
     <maven.version>3.9.9</maven.version>
     <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <modify-sources-plugin.version>1.0.14</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.7.0</mongodb.version>
-    <netty.version>4.2.13.Final</netty.version>
+    <netty.version>4.2.14.Final</netty.version>
     <njord.version>0.9.6</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
@@ -328,7 +328,7 @@
     <osgi.slf4j.import.packages>org.slf4j;version="[2.0,3.0)", org.slf4j.event;version="[2.0,3.0)", org.slf4j.helpers;version="[2.0,3.0)", org.slf4j.spi;version="[2.0,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.14.0</pax.exam.version>
     <pax.url.version>3.0.3</pax.url.version>
-    <plexus-classworlds.version>2.11.0</plexus-classworlds.version>
+    <plexus-classworlds.version>2.12.0</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.3</plexus-utils.version>
     <plexus-xml.version>4.1.1</plexus-xml.version>
