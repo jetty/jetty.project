@@ -968,6 +968,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (!_stream.compareAndSet(null, stream))
                 throw new IllegalStateException("Stream pending");
             _headerBuilder.clear();
+            if (_trailers != null)
+                _trailers.clear();
             _httpChannel.setHttpStream(stream);
         }
 
@@ -1028,9 +1030,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (stream._chunk != null)
                 throw new IllegalStateException();
             if (_trailers != null)
-                stream._chunk = new Trailers(_trailers.asImmutable());
+            {
+                if (_trailers.size() > 0)
+                    stream._chunk = new Trailers(_trailers.asImmutable());
+                _trailers = null;
+            }
             else
+            {
                 stream._chunk = Content.Chunk.EOF;
+            }
 
             getHttpChannel().getComplianceViolationListener().onRequestBegin(getHttpChannel().getRequest());
             return false;
@@ -1224,7 +1232,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_uri.getPath() == null)
                 _uri.path("/");
 
-            _request = new MetaData.Request(_parser.getBeginNanoTime(), _method, _uri.asImmutable(), _version, _headerBuilder, _contentLength)
+            _request = new MetaData.Request(_parser.getBeginNanoTime(), _method, _uri.asImmutable(), _version, _headerBuilder.asImmutable(), _contentLength)
             {
                 @Override
                 public boolean is100ContinueExpected()
@@ -1309,6 +1317,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 }
             }
 
+            _headerBuilder.clear();
             if (!persistent)
                 _generator.setPersistent(false);
 
