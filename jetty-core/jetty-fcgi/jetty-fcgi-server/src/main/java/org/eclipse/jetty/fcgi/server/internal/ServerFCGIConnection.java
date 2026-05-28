@@ -335,6 +335,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
             if (stream != null)
                 throw new UnsupportedOperationException("FastCGI Multiplexing");
             HttpChannel channel = httpChannelFactory.newHttpChannel(ServerFCGIConnection.this);
+            channel.initialize();
             ServerGenerator generator = new ServerGenerator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200);
             stream = new HttpStreamOverFCGI(ServerFCGIConnection.this, generator, channel, request);
             channel.setHttpStream(stream);

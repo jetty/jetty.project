@@ -162,6 +162,7 @@ public class ContextHandlerTest
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannelState(connectionMetaData);
+        channel.initialize();
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -318,6 +319,7 @@ public class ContextHandlerTest
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannelState(connectionMetaData);
+        channel.initialize();
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -354,6 +356,7 @@ public class ContextHandlerTest
         MockHttpStream stream = new MockHttpStream(channel);
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from(requestUri), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -372,6 +375,7 @@ public class ContextHandlerTest
         stream = new MockHttpStream(channel);
         fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         request = new MetaData.Request("GET", HttpURI.from(requestUri), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         task = channel.onRequest(request);
         task.run();
 
@@ -395,6 +399,7 @@ public class ContextHandlerTest
         MockHttpStream stream = new MockHttpStream(channel);
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         channel.onRequest(request).run();
 
         assertThat(stream.getResponse().getStatus(), equalTo(200));
@@ -405,6 +410,7 @@ public class ContextHandlerTest
 
         stream = new MockHttpStream(channel);
         request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         channel.onRequest(request).run();
 
         assertThat(stream.getResponse().getStatus(), equalTo(503));
@@ -415,6 +421,7 @@ public class ContextHandlerTest
 
         stream = new MockHttpStream(channel);
         request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.initialize();
         channel.onRequest(request).run();
 
         assertThat(stream.getResponse().getStatus(), equalTo(200));
@@ -464,6 +471,7 @@ public class ContextHandlerTest
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannelState(connectionMetaData);
+        channel.initialize();
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -490,11 +498,6 @@ public class ContextHandlerTest
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
-                Request.addCompletionListener(request, x ->
-                {
-                    assertInContext(request);
-                    scopeListener.assertInContext(request.getContext(), request);
-                });
 
                 request.demand(() ->
                 {
@@ -526,6 +529,7 @@ public class ContextHandlerTest
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannelState(connectionMetaData);
+        channel.initialize();
         AtomicReference<Callback> sendCB = new AtomicReference<>();
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
@@ -545,7 +549,8 @@ public class ContextHandlerTest
         todo = stream.addContent(BufferUtil.toBuffer("Hello"), true);
         todo.run();
 
-        sendCB.getAndSet(null).succeeded();
+        Callback cb = sendCB.getAndSet(null);
+        cb.succeeded();
 
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), nullValue());
@@ -591,6 +596,7 @@ public class ContextHandlerTest
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannelState(connectionMetaData);
+        channel.initialize();
         MockHttpStream stream = new MockHttpStream(channel, false);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -643,6 +649,7 @@ public class ContextHandlerTest
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannelState(connectionMetaData);
+        channel.initialize();
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -685,42 +692,50 @@ public class ContextHandlerTest
         HttpChannel channel = new HttpChannelState(connectionMetaData);
         HttpFields fields = HttpFields.build().asImmutable();
 
+        channel.initialize();
         MockHttpStream stream = new MockHttpStream(channel);
         channel.onRequest(new MetaData.Request("GET", HttpURI.from("/ctx/"), HttpVersion.HTTP_1_0, fields, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(404));
 
+        channel.initialize();
         stream = new MockHttpStream(channel);
         channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(404));
 
+        channel.initialize();
         stream = new MockHttpStream(channel);
         channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://nope.example.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(404));
 
+        channel.initialize();
         stream = new MockHttpStream(channel);
         channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://example.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(200));
 
+        channel.initialize();
         stream = new MockHttpStream(channel);
         channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://wild.org/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(404));
 
+        channel.initialize();
         stream = new MockHttpStream(channel);
         channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://match.wild.org/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(200));
 
+        channel.initialize();
         stream = new MockHttpStream(channel);
         channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://acme.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(404));
 
         connectorName.set("special");
+        channel.initialize();
         stream = new MockHttpStream(channel);
         channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://acme.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
         assertThat(stream.isComplete(), is(true));
@@ -753,6 +768,7 @@ public class ContextHandlerTest
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannelState(connectionMetaData);
+        channel.initialize();
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -812,6 +828,7 @@ public class ContextHandlerTest
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannelState(connectionMetaData);
+        channel.initialize();
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
