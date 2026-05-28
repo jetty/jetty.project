@@ -669,6 +669,16 @@ public class HttpChannelState implements HttpChannel, Components
 
     private void completeStream(HttpStream stream, Throwable failure)
     {
+        ChannelRequest request;
+        ChannelResponse response;
+        long oldIdleTimeout;
+        try (AutoLock ignored = _lock.lock())
+        {
+            request = _request;
+            response = _response;
+            oldIdleTimeout = _oldIdleTimeout;
+        }
+
         try
         {
             RequestLog requestLog = getServer().getRequestLog();
@@ -676,24 +686,23 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("logging {}", HttpChannelState.this);
-
-                requestLog.log(_request.getLoggedRequest(), _response);
+                requestLog.log(request.getLoggedRequest(), response);
             }
 
             // Clean up any multipart tmp files and release any associated resources.
-            MultiPartFormData.Parts parts = MultiPartFormData.getParts(_request);
+            MultiPartFormData.Parts parts = MultiPartFormData.getParts(request);
             if (parts != null)
                 parts.close();
 
             long idleTO = getHttpConfiguration().getIdleTimeout();
-            if (idleTO > 0 && _oldIdleTimeout != idleTO)
-                stream.setIdleTimeout(_oldIdleTimeout);
+            if (idleTO > 0 && oldIdleTimeout != idleTO)
+                stream.setIdleTimeout(oldIdleTimeout);
         }
         finally
         {
             ComplianceViolation.Listener listener = getComplianceViolationListener();
             if (listener != null)
-                listener.onRequestEnd(_request);
+                listener.onRequestEnd(request);
 
             // This is THE ONLY PLACE the stream is succeeded or failed.
             if (failure == null)
@@ -1403,7 +1412,8 @@ public class HttpChannelState implements HttpChannel, Components
                 callback = _writeCallback;
                 _writeCallback = null;
                 httpChannel = _request.lockedGetHttpChannelState();
-                httpChannel.lockedStreamSendCompleted(true);
+                if (!(callback instanceof LastWriteCallback))
+                    httpChannel.lockedStreamSendCompleted(true);
             }
             if (callback != null)
                 httpChannel._writeInvoker.run(new ReadyTask(callback.getInvocationType(), callback::succeeded));
@@ -1432,7 +1442,8 @@ public class HttpChannelState implements HttpChannel, Components
                 callback = _writeCallback;
                 _writeCallback = null;
                 httpChannel = _request.lockedGetHttpChannelState();
-                httpChannel.lockedStreamSendCompleted(false);
+                if (!(callback instanceof LastWriteCallback))
+                    httpChannel.lockedStreamSendCompleted(false);
             }
             if (callback != null)
                 httpChannel._writeInvoker.run(() -> HttpChannelState.failed(callback, x));
