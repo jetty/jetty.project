@@ -47,6 +47,7 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
@@ -1646,7 +1647,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // Turn pending demand into failure.
                 if (httpChannelState._onContentAvailable != null)
                 {
-                    failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
+                    failure = ExceptionUtil.combine(failure, new QuietException.Exception("demand pending"));
                 }
                 else
                 {
@@ -1657,6 +1658,8 @@ public class HttpChannelState implements HttpChannel, Components
                     // persistent otherwise RequestLog.log() would be able to read
                     // x-www-form-urlencoded parameters in one case and not the other.
                     Throwable unconsumed = stream.consumeAvailable();
+                    if (unconsumed != null)
+                        unconsumed = new QuietException.RuntimeException(unconsumed);
                     httpChannelState._consumeAvailableFailure = unconsumed;
                     if (httpChannelState.getConnectionMetaData().isPersistent() && !httpChannelState._expects100Continue)
                         failure = ExceptionUtil.combine(failure, unconsumed);
