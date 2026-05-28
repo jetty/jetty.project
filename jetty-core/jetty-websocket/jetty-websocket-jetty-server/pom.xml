@@ -38,7 +38,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>org.eclipse.jetty.websocket.server;version=${project.version}</Export-Package>
+            <Export-Package>org.eclipse.jetty.websocket.server.*;version=${project.version}</Export-Package>
           </instructions>
         </configuration>
       </plugin>
