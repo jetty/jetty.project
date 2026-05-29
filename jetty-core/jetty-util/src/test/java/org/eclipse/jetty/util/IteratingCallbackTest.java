@@ -46,6 +46,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IteratingCallbackTest
@@ -973,6 +974,7 @@ public class IteratingCallbackTest
         icb.iterate();
         assertEquals(1, count.get());
         assertTrue(icb.isAborted());
+        assertNotNull(failure.get());
     }
 
     @Test
@@ -1007,6 +1009,7 @@ public class IteratingCallbackTest
         icb.succeeded();
         assertEquals(1, count.get());
         assertTrue(icb.isAborted());
+        assertNotNull(failure.get());
     }
 
     @Test

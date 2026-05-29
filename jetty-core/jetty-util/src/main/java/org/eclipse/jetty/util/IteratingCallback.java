@@ -375,6 +375,7 @@ public abstract class IteratingCallback implements Callback
                 try
                 {
                     action = process();
+                    assert action != null;
                 }
                 catch (Throwable x)
                 {
@@ -395,7 +396,19 @@ public abstract class IteratingCallback implements Callback
                     case PROCESSING:
                     {
                         if (action == null)
-                            break processing;
+                        {
+                            if (_failure != null)
+                            {
+                                if (_aborted)
+                                    onAbortedOnFailureOnCompleted = _failure;
+                                else
+                                    onFailureOnCompleted = _failure;
+                                _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
+                                break processing;
+                            }
+                            throw new IllegalStateException(String.format("%s[action=%s]", this, action));
+                        }
+
                         switch (action)
                         {
                             case IDLE:
@@ -457,25 +470,42 @@ public abstract class IteratingCallback implements Callback
 
                     case PROCESSING_CALLED:
                     {
-                        if (action != Action.SCHEDULED && action != null)
+                        if (action == Action.SCHEDULED)
+                        {
+                            if (_failure != null)
+                            {
+                                if (_aborted)
+                                    onAbortedOnFailureOnCompleted = _failure;
+                                else
+                                    onFailureOnCompleted = _failure;
+                                _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
+                                break processing;
+                            }
+                            callOnSuccess = true;
+                            _state = State.PROCESSING;
+                            _reprocess = false;
+                            break;
+                        }
+                        if (action == null)
+                        {
+                            if (_failure != null)
+                            {
+                                if (_aborted)
+                                    onAbortedOnFailureOnCompleted = _failure;
+                                else
+                                    onFailureOnCompleted = _failure;
+                                _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
+                                break processing;
+                            }
+                            throw new IllegalStateException(String.format("%s[action=%s]", this, action));
+                        }
+                        else
                         {
                             _state = State.CLOSED;
-                            _failure = onAbortedOnFailureOnCompleted = ExceptionUtil.combine(_failure, new IllegalStateException("Action not scheduled"));
+                            _aborted = true;
+                            _failure = onAbortedOnFailureOnCompleted = ExceptionUtil.combine(_failure, new IllegalStateException("Action != SCHEDULED"));
                             break processing;
                         }
-                        if (_failure != null)
-                        {
-                            if (_aborted)
-                                onAbortedOnFailureOnCompleted = _failure;
-                            else
-                                onFailureOnCompleted = _failure;
-                            _state = _failure instanceof ClosedException ? State.CLOSED : State.COMPLETE;
-                            break processing;
-                        }
-                        callOnSuccess = true;
-                        _state = State.PROCESSING;
-                        _reprocess = false;
-                        break;
                     }
 
                     default:
