@@ -75,6 +75,7 @@ public class HttpRequest implements Request
     private final Fields params = new Fields(true);
     private final ResponseListeners responseListeners = new ResponseListeners();
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
+    private final AtomicReference<Throwable> failed = new AtomicReference<>();
     private final HttpClient client;
     private final HttpConversation conversation;
     private Connection connection;
@@ -865,6 +866,18 @@ public class HttpRequest implements Request
         {
             Promise.Completable<Boolean> promise = new Promise.Completable<>();
             conversation.abort(cause, promise);
+            return promise;
+        }
+        return CompletableFuture.completedFuture(false);
+    }
+
+    @Override
+    public CompletableFuture<Boolean> fail(Throwable cause)
+    {
+        if (failed.compareAndSet(null, Objects.requireNonNull(cause)))
+        {
+            Promise.Completable<Boolean> promise = new Promise.Completable<>();
+            conversation.abortRequest(cause, promise);
             return promise;
         }
         return CompletableFuture.completedFuture(false);

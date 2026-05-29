@@ -88,6 +88,8 @@ import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -107,6 +109,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -843,8 +846,18 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
+                // Flush the response headers.
+                try (Blocker.Callback cb = Blocker.callback())
+                {
+                    response.write(false, BufferUtil.EMPTY_BUFFER, cb);
+                    cb.block(5, TimeUnit.SECONDS);
+                }
+
+                // Wait for the client to process the response headers.
+                Thread.sleep(1000);
+
                 callback.succeeded();
                 return true;
             }
@@ -853,13 +866,13 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         AtomicReference<Throwable> onContentSourceErrorRef = new AtomicReference<>();
         AtomicReference<Result> resultRef = new AtomicReference<>();
 
-        org.eclipse.jetty.client.Request jettyRequest = httpClient.newRequest("localhost", connector.getLocalPort());
-        jettyRequest.send(new Response.Listener()
+        var clientRequest = httpClient.newRequest("localhost", connector.getLocalPort());
+        clientRequest.send(new Response.Listener()
         {
             @Override
             public void onBegin(Response response)
             {
-                response.abort(new ArrayStoreException("nothing is ever going to throw ArrayStoreException in our code"));
+                response.abort(new ArrayStoreException());
             }
 
             @Override
@@ -920,17 +933,18 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     }
 
     @Test
-    public void testUnreadRequestContentDrainsResponseContent() throws Exception
+    public void testUnreadRequestContentDoesNotDrainResponseContent() throws Exception
     {
+        int length = 1024;
         start(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Do not read the request content,
-                // the server will reset the stream,
-                // then send a response with content.
-                ByteBuffer content = ByteBuffer.allocate(1024);
+                // the server will send a response
+                // with content then reset the stream.
+                ByteBuffer content = ByteBuffer.allocate(length);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.remaining());
                 response.write(true, content, callback);
                 return true;
@@ -938,33 +952,48 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         AtomicReference<Content.Source> contentSourceRef = new AtomicReference<>();
-        AtomicReference<Content.Chunk> chunkRef = new AtomicReference<>();
-        CountDownLatch responseFailureLatch = new CountDownLatch(1);
+        CountDownLatch requestFailureLatch = new CountDownLatch(1);
+        CountDownLatch responseSuccessLatch = new CountDownLatch(1);
         AtomicReference<Result> resultRef = new AtomicReference<>();
         httpClient.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
-            .body(new AsyncRequestContent(ByteBuffer.allocate(1024)))
+            .body(new AsyncRequestContent(ByteBuffer.allocate(512)))
             .onResponseContentSource((response, contentSource) -> contentSourceRef.set(contentSource))
-            // The request is failed before the response, verify that
-            // reading at the request failure event yields a failure chunk.
-            .onRequestFailure((request, failure) -> chunkRef.set(contentSourceRef.get().read()))
-            .onResponseFailure((response, failure) -> responseFailureLatch.countDown())
+            .onRequestFailure((request, failure) -> requestFailureLatch.countDown())
+            .onResponseSuccess(response -> responseSuccessLatch.countDown())
             .send(resultRef::set);
 
-        // Wait for the RST_STREAM to arrive and drain the response content.
-        assertTrue(responseFailureLatch.await(5, TimeUnit.SECONDS));
+        // Wait for the request to fail.
+        assertTrue(requestFailureLatch.await(5, TimeUnit.SECONDS));
 
-        // Verify that the chunk read at the request failure event is a failure chunk.
-        Content.Chunk chunk = chunkRef.get();
-        assertTrue(Content.Chunk.isFailure(chunk, true));
-        // Reading more also yields a failure chunk.
-        chunk = contentSourceRef.get().read();
-        assertTrue(Content.Chunk.isFailure(chunk, true));
+        // Verify that we can fully read the response.
+        int received = 0;
+        try (Blocker.Runnable task = Blocker.runnable())
+        {
+            Content.Source source = contentSourceRef.get();
+            while (true)
+            {
+                Content.Chunk chunk = source.read();
+                if (chunk == null)
+                {
+                    source.demand(task);
+                    task.block(5, TimeUnit.SECONDS);
+                    continue;
+                }
+                received += chunk.remaining();
+                chunk.release();
+                if (chunk.isLast())
+                    break;
+            }
+        }
+
+        assertEquals(length, received);
+        assertTrue(responseSuccessLatch.await(5, TimeUnit.SECONDS));
 
         Result result = await().atMost(5, TimeUnit.SECONDS).until(resultRef::get, notNullValue());
         assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
         assertNotNull(result.getRequestFailure());
-        assertNotNull(result.getResponseFailure());
+        assertNull(result.getResponseFailure());
     }
 
     @Test

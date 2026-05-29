@@ -16,6 +16,7 @@ package org.eclipse.jetty.http2.tests;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -416,7 +417,7 @@ public class GoAwayTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        // Send the response, but do not read.
+                        // Send the response, but do not read right now.
                         MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     }
@@ -511,10 +512,26 @@ public class GoAwayTest extends AbstractTest
 
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverGoAwayLatch.await(5, TimeUnit.SECONDS));
+
+        // Consume the data of the first stream, otherwise the server session
+        // won't be closed, waiting for the application to complete this stream.
+        HTTP2Session serverSession = (HTTP2Session)serverSessionRef.get();
+        Collection<Stream> serverStreams = serverSession.getStreams();
+        assertEquals(1, serverStreams.size());
+        Stream serverStream = serverStreams.iterator().next();
+        while (true)
+        {
+            Stream.Data data = serverStream.readData();
+            assertNotNull(data);
+            data.release();
+            if (data.frame().isEndStream())
+                break;
+        }
+
         assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
 
-        assertFalse(((HTTP2Session)serverSessionRef.get()).getEndPoint().isOpen());
+        assertFalse(serverSession.getEndPoint().isOpen());
         assertFalse(((HTTP2Session)clientSession).getEndPoint().isOpen());
     }
 
