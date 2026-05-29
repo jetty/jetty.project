@@ -46,6 +46,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IteratingCallbackTest
@@ -635,7 +636,7 @@ public class IteratingCallbackTest
     }
 
     @Test
-    public void testICBSuccess() throws Exception
+    public void testIterateThenSucceedThenFail() throws Exception
     {
         TestIteratingCB callback = new TestIteratingCB();
         callback.iterate();
@@ -655,7 +656,7 @@ public class IteratingCallbackTest
     }
 
     @Test
-    public void testICBFailure() throws Exception
+    public void testIterateThenFailThenSucceed() throws Exception
     {
         Throwable failure = new Throwable();
         TestIteratingCB callback = new TestIteratingCB();
@@ -678,7 +679,7 @@ public class IteratingCallbackTest
     }
 
     @Test
-    public void testICBAbortSuccess() throws Exception
+    public void testAbortThenSucceedThenFail() throws Exception
     {
         TestIteratingCB callback = new TestIteratingCB();
         callback.iterate();
@@ -904,10 +905,10 @@ public class IteratingCallbackTest
     }
 
     @Test
-    public void testOnSuccessCalledDespiteISE() throws Exception
+    public void testOnFailureCalledWhenReturningWrongAction() throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<Throwable> aborted = new AtomicReference<>();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
         IteratingCallback icb = new IteratingCallback()
         {
             @Override
@@ -918,16 +919,9 @@ public class IteratingCallbackTest
             }
 
             @Override
-            protected void onAborted(Throwable cause)
+            protected void onFailure(Throwable cause)
             {
-                aborted.set(cause);
-                super.onAborted(cause);
-            }
-
-            @Override
-            protected void onCompleteSuccess()
-            {
-                latch.countDown();
+                failure.set(cause);
             }
 
             @Override
@@ -939,11 +933,11 @@ public class IteratingCallbackTest
 
         icb.iterate();
         assertTrue(latch.await(5, TimeUnit.SECONDS));
-        assertThat(aborted.get(), instanceOf(IllegalStateException.class));
+        assertThat(failure.get(), instanceOf(IllegalStateException.class));
     }
 
     @Test
-    public void testAbortFromOnSuccessInProcess() throws Exception
+    public void testSucceededInProcessThenAbortFromOnSuccess() throws Exception
     {
         AtomicInteger count = new AtomicInteger();
         AtomicReference<Throwable> failure = new AtomicReference<>();
@@ -973,10 +967,11 @@ public class IteratingCallbackTest
         icb.iterate();
         assertEquals(1, count.get());
         assertTrue(icb.isAborted());
+        assertNotNull(failure.get());
     }
 
     @Test
-    public void testAbortFromOnSuccessAfterProcess() throws Exception
+    public void testSucceededAfterProcessThenAbortFromOnSuccess() throws Exception
     {
         AtomicInteger count = new AtomicInteger();
         AtomicReference<Throwable> failure = new AtomicReference<>();
@@ -1007,6 +1002,7 @@ public class IteratingCallbackTest
         icb.succeeded();
         assertEquals(1, count.get());
         assertTrue(icb.isAborted());
+        assertNotNull(failure.get());
     }
 
     @Test
@@ -1116,7 +1112,7 @@ public class IteratingCallbackTest
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    public void testAbortThenFailFromProcess(boolean succeed)
+    public void testAbortThenCompleteThenThrowFromProcess(boolean succeed)
     {
         AccountingIteratingCallback icb = new AccountingIteratingCallback()
         {

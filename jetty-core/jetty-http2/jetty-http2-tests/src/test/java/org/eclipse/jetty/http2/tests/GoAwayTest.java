@@ -1372,7 +1372,7 @@ public class GoAwayTest extends AbstractTest
         }
 
         // All the requests should fail, since the server is always closing the connection.
-        assertTrue(latch.await(15, TimeUnit.SECONDS));
+        assertTrue(latch.await(15, TimeUnit.SECONDS), latch.toString());
 
         List<Destination> destinations = httpClient.getDestinations();
         assertThat(destinations.size(), equalTo(1));
