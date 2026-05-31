@@ -1,3 +1,5 @@
+jetty-12.1.11-SNAPSHOT
+
 12.1.10 - 29 May 2026
  + 9799 Declare EncodingException for HPACK/QPACK encoders and decoders
  + 14006 How to handle "Warning Logs in org.eclipse.jetty.ee8.nested.HttpChannelState and org.eclipse.jetty.server.internal.HttpChannelState"?
