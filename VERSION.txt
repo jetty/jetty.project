@@ -1,3 +1,9 @@
+12.0.36 - 30 May 2026
+ + 14006 How to handle "Warning Logs in org.eclipse.jetty.ee8.nested.HttpChannelState and org.eclipse.jetty.server.internal.HttpChannelState"?
+ + 14745 NPE in HttpChannelState.completeStream() when _request is null during multipart cleanup
+ + 15136 Refresh Digest authentication implementation
+ + 15161 Reduce memory footprint for persistent HttpConnections
+
 12.0.35 - 30 April 2026
  + 14745 NPE in HttpChannelState.completeStream() when _request is null during multipart cleanup
  + 14870 Refactor compliance checks
