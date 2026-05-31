@@ -1,4 +1,20 @@
-jetty-12.1.10-SNAPSHOT
+12.1.10 - 29 May 2026
+ + 9799 Declare EncodingException for HPACK/QPACK encoders and decoders
+ + 14006 How to handle "Warning Logs in org.eclipse.jetty.ee8.nested.HttpChannelState and org.eclipse.jetty.server.internal.HttpChannelState"?
+ + 14522 Bundle org.eclipse.jetty.websocket.server OSGI metadata exports internal instead of public package
+ + 14528 `BinaryStreamTest.testMoreThanLargestMessageOneByteAtATime()` is flaky
+ + 14745 NPE in HttpChannelState.completeStream() when _request is null during multipart cleanup
+ + 14984 XmlConfiguration emits "Deprecated method ... setMaxThreads" WARN from shipped jetty-threadpool-virtual.xml
+ + 15009 Make processing of RST_STREAM more lenient
+ + 15011 `PathResource.resolve()` fails on Microsoft Windows due to `Illegal char <:>`
+ + 15021 Resource handling regression in 12.1.9
+ + 15031 IOResources#toRetainableByteBuffer data loss when using resources without path
+ + 15074 HTTP/2 extended connect responses contain Content-Length: 0
+ + 15094 Jetty 12.1 Regression: Deferred Authentication provides Callback.NOT_CALLED leading to errors
+ + 15118 Upgrade to Quiche version 0.29.0
+ + 15136 Refresh Digest authentication implementation
+ + 15161 Reduce memory footprint for persistent HttpConnections
+ + 15180 Upgrade to Quiche version 0.29.1
 
 12.1.9 - 30 April 2026
  + 8876 Jetty 12 - JMX-ify HttpContent.Factory implementations
