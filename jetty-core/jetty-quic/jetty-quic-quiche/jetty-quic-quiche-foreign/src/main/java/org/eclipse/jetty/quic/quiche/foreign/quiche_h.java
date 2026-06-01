@@ -400,26 +400,12 @@ public class quiche_h
                 C_POINTER,
                 C_POINTER
             ));
-        private static final MethodHandle quiche_conn_set_keylog_fd = NativeHelper.downcallHandle(
-            "quiche_conn_set_keylog_fd",
-            FunctionDescriptor.ofVoid(
-                C_POINTER,
-                C_INT
-            ));
         private static final MethodHandle quiche_conn_set_qlog_path = NativeHelper.downcallHandle(
             "quiche_conn_set_qlog_path",
             FunctionDescriptor.of(
                 C_BOOL,
                 C_POINTER,
                 C_POINTER,
-                C_POINTER,
-                C_POINTER
-            ));
-        private static final MethodHandle quiche_conn_set_qlog_fd = NativeHelper.downcallHandle(
-            "quiche_conn_set_qlog_fd",
-            FunctionDescriptor.ofVoid(
-                C_POINTER,
-                C_INT,
                 C_POINTER,
                 C_POINTER
             ));
@@ -1557,35 +1543,11 @@ public class quiche_h
         }
     }
 
-    public static void quiche_conn_set_keylog_fd(MemorySegment conn, int fd)
-    {
-        try
-        {
-            DowncallHandles.quiche_conn_set_keylog_fd.invokeExact(conn, fd);
-        }
-        catch (Throwable x)
-        {
-            throw new AssertionError("should not reach here", x);
-        }
-    }
-
     public static boolean quiche_conn_set_qlog_path(MemorySegment conn, MemorySegment path, MemorySegment log_title, MemorySegment log_desc)
     {
         try
         {
             return (byte)DowncallHandles.quiche_conn_set_qlog_path.invokeExact(conn, path, log_title, log_desc) != 0;
-        }
-        catch (Throwable x)
-        {
-            throw new AssertionError("should not reach here", x);
-        }
-    }
-
-    public static void quiche_conn_set_qlog_fd(MemorySegment conn, int fd, MemorySegment log_title, MemorySegment log_desc)
-    {
-        try
-        {
-            DowncallHandles.quiche_conn_set_qlog_fd.invokeExact(conn, fd, log_title, log_desc);
         }
         catch (Throwable x)
         {
