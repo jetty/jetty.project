@@ -81,6 +81,8 @@ public class ContextScopeListenerTest
             {
                 if  (req.getDispatcherType() == DispatcherType.ASYNC)
                 {
+                    // wait until exitScope call has exited
+                    Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> _history.get(_history.size() - 1).equals("exitScope /initialPath"));
                     _history.add("asyncDispatch");
                     return;
                 }
