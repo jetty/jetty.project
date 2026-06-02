@@ -60,6 +60,8 @@ public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketC
         return discoverJakartaFrameHandlerMetadata(endpointClass, metadata);
     }
 
+
+    // TODO: change from new*() to create*() to match other factory?
     @Override
     public FrameHandler newFrameHandler(Object websocketPojo, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse)
     {
@@ -73,6 +75,7 @@ public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketC
         }
     }
 
+    // TODO: change from new*() to create*() to match other factory?
     @Override
     protected JakartaWebSocketFrameHandler newJakartaWebSocketFrameHandler(JakartaWebSocketContainer container,
                                                                            UpgradeRequest upgradeRequest,

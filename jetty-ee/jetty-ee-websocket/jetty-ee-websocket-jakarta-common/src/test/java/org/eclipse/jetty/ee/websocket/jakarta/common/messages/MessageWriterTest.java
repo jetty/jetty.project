@@ -151,8 +151,9 @@ public class MessageWriterTest
         @Override
         public void sendFrame(OutgoingEntry entry)
         {
-            frames.add(Frame.copy(entry.getFrame()));
-            entry.getFrame().getPayload().position(entry.getFrame().getPayload().limit());
+            Frame frame = entry.getFrame();
+            frames.add(Frame.copy(frame));
+            frame.getPayload().position(frame.getPayload().limit());
             entry.getCallback().succeeded();
         }
     }

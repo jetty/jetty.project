@@ -17,6 +17,7 @@ module org.eclipse.jetty.ee.websocket.jakarta.common
 
     requires transitive jakarta.websocket.client;
     requires transitive org.eclipse.jetty.websocket.core.client;
+    requires jakarta.websocket;
 
     exports org.eclipse.jetty.ee.websocket.jakarta.common;
     exports org.eclipse.jetty.ee.websocket.jakarta.common.decoders;

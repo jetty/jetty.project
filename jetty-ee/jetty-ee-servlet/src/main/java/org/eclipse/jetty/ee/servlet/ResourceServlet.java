@@ -321,7 +321,11 @@ public class ResourceServlet extends HttpServlet
             int minMappedFileSize = getInitInt("minMappedFileSize", -1);
             String useFileMappedBuffer = getInitParameter("useFileMappedBuffer");
             if (useFileMappedBuffer != null)
+            {
+                // This warning was introduced in EE11.
+                // TODO: in EE10, default to a functional minMappedFileSize for backward compat?
                 LOG.warn("{} Deprecated useFileMappedBuffer used. Use minMappedFileSize instead", this);
+            }
             
             if (minMappedFileSize > 0)
                 contentFactory = new FileMappingHttpContentFactory(contentFactory, minMappedFileSize, getInitInt("maxMappedFileSize", Integer.MAX_VALUE));

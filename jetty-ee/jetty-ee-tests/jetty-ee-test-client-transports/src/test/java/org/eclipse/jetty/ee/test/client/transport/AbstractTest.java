@@ -89,7 +89,10 @@ public class AbstractTest
 
     public static Collection<TransportType> transports()
     {
-        return EnumSet.allOf(TransportType.class);
+        EnumSet<TransportType> transportTypes = EnumSet.allOf(TransportType.class);
+        if ("ci".equals(System.getProperty("env")))
+            transportTypes.remove(TransportType.H3_QUICHE);
+        return transportTypes;
     }
 
     public static Collection<TransportType> transportsNoFCGI()

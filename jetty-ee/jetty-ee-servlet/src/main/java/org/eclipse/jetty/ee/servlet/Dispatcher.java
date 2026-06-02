@@ -40,6 +40,7 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.servlet.http.Part;
+import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
 import org.eclipse.jetty.ee.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
@@ -756,18 +757,27 @@ public class Dispatcher implements RequestDispatcher
             // NOOP for include.
         }
 
+        /**
+         * @since EE11 / Servlet 6.1
+         */
         @Override
         public void sendRedirect(String location, boolean clearBuffer) throws IOException
         {
             // NOOP for include.
         }
 
+        /**
+         * @since EE11 / Servlet 6.1
+         */
         @Override
         public void sendRedirect(String location, int sc) throws IOException
         {
             // NOOP for include.
         }
 
+        /**
+         * @since EE11 / Servlet 6.1
+         */
         @Override
         public void sendRedirect(String location, int sc, boolean clearBuffer) throws IOException
         {
@@ -987,8 +997,10 @@ public class Dispatcher implements RequestDispatcher
         {
             return switch (name)
             {
+                // New in EE11
                 case ERROR_METHOD -> _httpServletRequest.getMethod();
                 case ERROR_REQUEST_URI -> _httpServletRequest.getRequestURI();
+                // New in EE11
                 case ERROR_QUERY_STRING -> _httpServletRequest.getQueryString();
                 case ERROR_STATUS_CODE -> super.getAttribute(ErrorHandler.ERROR_STATUS);
                 case ERROR_MESSAGE -> super.getAttribute(ErrorHandler.ERROR_MESSAGE);
@@ -1006,7 +1018,15 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            List<String> names = new ArrayList<>(List.of(ERROR_METHOD, ERROR_REQUEST_URI, ERROR_QUERY_STRING, ERROR_STATUS_CODE, ERROR_MESSAGE, ERROR_SERVLET_NAME, ERROR_EXCEPTION, ERROR_EXCEPTION_TYPE));
+            // Start with EE10 list of names.
+            ArrayList<String> names = new ArrayList<>(List.of(ERROR_REQUEST_URI, ERROR_STATUS_CODE, ERROR_MESSAGE, ERROR_SERVLET_NAME, ERROR_EXCEPTION, ERROR_EXCEPTION_TYPE));
+            if (EnterpriseEditionVersion.getEnterpriseEditionVersion().version() >= EnterpriseEditionVersion.ee11.version())
+            {
+                // Add new names introduced in EE11.
+                names.add(ERROR_METHOD);
+                names.add(ERROR_QUERY_STRING);
+            }
+            // Add existing names from request attributes
             names.addAll(Collections.list(super.getAttributeNames()));
             return Collections.enumeration(names);
         }

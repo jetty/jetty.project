@@ -15,8 +15,22 @@ package org.eclipse.jetty.ee.common;
 
 public enum EnterpriseEditionVersion
 {
+    /**
+     * Unable to determine the EE version in use.
+     */
+    unknown(-99),
+    /**
+     * EE10 is in use.
+     */
     ee10(10),
-    ee11(11);
+    /**
+     * EE11 is in use.
+     */
+    ee11(11),
+    /**
+     * EE12 is in use.
+     */
+    ee12(12);
 
     public static final EnterpriseEditionVersion currentVersion = initEnterpriseEditionVersion();
 
@@ -41,11 +55,15 @@ public enum EnterpriseEditionVersion
     {
         try
         {
+            // TODO: EE versioning is not tied to Servlet spec versioning.
+            //       It is very possible for a EE version to increase WITHOUT
+            //       The Servlet spec updating too.
             return switch (ServletApiVersion.getServletApiVersion())
             {
                 case v6_0 -> ee10;
                 case v6_1 -> ee11;
-                default -> null;
+                case v6_2 -> ee12;
+                default -> unknown;
             };
         }
         catch (Throwable e)

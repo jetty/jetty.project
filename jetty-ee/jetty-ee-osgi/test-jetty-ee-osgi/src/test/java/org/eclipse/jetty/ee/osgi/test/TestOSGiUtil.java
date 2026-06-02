@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
 import org.eclipse.jetty.osgi.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.OSGiServerConstants;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.options.MavenArtifactProvisionOption;
 import org.ops4j.pax.tinybundles.TinyBundle;
 import org.ops4j.pax.tinybundles.TinyBundles;
 import org.osgi.framework.Bundle;
@@ -272,7 +274,14 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("mortbay-apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee").artifactId("jetty-ee-apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
-        res.add(mavenBundle().groupId("org.glassfish.wasp").artifactId("wasp").versionAsInProject().start());
+
+        MavenArtifactProvisionOption jstlOption = switch(EnterpriseEditionVersion.getEnterpriseEditionVersion())
+        {
+            case ee10 -> mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject();
+            case unknown, ee11, ee12 -> mavenBundle().groupId("org.glassfish.wasp").artifactId("wasp").versionAsInProject();
+        };
+
+        res.add(jstlOption.start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee.osgi").artifactId("jetty-ee-osgi-boot-jsp").versionAsInProject().noStart());
     }

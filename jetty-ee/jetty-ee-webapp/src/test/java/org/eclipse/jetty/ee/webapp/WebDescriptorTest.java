@@ -35,6 +35,7 @@ public class WebDescriptorTest
     public void testXmlWithXsd(WorkDir workDir) throws Exception
     {
         Path xml = workDir.getEmptyPathDir().resolve("test.xml");
+        // TODO: use Environment specific descriptor text from somewhere.
         Files.writeString(xml, """
             <?xml version="1.0" encoding="UTF-8"?>
             <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"

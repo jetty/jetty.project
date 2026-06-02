@@ -57,6 +57,8 @@ public class PushedResourcesTest extends AbstractTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 Cookie cookie0 = new Cookie("C0", "v0");
+                // TODO: EE10 has behavior for setMaxAge(0)
+                // TODO: EE11+ has setMaxAge(-1) meaning
                 cookie0.setMaxAge(-1);
                 response.addCookie(cookie0);
                 Cookie cookie1 = new Cookie("C1", "v1");

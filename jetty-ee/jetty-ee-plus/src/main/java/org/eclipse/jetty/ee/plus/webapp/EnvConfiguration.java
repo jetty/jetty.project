@@ -249,8 +249,8 @@ public class EnvConfiguration extends AbstractConfiguration
     }
 
     /**
-     * Obtain a WEB-INF/jetty-ee-env.xml, falling back to
-     * looking for WEB-INF/jetty-env.xml.
+     * Obtain a {@code WEB-INF/jetty-ee##-env.xml} (environment specific), falling back to
+     * looking for {@code WEB-INF/jetty-env.xml} (generic).
      *
      * @param webInf the WEB-INF of the context to search
      * @return the file if it exists or null otherwise
@@ -262,7 +262,7 @@ public class EnvConfiguration extends AbstractConfiguration
             if (webInf == null || !webInf.isDirectory())
                 return null;
 
-            //try to find jetty-ee-env.xml
+            //try to find jetty-ee##-env.xml (environment specific)
             Resource xmlResource = webInf.resolve(JETTY_EE_ENV_XML_FILENAME);
             if (!Resources.missing(xmlResource))
                 return xmlResource;

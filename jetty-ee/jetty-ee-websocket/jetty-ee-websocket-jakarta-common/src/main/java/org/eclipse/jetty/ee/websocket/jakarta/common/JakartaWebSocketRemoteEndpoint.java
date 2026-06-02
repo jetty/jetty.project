@@ -169,6 +169,7 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
 
             if (encoder instanceof Encoder.TextStream textStreamEncoder)
             {
+                // TODO: try-with-resources on `writer`?
                 MessageWriter writer = newMessageWriter();
                 writer.setCallback(callback);
                 textStreamEncoder.encode(data, writer);
@@ -185,6 +186,7 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
 
             if (encoder instanceof Encoder.BinaryStream binaryStreamEncoder)
             {
+                // TODO: try-with-resources on `out`?
                 MessageOutputStream out = newMessageOutputStream();
                 out.setCallback(callback);
                 binaryStreamEncoder.encode(data, out);

@@ -178,6 +178,9 @@ public class ServletApiResponse implements HttpServletResponse
         sendRedirect(HttpServletResponse.SC_MOVED_TEMPORARILY, location);
     }
 
+    /**
+     * @since EE11 / Servlet 6.1
+     */
     @Override
     public void sendRedirect(String location, int code, boolean clear) throws IOException
     {
@@ -790,18 +793,21 @@ public class ServletApiResponse implements HttpServletResponse
             // NOOP for include.
         }
 
+        // New in EE11
         @Override
         public void sendRedirect(String location, boolean clearBuffer) throws IOException
         {
             // NOOP for include.
         }
 
+        // New in EE11
         @Override
         public void sendRedirect(String location, int sc) throws IOException
         {
             // NOOP for include.
         }
 
+        // New in EE11
         @Override
         public void sendRedirect(String location, int sc, boolean clearBuffer) throws IOException
         {

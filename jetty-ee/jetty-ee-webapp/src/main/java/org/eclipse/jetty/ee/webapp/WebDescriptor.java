@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
  */
 public class WebDescriptor extends Descriptor
 {
+    // TODO: see if we can grab this from a resource within an EE specific artifact?
     public static final String WEB_APP_ELEMENT = """
         <?xml version="1.0" encoding="UTF-8"?>
         <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"

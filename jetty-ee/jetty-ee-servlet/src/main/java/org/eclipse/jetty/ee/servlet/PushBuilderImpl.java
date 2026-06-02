@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.URIUtil;
 
+// TODO: remove in 13.0.x?
 @Deprecated(since = "12.1.0")
 class PushBuilderImpl implements PushBuilder
 {

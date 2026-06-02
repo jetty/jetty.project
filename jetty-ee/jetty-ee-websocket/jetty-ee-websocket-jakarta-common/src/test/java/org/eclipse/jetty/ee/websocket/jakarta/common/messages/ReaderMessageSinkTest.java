@@ -41,6 +41,8 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
         MethodHolder copyHandle = getAcceptHandle(copy, Reader.class);
+        // .from()??
+        // ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
         ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback finCallback = new FutureCallback();
@@ -58,6 +60,8 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
         MethodHolder copyHandle = getAcceptHandle(copy, Reader.class);
+        // .from() ??
+        // ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
         ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();

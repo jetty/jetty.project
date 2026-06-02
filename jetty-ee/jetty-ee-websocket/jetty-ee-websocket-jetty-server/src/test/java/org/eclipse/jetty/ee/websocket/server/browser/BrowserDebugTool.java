@@ -193,14 +193,12 @@ public class BrowserDebugTool
 
             resp.setExtensions(negotiated);
             if (LOG.isDebugEnabled())
+            {
                 LOG.debug("User-Agent: {}", ua);
-            if (LOG.isDebugEnabled())
                 LOG.debug("Sec-WebSocket-Extensions (Request) : {}", rexts);
-            if (LOG.isDebugEnabled())
                 LOG.debug("Sec-WebSocket-Protocol (Request): {}", req.getHeader("Sec-WebSocket-Protocol"));
-            if (LOG.isDebugEnabled())
                 LOG.debug("Sec-WebSocket-Protocol (Response): {}", resp.getAcceptedSubProtocol());
-
+            }
             req.getExtensions();
             return new BrowserSocket(ua, rexts);
         }

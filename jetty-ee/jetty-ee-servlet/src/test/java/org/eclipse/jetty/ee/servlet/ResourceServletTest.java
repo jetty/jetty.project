@@ -1926,6 +1926,45 @@ public class ResourceServletTest
         );
 
         scenarios.addScenario(
+            "GET /context/one/ (index.htm match)",
+            """
+                GET /context/one/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("<h1>Hello Inde</h1>")),
+            "exact", null, null
+        );
+
+        scenarios.addScenario(
+            "GET /context/two/ (index.html match)",
+            """
+                GET /context/two/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("<h1>Hello Index</h1>")),
+            "exact", null, null
+        );
+
+        scenarios.addScenario(
+            "GET /context/three/ (index.html wins over index.htm)",
+            """
+                GET /context/three/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """,
+            HttpStatus.OK_200,
+            (response) -> assertThat(response.getContent(), containsString("<h1>Three Index</h1>")),
+            "exact", null, null
+        );
+
+        scenarios.addScenario(
             "No welcome file or servlet in dir",
             """
                 GET /context/dir/ HTTP/1.1\r
@@ -2065,8 +2104,20 @@ public class ResourceServletTest
     {
         FS.ensureDirExists(docRoot);
 
+        Path one = docRoot.resolve("one");
+        Path two = docRoot.resolve("two");
+        Path three = docRoot.resolve("three");
         Path dir = docRoot.resolve("dir");
+        FS.ensureDirExists(one);
+        FS.ensureDirExists(two);
+        FS.ensureDirExists(three);
         FS.ensureDirExists(dir);
+
+        Files.writeString(one.resolve("index.htm"), "<h1>Hello Inde</h1>", UTF_8);
+        Files.writeString(two.resolve("index.html"), "<h1>Hello Index</h1>", UTF_8);
+
+        Files.writeString(three.resolve("index.html"), "<h1>Three Index</h1>", UTF_8);
+        Files.writeString(three.resolve("index.htm"), "<h1>Three Inde</h1>", UTF_8);
 
         if (file != null)
             Files.writeString(docRoot.resolve(file), "Contents of " + file, UTF_8);
@@ -2077,7 +2128,7 @@ public class ResourceServletTest
         holder.setInitParameter("welcomeServlets", welcomeServlets);
         holder.setInitParameter("gzip", "false");
 
-        context.setWelcomeFiles(new String[] {"index.html"});
+        context.setWelcomeFiles(new String[] {"index.html", "index.htm"});
 
         if (mapping != null)
             context.addServlet(DumpServlet.class, mapping);

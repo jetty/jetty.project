@@ -18,6 +18,7 @@ import javax.inject.Inject;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,8 +62,14 @@ public class TestJettyOSGiBootWithJspC
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
         options.add(CoreOptions.cleanCaches(true));
-        
-        options.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("jetty-servlet6-demo-jspc-6-1-webapp").classifier("webbundle-ee11").versionAsInProject());
+
+        String jspcDemoWebappArtifactId = switch(EnterpriseEditionVersion.getEnterpriseEditionVersion())
+        {
+            case ee10 -> "jetty-servlet6-demo-jspc-webapp";
+            case ee11 -> "jetty-servlet6-demo-jspc-6-1-webapp";
+            case unknown, ee12 -> "jetty-servlet6-demo-jspc-6-2-webapp";
+        };
+        options.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId(jspcDemoWebappArtifactId).classifier("webbundle-ee").versionAsInProject());
         return options.toArray(new Option[0]);
     }
 
@@ -78,7 +85,13 @@ public class TestJettyOSGiBootWithJspC
 
             String port = System.getProperty("boot.jspc.port");
             assertNotNull(port);
-            ContentResponse response = client.GET("http://127.0.0.1:" + port + "/servlet6-demo-jspc-61/jstl.jsp");
+            String path = switch(EnterpriseEditionVersion.getEnterpriseEditionVersion())
+            {
+                case ee10 -> "/servlet6-demo-jspc/jstl.jsp";
+                case ee11 -> "/servlet6-demo-jspc-61/jstl.jsp";
+                case unknown, ee12 -> "/servlet6-demo-jspc-62/jstl.jsp";
+            };
+            ContentResponse response = client.GET("http://127.0.0.1:" + port + path);
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
             assertTrue(content.contains("JSTL Example"));
