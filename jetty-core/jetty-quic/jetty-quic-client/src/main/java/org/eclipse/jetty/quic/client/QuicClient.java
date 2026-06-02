@@ -27,6 +27,7 @@ import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.client.internal.ClientQuicSession;
 import org.eclipse.jetty.quic.client.internal.DefaultTokenStore;
 import org.eclipse.jetty.quic.common.DefaultZeroRTTStore;
+import org.eclipse.jetty.quic.common.SessionContainer;
 import org.eclipse.jetty.quic.common.ZeroRTTStore;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -42,11 +43,12 @@ public class QuicClient extends ContainerLifeCycle implements AutoCloseable
     public static final String SESSION_LISTENER_CONTEXT_KEY = Session.Listener.class.getName();
     private static final Logger LOG = LoggerFactory.getLogger(QuicClient.class);
 
+    private final SessionContainer container = new SessionContainer();
     private final QuicClientQuicConfiguration quicConfiguration;
     private final ClientConnector clientConnector;
     private ZeroRTTStore zeroRTTStore;
     private TokenStore tokenStore;
-    private List<String> protocols = List.of("http/1.1", "hq-interop");
+    private List<String> protocols = List.of();
 
     public QuicClient(QuicClientQuicConfiguration quicConfiguration)
     {
@@ -59,6 +61,7 @@ public class QuicClient extends ContainerLifeCycle implements AutoCloseable
         installBean(quicConfiguration);
         this.clientConnector = Objects.requireNonNull(clientConnector);
         installBean(clientConnector);
+        installBean(container);
     }
 
     public QuicClientQuicConfiguration getClientQuicConfiguration()
@@ -111,6 +114,8 @@ public class QuicClient extends ContainerLifeCycle implements AutoCloseable
         if (tokenStore == null)
             tokenStore = new DefaultTokenStore();
         addBean(tokenStore);
+
+        quicConfiguration.addEventListener(container);
 
         super.doStart();
     }

@@ -52,7 +52,6 @@ public class PacketProtector implements Encrypter, Decrypter
     private final boolean client;
     private SecretKey handshakeSecret;
     private SecretKey masterSecret;
-    private EncryptionLevel encryptionLevel;
 
     public PacketProtector(ByteBufferPool byteBufferPool, PacketNumbers packetNumbers, TranscriptHash transcriptHash, boolean client)
     {
@@ -77,17 +76,10 @@ public class PacketProtector implements Encrypter, Decrypter
         return keyManagers.get(EncryptionLevel.HANDSHAKE).getTrafficSecretKey(input);
     }
 
-    public EncryptionLevel getCurrentEncryptionLevel()
-    {
-        return encryptionLevel;
-    }
-
     public void generateInitialKeys(QuicVersion quicVersion, byte[] inputKeyMaterial)
     {
         try
         {
-            encryptionLevel = EncryptionLevel.INITIAL;
-
             KeyManager keyManager = new KeyManager(EncryptionLevel.INITIAL);
             if (keyManagers.put(EncryptionLevel.INITIAL, keyManager) != null)
                 throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.INITIAL);
@@ -131,8 +123,6 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         try
         {
-            encryptionLevel = EncryptionLevel.HANDSHAKE;
-
             KeyManager keyManager = new KeyManager(EncryptionLevel.HANDSHAKE);
             if (keyManagers.put(EncryptionLevel.HANDSHAKE, keyManager) != null)
                 throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.HANDSHAKE);
@@ -187,8 +177,6 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         try
         {
-            encryptionLevel = EncryptionLevel.ONE_RTT;
-
             KeyManager keyManager = new KeyManager(EncryptionLevel.ONE_RTT);
             if (keyManagers.put(EncryptionLevel.ONE_RTT, keyManager) != null)
                 throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.ONE_RTT);

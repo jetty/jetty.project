@@ -240,7 +240,11 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     {
         try
         {
+            getTLSEngine().getPacketProtector().discardKeys(EncryptionLevel.HANDSHAKE);
+            setEncryptionLevel(EncryptionLevel.ONE_RTT);
+
             notifyOpen();
+
             List<Frame> frames = new ArrayList<>();
             frames.add(new HandshakeDoneFrame());
             byte[] token = getQuicConfiguration().getTokenFactory().newToken(getRemoteSocketAddress());

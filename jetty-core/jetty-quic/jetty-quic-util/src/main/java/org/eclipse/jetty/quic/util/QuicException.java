@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.quic.util;
 
+import org.eclipse.jetty.util.TypeUtil;
+
 /**
  * A QUIC exception carrying the error code, the error reason, and the frame type that caused the error.
  */
@@ -80,6 +82,6 @@ public class QuicException extends RuntimeException
     @Override
     public String toString()
     {
-        return "%s %s frame[0x%x]".formatted(getErrorCode(), getMessage(), getFrameType());
+        return "%s@%x[%s,%s,frame=0x%x]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getErrorCode(), getMessage(), getFrameType());
     }
 }

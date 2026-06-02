@@ -100,7 +100,8 @@ public class ClientTLSEngine extends TLSEngine
 
             List<Extension> extensions = new ArrayList<>();
             String serverName = configuration.getServerName();
-            extensions.add(new ServerNameExtension(serverName));
+            if (serverName != null)
+                extensions.add(new ServerNameExtension(serverName));
             setServerName(serverName);
             List<String> applicationProtocols = configuration.getApplicationProtocols();
             if (applicationProtocols != null && !applicationProtocols.isEmpty())
@@ -206,6 +207,8 @@ public class ClientTLSEngine extends TLSEngine
             if (LOG.isDebugEnabled())
                 LOG.debug("retrying handshake on {}", this);
 
+            if (state == State.HANDSHAKE_FAILED)
+                return;
             if (state != State.NEED_SERVER_HELLO)
                 throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
@@ -256,6 +259,8 @@ public class ClientTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", message, this);
 
+        if (state == State.HANDSHAKE_FAILED)
+            return;
         if (state != State.NEED_SERVER_HELLO)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
         if (message.sessionId().length != 0)
@@ -367,6 +372,8 @@ public class ClientTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", message, this);
 
+        if (state == State.HANDSHAKE_FAILED)
+            return;
         if (state != State.NEED_ENCRYPTED_EXTENSIONS)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
@@ -416,6 +423,8 @@ public class ClientTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", message, this);
 
+        if (state == State.HANDSHAKE_FAILED)
+            return;
         if (state != State.NEED_CERTIFICATE)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
@@ -434,6 +443,8 @@ public class ClientTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", message, this);
 
+        if (state == State.HANDSHAKE_FAILED)
+            return;
         if (state != State.NEED_CERTIFICATE)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
@@ -473,6 +484,8 @@ public class ClientTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", message, this);
 
+        if (state == State.HANDSHAKE_FAILED)
+            return;
         if (state != State.NEED_CERTIFICATE_VERIFY)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
@@ -486,6 +499,8 @@ public class ClientTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", message, this);
 
+        if (state == State.HANDSHAKE_FAILED)
+            return;
         if (state != State.NEED_FINISHED)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
         CipherSuite cipherSuite = getCipherSuite();
@@ -611,6 +626,18 @@ public class ClientTLSEngine extends TLSEngine
     {
         HandshakeData handshakeData = new HandshakeData(tlsConfiguration.getQuicVersion(), getTLSVersion(), getServerName(), getCipherSuite(), getApplicationProtocol(), getTransportParameters());
         tlsConfiguration.getZeroRTTStore().store(new ZeroRTTStore.Entry(handshakeData, newSessionTicket, getPacketProtector().createResumptionMasterSecret(getCipherSuite())));
+    }
+
+    @Override
+    public void tryFail(Throwable failure)
+    {
+        boolean fail = switch (state)
+        {
+            case HANDSHAKE_SUCCESSFUL, HANDSHAKE_FAILED -> false;
+            default -> true;
+        };
+        if (fail)
+            fail(failure);
     }
 
     @Override

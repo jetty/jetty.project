@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.api;
 
 import java.net.SocketAddress;
 import java.util.Collection;
+import java.util.EventListener;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -129,7 +130,7 @@ public interface Session
     /// receives events happening on an QUIC connection.
     ///
     /// @see Session
-    interface Listener
+    interface Listener extends EventListener
     {
         /// Callback method invoked to customize the local QUIC transport parameters.
         ///

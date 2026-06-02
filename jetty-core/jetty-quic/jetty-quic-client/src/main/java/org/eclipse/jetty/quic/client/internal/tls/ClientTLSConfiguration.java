@@ -54,6 +54,11 @@ public final class ClientTLSConfiguration extends TLSConfiguration
         return serverName;
     }
 
+    public void setServerName(String serverName)
+    {
+        this.serverName = serverName;
+    }
+
     public RetainableByteBuffer getEarlyData()
     {
         return earlyData;
@@ -62,11 +67,6 @@ public final class ClientTLSConfiguration extends TLSConfiguration
     public void setEarlyData(RetainableByteBuffer earlyData)
     {
         this.earlyData = earlyData;
-    }
-
-    public void setServerName(String serverName)
-    {
-        this.serverName = serverName;
     }
 
     public TransportParameters getTransportParameters()

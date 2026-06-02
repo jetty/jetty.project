@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ClientConnector;
@@ -45,6 +46,8 @@ import org.eclipse.jetty.quic.common.packets.RetryPacket;
 import org.eclipse.jetty.quic.common.packets.VersionNegotiationPacket;
 import org.eclipse.jetty.quic.common.tls.HandshakeData;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
+import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
 import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
@@ -56,6 +59,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +70,7 @@ public class ClientQuicSession extends QuicSession
 
     private final Map<String, Object> context;
     private SocketAddress serverSocketAddress;
+    private Scheduler.Task connectTask;
     private boolean retryPacketProcessed;
     private byte[] retryToken;
 
@@ -151,9 +156,8 @@ public class ClientQuicSession extends QuicSession
         }
 
         List<String> protocols = alpnProtocols(context);
-        if (protocols == null || protocols.isEmpty())
-            throw new IllegalStateException("missing ALPN protocols");
-        tlsConfiguration.setApplicationProtocols(protocols);
+        if (protocols != null && !protocols.isEmpty())
+            tlsConfiguration.setApplicationProtocols(protocols);
 
         TransportParameters transportParameters = new TransportParameters();
         getQuicConfiguration().configure(transportParameters);
@@ -190,7 +194,17 @@ public class ClientQuicSession extends QuicSession
         // be notified when the TLS handshake is complete.
         getTLSEngine().addHandshakeListener(this::handshakeComplete);
 
+        ClientConnector connector = (ClientConnector)context.get(ClientConnector.CONTEXT_KEY);
+        connectTask = getScheduler().schedule(() -> connectTimeout(serverSocketAddress, callback), connector.getConnectTimeout().toMillis(), TimeUnit.MILLISECONDS);
+
         getTLSEngine().startHandshake(tlsConfiguration, callback);
+    }
+
+    private void connectTimeout(SocketAddress remoteAddress, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("connect timeout to {} on {}", remoteAddress, this);
+        callback.failed(new QuicException(ErrorCode.CONNECTION_REFUSED_ERROR, "connect_timeout", 0x06));
     }
 
     private void handshakeComplete(HandshakeData data, Throwable failure)
@@ -282,7 +296,12 @@ public class ClientQuicSession extends QuicSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} in {} on {}", frame, packet, this);
-        notifyOpen();
+
+        getTLSEngine().getPacketProtector().discardKeys(EncryptionLevel.HANDSHAKE);
+        setEncryptionLevel(EncryptionLevel.ONE_RTT);
+
+        emitOpen();
+
         sessionPromise(context).succeeded(this);
     }
 
@@ -297,7 +316,7 @@ public class ClientQuicSession extends QuicSession
     {
         switch (message)
         {
-            case ServerHelloMessage serverHello -> getTLSEngine().onMessage(EncryptionLevel.INITIAL, serverHello);
+            case ServerHelloMessage serverHello -> processServerHello(serverHello);
             case EncryptedExtensionsMessage encryptedExtensions -> processEncryptedExtensions(encryptedExtensions);
             case CertificateMessage certificate -> getTLSEngine().onMessage(EncryptionLevel.HANDSHAKE, certificate);
             case CertificateVerifyMessage certificateVerify -> getTLSEngine().onMessage(EncryptionLevel.HANDSHAKE, certificateVerify);
@@ -305,6 +324,12 @@ public class ClientQuicSession extends QuicSession
             case NewSessionTicketMessage newSessionTicket -> getTLSEngine().onMessage(EncryptionLevel.ONE_RTT, newSessionTicket);
             default -> throw new IllegalStateException("unexpected message " + message);
         }
+    }
+
+    private void processServerHello(ServerHelloMessage serverHello)
+    {
+        connectTask.cancel();
+        getTLSEngine().onMessage(EncryptionLevel.INITIAL, serverHello);
     }
 
     private void processEncryptedExtensions(EncryptedExtensionsMessage encryptedExtensions)
@@ -361,5 +386,13 @@ public class ClientQuicSession extends QuicSession
     private void processVersionNegotiationPacket(VersionNegotiationPacket packet)
     {
         // TODO: negotiate version and
+    }
+
+    @Override
+    public void fail(Throwable x)
+    {
+        connectTask.cancel();
+        super.fail(x);
+        sessionPromise(context).failed(x);
     }
 }

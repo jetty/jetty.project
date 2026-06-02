@@ -453,6 +453,8 @@ public abstract class TLSEngine
         return mac.doFinal(transcriptHash.getHash());
     }
 
+    public abstract void tryFail(Throwable failure);
+
     protected final void fail(Throwable failure)
     {
         if (failure == null)

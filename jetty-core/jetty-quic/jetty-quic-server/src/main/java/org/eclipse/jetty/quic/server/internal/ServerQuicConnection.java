@@ -321,7 +321,7 @@ public class ServerQuicConnection extends QuicConnection
         // This method has blocking semantic.
         try (Blocker.Promise<Void> promise = Blocker.promise())
         {
-            close(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "close"), promise);
+            close(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "close", 0x00), promise);
             promise.block();
         }
         catch (IOException x)
@@ -339,7 +339,7 @@ public class ServerQuicConnection extends QuicConnection
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("closing connection {}", this);
+            LOG.debug("closing {}", this);
 
         List<CompletableFuture<Session>> closes = new ArrayList<>();
         for (ServerQuicSession session : sessions.values())
@@ -353,7 +353,7 @@ public class ServerQuicConnection extends QuicConnection
     }
 
     @Override
-    public void terminate(QuicSession session)
+    protected void terminate(QuicSession session)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("terminate {} on {}", session, this);
