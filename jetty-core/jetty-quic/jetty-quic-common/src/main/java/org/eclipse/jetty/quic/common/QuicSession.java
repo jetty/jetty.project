@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -124,7 +125,7 @@ public abstract class QuicSession extends AbstractSession
     private final PacketsParser parser;
     private final QuicFlusher flusher;
     private CloseState closeState = CloseState.NOT_CLOSED;
-    private Packet.Listener packetListener;
+    private PacketListener packetListener;
     private QuicVersion quicVersion;
     private byte[] origDstConnectionId;
     private byte[] dstConnectionId;
@@ -135,6 +136,8 @@ public abstract class QuicSession extends AbstractSession
     private boolean writeStalled;
     private Scheduler.Task keepAliveTask;
     private EncryptionLevel encryptionLevel = EncryptionLevel.INITIAL;
+    private ConnectionCloseFrame closeFrame;
+    private long closeBackoff;
 
     protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, boolean client)
     {
@@ -674,6 +677,8 @@ public abstract class QuicSession extends AbstractSession
         // This method should be called by a Task submitted to the connection's execution strategy,
         // to serialize notification of failure and/or disconnect events with read events.
 
+        closeFrame = Objects.requireNonNullElse(closeFrame, frame);
+
         // Tear down all the streams.
         List<QuicStream> streamsToFail;
         try (var _ = lock.lock())
@@ -772,58 +777,75 @@ public abstract class QuicSession extends AbstractSession
 
     private void process(Packet packet)
     {
-        // TODO: grab the lock and check for closeState.
-        //  If CLOSING, respond with the CC frame that was sent,
-        //  and use a backoff threshold 1,2,4,8,etc. to respond.
-        //  CC frames are not retransmitted §13.3, so this is
-        //  their "retransmission" mechanism.
-
-
-        packetNumbers.onPacketReceived(packet);
-
-        // Minimally process first packets to set
-        // the dcid be used by acknowledgments.
-        switch (packet)
+        boolean process;
+        try (var _ = lock.lock())
         {
-            case InitialPacket initialPacket -> setDestinationConnectionId(initialPacket.sourceConnectionId());
-            case RetryPacket retryPacket -> setDestinationConnectionId(retryPacket.sourceConnectionId());
-            default ->
+            process = closeState == CloseState.NOT_CLOSED;
+            if (closeState == CloseState.DRAINING || closeState == CloseState.CLOSED)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("dropping incoming packet {} on {}", packet, this);
+                return;
             }
         }
 
-        if (packet instanceof InitialPacket || Arrays.equals(getSourceConnectionId(), packet.destinationConnectionId()))
+        if (process)
         {
-            // Reset the idle timeout only on the receiving side, because:
-            // - Computing when to reset the idle timeout on the sending side is complicated:
-            //   must take into account only ack-eliciting packets, and only if they are sent
-            //   after another packet has been received.
-            // - Sending would trigger an ack within an RTT, which is much smaller (milliseconds)
-            //   than the idle timeout (typically, seconds). In the rare case of sending when
-            //   the idle timeout is about to expire, well - too bad.
-            // - QUIC idle timeouts being fatal are likely disabled by the keepalive mechanism
-            //   so the rare case above should never happen: the keepalive triggers an ack
-            //   well within the idle timeout; in case of no ack, the connection is broken.
-            notIdle();
+            packetNumbers.onPacketReceived(packet);
 
-            // The packet was fully decrypted and parsed, ack it now.
-            // Processing of frames by a different layer (such as the
-            // TLS layer or the application layer) is independent of
-            // acknowledgments at the transport layer.
-            acknowledge(packet);
-
-            List<Invocable.Task> tasks = processPacket(packet);
-            for (Invocable.Task task : tasks)
+            // Minimally process first packets to set
+            // the dcid be used by acknowledgments.
+            switch (packet)
             {
-                offerTask(task, false);
+                case InitialPacket initialPacket -> setDestinationConnectionId(initialPacket.sourceConnectionId());
+                case RetryPacket retryPacket -> setDestinationConnectionId(retryPacket.sourceConnectionId());
+                default ->
+                {
+                }
+            }
+
+            if (packet instanceof InitialPacket || Arrays.equals(getSourceConnectionId(), packet.destinationConnectionId()))
+            {
+                // Reset the idle timeout only on the receiving side, because:
+                // - Computing when to reset the idle timeout on the sending side is complicated:
+                //   must take into account only ack-eliciting packets, and only if they are sent
+                //   after another packet has been received.
+                // - Sending would trigger an ack within an RTT, which is much smaller (milliseconds)
+                //   than the idle timeout (typically, seconds). In the rare case of sending when
+                //   the idle timeout is about to expire, well - too bad.
+                // - QUIC idle timeouts being fatal are likely disabled by the keepalive mechanism
+                //   so the rare case above should never happen: the keepalive triggers an ack
+                //   well within the idle timeout; in case of no ack, the connection is broken.
+                notIdle();
+
+                // The packet was fully decrypted and parsed, ack it now.
+                // Processing of frames by a different layer (such as the
+                // TLS layer or the application layer) is independent of
+                // acknowledgments at the transport layer.
+                acknowledge(packet);
+
+                List<Invocable.Task> tasks = processPacket(packet);
+                for (Invocable.Task task : tasks)
+                {
+                    offerTask(task, false);
+                }
+            }
+            else
+            {
+                // RFC-9000[7.2]: the packet must be discarded
+                // if the packet dcid does not match.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("packet {} does not match connection id on {}", packet, this);
             }
         }
         else
         {
-            // RFC-9000[7.2]: the packet must be discarded
-            // if the packet dcid does not match.
-            if (LOG.isDebugEnabled())
-                LOG.debug("packet {} does not match connection id on {}", packet, this);
+            // RFC-9000[10.2.1]: send a ConnectionCloseFrame in
+            // response to any packet received in CLOSING state.
+            // Use a power-of-2 backoff to avoid sending too many
+            // frames in reply to those sent by the remote peer.
+            if (Long.bitCount(++closeBackoff) == 1)
+                serializedDisconnect(closeFrame, null, Promise.Invocable.noop());
         }
     }
 
@@ -952,6 +974,7 @@ public abstract class QuicSession extends AbstractSession
                 // TODO: notify Session.Listener (before or after queuing to the flusher?)
             }
             case ConnectionCloseFrame connectionCloseFrame -> processConnectionCloseFrame(connectionCloseFrame);
+            case PingFrame _ -> notifyPing();
             default ->
             {
                 // TODO: notify Session.Listener
@@ -1130,12 +1153,12 @@ public abstract class QuicSession extends AbstractSession
         flusher.sendPacket(packet, callback);
     }
 
-    public Packet.Listener getPacketListener()
+    public PacketListener getPacketListener()
     {
         return packetListener;
     }
 
-    public void setPacketListener(Packet.Listener listener)
+    public void setPacketListener(PacketListener listener)
     {
         packetListener = listener;
     }
@@ -1178,18 +1201,6 @@ public abstract class QuicSession extends AbstractSession
         try
         {
             packetListener.onIncomingPacket(this, packet);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure while notifying listener {}", packetListener, x);
-        }
-    }
-
-    public void notifyOutgoingPacket(Packet packet)
-    {
-        try
-        {
-            packetListener.onOutgoingPacket(this, packet);
         }
         catch (Throwable x)
         {
@@ -1365,7 +1376,55 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    private class PacketProcessor implements Packet.Listener
+    /// Listener for incoming [Packet]s.
+    ///
+    /// [QuicSession]'s default `PacketListener` processes incoming packets,
+    /// and may be wrapped by applications in this way:
+    ///
+    /// ```java
+    /// quicSession.setPacketListener(new PacketListener.Wrapper(quicSession.getPacketListener())
+    /// {
+    ///     @Override
+    ///     public void onIncomingPacket(Session session, Packet packet)
+    ///     {
+    ///         ...
+    ///     }
+    /// });
+    /// ```
+    ///
+    /// The incoming packet is processed only if the wrapping `PacketListener` eventually
+    /// delegates the incoming packet event to the default `PacketListener`.
+    /// Not delegating the incoming packet event the default `PacketListener` is equivalent
+    /// to losing the packet, which can be used to simulate network packet loss.
+    public interface PacketListener
+    {
+        default void onIncomingPacket(Session session, Packet packet)
+        {
+        }
+
+        class Wrapper implements PacketListener
+        {
+            private final PacketListener wrapped;
+
+            public Wrapper(PacketListener wrapped)
+            {
+                this.wrapped = wrapped;
+            }
+
+            public PacketListener getWrapped()
+            {
+                return wrapped;
+            }
+
+            @Override
+            public void onIncomingPacket(Session session, Packet packet)
+            {
+                getWrapped().onIncomingPacket(session, packet);
+            }
+        }
+    }
+
+    private class PacketProcessor implements PacketListener
     {
         @Override
         public void onIncomingPacket(Session session, Packet packet)

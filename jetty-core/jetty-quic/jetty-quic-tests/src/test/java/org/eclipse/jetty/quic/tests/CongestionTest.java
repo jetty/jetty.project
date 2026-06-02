@@ -69,7 +69,7 @@ public class CongestionTest extends AbstractQuicTest
             public Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
             {
                 QuicSession quicSession = (QuicSession)session;
-                quicSession.setPacketListener(new Packet.Listener.Wrapper(quicSession.getPacketListener())
+                quicSession.setPacketListener(new QuicSession.PacketListener.Wrapper(quicSession.getPacketListener())
                 {
                     @Override
                     public void onIncomingPacket(Session session, Packet packet)

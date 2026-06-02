@@ -71,7 +71,6 @@ class PacketFlusher implements Callback
 
         Packet packet = processingPacketEntry.packet();
         packetGenerator.generate(packetAccumulator, packet, null);
-        session.notifyOutgoingPacket(packet);
         session.getPacketTracker().processPacketSent(session, packet, packetAccumulator.size(), dataStalled);
         if (LOG.isDebugEnabled())
             LOG.debug("writing packet {} {} to {} on {}", packet, packetAccumulator, endPoint, this);
