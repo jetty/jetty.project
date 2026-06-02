@@ -134,7 +134,16 @@ public class HttpRequest implements Request
             newURI = HttpURI.from(getScheme(), getHost(), getPort(), null).toURI();
 
         HttpRequest newRequest = copyInstance(newURI);
-        newRequest.useVersion(getVersion());
+        if (isVersionExplicit() && "http".equals(uri.getScheme()))
+        {
+            // this part is a bit hard since we don't know if we can forward to the new address
+            // for now only copy for http, assume https will guess it with alpn
+            newRequest.version(getVersion());
+        }
+        else
+        {
+            newRequest.useVersion(getVersion());
+        }
         newRequest.method(getMethod())
             .body(getBody())
             .idleTimeout(getIdleTimeout(), TimeUnit.MILLISECONDS)
