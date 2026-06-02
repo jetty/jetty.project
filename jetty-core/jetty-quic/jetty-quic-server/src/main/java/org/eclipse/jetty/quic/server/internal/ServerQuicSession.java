@@ -177,7 +177,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
                 RetryPacket retryPacket = new RetryPacket(packet.quicVersion(), packet.sourceConnectionId(), getSourceConnectionId(), token, null);
                 RetainableByteBuffer.Mutable retryAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), false, -1, 0, 0);
                 generateRetryPacket(retryAccumulator, retryPacket);
-                byte[] integrity = getTLSEngine().getPacketProtector().createRetryIntegrity(retryAccumulator, origDstConnectionId);
+                byte[] integrity = getTLSEngine().createRetryIntegrity(retryAccumulator, origDstConnectionId);
                 retryPacketSent = true;
                 retryPacket = retryPacket.withIntegrity(integrity);
                 packet(retryPacket, Callback.NOOP);

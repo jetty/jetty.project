@@ -287,8 +287,7 @@ public abstract class QuicSession extends AbstractSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("sending keepalive on {}", this);
-        // TODO: hardcoded EncryptionLevel
-        sendProbe(EncryptionLevel.ONE_RTT);
+        sendProbe(getTLSEngine().getPacketProtector().getCurrentEncryptionLevel());
         scheduleKeepAlive();
     }
 
@@ -679,8 +678,7 @@ public abstract class QuicSession extends AbstractSession
         streamsToFail.forEach(stream -> stream.processFailure(failure));
 
         Callback callback = Promise.Invocable.toCallback(promise, this);
-        // TODO: hardcoded EncryptionLevel
-        flusher.sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), Callback.from(callback, this::disconnectComplete));
+        flusher.sendFrames(getTLSEngine().getPacketProtector().getCurrentEncryptionLevel(), List.of(frame), Callback.from(callback, this::disconnectComplete));
     }
 
     private void disconnectComplete()

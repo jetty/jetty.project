@@ -343,7 +343,7 @@ public class ClientQuicSession extends QuicSession
         // Verify the integrity of the RetryPacket.
         RetainableByteBuffer.Mutable retryAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), false, -1, 0, 0);
         generateRetryPacket(retryAccumulator, packet);
-        if (!getTLSEngine().getPacketProtector().verifyRetryIntegrity(retryAccumulator, getOriginalDestinationConnectionId()))
+        if (!getTLSEngine().verifyRetryIntegrity(retryAccumulator, getOriginalDestinationConnectionId()))
         {
             // RFC-9000[17.2.5.2]: discard retry packets that do not verify.
             if (LOG.isDebugEnabled())

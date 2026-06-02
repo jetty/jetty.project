@@ -14,16 +14,13 @@
 package org.eclipse.jetty.quic.common.packets;
 
 import java.nio.ByteBuffer;
-import java.security.MessageDigest;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.crypto.Cipher;
 import javax.crypto.KDF;
-import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.HKDFParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -55,6 +52,7 @@ public class PacketProtector implements Encrypter, Decrypter
     private final boolean client;
     private SecretKey handshakeSecret;
     private SecretKey masterSecret;
+    private EncryptionLevel encryptionLevel;
 
     public PacketProtector(ByteBufferPool byteBufferPool, PacketNumbers packetNumbers, TranscriptHash transcriptHash, boolean client)
     {
@@ -79,10 +77,17 @@ public class PacketProtector implements Encrypter, Decrypter
         return keyManagers.get(EncryptionLevel.HANDSHAKE).getTrafficSecretKey(input);
     }
 
+    public EncryptionLevel getCurrentEncryptionLevel()
+    {
+        return encryptionLevel;
+    }
+
     public void generateInitialKeys(QuicVersion quicVersion, byte[] inputKeyMaterial)
     {
         try
         {
+            encryptionLevel = EncryptionLevel.INITIAL;
+
             KeyManager keyManager = new KeyManager(EncryptionLevel.INITIAL);
             if (keyManagers.put(EncryptionLevel.INITIAL, keyManager) != null)
                 throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.INITIAL);
@@ -126,6 +131,8 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         try
         {
+            encryptionLevel = EncryptionLevel.HANDSHAKE;
+
             KeyManager keyManager = new KeyManager(EncryptionLevel.HANDSHAKE);
             if (keyManagers.put(EncryptionLevel.HANDSHAKE, keyManager) != null)
                 throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.HANDSHAKE);
@@ -172,7 +179,7 @@ public class PacketProtector implements Encrypter, Decrypter
         }
         catch (Throwable x)
         {
-            throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
+            throw TLSException.wrap(x);
         }
     }
 
@@ -180,6 +187,8 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         try
         {
+            encryptionLevel = EncryptionLevel.ONE_RTT;
+
             KeyManager keyManager = new KeyManager(EncryptionLevel.ONE_RTT);
             if (keyManagers.put(EncryptionLevel.ONE_RTT, keyManager) != null)
                 throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.ONE_RTT);
@@ -221,7 +230,7 @@ public class PacketProtector implements Encrypter, Decrypter
         }
         catch (Throwable x)
         {
-            throw new TLSException(TLSException.Alert.INTERNAL_ERROR, x);
+            throw TLSException.wrap(x);
         }
     }
 
@@ -281,71 +290,6 @@ public class PacketProtector implements Encrypter, Decrypter
         if (keyManager == null)
             throw new IllegalStateException("no KeyManager for encryption level " + EncryptionLevel.ONE_RTT);
         return keyManager.decryptShortHeaderPacket(dstConnectionId, encrypted);
-    }
-
-    public byte[] createRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
-    {
-        // RFC-9001[5.8]: build a retry pseudo-packet.
-        // The buffer contains up to the token bytes but no integrity bytes.
-        return createRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, false);
-    }
-
-    private byte[] createRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId, boolean integrityPresent) throws Exception
-    {
-        ByteBuffer byteBuffer = retryPacketBuffer.getByteBuffer();
-        QuicVersion quicVersion = QuicVersion.from(byteBuffer.getInt(1));
-        int capacity = 1 + originalDestinationConnectionId.length + byteBuffer.remaining();
-        if (integrityPresent)
-            capacity -= 16;
-        byte[] pseudoPacket = new byte[capacity];
-        int offset = 0;
-        pseudoPacket[offset] = (byte)originalDestinationConnectionId.length;
-        ++offset;
-        System.arraycopy(originalDestinationConnectionId, 0, pseudoPacket, offset, originalDestinationConnectionId.length);
-        offset += originalDestinationConnectionId.length;
-        byteBuffer.get(pseudoPacket, offset, capacity - offset);
-
-        // RFC-9001[5.8]: compute the integrity.
-        KDF kdf = KDF.getInstance("HKDF-SHA256");
-        byte[] retryIntegritySecret = QuicCrypto.retryIntegritySecret(quicVersion);
-        // Derive the key and the nonce from the secret.
-        HKDFParameterSpec spec = HKDF.expandLabel(new SecretKeySpec(retryIntegritySecret, "AES"), QuicCrypto.encryptionLabel(quicVersion), 16);
-        SecretKey integrityKey = kdf.deriveKey("AES", spec);
-        spec = HKDF.expandLabel(new SecretKeySpec(retryIntegritySecret, "AES"), QuicCrypto.initializationVectorLabel(quicVersion), 12);
-        SecretKey integrityNonce = kdf.deriveKey("IntegrityNonce", spec);
-        // Generate the integrity.
-        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-        cipher.init(Cipher.ENCRYPT_MODE, integrityKey, new GCMParameterSpec(128, integrityNonce.getEncoded()));
-        cipher.updateAAD(pseudoPacket);
-        return cipher.doFinal();
-    }
-
-    public boolean verifyRetryIntegrity(RetainableByteBuffer.Mutable retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
-    {
-        // RFC-9001[5.8]: build a retry pseudo-packet.
-        // The buffer contains up to the integrity bytes (16 bytes).
-        byte[] expected = createRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, true);
-        byte[] integrity = new byte[16];
-        ByteBuffer byteBuffer = retryPacketBuffer.getByteBuffer();
-        byteBuffer.get(integrity);
-        // Verify the integrity.
-        return MessageDigest.isEqual(integrity, expected);
-    }
-
-    public byte[] createPreSharedKeyIdentityBinder(CipherSuite cipherSuite, SecretKey resumptionMasterSecret, byte[] sessionTicketNonce) throws Exception
-    {
-        int hashLength = cipherSuite.hashLength();
-        KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
-
-        SecretKey preSharedKey = kdf.deriveKey("Generic", HKDF.expandLabel(resumptionMasterSecret, "resumption", sessionTicketNonce, hashLength));
-        HKDFParameterSpec extract = HKDFParameterSpec.ofExtract().addSalt(new byte[hashLength]).addIKM(preSharedKey).extractOnly();
-        SecretKey earlySecret = kdf.deriveKey("Generic", extract);
-        SecretKey binderKey = kdf.deriveKey("Generic", HKDF.expandLabel(earlySecret, "res binder", getTranscriptHash().getEmptyHash(), hashLength));
-        SecretKey finishedKey = kdf.deriveKey("Generic", HKDF.expandLabel(binderKey, "finished", hashLength));
-
-        Mac mac = Mac.getInstance("HmacSHA" + (hashLength * 8));
-        mac.init(finishedKey);
-        return mac.doFinal(getTranscriptHash().getHash());
     }
 
     @Override

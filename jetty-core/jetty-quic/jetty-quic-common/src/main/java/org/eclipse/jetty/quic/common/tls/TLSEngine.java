@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.common.tls;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.MessageDigest;
@@ -31,14 +32,21 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import javax.crypto.Cipher;
 import javax.crypto.KDF;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.HKDFParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 
+import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
+import org.eclipse.jetty.quic.common.internal.packets.QuicCrypto;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.quic.common.tls.parser.QuicMessagesParser;
@@ -51,6 +59,7 @@ import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.common.HKDF;
+import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
 import org.eclipse.jetty.tls.common.parser.MessagesParser;
 import org.eclipse.jetty.util.Callback;
@@ -394,6 +403,54 @@ public abstract class TLSEngine
         String prefix = name.substring(0, name.length() - noGlobPattern.length());
         // Match only one subdomain.
         return prefix.indexOf('.') < 0;
+    }
+
+    protected byte[] createRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId, boolean integrityPresent) throws Exception
+    {
+        ByteBuffer byteBuffer = retryPacketBuffer.getByteBuffer();
+        QuicVersion quicVersion = QuicVersion.from(byteBuffer.getInt(1));
+        int capacity = 1 + originalDestinationConnectionId.length + byteBuffer.remaining();
+        if (integrityPresent)
+            capacity -= 16;
+        byte[] pseudoPacket = new byte[capacity];
+        int offset = 0;
+        pseudoPacket[offset] = (byte)originalDestinationConnectionId.length;
+        ++offset;
+        System.arraycopy(originalDestinationConnectionId, 0, pseudoPacket, offset, originalDestinationConnectionId.length);
+        offset += originalDestinationConnectionId.length;
+        byteBuffer.get(pseudoPacket, offset, capacity - offset);
+
+        // RFC-9001[5.8]: compute the integrity.
+        KDF kdf = KDF.getInstance("HKDF-SHA256");
+        byte[] retryIntegritySecret = QuicCrypto.retryIntegritySecret(quicVersion);
+        // Derive the key and the nonce from the secret.
+        HKDFParameterSpec spec = HKDF.expandLabel(new SecretKeySpec(retryIntegritySecret, "AES"), QuicCrypto.encryptionLabel(quicVersion), 16);
+        SecretKey integrityKey = kdf.deriveKey("AES", spec);
+        spec = HKDF.expandLabel(new SecretKeySpec(retryIntegritySecret, "AES"), QuicCrypto.initializationVectorLabel(quicVersion), 12);
+        SecretKey integrityNonce = kdf.deriveKey("IntegrityNonce", spec);
+        // Generate the integrity.
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.ENCRYPT_MODE, integrityKey, new GCMParameterSpec(128, integrityNonce.getEncoded()));
+        cipher.updateAAD(pseudoPacket);
+        return cipher.doFinal();
+    }
+
+    protected byte[] createPreSharedKeyIdentityBinder(CipherSuite cipherSuite, SecretKey resumptionMasterSecret, byte[] sessionTicketNonce) throws Exception
+    {
+        int hashLength = cipherSuite.hashLength();
+        KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
+
+        TranscriptHash transcriptHash = getPacketProtector().getTranscriptHash();
+
+        SecretKey preSharedKey = kdf.deriveKey("Generic", HKDF.expandLabel(resumptionMasterSecret, "resumption", sessionTicketNonce, hashLength));
+        HKDFParameterSpec extract = HKDFParameterSpec.ofExtract().addSalt(new byte[hashLength]).addIKM(preSharedKey).extractOnly();
+        SecretKey earlySecret = kdf.deriveKey("Generic", extract);
+        SecretKey binderKey = kdf.deriveKey("Generic", HKDF.expandLabel(earlySecret, "res binder", transcriptHash.getEmptyHash(), hashLength));
+        SecretKey finishedKey = kdf.deriveKey("Generic", HKDF.expandLabel(binderKey, "finished", hashLength));
+
+        Mac mac = Mac.getInstance("HmacSHA" + (hashLength * 8));
+        mac.init(finishedKey);
+        return mac.doFinal(transcriptHash.getHash());
     }
 
     protected final void fail(Throwable failure)
