@@ -323,19 +323,19 @@ public class ServerTLSEngine extends TLSEngine
 
         List<Message> handshakeMessages = new ArrayList<>();
 
-        List<Extension> eeExtensions = new ArrayList<>();
+        List<Extension> encryptedExtensions = new ArrayList<>();
         if (protocol != null)
         {
             ALPNExtension alpnExtension = new ALPNExtension(List.of(protocol));
-            eeExtensions.add(alpnExtension);
+            encryptedExtensions.add(alpnExtension);
         }
         QuicTransportParametersExtension quicTransportParametersExtension = new QuicTransportParametersExtension(tlsConfiguration.getTransportParameters());
-        eeExtensions.add(quicTransportParametersExtension);
-        EncryptedExtensionsMessage encryptedExtensions = new EncryptedExtensionsMessage(eeExtensions);
-        handshakeMessages.add(encryptedExtensions);
-        getPacketProtector().getTranscriptHash().offer(encryptedExtensions, false);
+        encryptedExtensions.add(quicTransportParametersExtension);
+        EncryptedExtensionsMessage encryptedExtensionsMessage = new EncryptedExtensionsMessage(encryptedExtensions);
+        handshakeMessages.add(encryptedExtensionsMessage);
+        getPacketProtector().getTranscriptHash().offer(encryptedExtensionsMessage, false);
         if (LOG.isDebugEnabled())
-            LOG.debug("produced {} on {}", encryptedExtensions, this);
+            LOG.debug("produced {} on {}", encryptedExtensionsMessage, this);
 
         boolean clientAuthentication = false;
         if (sessionTicket == null)
@@ -345,11 +345,11 @@ public class ServerTLSEngine extends TLSEngine
             {
                 // RFC-8446[4.3.2]: signature algorithms extension is mandatory.
                 List<Extension> crExtensions = List.of(new SignatureAlgorithmsExtension(serverSignatureAlgorithms));
-                CertificateRequestMessage certificateRequest = new CertificateRequestMessage(BufferUtil.EMPTY_BYTES, crExtensions);
-                handshakeMessages.add(certificateRequest);
-                getPacketProtector().getTranscriptHash().offer(certificateRequest, false);
+                CertificateRequestMessage certificateRequestMessage = new CertificateRequestMessage(BufferUtil.EMPTY_BYTES, crExtensions);
+                handshakeMessages.add(certificateRequestMessage);
+                getPacketProtector().getTranscriptHash().offer(certificateRequestMessage, false);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("produced {} on {}", certificateRequest, this);
+                    LOG.debug("produced {} on {}", certificateRequestMessage, this);
             }
 
             SignatureWithKeyStorePair match = selectCertificate(negotiatedKeyStorePairs, serverName, sniRequired);
@@ -361,24 +361,24 @@ public class ServerTLSEngine extends TLSEngine
             List<CertificateMessage.Entry> entries = match.keyStorePair().certificates().stream()
                 .map(c -> new CertificateMessage.Entry(c, List.of()))
                 .toList();
-            CertificateMessage certificate = new CertificateMessage(BufferUtil.EMPTY_BYTES, entries);
-            handshakeMessages.add(certificate);
-            getPacketProtector().getTranscriptHash().offer(certificate, false);
+            CertificateMessage certificateMessage = new CertificateMessage(BufferUtil.EMPTY_BYTES, entries);
+            handshakeMessages.add(certificateMessage);
+            getPacketProtector().getTranscriptHash().offer(certificateMessage, false);
             if (LOG.isDebugEnabled())
-                LOG.debug("produced {} on {}", certificate, this);
+                LOG.debug("produced {} on {}", certificateMessage, this);
 
-            CertificateVerifyMessage certificateVerify = createCertificateVerifyMessage(match.signatureAlgorithm(), match.keyStorePair().privateKey(), false);
-            handshakeMessages.add(certificateVerify);
-            getPacketProtector().getTranscriptHash().offer(certificateVerify, false);
+            CertificateVerifyMessage certificateVerifyMessage = createCertificateVerifyMessage(match.signatureAlgorithm(), match.keyStorePair().privateKey(), false);
+            handshakeMessages.add(certificateVerifyMessage);
+            getPacketProtector().getTranscriptHash().offer(certificateVerifyMessage, false);
             if (LOG.isDebugEnabled())
-                LOG.debug("produced {} on {}", certificateVerify, this);
+                LOG.debug("produced {} on {}", certificateVerifyMessage, this);
         }
 
-        FinishedMessage finished = createFinishedMessage(cipherSuite);
-        handshakeMessages.add(finished);
-        getPacketProtector().getTranscriptHash().offer(finished, false);
+        FinishedMessage finishedMessage = createFinishedMessage(cipherSuite);
+        handshakeMessages.add(finishedMessage);
+        getPacketProtector().getTranscriptHash().offer(finishedMessage, false);
         if (LOG.isDebugEnabled())
-            LOG.debug("produced {} on {}", finished, this);
+            LOG.debug("produced {} on {}", finishedMessage, this);
 
         getPacketProtector().generateOneRTTKeys(quicVersion, cipherSuite);
 
@@ -445,6 +445,8 @@ public class ServerTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", message, this);
 
+        if (state == State.HANDSHAKE_FAILED)
+            return;
         if (state != State.NEED_CERTIFICATE)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
@@ -484,6 +486,8 @@ public class ServerTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", certificateVerify, this);
 
+        if (state == State.HANDSHAKE_FAILED)
+            return;
         if (state != State.NEED_CERTIFICATE_VERIFY)
             throw new IllegalStateException("invalid_tls_state_" + state.name().toLowerCase(Locale.ROOT));
 
@@ -497,6 +501,8 @@ public class ServerTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", finished, this);
 
+        if (state == State.HANDSHAKE_FAILED)
+            return;
         SslContextFactory.Server sslContextFactory = tlsConfiguration.getSslContextFactory();
         // Certificate was mandatory, and the client did not send it.
         if (sslContextFactory.getNeedClientAuth() && state != State.NEED_FINISHED)
@@ -546,6 +552,18 @@ public class ServerTLSEngine extends TLSEngine
         // RFC-9001[5.8]: build a retry pseudo-packet.
         // The buffer contains up to the token bytes but no integrity bytes.
         return createRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, false);
+    }
+
+    @Override
+    public void tryFail(Throwable failure)
+    {
+        boolean fail = switch (state)
+        {
+            case HANDSHAKE_SUCCESSFUL, HANDSHAKE_FAILED -> false;
+            default -> true;
+        };
+        if (fail)
+            fail(failure);
     }
 
     @Override

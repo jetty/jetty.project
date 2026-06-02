@@ -27,7 +27,6 @@ import org.eclipse.jetty.quic.common.SessionContainer;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.DatagramServerConnector;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -59,7 +58,7 @@ public class QuicServerConnector extends DatagramServerConnector
 
     public QuicServerConnector(Server server, SslContextFactory.Server sslContextFactory, QuicServerQuicConfiguration quicConfiguration, Session.Listener.Factory sessionListenerFactory)
     {
-        super(server, new HttpConnectionFactory());
+        super(server);
         this.quicConnectionFactory = new QuicServerConnectionFactory(sslContextFactory, quicConfiguration, sessionListenerFactory);
     }
 

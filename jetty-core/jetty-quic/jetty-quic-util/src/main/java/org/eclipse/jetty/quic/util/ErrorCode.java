@@ -16,6 +16,10 @@ package org.eclipse.jetty.quic.util;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/// QUIC error codes.
+///
+/// Note: this class is not a record because it has an open set
+/// of values due to TLS alerts being carried as `CRYPTO_ERROR`s.
 public class ErrorCode
 {
     public static final ErrorCode NO_ERROR = new ErrorCode(0x00);

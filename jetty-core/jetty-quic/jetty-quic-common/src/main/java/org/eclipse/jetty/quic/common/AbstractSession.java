@@ -100,8 +100,10 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
     {
         if (LOG.isDebugEnabled())
             LOG.debug("closing {} {}", frame, this);
+
         // Propagate upwards.
-        notifyLocalClose(frame, promise);
+        notifyLocalClose(frame, Promise.Invocable.from(promise.getInvocationType(), (_, _) ->
+            disconnect(frame, null, promise)));
     }
 
     protected void notifyOpen()

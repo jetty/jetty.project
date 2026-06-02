@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
@@ -135,6 +134,7 @@ public abstract class QuicSession extends AbstractSession
     private TransportParameters transportParameters;
     private boolean writeStalled;
     private Scheduler.Task keepAliveTask;
+    private EncryptionLevel encryptionLevel = EncryptionLevel.INITIAL;
 
     protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, boolean client)
     {
@@ -287,7 +287,7 @@ public abstract class QuicSession extends AbstractSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("sending keepalive on {}", this);
-        sendProbe(getTLSEngine().getPacketProtector().getCurrentEncryptionLevel());
+        sendProbe(encryptionLevel);
         scheduleKeepAlive();
     }
 
@@ -314,6 +314,11 @@ public abstract class QuicSession extends AbstractSession
             // to inform the other peer that the connection is broken.
             serializedDisconnect(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "idle_timeout"), timeout, Promise.Invocable.noop());
         }), true);
+    }
+
+    protected void setEncryptionLevel(EncryptionLevel encryptionLevel)
+    {
+        this.encryptionLevel = encryptionLevel;
     }
 
     public abstract int getUDPPayloadLength();
@@ -678,12 +683,12 @@ public abstract class QuicSession extends AbstractSession
         streamsToFail.forEach(stream -> stream.processFailure(failure));
 
         Callback callback = Promise.Invocable.toCallback(promise, this);
-        flusher.sendFrames(getTLSEngine().getPacketProtector().getCurrentEncryptionLevel(), List.of(frame), Callback.from(callback, this::disconnectComplete));
+        flusher.sendFrames(encryptionLevel, List.of(frame), Callback.from(callback, this::disconnectComplete));
     }
 
     private void disconnectComplete()
     {
-        notifyDisconnect();
+        emitDisconnect();
         dispose();
     }
 
@@ -838,6 +843,7 @@ public abstract class QuicSession extends AbstractSession
                 case HandshakePacket handshakePacket ->
                 {
                     getTLSEngine().getPacketProtector().discardKeys(EncryptionLevel.INITIAL);
+                    setEncryptionLevel(EncryptionLevel.HANDSHAKE);
                     yield processFrames(handshakePacket);
                 }
                 case ZeroRTTPacket zeroRTTPacket ->
@@ -915,6 +921,18 @@ public abstract class QuicSession extends AbstractSession
         return tasks == null ? List.of() : tasks;
     }
 
+    private Invocable.Task processStreamFrames(List<Frame.WithStreamId> frames)
+    {
+        Frame.WithStreamId frame = frames.getFirst();
+        QuicStream stream = getOrCreateRemoteStream(frame);
+        if (stream != null)
+            return stream.processFrames(frames);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("dropping frame {} for terminated stream #{} on {}", frame, frame.streamId(), this);
+        return null;
+    }
+
     protected void processFrame(Packet.WithFrames packet, Frame frame)
     {
         if (LOG.isDebugEnabled())
@@ -958,8 +976,10 @@ public abstract class QuicSession extends AbstractSession
         {
             streamsToFail = List.copyOf(streams.values());
         }
-        Throwable failure = new EofException("close");
+        Throwable failure = new QuicException(ErrorCode.from(frame.errorCode()), frame.reason(), frame.causeFrameType());
         streamsToFail.forEach(stream -> stream.processFailure(failure));
+
+        getTLSEngine().tryFail(failure);
 
         notifyConnectionClose(frame);
 
@@ -994,18 +1014,6 @@ public abstract class QuicSession extends AbstractSession
                 case DRAINING, CLOSED -> false;
             };
         }
-    }
-
-    private Invocable.Task processStreamFrames(List<Frame.WithStreamId> frames)
-    {
-        Frame.WithStreamId frame = frames.getFirst();
-        QuicStream stream = getOrCreateRemoteStream(frame);
-        if (stream != null)
-            return stream.processFrames(frames);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("dropping frame {} for terminated stream #{} on {}", frame, frame.streamId(), this);
-        return null;
     }
 
     public void updateSendMaxData(QuicStream stream, long newValue)

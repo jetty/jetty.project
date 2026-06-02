@@ -14,7 +14,6 @@
 package org.eclipse.jetty.quic.common;
 
 import java.io.IOException;
-import java.util.EventListener;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,7 +33,7 @@ import org.eclipse.jetty.util.component.Graceful;
  * <p>A container that tracks {@link Session} instances.</p>
  */
 @ManagedObject("The container of QUIC sessions")
-public class SessionContainer extends AbstractLifeCycle implements EventListener, Session.Listener, Graceful, Dumpable
+public class SessionContainer extends AbstractLifeCycle implements Session.Listener, Graceful, Dumpable
 {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Set<Session> sessions = ConcurrentHashMap.newKeySet();

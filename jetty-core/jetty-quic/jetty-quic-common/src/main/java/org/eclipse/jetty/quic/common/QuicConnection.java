@@ -115,7 +115,7 @@ public abstract class QuicConnection extends AbstractConnection
 
     protected abstract Runnable doProduce();
 
-    public abstract void terminate(QuicSession session);
+    protected abstract void terminate(QuicSession session);
 
     void offerTask(Invocable.Task task, boolean dispatch)
     {

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.quic.client.internal;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -22,6 +24,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.CongestionController;
@@ -31,8 +34,11 @@ import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
+import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.tls.common.TranscriptHash;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -168,11 +174,40 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     }
 
     @Override
-    public void terminate(QuicSession session)
+    public void close()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("closing {}", this);
+
+        QuicSession quicSession = session;
+        if (quicSession != null)
+        {
+            // This method has blocking semantic.
+            try (Blocker.Promise<Void> blocker = Blocker.promise())
+            {
+                ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "close", 0x00);
+                // Propagate upwards.
+                quicSession.close(frame, Promise.Invocable.toPromise(blocker, _ -> null));
+                blocker.block();
+            }
+            catch (IOException x)
+            {
+                throw new UncheckedIOException(x);
+            }
+        }
+        else
+        {
+            super.close();
+        }
+    }
+
+    @Override
+    protected void terminate(QuicSession session)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("terminate {} on {}", session, this);
         assert this.session == session;
         getEndPoint().close();
+        LifeCycle.stop(session);
     }
 }
