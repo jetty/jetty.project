@@ -15,7 +15,6 @@ package org.eclipse.jetty.quic.common.packets;
 
 import java.util.List;
 
-import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -77,47 +76,6 @@ public sealed interface Packet extends AutoCloseable permits DiscardPacket, Long
         default void close()
         {
             frames().forEach(Frame::close);
-        }
-    }
-
-    //  TODO: javadoc this interface, can be used to drop packets in tests
-    //   to simulate network failures.
-    interface Listener
-    {
-        default void onIncomingPacket(Session session, Packet packet)
-        {
-        }
-
-        // TODO: maybe remove this method? not really useful
-        default void onOutgoingPacket(Session session, Packet packet)
-        {
-        }
-
-        class Wrapper implements Listener
-        {
-            private final Listener wrapped;
-
-            public Wrapper(Listener wrapped)
-            {
-                this.wrapped = wrapped;
-            }
-
-            public Listener getWrapped()
-            {
-                return wrapped;
-            }
-
-            @Override
-            public void onIncomingPacket(Session session, Packet packet)
-            {
-                getWrapped().onIncomingPacket(session, packet);
-            }
-
-            @Override
-            public void onOutgoingPacket(Session session, Packet packet)
-            {
-                getWrapped().onOutgoingPacket(session, packet);
-            }
         }
     }
 }

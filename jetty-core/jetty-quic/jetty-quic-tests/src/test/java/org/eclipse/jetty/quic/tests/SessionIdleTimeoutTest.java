@@ -308,7 +308,7 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
         }, promise);
         Session clientSession = promise.get(5, SECONDS);
         QuicSession clientQuicSession = (QuicSession)clientSession;
-        clientQuicSession.setPacketListener(new Packet.Listener.Wrapper(clientQuicSession.getPacketListener())
+        clientQuicSession.setPacketListener(new QuicSession.PacketListener.Wrapper(clientQuicSession.getPacketListener())
         {
             @Override
             public void onIncomingPacket(Session session, Packet packet)

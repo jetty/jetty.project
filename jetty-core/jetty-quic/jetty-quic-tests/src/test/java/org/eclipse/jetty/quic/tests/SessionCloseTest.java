@@ -18,13 +18,18 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
+import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.SessionContainer;
+import org.eclipse.jetty.quic.common.packets.Packet;
+import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
@@ -32,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -242,9 +248,49 @@ public class SessionCloseTest extends AbstractQuicTest
     }
 
     @Test
-    public void testClientClosesThenReceivesMoreFramesThatWillBeDropped()
+    public void testClientClosesThenReceivesMoreFramesThatWillBeDropped() throws Exception
     {
-        // TODO
+        AtomicReference<Session> serverSessionRef = new AtomicReference<>();
+        start(() -> new Session.Listener()
+        {
+            @Override
+            public void onOpen(Session session)
+            {
+                serverSessionRef.set(session);
+                QuicSession quicSession = (QuicSession)session;
+                quicSession.setPacketListener(new QuicSession.PacketListener.Wrapper(quicSession.getPacketListener())
+                {
+                    @Override
+                    public void onIncomingPacket(Session session, Packet packet)
+                    {
+                        // Drop ConnectionCloseFrames so we can send.
+                        boolean drop = packet instanceof Packet.WithFrames pwf && pwf.frames().stream().anyMatch(ConnectionCloseFrame.class::isInstance);
+                        if (!drop)
+                            super.onIncomingPacket(session, packet);
+                    }
+                });
+            }
+        });
+
+        CountDownLatch clientPingLatch = new CountDownLatch(1);
+        CompletableFuture<Session> future = new CompletableFuture<>();
+        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        {
+            @Override
+            public void onPing(Session session)
+            {
+                clientPingLatch.countDown();
+            }
+        }, Promise.Invocable.toPromise(future));
+        Session clientSession = future.get(5, SECONDS);
+
+        // Disconnect the client: incoming packets should be dropped.
+        clientSession.disconnect(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "test", 0x00), null, Promise.Invocable.noop());
+
+        Session serverSession = await().atMost(5, SECONDS).until(serverSessionRef::get, Objects::nonNull);
+        serverSession.ping(Promise.Invocable.noop());
+
+        assertFalse(clientPingLatch.await(1, SECONDS));
     }
 
     @Test

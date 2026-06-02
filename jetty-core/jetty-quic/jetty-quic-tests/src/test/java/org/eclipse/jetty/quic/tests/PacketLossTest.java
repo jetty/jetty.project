@@ -66,7 +66,7 @@ public class PacketLossTest extends AbstractQuicTest
         client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, promise);
         QuicSession session = (QuicSession)promise.get(5, TimeUnit.SECONDS);
 
-        session.setPacketListener(new Packet.Listener.Wrapper(session.getPacketListener())
+        session.setPacketListener(new QuicSession.PacketListener.Wrapper(session.getPacketListener())
         {
             private boolean dropped;
 
@@ -178,7 +178,7 @@ public class PacketLossTest extends AbstractQuicTest
         client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, promise);
         QuicSession clientSession = (QuicSession)promise.get(5, TimeUnit.SECONDS);
 
-        clientSession.setPacketListener(new Packet.Listener.Wrapper(clientSession.getPacketListener())
+        clientSession.setPacketListener(new QuicSession.PacketListener.Wrapper(clientSession.getPacketListener())
         {
             private boolean dropped;
 
