@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.quic.client.internal.tls;
 
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
@@ -167,7 +169,7 @@ public class ClientTLSEngine extends TLSEngine
                     getPacketProtector().getTranscriptHash().offer(truncatedClientHello, false);
 
                     getPacketProtector().getTranscriptHash().initialize(cipherSuite);
-                    byte[] binder = getPacketProtector().createPreSharedKeyIdentityBinder(cipherSuite, zeroRTTEntry.resumptionMasterSecret(), zeroRTTEntry.newSessionTicket().nonce());
+                    byte[] binder = createPreSharedKeyIdentityBinder(cipherSuite, zeroRTTEntry.resumptionMasterSecret(), zeroRTTEntry.newSessionTicket().nonce());
                     PreSharedKeyIdentity identity = truncated.withBinder(binder);
 
                     getPacketProtector().getTranscriptHash().clear();
@@ -184,9 +186,8 @@ public class ClientTLSEngine extends TLSEngine
 
             getPacketProtector().getTranscriptHash().offer(clientHello, false);
 
-            PacketProtector packetProtector = getPacketProtector();
             byte[] inputKeyMaterial = configuration.getInputKeyMaterial();
-            packetProtector.generateInitialKeys(configuration.getQuicVersion(), inputKeyMaterial);
+            getPacketProtector().generateInitialKeys(configuration.getQuicVersion(), inputKeyMaterial);
 
             // Notifies back the QuicSession to send this message in a CRYPTO frame.
             notifyOutgoingMessages(EncryptionLevel.INITIAL, List.of(clientHello), Callback.from(callback, this::fail));
@@ -592,6 +593,18 @@ public class ClientTLSEngine extends TLSEngine
     private void handshakeFailed(Throwable failure)
     {
         notifyHandshakeCompleted(null, failure);
+    }
+
+    public boolean verifyRetryIntegrity(RetainableByteBuffer.Mutable retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
+    {
+        // RFC-9001[5.8]: build a retry pseudo-packet.
+        // The buffer contains up to the integrity bytes (16 bytes).
+        byte[] expected = createRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, true);
+        byte[] integrity = new byte[16];
+        ByteBuffer byteBuffer = retryPacketBuffer.getByteBuffer();
+        byteBuffer.get(integrity);
+        // Verify the integrity.
+        return MessageDigest.isEqual(integrity, expected);
     }
 
     private void processNewSessionTicketMessage(NewSessionTicketMessage newSessionTicket) throws Exception

@@ -24,6 +24,7 @@ import java.util.Objects;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.HKDFParameterSpec;
 
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
@@ -187,7 +188,7 @@ public class ServerTLSEngine extends TLSEngine
 
                 CipherSuite cipherSuite = sessionTicket.handshakeData().cipherSuite();
                 getPacketProtector().getTranscriptHash().initialize(cipherSuite);
-                byte[] binder = getPacketProtector().createPreSharedKeyIdentityBinder(cipherSuite, sessionTicket.resumptionMasterSecret(), sessionTicket.configuration().nonce());
+                byte[] binder = createPreSharedKeyIdentityBinder(cipherSuite, sessionTicket.resumptionMasterSecret(), sessionTicket.configuration().nonce());
                 getPacketProtector().getTranscriptHash().clear();
                 boolean binderValid = MessageDigest.isEqual(clientIdentity.binder(), binder);
                 if (LOG.isDebugEnabled())
@@ -538,6 +539,13 @@ public class ServerTLSEngine extends TLSEngine
             NewSessionTicketMessage newSessionTicket = new NewSessionTicketMessage(lifetime, ageAdd, configuration.nonce(), ticket, extensions);
             notifyOutgoingMessages(EncryptionLevel.ONE_RTT, List.of(newSessionTicket), Callback.from(Callback.NOOP, this::fail));
         }
+    }
+
+    public byte[] createRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
+    {
+        // RFC-9001[5.8]: build a retry pseudo-packet.
+        // The buffer contains up to the token bytes but no integrity bytes.
+        return createRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, false);
     }
 
     @Override

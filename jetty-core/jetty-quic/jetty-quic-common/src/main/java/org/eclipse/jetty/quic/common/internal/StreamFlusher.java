@@ -176,7 +176,7 @@ class StreamFlusher extends CryptoFlusher
                     yield getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, maxBytes);
                 }
             }
-            case ResetFrame resetFrame->
+            case ResetFrame resetFrame ->
             {
                 if (resetFrame.finalSize() < 0)
                 {
