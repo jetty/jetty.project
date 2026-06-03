@@ -15,13 +15,13 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.WritePendingException;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,46 +60,40 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
     }
 
     @Override
-    public SocketAddress receive(ByteBuffer buffer) throws IOException
+    public SocketAddress receive(WritableBuffer buffer) throws IOException
     {
         if (isInputShutdown())
             return EOF;
 
-        int pos = BufferUtil.flipToFill(buffer);
-        SocketAddress peer = getChannel().receive(buffer);
-        BufferUtil.flipToFlush(buffer, pos);
+        SocketAddress[] peers = new SocketAddress[1];
+        long filled = buffer.readFrom(output ->
+        {
+            peers[0] = getChannel().receive(output);
+            return false;
+        });
+        SocketAddress peer = peers[0];
         if (peer == null)
             return null;
 
         notIdle();
 
-        int filled = buffer.remaining();
         if (LOG.isDebugEnabled())
-            LOG.debug("filled {} {}", filled, BufferUtil.toDetailString(buffer));
+            LOG.debug("filled {} {}", filled, buffer);
         return peer;
     }
 
     @Override
-    public boolean send(SocketAddress address, ByteBuffer... buffers) throws IOException
+    public boolean send(SocketAddress address, ReadableBuffer buffer) throws IOException
     {
-        boolean flushedAll = true;
-        long flushed = 0;
+        long toSend = buffer.remaining();
+        long flushed;
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("flushing {} buffer(s) to {}", buffers.length, address);
-            for (ByteBuffer buffer : buffers)
-            {
-                int sent = getChannel().send(buffer, address);
-                if (sent == 0)
-                {
-                    flushedAll = false;
-                    break;
-                }
-                flushed += sent;
-            }
+                LOG.debug("flushing {} to {}", buffer, address);
+            flushed = buffer.writeTo(input -> getChannel().send(input, address));
             if (LOG.isDebugEnabled())
-                LOG.debug("flushed {} byte(s), all flushed? {} - {}", flushed, flushedAll, this);
+                LOG.debug("flushed {} byte(s) - {}", flushed, this);
         }
         catch (IOException e)
         {
@@ -109,12 +103,12 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
         if (flushed > 0)
             notIdle();
 
-        return flushedAll;
+        return flushed == toSend;
     }
 
     @Override
-    public void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
+    public void write(ReadableBuffer buffer, SocketAddress address, Callback callback) throws WritePendingException
     {
-        getWriteFlusher().write(callback, address, buffers);
+        getWriteFlusher().write(buffer, address, callback);
     }
 }

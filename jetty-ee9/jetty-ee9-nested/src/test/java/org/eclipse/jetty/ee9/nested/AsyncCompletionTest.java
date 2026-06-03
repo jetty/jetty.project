@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -159,10 +159,10 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         }
 
         @Override
-        public void write(Callback callback, ByteBuffer... buffers) throws IllegalStateException
+        public void write(ReadableBuffer buffer, Callback callback) throws IllegalStateException
         {
             PendingCallback delay = new PendingCallback(callback);
-            super.write(delay, buffers);
+            super.write(buffer, delay);
             __queue.offer(delay);
         }
     }
