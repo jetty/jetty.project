@@ -576,22 +576,38 @@ public class BufferUtil
      */
     public static int put(ReadableBuffer from, ByteBuffer to)
     {
-        int pos = BufferUtil.flipToFill(to);
-        int filled;
+        WritableBuffer wb = ReadableBuffer.wrap(to).toWritable();
+        try
+        {
+            return (int)put(from, wb);
+        }
+        finally
+        {
+            wb.toReadable();
+        }
+    }
+
+    public static int put(ByteBuffer from, WritableBuffer to)
+    {
+        return (int)put(ReadableBuffer.wrap(from), to);
+    }
+
+    public static long put(ReadableBuffer from, WritableBuffer to)
+    {
+        long filled;
         if (to.remaining() >= from.remaining())
         {
-            filled = (int)from.remaining();
-            WritableBuffer.wrap(to).put(from);
+            filled = from.remaining();
+            to.put(from);
         }
         else
         {
             filled = to.remaining();
-            ReadableBuffer slice = from.slice(from.position(), to.remaining());
-            WritableBuffer.wrap(to).put(slice);
+            ReadableBuffer slice = from.slice(from.position(), filled);
+            to.put(slice);
             slice.release();
             from.position(from.position() + filled);
         }
-        BufferUtil.flipToFlush(to, pos);
         return filled;
     }
 
@@ -858,6 +874,11 @@ public class BufferUtil
         return toString(buffer, StandardCharsets.ISO_8859_1);
     }
 
+    public static String toString(ReadableBuffer buffer)
+    {
+        return toString(buffer, StandardCharsets.ISO_8859_1);
+    }
+
     /**
      * Convert buffer to a String with specified Charset
      *
@@ -877,6 +898,17 @@ public class BufferUtil
             return new String(to, 0, to.length, charset);
         }
         return new String(array, buffer.arrayOffset() + buffer.position(), buffer.remaining(), charset);
+    }
+
+    public static String toString(ReadableBuffer buffer, Charset charset)
+    {
+        if (buffer == null)
+            return null;
+        byte[] to = new byte[Math.toIntExact(buffer.remaining())];
+        long positionBefore = buffer.position();
+        buffer.get(to);
+        buffer.position(positionBefore);
+        return new String(to, charset);
     }
 
     /**
@@ -1255,6 +1287,16 @@ public class BufferUtil
         BufferUtil.flipToFlush(buffer, pos);
 
         return buffer;
+    }
+
+    public static ByteBuffer toBuffer(ReadableBuffer buffer, boolean direct)
+    {
+        long capacity = buffer.remaining();
+        if (capacity > Integer.MAX_VALUE)
+            throw new BufferOverflowException();
+        ByteBuffer result = BufferUtil.allocate((int)capacity, direct);
+        put(buffer, result);
+        return result;
     }
 
     public static ByteBuffer toDirectBuffer(String s)
