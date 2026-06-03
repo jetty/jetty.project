@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -609,14 +610,10 @@ public class RetainableByteBufferTest
         try (EndPoint endPoint = new AbstractEndPoint(new TimerScheduler())
         {
             @Override
-            public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+            public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
             {
-                for (ByteBuffer buffer : buffers)
-                {
-                    out.append(BufferUtil.toString(buffer));
-                    buffer.position(buffer.limit());
-                }
-
+                out.append(BufferUtil.toString(buffer));
+                buffer.position(buffer.position() + buffer.remaining());
                 callback.succeeded();
             }
 
@@ -672,14 +669,10 @@ public class RetainableByteBufferTest
         try (EndPoint endPoint = new AbstractEndPoint(new TimerScheduler())
         {
             @Override
-            public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+            public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
             {
-                for (ByteBuffer buffer : buffers)
-                {
-                    out.append(BufferUtil.toString(buffer));
-                    buffer.limit(buffer.position());
-                }
-
+                out.append(BufferUtil.toString(buffer));
+                buffer.position(buffer.position() + buffer.remaining());
                 callback.succeeded();
             }
 

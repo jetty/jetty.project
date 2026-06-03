@@ -98,7 +98,7 @@ public class MemoryEndPointPipeTest
                 int filled = remoteEndPoint.fill(byteBuffer);
                 if (filled > 0)
                 {
-                    byteBuffer.position(byteBuffer.position() + filled);
+                    BufferUtil.clear(byteBuffer);
                     totalFilled += filled;
                 }
                 else

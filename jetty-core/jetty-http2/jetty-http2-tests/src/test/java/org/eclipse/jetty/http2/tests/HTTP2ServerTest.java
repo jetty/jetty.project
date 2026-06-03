@@ -60,6 +60,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -346,12 +347,12 @@ public class HTTP2ServerTest extends AbstractServerTest
                 return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
                     @Override
-                    public void write(Callback callback, ByteBuffer... buffers) throws IllegalStateException
+                    public void write(ReadableBuffer buffer, Callback callback) throws IllegalStateException
                     {
                         if (broken.get())
                             callback.failed(new IOException("explicitly_thrown_by_test"));
                         else
-                            super.write(callback, buffers);
+                            super.write(buffer, callback);
                     }
                 };
             }
