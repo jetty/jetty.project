@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
@@ -345,7 +346,7 @@ public class FrameFlusher extends IteratingCallback
                 bufferArray[i++] = bb;
             }
             _bytesOut.add(bytes);
-            _endPoint.write(this, bufferArray);
+            _endPoint.write(ReadableBuffer.wrap(bufferArray), this);
             buffers.clear();
         }
         else

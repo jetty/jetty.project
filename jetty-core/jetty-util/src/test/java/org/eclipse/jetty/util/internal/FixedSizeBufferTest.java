@@ -38,10 +38,11 @@ public class FixedSizeBufferTest
         ReadableBuffer rb = wb.toReadable();
         assertEquals(1, rb.getInt());
         rb.toWritable();
-        wb.position(2); // rewind write position
+        wb.position(4); // 'revive' the 4 bytes previously written
         wb.toReadable();
-        assertEquals(2, rb.position());
-        assertEquals(0, rb.remaining());
+        assertEquals(0, rb.position());
+        assertEquals(4, rb.remaining());
+        assertEquals(1, rb.getInt());
     }
 
     @Test
@@ -265,8 +266,8 @@ public class FixedSizeBufferTest
         assertEquals(0L, rb.remaining());
 
         WritableBuffer wb = rb.toWritable();
-        assertEquals(8L, wb.position());
-        assertEquals(2L, wb.remaining());
+        assertEquals(0L, wb.position());
+        assertEquals(10L, wb.remaining());
     }
 
     @Test
@@ -330,12 +331,12 @@ public class FixedSizeBufferTest
         assertThrows(IllegalStateException.class, rb::getShort);
         assertThrows(IllegalStateException.class, rb::getInt);
         assertThrows(IllegalStateException.class, rb::getLong);
+        assertThrows(IllegalStateException.class, () -> rb.get(new byte[0]));
         assertThrows(IllegalStateException.class, rb::compact);
         assertThrows(IllegalStateException.class, rb::toWritable);
         assertThrows(IllegalStateException.class, rb::slice);
         assertThrows(IllegalStateException.class, () -> rb.slice(1L, 2L));
-        assertThrows(IllegalStateException.class, () -> rb.writeTo(b ->
-        {}));
+        assertThrows(IllegalStateException.class, () -> rb.writeTo(input -> {}));
     }
 
     @Test
@@ -369,9 +370,11 @@ public class FixedSizeBufferTest
         assertEquals((short)2, rb.getShort());
         assertEquals(4, rb.getInt());
         assertEquals(8, rb.getLong());
-        assertEquals((byte)1, rb.get());
-        assertEquals((byte)2, rb.get());
-        assertEquals((byte)3, rb.get());
+        byte[] bytes = new byte[3];
+        rb.get(bytes);
+        assertEquals((byte)1, bytes[0]);
+        assertEquals((byte)2, bytes[1]);
+        assertEquals((byte)3, bytes[2]);
         assertEquals(0, wb.remaining());
     }
 
