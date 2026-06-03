@@ -14,17 +14,11 @@
   <description>Contains wrong websocket which should fail at deployment</description>
 
   <dependencies>
-
     <dependency>
-
       <groupId>org.eclipse.jetty.ee</groupId>
-
       <artifactId>jetty-ee-test-bad-websocket-webapp</artifactId>
-
       <version>${project.version}</version>
-
       <type>war</type>
-
     </dependency>
     <dependency>
       <groupId>jakarta.servlet</groupId>

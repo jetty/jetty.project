@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
@@ -163,48 +164,45 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         normalizeRequest(exchange.getRequest());
 
-        HttpChannelOverHTTP2 channel;
-        try (AutoLock ignored = lock.lock())
+        // One connection maps to N channels, so one channel for each exchange.
+        HttpChannelOverHTTP2 channel = acquireHttpChannel();
+        if (channel == null)
         {
-            if (closed)
-            {
-                // The exchange may be retried on a different connection.
-                return new SendFailure(new ClosedChannelException(), true);
-            }
-            // One connection maps to N channels, so one channel for each exchange.
-            channel = acquireHttpChannel();
+            // The exchange may be retried on a different connection.
+            return new SendFailure(new ClosedChannelException(), true);
         }
 
         SendFailure result = send(channel, exchange);
         if (result != null)
-        {
-            try (AutoLock ignored = lock.lock())
-            {
-                activeChannels.remove(channel);
-            }
-            channel.destroy();
-        }
+            destroyHttpChannel(channel);
         return result;
     }
 
-    public void upgrade(Map<String, Object> context)
+    public boolean upgrade(Map<String, Object> context)
     {
         // In case of HTTP/1.1 upgrade to HTTP/2, the request is HTTP/1.1
         // (with upgrade) for a resource, and the response is HTTP/2.
 
+        HttpChannelOverHTTP2 http2Channel = acquireHttpChannel();
+        if (http2Channel == null)
+            return false;
+
         HttpResponse response = (HttpResponse)context.get(HttpResponse.class.getName());
         HttpRequest request = (HttpRequest)response.getRequest();
-
-        HttpChannelOverHTTP2 http2Channel = acquireHttpChannel();
 
         // Create a fake conversation, as the previous exchange received a 101 response.
         // The new exchange simulates a request, but receives the HTTP/2 response.
         HttpExchange exchange = request.getConversation().getExchanges().peekLast();
+        assert exchange != null;
         // Since we reuse the original request (with its response listeners)
         // for the second exchange in the conversation, we use empty response
         // listeners so that they are not notified twice.
         HttpExchange newExchange = new HttpExchange(exchange.getHttpDestination(), request, new ResponseListeners());
-        http2Channel.associate(newExchange);
+        if (!http2Channel.associate(newExchange))
+        {
+            destroyHttpChannel(http2Channel);
+            return false;
+        }
 
         // Create the implicit stream#1 so that it can receive the HTTP/2 response.
         MetaData.Request metaData = new MetaData.Request(request.getMethod(), HttpURI.from(request.getURI()), HttpVersion.HTTP_2, request.getHeaders());
@@ -214,8 +212,8 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         {
             newExchange.requestComplete(failure);
             newExchange.terminateRequest();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Upgrade failed for {}", HttpConnectionOverHTTP2.this);
+            newExchange.responseComplete(failure);
+            newExchange.terminateResponse();
         });
         if (stream != null)
         {
@@ -224,6 +222,15 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
             newExchange.terminateRequest();
             if (LOG.isDebugEnabled())
                 LOG.debug("Upgrade succeeded for {}", HttpConnectionOverHTTP2.this);
+            return true;
+        }
+        else
+        {
+            http2Channel.disassociate(newExchange);
+            destroyHttpChannel(http2Channel);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Upgrade failed for {}", HttpConnectionOverHTTP2.this);
+            return false;
         }
     }
 
@@ -273,6 +280,8 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         try (AutoLock ignored = lock.lock())
         {
+            if (closed)
+                return null;
             HttpChannelOverHTTP2 channel = idleChannels.poll();
             if (channel == null)
                 channel = newHttpChannel();
@@ -306,6 +315,15 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         getHttpDestination().release(this);
     }
 
+    private void destroyHttpChannel(HttpChannelOverHTTP2 channel)
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            activeChannels.remove(channel);
+        }
+        channel.destroy();
+    }
+
     void remove()
     {
         getHttpDestination().remove(this);
@@ -315,12 +333,9 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Failure {}", this, failure);
-        try (AutoLock ignored = lock.lock())
-        {
-            if (closed)
-                return;
-            closed = true;
-        }
+        if (ensureClosedOrAbortActiveChannels(() -> failure))
+            return;
+        remove();
         destroy();
         callback.succeeded();
     }
@@ -330,17 +345,37 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Close {}", this);
-        try (AutoLock ignored = lock.lock())
-        {
-            if (closed)
-                return;
-            closed = true;
-        }
+        if (ensureClosedOrAbortActiveChannels(ClosedChannelException::new))
+            return;
         session.close(ErrorCode.NO_ERROR.code, "close", Callback.from(() ->
         {
             remove();
             destroy();
         }));
+    }
+
+    /**
+     * @return true if already closed, false if not already closed and active channels were aborted.
+     */
+    private boolean ensureClosedOrAbortActiveChannels(Supplier<Throwable> failureSupplier)
+    {
+        Set<HttpChannelOverHTTP2> channels;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (closed)
+                return true;
+            closed = true;
+            channels = Set.copyOf(activeChannels);
+            activeChannels.clear();
+        }
+        Throwable failure = failureSupplier.get();
+        for (HttpChannel channel : channels)
+        {
+            HttpExchange exchange = channel.getHttpExchange();
+            if (exchange != null)
+                exchange.getRequest().abort(failure);
+        }
+        return false;
     }
 
     @Override

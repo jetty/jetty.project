@@ -547,8 +547,8 @@ public class MultiPartServletTest
             .send();
 
         assertEquals(200, response.getStatus());
-        assertThat(response.getContentAsString().replace(System.lineSeparator(), "\n"), containsString("Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog\n" +
-            "Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog"));
+        assertThat(response.getContentAsString(), containsString("Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog\n" +
+            "Part: name=myPart, size=88, content=the quick brown fox jumps over the lazy dog, the quick brown fox jumps over the lazy dog".replace("\n", System.lineSeparator())));
     }
 
     @ParameterizedTest

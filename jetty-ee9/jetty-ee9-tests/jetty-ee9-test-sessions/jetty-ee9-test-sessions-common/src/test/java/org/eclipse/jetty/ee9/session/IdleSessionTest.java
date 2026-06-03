@@ -38,7 +38,6 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.test.TestSessionDataStore;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -335,10 +334,7 @@ public class IdleSessionTest
                 originalId = session.getId();
 
                 ManagedSession s = org.eclipse.jetty.ee9.nested.Request.getBaseRequest(request).getCoreRequest().getManagedSession();
-                try (AutoLock lock = s.lock())
-                {
-                    assertTrue(s.isResident());
-                }
+                assertTrue(s.isResident());
                 _session = session;
             }
             else if ("test".equals(action))
@@ -347,10 +343,7 @@ public class IdleSessionTest
                 assertNotNull(session);
                 assertEquals(originalId, session.getId());
                 ManagedSession s = org.eclipse.jetty.ee9.nested.Request.getBaseRequest(request).getCoreRequest().getManagedSession();
-                try (AutoLock lock = s.lock())
-                {
-                    assertTrue(s.isResident());
-                }
+                assertTrue(s.isResident());
                 Integer v = (Integer)session.getAttribute("value");
                 session.setAttribute("value", v + 1);
                 _session = session;

@@ -91,6 +91,13 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         return receiver;
     }
 
+    @Override
+    public boolean isLastDataReceived()
+    {
+        HTTP2Stream http2Stream = (HTTP2Stream)stream;
+        return http2Stream != null && http2Stream.isLastDataReceived();
+    }
+
     public Stream getStream()
     {
         return stream;

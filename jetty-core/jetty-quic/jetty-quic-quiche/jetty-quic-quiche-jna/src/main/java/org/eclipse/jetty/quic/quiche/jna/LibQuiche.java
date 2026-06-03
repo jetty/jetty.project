@@ -30,7 +30,7 @@ public interface LibQuiche extends Library
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    String EXPECTED_QUICHE_VERSION = "0.24.5";
+    String EXPECTED_QUICHE_VERSION = "0.29.1";
 
     // The charset used to convert java.lang.String to char * and vice versa.
     Charset CHARSET = StandardCharsets.UTF_8;
@@ -190,8 +190,12 @@ public interface LibQuiche extends Library
     }
 
     @Structure.FieldOrder({
-        "recv", "sent", "lost", "retrans", "sent_bytes", "recv_bytes", "lost_bytes", "stream_retrans_bytes", "paths_count",
-        "reset_stream_count_local", "stopped_stream_count_local", "reset_stream_count_remote", "stopped_stream_count_remote"
+        "recv", "sent", "lost", "spurious_lost", "retrans", "sent_bytes", "recv_bytes", "acked_bytes", "lost_bytes",
+        "stream_retrans_bytes", "dgram_recv", "dgram_sent", "paths_count", "reset_stream_count_local",
+        "stopped_stream_count_local", "reset_stream_count_remote", "stopped_stream_count_remote",
+        "data_blocked_sent_count", "stream_data_blocked_sent_count", "data_blocked_recv_count", "stream_data_blocked_recv_count",
+        "streams_blocked_bidi_recv_count", "streams_blocked_uni_recv_count", "path_challenge_rx_count",
+        "bytes_in_flight_duration_msec", "tx_buffered_inconsistent"
     })
     class quiche_stats extends Structure
     {
@@ -204,6 +208,9 @@ public interface LibQuiche extends Library
         // The number of QUIC packets that were lost.
         public size_t lost;
 
+        // The number of QUIC packets that were marked as lost but later acked.
+        public size_t spurious_lost;
+
         // The number of sent QUIC packets with retransmitted data.
         public size_t retrans;
 
@@ -213,11 +220,20 @@ public interface LibQuiche extends Library
         // The number of received bytes.
         public uint64_t recv_bytes;
 
+        // The number of bytes acked.
+        public uint64_t acked_bytes;
+
         // The number of bytes lost.
         public uint64_t lost_bytes;
 
         // The number of stream bytes retransmitted.
         public uint64_t stream_retrans_bytes;
+
+        // The number of DATAGRAM frames received.
+        public size_t dgram_recv;
+
+        // The number of DATAGRAM frames sent.
+        public size_t dgram_sent;
 
         // The number of known paths for the connection.
         public size_t paths_count;
@@ -233,6 +249,41 @@ public interface LibQuiche extends Library
 
         // The number of streams stopped by remote.
         public uint64_t stopped_stream_count_remote;
+
+        // The number of DATA_BLOCKED frames sent due to hitting the connection
+        // flow control limit.
+        public uint64_t data_blocked_sent_count;
+
+        // The number of STREAM_DATA_BLOCKED frames sent due to a stream hitting
+        // the stream flow control limit.
+        public uint64_t stream_data_blocked_sent_count;
+
+        // The number of DATA_BLOCKED frames received from the remote.
+        public uint64_t data_blocked_recv_count;
+
+        // The number of STREAM_DATA_BLOCKED frames received from the remote.
+        public uint64_t stream_data_blocked_recv_count;
+
+        // The number of STREAMS_BLOCKED frames for bidirectional streams received
+        // from the remote, indicating the peer is blocked on opening new
+        // bidirectional streams.
+        public uint64_t streams_blocked_bidi_recv_count;
+
+        // The number of STREAMS_BLOCKED frames for unidirectional streams received
+        // from the remote, indicating the peer is blocked on opening new
+        // unidirectional streams.
+        public uint64_t streams_blocked_uni_recv_count;
+
+        // The total number of PATH_CHALLENGE frames that were received.
+        public uint64_t path_challenge_rx_count;
+
+        // Total duration during which this side of the connection was
+        // actively sending bytes or waiting for those bytes to be acked.
+        public uint64_t bytes_in_flight_duration_msec;
+
+        // True if the send buffer is in an inconsistent state, which could lead to
+        // connection stalls  or excess buffering.
+        public bool tx_buffered_inconsistent;
     }
 
     @Structure.FieldOrder({

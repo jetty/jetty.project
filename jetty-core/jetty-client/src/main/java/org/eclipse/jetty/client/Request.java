@@ -532,7 +532,7 @@ public interface Request
     void send(Response.CompleteListener listener);
 
     /**
-     * Attempts to abort the send of this request.
+     * Attempts to fail both the request and the response.
      *
      * @param cause the abort cause, must not be null
      * @return whether the abort succeeded
@@ -544,6 +544,17 @@ public interface Request
      * or null if this request has not been aborted
      */
     Throwable getAbortCause();
+
+    /**
+     * Attempts to fail only the request side of the request/response exchange.
+     *
+     * @param cause the fail cause, must not be null
+     * @return whether the fail succeeded
+     */
+    default CompletableFuture<Boolean> fail(Throwable cause)
+    {
+        return CompletableFuture.completedFuture(false);
+    }
 
     /**
      * Common, empty, super-interface for request listeners.

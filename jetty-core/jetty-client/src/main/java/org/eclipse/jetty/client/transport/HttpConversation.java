@@ -176,6 +176,24 @@ public class HttpConversation extends Attributes.Lazy
             promise.succeeded(false);
     }
 
+    void abortRequest(Throwable cause, Promise<Boolean> promise)
+    {
+        HttpExchange exchange = exchanges.peekLast();
+        if (exchange != null)
+            exchange.abortRequest(cause, promise);
+        else
+            promise.succeeded(false);
+    }
+
+    void abortResponse(Throwable cause, Promise<Boolean> promise)
+    {
+        HttpExchange exchange = exchanges.peekLast();
+        if (exchange != null)
+            exchange.abortResponse(cause, promise);
+        else
+            promise.succeeded(false);
+    }
+
     @Override
     public String toString()
     {

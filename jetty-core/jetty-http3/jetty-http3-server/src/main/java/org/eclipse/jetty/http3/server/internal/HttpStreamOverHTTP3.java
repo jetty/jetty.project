@@ -20,8 +20,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.http.ComplianceUtils;
-import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -39,9 +37,7 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpStream;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -85,18 +81,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         try
         {
             MetaData.Request requestMetaData = (MetaData.Request)frame.getMetaData();
-
-            HttpConfiguration httpConfiguration = httpChannel.getConnectionMetaData().getHttpConfiguration();
-
             Runnable handler = httpChannel.onRequest(requestMetaData);
-            Request request = httpChannel.getRequest();
-            // Grab the request specific ComplianceViolation Listener (possibly a composite).
-            ComplianceViolation.Listener listener = httpChannel.getComplianceViolationListener();
-            listener.onRequestBegin(request);
-
-            // Note: UriCompliance is done by HandlerInvoker
-            // Perform HttpCompliance
-            ComplianceUtils.verify(httpConfiguration.getHttpCompliance(), requestMetaData, listener);
 
             if (frame.isLast())
             {

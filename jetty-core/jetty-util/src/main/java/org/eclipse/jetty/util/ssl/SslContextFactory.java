@@ -1938,11 +1938,20 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
 
     public void reload(Consumer<SslContextFactory> consumer) throws Exception
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             consumer.accept(this);
             unload();
             load();
+        }
+    }
+
+    public void unload(Consumer<SslContextFactory> consumer)
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            consumer.accept(this);
+            unload();
         }
     }
 

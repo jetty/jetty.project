@@ -167,6 +167,16 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         testAuthentication(scenario, new DigestAuthentication(uri, ANY_REALM, "digest", "digest"));
     }
 
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testDigestCharset(Scenario scenario) throws Exception
+    {
+        startDigest(scenario, new EmptyServerHandler());
+        URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+        testAuthentication(scenario, new DigestAuthentication(uri, ANY_REALM, "digest_utf8", "€"));
+    }
+
     private void testAuthentication(Scenario scenario, Authentication authentication) throws Exception
     {
         AuthenticationStore authenticationStore = client.getAuthenticationStore();

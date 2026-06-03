@@ -16,17 +16,11 @@
   </properties>
 
   <dependencies>
-
     <dependency>
-
       <groupId>org.eclipse.jetty.ee</groupId>
-
       <artifactId>jetty-ee-test-sci-webapp</artifactId>
-
       <version>${project.version}</version>
-
       <type>war</type>
-
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee12</groupId>

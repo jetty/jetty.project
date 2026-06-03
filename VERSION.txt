@@ -1,3 +1,39 @@
+jetty-12.1.11-SNAPSHOT
+
+12.1.10 - 29 May 2026
+ + 9799 Declare EncodingException for HPACK/QPACK encoders and decoders
+ + 14006 How to handle "Warning Logs in org.eclipse.jetty.ee8.nested.HttpChannelState and org.eclipse.jetty.server.internal.HttpChannelState"?
+ + 14522 Bundle org.eclipse.jetty.websocket.server OSGI metadata exports internal instead of public package
+ + 14528 `BinaryStreamTest.testMoreThanLargestMessageOneByteAtATime()` is flaky
+ + 14745 NPE in HttpChannelState.completeStream() when _request is null during multipart cleanup
+ + 14984 XmlConfiguration emits "Deprecated method ... setMaxThreads" WARN from shipped jetty-threadpool-virtual.xml
+ + 15009 Make processing of RST_STREAM more lenient
+ + 15011 `PathResource.resolve()` fails on Microsoft Windows due to `Illegal char <:>`
+ + 15021 Resource handling regression in 12.1.9
+ + 15031 IOResources#toRetainableByteBuffer data loss when using resources without path
+ + 15074 HTTP/2 extended connect responses contain Content-Length: 0
+ + 15094 Jetty 12.1 Regression: Deferred Authentication provides Callback.NOT_CALLED leading to errors
+ + 15118 Upgrade to Quiche version 0.29.0
+ + 15136 Refresh Digest authentication implementation
+ + 15161 Reduce memory footprint for persistent HttpConnections
+ + 15180 Upgrade to Quiche version 0.29.1
+
+12.1.9 - 30 April 2026
+ + 8876 Jetty 12 - JMX-ify HttpContent.Factory implementations
+ + 12110 Request Authority checks needed
+ + 14196 Using passivation with eviction: HttpServletRequest.getSession() may return null due to race-condition
+ + 14541 Jetty HTTP Client - setMaxRequestHeadersSize resulting in  java.lang.OutOfMemoryError
+ + 14564 Jetty 12.1.x TLS connections hang after several requests with internal HTTPS self-requests
+ + 14646 Regression in Jetty 12.1: Invalid UTF-8 exception for application/x-www-form-urlencoded; charset=iso-8859-1
+ + 14805 HTTP/3 server crashes on `quiche_header_info`
+ + 14821 Websocket IllegalStateException ('Demand already fulfilled') since Jetty 12.1
+ + 14824 FileSystemPool doesn't always own its filesystems
+ + 14846 NPE in MimeTypes$Mutable.getMimeByExtension on startup with web-fragment with mime mapping
+ + 14853 CombinedResource.getRealURI() returns null when multiple members exist, causing 404 for all static resources
+ + 14870 Refactor compliance checks
+ + 14913 Upgrade to Quiche version 0.28.0
+ + 14972 Jetty 12.1.8 jetty-home has `lib/*-config.jar` files
+
 
 12.1.8 - 31 March 2026
  + 10906 Is there a ConsoleRequestLog (JettySlf4jRequestLog) module?

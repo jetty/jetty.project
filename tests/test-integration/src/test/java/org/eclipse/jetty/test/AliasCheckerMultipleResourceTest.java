@@ -31,12 +31,15 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
 public class AliasCheckerMultipleResourceTest extends AliasCheckerTestBase
@@ -47,12 +50,25 @@ public class AliasCheckerMultipleResourceTest extends AliasCheckerTestBase
     private HttpClient _client;
     private ContextHandler _context;
 
+    @BeforeEach
+    public void before()
+    {
+        _server = new Server();
+        _connector = new ServerConnector(_server);
+        _server.addConnector(_connector);
+        _context = new ContextHandler();
+
+        _context.setContextPath("/");
+        _server.setHandler(_context);
+        _context.clearAliasChecks();
+    }
+
     public void start(List<Path> baseResources, Consumer<Resource> configurator) throws Exception
     {
         Resource combinedResourceBase = ResourceFactory.combine(
             baseResources.stream()
-            .map(AliasCheckerTestBase::toResource)
-            .toList()
+                .map(AliasCheckerTestBase::toResource)
+                .toList()
         );
         start(combinedResourceBase, configurator);
     }
@@ -64,15 +80,7 @@ public class AliasCheckerMultipleResourceTest extends AliasCheckerTestBase
 
     public void start(Resource baseResource, Consumer<Resource> configurator) throws Exception
     {
-        _server = new Server();
-        _connector = new ServerConnector(_server);
-        _server.addConnector(_connector);
-        _context = new ContextHandler();
-
-        _context.setContextPath("/");
         _context.setBaseResource(baseResource);
-        _server.setHandler(_context);
-        _context.clearAliasChecks();
         if (configurator != null)
             configurator.accept(baseResource);
         _server.start();
@@ -184,5 +192,33 @@ public class AliasCheckerMultipleResourceTest extends AliasCheckerTestBase
         response = _client.GET(uri.resolve("/foo/symlink/file1Symlink"));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), is("file 1 contents"));
+    }
+
+    @Test
+    public void testJarResource() throws Exception
+    {
+        ResourceFactory resourceFactory = ResourceFactory.of(_context);
+        Path resourceDir = getResource("");
+        URI jarURI = resourceDir.resolve("test.jar").toFile().toURI();
+        Resource baseResource = ResourceFactory.combine(
+            resourceFactory.newResource(resourceDir.resolve("webroot")),
+            resourceFactory.newJarFileResource(jarURI)
+        );
+
+        // The base resource should not be an alias.
+        assertFalse(baseResource.isAlias());
+
+        // Start the server.
+        start(baseResource, r -> _context.setHandler(newResourceHandler(r)));
+        URI uri = URI.create("http://localhost:" + _connector.getLocalPort());
+
+        // We should need an alias checker to access the resource.
+        setAliasCheckers(_context);
+        ContentResponse response = _client.GET(uri.resolve("/file1"));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContentAsString(), is("file 1 contents from jar"));
+
+        // We should not have modified the baseResource of the context to resolve any alias.
+        assertThat(_context.getBaseResource(), equalTo(baseResource));
     }
 }

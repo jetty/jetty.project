@@ -56,6 +56,7 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
     private static HotSwapHandler _hotSwapHandler;
     private static ContextHandler _context1;
     private static ContextHandler _context2;
+    private static ContextHandler _context3;
 
     private static final List<Path> _createdFiles = new ArrayList<>();
 
@@ -122,6 +123,15 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
             combinedPath.resolve("externalCombinedSymlinkFile"),
             webRootPath.resolve("../sibling"));
 
+        // Symlink to the webroot directories for a combined base resource which is an alias.
+        Path webrootSymlink = combinedPath.resolve(getResource("webrootSymlink"));
+        Path combinedSymlink = combinedPath.resolve(getResource("combinedSymlink"));
+        createSymbolicLink(
+            webrootSymlink,
+            webRootPath);
+        createSymbolicLink(
+            combinedSymlink,
+            combinedPath);
 
         // Create and start Server and Client.
         _server = new Server();
@@ -143,13 +153,24 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
         ResourceFactory resourceFactory = ResourceFactory.of(_server);
         Resource resource = ResourceFactory.combine(
             resourceFactory.newResource(webRootPath),
-            resourceFactory.newResource(getResource("combined")));
+            resourceFactory.newResource(combinedPath));
         _context2 = new ContextHandler();
         _context2.setContextPath("/");
         _context2.setBaseResource(resource);
         _context2.setProtectedTargets(new String[]{"/WEB-INF", "/META-INF"});
         _context2.setHandler(new ResourceHandler());
         _context2.clearAliasChecks();
+
+        // Aliased CombinedResource for Base Resource tests.
+        resource = ResourceFactory.combine(
+            resourceFactory.newResource(webrootSymlink),
+            resourceFactory.newResource(combinedSymlink));
+        _context3 = new ContextHandler();
+        _context3.setContextPath("/");
+        _context3.setBaseResource(resource);
+        _context3.setProtectedTargets(new String[]{"/WEB-INF", "/META-INF"});
+        _context3.setHandler(new ResourceHandler());
+        _context3.clearAliasChecks();
 
         _server.start();
         _client = new HttpClient();
@@ -257,6 +278,32 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
             Arguments.of(allowedResource, "/externalCombinedSymlinkFile/file", HttpStatus.NOT_FOUND_404, null),
             Arguments.of(allowedResource, "/combinedWebInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null),
 
+            Arguments.of(symlinkAllowedResource, "/file", HttpStatus.OK_200, "This file is inside webroot."),
+            Arguments.of(symlinkAllowedResource, "/combinedSymlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
+            Arguments.of(symlinkAllowedResource, "/externalCombinedSymlinkFile/file", HttpStatus.OK_200, "This file is inside a sibling dir to webroot."),
+            Arguments.of(symlinkAllowedResource, "/combinedWebInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file.")
+        );
+        return Stream.concat(testCases(_context2), combinedResourceTests);
+    }
+
+    public static Stream<Arguments> combinedBaseResourceTestCases()
+    {
+        AllowedResourceAliasChecker allowedResource = new AllowedResourceAliasChecker(_context3);
+        SymlinkAllowedResourceAliasChecker symlinkAllowedResource = new SymlinkAllowedResourceAliasChecker(_context3);
+
+        Stream<Arguments> combinedResourceTests = Stream.of(
+            Arguments.of(allowedResource, "/file", HttpStatus.OK_200, "This file is inside webroot."),
+            Arguments.of(allowedResource, "/combinedFile", HttpStatus.OK_200, "This is a file in the combined resource dir."),
+            Arguments.of(allowedResource, "/WEB-INF/file", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(allowedResource, "/files", HttpStatus.OK_200, "Directory: /files/|/files/file1|/files/file2"),
+            Arguments.of(allowedResource, "/files/file1", HttpStatus.OK_200, "file1 from combined dir"),
+            Arguments.of(allowedResource, "/files/file2", HttpStatus.OK_200, "file1 from webroot"),
+
+            Arguments.of(allowedResource, "/combinedSymlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
+            Arguments.of(allowedResource, "/externalCombinedSymlinkFile/file", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(allowedResource, "/combinedWebInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null),
+
+            Arguments.of(symlinkAllowedResource, "/file", HttpStatus.OK_200, "This file is inside webroot."),
             Arguments.of(symlinkAllowedResource, "/combinedSymlinkFile", HttpStatus.OK_200, "This file is inside webroot."),
             Arguments.of(symlinkAllowedResource, "/externalCombinedSymlinkFile/file", HttpStatus.OK_200, "This file is inside a sibling dir to webroot."),
             Arguments.of(symlinkAllowedResource, "/combinedWebInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file.")
@@ -281,6 +328,31 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
     public void testCombinedResource(AliasCheck aliasChecker, String path, int httpStatus, String responseContent) throws Exception
     {
         init(_context2, aliasChecker);
+        URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + path);
+        ContentResponse response = _client.GET(uri);
+        assertThat(response.getStatus(), is(httpStatus));
+
+        if (responseContent != null)
+        {
+            if (responseContent.contains("|"))
+            {
+                for (String s : responseContent.split("\\|"))
+                {
+                    assertThat("Could not find " + s, response.getContentAsString(), containsString(s));
+                }
+            }
+            else
+            {
+                assertThat(response.getContentAsString(), equalTo(responseContent));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("combinedBaseResourceTestCases")
+    public void testCombinedBaseResource(AliasCheck aliasChecker, String path, int httpStatus, String responseContent) throws Exception
+    {
+        init(_context3, aliasChecker);
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + path);
         ContentResponse response = _client.GET(uri);
         assertThat(response.getStatus(), is(httpStatus));

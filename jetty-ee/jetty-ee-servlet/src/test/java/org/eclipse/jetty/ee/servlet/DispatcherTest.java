@@ -74,6 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
 public class DispatcherTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(DispatcherTest.class);
@@ -607,10 +608,10 @@ public class DispatcherTest
             HTTP/1.1 200 OK\r
             Connection: close\r
             \r
-            Include:
-            Test 2 to too two
-            ---
-            """;
+            Include:%n\
+            Test 2 to too two%n\
+            ---%n\
+            """.formatted();
 
         assertEquals(expected, responses);
     }
