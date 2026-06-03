@@ -127,7 +127,7 @@ public class DispatcherTest
     @Test
     public void testForward() throws Exception
     {
-        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(new ServletHolder("ForwardServlet", ForwardServlet.class), "/ForwardServlet/*");
         _contextHandler.addServlet(AssertForwardServlet.class, "/AssertForwardServlet/*");
 
         String rawResponse = _connector.getResponse("""
@@ -178,7 +178,7 @@ public class DispatcherTest
     @Test
     public void testForwardThenForward() throws Exception
     {
-        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(new ServletHolder("ForwardServlet", ForwardServlet.class), "/ForwardServlet/*");
         _contextHandler.addServlet(AlwaysForwardServlet.class, "/AlwaysForwardServlet/*");
         ServletHolder holder = _contextHandler.getServletHandler().newServletHolder(Source.EMBEDDED);
         holder.setHeldClass(ForwardEchoURIServlet.class);
@@ -219,7 +219,7 @@ public class DispatcherTest
     @Test
     public void testForwardNonUTF8() throws Exception
     {
-        _contextHandler.addServlet(ForwardNonUTF8Servlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(new ServletHolder("ForwardNonUTF8Servlet", ForwardNonUTF8Servlet.class), "/ForwardServlet/*");
         _contextHandler.addServlet(AssertNonUTF8ForwardServlet.class, "/AssertForwardServlet/*");
 
         String rawResponse = _connector.getResponse("""
@@ -407,7 +407,7 @@ public class DispatcherTest
     public void testInclude() throws Exception
     {
         _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
-        _contextHandler.addServlet(AssertIncludeServlet.class, "/AssertIncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("AssertIncludeServlet", AssertIncludeServlet.class), "/AssertIncludeServlet/*");
 
         //test include, along with special extension to include that allows headers to
         //be set during an include
@@ -537,7 +537,7 @@ public class DispatcherTest
     public void testIncludeWriterOutputStream() throws Exception
     {
         _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
-        _contextHandler.addServlet(AssertIncludeServlet.class, "/AssertIncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("AssertIncludeServlet", AssertIncludeServlet.class), "/AssertIncludeServlet/*");
 
         //test include, along with special extension to include that allows headers to
         //be set during an include
@@ -723,9 +723,9 @@ public class DispatcherTest
     @Test
     public void testForwardThenInclude() throws Exception
     {
-        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(new ServletHolder("ForwardServlet", ForwardServlet.class), "/ForwardServlet/*");
         _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
-        _contextHandler.addServlet(AssertForwardIncludeServlet.class, "/AssertForwardIncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("AssertForwardIncludeServlet", AssertForwardIncludeServlet.class), "/AssertForwardIncludeServlet/*");
 
         String rawResponse = _connector.getResponse("""
             GET /context/ForwardServlet/forwardpath?do=include HTTP/1.1\r
@@ -749,7 +749,7 @@ public class DispatcherTest
     @Test
     public void testIncludeThenForward() throws Exception
     {
-        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("IncludeServlet", IncludeServlet.class), "/IncludeServlet/*");
         _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
         _contextHandler.addServlet(AssertIncludeForwardServlet.class, "/AssertIncludeForwardServlet/*");
 
