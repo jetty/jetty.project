@@ -52,6 +52,8 @@ import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -423,7 +425,15 @@ public class ConnectHandler extends Handler.Wrapper
      */
     protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
     {
-        return endPoint.fill(buffer);
+        WritableBuffer wb = ReadableBuffer.wrap(buffer).toWritable();
+        try
+        {
+            return endPoint.fill(wb);
+        }
+        finally
+        {
+            wb.toReadable();
+        }
     }
 
     /**
@@ -436,7 +446,7 @@ public class ConnectHandler extends Handler.Wrapper
      */
     protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
     {
-        endPoint.write(callback, buffer);
+        endPoint.write(ReadableBuffer.wrap(buffer), callback);
     }
 
     /**

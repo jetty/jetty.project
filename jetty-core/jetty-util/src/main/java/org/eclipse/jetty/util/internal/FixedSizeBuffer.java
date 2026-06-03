@@ -100,6 +100,14 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
     }
 
     @Override
+    public void get(byte[] b)
+    {
+        if (flushPosition != -1)
+            throw new IllegalStateException("Cannot read from buffer in write mode");
+        byteBuffer.get(b);
+    }
+
+    @Override
     public long writeTo(Target target) throws IOException
     {
         if (flushPosition != -1)
@@ -116,6 +124,9 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
             throw new IllegalStateException("Buffer already in write mode");
         if (byteBuffer.isReadOnly())
             throw new IllegalStateException("Buffer is read-only");
+        // Always compact when there is nothing to copy.
+        if (remaining() == 0L)
+            byteBuffer.compact().flip();
         flushPosition = byteBuffer.position();
         byteBuffer.position(byteBuffer.limit());
         byteBuffer.limit(byteBuffer.capacity());
@@ -237,9 +248,10 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
     @Override
     public String toString()
     {
-        return String.format("%s@%x{b=%s,r=%s}",
+        return String.format("%s@%x{fp=%d,b=%s,r=%s}",
             TypeUtil.toShortName(getClass()),
             hashCode(),
+            flushPosition,
             BufferUtil.toDetailString(byteBuffer),
             retainable);
     }
