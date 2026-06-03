@@ -37,6 +37,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -123,7 +124,7 @@ public class SslConnectionTest
         }
 
         @Override
-        public boolean flush(ByteBuffer... buffers) throws IOException
+        public boolean flush(ReadableBuffer buffer) throws IOException
         {
             __onIncompleteFlush.set(false);
             if (__startBlocking.get() == 0 || __startBlocking.decrementAndGet() == 0)
@@ -133,7 +134,7 @@ public class SslConnectionTest
                     return false;
                 }
             }
-            return super.flush(buffers);
+            return super.flush(buffer);
         }
     }
 
