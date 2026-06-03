@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.buffer.WritableBuffer;
 
@@ -192,6 +193,19 @@ public class AccumulatingReadBuffer implements ReadableBuffer
     }
 
     @Override
+    public void get(byte[] b)
+    {
+        ReadableBuffer currentRb = currentReadableBuffer();
+        if (currentRb.remaining() >= b.length)
+        {
+            position += b.length;
+            currentRb.get(b);
+            return;
+        }
+        fragmentedGet(currentRb, b.length).get(b);
+    }
+
+    @Override
     public ReadableBuffer slice()
     {
         List<ReadableBuffer> copy = new ArrayList<>(readableBuffers.size());
@@ -260,6 +274,17 @@ public class AccumulatingReadBuffer implements ReadableBuffer
     @Override
     public long writeTo(Target target) throws IOException
     {
+        if (target instanceof GatheringTarget gatheringTarget)
+        {
+            long totalRemainingBefore = remaining();
+            List<ByteBuffer> buffers = new ArrayList<>();
+            toByteBuffers(buffers);
+            gatheringTarget.write(buffers.toArray(new ByteBuffer[0]));
+            long totalWritten = totalRemainingBefore - remaining();
+            position += totalWritten;
+            return totalWritten;
+        }
+
         long totalWritten = 0L;
         for (int i = 0; i < readableBuffers.size(); i++)
         {
@@ -279,6 +304,19 @@ public class AccumulatingReadBuffer implements ReadableBuffer
                 break;
         }
         return totalWritten;
+    }
+
+    private void toByteBuffers(List<ByteBuffer> result)
+    {
+        for (ReadableBuffer readableBuffer : readableBuffers)
+        {
+            if (readableBuffer instanceof AccumulatingReadBuffer accumulatingReadBuffer)
+                accumulatingReadBuffer.toByteBuffers(result);
+            if (readableBuffer instanceof FixedSizeBuffer fixedSizeBuffer)
+                result.add(fixedSizeBuffer.getByteBuffer());
+            else
+                throw new IllegalStateException("Unsupported ReadableBuffer type: " + readableBuffer.getClass().getName());
+        }
     }
 
     // Retainable
@@ -318,5 +356,16 @@ public class AccumulatingReadBuffer implements ReadableBuffer
     public int getRetained()
     {
         return retainable.getRetained();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{ls=%s,bs=%s,r=%s}",
+            TypeUtil.toShortName(getClass()),
+            hashCode(),
+            limits,
+            readableBuffers,
+            retainable);
     }
 }

@@ -33,6 +33,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,7 +167,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     }
 
     @Override
-    public int fill(ByteBuffer sink) throws IOException
+    public int fill(WritableBuffer sink) throws IOException
     {
         Stream.Data data = this.data.get();
         if (data != null)
@@ -190,21 +192,14 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
         return fillFromData(data, sink);
     }
 
-    private int fillFromData(Stream.Data data, ByteBuffer sink)
+    private int fillFromData(Stream.Data data, WritableBuffer sink)
     {
         int length = 0;
         ByteBuffer source = data.frame().getByteBuffer();
         boolean hasContent = source.hasRemaining();
         if (hasContent)
         {
-            int sinkPosition = BufferUtil.flipToFill(sink);
-            int sourceLength = source.remaining();
-            length = Math.min(sourceLength, sink.remaining());
-            int sourceLimit = source.limit();
-            source.limit(source.position() + length);
-            sink.put(source);
-            source.limit(sourceLimit);
-            BufferUtil.flipToFlush(sink, sinkPosition);
+            length = BufferUtil.put(source, sink);
         }
 
         if (!source.hasRemaining())
@@ -223,11 +218,11 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     }
 
     @Override
-    public boolean flush(ByteBuffer... buffers) throws IOException
+    public boolean flush(ReadableBuffer buffer) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("flushing {} on {}", BufferUtil.toDetailString(buffers), this);
-        if (buffers == null || buffers.length == 0 || remaining(buffers) == 0)
+            LOG.debug("flushing {} on {}", buffer, this);
+        if (buffer == null || buffer.remaining() == 0)
             return true;
 
         // Differently from other EndPoint implementations, where write() calls flush(),
@@ -294,11 +289,11 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     }
 
     @Override
-    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} on {}", BufferUtil.toDetailString(buffers), this);
-        if (buffers == null || buffers.length == 0 || remaining(buffers) == 0)
+            LOG.debug("writing {} on {}", buffer, this);
+        if (buffer == null || buffer.remaining() == 0L)
         {
             callback.succeeded();
         }
@@ -315,7 +310,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                         if (!writeState.compareAndSet(current, pending))
                             continue;
                         // TODO: we really need a Stream primitive to write multiple frames.
-                        ByteBuffer result = coalesce(buffers);
+                        ByteBuffer result = coalesce(buffer);
                         stream.data(new DataFrame(stream.getId(), result, false), pending);
                     }
                     case PENDING -> callback.failed(new WritePendingException());
@@ -415,23 +410,13 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
         }
     }
 
-    private long remaining(ByteBuffer... buffers)
+    private ByteBuffer coalesce(ReadableBuffer buffer)
     {
-        return BufferUtil.remaining(buffers);
-    }
-
-    private ByteBuffer coalesce(ByteBuffer[] buffers)
-    {
-        if (buffers.length == 1)
-            return buffers[0];
-        long capacity = remaining(buffers);
+        long capacity = buffer.remaining();
         if (capacity > Integer.MAX_VALUE)
             throw new BufferOverflowException();
-        ByteBuffer result = BufferUtil.allocateDirect((int)capacity);
-        for (ByteBuffer buffer : buffers)
-        {
-            BufferUtil.append(result, buffer);
-        }
+        ByteBuffer result = BufferUtil.allocate((int)capacity);
+        BufferUtil.put(buffer, result);
         return result;
     }
 

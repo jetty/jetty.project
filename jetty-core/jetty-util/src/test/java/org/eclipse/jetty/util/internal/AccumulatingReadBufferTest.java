@@ -23,11 +23,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class AccumulatingReadBufferTest
 {
@@ -452,6 +454,150 @@ public class AccumulatingReadBufferTest
     }
 
     @Test
+    public void testGetByteArray()
+    {
+        ReadableBuffer rb1 = ReadableBuffer.wrap(ByteBuffer.allocate(20)
+            .putLong(1L)
+            .putLong(2L)
+            .flip());
+        ReadableBuffer rb2 = ReadableBuffer.wrap(ByteBuffer.allocate(20)
+            .putLong(3L)
+            .putLong(4L)
+            .flip());
+        ReadableBuffer acc = ReadableBuffer.accumulate(List.of(rb1, rb2));
+        byte[] bytes = new byte[8];
+
+        assertEquals(0, acc.position());
+        assertEquals(32, acc.remaining());
+        acc.get(bytes);
+        assertArrayEquals(new byte[]{0, 0, 0, 0, 0, 0, 0, 1}, bytes);
+
+        assertEquals(8, acc.position());
+        assertEquals(24, acc.remaining());
+        acc.get(bytes);
+        assertArrayEquals(new byte[]{0, 0, 0, 0, 0, 0, 0, 2}, bytes);
+
+        assertEquals(16, acc.position());
+        assertEquals(16, acc.remaining());
+        acc.get(bytes);
+        assertArrayEquals(new byte[]{0, 0, 0, 0, 0, 0, 0, 3}, bytes);
+
+        assertEquals(24, acc.position());
+        assertEquals(8, acc.remaining());
+        acc.get(bytes);
+        assertArrayEquals(new byte[]{0, 0, 0, 0, 0, 0, 0, 4}, bytes);
+
+        assertEquals(32, acc.position());
+        assertEquals(0, acc.remaining());
+        assertThrows(BufferUnderflowException.class, () -> acc.get(bytes));
+    }
+
+    @Test
+    public void testFragmentedGetByteArray()
+    {
+        List<ReadableBuffer> accumulatorCombinations = new ArrayList<>();
+
+        {
+            ReadableBuffer rb1 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+                .put((byte)0)
+                .put((byte)0)
+                .put((byte)0)
+                .put((byte)0)
+                .put((byte)0)
+                .put((byte)0)
+                .put((byte)0)
+                .flip());
+            ReadableBuffer rb2 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+                .put((byte)1)
+                .flip());
+            accumulatorCombinations.add(ReadableBuffer.accumulate(List.of(rb1, rb2)));
+        }
+        {
+            ReadableBuffer rb1 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+                .put((byte)0)
+                .flip());
+            ReadableBuffer rb2 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+                .put((byte)0)
+                .put((byte)0)
+                .put((byte)0)
+                .put((byte)0)
+                .put((byte)0)
+                .put((byte)0)
+                .put((byte)1)
+                .flip());
+            accumulatorCombinations.add(ReadableBuffer.accumulate(List.of(rb1, rb2)));
+        }
+        {
+            ReadableBuffer rb1 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+                .put((byte)0)
+                .flip());
+            ReadableBuffer rb2 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+                .put((byte)0)
+                .flip());
+            ReadableBuffer rb3 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+                .put((byte)0)
+                .flip());
+            ReadableBuffer rb4 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+                .put((byte)0)
+                .flip());
+            ReadableBuffer rb5 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+                .put((byte)0)
+                .flip());
+            ReadableBuffer rb6 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+                .put((byte)0)
+                .flip());
+            ReadableBuffer rb7 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+                .put((byte)0)
+                .flip());
+            ReadableBuffer rb8 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+                .put((byte)1)
+                .flip());
+            accumulatorCombinations.add(ReadableBuffer.accumulate(List.of(rb1, rb2, rb3, rb4, rb5, rb6, rb7, rb8)));
+        }
+
+        byte[] bytes = new byte[8];
+        byte[] expected = new byte[]{0, 0, 0, 0, 0, 0, 0, 1};
+        for (ReadableBuffer acc : accumulatorCombinations)
+        {
+            assertEquals(0, acc.position());
+            assertEquals(8, acc.remaining());
+            acc.get(bytes);
+            assertArrayEquals(expected, bytes);
+
+            assertEquals(8, acc.position());
+            assertEquals(0, acc.remaining());
+            assertThrows(BufferUnderflowException.class, () -> acc.get(bytes));
+        }
+    }
+
+    @Test
+    public void testFragmentedGetByteArrayNotEnoughBytes()
+    {
+        ReadableBuffer rb1 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)1)
+            .flip());
+        ReadableBuffer rb2 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)2)
+            .put((byte)3)
+            .put((byte)4)
+            .flip());
+        ReadableBuffer acc = ReadableBuffer.accumulate(List.of(rb1, rb2));
+
+        assertEquals(0, acc.position());
+        assertEquals(7, acc.remaining());
+        byte[] bytes = new byte[8];
+        assertThrows(BufferUnderflowException.class, () -> acc.get(bytes));
+
+        assertEquals(1, acc.getInt());
+        assertEquals(2, acc.get());
+        assertEquals(3, acc.get());
+        assertEquals(4, acc.get());
+    }
+
+    @Test
     public void testPosition()
     {
         ReadableBuffer rb1 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
@@ -557,6 +703,53 @@ public class AccumulatingReadBufferTest
 
         assertEquals(4, acc.position());
         assertEquals(0, acc.remaining());
+    }
+
+    @Test
+    public void testWriteToGathering() throws IOException
+    {
+        ReadableBuffer rb1 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+            .putInt(11)
+            .putInt(12)
+            .flip());
+        ReadableBuffer rb2 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+            .putInt(13)
+            .putInt(14)
+            .flip());
+        ReadableBuffer acc = ReadableBuffer.accumulate(List.of(rb1, rb2));
+        assertEquals(0, acc.position());
+        assertEquals(16, acc.remaining());
+
+        List<Integer> writtenIntegers = new ArrayList<>();
+        long written = acc.writeTo(new ReadableBuffer.GatheringTarget()
+        {
+            @Override
+            public void write(ByteBuffer[] inputs)
+            {
+                for (ByteBuffer input : inputs)
+                {
+                    while (input.hasRemaining())
+                    {
+                        writtenIntegers.add(input.getInt());
+                    }
+                }
+            }
+
+            @Override
+            public void write(ByteBuffer input)
+            {
+                fail("gathering write should have been called instead");
+            }
+        });
+        assertEquals(16, written);
+
+        assertEquals(16, acc.position());
+        assertEquals(0, acc.remaining());
+        assertEquals(4, writtenIntegers.size());
+        assertEquals(11, writtenIntegers.get(0));
+        assertEquals(12, writtenIntegers.get(1));
+        assertEquals(13, writtenIntegers.get(2));
+        assertEquals(14, writtenIntegers.get(3));
     }
 
     @Test

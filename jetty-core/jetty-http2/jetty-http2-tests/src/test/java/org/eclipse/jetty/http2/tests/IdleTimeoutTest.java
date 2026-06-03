@@ -51,6 +51,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -865,7 +866,7 @@ public class IdleTimeoutTest extends AbstractTest
                 SocketChannelEndPoint endpoint = new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
                     @Override
-                    public boolean flush(ByteBuffer... buffers)
+                    public boolean flush(ReadableBuffer buffer)
                     {
                         // Fake TCP congestion.
                         return false;

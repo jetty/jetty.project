@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -64,7 +65,7 @@ public class IdleTimeoutTest
                 SocketChannelEndPoint endpoint = new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
                     @Override
-                    public boolean flush(ByteBuffer... buffers)
+                    public boolean flush(ReadableBuffer buffer)
                     {
                         // Fake TCP congestion.
                         return false;

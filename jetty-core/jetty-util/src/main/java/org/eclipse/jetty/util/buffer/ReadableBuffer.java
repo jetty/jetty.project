@@ -15,8 +15,10 @@ package org.eclipse.jetty.util.buffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.internal.AccumulatingReadBuffer;
 import org.eclipse.jetty.util.internal.FixedSizeBuffer;
@@ -45,6 +47,16 @@ public interface ReadableBuffer extends Retainable
     static ReadableBuffer wrap(ByteBuffer byteBuffer)
     {
         return new FixedSizeBuffer(byteBuffer, new ReferenceCounter(), false);
+    }
+
+    static ReadableBuffer wrap(ByteBuffer... buffers)
+    {
+        if (BufferUtil.isEmpty(buffers))
+            return EMPTY;
+        if (buffers.length == 1)
+            return wrap(buffers[0]);
+        List<ReadableBuffer> rbs = Arrays.stream(buffers).map(ReadableBuffer::wrap).toList();
+        return new AccumulatingReadBuffer(rbs);
     }
 
     /**
@@ -110,6 +122,12 @@ public interface ReadableBuffer extends Retainable
     long getLong();
 
     /**
+     * Reads a byte array at the current position.
+     * @throws java.nio.BufferUnderflowException – If the buffer's {@link #remaining()} is less than the array's length.
+     */
+    void get(byte[] b);
+
+    /**
      * Slices this ReadableBuffer, {@link Retainable#retain() retaining} it in the process.
      * @return a new ReadableBuffer with a position of 0 that indexes the current ReadableBuffer's {@link #position()}
      * and an adjusted capacity equal to the current ReadableBuffer's {@link #capacity()} - the current
@@ -168,7 +186,22 @@ public interface ReadableBuffer extends Retainable
          * Flushes a given NIO ByteBuffer. Note that this method can be called more than once if the {@code input} byte buffer
          * is depleted, for instance if the WritableBuffer is backed by more than one NIO ByteBuffer.
          * @param input the buffer to be written
+         * @throws IOException when IOException occurs
          */
         void write(ByteBuffer input) throws IOException;
+    }
+
+    /**
+     * Interface of the Target (i.e.: byte destination) used to flush a ReadableBuffer via the NIO ByteBuffer API when the
+     * target supports gathering writes.
+     */
+    interface GatheringTarget extends Target
+    {
+        /**
+         * Flushes a given NIO ByteBuffer. Note that this method is never be called more than once.
+         * @param inputs the buffer to be written
+         * @throws IOException when IOException occurs
+         */
+        void write(ByteBuffer[] inputs) throws IOException;
     }
 }
