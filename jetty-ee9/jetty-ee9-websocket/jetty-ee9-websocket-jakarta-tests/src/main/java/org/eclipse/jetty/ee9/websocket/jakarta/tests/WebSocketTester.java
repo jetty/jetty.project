@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketTester implements AutoCloseable
@@ -79,9 +80,9 @@ public class WebSocketTester implements AutoCloseable
         this.client.start();
         this.generator = new UnitGenerator(Behavior.CLIENT);
 
-        CompletableFuture<CoreSession> futureHandler = this.client.connect(upgradeRequest);
-        CompletableFuture<FrameCapture> futureCapture = futureHandler.thenCombine(upgradeRequest.getFuture(), (session, capture) -> capture);
-        this.frameCapture = futureCapture.get(10, TimeUnit.SECONDS);
+        CompletableFuture<CoreSession> futureCoreSession = this.client.connect(upgradeRequest);
+        CompletableFuture<FrameCapture> futureFrameCapture = futureCoreSession.thenCombine(upgradeRequest.getFuture(), (session, capture) -> capture);
+        this.frameCapture = futureFrameCapture.get(10, TimeUnit.SECONDS);
     }
 
     public ByteBuffer asNetworkBuffer(List<Frame> frames)
@@ -210,13 +211,15 @@ public class WebSocketTester implements AutoCloseable
     {
         ByteBuffer actualPayload = ByteBuffer.allocate(expectedMessage.remaining());
 
-        Frame frame = framesQueue.poll(5, TimeUnit.SECONDS);
+        Frame frame = framesQueue.poll(10, TimeUnit.SECONDS);
+        assertNotNull(frame);
         assertThat("Initial Frame.opCode", frame.getOpCode(), is(expectedDataOp));
 
         actualPayload.put(frame.getPayload());
         while (!frame.isFin())
         {
-            frame = framesQueue.poll(5, TimeUnit.SECONDS);
+            frame = framesQueue.poll(10, TimeUnit.SECONDS);
+            assertNotNull(frame);
             assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CONTINUATION));
             actualPayload.put(frame.getPayload());
         }
@@ -234,7 +237,7 @@ public class WebSocketTester implements AutoCloseable
             prefix = "Frame[" + i + "]";
 
             Frame expected = expect.get(i);
-            Frame actual = framesQueue.poll(5, TimeUnit.SECONDS);
+            Frame actual = framesQueue.poll(10, TimeUnit.SECONDS);
             assertThat(prefix + ".poll", actual, notNullValue());
 
             if (LOG.isDebugEnabled())

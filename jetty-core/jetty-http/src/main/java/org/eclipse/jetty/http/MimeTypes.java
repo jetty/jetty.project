@@ -873,12 +873,7 @@ public class MimeTypes
         if (field instanceof MimeTypes.ContentTypeField contentTypeField)
             return contentTypeField.getMimeType();
 
-        String contentType = field.getValue();
-        int semicolon = contentType.indexOf(';');
-        if (semicolon >= 0)
-            contentType = contentType.substring(0, semicolon).trim();
-
-        return MimeTypes.CACHE.get(contentType);
+        return MimeTypes.CACHE.get(field.getValue());
     }
 
     public static String getMimeTypeAsStringFromContentType(HttpField field)

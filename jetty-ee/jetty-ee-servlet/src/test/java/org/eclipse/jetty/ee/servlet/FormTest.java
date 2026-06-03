@@ -13,18 +13,24 @@
 
 package org.eclipse.jetty.ee.servlet;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FormRequestContent;
 import org.eclipse.jetty.client.HttpClient;
@@ -41,6 +47,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FormTest
@@ -226,5 +235,51 @@ public class FormTest
             .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testContentTypeWithIso8859Charset() throws Exception
+    {
+        String contentType = MimeTypes.Type.FORM_ENCODED_8859_1.asString();
+        start(handler -> new EchoFormServlet());
+
+        // We use a raw ByteRequestContent here to ensure the exact bytes we want to be sent.
+        // We avoid using a FormRequestContent/Fields as those can perform extra encoding
+        // that we do not want to do in this specifici test case.
+        BytesRequestContent formContent = new BytesRequestContent(
+            MimeTypes.Type.FORM_ENCODED_8859_1.asString(),
+            "name=%e9".getBytes(UTF_8));
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .method(HttpMethod.POST)
+            .path(contextPath + servletPath)
+            .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, contentType))
+            .body(formContent)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        // confirm contents on response
+        String responseBody = response.getContentAsString();
+        assertThat(responseBody, containsString("params.size=1\n"));
+        assertThat(responseBody, containsString("param.name=é\n"));
+    }
+
+    public static class EchoFormServlet extends HttpServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            // Set response output mode
+            resp.setCharacterEncoding(UTF_8);
+            resp.setContentType("text/plain");
+            // Grab a response output
+            PrintWriter out =  resp.getWriter();
+            List<String> names = Collections.list(req.getParameterNames());
+            out.printf("params.size=%d\n", names.size());
+            for (String name: names)
+            {
+                out.printf("param.%s=%s\n", name, req.getParameter(name));
+            }
+        }
     }
 }

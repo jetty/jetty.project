@@ -82,6 +82,12 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
+    public CompletableFuture<Boolean> fail(Throwable cause)
+    {
+        return response.fail(cause);
+    }
+
+    @Override
     public String getMediaType()
     {
         return mediaType;

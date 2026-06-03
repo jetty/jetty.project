@@ -17,6 +17,9 @@ import java.io.IOException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +29,8 @@ import org.slf4j.LoggerFactory;
  * an entry in every directory. If any request is made for this resources file name, and it is not
  * already present in that directory then the resource contained in this factory will be served instead.
  */
-public class VirtualHttpContentFactory implements HttpContent.Factory
+@ManagedObject
+public class VirtualHttpContentFactory extends ContainerLifeCycle implements HttpContent.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(VirtualHttpContentFactory.class);
 
@@ -39,6 +43,7 @@ public class VirtualHttpContentFactory implements HttpContent.Factory
     public VirtualHttpContentFactory(HttpContent.Factory factory, Resource resource, String contentType, ByteBufferPool.Sized sizedBufferPool)
     {
         _factory = factory;
+        installBean(factory, true);
         _resource = resource;
         _matchSuffix = "/" + _resource.getFileName();
         _contentType = contentType;
@@ -50,9 +55,16 @@ public class VirtualHttpContentFactory implements HttpContent.Factory
     /**
      * @return Returns the stylesheet as a Resource.
      */
+    @ManagedAttribute(value = "Resource served when the requested path matches the virtual resource name", readonly = true)
     public Resource getResource()
     {
         return _resource;
+    }
+
+    @ManagedAttribute(value = "Content-Type used for the virtual resource", readonly = true)
+    public String getContentType()
+    {
+        return _contentType;
     }
 
     @Override

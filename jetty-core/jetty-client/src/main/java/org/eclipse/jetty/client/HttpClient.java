@@ -965,7 +965,8 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     }
 
     /**
-     * @return the size of the buffer (in bytes) used to write requests
+     * @return the size of the buffer (in bytes) used to write requests headers
+     * @see #getMaxRequestHeadersSize()
      */
     @ManagedAttribute("The request buffer size in bytes")
     public int getRequestBufferSize()
@@ -974,8 +975,8 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     }
 
     /**
-     * Set the size of the buffer (in bytes) used to write requests.
-     * @param requestBufferSize the size of the buffer (in bytes) used to write requests
+     * @param requestBufferSize the size of the buffer (in bytes) used to write requests headers
+     * @see #setMaxRequestHeadersSize(int)
      */
     public void setRequestBufferSize(int requestBufferSize)
     {
@@ -987,7 +988,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     }
 
     /**
-     * @return the size of the buffer (in bytes) used to read responses
+     * @return the size of the buffer (in bytes) used to read responses from the network
      */
     @ManagedAttribute("The response buffer size in bytes")
     public int getResponseBufferSize()
@@ -996,8 +997,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     }
 
     /**
-     * Set the size of the buffer used to read responses.
-     * @param responseBufferSize the size of the buffer used to read responses
+     * @param responseBufferSize the size of the buffer used to read responses from the network
      */
     public void setResponseBufferSize(int responseBufferSize)
     {
@@ -1180,17 +1180,18 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     }
 
     /**
-     * @return the max size in bytes of the request headers
+     * @return the maximum size of the buffer (in bytes) used to write requests headers
+     * @see #getRequestBufferSize()
      */
-    @ManagedAttribute("The max size in bytes of the request headers")
+    @ManagedAttribute("The maximum request buffer size in bytes")
     public int getMaxRequestHeadersSize()
     {
         return maxRequestHeadersSize;
     }
 
     /**
-     * Set the max size in bytes of the request headers.
-     * @param maxRequestHeadersSize the max size in bytes of the request headers
+     * @param maxRequestHeadersSize the maximum size of the buffer (in bytes) used to write requests headers
+     * @see #setRequestBufferSize(int)
      */
     public void setMaxRequestHeadersSize(int maxRequestHeadersSize)
     {

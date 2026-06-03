@@ -47,6 +47,7 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
@@ -64,10 +65,8 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -324,13 +323,6 @@ public class HttpChannelState implements HttpChannel, Components
         if (LOG.isDebugEnabled())
             LOG.debug("onRequest {} {}", request, this);
 
-        if (!authorityMatches(request.getHttpURI(), request.getHttpFields().get(HttpHeader.HOST)))
-        {
-            HttpCompliance httpCompliance = getHttpConfiguration().getHttpCompliance();
-            if (!ComplianceUtils.allows(httpCompliance, HttpCompliance.Violation.MISMATCHED_AUTHORITY, "Authority!=Host", getComplianceViolationListener()))
-                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Authority!=Host");
-        }
-
         try (AutoLock ignored = _lock.lock())
         {
             if (_stream == null)
@@ -359,34 +351,6 @@ public class HttpChannelState implements HttpChannel, Components
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
         }
-    }
-
-    private boolean authorityMatches(HttpURI httpURI, String host)
-    {
-        String authority = httpURI.getAuthority();
-        // Either both are null or only one is present.
-        if (authority == null || host == null)
-            return true;
-
-        // Both are present, must match.
-
-        // Direct hit, hosts must be compared ignoring case.
-        if (authority.equalsIgnoreCase(host))
-            return true;
-
-        // Handle default ports: example.com matches example.com:80.
-        String scheme = httpURI.getScheme();
-        int defaultPort = URIUtil.getDefaultPortForScheme(scheme);
-        int uriPort = httpURI.getPort();
-        int effectiveURIPort = uriPort <= 0 ? defaultPort : uriPort;
-        HostPort hostPort = new HostPort(host);
-        int port = hostPort.getPort();
-        int effectiveHostPort = port <= 0 ? defaultPort : port;
-        if (effectiveURIPort != effectiveHostPort)
-            return false;
-
-        // Same effective port, compare hosts ignoring case.
-        return hostPort.getHost().equalsIgnoreCase(httpURI.getHost());
     }
 
     public Request getRequest()
@@ -732,6 +696,16 @@ public class HttpChannelState implements HttpChannel, Components
      */
     private void completeStream(HttpStream stream, Throwable failure)
     {
+        ChannelRequest request;
+        ChannelResponse response;
+        long oldIdleTimeout;
+        try (AutoLock ignored = _lock.lock())
+        {
+            request = _request;
+            response = _response;
+            oldIdleTimeout = _oldIdleTimeout;
+        }
+
         try
         {
             RequestLog requestLog = getServer().getRequestLog();
@@ -740,22 +714,22 @@ public class HttpChannelState implements HttpChannel, Components
                 if (LOG.isDebugEnabled())
                     LOG.debug("logging {}", HttpChannelState.this);
 
-                requestLog.log(_request.getLoggedRequest(), _response);
+                requestLog.log(request.getLoggedRequest(), response);
             }
 
             // Clean up any multipart tmp files and release any associated resources.
-            MultiPartFormData.Parts parts = MultiPartFormData.getParts(_request);
+            MultiPartFormData.Parts parts = MultiPartFormData.getParts(request);
             if (parts != null)
                 parts.close();
 
             long idleTO = getHttpConfiguration().getIdleTimeout();
-            if (idleTO > 0 && _oldIdleTimeout != idleTO)
-                stream.setIdleTimeout(_oldIdleTimeout);
+            if (idleTO > 0 && oldIdleTimeout != idleTO)
+                stream.setIdleTimeout(oldIdleTimeout);
         }
         finally
         {
             ComplianceViolation.Listener listener = getComplianceViolationListener();
-            listener.onRequestEnd(_request);
+            listener.onRequestEnd(request);
 
             // This is THE ONLY PLACE the stream is succeeded or failed.
             if (LOG.isDebugEnabled())
@@ -792,29 +766,12 @@ public class HttpChannelState implements HttpChannel, Components
 
             try
             {
-                String pathInContext = Request.getPathInContext(request);
-                if (pathInContext != null && !pathInContext.startsWith("/"))
-                {
-                    String method = request.getMethod();
-                    if (!HttpMethod.PRI.is(method) && !HttpMethod.CONNECT.is(method) && !HttpMethod.OPTIONS.is(method))
-                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad URI path");
-                }
-
-                HttpURI uri = request.getHttpURI();
-                if (uri.hasViolations())
-                {
-                    HttpConfiguration httpConfiguration = getConnectionMetaData().getHttpConfiguration();
-                    UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
-                    ComplianceViolation.Listener listener = getComplianceViolationListener();
-                    ComplianceUtils.verify(uriCompliance, uri, listener, (msg) -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
-                }
-
                 // Customize before processing.
-                HttpConfiguration configuration = getHttpConfiguration();
+                HttpConfiguration httpConfiguration = getHttpConfiguration();
 
                 Request customized = request;
                 HttpFields.Mutable responseHeaders = response.getHeaders();
-                for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
+                for (HttpConfiguration.Customizer customizer : httpConfiguration.getCustomizers())
                 {
                     Request next = customizer.customize(customized, responseHeaders);
                     customized = next == null ? customized : next;
@@ -822,6 +779,27 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (customized != request && server.getRequestLog() != null)
                     request.setLoggedRequest(customized);
+
+                String pathInContext = Request.getPathInContext(customized);
+                if (pathInContext != null && !pathInContext.startsWith("/"))
+                {
+                    String method = customized.getMethod();
+                    if (!HttpMethod.PRI.is(method) && !HttpMethod.CONNECT.is(method) && !HttpMethod.OPTIONS.is(method))
+                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad URI path");
+                }
+
+                ComplianceViolation.Listener listener = getComplianceViolationListener();
+                listener.onRequestBegin(customized);
+
+                HttpURI uri = customized.getHttpURI();
+                if (uri.hasViolations())
+                {
+                    UriCompliance uriCompliance = httpConfiguration.getUriCompliance();
+                    ComplianceUtils.verify(uriCompliance, uri, listener, msg -> new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, msg));
+                }
+
+                HttpCompliance httpCompliance = httpConfiguration.getHttpCompliance();
+                ComplianceUtils.verify(customized.getHttpURI(), customized.getHeaders(), httpCompliance, listener);
 
                 if (!server.handle(customized, response, request._callback))
                     Response.writeError(customized, response, request._callback, HttpStatus.NOT_FOUND_404);
@@ -867,8 +845,6 @@ public class HttpChannelState implements HttpChannel, Components
 
     private class LastWriteCallback implements Callback
     {
-        private Throwable _failure;
-
         /**
          * Called only as {@link Callback} by last write from {@link ChannelCallback#succeeded}
          */
@@ -1473,7 +1449,8 @@ public class HttpChannelState implements HttpChannel, Components
                 callback = _writeCallback;
                 _writeCallback = null;
                 httpChannel = _request.lockedGetHttpChannelState();
-                httpChannel.lockedStreamSendCompleted(true);
+                if (!(callback instanceof LastWriteCallback))
+                    httpChannel.lockedStreamSendCompleted(true);
             }
             if (callback != null)
                 httpChannel._writeInvoker.run(Invocable.from(callback.getInvocationType(), callback::succeeded));
@@ -1501,7 +1478,8 @@ public class HttpChannelState implements HttpChannel, Components
                 callback = _writeCallback;
                 _writeCallback = null;
                 httpChannel = _request.lockedGetHttpChannelState();
-                httpChannel.lockedStreamSendCompleted(false);
+                if (!(callback instanceof LastWriteCallback))
+                    httpChannel.lockedStreamSendCompleted(false);
             }
             if (callback != null)
                 httpChannel._writeInvoker.run(() -> HttpChannelState.failed(callback, x));
@@ -1600,7 +1578,7 @@ public class HttpChannelState implements HttpChannel, Components
             // Can we set the content length?
             HttpFields.Mutable mutableHeaders = _httpFields.getMutableHttpFields();
             httpChannel._committedContentLength = mutableHeaders.getLongField(HttpHeader.CONTENT_LENGTH);
-            if (last && httpChannel._committedContentLength < 0L)
+            if (last && httpChannel._committedContentLength < 0L && !MetaData.isTunnel(_request.getMethod(), _status))
             {
                 httpChannel._committedContentLength = _contentBytesWritten;
                 mutableHeaders.put(HttpHeader.CONTENT_LENGTH, httpChannel._committedContentLength);
@@ -1681,7 +1659,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // Turn pending demand into failure.
                 if (httpChannelState._onContentAvailable != null)
                 {
-                    failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
+                    failure = ExceptionUtil.combine(failure, new QuietException.Exception("demand pending"));
                 }
                 else
                 {
@@ -1692,6 +1670,8 @@ public class HttpChannelState implements HttpChannel, Components
                     // persistent otherwise RequestLog.log() would be able to read
                     // x-www-form-urlencoded parameters in one case and not the other.
                     Throwable unconsumed = stream.consumeAvailable();
+                    if (unconsumed != null)
+                        unconsumed = new QuietException.RuntimeException(unconsumed);
                     httpChannelState._consumeAvailableFailure = unconsumed;
                     if (httpChannelState.getConnectionMetaData().isPersistent() && !httpChannelState._expects100Continue)
                         failure = ExceptionUtil.combine(failure, unconsumed);

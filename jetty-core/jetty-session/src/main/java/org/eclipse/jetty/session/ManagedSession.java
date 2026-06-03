@@ -440,6 +440,8 @@ public class ManagedSession implements Session
      */
     protected void checkValidForWrite() throws IllegalStateException
     {
+        assert _lock.isHeldByCurrentThread();
+
         if (_state == State.INVALID)
             throw new IllegalStateException("Not valid for write: id=" + _sessionData.getId() +
                 " created=" + _sessionData.getCreated() +
@@ -463,6 +465,8 @@ public class ManagedSession implements Session
      */
     protected void checkValidForRead() throws IllegalStateException
     {
+        assert _lock.isHeldByCurrentThread();
+
         if (_state == State.INVALID)
             throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId() +
                 " created=" + _sessionData.getCreated() +
@@ -803,25 +807,31 @@ public class ManagedSession implements Session
 
     public void setResident(boolean resident)
     {
-        _resident = resident;
-
-        if (!_resident)
+        try (AutoLock ignored = _lock.lock())
+        {
+            _resident = resident;
+        }
+        if (!resident)
             _sessionInactivityTimer.destroy();
     }
 
     public boolean isResident()
     {
-        return _resident;
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _resident;
+        }
     }
 
     @Override
     public String toString()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock ignored = _lock.tryLock())
         {
-            return String.format("%s@%x{id=%s,x=%s,req=%d,res=%b}",
+            return String.format("%s@%x{%s:id=%s,x=%s,req=%d,res=%b}",
                 TypeUtil.toShortName(getClass()),
                 hashCode(),
+                _lock.isHeldByCurrentThread() ? "" : "?",
                 _sessionData.getId(),
                 _extendedId,
                 _requests,

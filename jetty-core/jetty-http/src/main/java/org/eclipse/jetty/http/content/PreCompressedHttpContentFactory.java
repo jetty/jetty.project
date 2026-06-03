@@ -22,12 +22,18 @@ import java.util.Set;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.content.HttpContent.Factory;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * This {@link HttpContent.Factory} populates the {@link HttpContent#getPreCompressedContentFormats()} field for any
  * {@link HttpContent} fetched through this factory.
  */
-public class PreCompressedHttpContentFactory implements HttpContent.Factory
+@ManagedObject
+public class PreCompressedHttpContentFactory extends ContainerLifeCycle implements HttpContent.Factory
 {
     private final HttpContent.Factory _factory;
     private final List<CompressedContentFormat> _preCompressedFormats;
@@ -40,6 +46,7 @@ public class PreCompressedHttpContentFactory implements HttpContent.Factory
     public PreCompressedHttpContentFactory(HttpContent.Factory factory, List<CompressedContentFormat> preCompressedFormats)
     {
         _factory = factory;
+        installBean(factory, true);
         _preCompressedFormats = preCompressedFormats;
     }
 
@@ -61,10 +68,16 @@ public class PreCompressedHttpContentFactory implements HttpContent.Factory
         return new CompressedFormatsHttpContent(content, compressedFormats);
     }
 
+    @ManagedAttribute(value = "Supported pre-compressed file extensions", readonly = true)
+    public List<String> getPreCompressedContentFormats()
+    {
+        return _preCompressedFormats.stream().map(CompressedContentFormat::toString).collect(toList());
+    }
+
     @Override
     public String toString()
     {
-        return "%s@%x[%s,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), _factory, _preCompressedFormats);
+        return "%s@%x[%s,%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getPreCompressedContentFormats(), _factory);
     }
 
     private static class CompressedFormatsHttpContent extends HttpContent.Wrapper

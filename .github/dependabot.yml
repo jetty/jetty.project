@@ -404,6 +404,8 @@ updates:
         versions:  [ ">=3.1.0" ]
       - dependency-name: "org.mortbay.jasper:*"
         versions:  [ "> 10.1.0"]
+      - dependency-name: "org.mortbay.jetty.quiche:jetty-quiche-native"
+        versions: [ "> 0.24.5" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee8"
@@ -506,6 +508,8 @@ updates:
         versions:  [ ">=3.1.0" ]
       - dependency-name: "org.mortbay.jasper:*"
         versions:  [ "> 10.1.0"]
+      - dependency-name: "org.mortbay.jetty.quiche:jetty-quiche-native"
+        versions: [ "> 0.24.5" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee9"
@@ -579,6 +583,8 @@ updates:
         versions: [ ">3.1.0"]
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
         versions:  [ ">=3.1.0" ]
+      - dependency-name: "org.mortbay.jetty.quiche:jetty-quiche-native"
+        versions: [ "> 0.24.5" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee10"
@@ -648,3 +654,5 @@ updates:
         versions:  [ ">=3.1.0" ]
       - dependency-name: "org.mortbay.jasper:*"
         versions:  [ "> 10.1.0"]
+      - dependency-name: "org.mortbay.jetty.quiche:jetty-quiche-native"
+        versions: [ "> 0.24.5" ]

@@ -309,15 +309,13 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * 
      * @param id The session to retrieve
      * @param enter if true, the usage count of the session will be incremented
-     * @return the session if it exists, null otherwise
+     * @return the session if it exists either in the cache or the store, null otherwise
      * @throws Exception if the session cannot be loaded
      */
     protected ManagedSession getAndEnter(String id, boolean enter) throws Exception
     {
-        ManagedSession session = null;
-        AtomicReference<Exception> exception = new AtomicReference<Exception>();
-
-        session = doComputeIfAbsent(id, k ->
+        AtomicReference<Exception> exception = new AtomicReference<>();
+        ManagedSession session = doComputeIfAbsent(id, k ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Session {} not found locally in {}, attempting to load", id, this);
@@ -329,7 +327,11 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 {
                     try (AutoLock lock = s.lock())
                     {
-                        s.setResident(true); //ensure freshly loaded session is resident
+                        //ensure freshly loaded session is resident, and if the datastore
+                        //supports passivation, call the activation listener
+                        s.setResident(true);
+                        if (s.isValid() && _sessionDataStore.isPassivating())
+                            s.onSessionActivation();
                     }
                 }
                 else
@@ -349,25 +351,29 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         Exception ex = exception.get();
         if (ex != null)
             throw ex;
-            
-        if (session != null)
-        {
-            try (AutoLock lock = session.lock())
-            {
-                if (!session.isResident()) //session isn't marked as resident in cache
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Non-resident session {} in cache", id);
-                    return null;
-                }
-                else if (enter)
-                {
-                    session.use();
-                }
-            }
-        }
 
-        return session;
+        if (session == null) //not in cache and doesn't exist in store
+            return null;
+            
+        try (AutoLock lock = session.lock())
+        {
+            if (session.isResident()) //session is currently in the cache, we can use it
+            {
+                if (enter)
+                    session.use();
+                return session;
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Non-resident session {} in cache", id);
+
+            //session is not resident, it could have just been evicted, or it
+            //could have been deleted. If we're not evicting, we shouldn't waste
+            //time trying to load a session that has in fact been deleted.
+            if (getEvictionPolicy() == SessionCache.NEVER_EVICT)
+                return null;
+            return getAndEnter(id, enter);
+        }
     }
 
     /**
@@ -622,13 +628,17 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 LOG.debug("Session id={} deleted in session data store {}", id, dsdel);
         }
 
-        //delete it from the session object store
         if (session != null)
         {
-            session.setResident(false);
+            try (AutoLock lock = session.lock())
+            {
+                session.setResident(false); //no longer resident
+                return doDelete(id); //remove from cache - note some caches may return null here
+            }
         }
 
-        return doDelete(id);
+        //No session object exists
+        return null;
     }
 
     @Override
@@ -701,8 +711,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                         _sessionDataStore.store(session.getId(), session.getSessionData());
                     }
 
-                    doDelete(session.getId()); //detach from this cache
                     session.setResident(false);
+                    doDelete(session.getId()); //detach from this cache
                 }
                 catch (Exception e)
                 {

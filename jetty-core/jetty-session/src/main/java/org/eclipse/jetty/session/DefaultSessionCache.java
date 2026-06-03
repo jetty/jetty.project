@@ -23,6 +23,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,19 +160,22 @@ public class DefaultSessionCache extends AbstractSessionCache
                 }
                 else
                 {
-                    //write out the session and remove from the cache
-                    if (_sessionDataStore.isPassivating())
-                        session.onSessionPassivation();
-                    try
+                    try (AutoLock s = session.lock())
                     {
-                        _sessionDataStore.store(session.getId(), session.getSessionData());
+                        //write out the session and remove from the cache
+                        if (_sessionDataStore.isPassivating())
+                            session.onSessionPassivation();
+                        try
+                        {
+                            _sessionDataStore.store(session.getId(), session.getSessionData());
+                        }
+                        catch (Exception e)
+                        {
+                            LOG.warn("Unable to store {}", session, e);
+                        }
+                        session.setResident(false); //no longer resident
+                        doDelete(session.getId()); //remove from cache
                     }
-                    catch (Exception e)
-                    {
-                        LOG.warn("Unable to store {}", session, e);
-                    }
-                    doDelete(session.getId()); //remove from memory
-                    session.setResident(false);
                 }
             }
         }

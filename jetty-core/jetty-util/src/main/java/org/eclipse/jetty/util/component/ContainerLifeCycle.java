@@ -492,6 +492,23 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         }
     }
 
+    /**
+     * Adds a managed lifecycle.
+     * <p>This is a convenience method that uses addBean(lifecycle,true)
+     * and then ensures that the added bean is started iff it is a {@link LifeCycle}
+     * and this container is running.
+     * Exception from nested calls to start are caught and wrapped as RuntimeExceptions
+     *
+     * @param o The bean to add.
+     */
+    public void addManaged(Object o)
+    {
+        if (o instanceof LifeCycle lifecycle)
+            addManaged(lifecycle);
+        else
+            addBean(o, Managed.POJO);
+    }
+
     @Override
     public boolean addEventListener(EventListener listener)
     {

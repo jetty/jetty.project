@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +60,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Password;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -70,6 +70,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
@@ -945,48 +946,22 @@ public class ConstraintTest
         }
     }
 
-    private static String CNONCE = "1234567890";
-
-    private String digest(String nonce, String username, String password, String uri, String nc) throws Exception
+    private String digest(String nonce, String password, String nc) throws Exception
     {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] ha1;
-        // calc A1 digest
-        md.update(username.getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update("TestRealm".getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update(password.getBytes(ISO_8859_1));
-        ha1 = md.digest();
-        // calc A2 digest
-        md.reset();
-        md.update("GET".getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update(uri.getBytes(ISO_8859_1));
-        byte[] ha2 = md.digest();
+        DigestAuthenticator authenticator = (DigestAuthenticator)_security.getAuthenticator();
+        MessageDigest md = MessageDigest.getInstance(authenticator.getAlgorithm());
 
-        // calc digest
-        // request-digest = <"> < KD ( H(A1), unq(nonce-value) ":"
-        // nc-value ":" unq(cnonce-value) ":" unq(qop-value) ":" H(A2) )
-        // <">
-        // request-digest = <"> < KD ( H(A1), unq(nonce-value) ":" H(A2)
-        // ) > <">
+        // Calculate A1 digest.
+        String a1 = "user:TestRealm:" + password;
+        byte[] ha1 = md.digest(a1.getBytes(UTF_8));
 
-        md.update(TypeUtil.toString(ha1, 16).getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update(nonce.getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update(nc.getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update(CNONCE.getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update("auth".getBytes(ISO_8859_1));
-        md.update((byte)':');
-        md.update(TypeUtil.toString(ha2, 16).getBytes(ISO_8859_1));
-        byte[] digest = md.digest();
+        // Calculate A2 digest.
+        String a2 = "GET:/ctx/auth/info";
+        byte[] ha2 = md.digest(a2.getBytes(UTF_8));
 
-        // check digest
-        return TypeUtil.toString(digest, 16);
+        String rsp = StringUtil.toHexString(ha1).toLowerCase(Locale.ROOT) + ":" + nonce + ":" + nc +
+            ":1234567890:auth:" + StringUtil.toHexString(ha2).toLowerCase(Locale.ROOT);
+        return StringUtil.toHexString(md.digest(rsp.getBytes(UTF_8))).toLowerCase(Locale.ROOT);
     }
 
     @Test
@@ -1012,61 +987,61 @@ public class ConstraintTest
         assertTrue(matcher.find());
         String nonce = matcher.group(1);
 
-        //wrong password
-        String digest = digest(nonce, "user", "WRONG", "/ctx/auth/info", "1");
+        // Wrong password.
+        String digest = digest(nonce, "WRONG", "00000001");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
-            "nc=1, " +
+            "nc=00000001, " +
             "nonce=\"" + nonce + "\", " +
             "response=\"" + digest + "\"\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
 
-        // right password
-        digest = digest(nonce, "user", "password", "/ctx/auth/info", "2");
+        // Right password.
+        digest = digest(nonce, "password", "00000002");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
-            "nc=2, " +
+            "nc=00000002, " +
             "nonce=\"" + nonce + "\", " +
             "response=\"" + digest + "\"\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
-        // once only
-        digest = digest(nonce, "user", "password", "/ctx/auth/info", "2");
+        // Replay of request with nc=00000002.
+        digest = digest(nonce, "password", "00000002");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
-            "nc=2, " +
+            "nc=00000002, " +
             "nonce=\"" + nonce + "\", " +
             "response=\"" + digest + "\"\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
 
-        // increasing
-        digest = digest(nonce, "user", "password", "/ctx/auth/info", "4");
+        // Next request.
+        digest = digest(nonce, "password", "00000004");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
-            "nc=4, " +
+            "nc=00000004, " +
             "nonce=\"" + nonce + "\", " +
             "response=\"" + digest + "\"\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
-        // out of order
-        digest = digest(nonce, "user", "password", "/ctx/auth/info", "3");
+        // Out of order request.
+        digest = digest(nonce, "password", "00000003");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
-            "nc=3, " +
+            "nc=00000003, " +
             "nonce=\"" + nonce + "\", " +
             "response=\"" + digest + "\"\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 
-        // stale
-        digest = digest(nonce, "user", "password", "/ctx/auth/info", "5");
+        // Beyond max nonce count.
+        digest = digest(nonce, "password", "00000006");
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Digest username=\"user\", qop=auth, cnonce=\"1234567890\", uri=\"/ctx/auth/info\", realm=\"TestRealm\", " +
-            "nc=5, " +
+            "nc=00000006, " +
             "nonce=\"" + nonce + "\", " +
             "response=\"" + digest + "\"\r\n" +
             "\r\n");
