@@ -140,7 +140,7 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
             {
                 if (error != null)
                 {
-                    futureSession.completeExceptionally(convertCause(error));
+                    futureSession.completeExceptionally(error);
                     return;
                 }
 
@@ -154,18 +154,6 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         }
 
         return futureSession;
-    }
-
-    public static Throwable convertCause(Throwable error)
-    {
-        if (error instanceof UpgradeException ||
-            error instanceof WebSocketTimeoutException)
-            return new IOException(error);
-
-        if (error instanceof InvalidWebSocketException)
-            return new DeploymentException(error.getMessage(), error);
-
-        return error;
     }
 
     private Session connect(ConfiguredEndpoint configuredEndpoint, URI destURI) throws IOException, DeploymentException

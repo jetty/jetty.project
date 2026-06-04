@@ -16,21 +16,17 @@ package org.eclipse.jetty.ee.common;
 public enum EnterpriseEditionVersion
 {
     /**
-     * Unable to determine the EE version in use.
-     */
-    unknown(-99),
-    /**
      * EE10 is in use.
      */
-    ee10(10),
+    EE10(10),
     /**
      * EE11 is in use.
      */
-    ee11(11),
+    EE11(11),
     /**
      * EE12 is in use.
      */
-    ee12(12);
+    EE12(12);
 
     public static final EnterpriseEditionVersion currentVersion = initEnterpriseEditionVersion();
 
@@ -60,10 +56,10 @@ public enum EnterpriseEditionVersion
             //       The Servlet spec updating too.
             return switch (ServletApiVersion.getServletApiVersion())
             {
-                case v6_0 -> ee10;
-                case v6_1 -> ee11;
-                case v6_2 -> ee12;
-                default -> unknown;
+                case V6_0 -> EE10;
+                case V6_1 -> EE11;
+                case V6_2 -> EE12;
+                default -> throw new RuntimeException("Unable to Initialize " + EnterpriseEditionVersion.class.getName());
             };
         }
         catch (Throwable e)

@@ -50,8 +50,6 @@ public class DecodedTextStreamMessageSinkTest extends AbstractMessageSinkTest
         DecodedDateCopy copy = new DecodedDateCopy(copyFuture);
         MethodHolder copyHandle = getAcceptHandle(copy, Date.class);
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
-        // .from() ??
-        // DecodedTextStreamMessageSink<Calendar> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), MethodHolder.from(copyHandle), decoders);
         DecodedTextStreamMessageSink<Calendar> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
         FutureCallback finCallback = new FutureCallback();
@@ -70,8 +68,6 @@ public class DecodedTextStreamMessageSinkTest extends AbstractMessageSinkTest
         DecodedDateCopy copy = new DecodedDateCopy(copyFuture);
         MethodHolder copyHandle = getAcceptHandle(copy, Date.class);
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
-        // .from() ??
-        // DecodedTextStreamMessageSink<Calendar> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), MethodHolder.from(copyHandle), decoders);
         DecodedTextStreamMessageSink<Calendar> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
         FutureCallback callback1 = new FutureCallback();

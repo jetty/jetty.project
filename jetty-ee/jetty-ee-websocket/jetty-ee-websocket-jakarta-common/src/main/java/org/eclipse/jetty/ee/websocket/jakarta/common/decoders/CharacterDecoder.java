@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee.websocket.jakarta.common.decoders;
 
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * Default implementation of the {@link jakarta.websocket.Decoder.Text} Message to {@link Character} decoder
@@ -32,15 +33,7 @@ public class CharacterDecoder extends AbstractDecoder implements Decoder.Text<Ch
     @Override
     public boolean willDecode(String s)
     {
-        if (s == null)
-        {
-            return false;
-        }
-        if (s.length() == 1)
-        {
-            return true;
-        }
-        // can only parse 1 character
-        return false;
+        // Behavior of WebSocket TCK (it will accept any positive length string, as long as it is not all whitespace)
+        return !StringUtil.isEmpty(s);
     }
 }

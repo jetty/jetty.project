@@ -19,11 +19,11 @@ import java.util.Map;
 
 public enum ServletApiVersion
 {
-    v4_0("4.0"),
-    v5_0("5.0"),
-    v6_0("6.0"),
-    v6_1("6.1"),
-    v6_2("6.2");
+    V4_0("4.0"),
+    V5_0("5.0"),
+    V6_0("6.0"),
+    V6_1("6.1"),
+    V6_2("6.2");
 
     public static final ServletApiVersion currentVersion = initServletApiVersion();
 

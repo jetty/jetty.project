@@ -21,8 +21,7 @@ import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee.webapp.WebAppContext;
 
 /**
- * Attempt at collecting up all the JSP specific configuration bits and pieces into a single place
- * for WebAppContext users to utilize.
+ * JSP specific configuration for WebAppContext users.
  */
 public class JspConfig
 {

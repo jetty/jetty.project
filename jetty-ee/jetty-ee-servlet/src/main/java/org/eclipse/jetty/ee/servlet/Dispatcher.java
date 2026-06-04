@@ -1017,7 +1017,7 @@ public class Dispatcher implements RequestDispatcher
         {
             // Start with EE10 list of names.
             ArrayList<String> names = new ArrayList<>(List.of(ERROR_REQUEST_URI, ERROR_STATUS_CODE, ERROR_MESSAGE, ERROR_SERVLET_NAME, ERROR_EXCEPTION, ERROR_EXCEPTION_TYPE));
-            if (EnterpriseEditionVersion.getEnterpriseEditionVersion().version() >= EnterpriseEditionVersion.ee11.version())
+            if (EnterpriseEditionVersion.getEnterpriseEditionVersion().version() >= EnterpriseEditionVersion.EE11.version())
             {
                 // Add new names introduced in EE11.
                 names.add(ERROR_METHOD);

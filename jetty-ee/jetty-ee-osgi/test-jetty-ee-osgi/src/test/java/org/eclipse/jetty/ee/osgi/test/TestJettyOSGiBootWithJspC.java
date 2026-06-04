@@ -65,9 +65,9 @@ public class TestJettyOSGiBootWithJspC
 
         String jspcDemoWebappArtifactId = switch(EnterpriseEditionVersion.getEnterpriseEditionVersion())
         {
-            case ee10 -> "jetty-servlet6-demo-jspc-webapp";
-            case ee11 -> "jetty-servlet6-demo-jspc-6-1-webapp";
-            case unknown, ee12 -> "jetty-servlet6-demo-jspc-6-2-webapp";
+            case EE10 -> "jetty-servlet6-demo-jspc-webapp";
+            case EE11 -> "jetty-servlet6-demo-jspc-6-1-webapp";
+            case EE12 -> "jetty-servlet6-demo-jspc-6-2-webapp";
         };
         options.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId(jspcDemoWebappArtifactId).classifier("webbundle-ee").versionAsInProject());
         return options.toArray(new Option[0]);
@@ -87,9 +87,9 @@ public class TestJettyOSGiBootWithJspC
             assertNotNull(port);
             String path = switch(EnterpriseEditionVersion.getEnterpriseEditionVersion())
             {
-                case ee10 -> "/servlet6-demo-jspc/jstl.jsp";
-                case ee11 -> "/servlet6-demo-jspc-61/jstl.jsp";
-                case unknown, ee12 -> "/servlet6-demo-jspc-62/jstl.jsp";
+                case EE10 -> "/servlet6-demo-jspc/jstl.jsp";
+                case EE11 -> "/servlet6-demo-jspc-61/jstl.jsp";
+                case unknown, EE12 -> "/servlet6-demo-jspc-62/jstl.jsp";
             };
             ContentResponse response = client.GET("http://127.0.0.1:" + port + path);
             assertEquals(HttpStatus.OK_200, response.getStatus());

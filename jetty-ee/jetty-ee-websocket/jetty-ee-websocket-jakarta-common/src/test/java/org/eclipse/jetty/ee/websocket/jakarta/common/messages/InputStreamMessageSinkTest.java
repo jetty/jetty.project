@@ -46,8 +46,6 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHolder copyHandle = getAcceptHandle(copy, InputStream.class);
-        // .from() ??
-        // InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
         InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback finCallback = new FutureCallback();
@@ -66,8 +64,6 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHolder copyHandle = getAcceptHandle(copy, InputStream.class);
-        // .from() ??
-        // InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
         InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback fin1Callback = new FutureCallback();
@@ -99,8 +95,6 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHolder copyHandle = getAcceptHandle(copy, InputStream.class);
-        // .from() ??
-        // InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
         InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();
@@ -126,8 +120,6 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHolder copyHandle = getAcceptHandle(copy, InputStream.class);
-        // .from() ??
-        // InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), MethodHolder.from(copyHandle), true);
         InputStreamMessageSink sink = new InputStreamMessageSink(session.getCoreSession(), copyHandle, true);
 
         FutureCallback callback1 = new FutureCallback();

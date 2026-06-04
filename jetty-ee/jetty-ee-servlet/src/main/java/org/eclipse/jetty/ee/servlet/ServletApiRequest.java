@@ -836,7 +836,7 @@ public class ServletApiRequest implements HttpServletRequest
                     continue;
 
                 boolean isExpired = httpCookie.isExpired();
-                if (EnterpriseEditionVersion.getEnterpriseEditionVersion().version() >= EnterpriseEditionVersion.ee11.version())
+                if (EnterpriseEditionVersion.getEnterpriseEditionVersion().version() >= EnterpriseEditionVersion.EE11.version())
                 {
                     // This should be httpCookie.isExpired(), but Servlet 6.1 requires to check for Max-Age as well.
                     isExpired = isExpired || (httpCookie.getMaxAge() < 0);

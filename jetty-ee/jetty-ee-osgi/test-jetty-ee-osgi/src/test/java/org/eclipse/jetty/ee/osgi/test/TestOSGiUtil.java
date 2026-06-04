@@ -277,8 +277,8 @@ public class TestOSGiUtil
 
         MavenArtifactProvisionOption jstlOption = switch(EnterpriseEditionVersion.getEnterpriseEditionVersion())
         {
-            case ee10 -> mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject();
-            case unknown, ee11, ee12 -> mavenBundle().groupId("org.glassfish.wasp").artifactId("wasp").versionAsInProject();
+            case EE10 -> mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject();
+            case unknown, EE11, EE12 -> mavenBundle().groupId("org.glassfish.wasp").artifactId("wasp").versionAsInProject();
         };
 
         res.add(jstlOption.start());
