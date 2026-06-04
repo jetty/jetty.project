@@ -160,8 +160,8 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (webApp == null)
         {
             String war = context.getWar();
-            if (war != null && war.length() > 0)
-                webApp = context.newResource(war);
+            if (war != null && !war.isEmpty())
+                webApp = ResourceFactory.of(context).newResource(war);
             else
                 webApp = context.getBaseResource();
 
@@ -174,7 +174,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 URI realURI = webApp.getRealURI();
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} anti-aliased to {}", webApp, realURI);
-                Resource realWebApp = context.newResource(realURI);
+                Resource realWebApp = ResourceFactory.of(context).newResource(realURI);
                 if (realWebApp != null && realWebApp.exists())
                     webApp = realWebApp;
             }
