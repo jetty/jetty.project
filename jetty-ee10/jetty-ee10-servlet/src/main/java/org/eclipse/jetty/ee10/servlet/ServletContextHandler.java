@@ -798,7 +798,9 @@ public class ServletContextHandler extends ContextHandler
      * @param url the url to convert to a Resource
      * @return the Resource for that url
      * @throws IOException if unable to create a Resource from the URL
+     * @deprecated use ResourceFactory.of(component).newResource(URL) properly at webapp initialization time only.
      */
+    @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(URL url) throws IOException
     {
         return ResourceFactory.of(this).newResource(url);
@@ -809,7 +811,9 @@ public class ServletContextHandler extends ContextHandler
      *
      * @param uri the URI to convert to a Resource
      * @return the Resource for that URI
+     * @deprecated use ResourceFactory.of(component).newResource(URI) properly at webapp initialization time only.
      */
+    @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(URI uri)
     {
         return ResourceFactory.of(this).newResource(uri);
@@ -820,7 +824,9 @@ public class ServletContextHandler extends ContextHandler
      *
      * @param urlOrPath The URL or path to convert
      * @return The Resource for the URL/path
+     * @deprecated use ResourceFactory.of(component).newResource(String) properly at webapp initialization time only.
      */
+    @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(String urlOrPath)
     {
         return ResourceFactory.of(this).newResource(urlOrPath);
@@ -2883,6 +2889,16 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
+            Resource resource = getJettyResource(path);
+            if (resource != null)
+                return resource.getURI().toURL();
+
+            // No hits
+            return null;
+        }
+
+        private Resource getJettyResource(String path)
+        {
             try
             {
                 // This is an API call from the application which may pass non-normalized paths.
@@ -2904,17 +2920,14 @@ public class ServletContextHandler extends ContextHandler
                 {
                     // return first
                     if (Resources.exists(r))
-                        return r.getURI().toURL();
-                }
+                        return r;
             }
-            catch (MalformedURLException e)
-            {
-                throw e;
             }
-            catch (Throwable e)
+            catch (Throwable throwable)
             {
-                // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
-                throw (MalformedURLException)new MalformedURLException(path).initCause(e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to get Jetty Resource for path: {}", path, throwable);
+                return null;
             }
 
             // No hits
@@ -2926,22 +2939,18 @@ public class ServletContextHandler extends ContextHandler
         {
             try
             {
-                URL url = getResource(path);
-                if (url == null)
-                    return null;
-                Resource r = ResourceFactory.of(ServletContextHandler.this).newResource(url);
-                // Cannot serve directories as an InputStream
-                if (r.isDirectory())
-                    return null;
-                return IOResources.asInputStream(r);
+                Resource resource = getJettyResource(path);
+                if (Resources.isReadableFile(resource))
+                    return IOResources.asInputStream(resource);
             }
             catch (Throwable e)
             {
-                // catch RuntimeException and things like java.nio.fileInvalidPathException here.
                 if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
                 return null;
             }
+            // not found
+            return null;
         }
 
         @Override
