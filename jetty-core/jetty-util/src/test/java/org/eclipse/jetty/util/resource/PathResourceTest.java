@@ -232,7 +232,7 @@ public class PathResourceTest
             Resource resBadFile = resourceFactory.newResource(jarUri.toASCIIString() + "bad/file.txt");
             assertNull(resBadFile);
 
-            if (resourceFactory instanceof ResourceFactoryInternals.Tracking tracking)
+            if (resourceFactory instanceof ResourceFactory.Tracking tracking)
             {
                 assertThat(tracking.getTrackingCount(), is(0));
             }
@@ -266,7 +266,7 @@ public class PathResourceTest
             Resource twoTxt = resourceFactory.newResource(jarUri.toASCIIString() + "datainf/two.txt");
             assertTrue(Resources.isReadableFile(twoTxt));
 
-            if (resourceFactory instanceof ResourceFactoryInternals.Tracking tracking)
+            if (resourceFactory instanceof ResourceFactory.Tracking tracking)
             {
                 assertThat(tracking.getTrackingCount(), is(2));
             }
@@ -305,12 +305,12 @@ public class PathResourceTest
             Resource twoTxt = resourceFactory2.newResource(jarUri.toASCIIString() + "datainf/two.txt");
             assertTrue(Resources.isReadableFile(twoTxt));
 
-            if (resourceFactory1 instanceof ResourceFactoryInternals.Tracking tracking)
+            if (resourceFactory1 instanceof ResourceFactory.Tracking tracking)
             {
                 assertThat(tracking.getTrackingCount(), is(2));
             }
 
-            if (resourceFactory2 instanceof ResourceFactoryInternals.Tracking tracking)
+            if (resourceFactory2 instanceof ResourceFactory.Tracking tracking)
             {
                 assertThat(tracking.getTrackingCount(), is(1));
             }
@@ -318,7 +318,7 @@ public class PathResourceTest
             // Close Resource Factory 1
             resourceFactory1.close();
 
-            if (resourceFactory1 instanceof ResourceFactoryInternals.Tracking tracking)
+            if (resourceFactory1 instanceof ResourceFactory.Tracking tracking)
             {
                 assertThat(tracking.getTrackingCount(), is(0));
             }
