@@ -261,10 +261,8 @@ public class QuicFlusher extends IteratingCallback
     @Override
     protected void onCompleteFailure(Throwable cause)
     {
-        // TODO: release the buffers here, this instance is thrown away.
-        //  Also, notify the session to disconnect()?
-        encryptedBuffer.clear();
-        plaintextBuffer.clear();
+        encryptedBuffer.release();
+        plaintextBuffer.release();
         if (flusher != null)
             flusher.failed(cause);
         flusher = null;
