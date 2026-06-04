@@ -20,6 +20,7 @@ import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -124,12 +125,7 @@ class ResourceFactoryInternals
         return RESOURCE_FACTORIES.getBest(str) != null;
     }
 
-    interface Tracking
-    {
-        int getTrackingCount();
-    }
-
-    static class Closeable implements ResourceFactory.Closeable, Tracking
+    static class Closeable implements ResourceFactory.Closeable, ResourceFactory.Tracking
     {
         private boolean closed = false;
         private final CompositeResourceFactory _compositeResourceFactory = new CompositeResourceFactory();
@@ -153,9 +149,15 @@ class ResourceFactoryInternals
         {
             return _compositeResourceFactory.mounted.size();
         }
+
+        @Override
+        public List<Resource> getTrackedResources()
+        {
+            return Collections.unmodifiableList(_compositeResourceFactory.mounted);
+        }
     }
 
-    static class LifeCycle extends AbstractLifeCycle implements ResourceFactory.LifeCycle
+    static class LifeCycle extends AbstractLifeCycle implements ResourceFactory.LifeCycle, ResourceFactory.Tracking
     {
         private final CompositeResourceFactory _compositeResourceFactory = new CompositeResourceFactory();
 
@@ -180,6 +182,17 @@ class ResourceFactoryInternals
                 .map(PathResource::getURI)
                 .toList();
             Dumpable.dumpObjects(out, indent, this, new DumpableCollection("newResourceReferences", referencedUris));
+        }
+
+        public int getTrackingCount()
+        {
+            return _compositeResourceFactory.mounted.size();
+        }
+
+        @Override
+        public List<Resource> getTrackedResources()
+        {
+            return Collections.unmodifiableList(_compositeResourceFactory.mounted);
         }
     }
 

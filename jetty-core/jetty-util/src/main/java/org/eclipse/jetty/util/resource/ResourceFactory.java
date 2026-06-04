@@ -771,4 +771,11 @@ public interface ResourceFactory
     interface LifeCycle extends org.eclipse.jetty.util.component.LifeCycle, ResourceFactory, Dumpable
     {
     }
+
+    interface Tracking
+    {
+        int getTrackingCount();
+
+        List<Resource> getTrackedResources();
+    }
 }
