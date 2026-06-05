@@ -1602,7 +1602,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
      * @param url the url to convert to a Resource
      * @return the Resource for that url
      * @throws IOException if unable to create a Resource from the URL
-     * @deprecated use ResourceFactory.of(component).newResource(URL) properly at webapp initialization time only.
+     * @deprecated use {@code ResourceFactory.of(component).newResource(URL)} properly
+     *             at webapp initialization time only.  The use of this method during
+     *             context started phase can result in excessive memory consumption.
      */
     @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(URL url) throws IOException
@@ -1616,7 +1618,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
      * @param uri the URI to convert to a Resource
      * @return the Resource for that URI
      * @throws IOException if unable to create a Resource from the URL
-     * @deprecated use ResourceFactory.of(component).newResource(URI) properly at webapp initialization time only.
+     * @deprecated use {@code ResourceFactory.of(component).newResource(URI)} properly
+     *             at webapp initialization time only.  The use of this method during
+     *             context started phase can result in excessive memory consumption.
      */
     @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(URI uri) throws IOException
@@ -1630,7 +1634,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
      * @param uriOrPath The URL or path to convert
      * @return The Resource for the URL/path
      * @throws IOException The Resource could not be created.
-     * @deprecated use ResourceFactory.of(component).newResource(String) properly at webapp initialization time only.
+     * @deprecated use {@code ResourceFactory.of(component).newResource(String)} properly
+     *             at webapp initialization time only.  The use of this method during
+     *             context started phase can result in excessive memory consumption.
      */
     @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(String uriOrPath) throws IOException
@@ -2073,15 +2079,29 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            Resource resource = getJettyResource(path);
-            if (resource != null)
-                return resource.getURI().toURL();
+            try
+            {
+                Resource resource = getJettyResource(path);
+                if (resource != null)
+                    return resource.getURI().toURL();
+            }
+            catch (MalformedURLException e)
+            {
+                // rethrow
+                throw e;
+            }
+            catch (IOException e)
+            {
+                MalformedURLException malformedURLException = new MalformedURLException(path);
+                ExceptionUtil.addSuppressedIfNotAssociated(malformedURLException, e);
+                throw malformedURLException;
+            }
 
             // No hits
             return null;
         }
 
-        private Resource getJettyResource(String path)
+        private Resource getJettyResource(String path) throws IOException
         {
             try
             {
@@ -2107,11 +2127,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                         return r;
                 }
             }
+            catch (MalformedURLException e)
+            {
+                // rethrow
+                throw e;
+            }
             catch (Throwable throwable)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to get Jetty Resource for path: {}", path, throwable);
-                return null;
+                throw new IOException("Unable to get Jetty Resource: " + path, throwable);
             }
 
             // No hits
@@ -2132,6 +2155,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
                 if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
+                // Per servlet spec, there's no exception thrown from this API
                 return null;
             }
             // not found
