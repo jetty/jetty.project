@@ -97,7 +97,9 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          * @param urlOrPath The URL or path to convert
          * @return The Resource for the URL/path
          * @throws IOException The Resource could not be created.
-         * @deprecated use ResourceFactory.of(component).newResource(String) properly at webapp initialization time only.
+         * @deprecated use {@code ResourceFactory.of(component).newResource(String)} properly
+         *             at webapp initialization time only.  The use of this method during
+         *             context started phase can result in excessive memory consumption.
          */
         @Deprecated(since = "12.1.11", forRemoval = true)
         Resource newResource(String urlOrPath) throws IOException;
