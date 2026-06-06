@@ -1428,7 +1428,7 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("mutables")
-    public void testTakeFrom(Supplier<Mutable> supplier)
+    public void testTakeTail(Supplier<Mutable> supplier)
     {
         Mutable buffer = supplier.get();
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
@@ -1436,16 +1436,16 @@ public class RetainableByteBufferTest
         buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown));
         buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
 
-        RetainableByteBuffer none = buffer.takeFrom(Long.MAX_VALUE);
+        RetainableByteBuffer none = buffer.takeTail(Long.MAX_VALUE);
         assertTrue(none.isEmpty());
         none.release();
 
-        RetainableByteBuffer hello = buffer.takeFrom(0);
+        RetainableByteBuffer hello = buffer.takeTail(0);
         buffer.release();
 
-        RetainableByteBuffer space = hello.takeFrom(5);
-        RetainableByteBuffer bang = space.takeFrom(space.size() - 1);
-        RetainableByteBuffer cruelWorld = space.takeFrom(1);
+        RetainableByteBuffer space = hello.takeTail(5);
+        RetainableByteBuffer bang = space.takeTail(space.size() - 1);
+        RetainableByteBuffer cruelWorld = space.takeTail(1);
 
         assertThat(BufferUtil.toString(hello.getByteBuffer()), is("Hello"));
         assertThat(BufferUtil.toString(space.getByteBuffer()), is(" "));
@@ -1462,7 +1462,7 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("mutables")
-    public void testTakeFromRetained(Supplier<Mutable> supplier)
+    public void testTakeTailRetained(Supplier<Mutable> supplier)
     {
         Mutable buffer = supplier.get();
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
@@ -1473,10 +1473,10 @@ public class RetainableByteBufferTest
         RetainableByteBuffer world = RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown);
         world.retain();
         buffer.add(world);
-        RetainableByteBuffer space = buffer.takeFrom(5);
+        RetainableByteBuffer space = buffer.takeTail(5);
 
-        RetainableByteBuffer bang = space.takeFrom(space.size() - 1);
-        RetainableByteBuffer cruelWorld = space.takeFrom(1);
+        RetainableByteBuffer bang = space.takeTail(space.size() - 1);
+        RetainableByteBuffer cruelWorld = space.takeTail(1);
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("Hello"));
         assertThat(BufferUtil.toString(space.getByteBuffer()), is(" "));
@@ -1608,5 +1608,127 @@ public class RetainableByteBufferTest
 
         assertThat(mutable2.release(), is(true));
         assertThat(pool.getLeaks().size(), is(0));
+    }
+
+    @Test
+    public void testDynamicCapacityWriteToEndPointLastGatherWrite() throws Exception
+    {
+        RetainableByteBuffer.Mutable dc = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello")));
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" World")));
+
+        StringBuilder out = new StringBuilder();
+        try (EndPoint endPoint = new AbstractEndPoint(new TimerScheduler())
+        {
+            @Override
+            public SocketAddress getLocalSocketAddress()
+            {
+                return null;
+            }
+
+            @Override
+            public SocketAddress getRemoteSocketAddress()
+            {
+                return null;
+            }
+
+            @Override
+            public Object getTransport()
+            {
+                return null;
+            }
+
+            @Override
+            public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+            {
+                for (ByteBuffer buffer : buffers)
+                {
+                    out.append(BufferUtil.toString(buffer));
+                    buffer.position(buffer.limit());
+                }
+                callback.succeeded();
+            }
+
+            @Override
+            protected void needsFillInterest()
+            {
+            }
+
+            @Override
+            protected void onIncompleteFlush()
+            {
+            }
+        })
+        {
+            Callback.Completable callback = new Callback.Completable();
+            dc.writeTo(endPoint, true, callback);
+            callback.get(5, TimeUnit.SECONDS);
+            assertFalse(endPoint.isOpen(), "Expected endPoint to be closed after last=true gather write");
+        }
+
+        assertThat(out.toString(), is("Hello World"));
+    }
+
+    @Test
+    public void testDynamicCapacityWriteToGatherWrite() throws Exception
+    {
+        RetainableByteBuffer.Mutable dc = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Foo")));
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Bar")));
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Baz")));
+
+        List<Boolean> lastFlags = new ArrayList<>();
+        StringBuilder out = new StringBuilder();
+        Content.Sink sink = (last, callback, buffers) ->
+        {
+            lastFlags.add(last);
+            for (ByteBuffer byteBuffer : buffers)
+            {
+                out.append(BufferUtil.toString(byteBuffer));
+                BufferUtil.clear(byteBuffer);
+            }
+            callback.succeeded();
+        };
+
+        Callback.Completable callback = new Callback.Completable();
+        dc.writeTo(sink, true, callback);
+        callback.get(5, TimeUnit.SECONDS);
+
+        assertThat(out.toString(), is("FooBarBaz"));
+        // With the varargs API, DynamicCapacity does a single gather write with all 3 buffers.
+        assertThat(lastFlags, is(List.of(true)));
+    }
+
+    @Test
+    public void testDynamicCapacityWriteToUsesGatherWrite() throws Exception
+    {
+        RetainableByteBuffer.Mutable dc = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello")));
+        dc.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" World")));
+
+        boolean[] gatherWriteCalled = {false};
+        StringBuilder out = new StringBuilder();
+        Content.Sink sink = new Content.Sink()
+        {
+            @Override
+            public void write(boolean last, Callback callback, ByteBuffer... buffers)
+            {
+                if (buffers.length > 1)
+                    gatherWriteCalled[0] = true;
+                for (ByteBuffer buffer : buffers)
+                {
+                    out.append(BufferUtil.toString(buffer));
+                    BufferUtil.clear(buffer);
+                }
+                callback.succeeded();
+            }
+        };
+
+        Callback.Completable callback = new Callback.Completable();
+        dc.writeTo(sink, true, callback);
+        callback.get(5, TimeUnit.SECONDS);
+
+        assertTrue(gatherWriteCalled[0], "Expected gather write to be called for multi-buffer DynamicCapacity");
+        assertThat(out.toString(), is("Hello World"));
     }
 }

@@ -140,7 +140,7 @@ public class SizeLimitHandler extends Handler.Wrapper
         }
 
         @Override
-        public void write(boolean last, ByteBuffer content, Callback callback)
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
             if (_failure != null)
             {
@@ -148,19 +148,22 @@ public class SizeLimitHandler extends Handler.Wrapper
                 return;
             }
 
-            if (content != null && content.remaining() > 0)
+            long remaining = 0;
+            for (ByteBuffer b : buffers)
+                remaining += b.remaining();
+            if (remaining > 0)
             {
-                if (_responseLimit >= 0 && (_written + content.remaining())  > _responseLimit)
+                if (_responseLimit >= 0 && (_written + remaining) > _responseLimit)
                 {
                     _failure = new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500,
-                        "Response body is too large: %d>%d".formatted(_written + content.remaining(), _responseLimit));
+                        "Response body is too large: %d>%d".formatted(_written + remaining, _responseLimit));
                     callback.failed(_failure);
                     return;
                 }
-                _written += content.remaining();
+                _written += remaining;
             }
 
-            super.write(last, content, callback);
+            super.write(last, callback, buffers);
         }
     }
 }

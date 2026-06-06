@@ -355,11 +355,26 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
             notifyOnResponseBegin(getRequest(), this);
-            notifyOnResponseWrite(getRequest(), last, byteBuffer);
-            super.write(last, byteBuffer, Callback.from(callback.getInvocationType(), () ->
+            ByteBuffer notifyBuffer;
+            if (buffers.length == 0)
+                notifyBuffer = null;
+            else if (buffers.length == 1)
+                notifyBuffer = buffers[0];
+            else
+            {
+                int total = 0;
+                for (ByteBuffer b : buffers)
+                    total += b.remaining();
+                notifyBuffer = ByteBuffer.allocate(total);
+                for (ByteBuffer b : buffers)
+                    notifyBuffer.put(b.duplicate());
+                notifyBuffer.flip();
+            }
+            notifyOnResponseWrite(getRequest(), last, notifyBuffer);
+            super.write(last, Callback.from(callback.getInvocationType(), () ->
             {
                 notifyOnResponseWriteComplete(getRequest(), null);
                 callback.succeeded();
@@ -367,7 +382,7 @@ public abstract class EventsHandler extends Handler.Wrapper
             {
                 notifyOnResponseWriteComplete(getRequest(), x);
                 callback.failed(x);
-            }));
+            }), buffers);
         }
 
         @Override

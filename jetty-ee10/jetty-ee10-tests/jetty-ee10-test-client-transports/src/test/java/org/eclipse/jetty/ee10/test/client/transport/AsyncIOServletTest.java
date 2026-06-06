@@ -1558,11 +1558,11 @@ public class AsyncIOServletTest extends AbstractTest
                 response = new org.eclipse.jetty.server.Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    public void write(boolean last, Callback callback, ByteBuffer... buffers)
                     {
                         if (last)
                             lastWriteCounter.incrementAndGet();
-                        super.write(last, byteBuffer, callback);
+                        super.write(last, callback, buffers);
                     }
                 };
                 return super.handle(request, response, callback);

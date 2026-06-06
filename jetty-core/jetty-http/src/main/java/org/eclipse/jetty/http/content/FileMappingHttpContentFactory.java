@@ -129,7 +129,7 @@ public class FileMappingHttpContentFactory extends ContainerLifeCycle implements
             try
             {
                 length = TypeUtil.checkOffsetLengthSize(offset, length, _buffer.remaining());
-                sink.write(true, BufferUtil.slice(_buffer, Math.toIntExact(offset), Math.toIntExact(length)), callback);
+                sink.write(true, callback, BufferUtil.slice(_buffer, Math.toIntExact(offset), Math.toIntExact(length)));
             }
             catch (Throwable x)
             {
@@ -215,7 +215,7 @@ public class FileMappingHttpContentFactory extends ContainerLifeCycle implements
                         int len = index == endIndex ? lastLen : -1;
                         boolean last = index == endIndex;
                         index++;
-                        sink.write(last, BufferUtil.slice(currentBuffer, offset, len), this);
+                        sink.write(last, this, BufferUtil.slice(currentBuffer, offset, len));
                         return Action.SCHEDULED;
                     }
                 }.iterate();

@@ -92,7 +92,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         if (_last)
             _callback.succeeded();
         else
-            write(true, null, _callback);
+            write(true, _callback);
     }
 
     @Override
@@ -108,13 +108,28 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
     }
 
     @Override
-    public void write(boolean last, ByteBuffer content, Callback callback)
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
+        ByteBuffer content;
+        if (buffers.length == 0)
+            content = null;
+        else if (buffers.length == 1)
+            content = buffers[0];
+        else
+        {
+            int total = 0;
+            for (ByteBuffer b : buffers)
+                total += b.remaining();
+            content = ByteBuffer.allocate(total);
+            for (ByteBuffer b : buffers)
+                content.put(b);
+            content.flip();
+        }
         _last = last;
         switch (_state.get())
         {
             case MIGHT_COMPRESS -> commit(last, callback, content);
-            case NOT_COMPRESSING -> super.write(last, content, callback);
+            case NOT_COMPRESSING -> super.write(last, callback, content);
             case COMMITTING -> callback.failed(new WritePendingException());
             case COMPRESSING -> gzip(last, callback, content);
             default ->
@@ -172,7 +187,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                 }
             }
 
-            super.write(last, content, callback);
+            super.write(last, callback, content);
             return;
         }
 
@@ -186,7 +201,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} exclude by mimeType {}", this, ct);
                 noCompression();
-                super.write(last, content, callback);
+                super.write(last, callback, content);
                 return;
             }
         }
@@ -198,7 +213,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             if (LOG.isDebugEnabled())
                 LOG.debug("{} exclude by content-encoding {}", this, ce);
             noCompression();
-            super.write(last, content, callback);
+            super.write(last, callback, content);
             return;
         }
 
@@ -208,7 +223,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             if (LOG.isDebugEnabled())
                 LOG.debug("{} exclude by nothing to write", this);
             noCompression();
-            super.write(true, content, callback);
+            super.write(true, callback, content);
             return;
         }
 
@@ -225,7 +240,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} exclude no deflater", this);
                 _state.set(GZState.NOT_COMPRESSING);
-                super.write(last, content, callback);
+                super.write(last, callback, content);
                 return;
             }
 
@@ -245,7 +260,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             if (BufferUtil.isEmpty(content))
             {
                 // We are committing, but have no content to compress, so flush empty buffer to write headers.
-                super.write(last, content, callback);
+                super.write(last, callback, content);
             }
             else
             {
@@ -468,7 +483,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("write() last={}, outputBuffer={}", last, BufferUtil.toDetailString(outputBuffer));
-            GzipResponseAndCallback.super.write(last, outputBuffer, this);
+            GzipResponseAndCallback.super.write(last, this, outputBuffer);
         }
 
         @Override

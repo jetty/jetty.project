@@ -267,7 +267,7 @@ public class IOResources
             if (resource instanceof MemoryResource memoryResource)
             {
                 ByteBuffer byteBuffer = BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(offset), Math.toIntExact(length));
-                sink.write(true, byteBuffer, callback);
+                sink.write(true, callback, byteBuffer);
                 return;
             }
 
@@ -355,7 +355,7 @@ public class IOResources
             }
             BufferUtil.flipToFlush(byteBuffer, 0);
             terminated = eof || remainingLength == 0;
-            sink.write(terminated, byteBuffer, this);
+            sink.write(terminated, this, byteBuffer);
             return Action.SCHEDULED;
         }
 

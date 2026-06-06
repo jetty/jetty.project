@@ -751,7 +751,7 @@ public class ServletChannel
             _state.completing();
             // _state::completed may invoke async listeners, but assume non-blocking.
             Callback callback = Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed);
-            getServletContextResponse().write(true, getServletContextResponse().getHttpOutput().getByteBuffer(), callback);
+            getServletContextResponse().write(true, callback, getServletContextResponse().getHttpOutput().getByteBuffer());
         }
         catch (Throwable x)
         {

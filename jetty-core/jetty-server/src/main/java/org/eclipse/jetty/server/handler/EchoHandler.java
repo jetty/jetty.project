@@ -118,7 +118,7 @@ public class EchoHandler extends Handler.Abstract
         {
             try
             {
-                response.write(true, Content.Source.asByteBuffer(request), callback);
+                response.write(true, callback, Content.Source.asByteBuffer(request));
             }
             catch (IOException e)
             {
@@ -137,7 +137,7 @@ public class EchoHandler extends Handler.Abstract
                 @Override
                 public void succeeded(ByteBuffer result)
                 {
-                    response.write(true, result, callback);
+                    response.write(true, callback, result);
                 }
 
                 @Override

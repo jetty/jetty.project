@@ -1402,7 +1402,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 if (HttpMethod.HEAD.is(request.getMethod()))
                 {
                     if (request.getHttpURI().getCanonicalPath().equals("/writeNull"))
-                        response.write(true, null, callback);
+                        response.write(true, callback);
                     else
                         callback.succeeded();
                 }

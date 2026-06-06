@@ -412,11 +412,11 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
             if (!_writeCallback.compareAndSet(null, Objects.requireNonNull(callback)))
                 throw new WritePendingException();
-            super.write(last, byteBuffer, this);
+            super.write(last, this, buffers);
         }
 
         @Override

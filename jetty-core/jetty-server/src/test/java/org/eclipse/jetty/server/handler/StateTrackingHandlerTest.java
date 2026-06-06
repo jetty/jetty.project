@@ -423,13 +423,13 @@ public class StateTrackingHandlerTest
                 Response.Wrapper wrapper = new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    public void write(boolean last, Callback callback, ByteBuffer... buffers)
                     {
                         try
                         {
                             // Block.
                             writeLatch.await();
-                            super.write(last, byteBuffer, callback);
+                            super.write(last, callback, buffers);
                         }
                         catch (Throwable x)
                         {
@@ -451,7 +451,7 @@ public class StateTrackingHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, null, callback);
+                response.write(true, callback);
                 return true;
             }
         });
@@ -483,11 +483,11 @@ public class StateTrackingHandlerTest
                 Response wrapped = new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    public void write(boolean last, Callback callback, ByteBuffer... buffers)
                     {
                         // The callback parameter is the write callback from
                         // StateTrackingHandler that will not be completed.
-                        super.write(last, byteBuffer, Callback.NOOP);
+                        super.write(last, Callback.NOOP, buffers);
                     }
                 };
                 return super.handle(request, wrapped, callback);
@@ -505,7 +505,7 @@ public class StateTrackingHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, null, callback);
+                response.write(true, callback);
                 return true;
             }
         });
@@ -537,7 +537,7 @@ public class StateTrackingHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(false, null, Callback.from(() ->
+                response.write(false, Callback.from(() ->
                 {
                     try
                     {

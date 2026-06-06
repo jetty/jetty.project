@@ -76,7 +76,7 @@ public class TransferEncodingChunkTest
                 // Send headers with Transfer-Encoding: chunked.
                 try (Blocker.Callback blocker = Blocker.callback())
                 {
-                    response.write(false, null, blocker);
+                    response.write(false, blocker);
                     blocker.block();
                 }
 

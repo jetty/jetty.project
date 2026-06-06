@@ -580,9 +580,9 @@ public class ResourceServlet extends HttpServlet
                 Response coreResponse = new Response.Wrapper(coreRequest, r)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    public void write(boolean last, Callback callback, ByteBuffer... buffers)
                     {
-                        super.write(false, byteBuffer, callback);
+                        super.write(false, callback, buffers);
                     }
                 };
 

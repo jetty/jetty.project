@@ -510,7 +510,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
         String nonce = createNonce(request.getSession(false));
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "application/json");
         ByteBuffer content = BufferUtil.toBuffer("{ \"nonce\": \"" + nonce + "\" }");
-        response.write(true, content, callback);
+        response.write(true, callback, content);
         return AuthenticationState.CHALLENGE;
     }
 

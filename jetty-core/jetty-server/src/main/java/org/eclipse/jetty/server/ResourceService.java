@@ -661,7 +661,7 @@ public class ResourceService extends ContainerLifeCycle
         byte[] data = listing.getBytes(charset);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=" + charset.name());
         response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
-        response.write(true, ByteBuffer.wrap(data), callback);
+        response.write(true, callback, ByteBuffer.wrap(data));
     }
 
     private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)

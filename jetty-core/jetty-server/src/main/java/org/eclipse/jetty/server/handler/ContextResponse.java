@@ -31,7 +31,7 @@ public class ContextResponse extends Response.Wrapper
     }
 
     @Override
-    public void write(boolean last, ByteBuffer content, Callback callback)
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
         Callback contextCallback = new Callback()
         {
@@ -53,6 +53,6 @@ public class ContextResponse extends Response.Wrapper
                 return Invocable.getInvocationType(callback);
             }
         };
-        super.write(last, content, contextCallback);
+        super.write(last, contextCallback, buffers);
     }
 }

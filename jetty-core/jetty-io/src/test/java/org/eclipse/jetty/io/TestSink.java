@@ -25,9 +25,18 @@ public class TestSink implements Content.Sink
     private List<Content.Chunk> accumulatedChunks = new ArrayList<>();
 
     @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
-        accumulatedChunks.add(Content.Chunk.from(BufferUtil.copy(byteBuffer), last));
+        int total = 0;
+        for (ByteBuffer b : buffers)
+            if (b != null)
+                total += b.remaining();
+        ByteBuffer combined = ByteBuffer.allocate(total);
+        for (ByteBuffer b : buffers)
+            if (b != null)
+                combined.put(b);
+        combined.flip();
+        accumulatedChunks.add(Content.Chunk.from(combined, last));
         callback.succeeded();
     }
 

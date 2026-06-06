@@ -33,12 +33,25 @@ public abstract class EncoderSink implements Content.Sink
     }
 
     @Override
-    public void write(boolean last, ByteBuffer content, Callback callback)
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
-        if (content != null || last)
-            new EncodeBufferCallback(last, content, last ? Callback.from(callback, this::release) : callback).iterate();
-        else
+        if (buffers.length == 0 && !last)
+        {
             callback.succeeded();
+            return;
+        }
+        Callback wrapped = last ? Callback.from(callback, this::release) : callback;
+        if (buffers.length <= 1)
+        {
+            // Fast path: single buffer (or no-content last flush)
+            ByteBuffer content = buffers.length == 0 ? BufferUtil.EMPTY_BUFFER : buffers[0];
+            new EncodeBufferCallback(last, content, wrapped).iterate();
+        }
+        else
+        {
+            // Gather write: process each buffer sequentially without aggregating
+            new EncodeBufferCallback(last, buffers, wrapped).iterate();
+        }
     }
 
     /**
@@ -77,14 +90,29 @@ public abstract class EncoderSink implements Content.Sink
 
         private static final Logger LOG = LoggerFactory.getLogger(EncodeBufferCallback.class);
         private final AtomicReference<State> state = new AtomicReference<>(State.INITIAL);
-        private final ByteBuffer content;
+        private final ByteBuffer[] buffers;
         private final boolean last;
+        private int index;
+        private ByteBuffer current;
 
+        // Single-buffer constructor (fast path)
         public EncodeBufferCallback(boolean last, ByteBuffer content, Callback callback)
         {
             super(callback);
-            this.content = content == null ? BufferUtil.EMPTY_BUFFER : content;
             this.last = last;
+            this.buffers = null;
+            this.index = 0;
+            this.current = content;
+        }
+
+        // Multi-buffer constructor (gather write)
+        public EncodeBufferCallback(boolean last, ByteBuffer[] buffers, Callback callback)
+        {
+            super(callback);
+            this.last = last;
+            this.buffers = buffers;
+            this.index = 0;
+            this.current = buffers[0];
         }
 
         @Override
@@ -93,21 +121,33 @@ public abstract class EncoderSink implements Content.Sink
             if (state.get() == State.FINISHED)
                 return Action.SUCCEEDED;
 
-            // Attempt to encode the next write event
-            WriteRecord writeRecord = encode(last, content);
-            if (writeRecord != null)
+            while (true)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("process() - write() {}", writeRecord);
-                state.compareAndSet(State.INITIAL, State.COMPRESSING);
-                write(writeRecord);
-                return Action.SCHEDULED;
-            }
+                // isLast=true only when there are no more buffers after this one
+                boolean isLast = last && (buffers == null || index >= buffers.length - 1);
+                WriteRecord writeRecord = encode(isLast, current);
+                if (writeRecord != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("process() - write() {}", writeRecord);
+                    state.compareAndSet(State.INITIAL, State.COMPRESSING);
+                    write(writeRecord);
+                    return Action.SCHEDULED;
+                }
 
-            boolean hasRemaining = content != null && content.hasRemaining();
-            if (LOG.isDebugEnabled())
-                LOG.debug("process() - hasRemaining={}", hasRemaining);
-            return hasRemaining ? Action.SCHEDULED : Action.SUCCEEDED;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("process() - hasRemaining={}", current.hasRemaining());
+                if (current.hasRemaining())
+                    return Action.SCHEDULED;
+
+                // Current buffer exhausted; check for more buffers
+                if (buffers == null || index >= buffers.length - 1)
+                    return Action.SUCCEEDED;
+
+                // Advance to next buffer and loop
+                index++;
+                current = buffers[index];
+            }
         }
 
         private void write(WriteRecord writeRecord)
@@ -120,7 +160,7 @@ public abstract class EncoderSink implements Content.Sink
             }
             if (writeRecord.callback != null)
                 callback = Callback.combine(callback, writeRecord.callback);
-            sink.write(writeRecord.last, writeRecord.output, callback);
+            sink.write(writeRecord.last, callback, writeRecord.output);
         }
 
         protected void finished()
@@ -131,9 +171,9 @@ public abstract class EncoderSink implements Content.Sink
         @Override
         public String toString()
         {
-            return String.format("%s[content=%s,last=%b]",
+            return String.format("%s[current=%s,last=%b]",
                 super.toString(),
-                BufferUtil.toDetailString(content),
+                BufferUtil.toDetailString(current),
                 last
             );
         }

@@ -94,8 +94,24 @@ public class CompressionResponse extends Response.Wrapper
     }
 
     @Override
-    public void write(boolean last, ByteBuffer content, Callback callback)
+    public void write(boolean last, Callback callback, ByteBuffer... buffers)
     {
+        ByteBuffer content;
+        if (buffers.length == 0)
+            content = null;
+        else if (buffers.length == 1)
+            content = buffers[0];
+        else
+        {
+            int total = 0;
+            for (ByteBuffer b : buffers)
+                total += b.remaining();
+            content = ByteBuffer.allocate(total);
+            for (ByteBuffer b : buffers)
+                content.put(b);
+            content.flip();
+        }
+
         HttpFields.Mutable headers = getHeaders();
 
         switch (state.get())
@@ -116,7 +132,7 @@ public class CompressionResponse extends Response.Wrapper
                     if (LOG.isDebugEnabled())
                         LOG.debug("no compression for status {} {}", status, this);
                     state.compareAndSet(State.MIGHT_COMPRESS, State.NOT_COMPRESSING);
-                    super.write(last, content, callback);
+                    super.write(last, callback, content);
                     return;
                 }
 
@@ -126,7 +142,7 @@ public class CompressionResponse extends Response.Wrapper
                         LOG.debug("no compression for status {} {}", status, this);
                     state.compareAndSet(State.MIGHT_COMPRESS, State.NOT_COMPRESSING);
                     headers.computeField(HttpHeader.ETAG, (name, value) -> (value == null || value.isEmpty()) ? null : new HttpField(HttpHeader.ETAG, compression.etag(value.get(0).getValue())));
-                    super.write(last, content, callback);
+                    super.write(last, callback, content);
                 }
 
                 HttpField contentTypeField = headers.getField(HttpHeader.CONTENT_TYPE);
@@ -138,7 +154,7 @@ public class CompressionResponse extends Response.Wrapper
                         if (LOG.isDebugEnabled())
                             LOG.debug("no compression for unsupported content type {} {}", mimeType, this);
                         state.compareAndSet(State.MIGHT_COMPRESS, State.NOT_COMPRESSING);
-                        super.write(last, content, callback);
+                        super.write(last, callback, content);
                         return;
                     }
                 }
@@ -150,7 +166,7 @@ public class CompressionResponse extends Response.Wrapper
                     if (LOG.isDebugEnabled())
                         LOG.debug("no compression for explicit content encoding {} {}", contentEncoding, this);
                     state.compareAndSet(State.MIGHT_COMPRESS, State.NOT_COMPRESSING);
-                    super.write(last, content, callback);
+                    super.write(last, callback, content);
                     return;
                 }
 
@@ -160,7 +176,7 @@ public class CompressionResponse extends Response.Wrapper
                     if (LOG.isDebugEnabled())
                         LOG.debug("no compression, nothing to write {}", this);
                     state.compareAndSet(State.MIGHT_COMPRESS, State.NOT_COMPRESSING);
-                    super.write(last, content, callback);
+                    super.write(true, callback, content);
                     return;
                 }
 
@@ -172,7 +188,7 @@ public class CompressionResponse extends Response.Wrapper
                     if (LOG.isDebugEnabled())
                         LOG.debug("no compression, too few content bytes {} {}", contentLength, this);
                     state.compareAndSet(State.MIGHT_COMPRESS, State.NOT_COMPRESSING);
-                    super.write(last, content, callback);
+                    super.write(last, callback, content);
                     return;
                 }
 
@@ -187,10 +203,10 @@ public class CompressionResponse extends Response.Wrapper
                 headers.remove(HttpHeader.CONTENT_LENGTH);
                 headers.computeField(HttpHeader.ETAG, (name, value) -> (value == null || value.isEmpty()) ? null : new HttpField(HttpHeader.ETAG, compression.etag(value.get(0).getValue())));
 
-                this.write(last, content, callback);
+                this.write(last, callback, content);
             }
-            case COMPRESSING -> encoderSink.write(last, content, callback);
-            case NOT_COMPRESSING -> super.write(last, content, callback);
+            case COMPRESSING -> encoderSink.write(last, callback, content);
+            case NOT_COMPRESSING -> super.write(last, callback, content);
         }
     }
 

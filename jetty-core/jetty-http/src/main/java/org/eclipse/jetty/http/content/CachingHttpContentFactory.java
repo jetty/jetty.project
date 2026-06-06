@@ -388,7 +388,7 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
                 length = TypeUtil.checkOffsetLengthSize(offset, length, buffer.remaining());
                 retained = tryRetain();
                 if (retained)
-                    sink.write(true, BufferUtil.slice(buffer.getByteBuffer(), Math.toIntExact(offset), Math.toIntExact(length)), Callback.from(this::release, callback));
+                    sink.write(true, Callback.from(this::release, callback), BufferUtil.slice(buffer.getByteBuffer(), Math.toIntExact(offset), Math.toIntExact(length)));
                 else
                     getWrapped().writeTo(sink, offset, length, callback);
             }
@@ -573,7 +573,7 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
         @Override
         public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
-            sink.write(true, BufferUtil.EMPTY_BUFFER, callback);
+            sink.write(true, callback);
         }
 
         @Override

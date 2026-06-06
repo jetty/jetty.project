@@ -293,7 +293,7 @@ public class ErrorHandler implements Request.Handler
             }
 
             response.getHeaders().put(type.getContentTypeField(charset));
-            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, buffer));
+            response.write(true, new WriteErrorCallback(callback, buffer), buffer.getByteBuffer());
 
             return true;
         }

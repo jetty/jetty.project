@@ -132,7 +132,7 @@ public class DefaultHandler extends Handler.Abstract
                 response.getHeaders().put(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
                 content = _favicon.slice();
             }
-            response.write(true, content, callback);
+            response.write(true, callback, content);
             return true;
         }
 
@@ -221,7 +221,7 @@ public class DefaultHandler extends Handler.Abstract
             writer.flush();
             ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());
             response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.remaining());
-            response.write(true, content, callback);
+            response.write(true, callback, content);
             return true;
         }
     }

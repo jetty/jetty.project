@@ -1346,8 +1346,25 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public void write(boolean last, ByteBuffer content, Callback callback)
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
+            ByteBuffer content = switch (buffers.length)
+            {
+                case 0 -> null;
+                case 1 -> buffers[0];
+                default ->
+                {
+                    int total = 0;
+                    for (ByteBuffer b : buffers)
+                        total += b.remaining();
+                    ByteBuffer coalesced = ByteBuffer.allocate(total);
+                    for (ByteBuffer b : buffers)
+                        coalesced.put(b);
+                    coalesced.flip();
+                    yield coalesced;
+                }
+            };
+
             Callback writeCallback = Objects.requireNonNullElse(callback, NOOP);
 
             long length = BufferUtil.length(content);
