@@ -37,8 +37,10 @@ import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
+import org.eclipse.jetty.quic.common.FlowController;
 import org.eclipse.jetty.quic.common.PacketTracker;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.StreamsController;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
@@ -74,9 +76,9 @@ public class ClientQuicSession extends QuicSession
     private boolean retryPacketProcessed;
     private byte[] retryToken;
 
-    public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, ClientQuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, ClientTLSEngine clientTLSEngine, Map<String, Object> context)
+    public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, ClientQuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, ClientTLSEngine clientTLSEngine, FlowController flowController, StreamsController streamsController, Map<String, Object> context)
     {
-        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), quicConfiguration, connection, packetTracker, packetNumbers, clientTLSEngine, sessionListener(context), true);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), quicConfiguration, connection, packetTracker, packetNumbers, clientTLSEngine, flowController, streamsController, sessionListener(context), true);
         this.context = context;
     }
 
@@ -160,13 +162,14 @@ public class ClientQuicSession extends QuicSession
             tlsConfiguration.setApplicationProtocols(protocols);
 
         TransportParameters transportParameters = new TransportParameters();
+        tlsConfiguration.setTransportParameters(transportParameters);
         getQuicConfiguration().configure(transportParameters);
         long idleTimeout = getIdleTimeout();
         if (idleTimeout > 0)
             transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, idleTimeout);
         transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, getSourceConnectionId());
         notifyPrepare(transportParameters);
-        tlsConfiguration.setTransportParameters(transportParameters);
+        configure(transportParameters, true);
 
         byte[] dstConnectionId = getTLSEngine().newRandomBytes(12);
         tlsConfiguration.setInputKeyMaterial(dstConnectionId);

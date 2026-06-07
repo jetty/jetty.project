@@ -18,7 +18,11 @@ import java.util.Objects;
 
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.CongestionController;
+import org.eclipse.jetty.quic.common.DefaultFlowControllerFactory;
+import org.eclipse.jetty.quic.common.DefaultStreamsControllerFactory;
+import org.eclipse.jetty.quic.common.FlowController;
 import org.eclipse.jetty.quic.common.NewRenoCongestionControllerFactory;
+import org.eclipse.jetty.quic.common.StreamsController;
 import org.eclipse.jetty.quic.server.internal.DefaultSessionTicketFactory;
 import org.eclipse.jetty.quic.server.internal.DefaultTokenFactory;
 import org.eclipse.jetty.tls.CipherSuite;
@@ -34,6 +38,8 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
     private TokenFactory tokenFactory = new DefaultTokenFactory();
     private SessionTicket.Factory sessionTicketFactory = new DefaultSessionTicketFactory();
     private CongestionController.Factory congestionControllerFactory = new NewRenoCongestionControllerFactory();
+    private FlowController.Factory flowControllerFactory = new DefaultFlowControllerFactory();
+    private StreamsController.Factory streamsControllerFactory = new DefaultStreamsControllerFactory();
     private int destinationConnectionIdLength = 8;
     private int earlyMaxData;
 
@@ -95,6 +101,26 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
     public void setCongestionControllerFactory(CongestionController.Factory congestionControllerFactory)
     {
         this.congestionControllerFactory = congestionControllerFactory;
+    }
+
+    public FlowController.Factory getFlowControllerFactory()
+    {
+        return flowControllerFactory;
+    }
+
+    public void setFlowControllerFactory(FlowController.Factory flowControllerFactory)
+    {
+        this.flowControllerFactory = flowControllerFactory;
+    }
+
+    public StreamsController.Factory getStreamsControllerFactory()
+    {
+        return streamsControllerFactory;
+    }
+
+    public void setStreamsControllerFactory(StreamsController.Factory streamsControllerFactory)
+    {
+        this.streamsControllerFactory = streamsControllerFactory;
     }
 
     public int getDestinationConnectionIdLength()

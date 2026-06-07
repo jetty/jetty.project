@@ -17,7 +17,11 @@ import java.util.List;
 
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.CongestionController;
+import org.eclipse.jetty.quic.common.DefaultFlowControllerFactory;
+import org.eclipse.jetty.quic.common.DefaultStreamsControllerFactory;
+import org.eclipse.jetty.quic.common.FlowController;
 import org.eclipse.jetty.quic.common.NewRenoCongestionControllerFactory;
+import org.eclipse.jetty.quic.common.StreamsController;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.NamedGroup;
 import org.eclipse.jetty.tls.SignatureAlgorithm;
@@ -29,6 +33,8 @@ public class QuicClientQuicConfiguration extends ClientQuicConfiguration
     private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519/*, NamedGroup.secp256r1, NamedGroup.ffdhe2048*/);
     private List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256);
     private CongestionController.Factory congestionControllerFactory = new NewRenoCongestionControllerFactory();
+    private FlowController.Factory flowControllerFactory = new DefaultFlowControllerFactory();
+    private StreamsController.Factory streamsControllerFactory = new DefaultStreamsControllerFactory();
 
     public List<SignatureAlgorithm> getSignatureAlgorithms()
     {
@@ -68,6 +74,26 @@ public class QuicClientQuicConfiguration extends ClientQuicConfiguration
     public void setCongestionControllerFactory(CongestionController.Factory congestionControllerFactory)
     {
         this.congestionControllerFactory = congestionControllerFactory;
+    }
+
+    public FlowController.Factory getFlowControllerFactory()
+    {
+        return flowControllerFactory;
+    }
+
+    public void setFlowControllerFactory(FlowController.Factory flowControllerFactory)
+    {
+        this.flowControllerFactory = flowControllerFactory;
+    }
+
+    public StreamsController.Factory getStreamsControllerFactory()
+    {
+        return streamsControllerFactory;
+    }
+
+    public void setStreamsControllerFactory(StreamsController.Factory streamsControllerFactory)
+    {
+        this.streamsControllerFactory = streamsControllerFactory;
     }
 
     @Override

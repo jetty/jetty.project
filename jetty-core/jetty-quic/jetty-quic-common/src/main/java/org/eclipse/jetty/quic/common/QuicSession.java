@@ -104,6 +104,10 @@ public abstract class QuicSession extends AbstractSession
     private final Map<Long, QuicStream> streams = new HashMap<>();
     private final AtomicLong biStreamIds = new AtomicLong();
     private final AtomicLong uniStreamIds = new AtomicLong();
+    private final AtomicLong biLocalStreamCount = new AtomicLong();
+    private final AtomicLong biLocalStreamMaxCount = new AtomicLong();
+    private final AtomicLong uniLocalStreamCount = new AtomicLong();
+    private final AtomicLong uniLocalStreamMaxCount = new AtomicLong();
     private final AtomicLong biRemoteStreamCount = new AtomicLong();
     private final AtomicLong biRemoteStreamMaxCount = new AtomicLong();
     private final AtomicLong uniRemoteStreamCount = new AtomicLong();
@@ -120,6 +124,8 @@ public abstract class QuicSession extends AbstractSession
     private final PacketTracker packetTracker;
     private final PacketNumbers packetNumbers;
     private final TLSEngine tlsEngine;
+    private final FlowController flowController;
+    private final StreamsController streamsController;
     private final boolean client;
     private final StreamTimeouts streamTimeouts;
     private final PacketsParser parser;
@@ -139,7 +145,7 @@ public abstract class QuicSession extends AbstractSession
     private ConnectionCloseFrame closeFrame;
     private long closeBackoff;
 
-    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, TLSEngine tlsEngine, Session.Listener listener, boolean client)
+    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, TLSEngine tlsEngine, FlowController flowController, StreamsController streamsController, Session.Listener listener, boolean client)
     {
         super(executor, quicConfiguration, listener);
         this.scheduler = scheduler;
@@ -154,6 +160,10 @@ public abstract class QuicSession extends AbstractSession
         installBean(packetNumbers);
         this.tlsEngine = tlsEngine;
         installBean(tlsEngine);
+        this.flowController = flowController;
+        installBean(flowController);
+        this.streamsController = streamsController;
+        installBean(streamsController);
         this.client = client;
         this.streamTimeouts = new StreamTimeouts(scheduler);
         installBean(streamTimeouts);
@@ -165,6 +175,9 @@ public abstract class QuicSession extends AbstractSession
         this.dstConnectionId = BufferUtil.EMPTY_BYTES;
         this.srcConnectionId = tlsEngine.newRandomBytes(8);
         this.keepAliveTask = () -> false;
+
+        biRemoteStreamMaxCount.set(quicConfiguration.getBidirectionalMaxStreams());
+        uniRemoteStreamMaxCount.set(quicConfiguration.getUnidirectionalMaxStreams());
     }
 
     public Scheduler getScheduler()
@@ -441,6 +454,14 @@ public abstract class QuicSession extends AbstractSession
             if (closeState != CloseState.NOT_CLOSED)
                 throw new QuicException(ErrorCode.NO_ERROR, "session_closed");
 
+            boolean bidirectional = StreamId.isBidirectional(streamId);
+            AtomicLong localStreamCount = bidirectional ? biLocalStreamCount : uniLocalStreamCount;
+            long count = localStreamCount.get();
+            long max = bidirectional ? getBidirectionalLocalStreamMaxCount() : getUnidirectionalLocalStreamMaxCount();
+            if (max >= 0 && count >= max)
+                throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "local_stream_count_exceeded");
+            localStreamCount.incrementAndGet();
+
             stream = new QuicStream(this, streamId, true);
             streams.put(streamId, stream);
         }
@@ -449,6 +470,8 @@ public abstract class QuicSession extends AbstractSession
         Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE);
         if (maxData != null)
             stream.updateSendMaxData(maxData);
+
+        flowController.onStreamCreated(stream);
 
         if (LOG.isDebugEnabled())
             LOG.debug("created local {} on {}", stream, this);
@@ -459,6 +482,7 @@ public abstract class QuicSession extends AbstractSession
     private QuicStream getOrCreateRemoteStream(Frame.WithStreamId frame)
     {
         long streamId = frame.streamId();
+        boolean bidirectional = StreamId.isBidirectional(streamId);
 
         QuicStream stream;
         try (var _ = lock.lock())
@@ -466,6 +490,9 @@ public abstract class QuicSession extends AbstractSession
             stream = streams.get(streamId);
             if (stream != null)
                 return stream;
+
+            if (closeState != CloseState.NOT_CLOSED)
+                return null;
 
             // A local stream id cannot create a new remote stream.
             // For example, a client can only receive a frame on a
@@ -479,20 +506,15 @@ public abstract class QuicSession extends AbstractSession
                     return null;
             }
 
-            boolean bidirectional = StreamId.isBidirectional(streamId);
             AtomicLong terminatedStreamId = bidirectional ? terminatedBiRemoteStream : terminatedUniRemoteStream;
             boolean terminated = streamId <= terminatedStreamId.get();
             if (terminated)
                 return null;
 
-            if (closeState != CloseState.NOT_CLOSED)
-                return null;
-
             // Create a new stream, if allowed.
             AtomicLong remoteStreamCount = bidirectional ? biRemoteStreamCount : uniRemoteStreamCount;
-            AtomicLong remoteStreamMaxCount = bidirectional ? biRemoteStreamMaxCount : uniRemoteStreamMaxCount;
-            long max = remoteStreamMaxCount.get();
             long count = remoteStreamCount.get();
+            long max = bidirectional ? getBidirectionalRemoteStreamMaxCount() : getUnidirectionalRemoteStreamMaxCount();
             if (max > 0 && count >= max)
                 throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "remote_stream_count_exceeded");
             remoteStreamCount.incrementAndGet();
@@ -503,9 +525,13 @@ public abstract class QuicSession extends AbstractSession
 
         stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
-        Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL);
+        Long maxData = bidirectional ?
+            transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL) :
+            transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
         if (maxData != null)
             stream.updateSendMaxData(maxData);
+
+        streamsController.onStreamCreated(stream);
 
         if (LOG.isDebugEnabled())
             LOG.debug("created remote {} for {} on {}", stream, frame, this);
@@ -535,7 +561,7 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    boolean remove(QuicStream stream)
+    void remove(QuicStream stream)
     {
         long streamId = stream.getId();
 
@@ -548,22 +574,42 @@ public abstract class QuicSession extends AbstractSession
         if (LOG.isDebugEnabled())
             LOG.debug("removed {} {} from {}", removed, stream, this);
 
-        if (removed)
-        {
-            AtomicLong terminated = stream.isBidirectional()
-                ? stream.isLocal() ? terminatedBiLocalStream : terminatedBiRemoteStream
-                : stream.isLocal() ? terminatedUniLocalStream : terminatedUniRemoteStream;
-            Atomics.updateMax(terminated, streamId);
-        }
+        if (!removed)
+            return;
 
-        return removed;
+        AtomicLong terminated = stream.isBidirectional()
+            ? stream.isLocal() ? terminatedBiLocalStream : terminatedBiRemoteStream
+            : stream.isLocal() ? terminatedUniLocalStream : terminatedUniRemoteStream;
+        Atomics.updateMax(terminated, streamId);
+
+        stream.notifyClose();
+
+        flowController.onStreamTerminated(stream);
+
+        if (!stream.isLocal())
+            streamsController.onStreamTerminated(stream);
     }
 
     @Override
     public void maxStreams(MaxStreamsFrame frame, Promise.Invocable<Session> promise)
     {
-        Callback callback = Promise.Invocable.toCallback(promise, this);
-        sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+        long max = frame.maxStreams();
+        if (max > StreamId.MAX_PROGRESSIVE)
+        {
+            promise.failed(new QuicException(ErrorCode.STREAM_STATE_ERROR, "max_streams_limit"));
+            return;
+        }
+
+        AtomicLong maxStreams = frame.isBidirectional() ? biRemoteStreamMaxCount : uniRemoteStreamMaxCount;
+        if (Atomics.updateMax(maxStreams, max))
+        {
+            Callback callback = Promise.Invocable.toCallback(promise, this);
+            sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+        }
+        else
+        {
+            promise.succeeded(this);
+        }
     }
 
     @Override
@@ -595,6 +641,8 @@ public abstract class QuicSession extends AbstractSession
 
     public void reset(QuicStream stream, ResetFrame frame, Promise.Invocable<Stream> promise)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("resetting {} for {} on {}", frame, stream, this);
         Callback callback = Promise.Invocable.toCallback(promise, stream);
         sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
     }
@@ -728,9 +776,38 @@ public abstract class QuicSession extends AbstractSession
     }
 
     @Override
-    public long getLocalBidirectionalMaxStreams()
+    public long getBidirectionalLocalStreamMaxCount()
     {
-        return 0;
+        return biLocalStreamMaxCount.get();
+    }
+
+    public long getUnidirectionalLocalStreamMaxCount()
+    {
+        return uniLocalStreamMaxCount.get();
+    }
+
+    /// @return the cumulative number of bidirectional remote streams that were opened
+    public long getBidirectionalRemoteStreamCount()
+    {
+        return biRemoteStreamCount.get();
+    }
+
+    /// @return the max cumulative number of bidirectional remote streams, as advertised by the remote peer
+    public long getBidirectionalRemoteStreamMaxCount()
+    {
+        return biRemoteStreamMaxCount.get();
+    }
+
+    /// @return the cumulative number of unidirectional remote streams that were opened
+    public long getUnidirectionalRemoteStreamCount()
+    {
+        return uniRemoteStreamCount.get();
+    }
+
+    /// @return the max cumulative number of unidirectional remote streams, as advertised by the remote peer
+    public long getUnidirectionalRemoteStreamMaxCount()
+    {
+        return uniRemoteStreamMaxCount.get();
     }
 
     @Override
@@ -915,7 +992,7 @@ public abstract class QuicSession extends AbstractSession
         {
             for (Frame frame : noStreamFrames)
             {
-                processFrame(packet,  frame);
+                processFrame(packet, frame);
             }
         }
 
@@ -962,6 +1039,7 @@ public abstract class QuicSession extends AbstractSession
         switch (frame)
         {
             case AckFrame ackFrame -> processAckFrame(EncryptionLevel.from(packet), ackFrame);
+            case ConnectionCloseFrame connectionCloseFrame -> processConnectionCloseFrame(connectionCloseFrame);
             case CryptoFrame cryptoFrame ->
             {
                 EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
@@ -973,12 +1051,14 @@ public abstract class QuicSession extends AbstractSession
                 flusher.processMaxData(maxDataFrame);
                 // TODO: notify Session.Listener (before or after queuing to the flusher?)
             }
-            case ConnectionCloseFrame connectionCloseFrame -> processConnectionCloseFrame(connectionCloseFrame);
-            case PingFrame _ -> notifyPing();
-            default ->
+            case MaxStreamsFrame maxStreamsFrame ->
             {
-                // TODO: notify Session.Listener
+                AtomicLong maxStreams = maxStreamsFrame.isBidirectional() ? biLocalStreamMaxCount : uniLocalStreamMaxCount;
+                if (Atomics.updateMax(maxStreams, maxStreamsFrame.maxStreams()))
+                    notifyMaxStreams(maxStreamsFrame);
             }
+            case PingFrame _ -> notifyPing();
+            default -> throw new UnsupportedOperationException();
         }
     }
 
@@ -1082,13 +1162,14 @@ public abstract class QuicSession extends AbstractSession
         return result;
     }
 
-    private void processCryptoFrame(Frame.WithData frame)
+    private void processCryptoFrame(Frame.WithOffset frame)
     {
         try
         {
-            while (frame.remaining() > 0)
+            CryptoFrame cryptoFrame = (CryptoFrame)frame;
+            while (cryptoFrame.remaining() > 0)
             {
-                Message message = frame.map(data -> getTLSEngine().getMessagesParser().parse(data));
+                Message message = cryptoFrame.map(data -> getTLSEngine().getMessagesParser().parse(data));
                 if (LOG.isDebugEnabled())
                     LOG.debug("parsed {} on {}", message, this);
                 if (message == null)
@@ -1115,31 +1196,74 @@ public abstract class QuicSession extends AbstractSession
 
         this.transportParameters = transportParameters;
 
-        // RFC-9000[10.1]: the idle timeout is the minimum of the two advertised values.
-        Long remoteIdleTimeout = transportParameters.get(TransportParameters.Ids.MAX_IDLE_TIMEOUT);
-        if (remoteIdleTimeout != null && remoteIdleTimeout > 0)
-        {
-            long localIdleTimeout = getIdleTimeout();
-            if (localIdleTimeout > 0)
-                setIdleTimeout(Math.min(localIdleTimeout, remoteIdleTimeout));
-            else
-                setIdleTimeout(remoteIdleTimeout);
-        }
-
-        Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_DATA);
-        if (maxData != null)
-            updateSendMaxData(null, maxData);
-
-        Long ackMaxDelay = transportParameters.get(TransportParameters.Ids.MAX_ACK_DELAY);
-        if (ackMaxDelay != null)
-            packetTracker.setAcknowledgmentMaxDelay(ackMaxDelay);
-        Long ackDelayExponent = transportParameters.get(TransportParameters.Ids.ACK_DELAY_EXPONENT);
-        if (ackDelayExponent != null)
-            packetTracker.setAcknowledgmentDelayExponent(ackDelayExponent);
 
         // TODO: other parameters.
 
+        configure(transportParameters, false);
         notifyTransportParameters(transportParameters);
+    }
+
+    protected void configure(TransportParameters parameters, boolean local)
+    {
+        Long idleTimeout = parameters.get(TransportParameters.Ids.MAX_IDLE_TIMEOUT);
+        if (idleTimeout != null)
+        {
+            if (local)
+            {
+                setIdleTimeout(idleTimeout);
+            }
+            else
+            {
+                // RFC-9000[10.1]: the idle timeout is the minimum of the two advertised values.
+                if (idleTimeout > 0)
+                {
+                    long localIdleTimeout = getIdleTimeout();
+                    if (localIdleTimeout > 0)
+                        setIdleTimeout(Math.min(localIdleTimeout, idleTimeout));
+                    else
+                        setIdleTimeout(idleTimeout);
+                }
+            }
+        }
+
+        Long maxData = parameters.get(TransportParameters.Ids.INITIAL_MAX_DATA);
+        if (maxData != null)
+        {
+            if (local)
+                ; //setRecvMaxData(maxData);
+            else
+                updateSendMaxData(null, maxData);
+        }
+
+        Long ackMaxDelay = parameters.get(TransportParameters.Ids.MAX_ACK_DELAY);
+        if (ackMaxDelay != null)
+        {
+            if (!local)
+                packetTracker.setAcknowledgmentMaxDelay(ackMaxDelay);
+        }
+        Long ackDelayExponent = parameters.get(TransportParameters.Ids.ACK_DELAY_EXPONENT);
+        if (ackDelayExponent != null)
+        {
+            if (!local)
+                packetTracker.setAcknowledgmentDelayExponent(ackDelayExponent);
+        }
+
+        Long uniMaxStreams = parameters.get(TransportParameters.Ids.INITIAL_MAX_STREAMS_UNIDIRECTIONAL);
+        if (uniMaxStreams != null)
+        {
+            if (local)
+                uniRemoteStreamMaxCount.set(uniMaxStreams);
+            else
+                uniLocalStreamMaxCount.set(uniMaxStreams);
+        }
+        Long biMaxStreams = parameters.get(TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL);
+        if (biMaxStreams != null)
+        {
+            if (local)
+                biRemoteStreamMaxCount.set(biMaxStreams);
+            else
+                biLocalStreamMaxCount.set(biMaxStreams);
+        }
     }
 
     private void acknowledge(Packet packet)

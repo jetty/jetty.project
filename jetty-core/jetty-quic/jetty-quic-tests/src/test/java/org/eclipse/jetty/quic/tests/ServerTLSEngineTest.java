@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
@@ -68,10 +69,16 @@ public class ServerTLSEngineTest
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12"));
         sslContextFactory.setKeyStorePassword("storepwd");
-        ServerTLSConfiguration configuration = new ServerTLSConfiguration(new QuicServerQuicConfiguration(), sslContextFactory);
-        engine = new ServerTLSEngine(packetProtector, configuration);
+        sslContextFactory.start();
+        QuicServerQuicConfiguration quicConfiguration = new QuicServerQuicConfiguration();
+        TransportParameters parameters = new TransportParameters();
+        quicConfiguration.configure(parameters);
+        ServerTLSConfiguration serverTLSConfiguration = new ServerTLSConfiguration(quicConfiguration, sslContextFactory);
+        serverTLSConfiguration.setTransportParameters(parameters);
         // TODO: parametrize on the version.
-        engine.initialize(QuicVersion.V1);
+        serverTLSConfiguration.setQuicVersion(QuicVersion.V1);
+        engine = new ServerTLSEngine(packetProtector, serverTLSConfiguration);
+        engine.initialize();
 
         outMessages = new ArrayList<>();
         engine.addMessageListener(new TLSEngine.MessageListener()
