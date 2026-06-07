@@ -20,9 +20,16 @@ import java.util.List;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.StreamFrame;
+import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.quic.util.QuicException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FrameStreamTest
 {
@@ -144,7 +151,7 @@ public class FrameStreamTest
     }
 
     @Test
-    public void testEmptyInitialOfferIsNotifiedThenEmptyOfferIsAlsoNotNotified()
+    public void testEmptyInitialOfferIsNotifiedThenEmptyOfferIsAlsoNotified()
     {
         List<Frame> output = new ArrayList<>();
         FrameStream stream = new FrameStream(output::add);
@@ -159,5 +166,103 @@ public class FrameStreamTest
 
         assertEquals(2, output.size());
         assertEquals(0, stream.offset());
+    }
+
+    @Test
+    public void testResetFrameReceivedWithNoData()
+    {
+        List<Frame> output = new ArrayList<>();
+        FrameStream stream = new FrameStream(output::add);
+
+        stream.offer(new ResetFrame(0, 0, 0));
+        assertEquals(1, output.size());
+
+        // Another ResetFrame is discarded.
+        stream.offer(new ResetFrame(0, 0, 0));
+        assertEquals(1, output.size());
+
+        // An empty data frame is discarded.
+        stream.offer(new StreamFrame(0, RetainableByteBuffer.EMPTY, 0, true, true, false));
+        assertEquals(1, output.size());
+        stream.offer(new StreamFrame(0, RetainableByteBuffer.EMPTY, 0, true, true, true));
+        assertEquals(1, output.size());
+    }
+
+    @Test
+    public void testResetFrameReceivedAfterLastData()
+    {
+        List<Frame> output = new ArrayList<>();
+        FrameStream stream = new FrameStream(output::add);
+
+        int finalSize = 32;
+        stream.offer(new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(finalSize)), 0, true, true, true));
+        assertEquals(1, output.size());
+
+        // A reset with same finalSize is discarded.
+        stream.offer(new ResetFrame(0, 0, finalSize));
+        assertEquals(1, output.size());
+
+        // A reset with smaller finalSize throws.
+        QuicException failure = assertThrows(QuicException.class, () -> stream.offer(new ResetFrame(0, 0, finalSize - 1)));
+        assertSame(ErrorCode.FINAL_SIZE_ERROR, failure.getErrorCode());
+
+        // A reset with larger finalSize throws.
+        failure = assertThrows(QuicException.class, () -> stream.offer(new ResetFrame(0, 0, finalSize + 1)));
+        assertSame(ErrorCode.FINAL_SIZE_ERROR, failure.getErrorCode());
+    }
+
+    @Test
+    public void testLastDataAfterLastData()
+    {
+        List<Frame> output = new ArrayList<>();
+        FrameStream stream = new FrameStream(output::add);
+
+        int finalSize = 32;
+        StreamFrame last = new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(finalSize)), 0, true, true, true);
+        stream.offer(last);
+        assertEquals(1, output.size());
+
+        StreamFrame afterLast = new StreamFrame(last.streamId(), RetainableByteBuffer.wrap(ByteBuffer.allocate(1)), stream.offset(), true, true, true);
+        QuicException failure = assertThrows(QuicException.class, () -> stream.offer(afterLast));
+        assertSame(ErrorCode.FINAL_SIZE_ERROR, failure.getErrorCode());
+    }
+
+    @Test
+    public void testResetFrameReceivedInOrderIsNotified()
+    {
+        List<Frame> output = new ArrayList<>();
+        FrameStream stream = new FrameStream(output::add);
+
+        stream.offer(new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(32)), 0, true, true, false));
+        assertEquals(1, output.size());
+
+        long finalSize = stream.offset();
+        stream.offer(new ResetFrame(0, 0, finalSize));
+        assertEquals(2, output.size());
+
+        assertEquals(finalSize, stream.offset());
+        assertInstanceOf(ResetFrame.class, output.getLast());
+    }
+
+    @Test
+    public void testResetFrameReceivedOutOfOrderIsNotified()
+    {
+        List<Frame> output = new ArrayList<>();
+        FrameStream stream = new FrameStream(output::add);
+
+        StreamFrame data1 = new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(32)), 0, true, true, false);
+        stream.offer(data1);
+        assertEquals(1, output.size());
+
+        StreamFrame data2 = new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(16)), stream.offset(), true, true, false);
+
+        stream.offer(new ResetFrame(0, 0, stream.offset() + data2.length()));
+        assertEquals(1, output.size());
+
+        stream.offer(data2);
+        assertEquals(3, output.size());
+
+        assertEquals(data1.length() + data2.length(), stream.offset());
+        assertInstanceOf(ResetFrame.class, output.getLast());
     }
 }

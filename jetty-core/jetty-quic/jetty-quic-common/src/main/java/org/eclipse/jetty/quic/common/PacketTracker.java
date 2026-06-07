@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.api.frames.ResetFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.util.NanoTime;
@@ -356,12 +357,14 @@ public class PacketTracker
             assert existing == null;
             for (Frame frame : entry.packet.frames())
             {
-                if (frame instanceof StreamFrame streamFrame)
+                QuicStream stream = switch (frame)
                 {
-                    QuicStream stream = session.getStream(streamFrame.streamId());
-                    if (stream != null)
-                        stream.onStreamFrameSent(streamFrame);
-                }
+                    case ResetFrame rf -> session.getStream(rf.streamId());
+                    case StreamFrame sf -> session.getStream(sf.streamId());
+                    default -> null;
+                };
+                if (stream != null)
+                    stream.onStreamFrameSent(frame);
             }
         }
 
@@ -386,20 +389,22 @@ public class PacketTracker
                 if (entry != null)
                 {
                     ackedLength += entry.length();
-                    Packet.WithFrames packet = entry.packet();
-                    output.add(packet);
-
-                    for (Frame frame : packet.frames())
+                    try (Packet.WithFrames packet = entry.packet())
                     {
-                        if (frame instanceof StreamFrame streamFrame)
+                        output.add(packet);
+
+                        for (Frame frame : packet.frames())
                         {
-                            QuicStream stream = session.getStream(streamFrame.streamId());
+                            QuicStream stream = switch (frame)
+                            {
+                                case ResetFrame rf -> session.getStream(rf.streamId());
+                                case StreamFrame sf -> session.getStream(sf.streamId());
+                                default -> null;
+                            };
                             if (stream != null)
-                                stream.onStreamFrameAcknowledged(streamFrame);
+                                stream.onStreamFrameAcknowledged(frame);
                         }
                     }
-
-                    packet.close();
                 }
             }
             if (LOG.isDebugEnabled())
@@ -470,12 +475,14 @@ public class PacketTracker
             {
                 for (Frame frame : packet.frames())
                 {
-                    if (frame instanceof StreamFrame streamFrame)
+                    QuicStream stream = switch (frame)
                     {
-                        QuicStream stream = session.getStream(streamFrame.streamId());
-                        if (stream != null)
-                            stream.onStreamFrameLost(streamFrame);
-                    }
+                        case ResetFrame rf -> session.getStream(rf.streamId());
+                        case StreamFrame sf -> session.getStream(sf.streamId());
+                        default -> null;
+                    };
+                    if (stream != null)
+                        stream.onStreamFrameLost(frame);
                 }
             }
 

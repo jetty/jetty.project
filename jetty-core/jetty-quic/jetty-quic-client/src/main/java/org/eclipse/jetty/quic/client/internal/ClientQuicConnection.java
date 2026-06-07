@@ -28,9 +28,11 @@ import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.CongestionController;
+import org.eclipse.jetty.quic.common.FlowController;
 import org.eclipse.jetty.quic.common.PacketTracker;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.StreamsController;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
@@ -76,7 +78,7 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     @Override
     public void onOpen()
     {
-        CongestionController congestionController = getClientQuicConfiguration().getCongestionControllerFactory().newCongestionController();
+        CongestionController congestionController = quicConfiguration.getCongestionControllerFactory().newCongestionController();
         PacketTracker packetTracker = new PacketTracker(getScheduler(), congestionController);
         packetTracker.setAcknowledgmentMaxDelay(quicConfiguration.getAcknowledgmentMaxDelay());
         packetTracker.setAcknowledgmentDelayExponent(quicConfiguration.getAcknowledgmentDelayExponent());
@@ -85,7 +87,9 @@ public class ClientQuicConnection extends QuicConnection implements Callback
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, false), new QuicMessagesGenerator(byteBufferPool, true));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         ClientTLSEngine tlsEngine = new ClientTLSEngine(protector);
-        session = new ClientQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, context);
+        FlowController flowController = quicConfiguration.getFlowControllerFactory().newFlowController();
+        StreamsController streamsController = quicConfiguration.getStreamsControllerFactory().newStreamsController();
+        session = new ClientQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, flowController, streamsController, context);
         session.setIdleTimeout(getEndPoint().getIdleTimeout());
         LifeCycle.start(session);
         session.connect(this);

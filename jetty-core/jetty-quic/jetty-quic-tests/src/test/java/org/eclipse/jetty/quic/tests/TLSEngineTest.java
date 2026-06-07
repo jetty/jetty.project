@@ -79,10 +79,15 @@ public class TLSEngineTest
         sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("server_keystore.p12"));
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.start();
-        ServerTLSConfiguration configuration = new ServerTLSConfiguration(new QuicServerQuicConfiguration(), sslContextFactory);
-        serverEngine = new ServerTLSEngine(packetProtector, configuration);
+        QuicServerQuicConfiguration quicConfiguration = new QuicServerQuicConfiguration();
+        TransportParameters parameters = new TransportParameters();
+        quicConfiguration.configure(parameters);
+        ServerTLSConfiguration serverTLSConfiguration = new ServerTLSConfiguration(quicConfiguration, sslContextFactory);
+        serverTLSConfiguration.setTransportParameters(parameters);
         // TODO: parametrize on the version.
-        serverEngine.initialize(QuicVersion.V1);
+        serverTLSConfiguration.setQuicVersion(QuicVersion.V1);
+        serverEngine = new ServerTLSEngine(packetProtector, serverTLSConfiguration);
+        serverEngine.initialize();
 
         serverOutMessages = new ArrayList<>();
         serverEngine.addMessageListener(new TLSEngine.MessageListener()

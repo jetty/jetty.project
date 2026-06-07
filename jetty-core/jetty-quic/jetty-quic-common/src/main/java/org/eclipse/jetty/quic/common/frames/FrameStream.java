@@ -19,6 +19,10 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.StreamFrame;
+import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,21 +38,39 @@ public class FrameStream
 {
     private static final Logger LOG = LoggerFactory.getLogger(FrameStream.class);
 
-    private final Queue<Frame.WithData> frames = new PriorityQueue<>();
-    private final Consumer<Frame.WithData> listener;
+    private final Queue<Frame.WithOffset> frames = new PriorityQueue<>();
+    private final Consumer<Frame.WithOffset> listener;
     private long offset;
+    private long finalOffset = -1;
 
-    public FrameStream(Consumer<Frame.WithData> listener)
+    public FrameStream(Consumer<Frame.WithOffset> listener)
     {
         this.listener = listener;
     }
 
-    public void offer(Frame.WithData frame)
+    public void offer(Frame.WithOffset frame)
     {
-        // Retain because it is stored for later use.
-        // When the frame is removed from the queue,
-        // it will be closed and therefore released.
-        frame.accept(RetainableByteBuffer::retain);
+        long finalSize = switch (frame)
+        {
+            case ResetFrame resetFrame -> resetFrame.finalSize();
+            case StreamFrame streamFrame when streamFrame.isEndStream() -> streamFrame.offset() + streamFrame.length();
+            default -> finalOffset;
+        };
+
+        // RFC-9000[4.5]: cannot change the final size.
+        if (finalOffset >= 0)
+        {
+            if (finalOffset != finalSize)
+                throw new QuicException(ErrorCode.FINAL_SIZE_ERROR, "invalid_final_size", frame.type());
+            if (offset == finalOffset)
+                return;
+        }
+
+        finalOffset = finalSize;
+
+        // Retain the frame because it is stored for later use.
+        // When the frame is removed from the queue, it will be released.
+        retain(frame);
         frames.offer(frame);
 
         if (LOG.isDebugEnabled())
@@ -56,7 +78,7 @@ public class FrameStream
 
         while (true)
         {
-            Frame.WithData candidate = frames.peek();
+            Frame.WithOffset candidate = frames.peek();
             if (candidate == null)
             {
                 if (LOG.isDebugEnabled())
@@ -93,17 +115,36 @@ public class FrameStream
                 continue;
             }
 
-            long length = offsetEnd - offset;
-            try (Frame.WithData newFrame = candidate.slice(offset, length))
+            switch (candidate)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("notifying, data slice {} on {}", newFrame, this);
-                frames.poll();
-                candidate.close();
-                offset += length;
-                notifyFrame(newFrame);
+                case ResetFrame resetFrame ->
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("notifying, reset {} on {}", resetFrame, this);
+                    frames.poll();
+                    notifyFrame(resetFrame);
+                }
+                case Frame.WithData dataFrame ->
+                {
+                    long length = offsetEnd - offset;
+                    try (Frame.WithData slice = dataFrame.slice(offset, length))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("notifying, data slice {} on {}", slice, this);
+                        frames.poll();
+                        dataFrame.close();
+                        offset += length;
+                        notifyFrame(slice);
+                    }
+                }
             }
         }
+    }
+
+    private void retain(Frame.WithOffset frame)
+    {
+        if (frame instanceof Frame.WithData dataFrame)
+            dataFrame.accept(RetainableByteBuffer::retain);
     }
 
     long offset()
@@ -111,7 +152,7 @@ public class FrameStream
         return offset;
     }
 
-    private void notifyFrame(Frame.WithData frame)
+    private void notifyFrame(Frame.WithOffset frame)
     {
         try
         {

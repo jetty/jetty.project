@@ -119,7 +119,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
     public long getMaxLocalStreams()
     {
-        return session.getSession().getLocalBidirectionalMaxStreams();
+        return session.getSession().getBidirectionalLocalStreamMaxCount();
     }
 
     @Override

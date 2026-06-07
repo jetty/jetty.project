@@ -37,9 +37,11 @@ import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.CongestionController;
+import org.eclipse.jetty.quic.common.FlowController;
 import org.eclipse.jetty.quic.common.PacketTracker;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.StreamsController;
 import org.eclipse.jetty.quic.common.packets.ConnectionId;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
@@ -263,7 +265,11 @@ public class ServerQuicConnection extends QuicConnection
             sessions.put(dstConnectionId, session);
             sessions.put(new ConnectionId(session.getSourceConnectionId()), session);
 
+            TransportParameters parameters = new TransportParameters();
+            quicConfiguration.configure(parameters);
+
             ServerTLSConfiguration tlsConfiguration = session.getTLSEngine().getTLSConfiguration();
+            tlsConfiguration.setTransportParameters(parameters);
             tlsConfiguration.setApplicationProtocols(connector.getProtocols());
 
             // RFC-9000[18.2].
@@ -287,7 +293,7 @@ public class ServerQuicConnection extends QuicConnection
 
     private ServerQuicSession newSession()
     {
-        CongestionController congestionController = getServerQuicConfiguration().getCongestionControllerFactory().newCongestionController();
+        CongestionController congestionController = quicConfiguration.getCongestionControllerFactory().newCongestionController();
         PacketTracker packetTracker = new PacketTracker(getScheduler(), congestionController);
         packetTracker.setAcknowledgmentMaxDelay(quicConfiguration.getAcknowledgmentMaxDelay());
         packetTracker.setAcknowledgmentDelayExponent(quicConfiguration.getAcknowledgmentDelayExponent());
@@ -297,8 +303,10 @@ public class ServerQuicConnection extends QuicConnection
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
         ServerTLSConfiguration tlsConfiguration = new ServerTLSConfiguration(getServerQuicConfiguration(), getSslContextFactory());
         ServerTLSEngine tlsEngine = new ServerTLSEngine(protector, tlsConfiguration);
+        FlowController flowController = quicConfiguration.getFlowControllerFactory().newFlowController();
+        StreamsController streamsController = quicConfiguration.getStreamsControllerFactory().newStreamsController();
         Session.Listener listener = getSessionListenerFactory().newListener();
-        return new ServerQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, listener);
+        return new ServerQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, flowController, streamsController, listener);
     }
 
     public void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers)

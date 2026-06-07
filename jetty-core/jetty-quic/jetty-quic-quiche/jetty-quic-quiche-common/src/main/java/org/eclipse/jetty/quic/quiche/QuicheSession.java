@@ -249,7 +249,7 @@ public abstract class QuicheSession extends AbstractSession
     }
 
     @Override
-    public long getLocalBidirectionalMaxStreams()
+    public long getBidirectionalLocalStreamMaxCount()
     {
         return Integer.MAX_VALUE;
     }

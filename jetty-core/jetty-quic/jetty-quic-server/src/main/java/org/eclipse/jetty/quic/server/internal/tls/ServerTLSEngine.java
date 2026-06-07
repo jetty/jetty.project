@@ -84,11 +84,10 @@ public class ServerTLSEngine extends TLSEngine
         this.tlsConfiguration = tlsConfiguration;
     }
 
-    public void initialize(QuicVersion quicVersion)
+    public void initialize()
     {
         try
         {
-            tlsConfiguration.setQuicVersion(quicVersion);
             SslContextFactory.Server sslContextFactory = tlsConfiguration.getSslContextFactory();
             keyStorePairs.addAll(loadKeyStore(sslContextFactory.getKeyStore(), sslContextFactory.getKeyStorePassword()));
         }

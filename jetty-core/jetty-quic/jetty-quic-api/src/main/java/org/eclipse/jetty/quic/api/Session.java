@@ -121,7 +121,7 @@ public interface Session
     SocketAddress getRemoteSocketAddress();
 
     /// @return the local bidirectional streams max count
-    long getLocalBidirectionalMaxStreams();
+    long getBidirectionalLocalStreamMaxCount();
 
     /// @return the idle timeout in milliseconds
     long getIdleTimeout();
