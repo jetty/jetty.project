@@ -17,7 +17,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
@@ -39,7 +38,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContextScopeListenerTest
 {
@@ -79,32 +77,21 @@ public class ContextScopeListenerTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             {
-                if  (req.getDispatcherType() == DispatcherType.ASYNC)
+                if (req.getDispatcherType() == DispatcherType.ASYNC)
                 {
-                    // wait until exitScope call has exited
-                    Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> _history.get(_history.size() - 1).equals("exitScope /initialPath"));
                     _history.add("asyncDispatch");
                     return;
                 }
 
                 _history.add("doGet");
-                CountDownLatch latch = new CountDownLatch(1);
                 AsyncContext asyncContext = req.startAsync();
                 asyncContext.start(() ->
                 {
                     _history.add("asyncRunnable");
                     asyncContext.dispatch("/dispatch");
-                    latch.countDown();
                 });
-
-                try
-                {
-                    assertTrue(latch.await(5, TimeUnit.SECONDS));
-                }
-                catch (InterruptedException e)
-                {
-                    throw new RuntimeException(e);
-                }
+                Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() ->
+                    _history.get(_history.size() - 1).equals("exitScope /initialPath"));
             }
         }), "/");
 
