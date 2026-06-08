@@ -204,7 +204,7 @@
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
     <jackson.version>2.22.0</jackson.version>
-    <jacoco.maven.plugin.version>0.8.14</jacoco.maven.plugin.version>
+    <jacoco.maven.plugin.version>0.8.15</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
     <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
     <jboss-threads.version>3.9.2</jboss-threads.version>
