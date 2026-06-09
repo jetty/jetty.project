@@ -42,7 +42,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.TypeUtil;
@@ -197,7 +196,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private boolean _softClose = false;
     private Interceptor _interceptor;
     private long _written;
-    private long _firstByteNanoTime = -1;
     private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
@@ -280,15 +278,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private void channelWrite(ByteBuffer content, boolean last, Callback callback)
     {
-        if (_firstByteNanoTime == -1)
-        {
-            long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
-            if (minDataRate > 0)
-                _firstByteNanoTime = NanoTime.now();
-            else
-                _firstByteNanoTime = Long.MAX_VALUE;
-        }
-
         _interceptor.write(content, last, callback);
     }
 
@@ -1471,7 +1460,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _written = 0;
             _writeListener = null;
             _onError = null;
-            _firstByteNanoTime = -1;
             _closedCallback = null;
         }
     }
