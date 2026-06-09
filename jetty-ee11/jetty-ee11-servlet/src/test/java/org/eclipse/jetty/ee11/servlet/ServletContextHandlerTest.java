@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -42,6 +43,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -81,6 +84,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -702,7 +706,6 @@ public class ServletContextHandlerTest
     public void createServer()
     {
         _server = new Server();
-
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
         __testServlets.set(0);
@@ -2734,6 +2737,11 @@ public class ServletContextHandlerTest
         }, "/servlet/*");
         _server.setHandler(context);
 
+        _server.setName("Test"); // Set server name to make JMX lookup predictable
+        // Enable JMX
+        MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+        MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
+        _server.addBean(mbeanContainer);
         _server.start();
 
         String rawRequest = """
@@ -2746,19 +2754,26 @@ public class ServletContextHandlerTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
 
-        ResourceFactory actualResourceFactory = ResourceFactory.of(context);
-        if (actualResourceFactory instanceof ResourceFactory.Tracking tracking)
-        {
-            List<Resource> trackedResources = tracking.getTrackedResources();
-            // Grab the original Jar FileSystem we are using.
-            FileSystem originalJarFileSystem = jarResource.getPath().getFileSystem();
+        // Use JMX to confirm status of ResourceFactory
+        String jmxName = "org.eclipse.jetty.util.resource:type=resourcefactoryinternals$lifecycle,context=Test/_context,id=0";
+        Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(jmxName), null);
+        assertEquals(1, mbeanNames.size());
+        ObjectName objectName = mbeanNames.iterator().next();
 
-            // Should only be tracking the original FileSystem from the `jarFileUri`,
-            // the call to ServletContext.getResourceAsStream() should not create a new FileSystem.
-            for (Resource resource: trackedResources)
-            {
-                assertThat("Tracked Resource: " + resource, resource.getPath().getFileSystem(), sameInstance(originalJarFileSystem));
-            }
+        Object trackedCount = mbeanServer.getAttribute(objectName, "trackedCount");
+        assertNotNull(trackedCount);
+        assertThat(trackedCount, instanceOf(Integer.class));
+        assertThat((Integer)trackedCount, is(1));
+
+        Object trackedResources = mbeanServer.getAttribute(objectName, "trackedResources");
+        assertNotNull(trackedResources);
+        assertThat(trackedResources, instanceOf(List.class));
+        if (trackedResources instanceof List<?> trackedList)
+        {
+            assertThat(trackedList.size(), is(1));
+            Resource tracked = (Resource)trackedList.get(0);
+            FileSystem originalJarFileSystem = jarResource.getPath().getFileSystem();
+            assertThat("Tracked Resource: " + tracked, tracked.getPath().getFileSystem(), sameInstance(originalJarFileSystem));
         }
     }
 }

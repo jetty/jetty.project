@@ -39,5 +39,10 @@ module org.eclipse.jetty.util
     exports org.eclipse.jetty.util.thread;
     exports org.eclipse.jetty.util.thread.strategy;
 
+    // Allow representation of
+    // opens org.eclipse.jetty.util.resource
+       // to java.management,
+         //  org.eclipse.jetty.jmx;
+
     uses org.eclipse.jetty.util.security.CredentialProvider;
 }

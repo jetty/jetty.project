@@ -772,10 +772,4 @@ public interface ResourceFactory
     {
     }
 
-    interface Tracking
-    {
-        int getTrackingCount();
-
-        List<Resource> getTrackedResources();
-    }
 }

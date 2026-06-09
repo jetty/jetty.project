@@ -19,11 +19,14 @@ import java.nio.file.FileSystem;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
  * Java NIO Path Resource with file system pooling. {@link FileSystem} implementations that must be closed
  * must use this class, for instance the one handling the `jar` scheme.
  */
+@ManagedObject("A Mounted Path Resource")
 public class MountedPathResource extends PathResource
 {
     private final FileSystem fileSystem;
@@ -62,11 +65,13 @@ public class MountedPathResource extends PathResource
         return URIUtil.unwrapContainer(container.getURI()).equals(containerUri);
     }
 
+    @ManagedAttribute("The FileSystem")
     public FileSystem getFileSystem()
     {
         return fileSystem;
     }
 
+    @ManagedAttribute("The Container Path")
     public Path getContainerPath()
     {
         return containerUri == null ? null : Path.of(containerUri);
