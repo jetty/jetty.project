@@ -101,6 +101,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.DoSHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.GracefulHandler;
+import org.eclipse.jetty.server.handler.MinimumDataRateHandler;
 import org.eclipse.jetty.server.handler.MovedContextHandler;
 import org.eclipse.jetty.server.handler.PathMappingsHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
@@ -1646,7 +1647,7 @@ public class HTTPServerDocs
 
         // Create and link the MinimumDataRateHandler to the Server.
         // Create the MinimumDataRateHandler with a minimum read rate of 1KB per second and no minimum write rate.
-        StatisticsHandler.MinimumDataRateHandler dataRateHandler = new StatisticsHandler.MinimumDataRateHandler(1024L, 0L);
+        MinimumDataRateHandler dataRateHandler = new MinimumDataRateHandler(1024L, 0L);
         server.setHandler(dataRateHandler);
 
         // Create a ContextHandlerCollection to hold contexts.

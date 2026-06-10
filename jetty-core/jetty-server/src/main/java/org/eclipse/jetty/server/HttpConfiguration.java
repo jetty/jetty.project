@@ -637,39 +637,47 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @return The minimum request data rate in bytes per second; or &lt;=0 for no limit
+     * @return The minimum request content data rate in bytes per second; use {@code <=0} for no minimum
+     * @deprecated use {@link org.eclipse.jetty.server.handler.MinimumDataRateHandler} instead
      */
     @ManagedAttribute("The minimum request content data rate in bytes per second")
+    @Deprecated(since = "12.1.11", forRemoval = true)
     public long getMinRequestDataRate()
     {
         return _minRequestDataRate;
     }
 
     /**
-     * @param bytesPerSecond The minimum request data rate in bytes per second; or &lt;=0 for no limit
+     * @param bytesPerSecond The minimum request content data rate in bytes per second; use {@code <=0} for no minimum
+     * @deprecated use {@link org.eclipse.jetty.server.handler.MinimumDataRateHandler} instead
      */
+    @Deprecated(since = "12.1.11", forRemoval = true)
     public void setMinRequestDataRate(long bytesPerSecond)
     {
         _minRequestDataRate = bytesPerSecond;
     }
 
     /**
-     * @return The minimum response data rate in bytes per second; or &lt;=0 for no limit
+     * @return The minimum response content data rate in bytes per second; use {@code <=0} for no minimum
+     * @deprecated use {@link org.eclipse.jetty.server.handler.MinimumDataRateHandler} instead
      */
     @ManagedAttribute("The minimum response content data rate in bytes per second")
+    @Deprecated(since = "12.1.11", forRemoval = true)
     public long getMinResponseDataRate()
     {
         return _minResponseDataRate;
     }
 
     /**
-     * <p>Sets an minimum response content data rate.</p>
+     * <p>Sets the minimum response content data rate.</p>
      * <p>The value is enforced only approximately - not precisely - due to the fact that
      * for efficiency reasons buffer writes may be comprised of both response headers and
      * response content.</p>
      *
-     * @param bytesPerSecond The minimum response data rate in bytes per second; or &lt;=0 for no limit
+     * @param bytesPerSecond The minimum response content data rate in bytes per second; use {@code <=0} for no minimum
+     * @deprecated use {@link org.eclipse.jetty.server.handler.MinimumDataRateHandler} instead
      */
+    @Deprecated(since = "12.1.11", forRemoval = true)
     public void setMinResponseDataRate(long bytesPerSecond)
     {
         _minResponseDataRate = bytesPerSecond;

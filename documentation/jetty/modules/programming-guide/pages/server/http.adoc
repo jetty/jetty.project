@@ -1179,13 +1179,35 @@ Server
         └── ContextHandler N
 ----
 
-It is possible to act on those statistics by subclassing `StatisticsHandler`.
-For instance, `StatisticsHandler.MinimumDataRateHandler` can be used to enforce a minimum read rate and a minimum write rate based of the figures collected by the `StatisticsHandler`:
+[[handler-use-min-data-rate]]
+=== MinimumDataRateHandler
+
+`MinimumDataRateHandler` is a subclass of `StatisticsHandler` that enforces a minimum request content read rate and a minimum response content write rate based of the figures that it collects:
 
 [,java,indent=0]
 ----
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=dataRateHandler]
 ----
+
+The `Handler` tree structure looks like the following:
+
+[,screen]
+----
+Server
+└── MinimumDataRateHandler
+    └── ContextHandlerCollection
+        ├── ContextHandler 1
+        :── ...
+        └── ContextHandler N
+----
+
+When minimum data rate is not enforced, bad clients may cause threads to be blocked on the server, and excessive memory consumption (as requests and responses stay in memory for longer than expected).
+
+Configuring the minimum read rate protects the server against bad clients that send request content very slowly, without tripping the idle timeout.
+When the server detects that the minimum threshold is not reached, it will abort the request, freeing server resources.
+
+Configuring the minimum write rate protects the server against bad clients that read response content very slowly, without tripping the idle timeout, and cause TCP congestion (for HTTP/1.1) or flow control stalls (for HTTP/2 and HTTP/3).
+When the server detects that the minimum threshold is not reached, it will abort the response, freeing server resources.
 
 [[handler-use-events]]
 ==== EventsHandler
