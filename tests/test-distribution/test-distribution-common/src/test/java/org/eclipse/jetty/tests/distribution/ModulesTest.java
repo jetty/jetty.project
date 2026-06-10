@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import static org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest.START_TIMEOUT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ModulesTest
 {
@@ -121,6 +122,28 @@ public class ModulesTest
             assertThat(run.awaitConsoleLogsFor("Started oejs.Server", START_TIMEOUT, TimeUnit.SECONDS), is(true));
             run.stop();
             assertThat(run.awaitFor(START_TIMEOUT, TimeUnit.SECONDS), is(true));
+        }
+    }
+
+    @Test
+    public void testMinDataRate() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .build();
+
+        // Add module.
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=min-data-rate"))
+        {
+            assertTrue(run1.awaitForStart());
+            assertThat(run1.getExitValue(), is(0));
+
+            // Verify that Jetty starts.
+            try (JettyHomeTester.Run run2 = distribution.start())
+            {
+                assertTrue(run2.awaitForJettyStart());
+            }
         }
     }
 }

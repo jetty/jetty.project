@@ -581,6 +581,18 @@ However, the RMI server is configured to bind to `localhost`, i.e. `127.0.0.1`.
 
 If the system property `java.rmi.server.hostname` is not specified, the RMI client will try to connect to `127.0.1.1` (because that's what in the RMI stub) and fail because nothing is listening on that address.
 
+[[min-data-rate]]
+== Module `min-data-rate`
+
+The `min-data-rate` installs the `MinimumDataRateHandler` at the root of the `Handler` tree.
+`MinimumDataRateHandler` enables support to enforce minimum data rates for reading request content and writing response content, as explained in xref:programming-guide:server/http.adoc#handler-use-min-data-rate[this section].
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/min-data-rate.mod[tags=documentation]
+----
+
 [[openid]]
 == Module `openid`
 

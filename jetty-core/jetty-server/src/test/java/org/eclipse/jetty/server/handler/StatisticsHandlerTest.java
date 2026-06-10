@@ -20,12 +20,8 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ConnectionStatistics;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
@@ -45,10 +41,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -82,162 +76,6 @@ public class StatisticsHandlerTest
     {
         _server.stop();
         _server.join();
-    }
-
-    @Test
-    public void testMinimumDataReadRateHandler() throws Exception
-    {
-        StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(1100, 0);
-        mdrh.setHandler(new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                while (true)
-                {
-                    Content.Chunk chunk = request.read();
-                    if (chunk == null)
-                    {
-                        request.demand(() -> handle(request, response, callback));
-                        return true;
-                    }
-
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        callback.failed(chunk.getFailure());
-                        return true;
-                    }
-
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        callback.succeeded();
-                        return true;
-                    }
-                }
-            }
-        });
-
-        _latchHandler.setHandler(mdrh);
-        AtomicReference<String> messageRef = new AtomicReference<>();
-        _server.setErrorHandler((request, response, callback) ->
-        {
-            messageRef.set((String)request.getAttribute(ErrorHandler.ERROR_MESSAGE));
-            callback.succeeded();
-            return true;
-        });
-        _server.start();
-
-        String request = """
-            POST / HTTP/1.1\r
-            Host: localhost\r
-            Content-Length: 1000\r
-            \r
-            """;
-
-        try (StacklessLogging ignore = new StacklessLogging(Response.class))
-        {
-            LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request);
-
-            // send 10 byte every 10 ms -> should avg to ~1000 bytes/s
-            for (int i = 0; i < 100; i++)
-            {
-                Thread.sleep(10);
-                endPoint.addInput(ByteBuffer.allocate(10));
-            }
-
-            _latchHandler.await();
-            AtomicInteger statusHolder = new AtomicInteger();
-            endPoint.waitForResponse(false, 5, TimeUnit.SECONDS, statusHolder::set);
-            assertThat(statusHolder.get(), is(500));
-            assertThat(messageRef.get(), startsWith("java.util.concurrent.TimeoutException: read rate is too low"));
-        }
-    }
-
-    @Test
-    public void testMinimumDataWriteRateHandler() throws Exception
-    {
-        AtomicReference<Throwable> exceptionRef = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        int expectedContentLength = 1000;
-        StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                write(response, 0, new Callback()
-                {
-                    @Override
-                    public void succeeded()
-                    {
-                        callback.succeeded();
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        callback.failed(x);
-                        exceptionRef.set(x);
-                        latch.countDown();
-                    }
-                });
-                return true;
-            }
-
-            private void write(Response response, int counter, Callback finalCallback)
-            {
-                try
-                {
-                    Thread.sleep(1);
-                }
-                catch (InterruptedException e)
-                {
-                    // ignore
-                }
-
-                if (counter < expectedContentLength)
-                {
-                    Callback cb = new Callback()
-                    {
-                        @Override
-                        public void succeeded()
-                        {
-                            write(response, counter + 1, finalCallback);
-                        }
-
-                        @Override
-                        public void failed(Throwable x)
-                        {
-                            finalCallback.failed(x);
-                        }
-                    };
-                    response.write(false, ByteBuffer.allocate(1), cb);
-                }
-                else
-                {
-                    response.write(true, ByteBuffer.allocate(1), finalCallback);
-                }
-            }
-        }, 0, 1000);
-
-        _latchHandler.setHandler(mdrh);
-        _server.start();
-
-        String request = """
-                GET / HTTP/1.1\r
-                Host: localhost\r
-                \r
-                """;
-
-        LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request);
-
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-        AtomicInteger statusHolder = new AtomicInteger();
-        ByteBuffer byteBuffer = endPoint.waitForResponse(false, 5, TimeUnit.SECONDS, statusHolder::set);
-        assertThat(statusHolder.get(), is(500));
-        assertThat(exceptionRef.get(), instanceOf(TimeoutException.class));
-        assertThat(exceptionRef.get().getMessage(), startsWith("write rate is too low"));
     }
 
     @Test
