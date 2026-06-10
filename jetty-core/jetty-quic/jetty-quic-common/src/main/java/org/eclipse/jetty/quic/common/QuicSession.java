@@ -533,9 +533,9 @@ public abstract class QuicSession extends AbstractSession
 
         stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
-        Long maxData = bidirectional ?
-            transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL) :
-            transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
+        Long maxData = bidirectional
+            ? transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
+            : transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
         if (maxData != null)
             stream.updateSentMaxOffset(maxData);
 

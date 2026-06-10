@@ -175,9 +175,6 @@ public class QuicStream extends AbstractStream
                 dataQueue.offer(Content.Chunk.EOF);
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("reading {} on {}", chunk, this);
-
         boolean terminated = false;
         if (chunk.isLast())
         {
@@ -186,6 +183,12 @@ public class QuicStream extends AbstractStream
                 terminated = closeState.remoteClose();
             }
         }
+
+        // TODO: not the chunk size, must be the offset!
+        session.getFlowController().onDataConsumed(session, this, chunk.size());
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("reading {} on {}", chunk, this);
 
         if (terminated)
             session.remove(this);

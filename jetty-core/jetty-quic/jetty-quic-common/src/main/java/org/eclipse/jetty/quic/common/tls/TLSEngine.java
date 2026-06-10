@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Objects;
 import javax.crypto.Cipher;
 import javax.crypto.KDF;
 import javax.crypto.Mac;
@@ -94,6 +95,7 @@ public abstract class TLSEngine
         this.protector = protector;
         tlsGenerator = new QuicMessagesGenerator(protector.getByteBufferPool(), client);
         tlsParser = new QuicMessagesParser(client);
+        cipherSuite = CipherSuite.TLS_AES_128_GCM_SHA256;
     }
 
     public PacketProtector getPacketProtector()
@@ -173,7 +175,7 @@ public abstract class TLSEngine
 
     public void setCipherSuite(CipherSuite cipherSuite)
     {
-        this.cipherSuite = cipherSuite;
+        this.cipherSuite = Objects.requireNonNull(cipherSuite);
     }
 
     public String getApplicationProtocol()
