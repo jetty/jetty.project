@@ -118,7 +118,11 @@ class StreamFlusher extends CryptoFlusher
         QuicSession session = getQuicSession();
         for (MaxDataEntry entry : maxDataProcessing)
         {
-            session.updateSendMaxData(entry.stream(), entry.maxData());
+            QuicStream stream = entry.stream();
+            if (stream == null)
+                session.updateSentMaxOffset(entry.maxData());
+            else
+                stream.updateSentMaxOffset(entry.maxData());
         }
         maxDataProcessing.clear();
     }
@@ -131,25 +135,21 @@ class StreamFlusher extends CryptoFlusher
             case StreamFrame streamFrame ->
             {
                 QuicSession session = getQuicSession();
-                long sessionWindow = session.getSendWindow(null);
+                long sessionWindow = session.getSendWindow();
+
+                // TODO: wrong logic: I may generate N bytes but not all of them, and I still need to send DATA_BLOCKED.
                 if (sessionWindow == 0)
                 {
                     if (session.stall())
-                    {
-                        // TODO: optimize immediate generation if there is room.
-                        sendFrames(List.of(new DataBlockedFrame(session.getSendData(null))), NOOP/*TODO: failures*/);
-                    }
+                        sendFrames(List.of(new DataBlockedFrame(session.getSentOffset())), NOOP);
                     yield null;
                 }
 
-                long streamWindow = session.getSendWindow(stream);
+                long streamWindow = stream.getSendWindow();
                 if (streamWindow == 0)
                 {
                     if (stream.stall())
-                    {
-                        // TODO: optimize immediate generation if there is room.
-                        sendFrames(List.of(new StreamDataBlockedFrame(stream.getId(), session.getSendData(stream))), NOOP/*TODO: failures*/);
-                    }
+                        sendFrames(List.of(new StreamDataBlockedFrame(stream.getId(), stream.getSentOffset())), NOOP);
                     yield null;
                 }
 
@@ -158,13 +158,13 @@ class StreamFlusher extends CryptoFlusher
 
                 if (streamFrame.offset() < 0)
                 {
-                    long offset = session.getSendData(stream);
+                    long offset = stream.getSentOffset();
                     if (LOG.isDebugEnabled())
                         LOG.debug("generating offset={} {} for stream {} on {}", offset, frame, stream, this);
-                    GeneratedFrame generated = getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, maxBytes);
-                    // Update the send data now, even if the frame could be lost.
+                    GeneratedFrame generated = getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, sendWindow, maxBytes);
+                    // Update the sent offset now, even if the frame could be lost.
                     if (generated != null)
-                        session.updateSendData(stream, ((StreamFrame)generated.frame()).remaining());
+                        session.updateSentOffset(stream, offset + ((StreamFrame)generated.frame()).remaining());
                     yield generated;
                 }
                 else
@@ -173,14 +173,14 @@ class StreamFlusher extends CryptoFlusher
                     if (LOG.isDebugEnabled())
                         LOG.debug("re-generating {} for stream {} on {}", frame, stream, this);
                     long offset = streamFrame.offset() + (streamFrame.length() - streamFrame.remaining());
-                    yield getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, maxBytes);
+                    yield getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, sendWindow, maxBytes);
                 }
             }
             case ResetFrame resetFrame ->
             {
                 if (resetFrame.finalSize() < 0)
                 {
-                    long finalSize = getQuicSession().getSendData(stream);
+                    long finalSize = stream.getSentOffset();
                     if (LOG.isDebugEnabled())
                         LOG.debug("generating finalSize={} {} for stream {} on {}", finalSize, frame, stream, this);
                     yield getFramesGenerator().generateResetStreamFrame(framesAccumulator, resetFrame, finalSize, maxBytes);

@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class MaxStreamsTest extends AbstractQuicTest
+public class StreamsControlTest extends AbstractQuicTest
 {
     @Test
     public void testMaxStreams() throws Exception

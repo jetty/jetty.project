@@ -35,42 +35,42 @@ import org.eclipse.jetty.util.Promise;
 /// The constant budget is [QuicConfiguration#getBidirectionalMaxStreams()] for
 /// bidirectional streams, and [QuicConfiguration#getUnidirectionalMaxStreams()]
 /// for unidirectional streams.
-public class DefaultStreamsControllerFactory implements StreamsController.Factory
+public class DefaultStreamsController implements StreamsController
 {
+    private final AtomicLong biClosed = new AtomicLong();
+    private final AtomicLong uniClosed = new AtomicLong();
+
     @Override
-    public StreamsController newStreamsController()
+    public void onStreamCreated(Stream stream)
     {
-        return new DefaultStreamsController();
     }
 
-    private static class DefaultStreamsController implements StreamsController
+    @Override
+    public void onStreamTerminated(Stream stream)
     {
-        private final AtomicLong biClosed = new AtomicLong();
-        private final AtomicLong uniClosed = new AtomicLong();
+        boolean bidirectional = stream.isBidirectional();
+        QuicSession session = (QuicSession)stream.getSession();
 
+        QuicConfiguration quicConfiguration = session.getQuicConfiguration();
+        long budget = bidirectional ? quicConfiguration.getBidirectionalMaxStreams() : quicConfiguration.getUnidirectionalMaxStreams();
+
+        long max = bidirectional ? session.getBidirectionalRemoteStreamMaxCount() : session.getUnidirectionalRemoteStreamMaxCount();
+        long opened = bidirectional ? session.getBidirectionalRemoteStreamCount() : session.getUnidirectionalRemoteStreamCount();
+        long closed = (bidirectional ? biClosed : uniClosed).incrementAndGet();
+        long newMax = closed + budget;
+
+        boolean needsMore = newMax > max;
+        boolean hasEnough = max - opened > budget / 2;
+        if (needsMore && !hasEnough)
+            session.maxStreams(new MaxStreamsFrame(newMax, bidirectional), Promise.Invocable.noop());
+    }
+
+    public static class Factory implements StreamsController.Factory
+    {
         @Override
-        public void onStreamCreated(Stream stream)
+        public StreamsController newStreamsController()
         {
-        }
-
-        @Override
-        public void onStreamTerminated(Stream stream)
-        {
-            boolean bidirectional = stream.isBidirectional();
-            QuicSession session = (QuicSession)stream.getSession();
-
-            QuicConfiguration quicConfiguration = session.getQuicConfiguration();
-            long budget = bidirectional ? quicConfiguration.getBidirectionalMaxStreams() : quicConfiguration.getUnidirectionalMaxStreams();
-
-            long max = bidirectional ? session.getBidirectionalRemoteStreamMaxCount() : session.getUnidirectionalRemoteStreamMaxCount();
-            long opened = bidirectional ? session.getBidirectionalRemoteStreamCount() : session.getUnidirectionalRemoteStreamCount();
-            long closed = (bidirectional ? biClosed : uniClosed).incrementAndGet();
-            long newMax = closed + budget;
-
-            boolean needsMore = newMax > max;
-            boolean hasEnough = max - opened > budget / 2;
-            if (needsMore && !hasEnough)
-                session.maxStreams(new MaxStreamsFrame(newMax, bidirectional), Promise.Invocable.noop());
+            return new DefaultStreamsController();
         }
     }
 }

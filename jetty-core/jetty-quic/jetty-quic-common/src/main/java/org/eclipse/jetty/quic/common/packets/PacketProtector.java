@@ -14,13 +14,19 @@
 package org.eclipse.jetty.quic.common.packets;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.security.GeneralSecurityException;
+import java.security.spec.AlgorithmParameterSpec;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.crypto.Cipher;
 import javax.crypto.KDF;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.ChaCha20ParameterSpec;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.HKDFParameterSpec;
+import javax.crypto.spec.IvParameterSpec;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -80,24 +86,25 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         try
         {
-            KeyManager keyManager = new KeyManager(EncryptionLevel.INITIAL);
+            CipherSuite cipherSuite = CipherSuite.TLS_AES_128_GCM_SHA256;
+            KeyManager keyManager = new KeyManager(EncryptionLevel.INITIAL, cipherSuite);
             if (keyManagers.put(EncryptionLevel.INITIAL, keyManager) != null)
                 throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.INITIAL);
 
             // RFC 9001, 5.2: initial secrets use SHA256.
             KDF kdf = KDF.getInstance("HKDF-SHA256");
             HKDFParameterSpec.Extract spec = HKDFParameterSpec.ofExtract().addSalt(QuicCrypto.initialSalt(quicVersion)).addIKM(inputKeyMaterial).extractOnly();
-            SecretKey prk = kdf.deriveKey("InitialPseudoRandom", spec);
+            SecretKey prk = kdf.deriveKey("Generic", spec);
 
-            SecretKey clientTraffic = kdf.deriveKey("InitialClientTraffic", HKDF.expandLabel(prk, "client in", 32));
-            SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), 16));
-            SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
-            SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), 16));
+            SecretKey clientTraffic = kdf.deriveKey("Generic", HKDF.expandLabel(prk, "client in", 32));
+            SecretKey clientEncryption = kdf.deriveKey(cipherSuite.algorithm(), HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), 16));
+            SecretKey clientInitialization = kdf.deriveKey("Generic", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
+            SecretKey clientProtection = kdf.deriveKey(cipherSuite.algorithm(), HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), 16));
 
-            SecretKey serverTraffic = kdf.deriveKey("InitialServerTraffic", HKDF.expandLabel(prk, "server in", 32));
-            SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), 16));
-            SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
-            SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), 16));
+            SecretKey serverTraffic = kdf.deriveKey("Generic", HKDF.expandLabel(prk, "server in", 32));
+            SecretKey serverEncryption = kdf.deriveKey(cipherSuite.algorithm(), HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), 16));
+            SecretKey serverInitialization = kdf.deriveKey("Generic", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
+            SecretKey serverProtection = kdf.deriveKey(cipherSuite.algorithm(), HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), 16));
 
             if (client)
             {
@@ -123,7 +130,7 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         try
         {
-            KeyManager keyManager = new KeyManager(EncryptionLevel.HANDSHAKE);
+            KeyManager keyManager = new KeyManager(EncryptionLevel.HANDSHAKE, cipherSuite);
             if (keyManagers.put(EncryptionLevel.HANDSHAKE, keyManager) != null)
                 throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.HANDSHAKE);
 
@@ -144,14 +151,14 @@ public class PacketProtector implements Encrypter, Decrypter
             int keyLength = cipherSuite.keyLength();
 
             SecretKey clientTraffic = kdf.deriveKey("Generic", HKDF.expandLabel(handshakeSecret, "c hs traffic", tlsHash, hashLength));
-            SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
-            SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
-            SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
+            SecretKey clientEncryption = kdf.deriveKey(cipherSuite.algorithm(), HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
+            SecretKey clientInitialization = kdf.deriveKey("Generic", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
+            SecretKey clientProtection = kdf.deriveKey(cipherSuite.algorithm(), HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
 
             SecretKey serverTraffic = kdf.deriveKey("Generic", HKDF.expandLabel(handshakeSecret, "s hs traffic", tlsHash, hashLength));
-            SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
-            SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
-            SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
+            SecretKey serverEncryption = kdf.deriveKey(cipherSuite.algorithm(), HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
+            SecretKey serverInitialization = kdf.deriveKey("Generic", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
+            SecretKey serverProtection = kdf.deriveKey(cipherSuite.algorithm(), HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
 
             if (client)
             {
@@ -177,7 +184,7 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         try
         {
-            KeyManager keyManager = new KeyManager(EncryptionLevel.ONE_RTT);
+            KeyManager keyManager = new KeyManager(EncryptionLevel.ONE_RTT, cipherSuite);
             if (keyManagers.put(EncryptionLevel.ONE_RTT, keyManager) != null)
                 throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.ONE_RTT);
 
@@ -185,22 +192,22 @@ public class PacketProtector implements Encrypter, Decrypter
             int hashLength = cipherSuite.hashLength();
             KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
 
-            SecretKey derivedSecret = kdf.deriveKey("ApplicationDerived", HKDF.expandLabel(handshakeSecret, "derived", transcriptHash.getEmptyHash(), hashLength));
+            SecretKey derivedSecret = kdf.deriveKey("Generic", HKDF.expandLabel(handshakeSecret, "derived", transcriptHash.getEmptyHash(), hashLength));
             HKDFParameterSpec.Extract extract = HKDFParameterSpec.ofExtract().addSalt(derivedSecret).addIKM(new byte[hashLength]).extractOnly();
-            masterSecret = kdf.deriveKey("ApplicationMaster", extract);
+            masterSecret = kdf.deriveKey("Generic", extract);
 
             byte[] tlsHash = transcriptHash.getHash();
             int keyLength = cipherSuite.keyLength();
 
-            SecretKey clientTraffic = kdf.deriveKey("ApplicationClientTraffic", HKDF.expandLabel(masterSecret, "c ap traffic", tlsHash, hashLength));
-            SecretKey clientEncryption = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
-            SecretKey clientInitialization = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
-            SecretKey clientProtection = kdf.deriveKey("AES", HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
+            SecretKey clientTraffic = kdf.deriveKey("Generic", HKDF.expandLabel(masterSecret, "c ap traffic", tlsHash, hashLength));
+            SecretKey clientEncryption = kdf.deriveKey(cipherSuite.algorithm(), HKDF.expandLabel(clientTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
+            SecretKey clientInitialization = kdf.deriveKey("Generic", HKDF.expandLabel(clientTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
+            SecretKey clientProtection = kdf.deriveKey(cipherSuite.algorithm(), HKDF.expandLabel(clientTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
 
-            SecretKey serverTraffic = kdf.deriveKey("ApplicationServerTraffic", HKDF.expandLabel(masterSecret, "s ap traffic", tlsHash, hashLength));
-            SecretKey serverEncryption = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
-            SecretKey serverInitialization = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
-            SecretKey serverProtection = kdf.deriveKey("AES", HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
+            SecretKey serverTraffic = kdf.deriveKey("Generic", HKDF.expandLabel(masterSecret, "s ap traffic", tlsHash, hashLength));
+            SecretKey serverEncryption = kdf.deriveKey(cipherSuite.algorithm(), HKDF.expandLabel(serverTraffic, QuicCrypto.encryptionLabel(quicVersion), keyLength));
+            SecretKey serverInitialization = kdf.deriveKey("Generic", HKDF.expandLabel(serverTraffic, QuicCrypto.initializationVectorLabel(quicVersion), 12));
+            SecretKey serverProtection = kdf.deriveKey(cipherSuite.algorithm(), HKDF.expandLabel(serverTraffic, QuicCrypto.headerProtectionLabel(quicVersion), keyLength));
 
             if (client)
             {
@@ -228,7 +235,7 @@ public class PacketProtector implements Encrypter, Decrypter
         int hashLength = cipherSuite.hashLength();
         KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
         byte[] tlsHash = transcriptHash.getHash();
-        SecretKey resumptionMasterSecret = kdf.deriveKey("AES", HKDF.expandLabel(masterSecret, "res master", tlsHash, hashLength));
+        SecretKey resumptionMasterSecret = kdf.deriveKey("Generic", HKDF.expandLabel(masterSecret, "res master", tlsHash, hashLength));
 
         // The master secret is not needed anymore, as both the application
         // keys and the resumption master secret have been generated.
@@ -295,10 +302,12 @@ public class PacketProtector implements Encrypter, Decrypter
         private final ReadKeys readKeys = new ReadKeys();
         private final WriteKeys writeKeys = new WriteKeys();
         private final EncryptionLevel encryptionLevel;
+        private final CipherSuite cipherSuite;
 
-        private KeyManager(EncryptionLevel encryptionLevel)
+        private KeyManager(EncryptionLevel encryptionLevel, CipherSuite cipherSuite)
         {
             this.encryptionLevel = encryptionLevel;
+            this.cipherSuite = cipherSuite;
         }
 
         public SecretKey getTrafficSecretKey(boolean input)
@@ -353,6 +362,41 @@ public class PacketProtector implements Encrypter, Decrypter
             }
         }
 
+        private Cipher newPayloadCipher(int cipherMode, SecretKey secretKey, byte[] nonce) throws GeneralSecurityException
+        {
+            Cipher cipher = Cipher.getInstance(cipherSuite.payloadCipherName());
+            AlgorithmParameterSpec params = switch (cipherSuite)
+            {
+                case TLS_AES_128_GCM_SHA256, TLS_AES_256_GCM_SHA384 -> new GCMParameterSpec(cipherSuite.tagLength() * 8, nonce);
+                case TLS_CHACHA20_POLY1305_SHA256 -> new IvParameterSpec(nonce);
+            };
+            cipher.init(cipherMode, secretKey, params);
+            return cipher;
+        }
+
+        private byte[] newHeaderCipherMask(SecretKey secretKey, byte[] sample) throws GeneralSecurityException
+        {
+            return switch (cipherSuite)
+            {
+                case TLS_AES_128_GCM_SHA256, TLS_AES_256_GCM_SHA384 ->
+                {
+                    // RFC-9001[5.4.3].
+                    Cipher cipher = Cipher.getInstance(cipherSuite.headerCipherName());
+                    cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+                    yield cipher.doFinal(sample);
+                }
+                case TLS_CHACHA20_POLY1305_SHA256 ->
+                {
+                    // RFC-9001[5.4.4].
+                    int blockCounter = ByteBuffer.wrap(sample, 0, 4).order(ByteOrder.LITTLE_ENDIAN).getInt();
+                    byte[] nonce = Arrays.copyOfRange(sample, 4, sample.length);
+                    Cipher cipher = Cipher.getInstance(cipherSuite.headerCipherName());
+                    cipher.init(Cipher.ENCRYPT_MODE, secretKey, new ChaCha20ParameterSpec(nonce, blockCounter));
+                    yield cipher.doFinal(new byte[5]);
+                }
+            };
+        }
+
         /// QUIC requires at least two generations of read keys,
         /// since a key update may arrive before a packet that
         /// was sent before the key update, encrypted with previous
@@ -395,7 +439,7 @@ public class PacketProtector implements Encrypter, Decrypter
                     byteBuffer.position(byteBuffer.position() + tokenLength);
                 }
                 // The payload length at this point also includes
-                // the packet number length and the 16-bytes AEAD tag.
+                // the packet number length and the AEAD tag.
                 int payloadLength = VarLenInt.decodeInt(byteBuffer);
                 int packetNumberPosition = byteBuffer.position();
                 // Packet number length is at most 4 bytes.
@@ -403,10 +447,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 byte[] sample = new byte[16];
                 byteBuffer.get(sample);
 
-                // TODO: algorithm name only valid for AES ciphers, not CHACHA20.
-                Cipher ecbCipher = Cipher.getInstance("AES/ECB/NoPadding");
-                ecbCipher.init(Cipher.ENCRYPT_MODE, protection);
-                byte[] mask = ecbCipher.doFinal(sample);
+                byte[] mask = newHeaderCipherMask(protection, sample);
 
                 int firstByte = byteBuffer.get(position) & 0xFF;
                 // Long header packets mask 4 bits.
@@ -438,13 +479,10 @@ public class PacketProtector implements Encrypter, Decrypter
                 long packetNumber = packetNumbers.decode(encryptionLevel, encoded);
 
                 byte[] nonce = nonce(initialization, packetNumber);
-                // TODO: algorithm name only valid for AES ciphers, not CHACHA20.
-                //  Same for GCMParameterSpec, and the length depends on the cipher.
-                Cipher gcmCipher = Cipher.getInstance("AES/GCM/NoPadding");
-                gcmCipher.init(Cipher.DECRYPT_MODE, encryption, new GCMParameterSpec(128, nonce));
+                Cipher payloadCipher = newPayloadCipher(Cipher.DECRYPT_MODE, encryption, nonce);
 
                 // Supply AAD as the plaintext packet header.
-                gcmCipher.updateAAD(decryptedHeader);
+                payloadCipher.updateAAD(decryptedHeader);
                 decryptedHeader.flip();
 
                 // Decrypt the payload.
@@ -453,7 +491,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 RetainableByteBuffer decryptedPayloadBuffer = byteBufferPool.acquire(payloadLength, true);
                 ByteBuffer decryptedPayload = decryptedPayloadBuffer.getByteBuffer();
                 decryptedPayload.clear();
-                gcmCipher.doFinal(encryptedPayload, decryptedPayload);
+                payloadCipher.doFinal(encryptedPayload, decryptedPayload);
                 decryptedPayload.flip();
 
                 return new PacketBuffers(decryptedHeaderBuffer, decryptedPayloadBuffer);
@@ -475,9 +513,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 byte[] sample = new byte[16];
                 byteBuffer.get(sample);
 
-                Cipher ecbCipher = Cipher.getInstance("AES/ECB/NoPadding");
-                ecbCipher.init(Cipher.ENCRYPT_MODE, protection);
-                byte[] mask = ecbCipher.doFinal(sample);
+                byte[] mask = newHeaderCipherMask(protection, sample);
 
                 int firstByte = byteBuffer.get(position) & 0xFF;
                 // Short header packets mask 5 bits.
@@ -508,11 +544,10 @@ public class PacketProtector implements Encrypter, Decrypter
                 long packetNumber = packetNumbers.decode(encryptionLevel, encoded);
 
                 byte[] nonce = nonce(initialization, packetNumber);
-                Cipher gcmCipher = Cipher.getInstance("AES/GCM/NoPadding");
-                gcmCipher.init(Cipher.DECRYPT_MODE, encryption, new GCMParameterSpec(128, nonce));
+                Cipher payloadCipher = newPayloadCipher(Cipher.DECRYPT_MODE, encryption, nonce);
 
                 // Supply AAD as the plaintext packet header.
-                gcmCipher.updateAAD(decryptedHeader);
+                payloadCipher.updateAAD(decryptedHeader);
                 decryptedHeader.flip();
 
                 // Decrypt the payload.
@@ -524,7 +559,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 RetainableByteBuffer decryptedPayloadBuffer = byteBufferPool.acquire(payloadLength, true);
                 ByteBuffer decryptedPayload = decryptedPayloadBuffer.getByteBuffer();
                 decryptedPayload.clear();
-                gcmCipher.doFinal(encryptedPayload, decryptedPayload);
+                payloadCipher.doFinal(encryptedPayload, decryptedPayload);
                 decryptedPayload.flip();
 
                 return new PacketBuffers(decryptedHeaderBuffer, decryptedPayloadBuffer);
@@ -564,22 +599,20 @@ public class PacketProtector implements Encrypter, Decrypter
             private PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer.Mutable payload) throws Exception
             {
                 byte[] nonce = nonce(initialization, packetNumber);
-
-                Cipher gcmCipher = Cipher.getInstance("AES/GCM/NoPadding");
-                gcmCipher.init(Cipher.ENCRYPT_MODE, encryption, new GCMParameterSpec(128, nonce));
+                Cipher payloadCipher = newPayloadCipher(Cipher.ENCRYPT_MODE, encryption, nonce);
 
                 // Supply AAD as the plaintext packet header.
                 ByteBuffer headerByteBuffer = header.getByteBuffer();
-                gcmCipher.updateAAD(headerByteBuffer);
+                payloadCipher.updateAAD(headerByteBuffer);
                 headerByteBuffer.flip();
 
                 // Encrypt the payload.
-                // AEAD encryption produces 16 additional bytes.
+                // AEAD encryption produces additional tag bytes.
                 ByteBuffer payloadByteBuffer = payload.getByteBuffer();
-                RetainableByteBuffer.Mutable encryptedPayloadBuffer = byteBufferPool.acquire(payloadByteBuffer.remaining() + 16, true);
+                RetainableByteBuffer.Mutable encryptedPayloadBuffer = byteBufferPool.acquire(payloadByteBuffer.remaining() + cipherSuite.tagLength(), true);
                 ByteBuffer encryptedPayload = encryptedPayloadBuffer.getByteBuffer();
                 encryptedPayload.clear();
-                gcmCipher.doFinal(payloadByteBuffer, encryptedPayload);
+                payloadCipher.doFinal(payloadByteBuffer, encryptedPayload);
                 encryptedPayload.flip();
 
                 // RFC 9001, 5.4.2: header protection sample.
@@ -590,9 +623,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 byte[] sample = new byte[16];
                 encryptedPayload.get(sampleOffset, sample);
 
-                Cipher ecbCipher = Cipher.getInstance("AES/ECB/NoPadding");
-                ecbCipher.init(Cipher.ENCRYPT_MODE, protection);
-                byte[] mask = ecbCipher.doFinal(sample);
+                byte[] mask = newHeaderCipherMask(protection, sample);
 
                 RetainableByteBuffer.Mutable encryptedHeaderBuffer = byteBufferPool.acquire(headerByteBuffer.remaining(), true);
                 ByteBuffer encryptedHeader = encryptedHeaderBuffer.getByteBuffer();

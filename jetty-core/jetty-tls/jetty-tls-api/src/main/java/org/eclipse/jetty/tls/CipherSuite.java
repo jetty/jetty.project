@@ -55,6 +55,16 @@ public enum CipherSuite
         };
     }
 
+    public int tagLength()
+    {
+        return switch (this)
+        {
+            case TLS_AES_128_GCM_SHA256 -> 16;
+            case TLS_AES_256_GCM_SHA384 -> 16;
+            case TLS_CHACHA20_POLY1305_SHA256 -> 16;
+        };
+    }
+
     public String algorithm()
     {
         return switch (this)
@@ -65,13 +75,23 @@ public enum CipherSuite
         };
     }
 
-    public String cipherName()
+    public String payloadCipherName()
     {
         return switch (this)
         {
             case TLS_AES_128_GCM_SHA256 -> "AES/GCM/NoPadding";
-            case TLS_AES_256_GCM_SHA384 -> "AES_256_GCM";
-            case TLS_CHACHA20_POLY1305_SHA256 -> "CHACHA20_POLY1305";
+            case TLS_AES_256_GCM_SHA384 -> "AES/GCM/NoPadding";
+            case TLS_CHACHA20_POLY1305_SHA256 -> "ChaCha20-Poly1305";
+        };
+    }
+
+    public String headerCipherName()
+    {
+        return switch (this)
+        {
+            case TLS_AES_128_GCM_SHA256 -> "AES/ECB/NoPadding";
+            case TLS_AES_256_GCM_SHA384 -> "AES/ECB/NoPadding";
+            case TLS_CHACHA20_POLY1305_SHA256 -> "ChaCha20";
         };
     }
 

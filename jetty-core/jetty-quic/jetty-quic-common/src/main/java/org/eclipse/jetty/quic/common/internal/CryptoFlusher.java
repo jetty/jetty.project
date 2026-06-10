@@ -368,7 +368,7 @@ class CryptoFlusher implements Callback
             : writing.stream().flatMap(entry -> entry.frames().stream()).toList();
         Packet packet = session.newPacket(encryptionLevel, frames);
         packetGenerator.generate(packetAccumulator, packet, framesAccumulator);
-        boolean dataStalled = processing.isEmpty() || session.getSendWindow(null) == 0;
+        boolean dataStalled = processing.isEmpty() || session.getSendWindow() == 0;
         session.getPacketTracker().processPacketSent(session, packet, packetAccumulator.size(), dataStalled);
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} {} to {} on {}", packet, packetAccumulator, endPoint, this);

@@ -117,8 +117,8 @@ public class ClientQuicheConnection extends QuicheConnection
             // Idle timeouts must not be managed by Quiche.
             quicheConfig.setMaxIdleTimeout(0L);
             quicheConfig.setInitialMaxData(quicConfiguration.getSessionMaxData());
-            quicheConfig.setInitialMaxStreamDataBidiLocal(quicConfiguration.getLocalBidirectionalStreamMaxData());
-            quicheConfig.setInitialMaxStreamDataBidiRemote(quicConfiguration.getRemoteBidirectionalStreamMaxData());
+            quicheConfig.setInitialMaxStreamDataBidiLocal(quicConfiguration.getBidirectionalLocalStreamMaxData());
+            quicheConfig.setInitialMaxStreamDataBidiRemote(quicConfiguration.getBidirectionalRemoteStreamMaxData());
             quicheConfig.setInitialMaxStreamDataUni(quicConfiguration.getUnidirectionalStreamMaxData());
             quicheConfig.setInitialMaxStreamsUni(quicConfiguration.getUnidirectionalMaxStreams());
             quicheConfig.setInitialMaxStreamsBidi(quicConfiguration.getBidirectionalMaxStreams());

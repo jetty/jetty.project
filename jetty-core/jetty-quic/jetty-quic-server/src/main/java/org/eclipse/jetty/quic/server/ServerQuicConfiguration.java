@@ -24,7 +24,7 @@ public class ServerQuicConfiguration extends QuicConfiguration
     {
         // Default configuration for a server.
         setSessionMaxData(24 * 1024 * 1024);
-        setRemoteBidirectionalStreamMaxData(16 * 1024 * 1024);
+        setBidirectionalRemoteStreamMaxData(16 * 1024 * 1024);
         // Accept one bidirectional stream to simulate the TCP stream, and no unidirectional streams.
         setBidirectionalMaxStreams(1);
         setUnidirectionalMaxStreams(0);

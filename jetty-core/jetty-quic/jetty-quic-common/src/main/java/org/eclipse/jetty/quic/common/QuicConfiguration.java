@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
@@ -32,9 +33,9 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     private int minInputBufferSpace = 1500;
     private long streamIdleTimeout;
     private long sessionMaxData;
-    private long localBidirectionalStreamMaxData;
-    private long remoteBidirectionalStreamMaxData;
-    private long unidirectionalStreamMaxData;
+    private long biLocalStreamMaxData;
+    private long biRemoteStreamMaxData;
+    private long uniStreamMaxData;
     private long bidirectionalMaxStreams;
     private long unidirectionalMaxStreams;
     // A value that does not exceed the usual MTU of 1500 and allows for encapsulation (VPN).
@@ -49,11 +50,13 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     // RFC-9000[18.2].
     private long connectionIdMaxCount = 2;
 
+    /// @return the supported QUIC versions
     public List<QuicVersion> getQuicVersions()
     {
         return versions;
     }
 
+    /// @param versions the supported QUIC versions
     public void setQuicVersions(List<QuicVersion> versions)
     {
         if (versions.isEmpty())
@@ -121,6 +124,13 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
         this.streamIdleTimeout = streamIdleTimeout;
     }
 
+    /// The session max data sent by a local peer to indicate the max data it is willing to receive.
+    ///
+    /// As data is received and consumed, this value is also used to increment the max data,
+    /// which is then sent by the local peer via [MaxDataFrame]s.
+    ///
+    /// @return the initial session max data
+    /// @see TransportParameters.Ids#INITIAL_MAX_DATA
     public long getSessionMaxData()
     {
         return sessionMaxData;
@@ -131,34 +141,34 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
         this.sessionMaxData = sessionMaxData;
     }
 
-    public long getLocalBidirectionalStreamMaxData()
+    public long getBidirectionalLocalStreamMaxData()
     {
-        return localBidirectionalStreamMaxData;
+        return biLocalStreamMaxData;
     }
 
-    public void setLocalBidirectionalStreamMaxData(long localBidirectionalStreamMaxData)
+    public void setBidirectionalLocalStreamMaxData(long bidirectionalLocalStreamMaxData)
     {
-        this.localBidirectionalStreamMaxData = localBidirectionalStreamMaxData;
+        this.biLocalStreamMaxData = bidirectionalLocalStreamMaxData;
     }
 
-    public long getRemoteBidirectionalStreamMaxData()
+    public long getBidirectionalRemoteStreamMaxData()
     {
-        return remoteBidirectionalStreamMaxData;
+        return biRemoteStreamMaxData;
     }
 
-    public void setRemoteBidirectionalStreamMaxData(long remoteBidirectionalStreamMaxData)
+    public void setBidirectionalRemoteStreamMaxData(long bidirectionalRemoteStreamMaxData)
     {
-        this.remoteBidirectionalStreamMaxData = remoteBidirectionalStreamMaxData;
+        this.biRemoteStreamMaxData = bidirectionalRemoteStreamMaxData;
     }
 
     public long getUnidirectionalStreamMaxData()
     {
-        return unidirectionalStreamMaxData;
+        return uniStreamMaxData;
     }
 
     public void setUnidirectionalStreamMaxData(long unidirectionalStreamMaxData)
     {
-        this.unidirectionalStreamMaxData = unidirectionalStreamMaxData;
+        this.uniStreamMaxData = unidirectionalStreamMaxData;
     }
 
     public long getBidirectionalMaxStreams()
@@ -259,8 +269,8 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     public void configure(TransportParameters transportParameters)
     {
         transportParameters.put(TransportParameters.Ids.INITIAL_MAX_DATA, getSessionMaxData());
-        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL, getLocalBidirectionalStreamMaxData());
-        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE, getRemoteBidirectionalStreamMaxData());
+        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL, getBidirectionalLocalStreamMaxData());
+        transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE, getBidirectionalRemoteStreamMaxData());
         transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL, getUnidirectionalStreamMaxData());
         transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL, getBidirectionalMaxStreams());
         transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_UNIDIRECTIONAL, getUnidirectionalMaxStreams());
