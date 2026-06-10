@@ -372,7 +372,7 @@ public abstract class EventsHandler extends Handler.Wrapper
         {
             notifyOnResponseBegin(getRequest(), this);
             notifyOnResponseWrite(getRequest(), last, byteBuffer);
-            ByteBuffer copy = byteBuffer.asReadOnlyBuffer();
+            ByteBuffer copy = byteBuffer == null ? null : byteBuffer.asReadOnlyBuffer();
             super.write(last, byteBuffer, Callback.from(callback.getInvocationType(), () ->
             {
                 notifyOnResponseWriteComplete(getRequest(), last, copy, null);
