@@ -219,8 +219,28 @@ public class FramesGenerator
         return generated;
     }
 
-    public GeneratedFrame generateStreamFrame(RetainableByteBuffer.Mutable accumulator, StreamFrame frame, long offset, long maxBytes)
+    /// Generates a [StreamFrame] with the given `offset`.
+    ///
+    /// The generation is capped by:
+    ///
+    /// * `maxData`, the maximum number of bytes allowed by flow control
+    /// * `maxBytes`, the maximum number of bytes allowed by congestion control
+    public GeneratedFrame generateStreamFrame(RetainableByteBuffer.Mutable accumulator, StreamFrame frame, long offset, long maxData, long maxBytes)
     {
+        assert maxData > 0;
+
+        // TODO:
+        //  1. no dwnd -> queue data_blocked no matter the cwnd.
+        //  2. generated = null => not enough cwnd => don't send data_blocked
+        //  3. generated partially due to not enough dwnd => send, and queue/send data_blocked.
+        //  4. generated partially due to not enough cwnd => send, and don't send data_blocked
+        //  5. generated fully => send
+
+        // TODO:
+        //  The point is that I must generate data limited by max(maxData, maxBytes - headerBytes)
+        //  but the problem is calculating the headerBytes when the data length goes from 1 to 2 bytes.
+        //  I must always try to fit as much dataBytes as possible, not counting the headerBytes.
+
         long frameType = frame.type();
         int capacity = VarLenInt.length(frameType);
         long streamId = frame.streamId();
@@ -229,6 +249,11 @@ public class FramesGenerator
         if (hasOffset)
             capacity += VarLenInt.length(offset);
         boolean hasLength = (frameType & StreamFrame.LENGTH_MASK) == StreamFrame.LENGTH_MASK;
+
+        if (maxBytes - capacity <= 0)
+            return null;
+
+        long dataLength = Math.min(frame.remaining(), maxData);
 
         // Handle the case where the bytes to send are more than they fit in the frame.
         // The data length is calculated without taking into account the length field.
@@ -239,14 +264,14 @@ public class FramesGenerator
         // will occupy 2 bytes; however, when correcting the data length subtracting the
         // length field length (2 bytes), the data length will be 62, which can be encoded
         // as just 1 byte, so 63 data bytes could have been generated, but we don't bother.
-        long estimatedDataLength = Math.min(frame.remaining(), maxBytes - capacity);
+        long estimatedDataLength = Math.min(dataLength, maxBytes - capacity);
         if (estimatedDataLength < 0)
             return null;
         int dataLengthLength = 0;
         if (hasLength)
             dataLengthLength = VarLenInt.length(estimatedDataLength);
         capacity += dataLengthLength;
-        long dataLength = Math.min(frame.remaining(), maxBytes - capacity);
+        long dataLength = Math.min(dataLength, maxBytes - capacity);
         if (dataLength < 0)
             return null;
 
