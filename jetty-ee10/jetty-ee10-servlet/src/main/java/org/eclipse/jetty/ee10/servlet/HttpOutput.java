@@ -462,7 +462,8 @@ public class HttpOutput extends ServletOutputStream
     public void close() throws IOException
     {
         ByteBuffer content = null;
-        Blocker.Callback blocker = null;
+        boolean acquireBlocker = false;
+        boolean combineClosedCallback = false;
         try (AutoLock l = _channelState.lock())
         {
             if (_softClose)
@@ -491,8 +492,8 @@ public class HttpOutput extends ServletOutputStream
                         case BLOCKING:
                         case BLOCKED:
                             // block until CLOSED state reached.
-                            blocker = _writeBlocker.callback();
-                            _closedCallback = Callback.combine(_closedCallback, blocker);
+                            acquireBlocker = true;
+                            combineClosedCallback = true;
                             break;
 
                         default:
@@ -508,7 +509,7 @@ public class HttpOutput extends ServletOutputStream
                             // Output is idle blocking state, but we still do an async close
                             _apiState = ApiState.BLOCKED;
                             _state = State.CLOSING;
-                            blocker = _writeBlocker.callback();
+                            acquireBlocker = true;
                             content = _aggregate != null && _aggregate.hasRemaining() ? _aggregate.getByteBuffer() : BufferUtil.EMPTY_BUFFER;
                             break;
 
@@ -518,8 +519,8 @@ public class HttpOutput extends ServletOutputStream
                             // then trigger a close from onWriteComplete
                             _state = State.CLOSE;
                             // and block until it is complete
-                            blocker = _writeBlocker.callback();
-                            _closedCallback = Callback.combine(_closedCallback, blocker);
+                            acquireBlocker = true;
+                            combineClosedCallback = true;
                             break;
 
                         case ASYNC:
@@ -539,6 +540,17 @@ public class HttpOutput extends ServletOutputStream
                             break;
                     }
                     break;
+            }
+        }
+
+        // Do not call _writeBlocker.callback() from within a lock as it itself also takes a lock.
+        Blocker.Callback blocker = acquireBlocker ? _writeBlocker.callback() : null;
+
+        if (combineClosedCallback)
+        {
+            try (AutoLock l = _channelState.lock())
+            {
+                _closedCallback = Callback.combine(_closedCallback, blocker);
             }
         }
 
