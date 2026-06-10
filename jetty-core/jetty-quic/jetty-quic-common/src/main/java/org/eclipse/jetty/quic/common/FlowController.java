@@ -15,16 +15,26 @@ package org.eclipse.jetty.quic.common;
 
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
+import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
+import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
+import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
+import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 
+/// The logic that controls when to send data flow.
+///
+/// Implementation decide when [MaxDataFrame]s and [StreamMaxDataFrame]s,
+/// as well as [DataBlockedFrame]s and [StreamDataBlockedFrame]s.
 public interface FlowController
 {
+    /// Callback method invoked when a stream is created.
     void onStreamCreated(Stream stream);
 
+    /// Callback method invoked when a stream is terminated.
     void onStreamTerminated(Stream stream);
 
-    void onDataReceived(Session session, Stream stream, long length);
+    void onDataReceived(Session session, Stream stream, long offset);
 
-    void onMaxData(Session session, Stream stream, long maxData);
+    void onDataConsumed(Session session, Stream stream, long offset);
 
     interface Factory
     {

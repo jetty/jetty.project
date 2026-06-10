@@ -17,8 +17,8 @@ import java.util.List;
 
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.CongestionController;
-import org.eclipse.jetty.quic.common.DefaultFlowControllerFactory;
-import org.eclipse.jetty.quic.common.DefaultStreamsControllerFactory;
+import org.eclipse.jetty.quic.common.DefaultFlowController;
+import org.eclipse.jetty.quic.common.DefaultStreamsController;
 import org.eclipse.jetty.quic.common.FlowController;
 import org.eclipse.jetty.quic.common.NewRenoCongestionControllerFactory;
 import org.eclipse.jetty.quic.common.StreamsController;
@@ -33,8 +33,8 @@ public class QuicClientQuicConfiguration extends ClientQuicConfiguration
     private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519/*, NamedGroup.secp256r1, NamedGroup.ffdhe2048*/);
     private List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256);
     private CongestionController.Factory congestionControllerFactory = new NewRenoCongestionControllerFactory();
-    private FlowController.Factory flowControllerFactory = new DefaultFlowControllerFactory();
-    private StreamsController.Factory streamsControllerFactory = new DefaultStreamsControllerFactory();
+    private FlowController.Factory flowControllerFactory = new DefaultFlowController.Factory();
+    private StreamsController.Factory streamsControllerFactory = new DefaultStreamsController.Factory();
 
     public List<SignatureAlgorithm> getSignatureAlgorithms()
     {

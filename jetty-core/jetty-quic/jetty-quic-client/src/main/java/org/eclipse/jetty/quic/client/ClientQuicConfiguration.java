@@ -21,7 +21,7 @@ public class ClientQuicConfiguration extends QuicConfiguration
     {
         // Default configuration for a client.
         setSessionMaxData(16 * 1024 * 1024);
-        setLocalBidirectionalStreamMaxData(8 * 1024 * 1024);
+        setBidirectionalLocalStreamMaxData(8 * 1024 * 1024);
         // Do not accept streams initiated by the server.
         setBidirectionalMaxStreams(0);
         setUnidirectionalMaxStreams(0);

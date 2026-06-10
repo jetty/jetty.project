@@ -18,8 +18,8 @@ import java.util.Objects;
 
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.CongestionController;
-import org.eclipse.jetty.quic.common.DefaultFlowControllerFactory;
-import org.eclipse.jetty.quic.common.DefaultStreamsControllerFactory;
+import org.eclipse.jetty.quic.common.DefaultFlowController;
+import org.eclipse.jetty.quic.common.DefaultStreamsController;
 import org.eclipse.jetty.quic.common.FlowController;
 import org.eclipse.jetty.quic.common.NewRenoCongestionControllerFactory;
 import org.eclipse.jetty.quic.common.StreamsController;
@@ -38,8 +38,8 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
     private TokenFactory tokenFactory = new DefaultTokenFactory();
     private SessionTicket.Factory sessionTicketFactory = new DefaultSessionTicketFactory();
     private CongestionController.Factory congestionControllerFactory = new NewRenoCongestionControllerFactory();
-    private FlowController.Factory flowControllerFactory = new DefaultFlowControllerFactory();
-    private StreamsController.Factory streamsControllerFactory = new DefaultStreamsControllerFactory();
+    private FlowController.Factory flowControllerFactory = new DefaultFlowController.Factory();
+    private StreamsController.Factory streamsControllerFactory = new DefaultStreamsController.Factory();
     private int destinationConnectionIdLength = 8;
     private int earlyMaxData;
 

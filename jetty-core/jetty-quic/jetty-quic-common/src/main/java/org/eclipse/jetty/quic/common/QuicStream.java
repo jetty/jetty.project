@@ -31,6 +31,7 @@ import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.frames.FrameStream;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
@@ -55,8 +56,10 @@ public class QuicStream extends AbstractStream
     private final Deque<Content.Chunk> dataQueue = new ArrayDeque<>(1);
     private final CloseState closeState = new CloseState();
     private final Sender sender = new Sender();
-    private final AtomicLong sendMaxData = new AtomicLong();
-    private final AtomicLong sendData = new AtomicLong();
+    private final AtomicLong recvOffset = new AtomicLong();
+    private final AtomicLong recvMaxOffset = new AtomicLong();
+    private final AtomicLong sentOffset = new AtomicLong();
+    private final AtomicLong sentMaxOffset = new AtomicLong();
     private final QuicSession session;
     private boolean readDemand;
     private boolean readStalled;
@@ -244,29 +247,49 @@ public class QuicStream extends AbstractStream
         session.maxData(this, new StreamMaxDataFrame(getId(), maxData), promise);
     }
 
-    void updateSendMaxData(long maxData)
+    long getRecvMaxOffset()
     {
-        Atomics.updateMax(sendMaxData, maxData);
+        return recvMaxOffset.get();
     }
 
-    long getSendWindow()
+    void updateRecvOffset(long offset)
     {
-        return getSendMaxData() - getSendData();
+        Atomics.updateMax(recvOffset, offset);
     }
 
-    private long getSendMaxData()
+    boolean updateRecvMaxOffset(long offset)
     {
-        return sendMaxData.get();
+        return Atomics.updateMax(recvMaxOffset, offset);
     }
 
-    long getSendData()
+    public long getSendWindow()
     {
-        return sendData.get();
+        return getSentMaxOffset() - getSentOffset();
     }
 
-    void updateSendData(long sent)
+    private long getSentMaxOffset()
     {
-        sendData.addAndGet(sent);
+        return sentMaxOffset.get();
+    }
+
+    public long getSentOffset()
+    {
+        return sentOffset.get();
+    }
+
+    void updateSentOffset(long sent)
+    {
+        Atomics.updateMax(sentOffset, sent);
+    }
+
+    /// Updates the sent max data offset for this stream.
+    ///
+    /// This method is called initially when receiving the
+    /// [TransportParameters.Ids#INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE],
+    /// and later when receiving [StreamMaxDataFrame]s.
+    public void updateSentMaxOffset(long maxData)
+    {
+        Atomics.updateMax(sentMaxOffset, maxData);
     }
 
     public boolean stall()
@@ -362,7 +385,7 @@ public class QuicStream extends AbstractStream
     }
 
     /// Main entry point to process incoming frames received by [QuicSession].
-    public void processFrame(Frame.WithStreamId frame)
+    private void processFrame(Frame.WithStreamId frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", frame, this);
@@ -380,7 +403,11 @@ public class QuicStream extends AbstractStream
             case StopSendingFrame stopSendingFrame -> processStopSendingFrame(stopSendingFrame);
             case StreamDataBlockedFrame streamDataBlockedFrame -> notifyDataBlockedFrame(streamDataBlockedFrame);
             case StreamFrame streamFrame -> frameStream.offer(streamFrame);
-            case StreamMaxDataFrame streamMaxDataFrame -> notifyMaxDataFrame(streamMaxDataFrame);
+            case StreamMaxDataFrame streamMaxDataFrame ->
+            {
+                updateSentMaxOffset(streamMaxDataFrame.maxData());
+                notifyMaxDataFrame(streamMaxDataFrame);
+            }
         }
     }
 
@@ -552,7 +579,7 @@ public class QuicStream extends AbstractStream
         try (var l = lock.tryLock())
         {
             String held = l.isHeldByCurrentThread() ? "" : "?";
-            return "%s[%s:%s,dataQueue=%d,demand=%b,data/max=%d/%d]".formatted(super.toString(), held, closeState, dataQueue.size(), readDemand, getSendData(), getSendMaxData());
+            return "%s[%s:%s,dataQueue=%d,demand=%b,data/max=%d/%d]".formatted(super.toString(), held, closeState, dataQueue.size(), readDemand, getSentOffset(), getSentMaxOffset());
         }
     }
 
