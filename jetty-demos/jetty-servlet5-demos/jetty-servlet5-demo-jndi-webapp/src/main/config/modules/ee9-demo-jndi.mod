@@ -22,9 +22,9 @@ ee9-demo-mock-resources
 basehome:modules/demo.d/ee9-demo-jndi.xml|webapps/ee9-demo-jndi.xml
 basehome:modules/demo.d/ee9-demo-jndi.properties|webapps/ee9-demo-jndi.properties
 maven://org.eclipse.jetty.demos/jetty-servlet5-demo-jndi-webapp/${jetty.version}/war|webapps/ee9-demo-jndi.war
-maven://com.sun.mail/jakarta.mail/2.0.1/jar|lib/ee9/jakarta.mail-2.0.1.jar
+maven://com.sun.mail/jakarta.mail/2.0.2/jar|lib/ee9/jakarta.mail-2.0.2.jar
 maven://com.sun.activation/jakarta.activation/2.0.1/jar|lib/ee9/jakarta.activation-2.0.1.jar
 
 [lib]
-lib/ee9/jakarta.mail-2.0.1.jar
+lib/ee9/jakarta.mail-2.0.2.jar
 lib/ee9/jakarta.activation-2.0.1.jar
