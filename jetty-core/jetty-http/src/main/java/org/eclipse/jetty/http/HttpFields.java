@@ -189,6 +189,36 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return new org.eclipse.jetty.http.ImmutableHttpFields(fields);
     }
 
+    static HttpCompliance copyHttpCompliance(HttpFields httpFields)
+    {
+        while (true)
+        {
+            if (httpFields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
+                return immutable._httpCompliance;
+            if (httpFields instanceof org.eclipse.jetty.http.MutableHttpFields mutable)
+                return mutable._httpCompliance;
+            if (httpFields instanceof Mutable.Wrapper wrapper)
+                httpFields = wrapper.getWrapped();
+            else
+                return null;
+        }
+    }
+
+    static Supplier<ComplianceViolation.Listener> copyComplianceListener(HttpFields httpFields)
+    {
+        while (true)
+        {
+            if (httpFields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
+                return immutable._listenerSupplier;
+            if (httpFields instanceof org.eclipse.jetty.http.MutableHttpFields mutable)
+                return mutable._listenerSupplier;
+            if (httpFields instanceof Mutable.Wrapper wrapper)
+                httpFields = wrapper.getWrapped();
+            else
+                return null;
+        }
+    }
+
     /**
      * <p>Supplies this instance, typically used to supply HTTP trailers.</p>
      *

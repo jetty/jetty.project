@@ -1637,7 +1637,20 @@ public class ServletHandler extends Handler.Wrapper
         @Override
         public void doFilter(ServletRequest request, ServletResponse response) throws IOException, ServletException
         {
-            _filterHolder.doFilter(request, response, _filterChain);
+            ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
+            ServletRequest oldRequest = servletContextRequest.getServletRequest();
+            ServletResponse oldResponse = servletContextRequest.getServletResponse();
+            try
+            {
+                servletContextRequest.setServletRequest(request);
+                servletContextRequest.setServletResponse(response);
+                _filterHolder.doFilter(request, response, _filterChain);
+            }
+            finally
+            {
+                servletContextRequest.setServletRequest(oldRequest);
+                servletContextRequest.setServletResponse(oldResponse);
+            }
         }
 
         @Override
@@ -1665,7 +1678,20 @@ public class ServletHandler extends Handler.Wrapper
         @Override
         public void doFilter(ServletRequest request, ServletResponse response) throws IOException, ServletException
         {
-            _servletHolder.handle(request, response);
+            ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
+            ServletRequest oldRequest = servletContextRequest.getServletRequest();
+            ServletResponse oldResponse = servletContextRequest.getServletResponse();
+            try
+            {
+                servletContextRequest.setServletRequest(request);
+                servletContextRequest.setServletResponse(response);
+                _servletHolder.handle(request, response);
+            }
+            finally
+            {
+                servletContextRequest.setServletRequest(oldRequest);
+                servletContextRequest.setServletResponse(oldResponse);
+            }
         }
 
         @Override

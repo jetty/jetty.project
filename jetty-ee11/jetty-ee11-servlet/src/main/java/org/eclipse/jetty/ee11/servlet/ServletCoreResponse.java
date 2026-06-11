@@ -21,13 +21,18 @@ import java.util.ListIterator;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferInputStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -61,7 +66,7 @@ public class ServletCoreResponse implements Response
         _httpServletResponse = httpServletResponse;
         _servletContextResponse = ServletContextResponse.getServletContextResponse(httpServletResponse);
         _wrapped = !(httpServletResponse instanceof ServletApiResponse);
-        HttpFields.Mutable fields = new HttpServletResponseHttpFields(httpServletResponse);
+        HttpFields.Mutable fields = new HttpServletResponseHttpFields(httpServletResponse, _servletContextResponse.getHeaders());
         if (included)
         {
             // If included, accept but ignore mutations.
@@ -222,16 +227,32 @@ public class ServletCoreResponse implements Response
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), this._coreRequest, _httpServletResponse);
+        return "%s@%x{%s,%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _coreRequest, _httpServletResponse);
     }
 
     private static class HttpServletResponseHttpFields implements HttpFields.Mutable
     {
-        private final HttpServletResponse _response;
+        private final HttpServletResponse _httpServletResponse;
+        private final HttpCompliance _httpCompliance;
+        private final Supplier<ComplianceViolation.Listener> _listenerSupplier;
 
-        private HttpServletResponseHttpFields(HttpServletResponse response)
+        private HttpServletResponseHttpFields(HttpServletResponse response, HttpFields httpFields)
         {
-            _response = response;
+            _httpServletResponse = response;
+            _httpCompliance = HttpFields.copyHttpCompliance(httpFields);
+            _listenerSupplier = HttpFields.copyComplianceListener(httpFields);
+        }
+
+        @Override
+        public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
+        {
+            return new QuotedQualityCSV(_httpCompliance, _listenerSupplier.get(), secondaryOrdering);
+        }
+
+        @Override
+        public QuotedCSV newQuotedCSV(boolean b)
+        {
+            return new QuotedCSV(_httpCompliance, _listenerSupplier.get(), b);
         }
 
         @Override
@@ -239,8 +260,8 @@ public class ServletCoreResponse implements Response
         {
             // The minimum requirement is to implement the listIterator, but it is inefficient.
             // Other methods are implemented for efficiency.
-            final ListIterator<HttpField> list = _response.getHeaderNames().stream()
-                .map(n -> new HttpField(n, _response.getHeader(n)))
+            final ListIterator<HttpField> list = _httpServletResponse.getHeaderNames().stream()
+                .map(n -> new HttpField(n, _httpServletResponse.getHeader(n)))
                 .collect(Collectors.toList())
                 .listIterator(index);
 
@@ -291,7 +312,7 @@ public class ServletCoreResponse implements Response
                     {
                         // This is not exactly the right semantic for repeated field names
                         list.remove();
-                        _response.setHeader(_last.getName(), null);
+                        _httpServletResponse.setHeader(_last.getName(), null);
                     }
                 }
 
@@ -299,14 +320,14 @@ public class ServletCoreResponse implements Response
                 public void set(HttpField httpField)
                 {
                     list.set(httpField);
-                    _response.setHeader(httpField.getName(), httpField.getValue());
+                    _httpServletResponse.setHeader(httpField.getName(), httpField.getValue());
                 }
 
                 @Override
                 public void add(HttpField httpField)
                 {
                     list.add(httpField);
-                    _response.addHeader(httpField.getName(), httpField.getValue());
+                    _httpServletResponse.addHeader(httpField.getName(), httpField.getValue());
                 }
             };
         }
@@ -314,56 +335,56 @@ public class ServletCoreResponse implements Response
         @Override
         public Mutable add(String name, String value)
         {
-            _response.addHeader(name, value);
+            _httpServletResponse.addHeader(name, value);
             return this;
         }
 
         @Override
         public Mutable add(HttpHeader header, HttpHeaderValue value)
         {
-            _response.addHeader(header.asString(), value.asString());
+            _httpServletResponse.addHeader(header.asString(), value.asString());
             return this;
         }
 
         @Override
         public Mutable add(HttpHeader header, String value)
         {
-            _response.addHeader(header.asString(), value);
+            _httpServletResponse.addHeader(header.asString(), value);
             return this;
         }
 
         @Override
         public Mutable add(HttpField field)
         {
-            _response.addHeader(field.getName(), field.getValue());
+            _httpServletResponse.addHeader(field.getName(), field.getValue());
             return this;
         }
 
         @Override
         public Mutable put(HttpField field)
         {
-            _response.setHeader(field.getName(), field.getValue());
+            _httpServletResponse.setHeader(field.getName(), field.getValue());
             return this;
         }
 
         @Override
         public Mutable put(String name, String value)
         {
-            _response.setHeader(name, value);
+            _httpServletResponse.setHeader(name, value);
             return this;
         }
 
         @Override
         public Mutable put(HttpHeader header, HttpHeaderValue value)
         {
-            _response.setHeader(header.asString(), value.asString());
+            _httpServletResponse.setHeader(header.asString(), value.asString());
             return this;
         }
 
         @Override
         public Mutable put(HttpHeader header, String value)
         {
-            _response.setHeader(header.asString(), value);
+            _httpServletResponse.setHeader(header.asString(), value);
             return this;
         }
 
@@ -376,9 +397,9 @@ public class ServletCoreResponse implements Response
             for (String s : list)
             {
                 if (first)
-                    _response.setHeader(name, s);
+                    _httpServletResponse.setHeader(name, s);
                 else
-                    _response.addHeader(name, s);
+                    _httpServletResponse.addHeader(name, s);
                 first = false;
             }
             return this;
@@ -387,7 +408,7 @@ public class ServletCoreResponse implements Response
         @Override
         public Mutable remove(HttpHeader header)
         {
-            _response.setHeader(header.asString(), null);
+            _httpServletResponse.setHeader(header.asString(), null);
             return this;
         }
 
@@ -402,7 +423,7 @@ public class ServletCoreResponse implements Response
         @Override
         public Mutable remove(String name)
         {
-            _response.setHeader(name, null);
+            _httpServletResponse.setHeader(name, null);
             return this;
         }
     }

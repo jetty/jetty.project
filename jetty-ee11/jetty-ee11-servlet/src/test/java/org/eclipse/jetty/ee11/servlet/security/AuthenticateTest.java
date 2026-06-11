@@ -14,11 +14,16 @@
 package org.eclipse.jetty.ee11.servlet.security;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.function.Consumer;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
@@ -180,6 +185,85 @@ public class AuthenticateTest
 
         // If we have correct credentials we will be able to get a valid user principal.
         response = _connector.getResponse("GET /ctx/?username=admin&password=password HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("UserPrincipal: admin"));
+    }
+
+    @Test
+    public void testWrappedRequest() throws Exception
+    {
+        configureServer(new LoginAuthenticator()
+        {
+            @Override
+            public String getAuthenticationType()
+            {
+                return "CUSTOM";
+            }
+
+            @Override
+            public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
+            {
+                String username = request.getHeaders().get("X-Username");
+                String password = request.getHeaders().get("X-Password");
+                if (username != null && password != null)
+                {
+                    UserIdentity user = login(username, Credential.getCredential(password), request, response);
+                    if (user == null)
+                    {
+                        if (response.isCommitted())
+                            return null;
+                        return AuthenticationState.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+                    }
+                    return new UserAuthenticationSucceeded(getAuthenticationType(), user);
+                }
+
+                if (response.isCommitted())
+                    return null;
+
+                return AuthenticationState.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            }
+        }, servletContextHandler ->
+        {
+            servletContextHandler.addFilter(new HttpFilter()
+            {
+                @Override
+                protected void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws IOException, ServletException
+                {
+                    String pathInContext = URIUtil.addPaths(req.getServletPath(), req.getPathInfo());
+                    if (pathInContext.startsWith("/authenticate"))
+                    {
+                        // The request is wrapped to override some headers.
+                        req = new HttpServletRequestWrapper(req)
+                        {
+                            @Override
+                            public String getHeader(String name)
+                            {
+                                if ("X-Username".equalsIgnoreCase(name))
+                                    return "admin";
+                                if ("X-Password".equalsIgnoreCase(name))
+                                    return "password";
+                                return super.getHeader(name);
+                            }
+                        };
+                    }
+                    chain.doFilter(req, res);
+                }
+            }, "/*", EnumSet.allOf(DispatcherType.class));
+            servletContextHandler.addServlet(new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException
+                {
+                    boolean authenticate = req.authenticate(resp);
+                    if (!authenticate)
+                        return;
+                    resp.getWriter().println("UserPrincipal: " + req.getUserPrincipal());
+                }
+            }, "/");
+        });
+        String response;
+
+        response = _connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("UserPrincipal: admin"));
     }

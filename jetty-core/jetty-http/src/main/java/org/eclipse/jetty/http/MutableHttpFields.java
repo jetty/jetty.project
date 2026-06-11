@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -44,8 +43,8 @@ class MutableHttpFields implements HttpFields.Mutable
     private static final int INITIAL_SIZE = 16;
     private static final int SIZE_INCREMENT = 4;
 
-    private final HttpCompliance _httpCompliance;
-    private final Supplier<ComplianceViolation.Listener> _listenerSupplier;
+    final HttpCompliance _httpCompliance;
+    final Supplier<ComplianceViolation.Listener> _listenerSupplier;
     private HttpField[] _fields;
     private boolean _immutable;
     private int _size;
@@ -77,8 +76,8 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields)
     {
-        _httpCompliance = copyHttpCompliance(fields);
-        _listenerSupplier = copyComplianceListener(fields);
+        _httpCompliance = HttpFields.copyHttpCompliance(fields);
+        _listenerSupplier = HttpFields.copyComplianceListener(fields);
         if (fields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
         {
             _fields = immutable._fields;
@@ -104,8 +103,8 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields, HttpField replaceField)
     {
-        _httpCompliance = copyHttpCompliance(fields);
-        _listenerSupplier = copyComplianceListener(fields);
+        _httpCompliance = HttpFields.copyHttpCompliance(fields);
+        _listenerSupplier = HttpFields.copyComplianceListener(fields);
         _fields = new HttpField[fields.size() + SIZE_INCREMENT];
         _size = 0;
         boolean put = false;
@@ -134,8 +133,8 @@ class MutableHttpFields implements HttpFields.Mutable
      */
     protected MutableHttpFields(HttpFields fields, EnumSet<HttpHeader> removeFields)
     {
-        _httpCompliance = copyHttpCompliance(fields);
-        _listenerSupplier = copyComplianceListener(fields);
+        _httpCompliance = HttpFields.copyHttpCompliance(fields);
+        _listenerSupplier = HttpFields.copyComplianceListener(fields);
         _fields = new HttpField[fields.size() + SIZE_INCREMENT];
         _size = 0;
         for (HttpField f : fields)
@@ -150,36 +149,6 @@ class MutableHttpFields implements HttpFields.Mutable
         _httpCompliance = httpCompliance;
         _listenerSupplier = listenerSupplier;
         _fields = new HttpField[INITIAL_SIZE];
-    }
-
-    private static HttpCompliance copyHttpCompliance(HttpFields httpFields)
-    {
-        while (true)
-        {
-            if (httpFields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
-                return immutable._httpCompliance;
-            if (httpFields instanceof org.eclipse.jetty.http.MutableHttpFields mutable)
-                return mutable._httpCompliance;
-            if (httpFields instanceof Wrapper wrapper)
-                httpFields = wrapper.getWrapped();
-            else
-                return null;
-        }
-    }
-
-    private static Supplier<ComplianceViolation.Listener> copyComplianceListener(HttpFields httpFields)
-    {
-        while (true)
-        {
-            if (httpFields instanceof org.eclipse.jetty.http.ImmutableHttpFields immutable)
-                return immutable._listenerSupplier;
-            if (httpFields instanceof org.eclipse.jetty.http.MutableHttpFields mutable)
-                return mutable._listenerSupplier;
-            if (httpFields instanceof Wrapper wrapper)
-                httpFields = wrapper.getWrapped();
-            else
-                return null;
-        }
     }
 
     @Override
