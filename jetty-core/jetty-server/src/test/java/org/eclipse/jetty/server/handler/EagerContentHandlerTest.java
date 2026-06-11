@@ -18,11 +18,13 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -46,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
@@ -527,6 +530,131 @@ public class EagerContentHandlerTest
             content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
             assertThat(content, containsString("name=[value]"));
             assertThat(content, containsString("x=[1, 2, 3]"));
+        }
+    }
+
+    @Test
+    public void testEagerFormFieldsLimits() throws Exception
+    {
+        // Set the global form limits for maxFormContentSize.
+        System.setProperty("org.eclipse.jetty.server.Request.maxFormKeys", "-1");
+        System.setProperty("org.eclipse.jetty.server.Request.maxFormContentSize", "15");
+
+        CountDownLatch processing = new CountDownLatch(1);
+        CompletableFuture<Throwable> contentLoaderErrorFuture = new CompletableFuture<>();
+        CompletableFuture<Throwable> handlerErrorFuture = new CompletableFuture<>();
+        EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.FormContentLoaderFactory()
+        {
+            @Override
+            public EagerContentHandler.ContentLoader newContentLoader(String contentType, String mimeType, Handler handler, Request request, Response response, Callback callback)
+            {
+                EagerContentHandler.ContentLoader contentLoader = super.newContentLoader(contentType, mimeType, handler, request, response, callback);
+                return new EagerContentHandler.ContentLoader(handler, request, response, callback)
+                {
+                    @Override
+                    protected void load() throws Exception
+                    {
+                        try
+                        {
+                            contentLoader.load();
+                            processing.countDown();
+                        }
+                        catch (Throwable t)
+                        {
+                            contentLoaderErrorFuture.complete(t);
+                            throw t;
+                        }
+                    }
+                };
+            }
+        });
+        _server.setHandler(eagerContentHandler);
+        eagerContentHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                try
+                {
+                    Fields fields = FormFields.getFields(request);
+                    Content.Sink.write(response, true, String.valueOf(fields), callback);
+                    return true;
+                }
+                catch (Throwable t)
+                {
+                    handlerErrorFuture.complete(t);
+                    throw t;
+                }
+            }
+        });
+        _server.start();
+
+        // Test when the content-length is known so the failure is triggered directly from EagerContentHandler.
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            // Write the first request content which does not exceed the form limits.
+            String request = """
+                POST /foo HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: application/x-www-form-urlencoded\r
+                Content-Length: 27\r
+                \r
+                param1=value1&param2=value2\
+                """;
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            // The EagerContentHandler's ContentLoader should throw so we never reach the handler.
+            Throwable throwable = contentLoaderErrorFuture.get(5, TimeUnit.SECONDS);
+            assertThat(throwable, instanceOf(HttpException.IllegalStateException.class));
+
+            // The response code should be 413 PAYLOAD_TOO_LARGE.
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertThat(response.getStatus(), is(HttpStatus.PAYLOAD_TOO_LARGE_413));
+            assertThat(response.getContent(), containsString("form too large"));
+        }
+
+        // Test when the content-length is not known so the failure is triggered from the Handler trying to access the form.
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            // Write the first request content which does not exceed the form limits.
+            String request = """
+                POST /foo HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: application/x-www-form-urlencoded\r
+                Transfer-Encoding: chunked\r
+                \r
+                D\r
+                param1=value1\r
+                """;
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            // Assert we reach the handler and didn't fail in EagerContentHandler.
+            assertTrue(processing.await(5, TimeUnit.SECONDS));
+
+            // Write remaining form content which exceeds the limit.
+            String requestContinued = """
+                E\r
+                &param2=value2\r
+                0\r
+                \r
+                """;
+            output.write(requestContinued.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            // After writing the final bytes of the request we fail in the handler.
+            Throwable throwable = handlerErrorFuture.get(5, TimeUnit.SECONDS);
+            assertThat(throwable, instanceOf(HttpException.IllegalStateException.class));
+
+            // The response code should be 413 PAYLOAD_TOO_LARGE.
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertThat(response.getStatus(), is(HttpStatus.PAYLOAD_TOO_LARGE_413));
+            assertThat(response.getContent(), containsString("form too large"));
         }
     }
 
