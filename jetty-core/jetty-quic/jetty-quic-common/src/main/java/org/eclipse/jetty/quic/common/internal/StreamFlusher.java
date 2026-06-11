@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.common.internal;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -74,20 +75,20 @@ class StreamFlusher extends CryptoFlusher
     }
 
     @Override
-    boolean drain(List<FramesEntry> output)
+    boolean drain(Deque<FramesEntry> output, Deque<FramesEntry> ccOutput)
     {
         acknowledger.drain(output);
-        return super.drain(output);
+        return super.drain(output, ccOutput);
     }
 
     @Override
-    boolean process(List<FramesEntry> entries, boolean probeMode) throws Exception
+    boolean process(Deque<FramesEntry> processing, Deque<FramesEntry> ccProcessing, boolean probeMode) throws Exception
     {
         // Update the flow control windows.
         processMaxData();
 
         if (probeMode)
-            return super.process(entries, true);
+            return super.process(processing, ccProcessing, true);
 
         // Check pacing.
         CongestionController congestionController = getQuicSession().getCongestionController();
@@ -101,10 +102,10 @@ class StreamFlusher extends CryptoFlusher
             Runnable task = () -> getQuicSession().getExecutor().execute(getQuicFlusher()::iterate);
             getQuicSession().getScheduler().schedule(task, pacingDelay, TimeUnit.NANOSECONDS);
             // Simulate a zero congestion window to stall data flush.
-            return process(entries, false, 0);
+            return process(processing, ccProcessing, false, 0);
         }
 
-        return super.process(entries, false);
+        return super.process(processing, ccProcessing, false);
     }
 
     private void processMaxData()
@@ -134,37 +135,63 @@ class StreamFlusher extends CryptoFlusher
         {
             case StreamFrame streamFrame ->
             {
-                QuicSession session = getQuicSession();
-                long sessionWindow = session.getSendWindow();
-
-                // TODO: wrong logic: I may generate N bytes but not all of them, and I still need to send DATA_BLOCKED.
-                if (sessionWindow == 0)
-                {
-                    if (session.stall())
-                        sendFrames(List.of(new DataBlockedFrame(session.getSentOffset())), NOOP);
-                    yield null;
-                }
-
-                long streamWindow = stream.getSendWindow();
-                if (streamWindow == 0)
-                {
-                    if (stream.stall())
-                        sendFrames(List.of(new StreamDataBlockedFrame(stream.getId(), stream.getSentOffset())), NOOP);
-                    yield null;
-                }
-
-                long sendWindow = Math.min(sessionWindow, streamWindow);
-                maxBytes = Math.min(sendWindow, maxBytes);
-
                 if (streamFrame.offset() < 0)
                 {
+                    QuicSession session = getQuicSession();
+                    long sessionWindow = session.getSendWindow();
+
+                    if (sessionWindow <= 0)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("stalled flow control for {} on {}", session, this);
+                        yield null;
+                    }
+
+                    long streamWindow = stream.getSendWindow();
+                    if (streamWindow <= 0)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("stalled flow control for {} on {}", stream, this);
+                        yield null;
+                    }
+
+                    long sendWindow = Math.min(sessionWindow, streamWindow);
+
                     long offset = stream.getSentOffset();
                     if (LOG.isDebugEnabled())
                         LOG.debug("generating offset={} {} for stream {} on {}", offset, frame, stream, this);
+                    long initial = streamFrame.remaining();
                     GeneratedFrame generated = getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, sendWindow, maxBytes);
-                    // Update the sent offset now, even if the frame could be lost.
-                    if (generated != null)
-                        session.updateSentOffset(stream, offset + ((StreamFrame)generated.frame()).remaining());
+                    if (generated == null)
+                        yield null;
+                    long remaining = streamFrame.remaining();
+                    long dataLength = initial - remaining;
+
+                    // Offset are updated only on first transmission, not on
+                    // retransmissions, because the flow control is limit-based.
+                    session.updateSentOffset(session.getSentOffset() + dataLength);
+                    stream.updateSentOffset(offset + dataLength);
+
+                    // Check flow control stalling.
+                    sessionWindow = session.getSendWindow();
+                    if (remaining > 0 && sessionWindow <= 0)
+                    {
+                        if (session.stall())
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("stalling flow control for {} on {}", session, this);
+                            sendFrames(List.of(new DataBlockedFrame(session.getSentOffset())), NOOP);
+                        }
+                    }
+
+                    streamWindow = stream.getSendWindow();
+                    if (remaining > 0 && streamWindow <= 0)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("stalling flow control for {} on {}", stream, this);
+                        sendFrames(List.of(new StreamDataBlockedFrame(stream.getId(), stream.getSentOffset())), NOOP);
+                    }
+
                     yield generated;
                 }
                 else
@@ -173,7 +200,7 @@ class StreamFlusher extends CryptoFlusher
                     if (LOG.isDebugEnabled())
                         LOG.debug("re-generating {} for stream {} on {}", frame, stream, this);
                     long offset = streamFrame.offset() + (streamFrame.length() - streamFrame.remaining());
-                    yield getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, sendWindow, maxBytes);
+                    yield getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, Long.MAX_VALUE, maxBytes);
                 }
             }
             case ResetFrame resetFrame ->
@@ -268,7 +295,7 @@ class StreamFlusher extends CryptoFlusher
                 getQuicFlusher().iterate();
         }
 
-        void drain(List<FramesEntry> output)
+        void drain(Deque<FramesEntry> output)
         {
             List<Entry> numbers;
             try (var _ = lock())
@@ -292,7 +319,7 @@ class StreamFlusher extends CryptoFlusher
                 AckFrame frame = new AckFrame(entry.packetNumber(), AckFrame.encodeAckDelay(ackDelayMicros, exponent), 0, List.of());
                 if (LOG.isDebugEnabled())
                     LOG.debug("draining {} on {}", frame, this);
-                output.add(new FramesEntry(null, List.of(frame), entry.callback, false));
+                output.offer(new FramesEntry(null, List.of(frame), entry.callback, false));
                 return;
             }
 
@@ -358,7 +385,7 @@ class StreamFlusher extends CryptoFlusher
             if (LOG.isDebugEnabled())
                 LOG.debug("draining {} on {}", frame, this);
 
-            output.add(new FramesEntry(null, List.of(frame), combinedCallback, false));
+            output.offer(new FramesEntry(null, List.of(frame), combinedCallback, false));
         }
 
         @Override
