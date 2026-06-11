@@ -299,19 +299,17 @@ public class PacketProtector implements Encrypter, Decrypter
     /// There is one key manager for each [EncryptionLevel].
     private class KeyManager
     {
-        private final ReadKeys readKeys = new ReadKeys();
-        private final WriteKeys writeKeys = new WriteKeys();
         private final EncryptionLevel encryptionLevel;
         private final CipherSuite cipherSuite;
-        private final Cipher payloadCipher;
-        private final Cipher headerCipher;
+        private final ReadKeys readKeys;
+        private final WriteKeys writeKeys;
 
         private KeyManager(EncryptionLevel encryptionLevel, CipherSuite cipherSuite) throws GeneralSecurityException
         {
             this.encryptionLevel = encryptionLevel;
             this.cipherSuite = cipherSuite;
-            this.payloadCipher = Cipher.getInstance(cipherSuite.payloadCipherName());
-            this.headerCipher = Cipher.getInstance(cipherSuite.headerCipherName());
+            this.readKeys = new ReadKeys(cipherSuite);
+            this.writeKeys = new WriteKeys(cipherSuite);
         }
 
         public SecretKey getTrafficSecretKey(boolean input)
@@ -366,9 +364,8 @@ public class PacketProtector implements Encrypter, Decrypter
             }
         }
 
-        private void initPayloadCipher(int cipherMode, SecretKey secretKey, byte[] nonce) throws GeneralSecurityException
+        private void initPayloadCipher(Cipher cipher, int cipherMode, SecretKey secretKey, byte[] nonce) throws GeneralSecurityException
         {
-            Cipher cipher = Cipher.getInstance(cipherSuite.payloadCipherName());
             AlgorithmParameterSpec params = switch (cipherSuite)
             {
                 case TLS_AES_128_GCM_SHA256, TLS_AES_256_GCM_SHA384 -> new GCMParameterSpec(cipherSuite.tagLength() * 8, nonce);
@@ -377,23 +374,23 @@ public class PacketProtector implements Encrypter, Decrypter
             cipher.init(cipherMode, secretKey, params);
         }
 
-        private byte[] newHeaderCipherMask(SecretKey secretKey, byte[] sample) throws GeneralSecurityException
+        private byte[] newHeaderCipherMask(Cipher cipher, SecretKey secretKey, byte[] sample) throws GeneralSecurityException
         {
             return switch (cipherSuite)
             {
                 case TLS_AES_128_GCM_SHA256, TLS_AES_256_GCM_SHA384 ->
                 {
                     // RFC-9001[5.4.3].
-                    headerCipher.init(Cipher.ENCRYPT_MODE, secretKey);
-                    yield headerCipher.doFinal(sample);
+                    cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+                    yield cipher.doFinal(sample);
                 }
                 case TLS_CHACHA20_POLY1305_SHA256 ->
                 {
                     // RFC-9001[5.4.4].
                     int blockCounter = ByteBuffer.wrap(sample, 0, 4).order(ByteOrder.LITTLE_ENDIAN).getInt();
                     byte[] nonce = Arrays.copyOfRange(sample, 4, sample.length);
-                    headerCipher.init(Cipher.ENCRYPT_MODE, secretKey, new ChaCha20ParameterSpec(nonce, blockCounter));
-                    yield headerCipher.doFinal(new byte[5]);
+                    cipher.init(Cipher.ENCRYPT_MODE, secretKey, new ChaCha20ParameterSpec(nonce, blockCounter));
+                    yield cipher.doFinal(new byte[5]);
                 }
             };
         }
@@ -406,10 +403,18 @@ public class PacketProtector implements Encrypter, Decrypter
         /// @see WriteKeys
         private class ReadKeys
         {
+            private final Cipher payloadCipher;
+            private final Cipher headerCipher;
             private SecretKey traffic;
             private SecretKey encryption;
             private SecretKey initialization;
             private SecretKey protection;
+
+            private ReadKeys(CipherSuite cipherSuite) throws GeneralSecurityException
+            {
+                this.payloadCipher = Cipher.getInstance(cipherSuite.payloadCipherName());
+                this.headerCipher = Cipher.getInstance(cipherSuite.headerCipherName());
+            }
 
             public void updateKeys(SecretKey initial, SecretKey encryption, SecretKey initialization, SecretKey protection)
             {
@@ -448,7 +453,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 byte[] sample = new byte[16];
                 byteBuffer.get(sample);
 
-                byte[] mask = newHeaderCipherMask(protection, sample);
+                byte[] mask = newHeaderCipherMask(headerCipher, protection, sample);
 
                 int firstByte = byteBuffer.get(position) & 0xFF;
                 // Long header packets mask 4 bits.
@@ -480,7 +485,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 long packetNumber = packetNumbers.decode(encryptionLevel, encoded);
 
                 byte[] nonce = nonce(initialization, packetNumber);
-                initPayloadCipher(Cipher.DECRYPT_MODE, encryption, nonce);
+                initPayloadCipher(payloadCipher, Cipher.DECRYPT_MODE, encryption, nonce);
 
                 // Supply AAD as the plaintext packet header.
                 payloadCipher.updateAAD(decryptedHeader);
@@ -514,7 +519,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 byte[] sample = new byte[16];
                 byteBuffer.get(sample);
 
-                byte[] mask = newHeaderCipherMask(protection, sample);
+                byte[] mask = newHeaderCipherMask(headerCipher, protection, sample);
 
                 int firstByte = byteBuffer.get(position) & 0xFF;
                 // Short header packets mask 5 bits.
@@ -545,7 +550,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 long packetNumber = packetNumbers.decode(encryptionLevel, encoded);
 
                 byte[] nonce = nonce(initialization, packetNumber);
-                initPayloadCipher(Cipher.DECRYPT_MODE, encryption, nonce);
+                initPayloadCipher(payloadCipher, Cipher.DECRYPT_MODE, encryption, nonce);
 
                 // Supply AAD as the plaintext packet header.
                 payloadCipher.updateAAD(decryptedHeader);
@@ -584,10 +589,18 @@ public class PacketProtector implements Encrypter, Decrypter
         /// @see ReadKeys
         private class WriteKeys
         {
+            private final Cipher payloadCipher;
+            private final Cipher headerCipher;
             private SecretKey traffic;
             private SecretKey encryption;
             private SecretKey initialization;
             private SecretKey protection;
+
+            private WriteKeys(CipherSuite cipherSuite) throws GeneralSecurityException
+            {
+                this.payloadCipher = Cipher.getInstance(cipherSuite.payloadCipherName());
+                this.headerCipher = Cipher.getInstance(cipherSuite.headerCipherName());
+            }
 
             private void updateKeys(SecretKey initial, SecretKey encryption, SecretKey initialization, SecretKey protection)
             {
@@ -600,7 +613,7 @@ public class PacketProtector implements Encrypter, Decrypter
             private PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer.Mutable payload) throws Exception
             {
                 byte[] nonce = nonce(initialization, packetNumber);
-                initPayloadCipher(Cipher.ENCRYPT_MODE, encryption, nonce);
+                initPayloadCipher(payloadCipher, Cipher.ENCRYPT_MODE, encryption, nonce);
 
                 // Supply AAD as the plaintext packet header.
                 ByteBuffer headerByteBuffer = header.getByteBuffer();
@@ -624,7 +637,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 byte[] sample = new byte[16];
                 encryptedPayload.get(sampleOffset, sample);
 
-                byte[] mask = newHeaderCipherMask(protection, sample);
+                byte[] mask = newHeaderCipherMask(headerCipher, protection, sample);
 
                 RetainableByteBuffer.Mutable encryptedHeaderBuffer = byteBufferPool.acquire(headerByteBuffer.remaining(), true);
                 ByteBuffer encryptedHeader = encryptedHeaderBuffer.getByteBuffer();

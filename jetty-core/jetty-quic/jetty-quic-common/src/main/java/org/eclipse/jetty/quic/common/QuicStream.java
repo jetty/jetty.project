@@ -63,7 +63,6 @@ public class QuicStream extends AbstractStream
     private final QuicSession session;
     private boolean readDemand;
     private boolean readStalled;
-    private boolean writeStalled;
 
     public QuicStream(QuicSession session, long streamId, boolean local)
     {
@@ -280,7 +279,7 @@ public class QuicStream extends AbstractStream
         return sentOffset.get();
     }
 
-    void updateSentOffset(long sent)
+    public void updateSentOffset(long sent)
     {
         Atomics.updateMax(sentOffset, sent);
     }
@@ -293,13 +292,6 @@ public class QuicStream extends AbstractStream
     public void updateSentMaxOffset(long maxData)
     {
         Atomics.updateMax(sentMaxOffset, maxData);
-    }
-
-    public boolean stall()
-    {
-        boolean result = !writeStalled;
-        writeStalled = true;
-        return result;
     }
 
     @Override

@@ -140,8 +140,9 @@ public abstract class QuicSession extends AbstractSession
     private byte[] srcConnectionId;
     private long idleTimeout;
     private SocketAddress remoteSocketAddress;
-    private TransportParameters transportParameters;
-    private boolean writeStalled;
+    private TransportParameters localTransportParameters;
+    private TransportParameters remoteTransportParameters;
+    private boolean flowControlStalled;
     private Scheduler.Task keepAliveTask;
     private EncryptionLevel encryptionLevel = EncryptionLevel.INITIAL;
     private ConnectionCloseFrame closeFrame;
@@ -475,9 +476,17 @@ public abstract class QuicSession extends AbstractSession
 
         stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
-        Long maxData = transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE);
-        if (maxData != null)
-            stream.updateSentMaxOffset(maxData);
+        Long maxSendData = stream.isBidirectional()
+            ? remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE)
+            : remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
+        if (maxSendData != null)
+            stream.updateSentMaxOffset(maxSendData);
+
+        Long maxRecvData = stream.isBidirectional()
+            ? localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
+            : localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
+        if (maxRecvData != null)
+            stream.updateRecvMaxOffset(maxRecvData);
 
         flowController.onStreamCreated(stream);
 
@@ -534,8 +543,8 @@ public abstract class QuicSession extends AbstractSession
         stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
         Long maxData = bidirectional
-            ? transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
-            : transportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
+            ? remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
+            : remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
         if (maxData != null)
             stream.updateSentMaxOffset(maxData);
 
@@ -1232,15 +1241,12 @@ public abstract class QuicSession extends AbstractSession
         return sentOffset.get();
     }
 
-    // TODO: offset for session and stream are different!!!
-    /// Updates the sent data offset for this session and the given stream.
+    /// Updates the sent data offset for this session.
     ///
     /// This method is called when [StreamFrame]s are generated.
-    public void updateSentOffset(QuicStream stream, long offset)
+    public void updateSentOffset(long offset)
     {
         Atomics.updateMax(sentOffset, offset);
-        if (stream != null)
-            stream.updateSentOffset(offset);
     }
 
     /// Updates the send max data for this session.
@@ -1251,14 +1257,13 @@ public abstract class QuicSession extends AbstractSession
     public void updateSentMaxOffset(long newValue)
     {
         if (Atomics.updateMax(sentMaxOffset, newValue))
-            writeStalled = false;
+            flowControlStalled = false;
     }
 
-    // TODO: review/remove this mechanism, seems wrong (as writeStalled is never moved to false).
     public boolean stall()
     {
-        boolean result = !writeStalled;
-        writeStalled = true;
+        boolean result = !flowControlStalled;
+        flowControlStalled = true;
         return result;
     }
 
@@ -1294,9 +1299,6 @@ public abstract class QuicSession extends AbstractSession
         //  * Values are within allowed ranges
         //  Apply Quic transport params to the various components.
 
-        this.transportParameters = transportParameters;
-
-
         // TODO: other parameters.
 
         configure(transportParameters, false);
@@ -1305,6 +1307,11 @@ public abstract class QuicSession extends AbstractSession
 
     protected void configure(TransportParameters parameters, boolean local)
     {
+        if (local)
+            localTransportParameters = parameters;
+        else
+            remoteTransportParameters = parameters;
+
         Long idleTimeout = parameters.get(TransportParameters.Ids.MAX_IDLE_TIMEOUT);
         if (idleTimeout != null)
         {

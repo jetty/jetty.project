@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
@@ -217,6 +218,7 @@ public class QuicTest extends AbstractQuicTest
         }, promise);
         Session clientSession = promise.get(5, SECONDS);
         long streamId = clientSession.newStreamId(true);
+        AtomicLong received = new AtomicLong();
         Stream clientStream = clientSession.newStream(streamId, new Stream.Listener()
         {
             @Override
@@ -230,6 +232,7 @@ public class QuicTest extends AbstractQuicTest
                         stream.demand();
                         return;
                     }
+                    received.addAndGet(chunk.remaining());
                     chunk.release();
                     if (chunk.isLast())
                     {
@@ -243,6 +246,7 @@ public class QuicTest extends AbstractQuicTest
         clientStream.demand();
 
         assertTrue(clientDataLatch.await(15, SECONDS));
+        assertEquals(length, received.get());
     }
 
     @Test
