@@ -34,6 +34,7 @@ class PacketFlusher implements Callback
     private final Queue<PacketEntry> packetEntries = new ArrayDeque<>();
     private final QuicFlusher flusher;
     private PacketEntry processingPacketEntry;
+    private long bytesWritten;
 
     PacketFlusher(QuicFlusher flusher)
     {
@@ -72,6 +73,7 @@ class PacketFlusher implements Callback
         Packet packet = processingPacketEntry.packet();
         packetGenerator.generate(packetAccumulator, packet, null);
         session.getPacketTracker().processPacketSent(session, packet, packetAccumulator.size(), dataStalled);
+        bytesWritten = packetAccumulator.size();
         if (LOG.isDebugEnabled())
             LOG.debug("writing packet {} {} to {} on {}", packet, packetAccumulator, endPoint, this);
         endPoint.write(flusher, session.getRemoteSocketAddress(), packetAccumulator.getByteBuffer());
@@ -83,6 +85,7 @@ class PacketFlusher implements Callback
     {
         if (LOG.isDebugEnabled())
             LOG.debug("write succeeded {} to {} on {}", processingPacketEntry.packet(), flusher.getQuicSession().getEndPoint(), this);
+        flusher.bytesWritten(bytesWritten);
         processingPacketEntry.succeeded();
         processingPacketEntry = null;
     }

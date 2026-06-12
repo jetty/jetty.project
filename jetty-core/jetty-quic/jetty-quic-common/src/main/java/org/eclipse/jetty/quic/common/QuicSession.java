@@ -374,6 +374,11 @@ public abstract class QuicSession extends AbstractSession
         streamTimeouts.schedule(stream);
     }
 
+    public void bytesWritten(long bytesWritten)
+    {
+        connection.bytesWritten(bytesWritten);
+    }
+
     /// Returns an estimate (by excess) of the packet header length.
     ///
     /// @param encryptionLevel the encryption level of the packet

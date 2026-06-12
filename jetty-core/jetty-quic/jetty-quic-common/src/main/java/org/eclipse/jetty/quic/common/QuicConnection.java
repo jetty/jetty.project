@@ -16,6 +16,7 @@ package org.eclipse.jetty.quic.common;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -34,6 +35,7 @@ public abstract class QuicConnection extends AbstractConnection
     private static final Logger LOG = LoggerFactory.getLogger(QuicConnection.class);
 
     private final AutoLock lock = new AutoLock();
+    private final AtomicLong bytesOut = new AtomicLong();
     private final Callback fillableCallback = new FillableCallback();
     private final Queue<Invocable.Task> tasks = new ArrayDeque<>();
     private final Scheduler scheduler;
@@ -94,6 +96,17 @@ public abstract class QuicConnection extends AbstractConnection
     public void onFillable()
     {
         strategy.produce();
+    }
+
+    void bytesWritten(long bytesWritten)
+    {
+        bytesOut.addAndGet(bytesWritten);
+    }
+
+    @Override
+    public long getBytesOut()
+    {
+        return bytesOut.get();
     }
 
     private Runnable produce()
