@@ -194,7 +194,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
             if (retryPacketSent)
                 transportParameters.put(TransportParameters.Ids.RETRY_SOURCE_CONNECTION_ID, getSourceConnectionId());
             notifyPrepare(transportParameters);
-            configure(transportParameters, false);
+            configure(transportParameters, true);
 
             boolean valid = getQuicConfiguration().getTokenFactory().isTokenValid(getRemoteSocketAddress(), getOriginalDestinationConnectionId(), token);
             if (LOG.isDebugEnabled())

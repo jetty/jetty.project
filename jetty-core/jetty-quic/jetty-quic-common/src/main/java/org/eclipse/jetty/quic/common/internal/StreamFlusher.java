@@ -15,7 +15,6 @@ package org.eclipse.jetty.quic.common.internal;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -65,7 +64,6 @@ class StreamFlusher extends CryptoFlusher
     {
         try (var _ = lock())
         {
-            // TODO: check if closed/failed, etc.
             MaxDataEntry entry = new MaxDataEntry(stream, maxData, Callback.NOOP);
             boolean result = maxDataEntries.add(entry);
             if (LOG.isDebugEnabled())
@@ -75,14 +73,14 @@ class StreamFlusher extends CryptoFlusher
     }
 
     @Override
-    boolean drain(Deque<FramesEntry> output, Deque<FramesEntry> ccOutput)
+    boolean drain(List<FramesEntry> output, List<FramesEntry> ccOutput)
     {
         acknowledger.drain(output);
         return super.drain(output, ccOutput);
     }
 
     @Override
-    boolean process(Deque<FramesEntry> processing, Deque<FramesEntry> ccProcessing, boolean probeMode) throws Exception
+    boolean process(List<FramesEntry> processing, List<FramesEntry> ccProcessing, boolean probeMode) throws Exception
     {
         // Update the flow control windows.
         processMaxData();
@@ -174,7 +172,7 @@ class StreamFlusher extends CryptoFlusher
 
                     // Check flow control stalling.
                     sessionWindow = session.getSendWindow();
-                    if (remaining > 0 && sessionWindow <= 0)
+                    if (sessionWindow <= 0)
                     {
                         if (session.stall())
                         {
@@ -185,7 +183,7 @@ class StreamFlusher extends CryptoFlusher
                     }
 
                     streamWindow = stream.getSendWindow();
-                    if (remaining > 0 && streamWindow <= 0)
+                    if (remaining >= 0 && streamWindow <= 0)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("stalling flow control for {} on {}", stream, this);
@@ -295,7 +293,7 @@ class StreamFlusher extends CryptoFlusher
                 getQuicFlusher().iterate();
         }
 
-        void drain(Deque<FramesEntry> output)
+        void drain(List<FramesEntry> output)
         {
             List<Entry> numbers;
             try (var _ = lock())
@@ -319,7 +317,7 @@ class StreamFlusher extends CryptoFlusher
                 AckFrame frame = new AckFrame(entry.packetNumber(), AckFrame.encodeAckDelay(ackDelayMicros, exponent), 0, List.of());
                 if (LOG.isDebugEnabled())
                     LOG.debug("draining {} on {}", frame, this);
-                output.offer(new FramesEntry(null, List.of(frame), entry.callback, false));
+                output.add(new FramesEntry(null, List.of(frame), entry.callback, false));
                 return;
             }
 
@@ -385,7 +383,7 @@ class StreamFlusher extends CryptoFlusher
             if (LOG.isDebugEnabled())
                 LOG.debug("draining {} on {}", frame, this);
 
-            output.offer(new FramesEntry(null, List.of(frame), combinedCallback, false));
+            output.add(new FramesEntry(null, List.of(frame), combinedCallback, false));
         }
 
         @Override

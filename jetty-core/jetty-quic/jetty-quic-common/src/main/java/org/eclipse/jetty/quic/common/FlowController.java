@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.quic.common;
 
-import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
@@ -32,9 +31,9 @@ public interface FlowController
     /// Callback method invoked when a stream is terminated.
     void onStreamTerminated(Stream stream);
 
-    void onDataReceived(Session session, Stream stream, long offset);
+    void onDataReceived(Stream stream);
 
-    void onDataConsumed(Session session, Stream stream, long offset);
+    void onDataRead(Stream stream, long length);
 
     interface Factory
     {

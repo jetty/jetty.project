@@ -34,7 +34,6 @@ import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.frames.FrameStream;
 import org.eclipse.jetty.quic.util.ErrorCode;
-import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Promise;
@@ -163,28 +162,23 @@ public class QuicStream extends AbstractStream
     public Content.Chunk read()
     {
         Content.Chunk chunk;
+        boolean terminated = false;
         try (var _ = lock.lock())
         {
             chunk = dataQueue.poll();
             if (chunk == null)
                 return null;
+
             if (Content.Chunk.isFailure(chunk, true))
                 dataQueue.offer(chunk);
             else if (chunk.isLast())
                 dataQueue.offer(Content.Chunk.EOF);
-        }
 
-        boolean terminated = false;
-        if (chunk.isLast())
-        {
-            try (var _ = lock.lock())
-            {
+            if (chunk.isLast())
                 terminated = closeState.remoteClose();
-            }
         }
 
-        // TODO: not the chunk size, must be the offset!
-        session.getFlowController().onDataConsumed(session, this, chunk.size());
+        session.getFlowController().onDataRead(this, chunk.size());
 
         if (LOG.isDebugEnabled())
             LOG.debug("reading {} on {}", chunk, this);
@@ -249,14 +243,24 @@ public class QuicStream extends AbstractStream
         session.maxData(this, new StreamMaxDataFrame(getId(), maxData), promise);
     }
 
-    long getRecvMaxOffset()
+    long getMaxData()
     {
-        return recvMaxOffset.get();
+        return session.getMaxData(this);
+    }
+
+    public long getRecvOffset()
+    {
+        return recvOffset.get();
     }
 
     void updateRecvOffset(long offset)
     {
         Atomics.updateMax(recvOffset, offset);
+    }
+
+    public long getRecvMaxOffset()
+    {
+        return recvMaxOffset.get();
     }
 
     boolean updateRecvMaxOffset(long offset)
@@ -269,7 +273,7 @@ public class QuicStream extends AbstractStream
         return getSentMaxOffset() - getSentOffset();
     }
 
-    private long getSentMaxOffset()
+    public long getSentMaxOffset()
     {
         return sentMaxOffset.get();
     }
@@ -388,21 +392,11 @@ public class QuicStream extends AbstractStream
         notIdle();
         switch (frame)
         {
-            case ResetFrame resetFrame ->
-            {
-                // RFC-9000[19.4]: local unidirectional stream receiving a reset produces a connection error.
-                if (!isBidirectional() && isLocal())
-                    throw new QuicException(ErrorCode.STREAM_STATE_ERROR, "local_unidirectional_stream_reset", frame.type());
-                frameStream.offer(resetFrame);
-            }
+            case ResetFrame resetFrame -> frameStream.offer(resetFrame);
             case StopSendingFrame stopSendingFrame -> processStopSendingFrame(stopSendingFrame);
             case StreamDataBlockedFrame streamDataBlockedFrame -> notifyDataBlockedFrame(streamDataBlockedFrame);
             case StreamFrame streamFrame -> frameStream.offer(streamFrame);
-            case StreamMaxDataFrame streamMaxDataFrame ->
-            {
-                updateSentMaxOffset(streamMaxDataFrame.maxData());
-                notifyMaxDataFrame(streamMaxDataFrame);
-            }
+            case StreamMaxDataFrame streamMaxDataFrame -> notifyMaxDataFrame(streamMaxDataFrame);
         }
     }
 

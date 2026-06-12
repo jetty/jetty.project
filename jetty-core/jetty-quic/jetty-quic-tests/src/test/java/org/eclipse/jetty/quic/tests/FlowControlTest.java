@@ -17,20 +17,31 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
+import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
+import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
-import org.eclipse.jetty.quic.common.DefaultFlowController;
+import org.eclipse.jetty.quic.common.QuicSession;
+import org.eclipse.jetty.quic.common.QuicStream;
+import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,14 +54,15 @@ public class FlowControlTest extends AbstractQuicTest
         int maxData = 512;
         AtomicReference<Stream> serverStreamRef = new AtomicReference<>();
         CountDownLatch serverDataBlockedLatch = new CountDownLatch(1);
-        prepareServer(() -> new Session.Listener()
+        CountDownLatch serverDataLatch = new CountDownLatch(1);
+        start(() -> new Session.Listener()
         {
             @Override
             public void onPrepare(Session session, TransportParameters transportParameters)
             {
                 // Limit the session, but not the streams.
                 transportParameters.put(TransportParameters.Ids.INITIAL_MAX_DATA, (long)maxData);
-                transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE, (long)maxData * 10);
+                transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE, maxData * 10L);
             }
 
             @Override
@@ -64,6 +76,34 @@ public class FlowControlTest extends AbstractQuicTest
                         serverStreamRef.set(stream);
                         // Do not demand yet.
                     }
+
+                    @Override
+                    public void onDataAvailable(Stream stream)
+                    {
+                        while (true)
+                        {
+                            Content.Chunk chunk = stream.read();
+                            if (chunk == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
+                            chunk.release();
+                            if (chunk.isLast())
+                            {
+                                Promise.Invocable<Stream> promise = Promise.Invocable.from(Promise.Invocable.noop(), serverDataLatch::countDown);
+                                stream.reset(ErrorCode.NO_ERROR.code(), promise);
+                                return;
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onDataBlocked(Stream stream, StreamDataBlockedFrame frame)
+                    {
+                        // TODO
+                        Stream.Listener.super.onDataBlocked(stream, frame);
+                    }
                 };
             }
 
@@ -73,13 +113,6 @@ public class FlowControlTest extends AbstractQuicTest
                 serverDataBlockedLatch.countDown();
             }
         });
-        connector.getServerQuicConfiguration().setFlowControllerFactory(() -> new DefaultFlowController()
-        {
-        });
-        server.start();
-
-        prepareClient();
-        client.start();
 
         CountDownLatch clientMaxDataLatch = new CountDownLatch(1);
         CompletableFuture<Session> sessionFuture = new  CompletableFuture<>();
@@ -91,19 +124,22 @@ public class FlowControlTest extends AbstractQuicTest
                 clientMaxDataLatch.countDown();
             }
         }, Promise.Invocable.toPromise(sessionFuture));
-        Session clientSession = sessionFuture.get(5, SECONDS);
+        QuicSession clientSession = (QuicSession)sessionFuture.get(5, SECONDS);
 
         long streamId = clientSession.newStreamId(true);
-        Stream stream = clientSession.newStream(streamId, new Stream.Listener() {});
+        QuicStream clientStream = (QuicStream)clientSession.newStream(streamId, new Stream.Listener() {});
 
         // Try to send more than allowed by the server.
-        int excessData = maxData / 2;
+        int excessData = 1;
+        long totalData = maxData + excessData;
         ByteBuffer byteBuffer = ByteBuffer.allocate(maxData + excessData);
         CompletableFuture<Stream> streamFuture = new  CompletableFuture<>();
-        stream.data(true, RetainableByteBuffer.wrap(byteBuffer), Promise.Invocable.toPromise(streamFuture));
+        clientStream.data(true, RetainableByteBuffer.wrap(byteBuffer), Promise.Invocable.toPromise(streamFuture));
+        await().during(1, SECONDS).atMost(5, SECONDS).until(() -> !streamFuture.isDone());
 
         // The client must send a DATA_BLOCKED frame to the server.
-        assertTrue(serverDataBlockedLatch.await(555, SECONDS));
+        assertTrue(serverDataBlockedLatch.await(5, SECONDS));
+        assertEquals(maxData, clientSession.getSentMaxOffset());
         // The server did not consume the data, so it must not send a MAX_DATA frame.
         assertFalse(clientMaxDataLatch.await(1, SECONDS));
         // The client must have sent only part of the data.
@@ -111,12 +147,262 @@ public class FlowControlTest extends AbstractQuicTest
 
         // Read from the server to consume the data.
         // The server must send a MAX_DATA and the client finish sending.
-        serverStreamRef.get().demand();
+        QuicStream serverStream = (QuicStream)serverStreamRef.get();
+        serverStream.demand();
 
         assertTrue(clientMaxDataLatch.await(5, SECONDS));
         streamFuture.get(5, SECONDS);
+        assertTrue(serverDataLatch.await(5, SECONDS));
 
-        // TODO: verify session/stream recv/send data on client and server.
+        QuicSession serverSession = serverStream.getSession();
+        assertEquals(totalData, clientSession.getSentOffset());
+        assertEquals(2 * maxData, clientSession.getSentMaxOffset());
+        assertEquals(totalData, clientStream.getSentOffset());
+        assertEquals(totalData, serverSession.getRecvOffset());
+        assertEquals(2 * maxData, serverSession.getRecvMaxOffset());
+        assertEquals(totalData, serverStream.getRecvOffset());
+    }
 
+    @Test
+    public void testSessionFlowControlStallWithMultipleStreams() throws Exception
+    {
+        int maxData = 500;
+        AtomicReference<Session> serverSessionRef = new AtomicReference<>();
+        AtomicInteger serverDataBlockedCounter = new AtomicInteger();
+        CountDownLatch serverDataLatch = new CountDownLatch(2);
+        start(() -> new Session.Listener()
+        {
+            @Override
+            public void onPrepare(Session session, TransportParameters transportParameters)
+            {
+                serverSessionRef.set(session);
+                // Limit the session, but not the streams.
+                transportParameters.put(TransportParameters.Ids.INITIAL_MAX_DATA, (long)maxData);
+                transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE, maxData * 10L);
+                transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL, 2L);
+            }
+
+            @Override
+            public Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
+            {
+                return new Stream.Listener()
+                {
+                    @Override
+                    public void onNewStream(Stream stream, Frame.WithStreamId frame)
+                    {
+                        // Do not demand yet.
+                    }
+
+                    @Override
+                    public void onDataAvailable(Stream stream)
+                    {
+                        while (true)
+                        {
+                            Content.Chunk chunk = stream.read();
+                            if (chunk == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
+                            chunk.release();
+                            if (chunk.isLast())
+                            {
+                                Promise.Invocable<Stream> promise = Promise.Invocable.from(Promise.Invocable.noop(), serverDataLatch::countDown);
+                                stream.data(true, RetainableByteBuffer.EMPTY, promise);
+                                return;
+                            }
+                        }
+                    }
+                };
+            }
+
+            @Override
+            public void onDataBlocked(Session session, DataBlockedFrame frame)
+            {
+                serverDataBlockedCounter.incrementAndGet();
+            }
+        });
+
+        CountDownLatch clientMaxDataLatch = new CountDownLatch(1);
+        CompletableFuture<Session> sessionFuture = new  CompletableFuture<>();
+        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        {
+            @Override
+            public void onMaxData(Session session, MaxDataFrame frame)
+            {
+                clientMaxDataLatch.countDown();
+            }
+        }, Promise.Invocable.toPromise(sessionFuture));
+        QuicSession clientSession = (QuicSession)sessionFuture.get(5, SECONDS);
+
+        long streamId1 = clientSession.newStreamId(true);
+        QuicStream clientStream1 = (QuicStream)clientSession.newStream(streamId1, new Stream.Listener() {});
+        long streamId2 = clientSession.newStreamId(true);
+        QuicStream clientStream2 = (QuicStream)clientSession.newStream(streamId2, new Stream.Listener() {});
+
+        // Send data with both streams until the session stalls.
+        int chunk1 = 300;
+        ByteBuffer byteBuffer1 = ByteBuffer.allocate(chunk1);
+        CompletableFuture<Stream> streamFuture1 = new  CompletableFuture<>();
+        clientStream1.data(false, RetainableByteBuffer.wrap(byteBuffer1), Promise.Invocable.toPromise(streamFuture1));
+        streamFuture1.get(5, SECONDS);
+
+        int chunk2 = maxData - chunk1;
+        ByteBuffer byteBuffer2 = ByteBuffer.allocate(chunk2);
+        CompletableFuture<Stream> streamFuture2 = new  CompletableFuture<>();
+        clientStream2.data(false, RetainableByteBuffer.wrap(byteBuffer2), Promise.Invocable.toPromise(streamFuture2));
+        streamFuture2.get(5, SECONDS);
+
+        // Verify that the session is flow control stalled.
+        QuicSession serverSession = (QuicSession)await().atMost(5, SECONDS).until(serverSessionRef::get, notNullValue());
+        await().atMost(5, SECONDS).until(serverSession::getRecvOffset, equalTo(serverSession.getRecvMaxOffset()));
+
+        // Trying to send more results in stalls.
+        int excess1 = 30;
+        ByteBuffer byteBuffer3 = ByteBuffer.allocate(excess1);
+        CompletableFuture<Stream> streamFuture3 = new  CompletableFuture<>();
+        clientStream1.data(true, RetainableByteBuffer.wrap(byteBuffer3), Promise.Invocable.toPromise(streamFuture3));
+        await().during(1, SECONDS).atMost(5, SECONDS).until(() -> !streamFuture3.isDone());
+
+        int excess2 = 20;
+        ByteBuffer byteBuffer4 = ByteBuffer.allocate(excess2);
+        CompletableFuture<Stream> streamFuture4 = new  CompletableFuture<>();
+        clientStream2.data(true, RetainableByteBuffer.wrap(byteBuffer4), Promise.Invocable.toPromise(streamFuture4));
+        await().during(1, SECONDS).atMost(5, SECONDS).until(() -> !streamFuture4.isDone());
+
+        // The client must send only 1 DATA_BLOCKED frame to the server.
+        await().during(1, SECONDS).atMost(5, SECONDS).until(serverDataBlockedCounter::get, equalTo(1));
+        assertEquals(maxData, clientSession.getSentMaxOffset());
+        // The server did not consume the data, so it must not send a MAX_DATA frame.
+        assertFalse(clientMaxDataLatch.await(1, SECONDS));
+
+        // Read from the server to consume the data.
+        // The server must send a MAX_DATA and the client finish sending.
+        assertThat(serverSession.getStreams(), hasSize(2));
+        serverSession.getStreams().forEach(Stream::demand);
+
+        assertTrue(clientMaxDataLatch.await(5, SECONDS));
+        streamFuture3.get(5, SECONDS);
+        streamFuture4.get(5, SECONDS);
+        assertTrue(serverDataLatch.await(5, SECONDS));
+
+        int totalData = maxData + excess1 + excess2;
+        assertEquals(totalData, clientSession.getSentOffset());
+        // The read of the first chunk triggers MAX_DATA at 300/500/500->800.
+        // The read of the second chunk does not trigger MAX_DATA at 500/500/800.
+        assertEquals(chunk1 + maxData, clientSession.getSentMaxOffset());
+        assertEquals(chunk1 + excess1, clientStream1.getSentOffset());
+        assertEquals(chunk2 + excess2, clientStream2.getSentOffset());
+        assertEquals(totalData, serverSession.getRecvOffset());
+        // The read of the third chunk triggers MAX_DATA at 530/550/800->1030.
+        assertEquals(maxData + excess1 + maxData, serverSession.getRecvMaxOffset());
+    }
+
+    @Test
+    public void testStreamFlowControlStall() throws Exception
+    {
+        int maxData = 512;
+        AtomicReference<Stream> serverStreamRef = new AtomicReference<>();
+        CountDownLatch serverDataBlockedLatch = new CountDownLatch(1);
+        CountDownLatch serverDataLatch = new CountDownLatch(1);
+        start(() -> new Session.Listener()
+        {
+            @Override
+            public void onPrepare(Session session, TransportParameters transportParameters)
+            {
+                // Limit the streams, but not the session.
+                transportParameters.put(TransportParameters.Ids.INITIAL_MAX_DATA, maxData * 10L);
+                transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE, (long)maxData);
+            }
+
+            @Override
+            public Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
+            {
+                return new Stream.Listener()
+                {
+                    @Override
+                    public void onNewStream(Stream stream, Frame.WithStreamId frame)
+                    {
+                        serverStreamRef.set(stream);
+                        // Do not demand yet.
+                    }
+
+                    @Override
+                    public void onDataBlocked(Stream stream, StreamDataBlockedFrame frame)
+                    {
+                        serverDataBlockedLatch.countDown();
+                    }
+
+                    @Override
+                    public void onDataAvailable(Stream stream)
+                    {
+                        while (true)
+                        {
+                            Content.Chunk chunk = stream.read();
+                            if (chunk == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
+                            chunk.release();
+                            if (chunk.isLast())
+                            {
+                                Promise.Invocable<Stream> promise = Promise.Invocable.from(Promise.Invocable.noop(), serverDataLatch::countDown);
+                                stream.reset(ErrorCode.NO_ERROR.code(), promise);
+                                return;
+                            }
+                        }
+                    }
+                };
+            }
+        });
+
+        CompletableFuture<Session> sessionFuture = new  CompletableFuture<>();
+        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, Promise.Invocable.toPromise(sessionFuture));
+        QuicSession clientSession = (QuicSession)sessionFuture.get(5, SECONDS);
+
+        long streamId = clientSession.newStreamId(true);
+        CountDownLatch clientMaxDataLatch = new CountDownLatch(1);
+        QuicStream clientStream = (QuicStream)clientSession.newStream(streamId, new Stream.Listener()
+        {
+            @Override
+            public void onMaxData(Stream stream, StreamMaxDataFrame frame)
+            {
+                clientMaxDataLatch.countDown();
+            }
+        });
+
+        // Try to send more than allowed by the server.
+        int excessData = 1;
+        long totalData = maxData + excessData;
+        ByteBuffer byteBuffer = ByteBuffer.allocate(maxData + excessData);
+        CompletableFuture<Stream> streamFuture = new  CompletableFuture<>();
+        clientStream.data(true, RetainableByteBuffer.wrap(byteBuffer), Promise.Invocable.toPromise(streamFuture));
+        await().during(1, SECONDS).atMost(5, SECONDS).until(() -> !streamFuture.isDone());
+
+        // The client must send a DATA_BLOCKED frame to the server.
+        assertTrue(serverDataBlockedLatch.await(5, SECONDS));
+        assertEquals(maxData, clientStream.getSentMaxOffset());
+        // The server did not consume the data, so it must not send a MAX_DATA frame.
+        assertFalse(clientMaxDataLatch.await(1, SECONDS));
+        // The client must have sent only part of the data.
+        assertEquals(excessData, byteBuffer.remaining());
+
+        // Read from the server to consume the data.
+        // The server must send a MAX_DATA and the client finish sending.
+        QuicStream serverStream = (QuicStream)serverStreamRef.get();
+        serverStream.demand();
+
+        assertTrue(clientMaxDataLatch.await(5, SECONDS));
+        streamFuture.get(5, SECONDS);
+        assertTrue(serverDataLatch.await(5, SECONDS));
+
+        QuicSession serverSession = serverStream.getSession();
+        assertEquals(totalData, clientSession.getSentOffset());
+        assertEquals(totalData, clientStream.getSentOffset());
+        assertEquals(2 * maxData, clientStream.getSentMaxOffset());
+        assertEquals(totalData, serverSession.getRecvOffset());
+        assertEquals(totalData, serverStream.getRecvOffset());
+        assertEquals(2 * maxData, serverStream.getRecvMaxOffset());
     }
 }
