@@ -164,8 +164,7 @@ public class ClientQuicConnection extends QuicConnection implements Callback
             if (LOG.isDebugEnabled())
                 LOG.debug("failed to produce on {}", this, x);
             buffer.release();
-            // TODO
-            // fail(x);
+            fail(x);
             return null;
         }
     }
@@ -206,5 +205,13 @@ public class ClientQuicConnection extends QuicConnection implements Callback
         assert this.session == session;
         getEndPoint().close();
         LifeCycle.stop(session);
+    }
+
+    private void fail(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("failing connection {}", this, failure);
+        ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "failure");
+        session.disconnect(frame, failure, Promise.Invocable.noop());
     }
 }
