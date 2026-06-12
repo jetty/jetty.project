@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.quic.common.internal;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
+import java.util.ListIterator;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -44,8 +43,8 @@ class CryptoFlusher implements Callback
     private final AutoLock lock = new AutoLock();
     private final List<FramesEntry> entries = new ArrayList<>();
     private final List<FramesEntry> ccEntries = new ArrayList<>();
-    private final Deque<FramesEntry> processing = new ArrayDeque<>();
-    private final Deque<FramesEntry> ccProcessing = new ArrayDeque<>();
+    private final List<FramesEntry> processing = new ArrayList<>();
+    private final List<FramesEntry> ccProcessing = new ArrayList<>();
     private final List<Frame> framesLeft = new ArrayList<>();
     private final List<Frame> framesGenerated = new ArrayList<>();
     private final List<FramesEntry> writing = new ArrayList<>();
@@ -91,7 +90,6 @@ class CryptoFlusher implements Callback
         boolean flush;
         try (var _ = lock())
         {
-            // TODO: check if closed/failed, etc.
             AckFrame frame = new AckFrame(packet.packetNumber(), 0, 0, List.of());
             FramesEntry entry = new FramesEntry(null, List.of(frame), callback, false);
             flush = entries.add(entry);
@@ -111,7 +109,6 @@ class CryptoFlusher implements Callback
     {
         try (var _ = lock())
         {
-            // TODO: check if closed/failed, etc.
             FramesEntry entry = new FramesEntry(stream, frames, callback, true);
             boolean result = ccEntries.add(entry);
             if (LOG.isDebugEnabled())
@@ -124,7 +121,6 @@ class CryptoFlusher implements Callback
     {
         try (var _ = lock())
         {
-            // TODO: check if closed/failed, etc.
             sendProbe = true;
             return true;
         }
@@ -156,7 +152,7 @@ class CryptoFlusher implements Callback
         return processed;
     }
 
-    boolean drain(Deque<FramesEntry> output, Deque<FramesEntry> ccOutput)
+    boolean drain(List<FramesEntry> output, List<FramesEntry> ccOutput)
     {
         try (var _ = lock())
         {
@@ -166,7 +162,7 @@ class CryptoFlusher implements Callback
                 if (LOG.isDebugEnabled())
                     LOG.debug("draining probe on {}", this);
                 sendProbe = false;
-                output.offerFirst(new FramesEntry(null, List.of(PingFrame.INSTANCE), Callback.NOOP, false));
+                output.addFirst(new FramesEntry(null, List.of(PingFrame.INSTANCE), Callback.NOOP, false));
                 result = true;
             }
 
@@ -184,7 +180,7 @@ class CryptoFlusher implements Callback
         }
     }
 
-    boolean process(Deque<FramesEntry> processing, Deque<FramesEntry> ccProcessing, boolean probeMode) throws Exception
+    boolean process(List<FramesEntry> processing, List<FramesEntry> ccProcessing, boolean probeMode) throws Exception
     {
         long congestionWindow = getQuicSession().getCongestionController().getCongestionWindow();
         if (LOG.isDebugEnabled())
@@ -192,10 +188,10 @@ class CryptoFlusher implements Callback
         return process(processing, ccProcessing, probeMode, congestionWindow);
     }
 
-    boolean process(Deque<FramesEntry> processing, Deque<FramesEntry> ccProcessing, boolean probeMode, long congestionWindow) throws Exception
+    boolean process(List<FramesEntry> processing, List<FramesEntry> ccProcessing, boolean probeMode, long congestionWindow) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processing {}/{} entries on {}", processing.size(), ccProcessing.size(), this);
+            LOG.debug("processing {}+{} entries on {}", processing.size(), ccProcessing.size(), this);
 
         QuicSession session = getQuicSession();
 
@@ -256,14 +252,15 @@ class CryptoFlusher implements Callback
         return true;
     }
 
-    private long generateEntries(RetainableByteBuffer.Mutable framesAccumulator, Deque<FramesEntry> entries, long maxFrameBytes)
+    private long generateEntries(RetainableByteBuffer.Mutable framesAccumulator, List<FramesEntry> entries, long maxFrameBytes)
     {
-        while (true)
+        ListIterator<FramesEntry> iterator = entries.listIterator();
+        while (iterator.hasNext())
         {
-            FramesEntry entry = entries.peek();
-            if (entry == null || maxFrameBytes <= 0)
-                return maxFrameBytes;
+            if (maxFrameBytes <= 0)
+                break;
 
+            FramesEntry entry = iterator.next();
             for (Frame frame : entry.frames())
             {
                 if (LOG.isDebugEnabled())
@@ -287,7 +284,7 @@ class CryptoFlusher implements Callback
                         framesLeft.add(frame);
                 }
 
-                if (maxFrameBytes == 0)
+                if (maxFrameBytes <= 0)
                     break;
             }
 
@@ -295,19 +292,17 @@ class CryptoFlusher implements Callback
             {
                 // No frame was generated, keep the entry for a later flush.
                 framesLeft.clear();
-                return maxFrameBytes;
             }
             else if (framesLeft.isEmpty())
             {
                 // The entry was fully generated, move it to writing.
-                entries.poll();
                 writing.add(new FramesEntry(entry.stream(), List.copyOf(framesGenerated), entry.callback(), entry.congestionControlled()));
+                iterator.remove();
                 framesGenerated.clear();
             }
             else
             {
                 // The entry was partially generated, split it into two entries.
-                entries.poll();
                 Callback callback = entry.callback();
                 // The first half does not notify successful completion
                 // until all frames are processed but does notify failures.
@@ -316,10 +311,11 @@ class CryptoFlusher implements Callback
                 framesGenerated.clear();
                 // Keep the second half.
                 FramesEntry secondHalfEntry = new FramesEntry(entry.stream(), List.copyOf(framesLeft), callback, entry.congestionControlled());
+                iterator.set(secondHalfEntry);
                 framesLeft.clear();
-                entries.offerFirst(secondHalfEntry);
             }
         }
+        return maxFrameBytes;
     }
 
     GeneratedFrame generateFrame(RetainableByteBuffer.Mutable framesAccumulator, QuicStream stream, Frame frame, long maxBytes)

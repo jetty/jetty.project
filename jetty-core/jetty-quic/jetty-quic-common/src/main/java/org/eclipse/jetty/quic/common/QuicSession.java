@@ -476,12 +476,14 @@ public abstract class QuicSession extends AbstractSession
 
         stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
+        // A local stream can only send up to what the remote stream wants to receive.
         Long maxSendData = stream.isBidirectional()
             ? remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE)
             : remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
         if (maxSendData != null)
             stream.updateSentMaxOffset(maxSendData);
 
+        // A local stream can only receive up to what the local stream wants to receive.
         Long maxRecvData = stream.isBidirectional()
             ? localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
             : localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
@@ -542,11 +544,19 @@ public abstract class QuicSession extends AbstractSession
 
         stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
-        Long maxData = bidirectional
+        // A remote stream can only send up to what the local stream wants to receive.
+        Long maxSendData = bidirectional
             ? remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
             : remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
-        if (maxData != null)
-            stream.updateSentMaxOffset(maxData);
+        if (maxSendData != null)
+            stream.updateSentMaxOffset(maxSendData);
+
+        // A remote stream can only receive up to what the remote stream wants to receive.
+        Long maxRecvData = stream.isBidirectional()
+            ? localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE)
+            : localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
+        if (maxRecvData != null)
+            stream.updateRecvMaxOffset(maxRecvData);
 
         flowController.onStreamCreated(stream);
 
@@ -676,7 +686,7 @@ public abstract class QuicSession extends AbstractSession
         if (stream.updateRecvMaxOffset(max))
         {
             Callback callback = Promise.Invocable.toCallback(promise, stream);
-            sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+            sendFrames(stream, List.of(frame), callback);
         }
         else
         {
@@ -689,19 +699,25 @@ public abstract class QuicSession extends AbstractSession
         if (LOG.isDebugEnabled())
             LOG.debug("resetting {} for {} on {}", frame, stream, this);
         Callback callback = Promise.Invocable.toCallback(promise, stream);
-        sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+        sendFrames(stream, List.of(frame), callback);
     }
 
     void stopSending(QuicStream stream, StopSendingFrame frame, Promise.Invocable<Stream> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, stream);
-        sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+        sendFrames(stream, List.of(frame), callback);
     }
 
     void dataBlocked(QuicStream stream, StreamDataBlockedFrame frame, Promise.Invocable<Stream> promise)
     {
         Callback callback = Promise.Invocable.toCallback(promise, stream);
-        sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
+        sendFrames(stream, List.of(frame), callback);
+    }
+
+    void sendProbe(EncryptionLevel encryptionLevel)
+    {
+        if (isOpen())
+            flusher.sendProbe(encryptionLevel);
     }
 
     void sendFrames(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback)
@@ -712,10 +728,12 @@ public abstract class QuicSession extends AbstractSession
             callback.failed(new ClosedChannelException());
     }
 
-    void sendProbe(EncryptionLevel encryptionLevel)
+    void sendFrames(QuicStream stream, List<Frame> frames, Callback callback)
     {
         if (isOpen())
-            flusher.sendProbe(encryptionLevel);
+            flusher.sendFrames(stream, frames, callback);
+        else
+            callback.failed(new ClosedChannelException());
     }
 
     @Override
@@ -1069,34 +1087,55 @@ public abstract class QuicSession extends AbstractSession
     {
         Frame.WithStreamId first = frames.getFirst();
         QuicStream stream = getOrCreateRemoteStream(first);
+        if (stream == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("dropping frame {} for terminated stream #{} on {}", first, first.streamId(), this);
+            return null;
+        }
 
-        long offset = 0;
+        // Perform some initial processing of the frames.
+
+        long streamOffset = 0;
         for (Frame.WithStreamId frame : frames)
         {
-            if (frame instanceof StreamFrame streamFrame)
-                offset = Math.max(offset, streamFrame.offset() + streamFrame.length());
+            streamOffset = Math.max(streamOffset, switch (frame)
+            {
+                case ResetFrame resetFrame ->
+                {
+                    // RFC-9000[19.4]: local unidirectional stream receiving a reset produces a connection error.
+                    if (stream.isLocal() && !stream.isBidirectional())
+                        throw new QuicException(ErrorCode.STREAM_STATE_ERROR, "local_unidirectional_stream_reset", frame.type());
+                    yield resetFrame.finalSize();
+                }
+                case StreamFrame streamFrame -> streamFrame.offset() + streamFrame.length();
+                case StreamMaxDataFrame streamMaxDataFrame ->
+                {
+                    flusher.processMaxData(stream, streamMaxDataFrame);
+                    yield 0;
+                }
+                default -> 0;
+            });
         }
 
-        if (offset > 0)
+        // Handle flow control.
+        if (streamOffset > 0)
         {
-            if (offset > getRecvMaxOffset())
-                throw new QuicException(ErrorCode.FLOW_CONTROL_ERROR, "session_max_data_exceeded", 0x08);
-            if (stream != null && offset > stream.getRecvMaxOffset())
+            if (streamOffset > stream.getRecvMaxOffset())
                 throw new QuicException(ErrorCode.FLOW_CONTROL_ERROR, "stream_max_data_exceeded", 0x08);
-            updateRecvOffset(stream, offset);
-            flowController.onDataReceived(this, stream, offset);
+            long delta = streamOffset - stream.getRecvOffset();
+            stream.updateRecvOffset(streamOffset);
+            if (delta > 0)
+            {
+                long sessionOffset = getRecvOffset() + delta;
+                if (sessionOffset > getRecvMaxOffset())
+                    throw new QuicException(ErrorCode.FLOW_CONTROL_ERROR, "session_max_data_exceeded", 0x08);
+                updateRecvOffset(sessionOffset);
+            }
+            flowController.onDataReceived(stream);
         }
 
-        if (stream != null)
-            return stream.processFrames(frames);
-
-        // The data is dropped, implicitly consume it.
-        if (offset > 0)
-            flowController.onDataConsumed(this, null, offset);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("dropping frame {} for terminated stream #{} on {}", first, first.streamId(), this);
-        return null;
+        return stream.processFrames(frames);
     }
 
     protected void processFrame(Packet.WithFrames packet, Frame frame)
@@ -1112,11 +1151,12 @@ public abstract class QuicSession extends AbstractSession
                 EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
                 cryptoStreams.computeIfAbsent(encryptionLevel, _ -> new FrameStream(this::processCryptoFrame)).offer(cryptoFrame);
             }
+            case DataBlockedFrame dataBlockedFrame -> notifyDataBlocked(dataBlockedFrame);
             case MaxDataFrame maxDataFrame ->
             {
                 // Serialize processing of maxData frames through the flusher.
                 flusher.processMaxData(maxDataFrame);
-                // TODO: notify Session.Listener (before or after queuing to the flusher?)
+                notifyMaxData(maxDataFrame);
             }
             case MaxStreamsFrame maxStreamsFrame ->
             {
@@ -1186,6 +1226,25 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
+    long getMaxData()
+    {
+        return localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_DATA);
+    }
+
+    long getMaxData(QuicStream stream)
+    {
+        if (stream.isBidirectional())
+        {
+            return stream.isLocal()
+                ? localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
+                : localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE);
+        }
+        else
+        {
+            return localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
+        }
+    }
+
     /// @return the received data offset for this session
     public long getRecvOffset()
     {
@@ -1198,14 +1257,12 @@ public abstract class QuicSession extends AbstractSession
         return recvMaxOffset.get();
     }
 
-    /// Updates the received data offset for this session and the given stream.
+    /// Updates the received data offset for this session.
     ///
     /// This method is called when [StreamFrame]s are received.
-    private void updateRecvOffset(QuicStream stream, long offset)
+    private void updateRecvOffset(long offset)
     {
         Atomics.updateMax(recvOffset, offset);
-        if (stream != null)
-            stream.updateRecvOffset(offset);
     }
 
     /// Updates the received max data offset for this session.
@@ -1247,6 +1304,11 @@ public abstract class QuicSession extends AbstractSession
     public void updateSentOffset(long offset)
     {
         Atomics.updateMax(sentOffset, offset);
+    }
+
+    public long getSentMaxOffset()
+    {
+        return sentMaxOffset.get();
     }
 
     /// Updates the send max data for this session.

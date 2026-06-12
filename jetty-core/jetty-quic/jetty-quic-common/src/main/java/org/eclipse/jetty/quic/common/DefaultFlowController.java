@@ -13,55 +13,91 @@
 
 package org.eclipse.jetty.quic.common;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
-import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Promise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DefaultFlowController implements FlowController
 {
-    private final AtomicLong sessionConsumed = new AtomicLong();
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultFlowController.class);
+
+    private final AtomicLong sessionRead = new AtomicLong();
+    private final Map<Stream, AtomicLong> streamsRead = new ConcurrentHashMap<>();
 
     @Override
     public void onStreamCreated(Stream stream)
     {
+        streamsRead.put(stream, new AtomicLong());
     }
 
     @Override
     public void onStreamTerminated(Stream stream)
     {
+        streamsRead.remove(stream);
     }
 
     @Override
-    public void onDataReceived(Session session, Stream stream, long offset)
+    public void onDataReceived(Stream stream)
     {
     }
 
     @Override
-    public void onDataConsumed(Session session, Stream stream, long offset)
+    public void onDataRead(Stream stream, long length)
     {
-        QuicSession quicSession = (QuicSession)session;
+        // NOTE: this method is called from arbitrary threads,
+        // so it may read session/stream offsets concurrently
+        // with the receiver thread that updates those offsets.
+        // As offsets are always increasing, the stale value
+        // read here is smaller than the just updated value.
+        // This means that the send of the MAX_DATA might be
+        // delayed to the next read, which might cause the
+        // sender to stall temporarily when these races occur.
+        // This is simpler than coordinating a lock between
+        // the receiver thread and the reader thread.
 
-        QuicConfiguration quicConfiguration = quicSession.getQuicConfiguration();
-        long sessionBudget = quicConfiguration.getSessionMaxData();
+        QuicStream quicStream = (QuicStream)stream;
+        QuicSession quicSession = quicStream.getSession();
 
-        if (Atomics.updateMax(sessionConsumed, offset))
+        long sessionReadOffset = sessionRead.addAndGet(length);
+
+        long sessionBudget = quicSession.getMaxData();
+        long sessionMax = quicSession.getRecvMaxOffset();
+        long sessionNewMax = sessionReadOffset + sessionBudget;
+        long sessionReceived = quicSession.getRecvOffset();
+
+        boolean sessionNeedsMore = sessionNewMax > sessionMax;
+        boolean sessionHasEnough = sessionMax - sessionReceived > sessionBudget / 2;
+        if (sessionNeedsMore && !sessionHasEnough)
         {
-            long max = quicSession.getRecvMaxOffset();
-            long newMax = offset + sessionBudget;
-            long received = quicSession.getRecvOffset();
-
-            boolean needsMore = newMax > max;
-            boolean hasEnough = max - received > sessionBudget / 2;
-            if (needsMore && !hasEnough)
-                quicSession.maxData(new MaxDataFrame(newMax), Promise.Invocable.noop());
+            if (LOG.isDebugEnabled())
+                LOG.debug("session unstalling read/recv/max->newMax {}/{}/{}->{} {}", sessionReadOffset, sessionReceived, sessionMax, sessionNewMax, quicSession);
+            quicSession.maxData(new MaxDataFrame(sessionNewMax), Promise.Invocable.noop());
         }
 
-        // TODO: same for streams.
+        AtomicLong streamRead = streamsRead.get(stream);
+        if (streamRead == null)
+            return;
+        long streamReadOffset = streamRead.addAndGet(length);
 
+        long streamBudget = quicStream.getMaxData();
+        long streamMax = quicStream.getRecvMaxOffset();
+        long streamNewMax = streamReadOffset + streamBudget;
+        long streamReceived = quicStream.getRecvOffset();
+
+        boolean streamNeedsMore = streamNewMax > streamMax;
+        boolean streamHasEnough = streamMax - streamReceived > streamBudget / 2;
+        if (streamNeedsMore && !streamHasEnough)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("stream unstalling read/recv/max->newMax {}/{}/{}->{} {}", streamReadOffset, streamReceived, streamMax, streamNewMax, quicStream);
+            quicStream.maxData(streamNewMax, Promise.Invocable.noop());
+        }
     }
 
     public static class Factory implements FlowController.Factory
