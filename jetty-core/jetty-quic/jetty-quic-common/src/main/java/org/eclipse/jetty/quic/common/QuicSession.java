@@ -142,7 +142,9 @@ public abstract class QuicSession extends AbstractSession
     private SocketAddress remoteSocketAddress;
     private TransportParameters localTransportParameters;
     private TransportParameters remoteTransportParameters;
-    private boolean flowControlStalled;
+    private volatile boolean biLocalStreamsStalled;
+    private volatile boolean uniLocalStreamsStalled;
+    private volatile boolean flowControlStalled;
     private Scheduler.Task keepAliveTask;
     private EncryptionLevel encryptionLevel = EncryptionLevel.INITIAL;
     private ConnectionCloseFrame closeFrame;
@@ -453,7 +455,8 @@ public abstract class QuicSession extends AbstractSession
 
     private QuicStream createLocalStream(long streamId)
     {
-        QuicStream stream;
+        QuicStream stream = null;
+        StreamsBlockedFrame stalled = null;
         try (var _ = lock.lock())
         {
             if (streams.containsKey(streamId))
@@ -466,13 +469,27 @@ public abstract class QuicSession extends AbstractSession
             AtomicLong localStreamCount = bidirectional ? biLocalStreamCount : uniLocalStreamCount;
             long count = localStreamCount.get();
             long max = bidirectional ? getBidirectionalLocalStreamMaxCount() : getUnidirectionalLocalStreamMaxCount();
-            if (max >= 0 && count >= max)
-                throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "local_stream_count_exceeded");
-            localStreamCount.incrementAndGet();
-
-            stream = new QuicStream(this, streamId, true);
-            streams.put(streamId, stream);
+            if (max < 0 || count < max)
+            {
+                localStreamCount.incrementAndGet();
+                stream = new QuicStream(this, streamId, true);
+                streams.put(streamId, stream);
+            }
+            else
+            {
+                if (stallStreams(bidirectional))
+                    stalled = new StreamsBlockedFrame(bidirectional, max);
+            }
         }
+
+        if (stalled != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("stalling streams on {}", this);
+            sendFrames(EncryptionLevel.ONE_RTT, List.of(stalled), Callback.NOOP);
+        }
+        if (stream == null)
+            throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "local_stream_count_exceeded");
 
         stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
@@ -534,12 +551,17 @@ public abstract class QuicSession extends AbstractSession
             AtomicLong remoteStreamCount = bidirectional ? biRemoteStreamCount : uniRemoteStreamCount;
             long count = remoteStreamCount.get();
             long max = bidirectional ? getBidirectionalRemoteStreamMaxCount() : getUnidirectionalRemoteStreamMaxCount();
-            if (max > 0 && count >= max)
-                throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "remote_stream_count_exceeded");
-            remoteStreamCount.incrementAndGet();
+            if (max <= 0 || count < max)
+            {
+                remoteStreamCount.incrementAndGet();
 
-            stream = new QuicStream(this, streamId, false);
-            streams.put(streamId, stream);
+                stream = new QuicStream(this, streamId, false);
+                streams.put(streamId, stream);
+            }
+            else
+            {
+                throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "remote_stream_count_exceeded");
+            }
         }
 
         stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
@@ -1160,11 +1182,11 @@ public abstract class QuicSession extends AbstractSession
             }
             case MaxStreamsFrame maxStreamsFrame ->
             {
-                AtomicLong maxStreams = maxStreamsFrame.isBidirectional() ? biLocalStreamMaxCount : uniLocalStreamMaxCount;
-                if (Atomics.updateMax(maxStreams, maxStreamsFrame.maxStreams()))
+                if (updateMaxStreams(maxStreamsFrame.isBidirectional(), maxStreamsFrame.maxStreams()))
                     notifyMaxStreams(maxStreamsFrame);
             }
             case PingFrame _ -> notifyPing();
+            case StreamsBlockedFrame streamsBlockedFrame -> notifyStreamsBlocked(streamsBlockedFrame);
             default -> throw new UnsupportedOperationException();
         }
     }
@@ -1322,11 +1344,35 @@ public abstract class QuicSession extends AbstractSession
             flowControlStalled = false;
     }
 
-    public boolean stall()
+    public boolean stallFlowControl()
     {
-        boolean result = !flowControlStalled;
+        boolean stalled = flowControlStalled;
         flowControlStalled = true;
-        return result;
+        return !stalled;
+    }
+
+    private boolean updateMaxStreams(boolean bidirectional, long newValue)
+    {
+        AtomicLong maxStreams = bidirectional ? biLocalStreamMaxCount : uniLocalStreamMaxCount;
+        if (Atomics.updateMax(maxStreams, newValue))
+        {
+            if (bidirectional)
+                biLocalStreamsStalled = false;
+            else
+                uniLocalStreamsStalled = false;
+            return true;
+        }
+        return false;
+    }
+
+    private boolean stallStreams(boolean bidirectional)
+    {
+        boolean stalled = bidirectional ? biLocalStreamsStalled : uniLocalStreamsStalled;
+        if (bidirectional)
+            biLocalStreamsStalled = true;
+        else
+            uniLocalStreamsStalled = true;
+        return !stalled;
     }
 
     private void processCryptoFrame(Frame.WithOffset frame)

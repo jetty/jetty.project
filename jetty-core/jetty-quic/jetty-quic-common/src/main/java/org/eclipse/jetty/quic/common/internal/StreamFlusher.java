@@ -174,7 +174,7 @@ class StreamFlusher extends CryptoFlusher
                     sessionWindow = session.getSendWindow();
                     if (sessionWindow <= 0)
                     {
-                        if (session.stall())
+                        if (session.stallFlowControl())
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("stalling flow control for {} on {}", session, this);

@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
+import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
@@ -30,6 +31,10 @@ import org.junit.jupiter.api.Test;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,6 +45,7 @@ public class StreamsControlTest extends AbstractQuicTest
     public void testMaxStreams() throws Exception
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
+        AtomicReference<StreamsBlockedFrame> streamsBlockedFrameRef = new AtomicReference<>();
         start(() -> new Session.Listener()
         {
             @Override
@@ -48,6 +54,12 @@ public class StreamsControlTest extends AbstractQuicTest
                 serverSessionRef.set(session);
                 transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL, 1L);
                 transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_UNIDIRECTIONAL, 0L);
+            }
+
+            @Override
+            public void onStreamsBlocked(Session session, StreamsBlockedFrame frame)
+            {
+                streamsBlockedFrameRef.set(frame);
             }
         });
 
@@ -64,16 +76,27 @@ public class StreamsControlTest extends AbstractQuicTest
         Session clientSession = future.get(5, SECONDS);
 
         // Cannot open unidirectional streams.
+        // Client should send a STREAMS_BLOCKED frame to the server.
         long uniStreamId = clientSession.newStreamId(false);
         QuicException failure = assertThrows(QuicException.class, () -> clientSession.newStream(uniStreamId, Stream.Listener.DEFAULT));
         assertSame(ErrorCode.STREAM_LIMIT_ERROR, failure.getErrorCode());
+        StreamsBlockedFrame frame = await().atMost(5, SECONDS).until(streamsBlockedFrameRef::get, notNullValue());
+        assertEquals(0, frame.maxStreams());
+        assertFalse(frame.isBidirectional());
+        streamsBlockedFrameRef.set(null);
 
         // Can only open 1 bidirectional stream.
         long streamId1 = clientSession.newStreamId(true);
         Stream stream1 = clientSession.newStream(streamId1, Stream.Listener.DEFAULT);
+        await().during(1, SECONDS).atMost(5, SECONDS).until(streamsBlockedFrameRef::get, nullValue());
+
         long streamId2 = clientSession.newStreamId(true);
         failure = assertThrows(QuicException.class, () -> clientSession.newStream(streamId2, Stream.Listener.DEFAULT));
         assertSame(ErrorCode.STREAM_LIMIT_ERROR, failure.getErrorCode());
+        frame = await().atMost(5, SECONDS).until(streamsBlockedFrameRef::get, notNullValue());
+        assertEquals(1, frame.maxStreams());
+        assertTrue(frame.isBidirectional());
+        streamsBlockedFrameRef.set(null);
 
         stream1.disconnect(ErrorCode.NO_ERROR.code(), null, Promise.Invocable.noop());
         assertTrue(maxStreamsLatch.await(5, SECONDS));
@@ -82,7 +105,7 @@ public class StreamsControlTest extends AbstractQuicTest
 
         // Wait for the stream to be closed also on the client-side.
         stream1.demand();
-        await().atMost(5, SECONDS).until(stream1::isClosed);
+        await().atMost(5, SECONDS).until(stream1::isTerminated);
         await().atMost(5, SECONDS).until(clientSession::getStreams, hasSize(0));
 
         // Verify that another stream can be opened.
