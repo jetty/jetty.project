@@ -55,7 +55,7 @@ public class QuicheStream extends AbstractStream
     }
 
     @Override
-    public boolean isClosed()
+    public boolean isTerminated()
     {
         return closeState.get() == CloseState.CLOSED;
     }
@@ -384,10 +384,11 @@ public class QuicheStream extends AbstractStream
         }
     }
 
+    // TODO: remove, only used by Quiche.
     private void removeAndNotifyClose()
     {
         if (session.remove(this))
-            notifyClose();
+            notifyTerminated();
     }
 
     @Override

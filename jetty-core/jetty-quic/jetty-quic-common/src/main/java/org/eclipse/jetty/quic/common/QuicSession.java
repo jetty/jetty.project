@@ -611,7 +611,7 @@ public abstract class QuicSession extends AbstractSession
             : stream.isLocal() ? terminatedUniLocalStream : terminatedUniRemoteStream;
         Atomics.updateMax(terminated, streamId);
 
-        stream.notifyClose();
+        stream.notifyTerminated();
 
         flowController.onStreamTerminated(stream);
 

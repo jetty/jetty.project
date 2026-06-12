@@ -398,7 +398,7 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
             }
 
             @Override
-            public void onClose(Stream stream)
+            public void onTerminated(Stream stream)
             {
                 clientStreamCloseLatch.countDown();
             }
@@ -416,7 +416,7 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
             }
 
             @Override
-            public void onClose(Stream stream)
+            public void onTerminated(Stream stream)
             {
                 clientStreamCloseLatch.countDown();
             }

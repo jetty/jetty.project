@@ -92,7 +92,7 @@ public class StreamEndPoint implements EndPoint
     @Override
     public boolean isOpen()
     {
-        return !stream.isClosed();
+        return !stream.isTerminated();
     }
 
     @Override
