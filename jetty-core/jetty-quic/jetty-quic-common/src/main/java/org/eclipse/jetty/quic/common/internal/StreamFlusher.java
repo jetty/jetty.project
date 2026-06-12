@@ -177,7 +177,7 @@ class StreamFlusher extends CryptoFlusher
                         if (session.stallFlowControl())
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug("stalling flow control for {} on {}", session, this);
+                                LOG.debug("stalling session flow control for {} on {}", session, this);
                             sendFrames(List.of(new DataBlockedFrame(session.getSentOffset())), NOOP);
                         }
                     }
@@ -186,7 +186,7 @@ class StreamFlusher extends CryptoFlusher
                     if (remaining >= 0 && streamWindow <= 0)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("stalling flow control for {} on {}", stream, this);
+                            LOG.debug("stalling stream flow control for {} on {}", stream, this);
                         sendFrames(List.of(new StreamDataBlockedFrame(stream.getId(), stream.getSentOffset())), NOOP);
                     }
 
