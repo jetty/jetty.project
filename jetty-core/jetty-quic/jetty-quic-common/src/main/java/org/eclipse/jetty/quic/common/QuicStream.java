@@ -71,7 +71,7 @@ public class QuicStream extends AbstractStream
     }
 
     @Override
-    public boolean isClosed()
+    public boolean isTerminated()
     {
         try (var _ = lock.lock())
         {

@@ -108,13 +108,13 @@ public abstract class AbstractStream implements Stream, CyclicTimeouts.Expirable
         }
     }
 
-    protected void notifyClose()
+    protected void notifyTerminated()
     {
         Stream.Listener listener = getListener();
         try
         {
             if (listener != null)
-                listener.onClose(this);
+                listener.onTerminated(this);
         }
         catch (Throwable x)
         {

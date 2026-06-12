@@ -49,12 +49,14 @@ public interface Stream
     /// @return whether the stream is local or remote
     boolean isLocal();
 
-    // TODO: rename to isTerminated? to include acked and failed?
-    /// Returns whether the stream is fully closed, both
-    /// [locally][#isLocallyClosed()] and [remotely][#isRemotelyClosed()].
+    /// Returns whether the stream is terminated.
     ///
-    /// @return whether the stream is fully closed
-    boolean isClosed();
+    /// A stream is terminated when:
+    /// * The receiving side read the last frame in the stream.
+    /// * The sending side sent the last frame in the stream, and it was acknowledged.
+    ///
+    /// @return whether the stream is terminated
+    boolean isTerminated();
 
     /// Returns whether the stream is locally closed.
     ///
@@ -66,7 +68,7 @@ public interface Stream
     ///
     /// @return whether the stream is locally closed
     /// @see #isRemotelyClosed()
-    /// @see #isClosed()
+    /// @see #isTerminated()
     boolean isLocallyClosed();
 
     /// Returns whether the stream is remotely closed.
@@ -78,7 +80,7 @@ public interface Stream
     ///
     /// @return whether the stream is remotely closed
     /// @see #isLocallyClosed()
-    /// @see #isClosed()
+    /// @see #isTerminated()
     boolean isRemotelyClosed();
 
     /// @return the idle timeout in milliseconds
@@ -349,6 +351,7 @@ public interface Stream
         {
         }
 
+        // TODO: remove.
         /// Invoked when a `RESET_STREAM` frame has been received.
         ///
         /// This event is only emitted for informational purposes.
@@ -359,18 +362,10 @@ public interface Stream
         {
         }
 
-        // TODO: invoked when closed or terminated?
-
-        /// Invoked when the stream has been [completed][Stream#isClosed()].
-        ///
-        /// A stream is closed when either:
-        /// * The receiving side read the last frame in the stream,
-        ///   and the sending side sent the last frame in the stream
-        /// * The stream is [disconnected][#disconnect(long, Throwable, Promise.Invocable)],
-        ///   for example due to failures.
+        /// Invoked when the stream has been [terminated][Stream#isTerminated()].
         ///
         /// @param stream the stream
-        default void onClose(Stream stream)
+        default void onTerminated(Stream stream)
         {
         }
 
