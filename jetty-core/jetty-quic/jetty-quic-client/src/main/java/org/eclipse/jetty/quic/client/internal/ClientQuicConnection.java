@@ -114,13 +114,6 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     }
 
     @Override
-    public long getBytesOut()
-    {
-        // TODO
-        return 0;
-    }
-
-    @Override
     public boolean onIdleExpired(TimeoutException timeoutException)
     {
         session.onIdleTimeout(timeoutException);

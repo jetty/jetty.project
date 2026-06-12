@@ -52,6 +52,7 @@ class CryptoFlusher implements Callback
     private final EncryptionLevel encryptionLevel;
     private long cryptoOffset;
     private boolean sendProbe;
+    private long bytesWritten;
 
     CryptoFlusher(QuicFlusher flusher, EncryptionLevel encryptionLevel)
     {
@@ -246,6 +247,7 @@ class CryptoFlusher implements Callback
         packetGenerator.generate(packetAccumulator, packet, framesAccumulator);
         boolean dataStalled = processing.isEmpty() || session.getSendWindow() == 0;
         session.getPacketTracker().processPacketSent(session, packet, packetAccumulator.size(), dataStalled);
+        bytesWritten = packetAccumulator.size();
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} {} to {} on {}", packet, packetAccumulator, endPoint, this);
         endPoint.write(flusher, session.getRemoteSocketAddress(), packetAccumulator.getByteBuffer());
@@ -354,6 +356,7 @@ class CryptoFlusher implements Callback
     {
         if (LOG.isDebugEnabled())
             LOG.debug("write succeeded to {} on {}", getQuicSession().getEndPoint(), this);
+        flusher.bytesWritten(bytesWritten);
         writing.forEach(FramesEntry::succeeded);
         writing.clear();
     }

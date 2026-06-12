@@ -249,6 +249,11 @@ public class QuicFlusher extends IteratingCallback
         return Action.IDLE;
     }
 
+    void bytesWritten(long bytesWritten)
+    {
+        session.bytesWritten(bytesWritten);
+    }
+
     @Override
     protected void onSuccess()
     {

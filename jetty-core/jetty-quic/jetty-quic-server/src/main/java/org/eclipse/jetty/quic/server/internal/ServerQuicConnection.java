@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -27,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
@@ -57,11 +57,9 @@ import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable.Task;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -78,9 +76,9 @@ public class ServerQuicConnection extends QuicConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerQuicConnection.class);
 
+    private final AtomicLong bytesIn = new AtomicLong();
     private final ConcurrentMap<ConnectionId, ServerQuicSession> sessions = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
-    private final Flusher flusher = new Flusher();
     private final Connector connector;
     private final SslContextFactory.Server sslContextFactory;
     private final QuicServerQuicConfiguration quicConfiguration;
@@ -139,6 +137,12 @@ public class ServerQuicConnection extends QuicConnection
     }
 
     @Override
+    public long getBytesIn()
+    {
+        return bytesIn.get();
+    }
+
+    @Override
     protected Runnable doProduce()
     {
         RetainableByteBuffer buffer = getByteBufferPool().acquire(getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
@@ -164,6 +168,8 @@ public class ServerQuicConnection extends QuicConnection
                     fillInterested();
                     return null;
                 }
+
+                bytesIn.addAndGet(filled);
 
                 // Retrieve the destination connection id from the packet.
                 int position = byteBuffer.position();
@@ -309,12 +315,6 @@ public class ServerQuicConnection extends QuicConnection
         return new ServerQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, flowController, streamsController, listener);
     }
 
-    public void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers)
-    {
-        flusher.offer(callback, remoteAddress, buffers);
-        flusher.iterate();
-    }
-
     @Override
     public boolean onIdleExpired(TimeoutException timeoutException)
     {
@@ -406,60 +406,6 @@ public class ServerQuicConnection extends QuicConnection
             // The implementation of the Iterator returned above does not support
             // removal, but the session will be removed by session.onIdleTimeout().
             return false;
-        }
-    }
-
-    private class Flusher extends IteratingCallback
-    {
-        private final AutoLock lock = new AutoLock();
-        private final ArrayDeque<Entry> queue = new ArrayDeque<>();
-        private Entry entry;
-
-        private void offer(Callback callback, SocketAddress address, ByteBuffer[] buffers)
-        {
-            try (AutoLock ignored = lock.lock())
-            {
-                queue.offer(new Entry(callback, address, buffers));
-            }
-        }
-
-        @Override
-        protected Action process()
-        {
-            try (AutoLock ignored = lock.lock())
-            {
-                entry = queue.poll();
-            }
-            if (entry == null)
-                return Action.IDLE;
-
-            getEndPoint().write(this, entry.address, entry.buffers);
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onSuccess()
-        {
-            entry.callback.succeeded();
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable failure)
-        {
-            entry.callback.failed(failure);
-            fail(failure);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            if (entry == null)
-                return InvocationType.NON_BLOCKING;
-            return entry.callback.getInvocationType();
-        }
-
-        private record Entry(Callback callback, SocketAddress address, ByteBuffer[] buffers)
-        {
         }
     }
 }
