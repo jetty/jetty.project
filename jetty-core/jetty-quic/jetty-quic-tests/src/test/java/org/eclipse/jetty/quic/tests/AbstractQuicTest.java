@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.quic.tests;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.client.QuicClient;
@@ -64,7 +63,7 @@ public class AbstractQuicTest extends AbstractTest
         clientThreads.setName("client");
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setExecutor(clientThreads);
-        clientConnector.setByteBufferPool(new ArrayByteBufferPool.Tracking());
+//        clientConnector.setByteBufferPool(new ArrayByteBufferPool.Tracking());
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
         client = new QuicClient(new QuicClientQuicConfiguration(), clientConnector);
     }
