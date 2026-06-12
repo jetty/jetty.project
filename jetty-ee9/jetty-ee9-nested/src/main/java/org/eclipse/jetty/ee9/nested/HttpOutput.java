@@ -614,7 +614,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             try (AutoLock l = _channelState.lock())
             {
-                _closedCallback = Callback.combine(_closedCallback, blocker);
+                // Check if onWriteComplete fired while the lock was not held; when it does,
+                // it nulls _closedCallback so no blocking is needed anymore.
+                if (_closedCallback != null)
+                {
+                    _closedCallback = Callback.combine(_closedCallback, blocker);
+                }
+                else
+                {
+                    blocker.succeeded();
+                    blocker.close();
+                    blocker = null;
+                }
             }
         }
 
