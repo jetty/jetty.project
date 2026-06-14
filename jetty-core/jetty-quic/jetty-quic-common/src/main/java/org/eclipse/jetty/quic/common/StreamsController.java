@@ -17,6 +17,8 @@ import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
 
 /// The logic that controls when to send [MaxStreamsFrame]s.
+///
+/// Callback methods are only invoked for remote streams.
 public interface StreamsController
 {
     /// Callback method invoked when a stream is created.

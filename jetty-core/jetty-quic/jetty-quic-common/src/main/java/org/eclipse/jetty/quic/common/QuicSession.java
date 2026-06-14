@@ -865,6 +865,15 @@ public abstract class QuicSession extends AbstractSession
         this.remoteSocketAddress = socketAddress;
     }
 
+    long getMaxStreams(boolean bidirectional)
+    {
+        TransportParameters.Id<Long> param = bidirectional
+            ? TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL
+            : TransportParameters.Ids.INITIAL_MAX_STREAMS_UNIDIRECTIONAL;
+        Long maxStreams = localTransportParameters.get(param);
+        return maxStreams == null ? 0 : maxStreams;
+    }
+
     @Override
     public long getBidirectionalLocalStreamMaxCount()
     {
