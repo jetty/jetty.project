@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -52,7 +53,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Isolated
 public class MountedPathResourceTest
 {
-
     @BeforeEach
     public void beforeEach()
     {
@@ -84,15 +84,48 @@ public class MountedPathResourceTest
     }
 
     @Test
-    public void testNewResourceByUrlHasCorrectUri() throws Exception
+    public void testNewResourceByUrlHasCorrectUrl() throws Exception
     {
         Path testZip = MavenPaths.findTestResourceFile("jar-file-resource.jar");
-        URL url = testZip.toUri().toURL();
+        URL originalUrl = testZip.toUri().toURL();
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Resource r = resourceFactory.newResource(url);
+            Resource r = resourceFactory.newResource(originalUrl);
             URI uri = r.getURI();
-            assertThat(uri.toASCIIString(), is(URIUtil.correctURI(uri).toASCIIString()));
+            assertThat(uri.toASCIIString(), is(URIUtil.correctURI(originalUrl.toURI()).toASCIIString()));
+        }
+    }
+
+    @Test
+    public void testNewResourceByUriHasCorrectUri() throws Exception
+    {
+        Path testZip = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+        URI originalUri = testZip.toUri();
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource r = resourceFactory.newResource(originalUri);
+            URI actualURI = r.getURI();
+            assertThat(actualURI.toASCIIString(), is(URIUtil.correctURI(originalUri).toASCIIString()));
+        }
+    }
+
+    @Test
+    public void testNewResourceByUriWithUnicode(WorkDir workDir) throws Exception
+    {
+        Path sourceJar = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+        Path testDir = workDir.getEmptyPathDir();
+        Path unicodeDir = testDir.resolve("dés");
+        FS.ensureDirExists(unicodeDir);
+        Path jarFile = unicodeDir.resolve("test.jar");
+        IO.copy(sourceJar, jarFile);
+
+        URI originalUri = jarFile.toUri();
+        URI originalJarFileURI = URIUtil.toJarFileUri(originalUri);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource r = resourceFactory.newJarFileResource(originalUri);
+            URI actualURI = r.getURI();
+            assertThat(actualURI.toASCIIString(), is(originalJarFileURI.toASCIIString()));
         }
     }
 
