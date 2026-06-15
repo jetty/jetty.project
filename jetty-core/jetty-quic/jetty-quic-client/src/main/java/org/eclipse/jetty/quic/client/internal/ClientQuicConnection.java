@@ -21,6 +21,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -59,15 +60,22 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     private final AtomicLong bytesIn = new AtomicLong();
     private final ClientConnector connector;
     private final QuicClientQuicConfiguration quicConfiguration;
+    private final ClientConnectionFactory connectionFactory;
     private final Map<String, Object> context;
     private ClientQuicSession session;
 
-    public ClientQuicConnection(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, EndPoint endPoint, Map<String, Object> context)
+    public ClientQuicConnection(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, ClientConnectionFactory connectionFactory, EndPoint endPoint, Map<String, Object> context)
     {
         super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.connector = connector;
         this.quicConfiguration = quicConfiguration;
+        this.connectionFactory = connectionFactory;
         this.context = context;
+    }
+
+    public ClientConnectionFactory getClientConnectionFactory()
+    {
+        return connectionFactory;
     }
 
     public QuicClientQuicConfiguration getClientQuicConfiguration()

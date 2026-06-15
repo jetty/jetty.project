@@ -18,6 +18,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 
@@ -60,6 +61,7 @@ public class QuicStream extends AbstractStream
     private final AtomicLong sentOffset = new AtomicLong();
     private final AtomicLong sentMaxOffset = new AtomicLong();
     private final QuicSession session;
+    private final AtomicBoolean disconnected = new AtomicBoolean();
     private boolean readDemand;
     private boolean readStalled;
 
@@ -331,7 +333,7 @@ public class QuicStream extends AbstractStream
         }
         else
         {
-            promise.failed(new IllegalStateException("stream already locally closed"));
+            promise.succeeded(this);
         }
     }
 
@@ -350,11 +352,20 @@ public class QuicStream extends AbstractStream
     @Override
     public void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise)
     {
-        stopSending(appErrorCode, Promise.Invocable.from(NON_BLOCKING, (s, x) ->
+        if (disconnected.compareAndSet(false, true))
         {
-            if (x == null)
-                s.reset(appErrorCode, promise);
-        }));
+            stopSending(appErrorCode, Promise.Invocable.from(NON_BLOCKING, (s, x) ->
+            {
+                if (x == null)
+                    s.reset(appErrorCode, promise);
+                else
+                    promise.failed(x);
+            }));
+        }
+        else
+        {
+            promise.succeeded(this);
+        }
     }
 
     void onIdleTimeout(TimeoutException failure)

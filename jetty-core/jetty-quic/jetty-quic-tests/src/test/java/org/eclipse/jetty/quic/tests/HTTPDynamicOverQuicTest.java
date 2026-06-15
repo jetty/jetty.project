@@ -30,10 +30,15 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Transport;
+import org.eclipse.jetty.quic.client.QuicClient;
+import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HostHeaderCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -70,7 +75,7 @@ public class HTTPDynamicOverQuicTest extends AbstractTest
         server = new Server();
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("server_keystore.p12").toString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
         HttpConfiguration httpConfig = new HttpConfiguration();
@@ -87,6 +92,11 @@ public class HTTPDynamicOverQuicTest extends AbstractTest
                 QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(workDir.getEmptyPathDir());
                 yield new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, h1, h2);
             }
+            case QUIC ->
+            {
+                QuicServerQuicConfiguration serverQuicConfig = new QuicServerQuicConfiguration();
+                yield new QuicServerConnector(server, sslContextFactory, serverQuicConfig, h1, h2);
+            }
         };
         server.addConnector(connector);
 
@@ -97,10 +107,7 @@ public class HTTPDynamicOverQuicTest extends AbstractTest
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
-        List<ClientConnectionFactory.Info> infos = switch (transportType)
-        {
-            case QUICHE -> List.of(HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client));
-        };
+        List<ClientConnectionFactory.Info> infos = List.of(HttpClientConnectionFactory.HTTP11, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client));
         HttpClientTransportDynamic httpClientTransport = new HttpClientTransportDynamic(clientConnector, infos.toArray(ClientConnectionFactory.Info[]::new));
         httpClient = new HttpClient(httpClientTransport);
         httpClient.start();
@@ -108,6 +115,12 @@ public class HTTPDynamicOverQuicTest extends AbstractTest
         transport = switch (transportType)
         {
             case QUICHE -> new QuicheTransport(new QuicheClientQuicConfiguration());
+            case QUIC ->
+            {
+                QuicClient quicClient = new QuicClient(new QuicClientQuicConfiguration());
+                quicClient.start();
+                yield new QuicTransport(quicClient);
+            }
         };
     }
 

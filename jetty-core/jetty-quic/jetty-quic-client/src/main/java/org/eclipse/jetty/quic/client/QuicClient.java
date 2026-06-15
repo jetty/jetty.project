@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.client.internal.ClientQuicSession;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.quic.client.internal.DefaultTokenStore;
 import org.eclipse.jetty.quic.common.DefaultZeroRTTStore;
 import org.eclipse.jetty.quic.common.SessionContainer;
 import org.eclipse.jetty.quic.common.ZeroRTTStore;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -133,7 +135,7 @@ public class QuicClient extends ContainerLifeCycle implements AutoCloseable
 
     public void connect(SocketAddress address, ByteBuffer earlyData, Session.Listener listener, Promise<Session> promise)
     {
-        connect(new QuicTransport(quicConfiguration), clientConnector.getSslContextFactory(), address, earlyData, listener, null, promise);
+        connect(new QuicTransport(this), clientConnector.getSslContextFactory(), address, earlyData, listener, null, promise);
     }
 
     public void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, ByteBuffer earlyData, Session.Listener listener, Map<String, Object> context, Promise<Session> promise)
@@ -144,12 +146,19 @@ public class QuicClient extends ContainerLifeCycle implements AutoCloseable
         context.put(QuicClient.EARLY_DATA_KEY, earlyData == null ? ClientQuicSession.NO_EARLY_DATA : earlyData);
         context.put(QuicClient.SESSION_LISTENER_CONTEXT_KEY, listener);
         context.put(QuicClient.SESSION_PROMISE_CONTEXT_KEY, promise);
-        context.put(ClientConnector.CONTEXT_KEY, getClientConnector());
-        context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, getApplicationProtocols());
-        context.computeIfAbsent(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY, _ -> sslContextFactory);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(_ -> {}, promise::failed));
-        context.put(ClientConnectionFactory.CONTEXT_KEY, resolveClientConnectionFactory(transport));
-        context.put(Transport.CONTEXT_KEY, transport);
+        context.putIfAbsent(ClientConnector.CONTEXT_KEY, getClientConnector());
+        context.putIfAbsent(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, getApplicationProtocols());
+        context.putIfAbsent(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY, sslContextFactory);
+        context.compute(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, (_, v) ->
+        {
+            if (v == null)
+                return Promise.from(_ -> {}, promise::failed);
+            @SuppressWarnings("unchecked")
+            Promise<Connection> io = (Promise<Connection>)v;
+            return Promise.from(io::succeeded, x -> ExceptionUtil.callAndThen(x, promise::failed, io::failed));
+        });
+        context.putIfAbsent(ClientConnectionFactory.CONTEXT_KEY, resolveClientConnectionFactory(transport));
+        context.putIfAbsent(Transport.CONTEXT_KEY, transport);
 
         if (LOG.isDebugEnabled())
             LOG.debug("connecting to {}", address);
