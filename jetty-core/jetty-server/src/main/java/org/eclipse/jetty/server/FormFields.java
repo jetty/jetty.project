@@ -400,19 +400,23 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
 
     private static int findDefaultMaxFields(Request request)
     {
-        int maxLength;
+        int maxFields;
         if (request != null)
         {
-            maxLength = parse(request.getContext().getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE));
-            if (maxLength != -1)
-                return maxLength;
+            maxFields = parse(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE));
+            if (maxFields != -1)
+                return maxFields;
+
+            maxFields = parse(request.getContext().getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE));
+            if (maxFields != -1)
+                return maxFields;
         }
 
         // Use value from the system property if it is set.
         String property = System.getProperty(FormFields.MAX_FIELDS_ATTRIBUTE);
-        maxLength = parse(property);
-        if (maxLength != -1)
-            return maxLength;
+        maxFields = parse(property);
+        if (maxFields != -1)
+            return maxFields;
 
         return FormFields.MAX_FIELDS_DEFAULT;
     }
@@ -422,6 +426,10 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         int maxLength;
         if (request != null)
         {
+            maxLength = parse(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE));
+            if (maxLength != -1)
+                return maxLength;
+
             maxLength = parse(request.getContext().getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE));
             if (maxLength != -1)
                 return maxLength;
@@ -450,6 +458,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         }
     }
 
+    private final Content.Source _content;
     private final Fields _fields;
     private final CharsetStringBuilder _builder;
     private final int _maxFields;
@@ -462,12 +471,11 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     private FormFields(Content.Source source, InvocationType invocationType, Charset charset, int maxFields, int maxSize)
     {
         super(source, invocationType);
+        _content = source;
         _maxFields = maxFields;
         _maxLength = maxSize;
         _builder = CharsetStringBuilder.forCharset(charset);
         _fields = new Fields(true);
-        if (_maxLength > 0 && source.getLength() > _maxLength)
-            throw new HttpException.IllegalStateException(HttpStatus.PAYLOAD_TOO_LARGE_413, "form too large > " + _maxLength);
     }
 
     @Override
@@ -475,6 +483,10 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     {
         if (_maxLength >= 0)
         {
+            // Fast fail here if content-length is known.
+            if (_length == 0 && _content.getLength() > _maxLength)
+                throw new HttpException.IllegalStateException(HttpStatus.PAYLOAD_TOO_LARGE_413, "form too large > " + _maxLength);
+
             _length += chunk.remaining();
             if (_length > _maxLength)
                 throw new HttpException.IllegalStateException(HttpStatus.PAYLOAD_TOO_LARGE_413, "form too large > " + _maxLength);

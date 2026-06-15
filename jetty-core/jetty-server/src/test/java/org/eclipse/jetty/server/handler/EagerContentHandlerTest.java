@@ -22,6 +22,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpException;
@@ -44,6 +45,9 @@ import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -536,12 +540,10 @@ public class EagerContentHandlerTest
     @Test
     public void testEagerFormFieldsLimits() throws Exception
     {
-        // Set the global form limits for maxFormContentSize.
-        System.setProperty("org.eclipse.jetty.server.Request.maxFormKeys", "-1");
-        System.setProperty("org.eclipse.jetty.server.Request.maxFormContentSize", "15");
+        // Set the server context limit for maxFormContentSize.
+        _server.getContext().setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize", "15");
 
-        CountDownLatch processing = new CountDownLatch(1);
-        CompletableFuture<Throwable> contentLoaderErrorFuture = new CompletableFuture<>();
+        CountDownLatch processing = new CountDownLatch(2);
         CompletableFuture<Throwable> handlerErrorFuture = new CompletableFuture<>();
         EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.FormContentLoaderFactory()
         {
@@ -554,16 +556,8 @@ public class EagerContentHandlerTest
                     @Override
                     protected void load() throws Exception
                     {
-                        try
-                        {
-                            contentLoader.load();
-                            processing.countDown();
-                        }
-                        catch (Throwable t)
-                        {
-                            contentLoaderErrorFuture.complete(t);
-                            throw t;
-                        }
+                        contentLoader.load();
+                        processing.countDown();
                     }
                 };
             }
@@ -605,8 +599,8 @@ public class EagerContentHandlerTest
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
-            // The EagerContentHandler's ContentLoader should throw so we never reach the handler.
-            Throwable throwable = contentLoaderErrorFuture.get(5, TimeUnit.SECONDS);
+            // The failure should not be thrown from the content loader but the handler.
+            Throwable throwable = handlerErrorFuture.get(5, TimeUnit.SECONDS);
             assertThat(throwable, instanceOf(HttpException.IllegalStateException.class));
 
             // The response code should be 413 PAYLOAD_TOO_LARGE.
@@ -655,6 +649,76 @@ public class EagerContentHandlerTest
             HttpTester.Response response = HttpTester.parseResponse(input);
             assertThat(response.getStatus(), is(HttpStatus.PAYLOAD_TOO_LARGE_413));
             assertThat(response.getContent(), containsString("form too large"));
+        }
+    }
+
+    public static Stream<Arguments> formLimitsProvider()
+    {
+        // The form content has a size of 27 bytes with 2 fields.
+        return Stream.of(
+            Arguments.of(-1, -1, HttpStatus.OK_200),
+            Arguments.of(100, 100, HttpStatus.OK_200),
+            Arguments.of(2, -1, HttpStatus.OK_200),
+            Arguments.of(1, -1, HttpStatus.PAYLOAD_TOO_LARGE_413),
+            Arguments.of(-1, 27, HttpStatus.OK_200),
+            Arguments.of(-1, 26, HttpStatus.PAYLOAD_TOO_LARGE_413)
+            );
+    }
+
+    @ParameterizedTest
+    @MethodSource("formLimitsProvider")
+    public void perRequestFormLimitsTest(int maxFormFields, int maxFormLength, int expectedStatusCode) throws Exception
+    {
+        _server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                String maxFieldsAttribute = request.getHeaders().get(FormFields.MAX_FIELDS_ATTRIBUTE);
+                if (maxFieldsAttribute != null)
+                    request.setAttribute(FormFields.MAX_FIELDS_ATTRIBUTE, maxFieldsAttribute);
+
+                String maxLengthAttribute = request.getHeaders().get(FormFields.MAX_LENGTH_ATTRIBUTE);
+                if (maxLengthAttribute != null)
+                    request.setAttribute(FormFields.MAX_LENGTH_ATTRIBUTE, maxLengthAttribute);
+
+                Fields fields = FormFields.getFields(request);
+                Content.Sink.write(response, true, String.valueOf(fields), callback);
+                return true;
+            }
+        });
+        _server.start();
+
+        HttpTester.Response response = getResponse(maxFormFields, maxFormLength);
+        assertThat(response.getStatus(), is(expectedStatusCode));
+    }
+
+    private HttpTester.Response getResponse(int maxFormFields, int maxFormLength) throws Exception
+    {
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            // Write the first request content which does not exceed the form limits.
+            StringBuilder request = new StringBuilder();
+            request.append("""
+                POST /foo HTTP/1.1\r
+                Host: localhost\r
+                """);
+            if (maxFormFields != -1)
+                request.append(FormFields.MAX_FIELDS_ATTRIBUTE).append(": ").append(maxFormFields).append("\r\n");
+            if (maxFormLength != -1)
+                request.append(FormFields.MAX_LENGTH_ATTRIBUTE).append(": ").append(maxFormLength).append("\r\n");
+            request.append("""
+                Content-Type: application/x-www-form-urlencoded\r
+                Content-Length: 27\r
+                \r
+                param1=value1&param2=value2\
+                """);
+            OutputStream output = socket.getOutputStream();
+            output.write(request.toString().getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            return HttpTester.parseResponse(input);
         }
     }
 
