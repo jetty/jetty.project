@@ -184,12 +184,12 @@
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
     <detectOfflineLinks>false</detectOfflineLinks>
     <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
-    <eclipse.jdt.ecj.version>3.45.0</eclipse.jdt.ecj.version>
+    <eclipse.jdt.ecj.version>3.46.0</eclipse.jdt.ecj.version>
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.7.3</flatten.maven.plugin.version>
     <groovy.version>4.0.26</groovy.version>
-    <grpc.version>1.81.0</grpc.version>
+    <grpc.version>1.82.0</grpc.version>
     <gson.version>2.14.0</gson.version>
     <guava.version>33.6.0-jre</guava.version>
     <guice.version>7.0.0</guice.version>
@@ -204,7 +204,7 @@
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
     <jackson.version>2.22.0</jackson.version>
-    <jacoco.maven.plugin.version>0.8.14</jacoco.maven.plugin.version>
+    <jacoco.maven.plugin.version>0.8.15</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
     <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
     <jboss-threads.version>3.9.2</jboss-threads.version>
@@ -227,7 +227,7 @@
     <jffi.version>1.3.15</jffi.version>
     <jmh.version>1.37</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
-    <jna.version>5.19.0</jna.version>
+    <jna.version>5.19.1</jna.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.6.0</json-smart.version>
     <junit.jupiter.execution.parallel.config.dynamic.factor>0.8</junit.jupiter.execution.parallel.config.dynamic.factor>
@@ -246,7 +246,7 @@
     <logback.version>1.5.34</logback.version>
     <lucene.version>9.11.1</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <mariadb.version>3.5.8</mariadb.version>
+    <mariadb.version>3.5.9</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.2.3</maven-build-cache.version>
     <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
@@ -278,7 +278,7 @@
     <maven.version>3.9.9</maven.version>
     <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
-    <mongodb.version>5.7.0</mongodb.version>
+    <mongodb.version>5.8.0</mongodb.version>
     <netty.version>4.2.15.Final</netty.version>
     <njord.version>0.9.7</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
@@ -286,7 +286,7 @@
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
     <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
     <org.osgi.util.promise.version>1.3.0</org.osgi.util.promise.version>
-    <osgi-http-service-api>1.2.102</osgi-http-service-api>
+    <osgi-http-service-api>1.2.202</osgi-http-service-api>
     <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
     <osgi-service-component-version>1.5.1</osgi-service-component-version>
     <osgi-service-event-version>1.4.1</osgi-service-event-version>
@@ -298,7 +298,7 @@
     <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
     <osgi-util-version>3.7.400</osgi-util-version>
     <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
-    <osgi-version>3.24.100</osgi-version>
+    <osgi-version>3.24.200</osgi-version>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.debug.remote>false</pax.exam.debug.remote>
     <pax.exam.version>4.14.0</pax.exam.version>
@@ -313,7 +313,7 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <sisu.plexus.version>1.0.0</sisu.plexus.version>
     <slf4j.version>2.0.17</slf4j.version>
-    <smallrye-common.version>2.18.1</smallrye-common.version>
+    <smallrye-common.version>2.19.0</smallrye-common.version>
     <spifly.version>1.3.7</spifly.version>
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
@@ -323,7 +323,7 @@
     <tinybundles.version>4.0.1</tinybundles.version>
     <versions.maven.plugin.version>2.21.0</versions.maven.plugin.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
-    <wildfly.elytron.version>2.9.1.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.9.2.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.9</xmemcached.version>
   </properties>
 
