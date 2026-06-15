@@ -135,7 +135,9 @@ public class FileSystemPool implements Dumpable
                 throw new IllegalArgumentException("Unable to mount FileSystem from unsupported URI: " + jarURIRoot, pnfe);
             }
             // use root FS URI so that pool key/release/sweep is sane
-            URI rootURI = fileSystem.getPath("/").toUri();
+            Path rootPath = fileSystem.getPath("/");
+            // To work around bug identified in https://github.com/jetty/jetty.project/issues/15289
+            URI rootURI = URI.create(rootPath.toUri().toASCIIString());
             Mount mount = new Mount(rootURI, new MountedPathResource(jarURIRoot));
             retain(rootURI, fileSystem, mount);
             return mount;
