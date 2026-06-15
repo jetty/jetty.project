@@ -622,6 +622,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 }
                 else
                 {
+                    // Here, combineClosedCallback is only ever true if acquireBlocker is also true,
+                    // so blocker can never be null.
                     blocker.succeeded();
                     blocker.close();
                     blocker = null;
