@@ -329,7 +329,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
             getEndPoint().shutdownOutput();
             if (LOG.isDebugEnabled())
                 LOG.debug("Shutdown {}", this);
-            getEndPoint().close();
+            getEndPoint().close(failure);
             if (LOG.isDebugEnabled())
                 LOG.debug("Closed {}", this);
         }

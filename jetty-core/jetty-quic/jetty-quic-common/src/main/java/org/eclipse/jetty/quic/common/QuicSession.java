@@ -266,6 +266,7 @@ public abstract class QuicSession extends AbstractSession
         return srcConnectionId;
     }
 
+    /// @return the negotiated application protocol
     public String getApplicationProtocol()
     {
         return getTLSEngine().getApplicationProtocol();

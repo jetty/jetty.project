@@ -36,7 +36,7 @@ public class QuicClientConnectionFactory extends ClientConnectionFactory.Wrapper
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         ClientConnector clientConnector = (ClientConnector)context.get(ClientConnector.CONTEXT_KEY);
-        ClientQuicConnection connection = new ClientQuicConnection(clientConnector, quicConfiguration, endPoint, context);
+        ClientQuicConnection connection = new ClientQuicConnection(clientConnector, quicConfiguration, getWrapped(), endPoint, context);
         return customize(connection, context);
     }
 }

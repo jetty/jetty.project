@@ -14,7 +14,6 @@
 package org.eclipse.jetty.quic.common;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
@@ -183,9 +182,10 @@ public class StreamEndPoint implements EndPoint
             disconnect(ErrorCode.NO_ERROR.code(), failure, true, Promise.Invocable.from(() -> onClose(failure), promise));
             promise.block();
         }
-        catch (IOException x)
+        catch (Throwable x)
         {
-            throw new UncheckedIOException(x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("could not close {}", this, x);
         }
     }
 

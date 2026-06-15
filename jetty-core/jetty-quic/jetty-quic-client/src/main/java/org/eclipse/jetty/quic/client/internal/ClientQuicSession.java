@@ -1,4 +1,4 @@
-//
+ //
 // ========================================================================
 // Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.AbstractEndPoint;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
@@ -106,6 +107,17 @@ public class ClientQuicSession extends QuicSession
     }
 
     @Override
+    public ClientQuicConnection getQuicConnection()
+    {
+        return (ClientQuicConnection)super.getQuicConnection();
+    }
+
+    public ClientConnectionFactory getClientConnectionFactory()
+    {
+        return getQuicConnection().getClientConnectionFactory();
+    }
+
+    @Override
     public ClientTLSEngine getTLSEngine()
     {
         return (ClientTLSEngine)super.getTLSEngine();
@@ -179,7 +191,7 @@ public class ClientQuicSession extends QuicSession
         setDestinationConnectionId(dstConnectionId);
 
         ByteBuffer earlyData = (ByteBuffer)context.get(QuicClient.EARLY_DATA_KEY);
-        if (earlyData != NO_EARLY_DATA)
+        if (earlyData != null && earlyData != NO_EARLY_DATA)
             tlsConfiguration.setEarlyData(RetainableByteBuffer.wrap(earlyData));
 
         // Link the ClientTLSEngine back to this session to

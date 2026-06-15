@@ -382,7 +382,7 @@ public class ClientConnector extends ContainerLifeCycle
         try
         {
             // In case ClientConnector is used directly.
-            context.put(ClientConnector.CONTEXT_KEY, this);
+            context.putIfAbsent(ClientConnector.CONTEXT_KEY, this);
 
             Transport transport = (Transport)context.get(Transport.CONTEXT_KEY);
 

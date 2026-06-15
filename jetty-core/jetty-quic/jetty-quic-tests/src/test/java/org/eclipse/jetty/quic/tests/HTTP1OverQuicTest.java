@@ -24,10 +24,15 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Transport;
+import org.eclipse.jetty.quic.client.QuicClient;
+import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HostHeaderCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -64,7 +69,7 @@ public class HTTP1OverQuicTest extends AbstractTest
         server = new Server();
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("server_keystore.p12").toString());
         sslContextFactory.setKeyStorePassword("storepwd");
 
         HttpConfiguration httpConfig = new HttpConfiguration();
@@ -79,6 +84,11 @@ public class HTTP1OverQuicTest extends AbstractTest
             {
                 QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(workDir.getEmptyPathDir());
                 yield new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, h1);
+            }
+            case QUIC ->
+            {
+                QuicServerQuicConfiguration serverQuicConfig = new QuicServerQuicConfiguration();
+                yield new QuicServerConnector(server, sslContextFactory, serverQuicConfig, h1);
             }
         };
         server.addConnector(connector);
@@ -95,6 +105,12 @@ public class HTTP1OverQuicTest extends AbstractTest
         transport = switch (transportType)
         {
             case QUICHE -> new QuicheTransport(new QuicheClientQuicConfiguration());
+            case QUIC ->
+            {
+                QuicClient quicClient = new QuicClient(new QuicClientQuicConfiguration());
+                quicClient.start();
+                yield new QuicTransport(quicClient);
+            }
         };
     }
 

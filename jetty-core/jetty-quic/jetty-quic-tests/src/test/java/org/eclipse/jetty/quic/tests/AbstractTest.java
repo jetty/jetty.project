@@ -19,11 +19,12 @@ public class AbstractTest
 {
     public static List<TransportType> transports()
     {
-        return List.of(TransportType.QUICHE);
+        return List.of(TransportType.values());
     }
 
     public enum TransportType
     {
-        QUICHE
+        QUICHE,
+        QUIC
     }
 }
