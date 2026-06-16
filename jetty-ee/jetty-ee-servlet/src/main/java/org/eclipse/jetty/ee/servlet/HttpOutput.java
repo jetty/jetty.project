@@ -37,7 +37,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -126,7 +125,6 @@ public class HttpOutput extends ServletOutputStream
     private State _state = State.OPEN;
     private boolean _softClose = false;
     private long _written;
-    private long _firstByteNanoTime = -1;
     private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
@@ -237,27 +235,11 @@ public class HttpOutput extends ServletOutputStream
 
     private void channelWrite(ByteBuffer content, boolean last, Callback callback)
     {
-        if (_firstByteNanoTime == -1)
-        {
-            long minDataRate = _servletChannel.getConnectionMetaData().getHttpConfiguration().getMinResponseDataRate();
-            if (minDataRate > 0)
-                _firstByteNanoTime = NanoTime.now();
-            else
-                _firstByteNanoTime = Long.MAX_VALUE;
-        }
         _servletChannel.getResponse().write(last, content, callback);
     }
 
     private void channelWrite(RetainableByteBuffer content, boolean last, Callback callback)
     {
-        if (_firstByteNanoTime == -1)
-        {
-            long minDataRate = _servletChannel.getConnectionMetaData().getHttpConfiguration().getMinResponseDataRate();
-            if (minDataRate > 0)
-                _firstByteNanoTime = NanoTime.now();
-            else
-                _firstByteNanoTime = Long.MAX_VALUE;
-        }
         content.writeTo(_servletChannel.getResponse(), last, callback);
     }
 
@@ -1342,7 +1324,6 @@ public class HttpOutput extends ServletOutputStream
             _written = 0;
             _writeListener = null;
             _onError = null;
-            _firstByteNanoTime = -1;
             _closedCallback = null;
             _applicationContentLength = -1;
         }

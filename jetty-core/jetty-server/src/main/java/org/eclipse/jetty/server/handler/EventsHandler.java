@@ -163,11 +163,11 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void notifyOnResponseWriteComplete(Request request, Throwable failure)
+    private void notifyOnResponseWriteComplete(Request request, boolean last, ByteBuffer content, Throwable failure)
     {
         try
         {
-            onResponseWriteComplete(request, failure);
+            onResponseWriteComplete(request, last, content, failure);
         }
         catch (Throwable x)
         {
@@ -268,11 +268,11 @@ public abstract class EventsHandler extends Handler.Wrapper
 
     /**
      * Invoked before each response content chunk has been written (i.e. from
-     * within the any call to {@link Response#write(boolean, ByteBuffer, Callback)}).
+     * within the call to {@link Response#write(boolean, ByteBuffer, Callback)}).
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
      * @param last indicating last write
-     * @param content The {@link ByteBuffer} of the response content chunk (readonly).
+     * @param content The {@link ByteBuffer} of the response content chunk.
      * @see Response#write(boolean, ByteBuffer, Callback)
      */
     protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
@@ -288,9 +288,22 @@ public abstract class EventsHandler extends Handler.Wrapper
      * This will always fire <em>before</em> {@link #onResponseTrailersComplete(Request, HttpFields)} is fired.
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
+     * @param last indicating last write
+     * @param content The {@link ByteBuffer} of the response content chunk (read-only).
      * @param failure if there was a failure to write the given content
      * @see Response#write(boolean, ByteBuffer, Callback)
      */
+    protected void onResponseWriteComplete(Request request, boolean last, ByteBuffer content, Throwable failure)
+    {
+        onResponseWriteComplete(request, failure);
+    }
+
+    /**
+     * @param request the request object
+     * @param failure the write failure, or {@code null} if the write operation succeeded
+     * @deprecated use {@link #onResponseWriteComplete(Request, boolean, ByteBuffer, Throwable)} instead
+     */
+    @Deprecated(since = "12.1.11", forRemoval = true)
     protected void onResponseWriteComplete(Request request, Throwable failure)
     {
         if (LOG.isDebugEnabled())
@@ -298,7 +311,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     }
 
     /**
-     * Invoked after the response trailers have been written <em>and</em> the final {@link #onResponseWriteComplete(Request, Throwable)} event was fired.
+     * Invoked after the response trailers have been written <em>and</em> the final {@link #onResponseWriteComplete(Request, boolean, ByteBuffer, Throwable)} event was fired.
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
      * @param trailers the written trailers.
@@ -359,13 +372,14 @@ public abstract class EventsHandler extends Handler.Wrapper
         {
             notifyOnResponseBegin(getRequest(), this);
             notifyOnResponseWrite(getRequest(), last, byteBuffer);
+            ByteBuffer copy = byteBuffer == null ? null : byteBuffer.asReadOnlyBuffer();
             super.write(last, byteBuffer, Callback.from(callback.getInvocationType(), () ->
             {
-                notifyOnResponseWriteComplete(getRequest(), null);
+                notifyOnResponseWriteComplete(getRequest(), last, copy, null);
                 callback.succeeded();
             }, x ->
             {
-                notifyOnResponseWriteComplete(getRequest(), x);
+                notifyOnResponseWriteComplete(getRequest(), last, copy, x);
                 callback.failed(x);
             }));
         }
