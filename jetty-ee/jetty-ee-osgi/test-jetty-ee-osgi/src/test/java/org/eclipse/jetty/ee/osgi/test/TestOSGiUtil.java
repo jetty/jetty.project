@@ -180,10 +180,8 @@ public class TestOSGiUtil
             res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
 
-        // BEGIN - slf4j 2.x
         res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
-        // END - slf4j 2.x
 
         TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
         loggingPropertiesBundle.addResource("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
