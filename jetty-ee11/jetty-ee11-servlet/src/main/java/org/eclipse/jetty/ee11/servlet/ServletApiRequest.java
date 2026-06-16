@@ -292,7 +292,20 @@ public class ServletApiRequest implements HttpServletRequest
             AuthenticationState undeferred;
             try (Blocker.Callback callback = Blocker.callback())
             {
-                HttpServletRequest httpServletRequest = _servletContextRequest.getHttpServletRequest();
+                // Find the most wrapped HttpServletRequest to use for the authentication.
+                HttpServletRequest httpServletRequest;
+                if (_async == null)
+                {
+                    httpServletRequest = _servletContextRequest.getHttpServletRequest();
+                }
+                else
+                {
+                    if (_async.getRequest() instanceof HttpServletRequest asyncHttpServletRequest)
+                        httpServletRequest = asyncHttpServletRequest;
+                    else
+                        httpServletRequest = _servletContextRequest.getHttpServletRequest();
+                }
+
                 boolean included = httpServletRequest.getDispatcherType() == DispatcherType.INCLUDE;
                 Request wrappedCoreRequest = ServletCoreRequest.wrap(httpServletRequest);
                 Response wrappedCoreResponse = ServletCoreResponse.wrap(getRequest(), response, included);

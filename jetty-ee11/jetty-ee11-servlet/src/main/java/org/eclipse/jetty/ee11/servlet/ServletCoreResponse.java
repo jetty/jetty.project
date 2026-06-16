@@ -25,8 +25,6 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -233,26 +231,24 @@ public class ServletCoreResponse implements Response
     private static class HttpServletResponseHttpFields implements HttpFields.Mutable
     {
         private final HttpServletResponse _httpServletResponse;
-        private final HttpCompliance _httpCompliance;
-        private final Supplier<ComplianceViolation.Listener> _listenerSupplier;
+        private final HttpFields _baseHttpFields;
 
         private HttpServletResponseHttpFields(HttpServletResponse response, HttpFields httpFields)
         {
             _httpServletResponse = response;
-            _httpCompliance = HttpFields.copyHttpCompliance(httpFields);
-            _listenerSupplier = HttpFields.copyComplianceListener(httpFields);
+            _baseHttpFields = httpFields;
         }
 
         @Override
         public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
         {
-            return new QuotedQualityCSV(_httpCompliance, _listenerSupplier.get(), secondaryOrdering);
+            return new QuotedQualityCSV(_baseHttpFields, secondaryOrdering);
         }
 
         @Override
         public QuotedCSV newQuotedCSV(boolean b)
         {
-            return new QuotedCSV(_httpCompliance, _listenerSupplier.get(), b);
+            return new QuotedCSV(_baseHttpFields, b);
         }
 
         @Override

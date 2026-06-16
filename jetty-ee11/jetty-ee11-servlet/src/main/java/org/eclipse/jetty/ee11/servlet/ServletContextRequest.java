@@ -401,18 +401,20 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
 
     public HttpServletRequest getHttpServletRequest()
     {
-        if (_servletRequest == null)
+        ServletRequest servletRequest = getServletRequest();
+        if (servletRequest == null)
             return getServletApiRequest();
-        if (!(_servletRequest instanceof HttpServletRequest httpServletRequest))
+        if (!(servletRequest instanceof HttpServletRequest httpServletRequest))
             throw new IllegalStateException("Not an HTTP request");
         return httpServletRequest;
     }
 
     public HttpServletResponse getHttpServletResponse()
     {
-        if (_servletResponse == null)
+        ServletResponse servletResponse = getServletResponse();
+        if (servletResponse == null)
             return getServletApiResponse();
-        if  (!(_servletResponse instanceof HttpServletResponse httpServletResponse))
+        if  (!(servletResponse instanceof HttpServletResponse httpServletResponse))
             throw new IllegalStateException("Not an HTTP response");
         return httpServletResponse;
     }
