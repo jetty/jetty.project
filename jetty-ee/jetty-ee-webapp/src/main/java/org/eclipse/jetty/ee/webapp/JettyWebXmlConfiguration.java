@@ -36,7 +36,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     public static final String PROPERTY_WEB_INF = "web-inf";
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
-    public static final String JETTY_EE_WEB_XML = "jetty-%s-web.xml".formatted(EnterpriseEditionVersion.getEnterpriseEditionVersion().name());
+    public static final String JETTY_EE_WEB_XML = "jetty-%s-web.xml".formatted(EnterpriseEditionVersion.getEnterpriseEditionVersion().environmentName());
 
     public JettyWebXmlConfiguration()
     {

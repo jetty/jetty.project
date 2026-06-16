@@ -28,15 +28,15 @@ public enum EnterpriseEditionVersion
     /**
      * EE10 is in use.
      */
-    EE10(10),
+    EE10(10, "ee10"),
     /**
      * EE11 is in use.
      */
-    EE11(11),
+    EE11(11, "ee11"),
     /**
      * EE12 is in use.
      */
-    EE12(12);
+    EE12(12, "ee12");
 
     private static final Logger LOG = LoggerFactory.getLogger(EnterpriseEditionVersion.class);
 
@@ -48,15 +48,22 @@ public enum EnterpriseEditionVersion
     }
 
     private final int version;
+    private final String environmentName;
 
-    EnterpriseEditionVersion(int version)
+    EnterpriseEditionVersion(int version, String environmentName)
     {
         this.version = version;
+        this.environmentName = environmentName;
     }
 
     public int version()
     {
         return version;
+    }
+
+    public String environmentName()
+    {
+        return this.environmentName;
     }
 
     private static EnterpriseEditionVersion initEnterpriseEditionVersion()
@@ -73,7 +80,7 @@ public enum EnterpriseEditionVersion
                     hits.stream().map(URL::toString).collect(Collectors.joining(", ")));
             }
 
-            // Not in classloader (eg: using jetty-ee common directly)
+            // Not in classloader (eg: when using jetty-ee-common jars directly)
             if (hits.isEmpty())
             {
                 LOG.info("Defaulting to EE11 environment");

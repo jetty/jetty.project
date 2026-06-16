@@ -55,7 +55,7 @@ public class EEActivator extends AbstractEEActivator
 {
     private static final Logger LOG = LoggerFactory.getLogger(EEActivator.class);
 
-    public static final String ENVIRONMENT = EnterpriseEditionVersion.getEnterpriseEditionVersion().name();
+    public static final String ENVIRONMENT = EnterpriseEditionVersion.getEnterpriseEditionVersion().environmentName();
 
     @Override
     public String getEnvironment()

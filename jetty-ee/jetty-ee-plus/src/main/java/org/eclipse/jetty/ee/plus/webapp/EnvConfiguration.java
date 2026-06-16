@@ -49,7 +49,7 @@ public class EnvConfiguration extends AbstractConfiguration
     private static final Logger LOG = LoggerFactory.getLogger(EnvConfiguration.class);
 
     private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
-    private static final String JETTY_EE_ENV_XML_FILENAME = "jetty-%s-env.xml".formatted(EnterpriseEditionVersion.getEnterpriseEditionVersion().name());
+    private static final String JETTY_EE_ENV_XML_FILENAME = "jetty-%s-env.xml".formatted(EnterpriseEditionVersion.getEnterpriseEditionVersion().environmentName());
     private static final String JETTY_ENV_XML_FILENAME = "jetty-env.xml";
 
     public EnvConfiguration()

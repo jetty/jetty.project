@@ -89,7 +89,7 @@ public class TestJettyOSGiBootWithJspC
             {
                 case EE10 -> "/servlet6-demo-jspc/jstl.jsp";
                 case EE11 -> "/servlet6-demo-jspc-61/jstl.jsp";
-                case unknown, EE12 -> "/servlet6-demo-jspc-62/jstl.jsp";
+                case EE12 -> "/servlet6-demo-jspc-62/jstl.jsp";
             };
             ContentResponse response = client.GET("http://127.0.0.1:" + port + path);
             assertEquals(HttpStatus.OK_200, response.getStatus());

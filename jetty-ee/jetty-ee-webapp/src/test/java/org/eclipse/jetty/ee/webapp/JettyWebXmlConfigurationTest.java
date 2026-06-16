@@ -17,7 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +46,7 @@ public class JettyWebXmlConfigurationTest
     @Test
     public void testWithOnlyJettyWebXml() throws Exception
     {
-        Path testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp-with-jetty-web-xml");
+        Path testWebappDir = MavenPaths.findTestResourceDir("webapp-with-jetty-web-xml");
         assertTrue(Files.exists(testWebappDir));
 
         WebAppContext context = new WebAppContext();
@@ -60,7 +60,7 @@ public class JettyWebXmlConfigurationTest
     @Test
     public void testWithJettyEEWebXml() throws Exception
     {
-        Path testWebappDir = MavenTestingUtils.getTargetPath("test-classes/webapp-with-jetty-ee-web-xml");
+        Path testWebappDir = MavenPaths.findTestResourceDir("webapp-with-jetty-ee-web-xml");
         assertTrue(Files.exists(testWebappDir));
 
         WebAppContext context = new WebAppContext();
