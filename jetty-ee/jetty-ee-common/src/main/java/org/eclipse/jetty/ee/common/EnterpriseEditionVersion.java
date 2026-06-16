@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.ee.common;
 
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public enum EnterpriseEditionVersion
 {
     /**
@@ -27,6 +37,8 @@ public enum EnterpriseEditionVersion
      * EE12 is in use.
      */
     EE12(12);
+
+    private static final Logger LOG = LoggerFactory.getLogger(EnterpriseEditionVersion.class);
 
     public static final EnterpriseEditionVersion currentVersion = initEnterpriseEditionVersion();
 
@@ -51,16 +63,50 @@ public enum EnterpriseEditionVersion
     {
         try
         {
-            // TODO: EE versioning is not tied to Servlet spec versioning.
-            //       It is very possible for a EE version to increase WITHOUT
-            //       The Servlet spec updating too.
-            return switch (ServletApiVersion.getServletApiVersion())
+            ClassLoader cl = EnterpriseEditionVersion.class.getClassLoader();
+            String resourceName = "META-INF/org.eclipse.jetty/env.properties";
+            List<URL> hits = Collections.list(cl.getResources(resourceName));
+
+            if (LOG.isDebugEnabled())
             {
-                case V6_0 -> EE10;
-                case V6_1 -> EE11;
-                case V6_2 -> EE12;
-                default -> throw new RuntimeException("Unable to Initialize " + EnterpriseEditionVersion.class.getName());
-            };
+                LOG.debug("Looking for {}: found {}", resourceName,
+                    hits.stream().map(URL::toString).collect(Collectors.joining(", ")));
+            }
+
+            // Not in classloader (eg: using jetty-ee common directly)
+            if (hits.isEmpty())
+            {
+                LOG.info("Defaulting to EE11 environment");
+                // Default environment
+                return EE11;
+            }
+
+            if (hits.size() > 1)
+            {
+                throw new RuntimeException("Multiple environments detected in the same classloader: " +
+                    hits.stream().map(URL::toString).collect(Collectors.joining(", ")));
+            }
+
+            Properties props = new Properties();
+            URL url = hits.getFirst();
+            try (InputStream in = url.openStream())
+            {
+                props.load(in);
+                String env = props.getProperty("environment");
+
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Found declared [environment={}] in {}", env, url);
+                }
+
+                return switch(env)
+                {
+                    case "ee10" -> EE10;
+                    case "ee11" -> EE11;
+                    case "ee12" -> EE12;
+                    default -> throw new RuntimeException("Unrecognized Jetty environment [" + env + "]");
+                };
+            }
         }
         catch (Throwable e)
         {
