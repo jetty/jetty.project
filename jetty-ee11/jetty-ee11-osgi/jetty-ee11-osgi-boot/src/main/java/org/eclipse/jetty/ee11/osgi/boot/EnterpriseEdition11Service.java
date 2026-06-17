@@ -11,15 +11,18 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee.common
+package org.eclipse.jetty.ee11.osgi.boot;
+
+import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
+
+/**
+ * Use EE11 when running this OSGi configuration.
+ */
+public class EnterpriseEdition11Service implements EnterpriseEditionVersion.Service
 {
-    requires org.slf4j;
-
-    requires transitive org.eclipse.jetty.util;
-    requires transitive org.eclipse.jetty.server;
-    requires java.instrument;
-
-    exports org.eclipse.jetty.ee.common;
-
-    uses org.eclipse.jetty.ee.common.EnterpriseEditionVersion.Service;
+    @Override
+    public EnterpriseEditionVersion getVersion()
+    {
+        return EnterpriseEditionVersion.EE11;
+    }
 }

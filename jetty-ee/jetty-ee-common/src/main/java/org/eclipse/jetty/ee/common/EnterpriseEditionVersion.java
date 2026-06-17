@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.ee.common;
 
-import java.io.InputStream;
-import java.net.URL;
-import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
-import java.util.stream.Collectors;
+import java.util.ServiceLoader;
+import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +37,20 @@ public enum EnterpriseEditionVersion
     EE12(12, "ee12");
 
     private static final Logger LOG = LoggerFactory.getLogger(EnterpriseEditionVersion.class);
+
+    /**
+     * Interface for service (via {@link java.util.ServiceLoader} to provide the {@link EnterpriseEditionVersion}.
+     */
+    public interface Service
+    {
+        /**
+         * Get the version.
+         *
+         * @return the {@link EnterpriseEditionVersion} if able to be returned, or {@code null} if this
+         *         service is unable to provide the version.
+         */
+        EnterpriseEditionVersion getVersion();
+    }
 
     public static final EnterpriseEditionVersion currentVersion = initEnterpriseEditionVersion();
 
@@ -68,56 +80,27 @@ public enum EnterpriseEditionVersion
 
     private static EnterpriseEditionVersion initEnterpriseEditionVersion()
     {
-        try
+        List<Service> services = TypeUtil.serviceProviderStream(ServiceLoader.load(Service.class))
+            .flatMap(p -> Stream.of(p.get()))
+            .toList();
+        for (Service service: services)
         {
-            ClassLoader cl = EnterpriseEditionVersion.class.getClassLoader();
-            String resourceName = "META-INF/org.eclipse.jetty/env.properties";
-            List<URL> hits = Collections.list(cl.getResources(resourceName));
-
+            EnterpriseEditionVersion ver = service.getVersion();
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("Looking for {}: found {}", resourceName,
-                    hits.stream().map(URL::toString).collect(Collectors.joining(", ")));
+                LOG.debug("{}.getVersion() gives {}", service.getClass().getName(), ver);
             }
-
-            // Not in classloader (eg: when using jetty-ee-common jars directly)
-            if (hits.isEmpty())
+            if (ver != null)
             {
-                LOG.info("Defaulting to EE11 environment");
-                // Default environment
-                return EE11;
-            }
-
-            if (hits.size() > 1)
-            {
-                throw new RuntimeException("Multiple environments detected in the same classloader: " +
-                    hits.stream().map(URL::toString).collect(Collectors.joining(", ")));
-            }
-
-            Properties props = new Properties();
-            URL url = hits.getFirst();
-            try (InputStream in = url.openStream())
-            {
-                props.load(in);
-                String env = props.getProperty("environment");
-
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("Found declared [environment={}] in {}", env, url);
-                }
-
-                return switch(env)
-                {
-                    case "ee10" -> EE10;
-                    case "ee11" -> EE11;
-                    case "ee12" -> EE12;
-                    default -> throw new RuntimeException("Unrecognized Jetty environment [" + env + "]");
-                };
+                return ver;
             }
         }
-        catch (Throwable e)
+
+        // No match, default to EE11 then.
+        if (LOG.isInfoEnabled())
         {
-            throw new RuntimeException(e);
+            LOG.info("EnterpriseEditionVersion not found in environment and/or classloader, defaulting to EE11");
         }
+        return EE11;
     }
 }

@@ -66,7 +66,9 @@
           <instructions>
             <Bundle-SymbolicName>org.eclipse.jetty.ee11.osgi.boot;singleton:=true</Bundle-SymbolicName>
             <Bundle-Activator>org.eclipse.jetty.ee.osgi.boot.EEActivator</Bundle-Activator>
-            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee11.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
+              org.eclipse.jetty.ee11.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
+              org.eclipse.jetty.ee.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
             <Import-Package>${osgi.slf4j.import.packages},
               jakarta.mail;version="2.0";resolution:=optional,
               jakarta.mail.event;version="2.0";resolution:=optional,
@@ -90,6 +92,9 @@
               org.xml.sax.helpers,
               org.eclipse.jetty.ee11.annotations;resolution:=optional,
               *</Import-Package>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee.webapp.Configuration,
+              osgi.serviceloader=org.eclipse.jetty.ee.common.EnterpriseEditionVersion$Service</Provide-Capability>
             <_nouses>true</_nouses>
           </instructions>
         </configuration>
