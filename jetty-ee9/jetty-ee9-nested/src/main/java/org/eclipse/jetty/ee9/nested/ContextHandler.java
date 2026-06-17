@@ -1323,7 +1323,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     {
         try
         {
-            setBaseResource(newResource(resourceBase));
+            Resource baseResource = ResourceFactory.of(this).newResource(resourceBase);
+            setBaseResource(baseResource);
         }
         catch (IllegalArgumentException e)
         {
@@ -1601,7 +1602,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
      * @param url the url to convert to a Resource
      * @return the Resource for that url
      * @throws IOException if unable to create a Resource from the URL
+     * @deprecated use {@code ResourceFactory.of(component).newResource(URL)} properly
+     *             at webapp initialization time only.  The use of this method during
+     *             context started phase can result in excessive memory consumption.
      */
+    @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(URL url) throws IOException
     {
         return ResourceFactory.of(this).newResource(url);
@@ -1613,7 +1618,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
      * @param uri the URI to convert to a Resource
      * @return the Resource for that URI
      * @throws IOException if unable to create a Resource from the URL
+     * @deprecated use {@code ResourceFactory.of(component).newResource(URI)} properly
+     *             at webapp initialization time only.  The use of this method during
+     *             context started phase can result in excessive memory consumption.
      */
+    @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(URI uri) throws IOException
     {
         return ResourceFactory.of(this).newResource(uri);
@@ -1625,7 +1634,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
      * @param uriOrPath The URL or path to convert
      * @return The Resource for the URL/path
      * @throws IOException The Resource could not be created.
+     * @deprecated use {@code ResourceFactory.of(component).newResource(String)} properly
+     *             at webapp initialization time only.  The use of this method during
+     *             context started phase can result in excessive memory consumption.
      */
+    @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(String uriOrPath) throws IOException
     {
         return ResourceFactory.of(this).newResource(uriOrPath);
@@ -2068,29 +2081,63 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         {
             try
             {
-                // This is an API call from the application which may pass non-normalized paths.
-                // Thus, we normalize here, to avoid the enforcement of normalized paths in
-                // ContextHandler.this.getResource(path).
-                path = URIUtil.normalizePath(path);
-                if (path == null)
-                    return null;
-
-                if (!path.startsWith("/"))
-                    throw new MalformedURLException(path);
-
-                Resource resource = ContextHandler.this.getResource(path);
-                if (resource != null && resource.exists())
+                Resource resource = getJettyResource(path);
+                if (resource != null)
                     return resource.getURI().toURL();
             }
             catch (MalformedURLException e)
             {
+                // rethrow
                 throw e;
             }
-            catch (Throwable e)
+            catch (IOException e)
             {
-                // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
-                throw (MalformedURLException)new MalformedURLException(path).initCause(e);
+                MalformedURLException malformedURLException = new MalformedURLException(path);
+                ExceptionUtil.addSuppressedIfNotAssociated(malformedURLException, e);
+                throw malformedURLException;
             }
+
+            // No hits
+            return null;
+        }
+
+        private Resource getJettyResource(String path) throws IOException
+        {
+            try
+            {
+                // This is an API call from the application which may pass non-normalized paths.
+                // Thus, we normalize here, to avoid the enforcement of normalized paths in
+                // ServletContextHandler.this.getResource(path).
+                path = URIUtil.normalizePath(path);
+                if (path == null)
+                    return null;
+
+                // Assumption is that the resource base has been properly setup.
+                // Spec requirement is that the WAR file is interrogated first.
+                // If a WAR file is mounted, or is extracted to a temp directory,
+                // then the first entry of the resource base must be the WAR file.
+                Resource resource = ContextHandler.this.getResource(path);
+                if (!Resources.exists(resource))
+                    return null;
+
+                for (Resource r : resource)
+                {
+                    // return first
+                    if (Resources.exists(r))
+                        return r;
+                }
+            }
+            catch (MalformedURLException e)
+            {
+                // rethrow
+                throw e;
+            }
+            catch (Throwable throwable)
+            {
+                throw new IOException("Unable to get Jetty Resource: " + path, throwable);
+            }
+
+            // No hits
             return null;
         }
 
@@ -2099,22 +2146,20 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         {
             try
             {
-                URL url = getResource(path);
-                if (url == null)
-                    return null;
-                Resource r = ResourceFactory.of(ContextHandler.this).newResource(url);
-                // Cannot serve directories as an InputStream
-                if (r.isDirectory())
-                    return null;
-                return IOResources.asInputStream(r);
+                Resource resource = getJettyResource(path);
+                if (Resources.isReadableFile(resource))
+                    return IOResources.asInputStream(resource);
             }
             catch (Throwable e)
             {
                 // catch IOException, RuntimeException, and things like java.nio.fileInvalidPathException here.
                 if (LOG.isTraceEnabled())
                     LOG.trace("IGNORED", e);
+                // Per servlet spec, there's no exception thrown from this API
                 return null;
             }
+            // not found
+            return null;
         }
 
         @Override

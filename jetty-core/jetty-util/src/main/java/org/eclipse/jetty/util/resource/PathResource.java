@@ -30,12 +30,15 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Java NIO Path Resource.
  */
+@ManagedObject("A Path Resource")
 public class PathResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
@@ -200,6 +203,7 @@ public class PathResource extends Resource
         }
     }
 
+    @ManagedAttribute("The Path")
     @Override
     public Path getPath()
     {
@@ -279,6 +283,7 @@ public class PathResource extends Resource
         return fn.toString();
     }
 
+    @ManagedAttribute("The URI")
     @Override
     public URI getURI()
     {

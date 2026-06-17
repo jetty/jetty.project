@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,7 @@ import org.slf4j.LoggerFactory;
  * Supports real filesystems, and also <a href="https://docs.oracle.com/en/java/javase/17/docs/api/jdk.zipfs/module-summary.html">ZipFS</a>.
  * </p>
  */
+@ManagedObject("A Jetty Resource")
 public abstract class Resource implements Iterable<Resource>
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
