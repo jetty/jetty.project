@@ -62,6 +62,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -238,9 +239,10 @@ public class ResourceServlet extends HttpServlet
         {
             try
             {
-                baseResource = URIUtil.isRelative(rb) ? baseResource.resolve(rb) :  contextHandler.newResource(rb);
+                ResourceFactory resourceFactory = ResourceFactory.of(contextHandler);
+                baseResource = URIUtil.isRelative(rb) ? baseResource.resolve(rb) : resourceFactory.newResource(rb);
                 if (baseResource.isAlias())
-                    baseResource = contextHandler.newResource(baseResource.getRealURI());
+                    baseResource = resourceFactory.newResource(baseResource.getRealURI());
             }
             catch (Exception e)
             {
