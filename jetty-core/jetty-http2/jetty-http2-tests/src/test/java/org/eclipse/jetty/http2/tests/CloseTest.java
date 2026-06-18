@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,9 +37,9 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,7 +73,7 @@ public class CloseTest extends AbstractServerTest
             }
         });
 
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        List<ReadableBuffer> accumulator = new ArrayList<>();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -79,7 +81,10 @@ public class CloseTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            accumulator.writeTo(Content.Sink.from(client.getOutputStream()), false);
+            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+            accumulator.forEach(ReadableBuffer::release);
+            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.release();
 
             Parser parser = new Parser(bufferPool, 8192);
             parser.init(new Parser.Listener()
@@ -128,7 +133,7 @@ public class CloseTest extends AbstractServerTest
             }
         });
 
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        List<ReadableBuffer> accumulator = new ArrayList<>();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -137,7 +142,10 @@ public class CloseTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            accumulator.writeTo(Content.Sink.from(client.getOutputStream()), false);
+            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+            accumulator.forEach(ReadableBuffer::release);
+            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.release();
 
             // Don't close the connection; the server should close.
 
@@ -191,7 +199,7 @@ public class CloseTest extends AbstractServerTest
         });
         connector.setIdleTimeout(idleTimeout);
 
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        List<ReadableBuffer> accumulator = new ArrayList<>();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -199,7 +207,10 @@ public class CloseTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            accumulator.writeTo(Content.Sink.from(client.getOutputStream()), false);
+            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+            accumulator.forEach(ReadableBuffer::release);
+            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.release();
 
             final CountDownLatch responseLatch = new CountDownLatch(1);
             final CountDownLatch closeLatch = new CountDownLatch(1);

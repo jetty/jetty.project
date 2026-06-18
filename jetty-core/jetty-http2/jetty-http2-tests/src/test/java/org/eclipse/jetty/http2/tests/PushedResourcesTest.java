@@ -267,14 +267,14 @@ public class PushedResourcesTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                if (data == null)
+                Content.Chunk chunk = stream.read();
+                if (chunk == null)
                 {
                     stream.demand();
                     return;
                 }
-                data.release();
-                if (data.frame().isEndStream())
+                chunk.release();
+                if (chunk.isLast())
                 {
                     // Request for the secondary resource.
                     HttpFields.Mutable secondaryFields = HttpFields.build();
@@ -285,14 +285,14 @@ public class PushedResourcesTest extends AbstractTest
                         @Override
                         public void onDataAvailable(Stream stream)
                         {
-                            Stream.Data data = stream.readData();
-                            if (data == null)
+                            Content.Chunk chunk = stream.read();
+                            if (chunk == null)
                             {
                                 stream.demand();
                                 return;
                             }
-                            data.release();
-                            if (data.frame().isEndStream())
+                            chunk.release();
+                            if (chunk.isLast())
                                 warmupLatch.countDown();
                         }
                     });
@@ -317,14 +317,14 @@ public class PushedResourcesTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                if (data == null)
+                Content.Chunk chunk = stream.read();
+                if (chunk == null)
                 {
                     stream.demand();
                     return;
                 }
-                data.release();
-                if (data.frame().isEndStream())
+                chunk.release();
+                if (chunk.isLast())
                     primaryResponseLatch.countDown();
             }
         });

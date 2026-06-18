@@ -13,36 +13,44 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.io.Retainable;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
-public class DataFrame extends StreamFrame
+public class DataFrame extends StreamFrame implements Retainable
 {
-    private final ByteBuffer data;
+    private final ReadableBuffer data;
     private final boolean endStream;
-    private final int length;
+    private final long length;
     private final int padding;
 
-    public DataFrame(ByteBuffer data, boolean endStream)
+    public DataFrame(ReadableBuffer data, boolean endStream)
     {
         this(0, data, endStream);
     }
 
-    public DataFrame(int streamId, ByteBuffer data, boolean endStream)
+    public DataFrame(int streamId, ReadableBuffer data, boolean endStream)
     {
         this(streamId, data, endStream, 0);
     }
 
-    public DataFrame(int streamId, ByteBuffer data, boolean endStream, int padding)
+    public DataFrame(int streamId, ReadableBuffer data, boolean endStream, int padding)
     {
         super(FrameType.DATA, streamId);
         this.data = data;
+        data.retain();
         this.endStream = endStream;
         this.length = data.remaining();
         this.padding = padding;
     }
 
-    public ByteBuffer getByteBuffer()
+    public static DataFrame eof(int streamId)
     {
+        return new DataFrame(streamId, ReadableBuffer.EMPTY, true);
+    }
+
+    public ReadableBuffer acquire()
+    {
+        data.retain();
         return data;
     }
 
@@ -54,7 +62,7 @@ public class DataFrame extends StreamFrame
     /**
      * @return the number of data bytes remaining.
      */
-    public int remaining()
+    public long remaining()
     {
         return data.remaining();
     }
@@ -72,13 +80,44 @@ public class DataFrame extends StreamFrame
      */
     public int flowControlLength()
     {
-        return length + padding;
+        // TODO: overflow?
+        return Math.toIntExact(length + padding);
     }
 
     @Override
     public DataFrame withStreamId(int streamId)
     {
-        return new DataFrame(streamId, getByteBuffer(), isEndStream());
+        return new DataFrame(streamId, data, isEndStream());
+    }
+
+    @Override
+    public boolean canRetain()
+    {
+        return data.canRetain();
+    }
+
+    @Override
+    public boolean isRetained()
+    {
+        return data.isRetained();
+    }
+
+    @Override
+    public void retain()
+    {
+        data.retain();
+    }
+
+    @Override
+    public boolean release()
+    {
+        return data.release();
+    }
+
+    @Override
+    public int getRetained()
+    {
+        return data.getRetained();
     }
 
     @Override

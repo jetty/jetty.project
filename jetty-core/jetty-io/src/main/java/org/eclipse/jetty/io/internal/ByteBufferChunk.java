@@ -53,7 +53,7 @@ public abstract class ByteBufferChunk extends RetainableByteBuffer.FixedCapacity
 
     public static class WithReferenceCount extends ByteBufferChunk
     {
-        private final ReferenceCounter references = new ReferenceCounter();
+        private final Retainable.ReferenceCounter references = new Retainable.ReferenceCounter();
 
         public WithReferenceCount(ByteBuffer byteBuffer, boolean last)
         {

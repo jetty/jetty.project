@@ -13,25 +13,25 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.frames.PriorityFrame;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 
 public class HeaderBlockFragments
 {
-    private final ByteBufferPool bufferPool;
+    private final WritableBufferPool bufferPool;
+    private final boolean directness;
     private final int maxCapacity;
     private PriorityFrame priorityFrame;
     private int streamId;
     private boolean endStream;
-    private RetainableByteBuffer storage;
+    private ReadableBuffer storage;
 
-    public HeaderBlockFragments(ByteBufferPool bufferPool, int maxCapacity)
+    public HeaderBlockFragments(WritableBufferPool bufferPool, boolean directness, int maxCapacity)
     {
         this.bufferPool = bufferPool;
+        this.directness = directness;
         this.maxCapacity = maxCapacity;
     }
 
@@ -43,38 +43,49 @@ public class HeaderBlockFragments
         storage = null;
     }
 
-    public boolean storeFragment(ByteBuffer fragment, int length, boolean last)
+    public boolean storeFragment(ReadableBuffer fragment, int length, boolean last)
     {
+        WritableBuffer storageWb;
         if (storage == null)
         {
             if (maxCapacity > 0 && length > maxCapacity)
                 return false;
             int capacity = last ? length : length * 2;
-            storage = bufferPool.acquire(capacity, fragment.isDirect());
-            BufferUtil.flipToFill(storage.getByteBuffer());
+            storageWb = bufferPool.acquire(capacity, directness);
+        }
+        else
+        {
+            storageWb = storage.toWritable();
+            storage = null;
         }
 
         // Grow the storage if necessary.
-        if (storage.remaining() < length)
+        if (storageWb.remaining() < length)
         {
-            ByteBuffer byteBuffer = storage.getByteBuffer();
-            if (maxCapacity > 0 && (byteBuffer.position() + length) > maxCapacity)
+            if (maxCapacity > 0 && (storageWb.position() + length) > maxCapacity)
                 return false;
             int space = last ? length : length * 2;
-            int capacity = byteBuffer.position() + space;
-            RetainableByteBuffer newStorage = bufferPool.acquire(capacity, storage.isDirect());
-            BufferUtil.flipToFill(newStorage.getByteBuffer());
-            byteBuffer.flip();
-            newStorage.getByteBuffer().put(byteBuffer);
-            storage.release();
-            storage = newStorage;
+            // TODO overflow?
+            int capacity = Math.toIntExact(storageWb.position() + space);
+            WritableBuffer largerStorageWb = bufferPool.acquire(capacity, directness);
+            largerStorageWb.put(storageWb.toReadable());
+            storageWb.release();
+            storageWb = largerStorageWb;
         }
 
+        ReadableBuffer slice;
+        if (fragment.remaining() > length)
+            slice = fragment.slice(fragment.position(), length);
+        else
+            slice = fragment.slice();
+        fragment.position(fragment.position() + length);
+
         // Copy the fragment into the storage.
-        int limit = fragment.limit();
-        fragment.limit(fragment.position() + length);
-        storage.getByteBuffer().put(fragment);
-        fragment.limit(limit);
+        // TODO find a way to limit the size of the copy without slicing?
+        storageWb.put(slice);
+        slice.release();
+
+        storage = storageWb.toReadable();
         return true;
     }
 
@@ -98,10 +109,11 @@ public class HeaderBlockFragments
         this.endStream = endStream;
     }
 
-    public RetainableByteBuffer complete()
+    public ReadableBuffer complete()
     {
-        storage.getByteBuffer().flip();
-        return storage;
+        ReadableBuffer rb = storage;
+        storage = null;
+        return rb;
     }
 
     public int getStreamId()

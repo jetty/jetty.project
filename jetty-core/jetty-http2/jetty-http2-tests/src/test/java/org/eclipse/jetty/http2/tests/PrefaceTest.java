@@ -19,10 +19,11 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -49,16 +50,16 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -149,13 +150,11 @@ public class PrefaceTest extends AbstractTest
         });
         connector.setIdleTimeout(1000);
 
-        ByteBufferPool bufferPool = http2Client.getByteBufferPool();
-        try (SocketChannel socket = SocketChannel.open())
+        WritableBufferPool bufferPool = WritableBufferPool.wrap(http2Client.getByteBufferPool());
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
-            socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
-
             Generator generator = new Generator(bufferPool);
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            List<ReadableBuffer> accumulator = new ArrayList<>();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 0);
@@ -163,8 +162,10 @@ public class PrefaceTest extends AbstractTest
             // The PING frame just to make sure the client stops reading.
             generator.control(accumulator, new PingFrame(true));
 
-            accumulator.writeTo(Content.Sink.from(socket), false);
-            accumulator.release();
+            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+            accumulator.forEach(ReadableBuffer::release);
+            rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            rb.release();
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
             AtomicBoolean closed = new AtomicBoolean();
@@ -184,15 +185,13 @@ public class PrefaceTest extends AbstractTest
                 }
             });
 
-            ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+            byte[] buffer = new byte[1024];
             while (true)
             {
-                BufferUtil.clearToFill(buffer);
-                int read = socket.read(buffer);
+                int read = socket.getInputStream().read(buffer);
                 if (read < 0)
                     break;
-                BufferUtil.flipToFlush(buffer, 0);
-                parser.parse(buffer);
+                parser.parse(ReadableBuffer.wrap(ByteBuffer.wrap(buffer, 0, read)));
                 if (closed.get())
                     break;
             }
@@ -248,11 +247,9 @@ public class PrefaceTest extends AbstractTest
         });
         server.start();
 
-        ByteBufferPool bufferPool = new ArrayByteBufferPool();
-        try (SocketChannel socket = SocketChannel.open())
+        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
-            socket.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
-
             String upgradeRequest = """
                 GET /one HTTP/1.1\r
                 Host: localhost\r
@@ -261,22 +258,21 @@ public class PrefaceTest extends AbstractTest
                 HTTP2-Settings: \r
                 \r
                 """;
-            ByteBuffer upgradeBuffer = ByteBuffer.wrap(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
-            socket.write(upgradeBuffer);
+            socket.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
 
             // Make sure onPreface() is called on server.
             assertTrue(serverPrefaceLatch.get().await(5, TimeUnit.SECONDS));
             assertTrue(serverSettingsLatch.get().await(5, TimeUnit.SECONDS));
 
             // The 101 response is the reply to the client preface SETTINGS frame.
-            ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+            ByteBuffer buffer;
             http1:
             while (true)
             {
-                BufferUtil.clearToFill(buffer);
-                int read = socket.read(buffer);
-                BufferUtil.flipToFlush(buffer, 0);
+                byte[] bytes = new byte[1024];
+                int read = socket.getInputStream().read(bytes);
                 assertThat(read, greaterThanOrEqualTo(0));
+                buffer = ByteBuffer.wrap(bytes, 0, read);
 
                 int crlfs = 0;
                 while (buffer.hasRemaining())
@@ -297,12 +293,15 @@ public class PrefaceTest extends AbstractTest
 
             // After the 101, the client must send the connection preface.
             Generator generator = new Generator(bufferPool);
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            List<ReadableBuffer> accumulator = new ArrayList<>();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 1);
             generator.control(accumulator, new SettingsFrame(clientSettings, false));
-            accumulator.writeTo(Content.Sink.from(socket), false);
+            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+            accumulator.forEach(ReadableBuffer::release);
+            rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            rb.release();
 
             // However, we should not call onPreface() again.
             assertFalse(serverPrefaceLatch.get().await(1, TimeUnit.SECONDS));
@@ -332,16 +331,23 @@ public class PrefaceTest extends AbstractTest
             });
 
             // HTTP/2 parsing.
+            ReadableBuffer readableBuffer = ReadableBuffer.wrap(buffer);
             while (true)
             {
-                parser.parse(buffer);
+                parser.parse(readableBuffer);
                 if (responded.get())
                     break;
 
-                BufferUtil.clearToFill(buffer);
-                int read = socket.read(buffer);
-                BufferUtil.flipToFlush(buffer, 0);
-                assertThat(read, greaterThanOrEqualTo(0));
+                WritableBuffer wb = readableBuffer.toWritable();
+                long read = wb.readFrom(output ->
+                {
+                    int r = socket.getInputStream().read(output.array(), output.arrayOffset(), output.remaining());
+                    if (r > 0)
+                        output.position(output.position() + r);
+                    return r == -1;
+                });
+                wb.toReadable();
+                assertThat(read, greaterThanOrEqualTo(0L));
             }
 
             assertTrue(clientSettingsLatch.await(5, TimeUnit.SECONDS));

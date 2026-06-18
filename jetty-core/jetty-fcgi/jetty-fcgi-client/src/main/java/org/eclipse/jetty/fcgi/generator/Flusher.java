@@ -14,18 +14,17 @@
 package org.eclipse.jetty.fcgi.generator;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,9 +68,9 @@ public class Flusher
         return cancelSendException.join();
     }
 
-    public void flush(ByteBufferPool.Accumulator accumulator, Callback callback)
+    public void flush(ReadableBuffer buffer, Callback callback)
     {
-        offer(new Entry(accumulator, callback));
+        offer(new Entry(buffer, callback));
         flushCallback.iterate();
     }
 
@@ -79,6 +78,7 @@ public class Flusher
     {
         try (AutoLock ignored = lock.lock())
         {
+            entry.buffer().retain();
             queue.offer(entry);
         }
     }
@@ -93,7 +93,7 @@ public class Flusher
 
     public void shutdown()
     {
-        flush(null, Callback.from(() ->
+        flush(ReadableBuffer.EMPTY, Callback.from(() ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Shutting down {}", endPoint);
@@ -157,8 +157,8 @@ public class Flusher
             }
 
             active = entry;
-            List<ByteBuffer> buffers = entry.accumulator.getByteBuffers();
-            endPoint.write(this, buffers.toArray(ByteBuffer[]::new));
+
+            endPoint.write(entry.buffer(), this);
             return Action.SCHEDULED;
         }
 
@@ -173,7 +173,7 @@ public class Flusher
         {
             Flusher.Entry entry = active;
             active = null;
-            return Callback.from(entry.callback, entry::release);
+            return Callback.from(entry.callback, () -> entry.buffer().release());
         }
 
         @Override
@@ -196,8 +196,8 @@ public class Flusher
         {
             if (active != null)
             {
-                active.release();
-                active.succeeded();
+                active.callback().succeeded();
+                active.buffer().release();
                 active = null;
             }
         }
@@ -206,13 +206,13 @@ public class Flusher
         public void onFailure(Throwable cause)
         {
             if (active != null)
-                active.failed(cause);
+                active.callback().failed(cause);
             List<Entry> entries;
             try (AutoLock ignored = lock.lock())
             {
                 entries = new ArrayList<>(queue);
             }
-            entries.forEach(entry -> entry.failed(cause));
+            entries.forEach(entry -> entry.callback().failed(cause));
         }
 
         @Override
@@ -220,7 +220,7 @@ public class Flusher
         {
             if (active != null)
             {
-                active.release();
+                active.buffer().release();
                 active = null;
             }
             List<Entry> entries;
@@ -229,7 +229,7 @@ public class Flusher
                 entries = new ArrayList<>(queue);
                 queue.clear();
             }
-            entries.forEach(Entry::release);
+            entries.forEach(e -> e.buffer().release());
         }
 
         @Override
@@ -241,22 +241,7 @@ public class Flusher
         }
     }
 
-    private record Entry(ByteBufferPool.Accumulator accumulator, Callback callback)
+    private record Entry(ReadableBuffer buffer, Callback callback)
     {
-        public void succeeded()
-        {
-            callback.succeeded();
-        }
-
-        public void failed(Throwable x)
-        {
-            callback.failed(x);
-        }
-
-        private void release()
-        {
-            if (accumulator != null)
-                accumulator.release();
-        }
     }
 }

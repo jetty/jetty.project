@@ -13,14 +13,12 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.FrameType;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RateControl;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +30,7 @@ public class ServerParser extends Parser
     private State state = State.PREFACE;
     private boolean notifyPreface = true;
 
-    public ServerParser(ByteBufferPool bufferPool, int maxHeaderSize, RateControl rateControl)
+    public ServerParser(WritableBufferPool bufferPool, int maxHeaderSize, RateControl rateControl)
     {
         super(bufferPool, maxHeaderSize, rateControl);
     }
@@ -80,7 +78,7 @@ public class ServerParser extends Parser
     }
 
     @Override
-    public void parse(ByteBuffer buffer)
+    public void parse(ReadableBuffer buffer)
     {
         try
         {
@@ -106,7 +104,7 @@ public class ServerParser extends Parser
                             return;
                         if (getFrameType() != FrameType.SETTINGS.getType() || hasFlag(Flags.ACK))
                         {
-                            BufferUtil.clear(buffer);
+                            buffer.position(buffer.position() + buffer.remaining());
                             notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_preface");
                             return;
                         }
@@ -132,7 +130,7 @@ public class ServerParser extends Parser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Parse error", x);
-            BufferUtil.clear(buffer);
+            buffer.position(buffer.position() + buffer.remaining());
             notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "parser_error");
         }
     }

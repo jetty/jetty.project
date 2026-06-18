@@ -233,7 +233,7 @@ public interface Session
          * {@link Stream.Listener#onDataAvailable(Stream)} or
          * {@link Stream.Listener#onDataAvailable(Stream, boolean)},
          * where applications can read from the {@link Stream} via
-         * {@link Stream#readData()}, or return {@link Stream.Listener#AUTO_DISCARD}
+         * {@link Stream#read()}, or return {@link Stream.Listener#AUTO_DISCARD}
          * that automatically reads and discards DATA frames.
          * Returning {@code null} is possible but discouraged, and has the
          * same effect of demanding and discarding the DATA frames.</p>

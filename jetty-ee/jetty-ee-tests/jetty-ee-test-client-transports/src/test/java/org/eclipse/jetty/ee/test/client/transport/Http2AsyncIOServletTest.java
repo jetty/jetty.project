@@ -41,16 +41,17 @@ import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -261,7 +262,7 @@ public class Http2AsyncIOServletTest
 
         HTTP2Session session = (HTTP2Session)client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {})
             .get(5, TimeUnit.SECONDS);
-        Queue<Stream.Data> dataList = new ConcurrentLinkedQueue<>();
+        Queue<Content.Chunk> dataList = new ConcurrentLinkedQueue<>();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
         Stream stream = session.newStream(new HeadersFrame(request, null, false), new Stream.Listener()
         {
@@ -270,20 +271,20 @@ public class Http2AsyncIOServletTest
             {
                 while (true)
                 {
-                    Stream.Data data = stream.readData();
+                    Content.Chunk data = stream.read();
                     if (data == null)
                     {
                         stream.demand();
                         return;
                     }
                     dataList.offer(data);
-                    if (data.frame().isEndStream())
+                    if (data.isLast())
                         return;
                 }
             }
         }).get(5, TimeUnit.SECONDS);
 
-        stream.data(new DataFrame(stream.getId(), UTF_8.encode("Hello Jetty"), false))
+        stream.data(ReadableBuffer.wrap(UTF_8.encode("Hello Jetty")), false)
             .get(5, TimeUnit.SECONDS);
         stream.demand();
 
@@ -303,7 +304,7 @@ public class Http2AsyncIOServletTest
         await().atMost(5, TimeUnit.SECONDS).until(() -> !session.getEndPoint().isOpen());
 
         // Cleanup.
-        dataList.forEach(Stream.Data::release);
+        dataList.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -337,7 +338,7 @@ public class Http2AsyncIOServletTest
 
         HTTP2Session session = (HTTP2Session)client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {})
             .get(5, TimeUnit.SECONDS);
-        Queue<Stream.Data> dataList = new ConcurrentLinkedQueue<>();
+        Queue<Content.Chunk> dataList = new ConcurrentLinkedQueue<>();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
         Stream stream = session.newStream(new HeadersFrame(request, null, false), new Stream.Listener()
         {
@@ -346,20 +347,21 @@ public class Http2AsyncIOServletTest
             {
                 while (true)
                 {
-                    Stream.Data data = stream.readData();
-                    if (data == null)
+                    Content.Chunk chunk = stream.read();
+                    if (chunk == null)
                     {
                         stream.demand();
                         return;
                     }
-                    dataList.offer(data);
-                    if (data.frame().isEndStream())
+                    chunk.retain();
+                    dataList.offer(chunk);
+                    if (chunk.isLast())
                         return;
                 }
             }
         }).get(5, TimeUnit.SECONDS);
 
-        stream.data(new DataFrame(stream.getId(), UTF_8.encode("Hello Jetty"), false))
+        stream.data(ReadableBuffer.wrap(UTF_8.encode("Hello Jetty")), false)
             .get(5, TimeUnit.SECONDS);
         stream.demand();
 
@@ -376,7 +378,7 @@ public class Http2AsyncIOServletTest
         await().atMost(5, TimeUnit.SECONDS).until(() -> !session.getEndPoint().isOpen());
 
         // Cleanup.
-        dataList.forEach(Stream.Data::release);
+        dataList.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -413,7 +415,7 @@ public class Http2AsyncIOServletTest
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
         Stream stream = session.newStream(new HeadersFrame(request, null, false), new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
 
-        stream.data(new DataFrame(stream.getId(), UTF_8.encode("Hello Jetty"), false))
+        stream.data(ReadableBuffer.wrap(UTF_8.encode("Hello Jetty")), false)
             .get(5, TimeUnit.SECONDS);
         stream.demand();
 
