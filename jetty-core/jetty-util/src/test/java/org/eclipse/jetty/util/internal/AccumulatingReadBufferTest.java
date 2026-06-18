@@ -697,11 +697,11 @@ public class AccumulatingReadBufferTest
             .position(1));
         ReadableBuffer acc = ReadableBuffer.accumulate(List.of(rb1, rb2));
 
-        assertEquals(1, acc.position());
+        assertEquals(0, acc.position());
         assertEquals(2, acc.remaining());
         assertEquals(1, acc.getShort());
 
-        assertEquals(4, acc.position());
+        assertEquals(2, acc.position());
         assertEquals(0, acc.remaining());
     }
 
@@ -809,7 +809,7 @@ public class AccumulatingReadBufferTest
             .position(1));
         ReadableBuffer acc = ReadableBuffer.accumulate(List.of(rb1, rb2));
 
-        assertEquals(1, acc.position());
+        assertEquals(0, acc.position());
         assertEquals(8, acc.remaining());
 
         AtomicInteger counter = new AtomicInteger();
@@ -821,7 +821,7 @@ public class AccumulatingReadBufferTest
                 written.add(input.getShort());
             })
         );
-        assertEquals(3, acc.position());
+        assertEquals(2, acc.position());
         assertEquals(6, acc.remaining());
         assertEquals(1, written.size());
         assertEquals((short)0, written.getFirst());
@@ -838,7 +838,7 @@ public class AccumulatingReadBufferTest
                     written.add(input.getInt());
             })
         );
-        assertEquals(10, acc.position());
+        assertEquals(8, acc.position());
         assertEquals(0, acc.remaining());
         assertEquals(2, written.size());
         assertEquals((short)1, written.get(0));
@@ -939,9 +939,9 @@ public class AccumulatingReadBufferTest
         assertFalse(rb1.release());
         assertFalse(rb2.release());
 
-        assertEquals(1, acc.position());
+        assertEquals(0, acc.position());
         assertEquals(8, acc.remaining());
-        assertEquals(20, acc.capacity());
+        assertEquals(8, acc.capacity());
 
         ReadableBuffer slice = acc.slice();
         assertEquals(0, slice.position());

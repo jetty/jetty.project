@@ -106,7 +106,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         for (int i = 0; i < maxConnections + 1; ++i)
         {
-            ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
+            ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/" + i);
             assertNotNull(response);
             assertEquals(200, response.getStatus());
             byte[] content = response.getContent();

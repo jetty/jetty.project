@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.http.compression;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.CharsetStringBuilder;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 import static org.eclipse.jetty.http.compression.Huffman.rowbits;
 import static org.eclipse.jetty.http.compression.Huffman.rowsym;
@@ -26,7 +25,7 @@ import static org.eclipse.jetty.http.compression.Huffman.rowsym;
 public class HuffmanDecoder
 {
     private final CharsetStringBuilder.Iso88591StringBuilder _builder = new CharsetStringBuilder.Iso88591StringBuilder();
-    private int _length = 0;
+    private long _length = 0;
     private int _count = 0;
     private int _node = 0;
     private int _current = 0;
@@ -36,7 +35,7 @@ public class HuffmanDecoder
      * Set length of input bytes of the huffman data.
      * @param length in bytes of the huffman data.
      */
-    public void setLength(int length)
+    public void setLength(long length)
     {
         if (_count != 0)
             throw new IllegalStateException();
@@ -48,11 +47,11 @@ public class HuffmanDecoder
      * @return the decoded String or null if more data is needed.
      * @throws EncodingException if the huffman encoding is invalid.
      */
-    public String decode(ByteBuffer buffer) throws EncodingException
+    public String decode(ReadableBuffer buffer) throws EncodingException
     {
         for (; _count < _length; _count++)
         {
-            if (!buffer.hasRemaining())
+            if (buffer.remaining() == 0L)
                 return null;
 
             int b = buffer.get() & 0xFF;

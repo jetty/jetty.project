@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.UnknownFrame;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 public class UnknownBodyParser extends BodyParser
 {
-    private int cursor;
+    private long cursor;
 
     public UnknownBodyParser(HeaderParser headerParser, Parser.Listener listener)
     {
@@ -28,9 +27,9 @@ public class UnknownBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(ReadableBuffer buffer)
     {
-        int length = cursor == 0 ? getBodyLength() : cursor;
+        long length = cursor == 0 ? getBodyLength() : cursor;
         cursor = consume(buffer, length);
         boolean parsed = cursor == 0;
         if (parsed && !rateControlOnEvent(new UnknownFrame(getFrameType())))
@@ -38,9 +37,9 @@ public class UnknownBodyParser extends BodyParser
         return parsed;
     }
 
-    private int consume(ByteBuffer buffer, int length)
+    private long consume(ReadableBuffer buffer, long length)
     {
-        int remaining = buffer.remaining();
+        long remaining = buffer.remaining();
         if (remaining >= length)
         {
             buffer.position(buffer.position() + length);
@@ -48,7 +47,7 @@ public class UnknownBodyParser extends BodyParser
         }
         else
         {
-            buffer.position(buffer.limit());
+            buffer.position(buffer.position() + remaining);
             return length - remaining;
         }
     }

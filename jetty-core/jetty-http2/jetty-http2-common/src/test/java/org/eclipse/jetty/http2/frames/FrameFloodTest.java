@@ -24,8 +24,10 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.WindowRateControl;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -34,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FrameFloodTest
 {
-    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
+    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
 
     // Frame structure:
     // | Len0 | Len1 | Len2 | Type | Flags | StreamID0 |StreamID1 |StreamID2 |StreamID3 | Payload... |
@@ -82,11 +84,11 @@ public class FrameFloodTest
             }
         };
         HpackEncoder encoder = new HpackEncoder();
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
-        encoder.encode(buffer, metadata);
-        buffer.flip();
-        byte[] payload = new byte[buffer.remaining()];
-        buffer.get(payload);
+        WritableBuffer wb = WritableBuffer.allocate(1024, false);
+        encoder.encode(wb, metadata);
+        ReadableBuffer rb = wb.toReadable();
+        byte[] payload = new byte[(int)rb.remaining()];
+        rb.get(payload);
         testFrameFlood(null, frameFrom(payload.length, FrameType.HEADERS.getType(), Flags.END_HEADERS, 13, payload));
     }
 
@@ -175,8 +177,8 @@ public class FrameFloodTest
 
         if (preamble != null)
         {
-            ByteBuffer buffer = ByteBuffer.wrap(preamble);
-            while (buffer.hasRemaining())
+            ReadableBuffer buffer = ReadableBuffer.wrap(ByteBuffer.wrap(preamble));
+            while (buffer.remaining() > 0L)
             {
                 parser.parse(buffer);
             }
@@ -185,8 +187,8 @@ public class FrameFloodTest
         int count = 0;
         while (failed.get() == 0)
         {
-            ByteBuffer buffer = ByteBuffer.wrap(bytes);
-            while (buffer.hasRemaining())
+            ReadableBuffer buffer = ReadableBuffer.wrap(ByteBuffer.wrap(bytes));
+            while (buffer.remaining() > 0L)
             {
                 parser.parse(buffer);
             }

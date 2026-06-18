@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import java.nio.ByteBuffer;
 import java.util.function.LongSupplier;
 
 import org.eclipse.jetty.http.HttpField;
@@ -29,6 +28,7 @@ import org.eclipse.jetty.http2.hpack.internal.AuthorityHttpField;
 import org.eclipse.jetty.http2.hpack.internal.MetaDataBuilder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CharsetStringBuilder;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,7 +99,7 @@ public class HpackDecoder
         _builder.setMaxSize(maxHeaderListSize);
     }
 
-    public MetaData decode(ByteBuffer buffer) throws HpackException.SessionException, HpackException.StreamException
+    public MetaData decode(ReadableBuffer buffer) throws HpackException.SessionException, HpackException.StreamException
     {
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
@@ -112,7 +112,7 @@ public class HpackDecoder
         try
         {
             boolean emitted = false;
-            while (buffer.hasRemaining())
+            while (buffer.remaining() > 0)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("decode {}", BufferUtil.toHexString(buffer));
@@ -315,7 +315,7 @@ public class HpackDecoder
         return field;
     }
 
-    private int integerDecode(ByteBuffer buffer, int prefix) throws HpackException.CompressionException
+    private int integerDecode(ReadableBuffer buffer, int prefix) throws HpackException.CompressionException
     {
         try
         {
@@ -338,7 +338,7 @@ public class HpackDecoder
         }
     }
 
-    private String huffmanDecode(ByteBuffer buffer, int length) throws HpackException.CompressionException
+    private String huffmanDecode(ReadableBuffer buffer, int length) throws HpackException.CompressionException
     {
         try
         {
@@ -358,7 +358,7 @@ public class HpackDecoder
         }
     }
 
-    public static String toISO88591String(ByteBuffer buffer, int length)
+    public static String toISO88591String(ReadableBuffer buffer, int length)
     {
         CharsetStringBuilder.Iso88591StringBuilder builder = new CharsetStringBuilder.Iso88591StringBuilder();
         for (int i = 0; i < length; ++i)

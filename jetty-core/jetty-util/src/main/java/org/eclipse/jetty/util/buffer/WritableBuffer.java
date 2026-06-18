@@ -98,42 +98,72 @@ public interface WritableBuffer
     /**
      * Writes a single byte at the current position.
      * @param b the byte to write
-     * @throws java.nio.BufferOverflowException – If this buffer's current position is not smaller than its capacity
-     * @throws java.nio.ReadOnlyBufferException – If this buffer is read-only
+     * @throws java.nio.BufferOverflowException if this buffer's current position is not smaller than its capacity
      */
     void put(byte b);
 
     /**
+     * Writes a single byte at the given position.
+     * @param position the position of the byte
+     * @param b the byte to write
+     * @throws java.nio.BufferOverflowException if this buffer's current position is not smaller than its capacity
+     */
+    void put(long position, byte b);
+
+    /**
+     * Writes the given source array at the current position.
+     * @param src the array from which bytes are to be read
+     */
+    void put(byte[] src);
+
+    /**
+     * Writes the given source array at the current position.
+     * @param src the array from which bytes are to be read
+     * @param offset the offset within the array of the first byte to be read
+     * @param length the number of bytes to be read from the given array
+     */
+    void put(byte[] src, int offset, int length);
+
+    /**
      * Writes a {@link ReadableBuffer} at the current position.
      * @param readableBuffer the buffer to write
-     * @throws java.nio.BufferOverflowException – If there is insufficient space in this buffer for the remaining bytes in the source buffer
-     * @throws java.nio.ReadOnlyBufferException – If this buffer is read-only
+     * @throws java.nio.BufferOverflowException if there is insufficient space in this buffer for the remaining bytes in the source buffer     
      */
     void put(ReadableBuffer readableBuffer);
 
     /**
      * Writes a short at the current position.
      * @param s the short to write
-     * @throws java.nio.BufferOverflowException – If there are fewer than two bytes remaining in this buffer
-     * @throws java.nio.ReadOnlyBufferException – If this buffer is read-only
+     * @throws java.nio.BufferOverflowException if there are fewer than two bytes remaining in this buffer
      */
     void putShort(short s);
+
+    /// Writes a `short` at the given position.
+    /// 
+    /// @param position the position to write the `short`
+    /// @param s the `short` to write
+    /// @throws java.nio.BufferOverflowException if there are fewer than two bytes remaining in this buffer
+    void putShort(long position, short s);
 
     /**
      * Writes an int at the current position.
      * @param i the int to write
-     * @throws java.nio.BufferOverflowException – If there are fewer than four bytes remaining in this buffer
-     * @throws java.nio.ReadOnlyBufferException – If this buffer is read-only
+     * @throws java.nio.BufferOverflowException if there are fewer than four bytes remaining in this buffer     
      */
     void putInt(int i);
 
     /**
      * Writes a long at the current position.
      * @param l the long to write
-     * @throws java.nio.BufferOverflowException – If there are fewer than eight bytes remaining in this buffer
-     * @throws java.nio.ReadOnlyBufferException – If this buffer is read-only
+     * @throws java.nio.BufferOverflowException if there are fewer than eight bytes remaining in this buffer
      */
     void putLong(long l);
+
+    /// Writes the given bytes at the current position.
+    ///
+    /// @param bytes the bytes to write
+    /// @throws java.nio.BufferOverflowException if there are fewer than `bytes.length` remaining in this buffer
+    void putBytes(byte[] bytes);
 
     /**
      * Flips this WritableBuffer to flush mode

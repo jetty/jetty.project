@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -28,20 +28,17 @@ import org.eclipse.jetty.http2.generator.HeadersGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class HeadersTooLargeParseTest
 {
-    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
+    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
 
     @Test
     public void testProtocolErrorURITooLong() throws Exception
@@ -82,30 +79,17 @@ public class HeadersTooLargeParseTest
         });
 
         int streamId = 48;
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        List<ReadableBuffer> accumulator = new ArrayList<>();
         PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
         int len = generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
-        Callback.Completable callback = new Callback.Completable();
-        accumulator.writeTo((l, b, c) ->
-        {
-            parser.parse(b);
-            if (failure.get() != 0)
-                c.failed(new Throwable("Expected"));
-            else
-                c.succeeded();
-        }, false, callback);
-
-        try
-        {
-            callback.get(10, TimeUnit.SECONDS);
+        ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+        accumulator.forEach(ReadableBuffer::release);
+        parser.parse(rb);
+        if (failure.get() == 0)
             fail();
-        }
-        catch (ExecutionException e)
-        {
-            assertThat(e.getCause().getMessage(), is("Expected"));
-        }
-        accumulator.release();
+
+        rb.release();
 
         assertTrue(len > maxHeaderSize);
         assertEquals(ErrorCode.PROTOCOL_ERROR.code, failure.get());

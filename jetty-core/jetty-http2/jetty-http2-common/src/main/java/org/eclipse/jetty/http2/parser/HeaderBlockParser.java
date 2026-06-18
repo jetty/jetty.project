@@ -13,16 +13,14 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,15 +29,17 @@ public class HeaderBlockParser
     private static final Logger LOG = LoggerFactory.getLogger(HeaderBlockParser.class);
 
     private final HeaderParser headerParser;
-    private final ByteBufferPool bufferPool;
+    private final WritableBufferPool bufferPool;
+    private final boolean directness;
     private final HpackDecoder hpackDecoder;
     private final BodyParser notifier;
-    private RetainableByteBuffer blockBuffer;
+    private ReadableBuffer blockBuffer;
 
-    public HeaderBlockParser(HeaderParser headerParser, ByteBufferPool bufferPool, HpackDecoder hpackDecoder, BodyParser notifier)
+    public HeaderBlockParser(HeaderParser headerParser, WritableBufferPool bufferPool, boolean directness, HpackDecoder hpackDecoder, BodyParser notifier)
     {
         this.headerParser = headerParser;
         this.bufferPool = bufferPool;
+        this.directness = directness;
         this.hpackDecoder = hpackDecoder;
         this.notifier = notifier;
     }
@@ -58,41 +58,43 @@ public class HeaderBlockParser
      * an instance of {@link MetaData.Failed} if parsing the HPACK block produced a failure;
      * an instance of {@link MetaData} if the parsing was successful.
      */
-    public MetaData parse(ByteBuffer buffer, int blockLength)
+    public MetaData parse(ReadableBuffer buffer, int blockLength)
     {
         // We must wait for the all the bytes of the header block to arrive.
         // If they are not all available, accumulate them.
         // When all are available, decode them.
 
-        ByteBuffer byteBuffer = blockBuffer == null ? null : blockBuffer.getByteBuffer();
-        int accumulated = byteBuffer == null ? 0 : byteBuffer.position();
-        int remaining = blockLength - accumulated;
+        long accumulated = blockBuffer == null ? 0L : blockBuffer.remaining();
+        long remaining = blockLength - accumulated;
 
         if (buffer.remaining() < remaining)
         {
-            if (blockBuffer == null)
-            {
-                blockBuffer = bufferPool.acquire(blockLength, buffer.isDirect());
-                byteBuffer = blockBuffer.getByteBuffer();
-                BufferUtil.flipToFill(byteBuffer);
-            }
-            byteBuffer.put(buffer);
+            WritableBuffer wb = blockBuffer == null ? bufferPool.acquire(blockLength, directness) : blockBuffer.toWritable();
+            blockBuffer = null;
+            wb.put(buffer);
+            blockBuffer = wb.toReadable();
             return null;
         }
         else
         {
-            int limit = buffer.limit();
-            buffer.limit(buffer.position() + remaining);
-            ByteBuffer toDecode;
-            if (byteBuffer != null)
+            ReadableBuffer toDecode;
+            if (blockBuffer != null)
             {
-                byteBuffer.put(buffer);
-                BufferUtil.flipToFlush(byteBuffer, 0);
-                toDecode = byteBuffer;
+                WritableBuffer wb = blockBuffer.toWritable();
+                blockBuffer = null;
+                // TODO: add ReadableBuffer.limit(long) method to avoid slicing + advancing position?
+                ReadableBuffer slice = buffer.slice(buffer.position(), remaining);
+                buffer.position(buffer.position() + remaining);
+                wb.put(slice);
+                slice.release();
+                toDecode = wb.toReadable();
             }
             else
             {
-                toDecode = buffer;
+                long min = Math.min(buffer.remaining(), blockLength);
+                // TODO: add ReadableBuffer.limit(long) method to avoid slicing + advancing position?
+                toDecode = buffer.slice(buffer.position(), min);
+                buffer.position(buffer.position() + min);
             }
 
             try
@@ -112,26 +114,20 @@ public class HeaderBlockParser
             catch (HpackException.CompressionException x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Compression error, buffer={}", BufferUtil.toDetailString(buffer), x);
+                    LOG.debug("Compression error, buffer={}", buffer, x);
                 notifier.connectionFailure(buffer, ErrorCode.COMPRESSION_ERROR.code, "invalid_hpack_block");
                 return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_2, x);
             }
             catch (HpackException.SessionException x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Session error, buffer={}", BufferUtil.toDetailString(buffer), x);
+                    LOG.debug("Session error, buffer={}", buffer, x);
                 notifier.connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
                 return MetaData.Failed.newFailedMetaData(HttpVersion.HTTP_2, x);
             }
             finally
             {
-                buffer.limit(limit);
-
-                if (blockBuffer != null)
-                {
-                    blockBuffer.release();
-                    blockBuffer = null;
-                }
+                toDecode.release();
             }
         }
     }

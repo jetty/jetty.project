@@ -27,17 +27,15 @@ import java.util.Set;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -54,7 +52,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     private final Queue<HTTP2Session.Entry> pendingEntries = new ArrayDeque<>();
     private final Collection<HTTP2Session.Entry> processedEntries = new ArrayList<>();
     private final HTTP2Session session;
-    private final RetainableByteBuffer.Mutable accumulator;
+    private final List<ReadableBuffer> accumulator = new ArrayList<>();
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
     private Throwable terminated;
     private HTTP2Session.Entry stalledEntry;
@@ -62,9 +60,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public HTTP2Flusher(HTTP2Session session)
     {
         this.session = session;
-        EndPoint endPoint = session.getEndPoint();
-        boolean direct = endPoint != null && endPoint.getConnection() instanceof HTTP2Connection http2Connection && http2Connection.isUseOutputDirectByteBuffers();
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(session.getGenerator().getByteBufferPool(), direct, -1);
     }
 
     @Override
@@ -330,7 +325,11 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 pendingEntries,
                 this);
 
-        accumulator.writeTo(session.getEndPoint(), false, this);
+        ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+        accumulator.forEach(ReadableBuffer::release);
+        accumulator.clear();
+        session.getEndPoint().write(rb, this);
+        rb.release();
         return Action.SCHEDULED;
     }
 
@@ -408,7 +407,8 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     @Override
     protected void onCompleteFailure(Throwable x)
     {
-        accumulator.release();
+        accumulator.forEach(ReadableBuffer::release);
+        accumulator.clear();
     }
 
     private void onSessionFailure(Throwable x)

@@ -783,15 +783,15 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private class PooledBuffer extends RetainableByteBuffer.Pooled
     {
-        private final ReferenceCounter _referenceCounter;
+        private final Retainable.ReferenceCounter _referenceCounter;
         private final RetainedBucket _bucket;
         private final Pool.Entry<RetainableByteBuffer.Pooled> _entry;
         private int _usages;
 
         private PooledBuffer(ByteBuffer buffer, RetainedBucket bucket, Pool.Entry<RetainableByteBuffer.Pooled> entry)
         {
-            super(ArrayByteBufferPool.this, buffer, new ReferenceCounter(0));
-            if (getWrapped() instanceof  ReferenceCounter referenceCounter)
+            super(ArrayByteBufferPool.this, buffer, new Retainable.ReferenceCounter(0));
+            if (getWrapped() instanceof  Retainable.ReferenceCounter referenceCounter)
                 _referenceCounter = referenceCounter;
             else
                 throw new IllegalArgumentException();
@@ -821,7 +821,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         }
 
         /**
-         * @see ReferenceCounter#acquire()
+         * @see Retainable.ReferenceCounter#acquire()
          */
         protected void acquire()
         {

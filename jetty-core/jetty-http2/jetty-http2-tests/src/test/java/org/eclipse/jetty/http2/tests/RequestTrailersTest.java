@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
@@ -69,12 +70,12 @@ public class RequestTrailersTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Stream.Data data = stream.readData();
-                            if (data != null)
-                                data.release();
-                            if (data == null || !data.frame().isEndStream())
+                            Content.Chunk chunk = stream.read();
+                            if (chunk != null)
+                                chunk.release();
+                            if (chunk == null || !chunk.isLast())
                                 stream.demand();
-                            if (data == null || data.frame().isEndStream())
+                            if (chunk == null || chunk.isLast())
                                 break;
                         }
                     }
@@ -115,11 +116,11 @@ public class RequestTrailersTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        data.release();
+                        Content.Chunk chunk = stream.read();
+                        chunk.release();
                         // We should not receive an empty HEADERS frame for the
                         // trailers, but instead a DATA frame with endStream=true.
-                        if (data.frame().isEndStream())
+                        if (chunk.isLast())
                         {
                             MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
@@ -170,11 +171,11 @@ public class RequestTrailersTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        data.release();
+                        Content.Chunk chunk = stream.read();
+                        chunk.release();
                         // We should not receive an empty HEADERS frame for the
                         // trailers, but instead a DATA frame with endStream=true.
-                        if (data.frame().isEndStream())
+                        if (chunk.isLast())
                         {
                             MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
