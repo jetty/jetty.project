@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.internal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Retainable;
@@ -68,6 +69,14 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
     // Readable
 
     @Override
+    public byte get(long index)
+    {
+        if (flushPosition != -1)
+            throw new IllegalStateException("Cannot read from buffer in write mode");
+        return byteBuffer.get(Math.toIntExact(index));
+    }
+
+    @Override
     public byte get()
     {
         if (flushPosition != -1)
@@ -108,6 +117,14 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
     }
 
     @Override
+    public void get(byte[] b, int off, int len)
+    {
+        if (flushPosition != -1)
+            throw new IllegalStateException("Cannot read from buffer in write mode");
+        byteBuffer.get(b, off, len);
+    }
+
+    @Override
     public long writeTo(Target target) throws IOException
     {
         if (flushPosition != -1)
@@ -131,6 +148,14 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
         byteBuffer.position(byteBuffer.limit());
         byteBuffer.limit(byteBuffer.capacity());
         return this;
+    }
+
+    @Override
+    public String asString(Charset charset)
+    {
+        if (flushPosition != -1)
+            throw new IllegalStateException("Cannot convert to String in write mode");
+        return charset.decode(byteBuffer).toString();
     }
 
     @Override
@@ -162,6 +187,30 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
     }
 
     @Override
+    public void put(long position, byte b)
+    {
+        if (flushPosition == -1)
+            throw new IllegalStateException("Cannot write to buffer in read mode");
+        byteBuffer.put(Math.toIntExact(position), b);
+    }
+
+    @Override
+    public void put(byte[] src)
+    {
+        if (flushPosition == -1)
+            throw new IllegalStateException("Cannot write to buffer in read mode");
+        byteBuffer.put(src);
+    }
+
+    @Override
+    public void put(byte[] src, int offset, int length)
+    {
+        if (flushPosition == -1)
+            throw new IllegalStateException("Cannot write to buffer in read mode");
+        byteBuffer.put(src, offset, length);
+    }
+
+    @Override
     public void put(ReadableBuffer readableBuffer)
     {
         if (flushPosition == -1)
@@ -190,6 +239,14 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
     }
 
     @Override
+    public void putShort(long position, short s)
+    {
+        if (flushPosition == -1)
+            throw new IllegalStateException("Cannot write to buffer in read mode");
+        byteBuffer.putShort(Math.toIntExact(position), s);
+    }
+
+    @Override
     public void putInt(int i)
     {
         if (flushPosition == -1)
@@ -203,6 +260,14 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
         if (flushPosition == -1)
             throw new IllegalStateException("Cannot write to buffer in read mode");
         byteBuffer.putLong(l);
+    }
+
+    @Override
+    public void putBytes(byte[] bytes)
+    {
+        if (flushPosition == -1)
+            throw new IllegalStateException("Cannot write to buffer in read mode");
+        byteBuffer.put(bytes);
     }
 
     @Override

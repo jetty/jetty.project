@@ -26,6 +26,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
@@ -74,10 +75,10 @@ public class JDK9HTTP2ClientTest
                 @Override
                 public void onDataAvailable(Stream stream)
                 {
-                    Stream.Data data = stream.readData();
-                    System.err.println(data);
-                    data.release();
-                    if (data.frame().isEndStream())
+                    Content.Chunk chunk = stream.read();
+                    System.err.println(chunk);
+                    chunk.release();
+                    if (chunk.isLast())
                         latch.countDown();
                     else
                         stream.demand();

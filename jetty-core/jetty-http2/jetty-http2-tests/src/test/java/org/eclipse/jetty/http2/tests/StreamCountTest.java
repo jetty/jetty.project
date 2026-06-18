@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -32,10 +34,10 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -66,9 +68,9 @@ public class StreamCountTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        data.release();
-                        if (data.frame().isEndStream())
+                        Content.Chunk chunk = stream.read();
+                        chunk.release();
+                        if (chunk.isLast())
                         {
                             MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), Callback.NOOP);
@@ -112,7 +114,7 @@ public class StreamCountTest extends AbstractTest
         assertThrows(ExecutionException.class,
             () -> streamPromise2.get(5, TimeUnit.SECONDS));
 
-        stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
+        stream1.data(ReadableBuffer.EMPTY, true, Callback.NOOP);
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -132,9 +134,9 @@ public class StreamCountTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        data.release();
-                        if (data.frame().isEndStream())
+                        Content.Chunk chunk = stream.read();
+                        chunk.release();
+                        if (chunk.isLast())
                         {
                             MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), Callback.NOOP);
@@ -189,7 +191,7 @@ public class StreamCountTest extends AbstractTest
         // Reset the latch and send a DATA frame, it should be dropped
         // by the client because the stream has already been reset.
         resetLatch.set(new CountDownLatch(1));
-        stream2.data(new DataFrame(stream2.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
+        stream2.data(ReadableBuffer.EMPTY, true, Callback.NOOP);
         // Must not receive another RST_STREAM.
         assertFalse(resetLatch.get().await(1, TimeUnit.SECONDS));
 
@@ -198,16 +200,19 @@ public class StreamCountTest extends AbstractTest
         // For the server, dropping the DATA frame is too costly so it sends another RST_STREAM.
         int streamId3 = stream2.getId() + 2;
         HeadersFrame frame3 = new HeadersFrame(streamId3, metaData, null, false);
-        DataFrame data3 = new DataFrame(streamId3, BufferUtil.EMPTY_BUFFER, true);
+        DataFrame data3 = new DataFrame(streamId3, ReadableBuffer.EMPTY, true);
         Generator generator = ((HTTP2Session)session).getGenerator();
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        List<ReadableBuffer> accumulator = new ArrayList<>();
         generator.control(accumulator, frame3);
-        generator.data(accumulator, data3, data3.remaining());
-        accumulator.writeTo(((HTTP2Session)session).getEndPoint(), false, Callback.from(accumulator::release));
+        generator.data(accumulator, data3, (int)data3.remaining());
+        ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+        accumulator.forEach(ReadableBuffer::release);
+        ((HTTP2Session)session).getEndPoint().write(rb, Callback.NOOP);
+        rb.release();
         // Expect 1 RST_STREAM frame.
         assertTrue(sessionResetLatch.await(5, TimeUnit.SECONDS));
 
-        stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
+        stream1.data(ReadableBuffer.EMPTY, true, Callback.NOOP);
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 }

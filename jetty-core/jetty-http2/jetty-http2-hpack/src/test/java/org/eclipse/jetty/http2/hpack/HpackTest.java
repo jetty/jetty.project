@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -23,8 +21,9 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Response;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,7 +44,7 @@ public class HpackTest
     {
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(8192, NanoTime::now);
-        ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
+        WritableBuffer wb = WritableBuffer.allocate(16 * 1024, true);
 
         long contentLength = 1024;
         HttpFields.Mutable fields0 = HttpFields.build()
@@ -59,21 +58,26 @@ public class HpackTest
             .add("custom-key", "custom-value");
         Response original0 = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields0, contentLength);
 
-        BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer, original0);
-        BufferUtil.flipToFlush(buffer, 0);
-        Response decoded0 = (Response)decoder.decode(buffer);
-        
         Response nullToEmpty = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields0.put(new HttpField(HttpHeader.CONTENT_ENCODING, "")), contentLength);
-        assertMetaDataResponseSame(nullToEmpty, decoded0);
+        {
+            encoder.encode(wb, original0);
+            ReadableBuffer rb = wb.toReadable();
+            Response decoded0 = (Response)decoder.decode(rb);
+            rb.toWritable();
+
+            assertMetaDataResponseSame(nullToEmpty, decoded0);
+        }
 
         // Same again?
-        BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer, original0);
-        BufferUtil.flipToFlush(buffer, 0);
-        Response decoded0b = (Response)decoder.decode(buffer);
+        {
+            wb.position(0);
+            encoder.encode(wb, original0);
+            ReadableBuffer rb = wb.toReadable();
+            Response decoded0b = (Response)decoder.decode(rb);
+            rb.toWritable();
 
-        assertMetaDataResponseSame(nullToEmpty, decoded0b);
+            assertMetaDataResponseSame(nullToEmpty, decoded0b);
+        }
 
         contentLength = 1234;
         HttpFields.Mutable fields1 = HttpFields.build()
@@ -87,13 +91,16 @@ public class HpackTest
         Response original1 = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields1, contentLength);
 
         // Same again?
-        BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer, original1);
-        BufferUtil.flipToFlush(buffer, 0);
-        Response decoded1 = (Response)decoder.decode(buffer);
+        {
+            wb.position(0);
+            encoder.encode(wb, original1);
+            ReadableBuffer rb = wb.toReadable();
+            Response decoded1 = (Response)decoder.decode(rb);
+            rb.toWritable();
 
-        assertMetaDataResponseSame(original1, decoded1);
-        assertEquals("custom-key", decoded1.getHttpFields().getField("Custom-Key").getName());
+            assertMetaDataResponseSame(original1, decoded1);
+            assertEquals("custom-key", decoded1.getHttpFields().getField("Custom-Key").getName());
+        }
     }
 
     @Test
@@ -101,19 +108,20 @@ public class HpackTest
     {
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(164, NanoTime::now);
-        ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
+        WritableBuffer wb = WritableBuffer.allocate(16 * 1024, true);
 
         HttpFields fields0 = HttpFields.build()
             .add("1234567890", "1234567890123456789012345678901234567890")
             .add("Cookie", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
         MetaData original0 = new MetaData(HttpVersion.HTTP_2, fields0);
 
-        BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer, original0);
-        BufferUtil.flipToFlush(buffer, 0);
-        MetaData decoded0 = decoder.decode(buffer);
+        {
+            encoder.encode(wb, original0);
+            ReadableBuffer rb = wb.toReadable();
+            MetaData decoded0 = decoder.decode(rb);
 
-        assertMetaDataSame(original0, decoded0);
+            assertMetaDataSame(original0, decoded0);
+        }
 
         HttpFields fields1 = HttpFields.build()
             .add("1234567890", "1234567890123456789012345678901234567890")
@@ -121,12 +129,13 @@ public class HpackTest
             .add("x", "y");
         MetaData original1 = new MetaData(HttpVersion.HTTP_2, fields1);
 
-        BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer, original1);
-        BufferUtil.flipToFlush(buffer, 0);
+        wb.position(0);
+        encoder.encode(wb, original1);
+        ReadableBuffer rb = wb.toReadable();
         try
         {
-            decoder.decode(buffer);
+            decoder.decode(rb);
+            rb.toWritable();
             fail();
         }
         catch (HpackException.SessionException e)
@@ -139,7 +148,7 @@ public class HpackTest
     public void encodeNonAscii() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        ByteBuffer buffer = BufferUtil.allocate(16 * 1024);
+        WritableBuffer buffer = WritableBuffer.allocate(16 * 1024, false);
 
         HttpFields fields0 = HttpFields.build()
             // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
@@ -147,12 +156,7 @@ public class HpackTest
             .add("custom-key", "[\uD842\uDF9F]");
         Response original0 = new MetaData.Response(200, null, HttpVersion.HTTP_2, fields0);
 
-        HpackException.StreamException throwable = assertThrows(HpackException.StreamException.class, () ->
-        {
-            BufferUtil.clearToFill(buffer);
-            encoder.encode(buffer, original0);
-            BufferUtil.flipToFlush(buffer, 0);
-        });
+        HpackException.StreamException throwable = assertThrows(HpackException.StreamException.class, () -> encoder.encode(buffer, original0));
 
         assertThat(throwable.getMessage(), containsString("Invalid header value"));
     }
@@ -165,7 +169,7 @@ public class HpackTest
         HpackEncoder encoder = new HpackEncoder();
         encoder.setMaxTableCapacity(decoder.getMaxTableCapacity());
         encoder.setTableCapacity(decoder.getMaxTableCapacity());
-        ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
+        WritableBuffer wb = WritableBuffer.allocate(16 * 1024, true);
 
         String longEnoughToBeEvicted = "012345678901234567890123456789012345678901234567890";
 
@@ -174,28 +178,33 @@ public class HpackTest
             .add("foo", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
         MetaData original0 = new MetaData(HttpVersion.HTTP_2, fields0);
 
-        BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer, original0);
-        BufferUtil.flipToFlush(buffer, 0);
-        MetaData decoded0 = decoder.decode(buffer);
+        {
+            encoder.encode(wb, original0);
+            ReadableBuffer rb = wb.toReadable();
+            MetaData decoded0 = decoder.decode(rb);
+            rb.toWritable();
 
-        assertEquals(2, encoder.getHpackContext().size());
-        assertEquals(2, decoder.getHpackContext().size());
-        assertEquals(longEnoughToBeEvicted, encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length + 1).getHttpField().getName());
-        assertEquals("foo", encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length).getHttpField().getName());
+            assertEquals(2, encoder.getHpackContext().size());
+            assertEquals(2, decoder.getHpackContext().size());
+            assertEquals(longEnoughToBeEvicted, encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length + 1).getHttpField().getName());
+            assertEquals("foo", encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length).getHttpField().getName());
 
-        assertMetaDataSame(original0, decoded0);
+            assertMetaDataSame(original0, decoded0);
+        }
 
         HttpFields fields1 = HttpFields.build()
             .add(longEnoughToBeEvicted, "other_value")
             .add("x", "y");
         MetaData original1 = new MetaData(HttpVersion.HTTP_2, fields1);
 
-        BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer, original1);
-        BufferUtil.flipToFlush(buffer, 0);
-        MetaData decoded1 = decoder.decode(buffer);
-        assertMetaDataSame(original1, decoded1);
+        {
+            wb.position(0);
+            encoder.encode(wb, original1);
+            ReadableBuffer rb = wb.toReadable();
+            MetaData decoded1 = decoder.decode(rb);
+            rb.toWritable();
+            assertMetaDataSame(original1, decoded1);
+        }
 
         assertEquals(2, encoder.getHpackContext().size());
         assertEquals(2, decoder.getHpackContext().size());
@@ -219,11 +228,10 @@ public class HpackTest
             .add(HttpHeader.TRANSFER_ENCODING, "chunked")
             .add(HttpHeader.UPGRADE, "gold");
 
-        ByteBuffer buffer = BufferUtil.allocate(2048);
-        BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input));
-        BufferUtil.flipToFlush(buffer, 0);
-        MetaData metaData = decoder.decode(buffer);
+        WritableBuffer wb = WritableBuffer.allocate(2048, false);
+        encoder.encode(wb, new MetaData(HttpVersion.HTTP_2, input));
+        ReadableBuffer rb = wb.toReadable();
+        MetaData metaData = decoder.decode(rb);
         HttpFields output = metaData.getHttpFields();
 
         assertEquals(1, output.size());
@@ -243,11 +251,10 @@ public class HpackTest
             .add(HttpHeader.TE, teValue)
             .add(HttpHeader.TRAILER, trailerValue);
 
-        ByteBuffer buffer = BufferUtil.allocate(2048);
-        BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input));
-        BufferUtil.flipToFlush(buffer, 0);
-        MetaData metaData = decoder.decode(buffer);
+        WritableBuffer wb = WritableBuffer.allocate(2048, false);
+        encoder.encode(wb, new MetaData(HttpVersion.HTTP_2, input));
+        ReadableBuffer rb = wb.toReadable();
+        MetaData metaData = decoder.decode(rb);
         HttpFields output = metaData.getHttpFields();
 
         assertEquals(2, output.size());
@@ -265,15 +272,14 @@ public class HpackTest
             .add(":status", "200")
             .add(":custom", "special");
 
-        ByteBuffer buffer = BufferUtil.allocate(2048);
-        BufferUtil.clearToFill(buffer);
-        assertThrows(HpackException.StreamException.class, () -> encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input)));
+        WritableBuffer wb = WritableBuffer.allocate(2048, false);
+        assertThrows(HpackException.StreamException.class, () -> encoder.encode(wb, new MetaData(HttpVersion.HTTP_2, input)));
 
         encoder.setValidateEncoding(false);
-        encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input));
+        encoder.encode(wb, new MetaData(HttpVersion.HTTP_2, input));
 
-        BufferUtil.flipToFlush(buffer, 0);
-        assertThrows(HpackException.StreamException.class, () -> decoder.decode(buffer));
+        ReadableBuffer rb = wb.toReadable();
+        assertThrows(HpackException.StreamException.class, () -> decoder.decode(rb));
     }
 
     private void assertMetaDataResponseSame(MetaData.Response expected, MetaData.Response actual)

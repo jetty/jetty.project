@@ -46,6 +46,7 @@ import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.SettingsBodyParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
@@ -55,6 +56,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +80,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, ServerSessionListener listener)
     {
-        super(connector.getByteBufferPool(), connector.getExecutor(), endPoint, session, httpConfig.getInputBufferSize(), httpConfig.getMinInputBufferSpace());
+        super(WritableBufferPool.wrap(connector.getByteBufferPool()), connector.getExecutor(), endPoint, session, httpConfig.getInputBufferSize(), httpConfig.getMinInputBufferSpace());
         this.connector = connector;
         this.listener = listener;
         this.httpConfig = httpConfig;
@@ -299,7 +301,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             if (LOG.isDebugEnabled())
                 LOG.debug("{} {}: {}", this, HttpHeader.HTTP2_SETTINGS, StringUtil.toHexString(settings));
 
-            SettingsFrame settingsFrame = SettingsBodyParser.parseBody(BufferUtil.toBuffer(settings));
+            SettingsFrame settingsFrame = SettingsBodyParser.parseBody(ReadableBuffer.wrap(BufferUtil.toBuffer(settings)));
             if (settingsFrame == null)
             {
                 LOG.warn("Invalid {} header value: {}", HttpHeader.HTTP2_SETTINGS, value);

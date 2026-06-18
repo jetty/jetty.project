@@ -37,9 +37,11 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,16 +82,17 @@ public class InterleavingTest extends AbstractTest
             }
         });
 
-        BlockingQueue<Stream.Data> dataQueue = new LinkedBlockingDeque<>();
+        BlockingQueue<DataFrame> dataQueue = new LinkedBlockingDeque<>();
         Stream.Listener streamListener = new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
+                Content.Chunk chunk = stream.read();
+                DataFrame dataFrame = new DataFrame(stream.getId(), ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast());
                 // Do not release.
-                dataQueue.offer(data);
-                if (!data.frame().isEndStream())
+                dataQueue.offer(dataFrame);
+                if (!chunk.isLast())
                     stream.demand();
             }
         };
@@ -127,11 +130,11 @@ public class InterleavingTest extends AbstractTest
             {
                 // Write data for both streams from within the callback so that they get queued together.
 
-                ByteBuffer buffer1 = ByteBuffer.wrap(content1);
-                serverStream1.data(new DataFrame(serverStream1.getId(), buffer1, true), NOOP);
+                ReadableBuffer buffer1 = ReadableBuffer.wrap(ByteBuffer.wrap(content1));
+                serverStream1.data(buffer1, true, NOOP);
 
-                ByteBuffer buffer2 = ByteBuffer.wrap(content2);
-                serverStream2.data(new DataFrame(serverStream2.getId(), buffer2, true), NOOP);
+                ReadableBuffer buffer2 = ReadableBuffer.wrap(ByteBuffer.wrap(content2));
+                serverStream2.data(buffer2, true, NOOP);
             }
         });
 
@@ -147,20 +150,21 @@ public class InterleavingTest extends AbstractTest
         int finished = 0;
         while (finished < 2)
         {
-            Stream.Data data = dataQueue.poll(5, TimeUnit.SECONDS);
-            if (data == null)
+            DataFrame dataFrame = dataQueue.poll(5, TimeUnit.SECONDS);
+            if (dataFrame == null)
                 fail();
 
-            DataFrame dataFrame = data.frame();
             int streamId = dataFrame.getStreamId();
-            int length = dataFrame.remaining();
+            int length = (int)dataFrame.remaining();
             streamLengths.add(new StreamLength(streamId, length));
             if (dataFrame.isEndStream())
                 ++finished;
 
-            BufferUtil.writeTo(dataFrame.getByteBuffer(), contents.get(streamId));
+            ReadableBuffer rb = dataFrame.acquire();
+            BufferUtil.writeTo(rb, contents.get(streamId));
+            rb.release();
 
-            data.release();
+            dataFrame.release();
         }
 
         // Verify that the content has been sent properly.

@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.http2.generator;
 
+import java.util.List;
+
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 
 public class PriorityGenerator extends FrameGenerator
 {
@@ -27,20 +30,21 @@ public class PriorityGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Frame frame)
+    public int generate(List<ReadableBuffer> accumulator, Frame frame)
     {
         PriorityFrame priorityFrame = (PriorityFrame)frame;
         return generatePriority(accumulator, priorityFrame.getStreamId(), priorityFrame.getParentStreamId(), priorityFrame.getWeight(), priorityFrame.isExclusive());
     }
 
-    public int generatePriority(RetainableByteBuffer.Mutable accumulator, int streamId, int parentStreamId, int weight, boolean exclusive)
+    public int generatePriority(List<ReadableBuffer> accumulator, int streamId, int parentStreamId, int weight, boolean exclusive)
     {
-        generateHeader(accumulator, FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
-        generatePriorityBody(accumulator, streamId, parentStreamId, weight, exclusive);
+        WritableBuffer wb = generateHeader(FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
+        generatePriorityBody(wb, streamId, parentStreamId, weight, exclusive);
+        accumulator.add(wb.toReadable());
         return Frame.HEADER_LENGTH + PriorityFrame.PRIORITY_LENGTH;
     }
 
-    public void generatePriorityBody(RetainableByteBuffer.Mutable accumulator, int streamId, int parentStreamId, int weight, boolean exclusive)
+    public void generatePriorityBody(WritableBuffer wb, int streamId, int parentStreamId, int weight, boolean exclusive)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -53,8 +57,9 @@ public class PriorityGenerator extends FrameGenerator
 
         if (exclusive)
             parentStreamId |= 0x80_00_00_00;
-        accumulator.putInt(parentStreamId);
+
+        wb.putInt(parentStreamId);
         // SPEC: for RFC 7540 weight is 1..256, for RFC 9113 is an unused value.
-        accumulator.put((byte)(weight - 1));
+        wb.put((byte)(weight - 1));
     }
 }

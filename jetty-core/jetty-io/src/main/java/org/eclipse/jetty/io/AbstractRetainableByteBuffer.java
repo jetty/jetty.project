@@ -23,16 +23,16 @@ import java.nio.ByteBuffer;
 @Deprecated(forRemoval = true)
 public abstract class AbstractRetainableByteBuffer extends RetainableByteBuffer.FixedCapacity
 {
-    private final ReferenceCounter _refCount;
+    private final Retainable.ReferenceCounter _refCount;
 
     public AbstractRetainableByteBuffer(ByteBuffer byteBuffer)
     {
-        super(byteBuffer, new ReferenceCounter(0));
-        _refCount = (ReferenceCounter)getWrapped();
+        super(byteBuffer, new Retainable.ReferenceCounter(0));
+        _refCount = (Retainable.ReferenceCounter)getWrapped();
     }
 
     /**
-     * @see ReferenceCounter#acquire()
+     * @see Retainable.ReferenceCounter#acquire()
      */
     protected void acquire()
     {

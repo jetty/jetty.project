@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.http2.generator;
 
+import java.util.List;
+
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PingFrame;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 
 public class PingGenerator extends FrameGenerator
 {
@@ -27,19 +30,20 @@ public class PingGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Frame frame)
+    public int generate(List<ReadableBuffer> accumulator, Frame frame)
     {
         PingFrame pingFrame = (PingFrame)frame;
         return generatePing(accumulator, pingFrame.getPayload(), pingFrame.isReply());
     }
 
-    public int generatePing(RetainableByteBuffer.Mutable accumulator, byte[] payload, boolean reply)
+    public int generatePing(List<ReadableBuffer> accumulator, byte[] payload, boolean reply)
     {
         if (payload.length != PingFrame.PING_LENGTH)
             throw new IllegalArgumentException("Invalid payload length: " + payload.length);
 
-        generateHeader(accumulator, FrameType.PING, PingFrame.PING_LENGTH, reply ? Flags.ACK : Flags.NONE, 0);
-        accumulator.put(payload, 0, payload.length);
+        WritableBuffer wb = generateHeader(FrameType.PING, PingFrame.PING_LENGTH, reply ? Flags.ACK : Flags.NONE, 0);
+        wb.put(payload);
+        accumulator.add(wb.toReadable());
         return Frame.HEADER_LENGTH + PingFrame.PING_LENGTH;
     }
 }

@@ -23,7 +23,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.Content;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -116,7 +116,7 @@ public class ContentLengthTest extends AbstractTest
                 resetLatch.countDown();
                 callback.succeeded();
             }
-        }).thenAccept(stream -> stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(data), true)));
+        }).thenAccept(stream -> stream.data(ReadableBuffer.wrap(ByteBuffer.wrap(data)), true));
 
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }

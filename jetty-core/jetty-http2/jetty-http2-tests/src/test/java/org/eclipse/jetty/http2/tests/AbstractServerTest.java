@@ -30,12 +30,13 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 
@@ -43,7 +44,7 @@ public class AbstractServerTest
 {
     protected HttpConfiguration httpConfig = new HttpConfiguration();
     protected ServerConnector connector;
-    protected ByteBufferPool bufferPool;
+    protected WritableBufferPool bufferPool;
     protected Generator generator;
     protected Server server;
     protected String path;
@@ -69,7 +70,7 @@ public class AbstractServerTest
         connector = new ServerConnector(server, connectionFactory);
         server.addConnector(connector);
         path = "/test";
-        bufferPool = new ArrayByteBufferPool();
+        bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         generator = new Generator(bufferPool);
     }
 
@@ -105,7 +106,7 @@ public class AbstractServerTest
                 int read = input.read(buffer);
                 if (read < 0)
                     return true;
-                parser.parse(ByteBuffer.wrap(buffer, 0, read));
+                parser.parse(ReadableBuffer.wrap(ByteBuffer.wrap(buffer, 0, read)));
                 if (client.isClosed())
                     return true;
             }

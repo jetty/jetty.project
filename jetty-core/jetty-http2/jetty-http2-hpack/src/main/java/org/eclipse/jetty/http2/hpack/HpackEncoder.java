@@ -36,6 +36,8 @@ import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,7 +141,7 @@ public class HpackEncoder
      * up to {@link #getMaxTableCapacity()}.
      * An HPACK instruction with the new capacity value will
      * be sent to the decoder when the next call to
-     * {@link #encode(ByteBuffer, MetaData)} is made.</p>
+     * {@link #encode(WritableBuffer, MetaData)} is made.</p>
      *
      * @param tableCapacity the capacity of the dynamic header table
      */
@@ -175,7 +177,7 @@ public class HpackEncoder
         _validateEncoding = validateEncoding;
     }
 
-    public void encode(ByteBuffer buffer, MetaData metadata) throws HpackException
+    public void encode(WritableBuffer buffer, MetaData metadata) throws HpackException
     {
         try
         {
@@ -199,7 +201,7 @@ public class HpackEncoder
             }
 
             _headerListSize = 0;
-            int pos = buffer.position();
+            long pos = buffer.position();
 
             // If max table size changed, send the correspondent instruction.
             int tableCapacity = getTableCapacity();
@@ -300,14 +302,14 @@ public class HpackEncoder
         }
     }
 
-    public void encodeMaxDynamicTableSize(ByteBuffer buffer, int maxTableSize)
+    public void encodeMaxDynamicTableSize(WritableBuffer buffer, int maxTableSize)
     {
         buffer.put((byte)0x20);
         NBitIntegerEncoder.encode(buffer, 5, maxTableSize);
         _context.resize(maxTableSize);
     }
 
-    public void encode(ByteBuffer buffer, HttpField field)
+    public void encode(WritableBuffer buffer, HttpField field)
     {
         if (field.getValue() == null)
             field = new HttpField(field.getHeader(), field.getName(), "");
@@ -353,9 +355,11 @@ public class HpackEncoder
 
                 if (field instanceof PreEncodedHttpField)
                 {
-                    int i = buffer.position();
+                    long i = buffer.position();
                     ((PreEncodedHttpField)field).putTo(buffer, HttpVersion.HTTP_2);
-                    byte b = buffer.get(i);
+                    ReadableBuffer rb = buffer.toReadable();
+                    byte b = rb.get(i);
+                    rb.toWritable();
                     indexed = b < 0 || b >= 0x40;
                     if (_debug)
                         encoding = indexed ? "PreEncodedIdx" : "PreEncoded";
@@ -390,9 +394,11 @@ public class HpackEncoder
                 if (field instanceof PreEncodedHttpField)
                 {
                     // Preencoded field
-                    int i = buffer.position();
+                    long i = buffer.position();
                     ((PreEncodedHttpField)field).putTo(buffer, HttpVersion.HTTP_2);
-                    byte b = buffer.get(i);
+                    ReadableBuffer rb = buffer.toReadable();
+                    byte b = rb.get(i);
+                    rb.toWritable();
                     indexed = b < 0 || b >= 0x40;
                     if (_debug)
                         encoding = indexed ? "PreEncodedIdx" : "PreEncoded";
@@ -444,11 +450,15 @@ public class HpackEncoder
         if (_debug)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("encode {}:'{}' to '{}'", encoding, field, BufferUtil.toHexString(buffer.duplicate().flip()));
+            {
+                ReadableBuffer rb = buffer.toReadable();
+                LOG.debug("encode {}:'{}' to '{}'", encoding, field, BufferUtil.toHexString(rb));
+                rb.toWritable();
+            }
         }
     }
 
-    private void encodeName(ByteBuffer buffer, byte mask, int bits, String name, Entry entry)
+    private void encodeName(WritableBuffer buffer, byte mask, int bits, String name, Entry entry)
     {
         buffer.put(mask);
         if (entry == null)
@@ -463,6 +473,11 @@ public class HpackEncoder
         {
             NBitIntegerEncoder.encode(buffer, bits, _context.index(entry));
         }
+    }
+
+    static void encodeValue(WritableBuffer buffer, boolean huffman, String value)
+    {
+        NBitStringEncoder.encode(buffer, 8, value, huffman);
     }
 
     static void encodeValue(ByteBuffer buffer, boolean huffman, String value)

@@ -14,7 +14,9 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -37,8 +39,8 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -330,12 +332,15 @@ public class SettingsTest extends AbstractTest
                 try
                 {
                     HTTP2Session session = (HTTP2Session)stream.getSession();
-                    RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+                    List<ReadableBuffer> accumulator = new ArrayList<>();
                     MetaData.Request push = newRequest("GET", "/push", HttpFields.EMPTY);
                     PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 2, push);
                     session.getGenerator().control(accumulator, pushFrame);
 
-                    accumulator.writeTo(session.getEndPoint(), false, Callback.from(accumulator::release));
+                    ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+                    accumulator.forEach(ReadableBuffer::release);
+                    session.getEndPoint().write(rb, Callback.NOOP);
+                    rb.release();
                     return null;
                 }
                 catch (HpackException x)
