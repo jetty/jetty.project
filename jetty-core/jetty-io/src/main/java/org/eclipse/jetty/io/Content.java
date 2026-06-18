@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1029,6 +1030,16 @@ public class Content
             return new ByteBufferChunk.WithRetainableByteBuffer(buffer, last);
         }
 
+        static Chunk from(ReadableBuffer buffer, boolean last)
+        {
+            if (buffer.remaining() == 0)
+                return last ? EOF : EMPTY;
+
+            // TODO: do not copy but link the chunk and the buffer.
+            ByteBuffer copy = BufferUtil.toBuffer(buffer, true/*TODO do not hardcode directness*/);
+            return from(copy, last);
+        }
+
         /**
          * <p>Creates a Chunk with the given ByteBuffer.</p>
          * <p>The returned Chunk must be {@link #release() released}.</p>
@@ -1090,6 +1101,19 @@ public class Content
                 }
             }
             retainable.release();
+            return last ? EOF : EMPTY;
+        }
+
+        static Chunk asChunk(ReadableBuffer buffer, boolean last, Retainable retainable)
+        {
+            if (buffer.remaining() > 0L)
+            {
+                // TODO retain instead of copy
+                ByteBuffer byteBuffer = BufferUtil.toBuffer(buffer, false);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Copying buffer because could not retain");
+                return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
+            }
             return last ? EOF : EMPTY;
         }
 

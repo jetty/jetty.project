@@ -31,13 +31,12 @@ import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -96,8 +95,7 @@ public class MaxPushedStreamsTest extends AbstractTest
                     // ... then send the data for the valid pushed streams...
                     .thenAccept(streams -> streams.forEach(pushedStream ->
                     {
-                        DataFrame data = new DataFrame(pushedStream.getId(), BufferUtil.EMPTY_BUFFER, true);
-                        pushedStream.data(data);
+                        pushedStream.data(ReadableBuffer.EMPTY, true);
                     }))
                     // ... then send the response.
                     .thenRun(() ->

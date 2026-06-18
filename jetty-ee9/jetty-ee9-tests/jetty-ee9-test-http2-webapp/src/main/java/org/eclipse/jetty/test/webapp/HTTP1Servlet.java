@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -103,7 +104,7 @@ public class HTTP1Servlet extends HttpServlet
                         try
                         {
                             // Read a chunk of the content.
-                            Stream.Data data = stream.readData();
+                            Content.Chunk data = stream.read();
                             if (data == null)
                             {
                                 // No data available now, demand to be called back.
@@ -112,13 +113,13 @@ public class HTTP1Servlet extends HttpServlet
                             else
                             {
                                 // Process the content.
-                                ByteBuffer buffer = data.frame().getByteBuffer();
-                                byte[] bytes = new byte[buffer.remaining()];
+                                ByteBuffer buffer = data.getByteBuffer();
+                                byte[] bytes = new byte[(int)buffer.remaining()];
                                 buffer.get(bytes);
                                 output.write(bytes);
                                 // Notify that the content has been consumed.
                                 data.release();
-                                if (!data.frame().isEndStream())
+                                if (!data.isLast())
                                 {
                                     // Demand to be called back.
                                     stream.demand();

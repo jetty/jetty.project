@@ -36,6 +36,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -134,14 +135,14 @@ public class HTTP2RequestTest
                 @Override
                 public void onDataAvailable(Stream stream)
                 {
-                    Stream.Data data = stream.readData();
+                    Content.Chunk data = stream.read();
                     if (data == null)
                     {
                         stream.demand();
                         return;
                     }
                     data.release();
-                    if (data.frame().isEndStream())
+                    if (data.isLast())
                         responseLatch.countDown();
                     else
                         stream.demand();

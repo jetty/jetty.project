@@ -394,6 +394,15 @@ public class BufferUtil
      * @param buffer The buffer to convert in flush mode. The buffer is not altered.
      * @return An array of bytes duplicated from the buffer.
      */
+    public static byte[] toArray(ReadableBuffer buffer)
+    {
+        byte[] to = new byte[Math.toIntExact(buffer.remaining())];
+        ReadableBuffer slice = buffer.slice();
+        slice.get(to);
+        slice.release();
+        return to;
+    }
+
     public static byte[] toArray(ByteBuffer buffer)
     {
         if (buffer.hasArray())
@@ -843,6 +852,11 @@ public class BufferUtil
      * @param out The output stream
      * @throws IOException if there was a problem writing.
      */
+    public static void writeTo(ReadableBuffer buffer, OutputStream out) throws IOException
+    {
+        buffer.writeTo(input -> writeTo(input, out));
+    }
+
     public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
         if (buffer.hasArray())
@@ -1576,6 +1590,23 @@ public class BufferUtil
      * @param buffer the buffer to generate a hex byte summary from
      * @return A hex string
      */
+    public static String toHexString(ReadableBuffer buffer)
+    {
+        if (buffer == null)
+            return "null";
+        ReadableBuffer slice = buffer.slice();
+        try
+        {
+            byte[] b = new byte[Math.toIntExact(slice.remaining())];
+            slice.get(b);
+            return StringUtil.toHexString(b);
+        }
+        finally
+        {
+            slice.release();
+        }
+    }
+
     public static String toHexString(ByteBuffer buffer)
     {
         if (buffer == null)

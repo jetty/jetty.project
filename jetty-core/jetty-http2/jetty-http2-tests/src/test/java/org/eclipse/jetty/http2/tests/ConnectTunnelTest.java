@@ -29,10 +29,11 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,8 +65,8 @@ public class ConnectTunnelTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        stream.data(data.frame(), Callback.from(data::release));
+                        Content.Chunk chunk = stream.read();
+                        stream.data(ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), Callback.from(chunk::release));
                     }
                 };
             }
@@ -85,15 +86,15 @@ public class ConnectTunnelTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
+                Content.Chunk data = stream.read();
                 data.release();
-                if (data.frame().isEndStream())
+                if (data.isLast())
                     latch.countDown();
             }
         });
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.wrap(bytes);
-        stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
+        ReadableBuffer data = ReadableBuffer.wrap(ByteBuffer.wrap(bytes));
+        stream.data(data, true, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -121,8 +122,8 @@ public class ConnectTunnelTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        stream.data(data.frame(), Callback.from(data::release));
+                        Content.Chunk chunk = stream.read();
+                        stream.data(ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), Callback.from(chunk::release));
                     }
                 };
             }
@@ -142,15 +143,15 @@ public class ConnectTunnelTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
+                Content.Chunk data = stream.read();
                 data.release();
-                if (data.frame().isEndStream())
+                if (data.isLast())
                     latch.countDown();
             }
         });
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.wrap(bytes);
-        stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
+        ReadableBuffer data = ReadableBuffer.wrap(ByteBuffer.wrap(bytes));
+        stream.data(data, true, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

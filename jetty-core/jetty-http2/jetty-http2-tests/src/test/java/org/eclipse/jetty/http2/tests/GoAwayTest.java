@@ -48,10 +48,11 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -480,7 +481,7 @@ public class GoAwayTest extends AbstractTest
 
         MetaData.Request request1 = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame headersFrame1 = new HeadersFrame(request1, null, false);
-        DataFrame dataFrame1 = new DataFrame(ByteBuffer.allocate(flowControlWindow / 2), false);
+        DataFrame dataFrame1 = new DataFrame(ReadableBuffer.allocate(flowControlWindow / 2, false), false);
         ((HTTP2Session)clientSession).newStream(new HTTP2Stream.FrameList(headersFrame1, dataFrame1, null), new Promise<>() {}, new Stream.Listener()
         {
             @Override
@@ -495,7 +496,7 @@ public class GoAwayTest extends AbstractTest
                 // this stream, so that the first stream can send more data.
                 MetaData.Request request2 = newRequest("POST", HttpFields.EMPTY);
                 HeadersFrame headersFrame2 = new HeadersFrame(request2, null, false);
-                DataFrame dataFrame2 = new DataFrame(ByteBuffer.allocate(flowControlWindow / 2), true);
+                DataFrame dataFrame2 = new DataFrame(ReadableBuffer.allocate(flowControlWindow / 2, false), true);
                 ((HTTP2Session)clientStream1.getSession()).newStream(new HTTP2Stream.FrameList(headersFrame2, dataFrame2, null), new Promise<>()
                 {
                     @Override
@@ -504,7 +505,7 @@ public class GoAwayTest extends AbstractTest
                         // After the in-flight stream is sent, try to complete the first stream.
                         // The client should receive the window update from
                         // the server and be able to complete this stream.
-                        clientStream1.data(new DataFrame(clientStream1.getId(), ByteBuffer.allocate(flowControlWindow / 2), true), Callback.NOOP);
+                        clientStream1.data(ReadableBuffer.allocate(flowControlWindow / 2, false), true, Callback.NOOP);
                     }
                 }, AUTO_DISCARD);
             }
@@ -521,10 +522,10 @@ public class GoAwayTest extends AbstractTest
         Stream serverStream = serverStreams.iterator().next();
         while (true)
         {
-            Stream.Data data = serverStream.readData();
-            assertNotNull(data);
-            data.release();
-            if (data.frame().isEndStream())
+            Content.Chunk chunk = serverStream.read();
+            assertNotNull(chunk);
+            chunk.release();
+            if (chunk.isLast())
                 break;
         }
 
@@ -727,9 +728,9 @@ public class GoAwayTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        data.release();
-                        if (data.frame().isEndStream())
+                        Content.Chunk chunk = stream.read();
+                        chunk.release();
+                        if (chunk.isLast())
                         {
                             MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
@@ -793,7 +794,7 @@ public class GoAwayTest extends AbstractTest
         assertTrue(clientGracefulGoAwayLatch.await(5, TimeUnit.SECONDS));
 
         // Complete the stream.
-        clientStream.data(new DataFrame(clientStream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
+        clientStream.data(ReadableBuffer.EMPTY, true, Callback.NOOP);
 
         // Both client and server should send a non-graceful GOAWAY.
         assertTrue(serverGoAwayLatch.await(5, TimeUnit.SECONDS));

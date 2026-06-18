@@ -18,6 +18,8 @@ import java.util.EnumMap;
 import java.util.ServiceLoader;
 
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,6 +105,11 @@ public class PreEncodedHttpField extends HttpField
     public PreEncodedHttpField(String name, long value)
     {
         this(null, name, Long.toString(value), value);
+    }
+
+    public void putTo(WritableBuffer buffer, HttpVersion version)
+    {
+        buffer.put(ReadableBuffer.wrap(ByteBuffer.wrap(_encodedFields.get(version))));
     }
 
     public void putTo(ByteBuffer bufferInFillMode, HttpVersion version)

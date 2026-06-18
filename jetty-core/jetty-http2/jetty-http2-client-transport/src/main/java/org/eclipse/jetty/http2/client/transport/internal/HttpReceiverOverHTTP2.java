@@ -34,7 +34,6 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Stream;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -69,22 +68,19 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         if (stream == null)
             return Content.Chunk.from(new EOFException("Channel has been released"));
 
-        Stream.Data data = stream.readData();
+        Content.Chunk chunk = stream.read();
         if (LOG.isDebugEnabled())
-            LOG.debug("Read stream data {} in {}", data, this);
-        if (data == null)
+            LOG.debug("Read stream data {} in {}", chunk, this);
+        if (chunk == null)
         {
             if (fillInterestIfNeeded)
                 stream.demand();
             return null;
         }
 
-        DataFrame frame = data.frame();
-        boolean last = frame.remaining() == 0 && frame.isEndStream();
+        boolean last = chunk.getByteBuffer().remaining() == 0 && chunk.isLast();
         if (!last)
-            return Content.Chunk.asChunk(frame.getByteBuffer(), false, data);
-
-        data.release();
+            return Content.Chunk.asChunk(chunk.getByteBuffer(), false, chunk);
 
         if (getHttpChannel().isLastDataReceived())
         {

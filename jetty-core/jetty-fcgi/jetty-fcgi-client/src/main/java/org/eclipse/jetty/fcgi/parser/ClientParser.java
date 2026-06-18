@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
-import java.nio.ByteBuffer;
 import java.util.EnumMap;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 public class ClientParser extends Parser
 {
@@ -70,7 +70,7 @@ public class ClientParser extends Parser
         }
 
         @Override
-        public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+        public boolean onContent(int request, FCGI.StreamType stream, ReadableBuffer buffer)
         {
             return listener.onContent(request, stream, buffer);
         }

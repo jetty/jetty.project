@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,16 +34,17 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -144,8 +144,8 @@ public class FlowControlStalledTest
                         public void succeeded()
                         {
                             // Send a large chunk of data so the stream gets stalled.
-                            ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1);
-                            stream.data(new DataFrame(stream.getId(), data, true), NOOP);
+                            ReadableBuffer data = ReadableBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1, false);
+                            stream.data(data, true, NOOP);
                         }
                     });
                 }
@@ -164,17 +164,17 @@ public class FlowControlStalledTest
         Session client = newClient(new Session.Listener() {});
 
         CountDownLatch latch = new CountDownLatch(1);
-        Queue<Stream.Data> dataQueue = new ArrayDeque<>();
+        Queue<Content.Chunk> dataQueue = new ArrayDeque<>();
         MetaData.Request request = newRequest("GET", "/stall", HttpFields.EMPTY);
         client.newStream(new HeadersFrame(request, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
+                Content.Chunk chunk = stream.read();
                 // Do not release.
-                dataQueue.offer(data);
-                if (data.frame().isEndStream())
+                dataQueue.offer(chunk);
+                if (chunk.isLast())
                     latch.countDown();
                 else
                     stream.demand();
@@ -195,9 +195,9 @@ public class FlowControlStalledTest
         // Consume all data.
         while (!latch.await(10, TimeUnit.MILLISECONDS))
         {
-            Stream.Data data = dataQueue.poll();
-            if (data != null)
-                data.release();
+            Content.Chunk chunk = dataQueue.poll();
+            if (chunk != null)
+                chunk.release();
         }
 
         // Make sure the unstall callback is invoked.
@@ -240,8 +240,8 @@ public class FlowControlStalledTest
                         public void succeeded()
                         {
                             // Send a large chunk of data so the session gets stalled.
-                            ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1);
-                            stream.data(new DataFrame(stream.getId(), data, true), NOOP);
+                            ReadableBuffer data = ReadableBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1, false);
+                            stream.data(data, true, NOOP);
                         }
                     });
                 }
@@ -269,17 +269,17 @@ public class FlowControlStalledTest
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        Queue<Stream.Data> dataQueue = new ArrayDeque<>();
+        Queue<Content.Chunk> dataQueue = new ArrayDeque<>();
         MetaData.Request request = newRequest("GET", "/stall", HttpFields.EMPTY);
         session.newStream(new HeadersFrame(request, null, true), new Promise<>() {}, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
+                Content.Chunk chunk = stream.read();
                 // Do not release.
-                dataQueue.offer(data);
-                if (data.frame().isEndStream())
+                dataQueue.offer(chunk);
+                if (chunk.isLast())
                     latch.countDown();
                 else
                     stream.demand();
@@ -300,9 +300,9 @@ public class FlowControlStalledTest
         // Release all data.
         while (!latch.await(10, TimeUnit.MILLISECONDS))
         {
-            Stream.Data data = dataQueue.poll();
-            if (data != null)
-                data.release();
+            Content.Chunk chunk = dataQueue.poll();
+            if (chunk != null)
+                chunk.release();
         }
 
         // Make sure the unstall callback is invoked.

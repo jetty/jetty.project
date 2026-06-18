@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.util.Objects;
-
-import org.eclipse.jetty.util.TypeUtil;
-
 /**
  * <p>A reference counted resource, for example one that is borrowed from a pool,
  * that may be retained an additional number of times, and released a correspondent
@@ -56,54 +52,16 @@ public interface Retainable extends org.eclipse.jetty.util.Retainable
     /**
      * A wrapper of {@link Retainable} instances.
      */
-    class Wrapper implements Retainable
+    class Wrapper extends org.eclipse.jetty.util.Retainable.Wrapper implements Retainable
     {
-        private final Retainable wrapped;
-
         public Wrapper(Retainable wrapped)
         {
-            this.wrapped = Objects.requireNonNull(wrapped);
+            super(wrapped);
         }
 
         public Retainable getWrapped()
         {
-            return wrapped;
-        }
-
-        @Override
-        public boolean canRetain()
-        {
-            return getWrapped().canRetain();
-        }
-
-        @Override
-        public int getRetained()
-        {
-            return getWrapped().getRetained();
-        }
-
-        @Override
-        public boolean isRetained()
-        {
-            return getWrapped().isRetained();
-        }
-
-        @Override
-        public void retain()
-        {
-            getWrapped().retain();
-        }
-
-        @Override
-        public boolean release()
-        {
-            return getWrapped().release();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getWrapped());
+            return (Retainable)super.getWrapped();
         }
     }
 
@@ -118,6 +76,10 @@ public interface Retainable extends org.eclipse.jetty.util.Retainable
         {
             super(initialCount);
         }
+    }
+
+    class Tracking extends TrackingRetainable implements Retainable
+    {
     }
 
     /**

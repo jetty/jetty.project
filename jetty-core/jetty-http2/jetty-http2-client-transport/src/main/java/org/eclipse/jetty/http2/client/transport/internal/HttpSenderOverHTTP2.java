@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 public class HttpSenderOverHTTP2 extends HttpSender
 {
@@ -95,13 +96,13 @@ public class HttpSenderOverHTTP2 extends HttpSender
                 {
                     HttpFields trailers = retrieveTrailers(request);
                     boolean hasTrailers = trailers != null;
-                    dataFrame = new DataFrame(contentBuffer, !hasTrailers);
+                    dataFrame = new DataFrame(ReadableBuffer.wrap(contentBuffer), !hasTrailers);
                     if (hasTrailers)
                         trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_2, trailers), null, true);
                 }
                 else
                 {
-                    dataFrame = new DataFrame(contentBuffer, false);
+                    dataFrame = new DataFrame(ReadableBuffer.wrap(contentBuffer), false);
                 }
             }
             else
@@ -145,31 +146,24 @@ public class HttpSenderOverHTTP2 extends HttpSender
             boolean hasTrailers = trailers != null && trailers.size() > 0;
             if (hasContent)
             {
-                DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, !hasTrailers);
                 if (hasTrailers)
-                    stream.data(dataFrame, Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed));
+                    stream.data(ReadableBuffer.wrap(contentBuffer), !hasTrailers, Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed));
                 else
-                    stream.data(dataFrame, callback);
+                    stream.data(ReadableBuffer.wrap(contentBuffer), !hasTrailers, callback);
             }
             else
             {
                 if (hasTrailers)
-                {
                     sendTrailers(stream, trailers, callback);
-                }
                 else
-                {
-                    DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, true);
-                    stream.data(dataFrame, callback);
-                }
+                    stream.data(ReadableBuffer.wrap(contentBuffer), true, callback);
             }
         }
         else
         {
             if (hasContent)
             {
-                DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, false);
-                stream.data(dataFrame, callback);
+                stream.data(ReadableBuffer.wrap(contentBuffer), false, callback);
             }
             else
             {

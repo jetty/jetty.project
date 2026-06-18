@@ -295,7 +295,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         {
             super(byteBuffer.hasRemaining() ? byteBuffer : BufferUtil.EMPTY_BUFFER, last);
             this.callback = callback;
-            referenceCounter = getByteBuffer() == BufferUtil.EMPTY_BUFFER ? null : new ReferenceCounter();
+            referenceCounter = getByteBuffer() == BufferUtil.EMPTY_BUFFER ? null : new Retainable.ReferenceCounter();
         }
 
         @Override

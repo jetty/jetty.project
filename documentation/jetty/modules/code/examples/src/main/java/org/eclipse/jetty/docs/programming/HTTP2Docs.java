@@ -29,6 +29,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 
 @SuppressWarnings("unused")
@@ -48,12 +49,12 @@ public class HTTP2Docs
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::dataUnwrap[]
-        record Chunk(ByteBuffer byteBuffer, Callback callback)
+        record Data(ByteBuffer buffer, Callback callback)
         {
         }
 
         // A queue that consumers poll to consume content asynchronously.
-        Queue<Chunk> dataQueue = new ConcurrentLinkedQueue<>();
+        Queue<Data> dataQueue = new ConcurrentLinkedQueue<>();
 
         // Implementation of Stream.Listener.onDataAvailable(Stream stream)
         // in case of unwrapping of the Data object for asynchronous content
@@ -63,26 +64,26 @@ public class HTTP2Docs
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
+                Content.Chunk chunk = stream.read();
 
-                if (data == null)
+                if (chunk == null)
                 {
                     stream.demand();
                     return;
                 }
 
                 // Get the content buffer.
-                ByteBuffer byteBuffer = data.frame().getByteBuffer();
+                ByteBuffer byteBuffer = chunk.getByteBuffer();
 
                 // Unwrap the Data object, converting it to a Chunk.
                 // The Data.release() semantic is maintained in the completion of the Callback.
-                dataQueue.offer(new Chunk(byteBuffer, Callback.from(() ->
+                dataQueue.offer(new Data(byteBuffer, Callback.from(() ->
                 {
                     // When the buffer has been consumed, then:
                     // A) release the Data object.
-                    data.release();
+                    chunk.release();
                     // B) possibly demand more DATA frames.
-                    if (!data.frame().isEndStream())
+                    if (!chunk.isLast())
                         stream.demand();
                 })));
 
