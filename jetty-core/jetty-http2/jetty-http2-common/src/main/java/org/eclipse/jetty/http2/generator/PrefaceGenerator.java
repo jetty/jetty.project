@@ -14,14 +14,15 @@
 package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 public class PrefaceGenerator extends FrameGenerator
 {
-    private static final ByteBuffer PREFACE = ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES);
+    private static final ReadableBuffer PREFACE = ReadableBuffer.wrap(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES));
 
     public PrefaceGenerator()
     {
@@ -29,9 +30,10 @@ public class PrefaceGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Frame frame)
+    public int generate(List<ReadableBuffer> accumulator, Frame frame)
     {
-        accumulator.add(PREFACE.slice());
-        return PREFACE.remaining();
+        ReadableBuffer slice = PREFACE.slice();
+        accumulator.add(slice);
+        return PrefaceFrame.PREFACE_BYTES.length;
     }
 }

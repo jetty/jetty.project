@@ -22,10 +22,10 @@ import org.eclipse.jetty.client.transport.HttpSender;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 public class HttpChannelOverFCGI extends HttpChannel
 {
@@ -167,9 +167,9 @@ public class HttpChannelOverFCGI extends HttpChannel
             release();
     }
 
-    protected void flush(ByteBufferPool.Accumulator accumulator, Callback callback)
+    protected void flush(ReadableBuffer buffer, Callback callback)
     {
-        connection.getFlusher().flush(accumulator, callback);
+        connection.getFlusher().flush(buffer, callback);
     }
 
     void receive()

@@ -892,7 +892,7 @@ public interface RetainableByteBuffer extends Retainable
     {
         public Abstract()
         {
-            this(new ReferenceCounter());
+            this(new Retainable.ReferenceCounter());
         }
 
         public Abstract(Retainable retainable)
@@ -987,7 +987,7 @@ public interface RetainableByteBuffer extends Retainable
 
         public FixedCapacity(ByteBuffer byteBuffer)
         {
-            this(byteBuffer, new ReferenceCounter());
+            this(byteBuffer, new Retainable.ReferenceCounter());
         }
 
         public FixedCapacity(ByteBuffer byteBuffer, Retainable retainable)
@@ -1366,7 +1366,7 @@ public interface RetainableByteBuffer extends Retainable
     {
         public NonRetainableByteBuffer(ByteBuffer byteBuffer)
         {
-            super(byteBuffer, NON_RETAINABLE);
+            super(byteBuffer, Retainable.NON_RETAINABLE);
         }
     }
 

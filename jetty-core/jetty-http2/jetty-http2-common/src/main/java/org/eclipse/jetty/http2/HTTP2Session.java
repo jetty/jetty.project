@@ -64,7 +64,6 @@ import org.eclipse.jetty.http2.internal.HTTP2Flusher;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
@@ -75,6 +74,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -306,16 +306,9 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     @Override
     public void onData(DataFrame frame)
     {
-        // This method should never be called, the one below should.
-        throw new UnsupportedOperationException();
-    }
-
-    public void onData(Stream.Data data)
-    {
         if (LOG.isDebugEnabled())
-            LOG.debug("Received {} on {}", data, this);
+            LOG.debug("Received {} on {}", frame, this);
 
-        DataFrame frame = data.frame();
         notifyIncomingFrame(frame);
 
         int streamId = frame.getStreamId();
@@ -342,7 +335,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                 }
                 else
                 {
-                    stream.process(data);
+                    stream.process(frame);
                 }
             }
         }
@@ -815,7 +808,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                 // Pushed streams are implicitly remotely closed.
                 // They are closed when sending an end-stream DATA frame.
                 HTTP2Stream http2Pushed = (HTTP2Stream)pushed;
-                http2Pushed.process(Stream.Data.eof(pushed.getId()));
+                http2Pushed.process(DataFrame.eof(pushed.getId()));
                 http2Pushed.updateClose(true, CloseState.Event.RECEIVED);
                 super.succeeded(pushed);
             }
@@ -1556,12 +1549,12 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
 
         public abstract int getFrameBytesGenerated();
 
-        public int getDataBytesRemaining()
+        public long getDataBytesRemaining()
         {
             return 0;
         }
 
-        public abstract boolean generate(RetainableByteBuffer.Mutable accumulator) throws HpackException;
+        public abstract boolean generate(List<ReadableBuffer> accumulator) throws HpackException;
 
         boolean hasHighPriority()
         {
@@ -1652,7 +1645,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
 
         @Override
-        public boolean generate(RetainableByteBuffer.Mutable accumulator) throws HpackException
+        public boolean generate(List<ReadableBuffer> accumulator) throws HpackException
         {
             frameBytes = generator.control(accumulator, frame);
             beforeSend();
@@ -1728,7 +1721,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     {
         private int frameBytes;
         private int dataBytes;
-        private int dataRemaining;
+        private long dataRemaining;
 
         private DataEntry(DataFrame frame, HTTP2Stream stream, Callback callback)
         {
@@ -1739,6 +1732,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             // the flow control window exhausting, since in that case
             // we would have to count the padding only once.
             dataRemaining = frame.remaining();
+            frame.retain();
         }
 
         @Override
@@ -1748,15 +1742,15 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
 
         @Override
-        public int getDataBytesRemaining()
+        public long getDataBytesRemaining()
         {
             return dataRemaining;
         }
 
         @Override
-        public boolean generate(RetainableByteBuffer.Mutable accumulator)
+        public boolean generate(List<ReadableBuffer> accumulator)
         {
-            int dataRemaining = getDataBytesRemaining();
+            long dataRemaining = getDataBytesRemaining();
 
             int sessionSendWindow = getSendWindow();
             int streamSendWindow = stream.updateSendWindow(0);
@@ -1764,7 +1758,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             if (window <= 0 && dataRemaining > 0)
                 return false;
 
-            int length = Math.min(dataRemaining, window);
+            int length = dataRemaining > Integer.MAX_VALUE ? window : Math.min((int)dataRemaining, window);
 
             // Only one DATA frame is generated.
             DataFrame dataFrame = (DataFrame)frame;
@@ -1797,12 +1791,20 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             DataFrame dataFrame = (DataFrame)frame;
             if (getDataBytesRemaining() == 0)
             {
+                dataFrame.release();
                 // Only now we can update the close state
                 // and eventually remove the stream.
                 if (stream.updateClose(dataFrame.isEndStream(), CloseState.Event.AFTER_SEND))
                     removeStream(stream);
                 super.succeeded();
             }
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            ((DataFrame)frame).release();
+            super.failed(x);
         }
     }
 

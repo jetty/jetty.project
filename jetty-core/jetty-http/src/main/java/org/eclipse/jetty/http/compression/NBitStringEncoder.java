@@ -15,6 +15,9 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
+
 public class NBitStringEncoder
 {
     private NBitStringEncoder()
@@ -36,6 +39,12 @@ public class NBitStringEncoder
 
     public static void encode(ByteBuffer buffer, int prefix, String value, boolean huffman)
     {
+        WritableBuffer wb = WritableBuffer.wrap(buffer);
+        encode(wb, prefix, value, huffman);
+    }
+
+    public static void encode(WritableBuffer buffer, int prefix, String value, boolean huffman)
+    {
         if (prefix <= 0 || prefix > 8)
             throw new IllegalArgumentException();
 
@@ -46,8 +55,8 @@ public class NBitStringEncoder
         }
         else
         {
-            int p = buffer.position() - 1;
-            buffer.put(p, (byte)(buffer.get(p) | huffmanFlag));
+            long p = buffer.position() - 1;
+            buffer.put(p, (byte)(getByteAt(buffer, p) | huffmanFlag));
         }
 
         // Start encoding size & content in rest of prefix.
@@ -70,5 +79,13 @@ public class NBitStringEncoder
                 buffer.put((byte)c);
             }
         }
+    }
+
+    private static byte getByteAt(WritableBuffer buffer, long p)
+    {
+        ReadableBuffer rb = buffer.toReadable();
+        byte b = rb.get(p);
+        rb.toWritable();
+        return b;
     }
 }

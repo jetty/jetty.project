@@ -30,6 +30,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -102,9 +103,9 @@ public class ResponseTrailerTest extends AbstractTest
                 @Override
                 public void onDataAvailable(Stream stream)
                 {
-                    Stream.Data data = stream.readData();
-                    data.release();
-                    if (data.frame().isEndStream())
+                    Content.Chunk chunk = stream.read();
+                    chunk.release();
+                    if (chunk.isLast())
                         latch.countDown();
                 }
             });
