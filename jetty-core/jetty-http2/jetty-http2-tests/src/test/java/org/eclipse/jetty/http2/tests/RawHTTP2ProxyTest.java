@@ -44,13 +44,16 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -61,7 +64,6 @@ import org.slf4j.LoggerFactory;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -147,10 +149,10 @@ public class RawHTTP2ProxyTest
         Random random = new Random();
         byte[] data1 = new byte[1024];
         random.nextBytes(data1);
-        ByteBuffer buffer1 = ByteBuffer.wrap(data1);
+        ReadableBuffer buffer1 = ReadableBuffer.wrap(ByteBuffer.wrap(data1));
         byte[] data2 = new byte[512];
         random.nextBytes(data2);
-        ByteBuffer buffer2 = ByteBuffer.wrap(data2);
+        ReadableBuffer buffer2 = ReadableBuffer.wrap(ByteBuffer.wrap(data2));
         Server server1 = startServer("server1", new ServerSessionListener()
         {
             @Override
@@ -173,10 +175,9 @@ public class RawHTTP2ProxyTest
                                 LOGGER.debug("SERVER1 sending {}", reply);
                             stream.headers(reply).thenAccept(s ->
                             {
-                                DataFrame data = new DataFrame(s.getId(), buffer1.slice(), true);
                                 if (LOGGER.isDebugEnabled())
-                                    LOGGER.debug("SERVER1 sending {}", data);
-                                s.data(data);
+                                    LOGGER.debug("SERVER1 sending {}", buffer1);
+                                s.data(buffer1.slice(), true);
                             });
                         }
                     }
@@ -197,11 +198,11 @@ public class RawHTTP2ProxyTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
+                        Content.Chunk chunk = stream.read();
                         if (LOGGER.isDebugEnabled())
-                            LOGGER.debug("SERVER2 received {}", data);
-                        data.release();
-                        if (data.frame().isEndStream())
+                            LOGGER.debug("SERVER2 received {}", chunk);
+                        chunk.release();
+                        if (chunk.isLast())
                         {
                             MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
@@ -210,10 +211,9 @@ public class RawHTTP2ProxyTest
                             stream.headers(reply)
                                 .thenCompose(s ->
                                 {
-                                    DataFrame dataFrame = new DataFrame(s.getId(), buffer2.slice(), false);
                                     if (LOGGER.isDebugEnabled())
-                                        LOGGER.debug("SERVER2 sending {}", dataFrame);
-                                    return s.data(dataFrame);
+                                        LOGGER.debug("SERVER2 sending {}", buffer2);
+                                    return s.data(buffer2.slice(), false);
                                 }).thenAccept(s ->
                                 {
                                     MetaData trailers = new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY);
@@ -243,7 +243,7 @@ public class RawHTTP2ProxyTest
         CountDownLatch latch1 = new CountDownLatch(1);
         Stream stream1 = clientSession.newStream(new HeadersFrame(request1, null, false), new Stream.Listener()
         {
-            private final RetainableByteBuffer.DynamicCapacity aggregator = new RetainableByteBuffer.DynamicCapacity(client.getByteBufferPool(), true, data1.length * 2);
+            private final WritableBuffer aggregator = WritableBuffer.allocate(data1.length * 2, true);
 
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -256,20 +256,19 @@ public class RawHTTP2ProxyTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                DataFrame frame = data.frame();
+                Content.Chunk chunk = stream.read();
                 if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("CLIENT1 received {}", frame);
-                assertTrue(aggregator.append(frame.getByteBuffer()));
-                data.release();
-                if (!data.frame().isEndStream())
+                    LOGGER.debug("CLIENT1 received {}", chunk);
+                aggregator.put(ReadableBuffer.wrap(chunk.getByteBuffer()));
+                chunk.release();
+                if (!chunk.isLast())
                 {
                     stream.demand();
                     return;
                 }
-                RetainableByteBuffer buffer = aggregator.take();
+                ReadableBuffer buffer = aggregator.toReadable();
                 assertNotNull(buffer);
-                assertEquals(buffer1.slice(), buffer.getByteBuffer());
+                assertThat(BufferUtil.toArray(buffer), is(BufferUtil.toArray(buffer1)));
                 buffer.release();
                 latch1.countDown();
             }
@@ -297,15 +296,15 @@ public class RawHTTP2ProxyTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
+                Content.Chunk chunk = stream.read();
                 if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("CLIENT2 received {}", data.frame());
-                data.release();
-                if (!data.frame().isEndStream())
+                    LOGGER.debug("CLIENT2 received {}", chunk);
+                chunk.release();
+                if (!chunk.isLast())
                     stream.demand();
             }
         }).get(5, TimeUnit.SECONDS);
-        stream2.data(new DataFrame(stream2.getId(), buffer1.slice(), true), Callback.NOOP);
+        stream2.data(buffer1, true, Callback.NOOP);
 
         assertTrue(latch1.await(5, TimeUnit.SECONDS));
         assertTrue(latch2.await(5, TimeUnit.SECONDS));
@@ -503,8 +502,9 @@ public class RawHTTP2ProxyTest
                     case DATA ->
                     {
                         DataFrame clientToProxyFrame = (DataFrame)frameInfo.frame;
-                        DataFrame proxyToServerFrame = new DataFrame(proxyToServerStream.getId(), clientToProxyFrame.getByteBuffer(), clientToProxyFrame.isEndStream());
-                        proxyToServerStream.data(proxyToServerFrame, this);
+                        ReadableBuffer rb = clientToProxyFrame.acquire();
+                        proxyToServerStream.data(rb, clientToProxyFrame.isEndStream(), this);
+                        rb.release();
                         yield Action.SCHEDULED;
                     }
                     default -> throw new IllegalStateException();
@@ -544,11 +544,11 @@ public class RawHTTP2ProxyTest
         @Override
         public void onDataAvailable(Stream stream)
         {
-            Stream.Data data = stream.readData();
+            Content.Chunk chunk = stream.read();
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("CPS:{} read {} on {}", port, data, stream);
-            offer(stream, data.frame(), Callback.from(data::release), false);
-            if (!data.frame().isEndStream())
+                LOGGER.debug("CPS:{} read {} on {}", port, chunk, stream);
+            offer(stream, new DataFrame(stream.getId(), ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast()), Callback.from(chunk::release), false);
+            if (!chunk.isLast())
                 stream.demand();
         }
 
@@ -656,8 +656,9 @@ public class RawHTTP2ProxyTest
                 case DATA ->
                 {
                     DataFrame serverToProxyFrame = (DataFrame)frameInfo.frame;
-                    DataFrame proxyToClientFrame = new DataFrame(proxyToClientStream.getId(), serverToProxyFrame.getByteBuffer(), serverToProxyFrame.isEndStream());
-                    proxyToClientStream.data(proxyToClientFrame, this);
+                    ReadableBuffer rb = serverToProxyFrame.acquire();
+                    proxyToClientStream.data(rb, serverToProxyFrame.isEndStream(), this);
+                    rb.release();
                     yield Action.SCHEDULED;
                 }
                 // TODO
@@ -712,11 +713,12 @@ public class RawHTTP2ProxyTest
         @Override
         public void onDataAvailable(Stream stream)
         {
-            Stream.Data data = stream.readData();
+            Content.Chunk chunk = stream.read();
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("SPC:{} read {} on {}", port, data, stream);
-            offer(stream, data.frame(), Callback.from(data::release));
-            if (!data.frame().isEndStream())
+                LOGGER.debug("SPC:{} read {} on {}", port, chunk, stream);
+            DataFrame dataFrame = new DataFrame(stream.getId(), ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast());
+            offer(stream, dataFrame, Callback.from(chunk::release));
+            if (!chunk.isLast())
                 stream.demand();
         }
 

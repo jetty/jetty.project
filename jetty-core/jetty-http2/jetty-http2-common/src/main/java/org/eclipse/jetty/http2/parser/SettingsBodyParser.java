@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +23,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.RateControl;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +67,7 @@ public class SettingsBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ReadableBuffer buffer)
     {
         if (!validateFrame(buffer, getStreamId(), 0))
             return;
@@ -76,7 +76,7 @@ public class SettingsBodyParser extends BodyParser
         onSettings(buffer, frame);
     }
 
-    private boolean validateFrame(ByteBuffer buffer, int streamId, int bodyLength)
+    private boolean validateFrame(ReadableBuffer buffer, int streamId, int bodyLength)
     {
         // SPEC: wrong streamId is treated as connection error.
         if (streamId != 0)
@@ -88,14 +88,14 @@ public class SettingsBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(ReadableBuffer buffer)
     {
         return parse(buffer, getStreamId(), getBodyLength());
     }
 
-    private boolean parse(ByteBuffer buffer, int streamId, int bodyLength)
+    private boolean parse(ReadableBuffer buffer, int streamId, int bodyLength)
     {
-        while (buffer.hasRemaining())
+        while (buffer.remaining() > 0L)
         {
             switch (state)
             {
@@ -185,7 +185,7 @@ public class SettingsBodyParser extends BodyParser
         return false;
     }
 
-    protected boolean onSetting(ByteBuffer buffer, Map<Integer, Integer> settings, int key, int value)
+    protected boolean onSetting(ReadableBuffer buffer, Map<Integer, Integer> settings, int key, int value)
     {
         ++keys;
         if (keys > getMaxKeys())
@@ -194,7 +194,7 @@ public class SettingsBodyParser extends BodyParser
         return true;
     }
 
-    protected boolean onSettings(ByteBuffer buffer, Map<Integer, Integer> settings)
+    protected boolean onSettings(ReadableBuffer buffer, Map<Integer, Integer> settings)
     {
         Integer enablePush = settings.get(SettingsFrame.ENABLE_PUSH);
         if (enablePush != null && enablePush != 0 && enablePush != 1)
@@ -217,7 +217,7 @@ public class SettingsBodyParser extends BodyParser
         return onSettings(buffer, frame);
     }
 
-    private boolean onSettings(ByteBuffer buffer, SettingsFrame frame)
+    private boolean onSettings(ReadableBuffer buffer, SettingsFrame frame)
     {
         if (!rateControlOnEvent(frame))
             return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame_rate");
@@ -233,7 +233,7 @@ public class SettingsBodyParser extends BodyParser
      * @param buffer the buffer containing the body of {@code SETTINGS} frame
      * @return the {@code SETTINGS} frame from the parsed body bytes
      */
-    public static SettingsFrame parseBody(final ByteBuffer buffer)
+    public static SettingsFrame parseBody(ReadableBuffer buffer)
     {
         AtomicReference<SettingsFrame> frameRef = new AtomicReference<>();
         SettingsBodyParser parser = new SettingsBodyParser(new HeaderParser(RateControl.NO_RATE_CONTROL), new Parser.Listener()
@@ -250,8 +250,9 @@ public class SettingsBodyParser extends BodyParser
                 frameRef.set(null);
             }
         });
-        if (buffer.hasRemaining())
-            parser.parse(buffer, 0, buffer.remaining());
+        if (buffer.remaining() > 0L)
+            // TODO overflow?
+            parser.parse(buffer, 0, Math.toIntExact(buffer.remaining()));
         else
             parser.emptyBody(buffer);
         return frameRef.get();

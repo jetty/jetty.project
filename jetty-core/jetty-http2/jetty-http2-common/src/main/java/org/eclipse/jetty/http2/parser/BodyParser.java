@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -26,13 +24,13 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p>The base parser for the frame body of HTTP/2 frames.</p>
- * <p>Subclasses implement {@link #parse(ByteBuffer)} to parse
+ * <p>Subclasses implement {@link #parse(ReadableBuffer)} to parse
  * the frame specific body.</p>
  *
  * @see Parser
@@ -59,9 +57,9 @@ public abstract class BodyParser
      * @return true if the whole body bytes were parsed, false if not enough
      * body bytes were present in the buffer
      */
-    public abstract boolean parse(ByteBuffer buffer);
+    public abstract boolean parse(ReadableBuffer buffer);
 
-    protected void emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ReadableBuffer buffer)
     {
         connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_frame");
     }
@@ -204,9 +202,9 @@ public abstract class BodyParser
         }
     }
 
-    protected boolean connectionFailure(ByteBuffer buffer, int error, String reason)
+    protected boolean connectionFailure(ReadableBuffer buffer, int error, String reason)
     {
-        BufferUtil.clear(buffer);
+        buffer.position(buffer.position() + buffer.remaining());
         notifyConnectionFailure(error, reason);
         return false;
     }

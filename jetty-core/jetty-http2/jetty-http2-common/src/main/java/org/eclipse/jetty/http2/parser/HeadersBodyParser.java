@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
@@ -22,7 +20,7 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +57,7 @@ public class HeadersBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ReadableBuffer buffer)
     {
         if (hasFlag(Flags.PRIORITY))
         {
@@ -67,7 +65,7 @@ public class HeadersBodyParser extends BodyParser
         }
         else if (hasFlag(Flags.END_HEADERS))
         {
-            MetaData metaData = headerBlockParser.parse(BufferUtil.EMPTY_BUFFER, 0);
+            MetaData metaData = headerBlockParser.parse(ReadableBuffer.EMPTY, 0);
             HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
             if (!rateControlOnEvent(frame))
                 connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
@@ -89,10 +87,10 @@ public class HeadersBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(ReadableBuffer buffer)
     {
         boolean loop = false;
-        while (buffer.hasRemaining() || loop)
+        while (buffer.remaining() > 0L || loop)
         {
             switch (state)
             {
@@ -225,10 +223,10 @@ public class HeadersBodyParser extends BodyParser
                     }
                     else
                     {
-                        int remaining = buffer.remaining();
+                        long remaining = buffer.remaining();
                         if (remaining < length)
                         {
-                            if (!headerBlockFragments.storeFragment(buffer, remaining, false))
+                            if (!headerBlockFragments.storeFragment(buffer, (int)remaining, false))
                                 return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_headers_frame");
                             length -= remaining;
                         }
@@ -244,7 +242,7 @@ public class HeadersBodyParser extends BodyParser
                 }
                 case PADDING:
                 {
-                    int size = Math.min(buffer.remaining(), paddingLength);
+                    int size = buffer.remaining() > Integer.MAX_VALUE ? paddingLength : Math.min((int)buffer.remaining(), paddingLength);
                     buffer.position(buffer.position() + size);
                     paddingLength -= size;
                     if (paddingLength == 0)

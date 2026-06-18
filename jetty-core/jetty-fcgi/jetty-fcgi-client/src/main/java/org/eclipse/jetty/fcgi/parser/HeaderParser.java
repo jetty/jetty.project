@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,21 +51,21 @@ public class HeaderParser
      * @param buffer the bytes to parse
      * @return whether there were enough bytes for a FastCGI header
      */
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(ReadableBuffer buffer)
     {
-        while (buffer.hasRemaining())
+        while (buffer.remaining() > 0)
         {
             switch (state)
             {
                 case VERSION:
                 {
-                    version = buffer.get() & 0xFF;
+                    version = buffer.getAsInt();
                     state = State.TYPE;
                     break;
                 }
                 case TYPE:
                 {
-                    type = buffer.get() & 0xFF;
+                    type = buffer.getAsInt();
                     state = State.REQUEST;
                     break;
                 }
@@ -74,7 +73,7 @@ public class HeaderParser
                 {
                     if (buffer.remaining() >= 2)
                     {
-                        request = buffer.getShort() & 0xFF_FF;
+                        request = buffer.getShortAsInt();
                         state = State.LENGTH;
                     }
                     else
@@ -86,7 +85,7 @@ public class HeaderParser
                 }
                 case REQUEST_BYTES:
                 {
-                    int halfShort = buffer.get() & 0xFF;
+                    int halfShort = buffer.getAsInt();
                     request = (request << 8) + halfShort;
                     if (++cursor == 2)
                         state = State.LENGTH;
@@ -96,7 +95,7 @@ public class HeaderParser
                 {
                     if (buffer.remaining() >= 2)
                     {
-                        length = buffer.getShort() & 0xFF_FF;
+                        length = buffer.getShortAsInt();
                         state = State.PADDING;
                     }
                     else
@@ -108,7 +107,7 @@ public class HeaderParser
                 }
                 case LENGTH_BYTES:
                 {
-                    int halfShort = buffer.get() & 0xFF;
+                    int halfShort = buffer.getAsInt();
                     length = (length << 8) + halfShort;
                     if (++cursor == 2)
                         state = State.PADDING;
@@ -116,7 +115,7 @@ public class HeaderParser
                 }
                 case PADDING:
                 {
-                    padding = buffer.get() & 0xFF;
+                    padding = buffer.getAsInt();
                     state = State.RESERVED;
                     break;
                 }

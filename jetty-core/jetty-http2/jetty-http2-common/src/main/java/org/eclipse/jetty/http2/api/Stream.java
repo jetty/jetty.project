@@ -20,11 +20,12 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Retainable;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
@@ -102,6 +103,39 @@ public interface Stream
 
     /**
      * <p>Reads DATA frames from this stream, wrapping them in retainable
+     * {@link Content.Chunk} objects.</p>
+     * <p>The returned {@link Content.Chunk} object may be {@code null}, indicating
+     * that the end of the read side of the stream has not yet been reached, which
+     * may happen in these cases:</p>
+     * <ul>
+     *   <li>not all the bytes have been received so far, for example the remote
+     *   peer did not send them yet, or they are in-flight</li>
+     *   <li>all the bytes have been received, but there is a trailer HEADERS
+     *   frame to be received to indicate the end of the read side of the
+     *   stream</li>
+     * </ul>
+     * <p>When the returned {@link Content.Chunk} object is not {@code null},
+     * the flow control window has been enlarged by the DATA frame length;
+     * applications <em>must</em> call, either immediately or later (even
+     * asynchronously from a different thread) {@link Content.Chunk#release()}
+     * to notify the implementation that the bytes have been processed.</p>
+     * <p>{@link Content.Chunk} objects may be stored away for later, asynchronous,
+     * processing (for example, to process them only when all of them have been
+     * received).</p>
+     * <p>Once the returned {@link Content.Chunk} object indicates that the end
+     * of the read side of the stream has been reached, further calls to this
+     * method will return a {@link Content.Chunk} object with the same indication,
+     * although the instance may be different.</p>
+     *
+     * @return a {@link Content.Chunk} object containing the DATA frame,
+     * or null if no DATA frame is available
+     * @see #demand()
+     * @see Listener#onDataAvailable(Stream, boolean)
+     */
+    public Content.Chunk read();
+
+    /**
+     * <p>Reads DATA frames from this stream, wrapping them in retainable
      * {@link Data} objects.</p>
      * <p>The returned {@link Stream.Data} object may be {@code null}, indicating
      * that the end of the read side of the stream has not yet been reached, which
@@ -131,6 +165,7 @@ public interface Stream
      * @see #demand()
      * @see Listener#onDataAvailable(Stream, boolean)
      */
+    @Deprecated
     public Data readData();
 
     /**
@@ -139,9 +174,22 @@ public interface Stream
      * @param frame the DATA frame to send
      * @return the CompletableFuture that gets notified when the frame has been sent
      */
+    @Deprecated
     public default CompletableFuture<Stream> data(DataFrame frame)
     {
         return Promise.Completable.with(p -> data(frame, Callback.from(() -> p.succeeded(this), p::failed)));
+    }
+
+    /**
+     * <p>Sends a DATA {@code frame}.</p>
+     *
+     * @param data the data to send
+     * @param endStream whether the frame is the last one
+     * @return the CompletableFuture that gets notified when the frame has been sent
+     */
+    public default CompletableFuture<Stream> data(ReadableBuffer data, boolean endStream)
+    {
+        return Promise.Completable.with(p -> data(data, endStream, Callback.from(() -> p.succeeded(this), p::failed)));
     }
 
     /**
@@ -150,7 +198,17 @@ public interface Stream
      * @param frame the DATA frame to send
      * @param callback the callback that gets notified when the frame has been sent
      */
+    @Deprecated
     public void data(DataFrame frame, Callback callback);
+
+    /**
+     * <p>Sends a DATA {@code frame}.</p>
+     *
+     * @param data the data to send
+     * @param endStream whether the frame is the last one
+     * @param callback the callback that gets notified when the frame has been sent
+     */
+    public void data(ReadableBuffer data, boolean endStream, Callback callback);
 
     /**
      * <p>Sends the given RST_STREAM {@code frame}.</p>
@@ -244,7 +302,7 @@ public interface Stream
      * {@code onDataAvailable(Stream, boolean)} will not cause a
      * {@link StackOverflowError}.</p>
      *
-     * @see #readData()
+     * @see #read()
      * @see Listener#onDataAvailable(Stream, boolean)
      */
     public void demand();
@@ -318,7 +376,7 @@ public interface Stream
          * {@link Listener} implementation that overrides either
          * {@link #onDataAvailable(Stream)} or {@link #onDataAvailable(Stream, boolean)},
          * where applications can read from the {@link Stream} via
-         * {@link Stream#readData()}, or return {@link #AUTO_DISCARD} that automatically
+         * {@link Stream#read()}, or return {@link #AUTO_DISCARD} that automatically
          * reads and discards DATA frames.
          * Returning {@code null} is possible but discouraged, and has the
          * same effect of demanding and discarding the pushed DATA frames.</p>
@@ -344,14 +402,14 @@ public interface Stream
         {
             while (true)
             {
-                Data data = stream.readData();
-                if (data == null)
+                Content.Chunk chunk = stream.read();
+                if (chunk == null)
                 {
                     stream.demand();
                     return;
                 }
-                data.release();
-                if (data.frame().isEndStream())
+                chunk.release();
+                if (chunk.isLast())
                     return;
             }
         }
@@ -369,7 +427,7 @@ public interface Stream
          * (upon receiving an HTTP response).</p>
          * <p>Just prior calling this method, the outstanding demand is
          * cancelled; applications that implement this method should read
-         * content calling {@link Stream#readData()}, and call
+         * content calling {@link Stream#read()}, and call
          * {@link Stream#demand()} to signal to the implementation to call
          * again this method when there may be more content available.</p>
          * <p>Only one thread at a time invokes this method, although it
@@ -473,13 +531,9 @@ public interface Stream
     /**
      * <p>A {@link Retainable} wrapper of a {@link DataFrame}.</p>
      */
-    abstract class Data implements Retainable
+    @Deprecated
+    class Data implements Retainable
     {
-        public static Data eof(int streamId)
-        {
-            return new Data.EOF(streamId);
-        }
-
         private final DataFrame frame;
 
         public Data(DataFrame frame)
@@ -493,17 +547,39 @@ public interface Stream
         }
 
         @Override
-        public String toString()
+        public boolean canRetain()
         {
-            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), frame());
+            return frame.canRetain();
         }
 
-        private static class EOF extends Data
+        @Override
+        public boolean isRetained()
         {
-            private EOF(int streamId)
-            {
-                super(new DataFrame(streamId, BufferUtil.EMPTY_BUFFER, true));
-            }
+            return frame.isRetained();
+        }
+
+        @Override
+        public void retain()
+        {
+            frame.retain();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return frame.release();
+        }
+
+        @Override
+        public int getRetained()
+        {
+            return frame.getRetained();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), frame);
         }
     }
 }

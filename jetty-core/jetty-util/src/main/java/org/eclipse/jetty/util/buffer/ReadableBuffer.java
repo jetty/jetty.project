@@ -14,7 +14,9 @@
 package org.eclipse.jetty.util.buffer;
 
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 
@@ -46,7 +48,18 @@ public interface ReadableBuffer extends Retainable
      */
     static ReadableBuffer wrap(ByteBuffer byteBuffer)
     {
-        return new FixedSizeBuffer(byteBuffer, new ReferenceCounter(), false);
+        return byteBuffer == null ? EMPTY : wrap(byteBuffer, new ReferenceCounter());
+    }
+
+    /**
+     * Wraps the given NIO ByteBuffer that already is in flush node, using the provided {@link ReferenceCounter} for retainability.
+     * @param byteBuffer the NIO byte buffer
+     * @param retainable the retainable used for retainability of the NIO ByteBuffer
+     * @return a ReadableBuffer
+     */
+    static ReadableBuffer wrap(ByteBuffer byteBuffer, Retainable retainable)
+    {
+        return new FixedSizeBuffer(byteBuffer, retainable, false);
     }
 
     static ReadableBuffer wrap(ByteBuffer... buffers)
@@ -57,6 +70,13 @@ public interface ReadableBuffer extends Retainable
             return wrap(buffers[0]);
         List<ReadableBuffer> rbs = Arrays.stream(buffers).map(ReadableBuffer::wrap).toList();
         return new AccumulatingReadBuffer(rbs);
+    }
+
+    static ReadableBuffer allocate(int size, boolean direct)
+    {
+        WritableBuffer wb = WritableBuffer.allocate(size, direct);
+        wb.position(size);
+        return wb.toReadable();
     }
 
     /**
@@ -97,35 +117,52 @@ public interface ReadableBuffer extends Retainable
      */
     long remaining();
 
+    byte get(long index);
+
     /**
      * Reads a single byte at the current position.
-     * @throws java.nio.BufferUnderflowException – If the buffer's {@link #remaining()} is less than one.
+     * @throws BufferUnderflowException – If the buffer's {@link #remaining()} is less than one.
      */
     byte get();
 
+    /// @return a single byte at the current position, converted to `int` via `get() & 0xFF`
+    /// @throws BufferUnderflowException if the buffer's {@link #remaining()} is less than one.
+    /// @see #get()
+    default int getAsInt()
+    {
+        return get() & 0xFF;
+    }
+
     /**
      * Reads a short at the current position.
-     * @throws java.nio.BufferUnderflowException – If the buffer's {@link #remaining()} is less than two.
+     * @throws BufferUnderflowException – If the buffer's {@link #remaining()} is less than two.
      */
     short getShort();
 
+    default int getShortAsInt()
+    {
+        return getShort() & 0xFFFF;
+    }
+
     /**
      * Reads an int at the current position.
-     * @throws java.nio.BufferUnderflowException – If the buffer's {@link #remaining()} is less than four.
+     * @throws BufferUnderflowException – If the buffer's {@link #remaining()} is less than four.
      */
     int getInt();
 
     /**
      * Reads a long at the current position.
-     * @throws java.nio.BufferUnderflowException – If the buffer's {@link #remaining()} is less than eight.
+     * @throws BufferUnderflowException – If the buffer's {@link #remaining()} is less than eight.
      */
     long getLong();
 
     /**
      * Reads a byte array at the current position.
-     * @throws java.nio.BufferUnderflowException – If the buffer's {@link #remaining()} is less than the array's length.
+     * @throws BufferUnderflowException – If the buffer's {@link #remaining()} is less than the array's length.
      */
     void get(byte[] b);
+
+    void get(byte[] b, int off, int len);
 
     /**
      * Slices this ReadableBuffer, {@link Retainable#retain() retaining} it in the process.
@@ -168,6 +205,8 @@ public interface ReadableBuffer extends Retainable
      * // TODO should this auto-compact when empty but not at position 0? Or always auto-compact?
      */
     WritableBuffer toWritable();
+
+    String asString(Charset charset);
 
     /**
      * Flushes this buffer to the given Target.

@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,9 +73,9 @@ public class ParamsContentParser extends ContentParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public Result parse(ReadableBuffer buffer)
     {
-        while (buffer.hasRemaining() || state == State.PARAM)
+        while (buffer.remaining() > 0 || state == State.PARAM)
         {
             switch (state)
             {
@@ -259,7 +259,7 @@ public class ParamsContentParser extends ContentParser
         }
     }
 
-    private boolean isLargeLength(ByteBuffer buffer)
+    private boolean isLargeLength(ReadableBuffer buffer)
     {
         return (buffer.get(buffer.position()) & 0x80) == 0x80;
     }

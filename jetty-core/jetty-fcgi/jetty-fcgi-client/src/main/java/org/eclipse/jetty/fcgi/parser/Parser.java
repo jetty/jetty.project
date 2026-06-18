@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
-import java.io.EOFException;
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +61,7 @@ public abstract class Parser
     protected final HeaderParser headerParser = new HeaderParser();
     private final Listener listener;
     private State state = State.INITIAL;
-    private int padding;
+    private long padding;
 
     protected Parser(Listener listener)
     {
@@ -73,7 +72,7 @@ public abstract class Parser
      * @param buffer the bytes to parse
      * @return true if the caller should stop parsing, false if the caller should continue parsing
      */
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(ReadableBuffer buffer)
     {
         try
         {
@@ -83,7 +82,7 @@ public abstract class Parser
                 {
                     case INITIAL ->
                     {
-                        if (!buffer.hasRemaining())
+                        if (buffer.remaining() == 0)
                             return false;
                         state = State.HEADER;
                     }
@@ -130,13 +129,13 @@ public abstract class Parser
                         {
                             buffer.position(buffer.position() + padding);
                             reset();
-                            if (!buffer.hasRemaining())
+                            if (buffer.remaining() == 0)
                                 return true;
                         }
                         else
                         {
                             padding -= buffer.remaining();
-                            buffer.position(buffer.limit());
+                            buffer.position(buffer.position() + buffer.remaining());
                             return false;
                         }
                     }
@@ -146,7 +145,7 @@ public abstract class Parser
         }
         catch (Throwable x)
         {
-            buffer.position(buffer.limit());
+            buffer.position(buffer.position() + buffer.remaining());
             listener.onFailure(headerParser.getRequest(), x);
             return true;
         }
@@ -158,7 +157,7 @@ public abstract class Parser
     {
         if (state == State.INITIAL)
             return false;
-        Throwable failure = new EOFException();
+        Throwable failure = new EofException();
         listener.onFailure(headerParser.getRequest(), failure);
         return true;
     }
@@ -190,9 +189,9 @@ public abstract class Parser
          * @param stream the stream type
          * @param buffer the content bytes
          * @return true to signal to the parser to stop parsing, false to continue parsing
-         * @see Parser#parse(java.nio.ByteBuffer)
+         * @see Parser#parse(ReadableBuffer)
          */
-        public default boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+        public default boolean onContent(int request, FCGI.StreamType stream, ReadableBuffer buffer)
         {
             return false;
         }

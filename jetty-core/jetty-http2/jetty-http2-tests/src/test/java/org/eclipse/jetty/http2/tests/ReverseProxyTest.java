@@ -30,6 +30,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.proxy.ProxyHandler;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -186,9 +187,9 @@ public class ReverseProxyTest
                 try
                 {
                     TimeUnit.MILLISECONDS.sleep(1);
-                    Stream.Data data = stream.readData();
-                    data.release();
-                    if (data.frame().isEndStream())
+                    Content.Chunk chunk = stream.read();
+                    chunk.release();
+                    if (chunk.isLast())
                         clientLatch.countDown();
                     else
                         stream.demand();

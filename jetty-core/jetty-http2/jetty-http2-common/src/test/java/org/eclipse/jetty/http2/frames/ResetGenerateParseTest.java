@@ -20,15 +20,15 @@ import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.ResetGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ResetGenerateParseTest
 {
-    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
+    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
 
     @Test
     public void testGenerateParse() throws Exception
@@ -52,12 +52,14 @@ public class ResetGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            List<ReadableBuffer> accumulator = new ArrayList<>();
             generator.generateReset(accumulator, streamId, error);
 
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+            accumulator.forEach(ReadableBuffer::release);
+            UnknownParseTest.parse(parser, rb);
+            rb.release();
         }
 
         assertEquals(1, frames.size());
@@ -88,12 +90,14 @@ public class ResetGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            List<ReadableBuffer> accumulator = new ArrayList<>();
             generator.generateReset(accumulator, streamId, error);
 
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+            accumulator.forEach(ReadableBuffer::release);
+            UnknownParseTest.parse(parser, rb);
+            rb.release();
 
             assertEquals(1, frames.size());
             ResetFrame frame = frames.get(0);
