@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 
 public class DataGenerator
 {
@@ -30,47 +31,53 @@ public class DataGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public int generate(RetainableByteBuffer.Mutable accumulator, DataFrame frame, int maxLength)
+    public int generate(List<ReadableBuffer> accumulator, DataFrame frame, int maxLength)
     {
-        return generateData(accumulator, frame.getStreamId(), frame.getByteBuffer(), frame.isEndStream(), maxLength);
+        ReadableBuffer rb = frame.acquire();
+        try
+        {
+            return generateData(accumulator, frame.getStreamId(), rb, frame.isEndStream(), maxLength);
+        }
+        finally
+        {
+            rb.release();
+        }
     }
 
-    public int generateData(RetainableByteBuffer.Mutable accumulator, int streamId, ByteBuffer data, boolean last, int maxLength)
+    public int generateData(List<ReadableBuffer> accumulator, int streamId, ReadableBuffer data, boolean last, int maxLength)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
-        int dataLength = data.remaining();
+        long dataLength = data.remaining();
         int maxFrameSize = headerGenerator.getMaxFrameSize();
-        int length = Math.min(dataLength, Math.min(maxFrameSize, maxLength));
+        maxLength = Math.min(maxFrameSize, maxLength);
+        int length = dataLength > Integer.MAX_VALUE ? maxLength : Math.min((int)dataLength, maxLength);
         if (length == dataLength)
         {
             generateFrame(accumulator, streamId, data, last);
         }
         else
         {
-            int limit = data.limit();
-            int newLimit = data.position() + length;
-            data.limit(newLimit);
-            ByteBuffer slice = data.slice();
-            data.position(newLimit);
-            data.limit(limit);
+            ReadableBuffer slice = data.slice(data.position(), length);
+            data.position(data.position() + length);
             generateFrame(accumulator, streamId, slice, false);
+            slice.release();
         }
         return Frame.HEADER_LENGTH + length;
     }
 
-    private void generateFrame(RetainableByteBuffer.Mutable accumulator, int streamId, ByteBuffer data, boolean last)
+    private void generateFrame(List<ReadableBuffer> accumulator, int streamId, ReadableBuffer data, boolean last)
     {
-        int length = data.remaining();
+        long length = data.remaining();
 
         int flags = Flags.NONE;
         if (last)
             flags |= Flags.END_STREAM;
 
-        headerGenerator.generate(accumulator, FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
-        // Skip empty data buffers.
-        if (data.remaining() > 0)
-            accumulator.add(data);
+        WritableBuffer wb = headerGenerator.generate(FrameType.DATA, Frame.HEADER_LENGTH, Math.toIntExact(length), flags, streamId);
+        accumulator.add(wb.toReadable());
+        data.retain();
+        accumulator.add(data);
     }
 }

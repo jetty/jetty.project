@@ -13,15 +13,13 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.ContinuationFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 public class ContinuationBodyParser extends BodyParser
 {
@@ -38,7 +36,7 @@ public class ContinuationBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ReadableBuffer buffer)
     {
         if (hasFlag(Flags.END_HEADERS))
         {
@@ -53,9 +51,9 @@ public class ContinuationBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(ReadableBuffer buffer)
     {
-        while (buffer.hasRemaining())
+        while (buffer.remaining() > 0L)
         {
             switch (state)
             {
@@ -74,14 +72,14 @@ public class ContinuationBodyParser extends BodyParser
                 }
                 case FRAGMENT:
                 {
-                    int remaining = buffer.remaining();
+                    long remaining = buffer.remaining();
                     if (remaining < length)
                     {
                         ContinuationFrame frame = new ContinuationFrame(getStreamId(), false);
                         if (!rateControlOnEvent(frame))
                             return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_continuation_frame_rate");
 
-                        if (!headerBlockFragments.storeFragment(buffer, remaining, false))
+                        if (!headerBlockFragments.storeFragment(buffer, (int)remaining, false))
                             return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_continuation_stream");
 
                         length -= remaining;
@@ -112,10 +110,11 @@ public class ContinuationBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onHeaders(ByteBuffer buffer)
+    private boolean onHeaders(ReadableBuffer buffer)
     {
-        RetainableByteBuffer headerBlock = headerBlockFragments.complete();
-        MetaData metaData = headerBlockParser.parse(headerBlock.getByteBuffer(), headerBlock.remaining());
+        ReadableBuffer headerBlock = headerBlockFragments.complete();
+        // TODO: overflow?
+        MetaData metaData = headerBlockParser.parse(headerBlock, Math.toIntExact(headerBlock.remaining()));
         headerBlock.release();
         HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, headerBlockFragments.getPriorityFrame(), headerBlockFragments.isEndStream());
         headerBlockFragments.reset();

@@ -26,7 +26,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
@@ -164,9 +164,9 @@ public class SmallThreadPoolLoadTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                data.release();
-                if (data.frame().isEndStream())
+                Content.Chunk chunk = stream.read();
+                chunk.release();
+                if (chunk.isLast())
                     responseLatch.countDown();
                 else
                     stream.demand();
@@ -183,7 +183,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         if (!download)
         {
             Stream stream = promise.get(5, TimeUnit.SECONDS);
-            stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(contentLength), true), Callback.NOOP);
+            stream.data(ReadableBuffer.allocate(contentLength, false), true, Callback.NOOP);
         }
 
         boolean success = responseLatch.await(5, TimeUnit.SECONDS);

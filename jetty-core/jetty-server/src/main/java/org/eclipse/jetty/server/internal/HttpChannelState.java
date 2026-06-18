@@ -1426,7 +1426,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
+                LOG.debug("writing last={} {} {}", last, content, this);
             stream.send(_request._metaData, responseMetaData, last, content, this);
         }
 

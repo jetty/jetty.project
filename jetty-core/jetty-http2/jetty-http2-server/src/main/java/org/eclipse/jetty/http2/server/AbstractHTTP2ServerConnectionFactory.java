@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.WindowRateControl;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -309,7 +310,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     {
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
-        Generator generator = new Generator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxHeaderBlockFragment());
+        Generator generator = new Generator(WritableBufferPool.wrap(connector.getByteBufferPool()), isUseOutputDirectByteBuffers(), getMaxHeaderBlockFragment());
         int maxResponseHeaderSize = getHttpConfiguration().getMaxResponseHeaderSize();
         if (maxResponseHeaderSize < 0)
             maxResponseHeaderSize = getHttpConfiguration().getResponseHeaderSize();
@@ -351,6 +352,6 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     private ServerParser newServerParser(Connector connector, RateControl rateControl)
     {
-        return new ServerParser(connector.getByteBufferPool(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
+        return new ServerParser(WritableBufferPool.wrap(connector.getByteBufferPool()), getHttpConfiguration().getRequestHeaderSize(), rateControl);
     }
 }

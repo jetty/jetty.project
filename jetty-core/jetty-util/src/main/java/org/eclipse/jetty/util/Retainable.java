@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -99,6 +100,60 @@ public interface Retainable
     default int getRetained()
     {
         return -1;
+    }
+
+    /**
+     * A wrapper of {@link Retainable} instances.
+     */
+    class Wrapper implements Retainable
+    {
+        private final Retainable wrapped;
+
+        public Wrapper(Retainable wrapped)
+        {
+            this.wrapped = Objects.requireNonNull(wrapped);
+        }
+
+        public Retainable getWrapped()
+        {
+            return wrapped;
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return getWrapped().canRetain();
+        }
+
+        @Override
+        public int getRetained()
+        {
+            return getWrapped().getRetained();
+        }
+
+        @Override
+        public boolean isRetained()
+        {
+            return getWrapped().isRetained();
+        }
+
+        @Override
+        public void retain()
+        {
+            getWrapped().retain();
+        }
+
+        @Override
+        public boolean release()
+        {
+            return getWrapped().release();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getWrapped());
+        }
     }
 
     /**

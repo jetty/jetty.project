@@ -19,14 +19,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MaxFrameSizeParseTest
 {
-    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
+    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
 
     @Test
     public void testMaxFrameSize()
@@ -49,10 +51,14 @@ public class MaxFrameSizeParseTest
         for (int i = 0; i < 2; ++i)
         {
             byte[] bytes = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0};
-            ByteBuffer buffer = ByteBuffer.wrap(bytes);
-            buffer.putInt(0, maxFrameSize + 1);
+            ReadableBuffer buffer = ReadableBuffer.wrap(ByteBuffer.wrap(bytes));
+            WritableBuffer wb = buffer.toWritable();
+            wb.position(0);
+            wb.putInt(maxFrameSize + 1);
+            wb.position(wb.capacity());
+            wb.toReadable();
             buffer.position(1);
-            while (buffer.hasRemaining())
+            while (buffer.remaining() > 0L)
             {
                 parser.parse(buffer);
             }

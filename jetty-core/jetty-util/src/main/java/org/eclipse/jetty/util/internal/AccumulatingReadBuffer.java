@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.internal;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,7 +28,6 @@ import org.eclipse.jetty.util.buffer.WritableBuffer;
 public class AccumulatingReadBuffer implements ReadableBuffer
 {
     private final List<ReadableBuffer> readableBuffers;
-    private final List<Long> limits;
     private final Retainable retainable;
     private final long capacity;
     private long position;
@@ -36,37 +36,20 @@ public class AccumulatingReadBuffer implements ReadableBuffer
     {
         if (readableBuffers.isEmpty())
             throw new IllegalArgumentException("Buffers list cannot be empty");
-        this.limits = new ArrayList<>(readableBuffers.size());
-        updateLimits(readableBuffers, this.limits);
         this.retainable = new ReferenceCounter();
         long totalCapacity = 0L;
+        this.readableBuffers = new ArrayList<>(readableBuffers.size());
         for (ReadableBuffer readableBuffer : readableBuffers)
         {
-            readableBuffer.retain();
+            if (readableBuffer.remaining() != readableBuffer.capacity())
+                readableBuffer = readableBuffer.slice();
+            else
+                readableBuffer.retain();
             totalCapacity += readableBuffer.capacity();
+            this.readableBuffers.add(readableBuffer);
         }
-        this.readableBuffers = new ArrayList<>(readableBuffers);
         this.capacity = totalCapacity;
-        this.position = readableBuffers.getFirst().position();
-    }
-
-    private static void updateLimits(List<ReadableBuffer> readableBuffers, List<Long> limits)
-    {
-        limits.clear();
-        for (ReadableBuffer readableBuffer : readableBuffers)
-        {
-            limits.add(readableBuffer.position() + readableBuffer.remaining());
-        }
-    }
-
-    private long limit()
-    {
-        long totalLimit = 0L;
-        for (Long limit : limits)
-        {
-            totalLimit += limit;
-        }
-        return totalLimit;
+        this.position = 0L;
     }
 
     @Override
@@ -78,15 +61,12 @@ public class AccumulatingReadBuffer implements ReadableBuffer
     @Override
     public void position(long newPosition)
     {
-        long totalLimit = limit();
-        if (newPosition > totalLimit)
-            throw new IllegalArgumentException("newPosition(" + newPosition + ") > limit(" + totalLimit + ")");
+        if (newPosition > capacity)
+            throw new IllegalArgumentException("newPosition(" + newPosition + ") > capacity(" + capacity + ")");
         this.position = newPosition;
-        for (int i = 0; i < readableBuffers.size(); i++)
+        for (ReadableBuffer currentRb : readableBuffers)
         {
-            ReadableBuffer currentRb = readableBuffers.get(i);
-            long currentLimit = limits.get(i);
-
+            long currentLimit = currentRb.capacity();
             long nextLimit = Math.min(newPosition, currentLimit);
             currentRb.position(nextLimit);
             newPosition -= currentLimit;
@@ -149,6 +129,19 @@ public class AccumulatingReadBuffer implements ReadableBuffer
     }
 
     @Override
+    public byte get(long index)
+    {
+        for (ReadableBuffer readableBuffer : readableBuffers)
+        {
+            long limit = readableBuffer.capacity();
+            if (limit > index)
+                return readableBuffer.get(index);
+            index -= limit;
+        }
+        throw new BufferUnderflowException();
+    }
+
+    @Override
     public byte get()
     {
         ReadableBuffer readableBuffer = currentReadableBuffer();
@@ -206,6 +199,19 @@ public class AccumulatingReadBuffer implements ReadableBuffer
     }
 
     @Override
+    public void get(byte[] b, int off, int len)
+    {
+        ReadableBuffer currentRb = currentReadableBuffer();
+        if (currentRb.remaining() >= len)
+        {
+            position += b.length;
+            currentRb.get(b, off, len);
+            return;
+        }
+        fragmentedGet(currentRb, len).get(b, off, len);
+    }
+
+    @Override
     public ReadableBuffer slice()
     {
         List<ReadableBuffer> copy = new ArrayList<>(readableBuffers.size());
@@ -224,18 +230,17 @@ public class AccumulatingReadBuffer implements ReadableBuffer
             throw new IllegalArgumentException("position must be >= 0");
         if (length < 0)
             throw new IllegalArgumentException("length must be >= 0");
-        if (position + length > remaining())
-            throw new IllegalArgumentException("position(" + position + ") + length(" + length + ") must be <= remaining(" + remaining() + ")");
+        if (position + length > capacity)
+            throw new IllegalArgumentException("position(" + position + ") + length(" + length + ") must be <= capacity(" + capacity + ")");
 
         List<ReadableBuffer> copy = new ArrayList<>(readableBuffers.size());
 
-        for (int i = 0; i < readableBuffers.size(); i++)
+        for (ReadableBuffer readableBuffer : readableBuffers)
         {
             if (length == 0)
                 break;
 
-            ReadableBuffer readableBuffer = readableBuffers.get(i);
-            long limit = limits.get(i);
+            long limit = readableBuffer.capacity();
 
             if (position >= limit)
             {
@@ -243,9 +248,11 @@ public class AccumulatingReadBuffer implements ReadableBuffer
                 continue;
             }
 
-            copy.add(readableBuffer.slice(position, Math.min(readableBuffer.remaining(), length)));
-            readableBuffer.release();
-            length -= readableBuffer.remaining();
+            long sliceLength = Math.min(readableBuffer.remaining(), length);
+            ReadableBuffer slice = readableBuffer.slice(position, sliceLength);
+            copy.add(slice);
+            slice.release();
+            length -= sliceLength;
         }
 
         return copy.isEmpty() ? EMPTY : new AccumulatingReadBuffer(copy);
@@ -262,13 +269,19 @@ public class AccumulatingReadBuffer implements ReadableBuffer
     {
         readableBuffers.forEach(Retainable::release);
         readableBuffers.clear();
-        limits.clear();
     }
 
     @Override
     public WritableBuffer toWritable()
     {
         throw new IllegalStateException("Read-only instance");
+    }
+
+    @Override
+    public String asString(Charset charset)
+    {
+        // TODO
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -347,7 +360,6 @@ public class AccumulatingReadBuffer implements ReadableBuffer
         {
             readableBuffers.forEach(Retainable::release);
             readableBuffers.clear();
-            limits.clear();
         }
         return released;
     }
@@ -361,10 +373,9 @@ public class AccumulatingReadBuffer implements ReadableBuffer
     @Override
     public String toString()
     {
-        return String.format("%s@%x{ls=%s,bs=%s,r=%s}",
+        return String.format("%s@%x{bs=%s,r=%s}",
             TypeUtil.toShortName(getClass()),
             hashCode(),
-            limits,
             readableBuffers,
             retainable);
     }

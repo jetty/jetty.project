@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.hpack;
 
 import java.io.File;
 import java.io.FileReader;
-import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.Map;
 
@@ -23,8 +22,8 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +34,7 @@ public class HpackPerfTest
 {
     int _tableCapacity = 4 * 1024;
     int _unencodedSize;
-    int _encodedSize;
+    long _encodedSize;
 
     @BeforeEach
     public void before()
@@ -74,20 +73,19 @@ public class HpackPerfTest
             stories[i++] = story;
         }
 
-        ByteBuffer buffer = BufferUtil.allocate(256 * 1024);
+        WritableBuffer buffer = WritableBuffer.allocate(256 * 1024, false);
 
         // Encode all the requests
         encodeStories(buffer, stories, "request");
 
         // clear table
-        BufferUtil.clearToFill(buffer);
-        BufferUtil.flipToFlush(buffer, 0);
+        buffer.position(0);
 
         // Encode all the responses
         encodeStories(buffer, stories, "response");
     }
 
-    private void encodeStories(ByteBuffer buffer, Map<String, Object>[] stories, String type) throws Exception
+    private void encodeStories(WritableBuffer buffer, Map<String, Object>[] stories, String type) throws Exception
     {
         for (Map<String, Object> story : stories)
         {
@@ -115,9 +113,7 @@ public class HpackPerfTest
                         _unencodedSize += e.getKey().length() + e.getValue().length();
                     }
 
-                    BufferUtil.clearToFill(buffer);
                     encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, fields));
-                    BufferUtil.flipToFlush(buffer, 0);
                     _encodedSize += buffer.remaining();
                 }
             }
