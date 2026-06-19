@@ -104,8 +104,10 @@ public class TestJettyOSGiBootWithAnnotations
     private void debugSpiFlySetup()
     {
         BundleContext ctx = FrameworkUtil.getBundle(getClass()).getBundleContext();
-        for (Bundle b : ctx.getBundles()) {
-            if (b.getSymbolicName().contains("spifly")) {
+        for (Bundle b : ctx.getBundles())
+        {
+            if (b.getSymbolicName().contains("spifly"))
+            {
                 System.out.println(b.getSymbolicName() + " state=" + b.getState());
                 assertEquals(b + " is not ACTIVE", 32, b.getState());
             }

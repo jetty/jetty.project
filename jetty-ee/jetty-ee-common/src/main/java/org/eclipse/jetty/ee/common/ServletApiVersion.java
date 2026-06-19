@@ -25,7 +25,7 @@ public enum ServletApiVersion
     V6_1("6.1"),
     V6_2("6.2");
 
-    public static final ServletApiVersion currentVersion = initServletApiVersion();
+    private static volatile ServletApiVersion currentVersion;
 
     private final String version;
     private final int major;
@@ -90,7 +90,14 @@ public enum ServletApiVersion
 
     public static ServletApiVersion getServletApiVersion()
     {
-        return currentVersion;
+        ServletApiVersion version = currentVersion;
+        if (version == null)
+        {
+            // Resolve lazily and cache; initServletApiVersion() throws if it cannot detect.
+            version = initServletApiVersion();
+            currentVersion = version;
+        }
+        return version;
     }
 
     private static class Mapping
