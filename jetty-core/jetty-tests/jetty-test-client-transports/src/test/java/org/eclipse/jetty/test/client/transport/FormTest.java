@@ -46,6 +46,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
@@ -59,10 +60,10 @@ public class FormTest extends AbstractTest
         List<Arguments> results = new ArrayList<>();
         transportsNoFCGI().forEach(transportType ->
         {
-            results.add(arguments(transportType, null, FormFields.MAX_LENGTH_DEFAULT + 1, HttpStatus.BAD_REQUEST_400));
+            results.add(arguments(transportType, null, FormFields.MAX_LENGTH_DEFAULT + 1, HttpStatus.PAYLOAD_TOO_LARGE_413));
             results.add(arguments(transportType, -1, null, HttpStatus.OK_200));
-            results.add(arguments(transportType, 0, null, HttpStatus.BAD_REQUEST_400));
-            results.add(arguments(transportType, MAX_FORM_CONTENT_SIZE, FormFields.MAX_LENGTH_DEFAULT + 1, HttpStatus.BAD_REQUEST_400));
+            results.add(arguments(transportType, 0, null, HttpStatus.PAYLOAD_TOO_LARGE_413));
+            results.add(arguments(transportType, MAX_FORM_CONTENT_SIZE, FormFields.MAX_LENGTH_DEFAULT + 1, HttpStatus.PAYLOAD_TOO_LARGE_413));
         });
         return results.stream();
     }
@@ -85,6 +86,7 @@ public class FormTest extends AbstractTest
         BytesRequestContent formContent = new BytesRequestContent(
             MimeTypes.Type.FORM_ENCODED.asString(),
             newContent(contentSize));
+        assertThat(formContent.getLength(), equalTo((long)contentSize));
 
         AtomicReference<Result> resultRef = new AtomicReference<>();
 
@@ -101,7 +103,7 @@ public class FormTest extends AbstractTest
     private byte[] newContent(int size)
     {
         byte[] key = "foo=".getBytes(US_ASCII);
-        byte[] buf = new byte[size + key.length];
+        byte[] buf = new byte[(size - key.length) + key.length];
         Arrays.fill(buf, (byte)'x');
         System.arraycopy(key, 0, buf, 0, key.length);
         return buf;
@@ -151,7 +153,7 @@ public class FormTest extends AbstractTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
-        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+        assertEquals(HttpStatus.PAYLOAD_TOO_LARGE_413, response.getStatus());
     }
 
     @ParameterizedTest
@@ -226,10 +228,6 @@ public class FormTest extends AbstractTest
                     out.printf("field.%s=%s\n", field.getName(), field.getValue()));
                 out.flush();
                 Content.Sink.write(response, true, writer.toString(), callback);
-            }
-            catch (IllegalStateException e)
-            {
-                Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, "Bad Form", e);
             }
             return true;
         }
