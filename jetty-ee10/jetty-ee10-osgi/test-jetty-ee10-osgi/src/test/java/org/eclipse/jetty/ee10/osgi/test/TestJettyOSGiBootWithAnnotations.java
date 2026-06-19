@@ -30,8 +30,14 @@ import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.ProbeBuilder;
+import org.ops4j.pax.exam.TestProbeBuilder;
 import org.ops4j.pax.exam.junit.PaxExam;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.wiring.BundleWire;
+import org.osgi.framework.wiring.BundleWiring;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -48,11 +54,23 @@ public class TestJettyOSGiBootWithAnnotations
     @Inject
     BundleContext bundleContext = null;
 
+    @ProbeBuilder
+    public TestProbeBuilder probeConfiguration(TestProbeBuilder probe)
+    {
+        probe.setHeader("Require-Capability",
+            "osgi.extender;filter:=\"(osgi.extender=osgi.serviceloader.processor)\"");
+        // only needed if you also want to consume osgi.serviceloader capabilities
+        // for resolution purposes; not strictly required for the weaving itself
+        probe.setHeader("DynamicImport-Package", "*");
+        return probe;
+    }
+
     @Configuration
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
 
+        options.add(CoreOptions.cleanCaches(true));
         options.addAll(TestOSGiUtil.configurePaxExamLogging());
 
         options.add(TestOSGiUtil.optionalRemoteDebug());
@@ -83,11 +101,37 @@ public class TestJettyOSGiBootWithAnnotations
         return res;
     }
 
+    private void debugSpiFlySetup()
+    {
+        BundleContext ctx = FrameworkUtil.getBundle(getClass()).getBundleContext();
+        for (Bundle b : ctx.getBundles()) {
+            if (b.getSymbolicName().contains("spifly")) {
+                System.out.println(b.getSymbolicName() + " state=" + b.getState());
+                assertEquals(b + " is not ACTIVE", 32, b.getState());
+            }
+            else if (b.getSymbolicName().startsWith("org.eclipse.jetty."))
+            {
+                System.out.println("Bundle: " + b.getSymbolicName() + " - " + b.getState());
+                BundleWiring wiring = b.adapt(BundleWiring.class);
+                for (BundleWire wire : wiring.getRequiredWires("osgi.extender"))
+                {
+                    System.out.println("  extender wire -> " + wire.getProvider());
+                }
+                for (BundleWire wire : wiring.getRequiredWires("osgi.serviceloader"))
+                {
+                    System.out.println("  serviceloader wire -> " + wire.getProvider());
+                }
+            }
+        }
+    }
+
     @Test
     public void testIndex() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);
+
+        debugSpiFlySetup();
 
         try (HttpClient client = new HttpClient())
         {

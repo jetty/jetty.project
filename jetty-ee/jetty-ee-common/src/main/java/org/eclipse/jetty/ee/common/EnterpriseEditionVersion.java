@@ -47,7 +47,7 @@ public enum EnterpriseEditionVersion
          * Get the version.
          *
          * @return the {@link EnterpriseEditionVersion} if able to be returned, or {@code null} if this
-         *         service is unable to provide the version.
+         * service is unable to provide the version.
          */
         EnterpriseEditionVersion getVersion();
     }
@@ -80,10 +80,18 @@ public enum EnterpriseEditionVersion
 
     private static EnterpriseEditionVersion initEnterpriseEditionVersion()
     {
+        ServiceLoader<EnterpriseEditionVersion.Service> loader = ServiceLoader.load(Service.class);
+        loader.stream()
+            .forEach(serviceProvider ->
+            {
+                Service service = serviceProvider.get();
+                LOG.info("Found Service: {}", service.getClass().getName());
+            });
+
         List<Service> services = TypeUtil.serviceProviderStream(ServiceLoader.load(Service.class))
             .flatMap(p -> Stream.of(p.get()))
             .toList();
-        for (Service service: services)
+        for (Service service : services)
         {
             EnterpriseEditionVersion ver = service.getVersion();
             if (LOG.isDebugEnabled())

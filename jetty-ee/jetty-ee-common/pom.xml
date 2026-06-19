@@ -46,8 +46,8 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee.common.EnterpriseEditionVersion$Service</Provide-Capability>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional,
+              osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.ee.common.EnterpriseEditionVersion$Service)";resolution:=optional;cardinality:=multiple</Require-Capability>
             <DynamicImport-Package>jakarta.*</DynamicImport-Package>
           </instructions>
         </configuration>

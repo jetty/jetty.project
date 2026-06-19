@@ -92,9 +92,9 @@
               org.xml.sax.helpers,
               org.eclipse.jetty.ee11.annotations;resolution:=optional,
               *</Import-Package>
-            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee.webapp.Configuration,
-              osgi.serviceloader=org.eclipse.jetty.ee.common.EnterpriseEditionVersion$Service</Provide-Capability>
+              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee.common.EnterpriseEditionVersion$Service</Provide-Capability>
             <_nouses>true</_nouses>
           </instructions>
         </configuration>
