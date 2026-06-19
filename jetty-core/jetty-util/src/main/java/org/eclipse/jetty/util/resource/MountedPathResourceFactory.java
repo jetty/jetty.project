@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
  * A ResourceFactory for mounted FileSystems.
@@ -31,6 +32,7 @@ import org.eclipse.jetty.util.URIUtil;
  * as a {@link FileSystem} suitable for {@link PathResource}.
  * </p>
  */
+@ManagedObject("Factory for Mounted Resources")
 public class MountedPathResourceFactory implements ResourceFactory
 {
     private static final Map<String, String> ENV_MULTIRELEASE_RUNTIME;
