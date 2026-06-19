@@ -52,11 +52,28 @@ public enum EnterpriseEditionVersion
         EnterpriseEditionVersion getVersion();
     }
 
-    public static final EnterpriseEditionVersion currentVersion = initEnterpriseEditionVersion();
+    private static volatile EnterpriseEditionVersion currentVersion;
 
     public static EnterpriseEditionVersion getEnterpriseEditionVersion()
     {
-        return currentVersion;
+        EnterpriseEditionVersion version = currentVersion;
+        if (version != null)
+            return version;
+
+        // Resolve lazily. A too-early lookup (eg: during OSGi boot bundle activation, before
+        // SPIFly has registered the EnterpriseEditionVersion.Service providers) finds nothing
+        // and must not be cached, otherwise the wrong default would be frozen forever.
+        version = initEnterpriseEditionVersion();
+        if (version != null)
+        {
+            // Cache only a successful resolution.
+            currentVersion = version;
+            return version;
+        }
+
+        // No provider found (yet): use EE11 as a transient default without caching it,
+        // so a later call can still resolve the real version.
+        return EE11;
     }
 
     private final int version;
@@ -104,11 +121,11 @@ public enum EnterpriseEditionVersion
             }
         }
 
-        // No match, default to EE11 then.
+        // No match found.
         if (LOG.isInfoEnabled())
         {
             LOG.info("EnterpriseEditionVersion not found in environment and/or classloader, defaulting to EE11");
         }
-        return EE11;
+        return null;
     }
 }

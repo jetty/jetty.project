@@ -26,7 +26,7 @@ public enum WebsocketApiVersion
     v2_1("2.1"),
     v2_2("2.2");
 
-    public static final WebsocketApiVersion currentVersion = initWebsocketApiVersion();
+    private static volatile WebsocketApiVersion currentVersion;
 
     private static Logger LOG = LoggerFactory.getLogger(WebsocketApiVersion.class);
     private final String version;
@@ -92,7 +92,14 @@ public enum WebsocketApiVersion
 
     public static WebsocketApiVersion getWebsocketApiVersion()
     {
-        return currentVersion;
+        WebsocketApiVersion version = currentVersion;
+        if (version == null)
+        {
+            // Resolve lazily and cache; initWebsocketApiVersion() throws if it cannot detect.
+            version = initWebsocketApiVersion();
+            currentVersion = version;
+        }
+        return version;
     }
 
     private static class Mapping
