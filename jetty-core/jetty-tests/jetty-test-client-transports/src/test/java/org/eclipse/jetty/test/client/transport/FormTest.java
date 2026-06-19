@@ -103,7 +103,7 @@ public class FormTest extends AbstractTest
     private byte[] newContent(int size)
     {
         byte[] key = "foo=".getBytes(US_ASCII);
-        byte[] buf = new byte[(size - key.length) + key.length];
+        byte[] buf = new byte[size];
         Arrays.fill(buf, (byte)'x');
         System.arraycopy(key, 0, buf, 0, key.length);
         return buf;
