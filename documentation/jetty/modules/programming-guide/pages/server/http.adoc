@@ -1882,6 +1882,23 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 
 Specifying _protected_ and _hidden_ classes is also possible when using Jetty as a standalone server, as explained in xref:operations-guide:modules/standard.adoc#eeN-webapp[this section].
 
+[[handler-use-webapp-context-class-loading-caching]]
+===== CachingWebAppClassLoader
+
+A `WebAppClassLoader` may be repeatedly asked to load classes or to find resources that do not exist.
+In this case, the standard behavior is to try to load the class or find the resource _every time_, first by asking locally to the `WebAppClassLoader` itself, and then walking the parent `ClassLoader` hierarchy.
+
+`CachingWebAppClassLoader` is a `WebAppClassLoader` subclass that caches _not-found_ attempts to load classes and find resources, so that a subsequent attempt to load a class or find a resource that does not exist is immediately responded, rather than being performed again.
+
+`CachingWebAppClassLoader` may therefore increase performance, at the cost of dynamic resolution of classes or resources that may become available at a later time.
+
+Below you can find an example of how to set up `CachingWebAppClassLoader`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=cachingWebAppClassLoader]
+----
+
 [[handler-use-webapp-context-class-loading-jetty-libraries]]
 ===== Web Applications using Jetty Libraries
 
