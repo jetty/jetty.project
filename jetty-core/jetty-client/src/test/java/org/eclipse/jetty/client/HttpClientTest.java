@@ -376,6 +376,36 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    public void testQUERY(Scenario scenario) throws Exception
+    {
+        String content = "query content";
+        start(scenario, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            {
+                if (HttpMethod.QUERY.is(request.getMethod()))
+                {
+                    String text = Content.Source.asString(request);
+                    response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
+                    Content.Sink.write(response, true, text, callback);
+                }
+                return true;
+            }
+        });
+
+        ContentResponse response = client.QUERY(scenario.getScheme() + "://localhost:" + connector.getLocalPort())
+            .body(new StringRequestContent(content))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
+        assertEquals(content, response.getContentAsString());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
     public void testPOSTWithContentNotifiesRequestContentListener(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler()

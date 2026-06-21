@@ -307,6 +307,45 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         assertThat(content, is(message));
     }
 
+    @ParameterizedTest
+    @MethodSource("compressions")
+    public void testDefaultCompressionConfigurationQuery(Class<Compression> compressionClass) throws Exception
+    {
+        newCompression(compressionClass);
+        String message = "Hello Jetty!\n".repeat(10);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(compression);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                Content.Sink.write(response, true, message, callback);
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        ContentResponse response = client.QUERY(serverURI.resolve("/hello"))
+            .headers((headers) ->
+            {
+                headers.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName());
+            })
+            .send();
+        dumpResponse(response);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(compression.getEncodingName()));
+        String content = new String(decompress(response.getContent()), UTF_8);
+        assertThat(content, is(message));
+    }
+
     /**
      * Testing how CompressionHandler acts with a single compression implementation added.
      * Using all defaults for both the compression impl, and the CompressionHandler.
