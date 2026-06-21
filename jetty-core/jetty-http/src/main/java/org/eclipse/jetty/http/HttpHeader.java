@@ -88,6 +88,7 @@ public enum HttpHeader
     /**
      * Response Fields.
      */
+    ACCEPT_QUERY("Accept-Query"),
     ACCEPT_RANGES("Accept-Ranges"),
     ACCESS_CONTROL_ALLOW_ORIGIN("Access-Control-Allow-Origin"),
     ACCESS_CONTROL_ALLOW_METHODS("Access-Control-Allow-Methods"),
