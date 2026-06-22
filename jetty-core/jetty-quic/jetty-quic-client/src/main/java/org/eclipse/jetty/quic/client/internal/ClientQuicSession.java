@@ -1,4 +1,4 @@
- //
+//
 // ========================================================================
 // Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
@@ -13,60 +13,60 @@
 
 package org.eclipse.jetty.quic.client.internal;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+ import java.net.InetSocketAddress;
+ import java.net.SocketAddress;
+ import java.nio.ByteBuffer;
+ import java.util.Arrays;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.AbstractEndPoint;
-import org.eclipse.jetty.io.ClientConnectionFactory;
-import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.QuicVersion;
-import org.eclipse.jetty.quic.api.Session;
-import org.eclipse.jetty.quic.api.frames.CryptoFrame;
-import org.eclipse.jetty.quic.api.frames.Frame;
-import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
-import org.eclipse.jetty.quic.api.frames.NewTokenFrame;
-import org.eclipse.jetty.quic.api.frames.TransportParameters;
-import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
-import org.eclipse.jetty.quic.client.QuicClient;
-import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
-import org.eclipse.jetty.quic.client.internal.tls.ClientTLSConfiguration;
-import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
-import org.eclipse.jetty.quic.common.EncryptionLevel;
-import org.eclipse.jetty.quic.common.FlowController;
-import org.eclipse.jetty.quic.common.PacketTracker;
-import org.eclipse.jetty.quic.common.QuicSession;
-import org.eclipse.jetty.quic.common.StreamsController;
-import org.eclipse.jetty.quic.common.packets.InitialPacket;
-import org.eclipse.jetty.quic.common.packets.Packet;
-import org.eclipse.jetty.quic.common.packets.PacketNumbers;
-import org.eclipse.jetty.quic.common.packets.RetryPacket;
-import org.eclipse.jetty.quic.common.packets.VersionNegotiationPacket;
-import org.eclipse.jetty.quic.common.tls.HandshakeData;
-import org.eclipse.jetty.quic.common.tls.TLSEngine;
-import org.eclipse.jetty.quic.util.ErrorCode;
-import org.eclipse.jetty.quic.util.QuicException;
-import org.eclipse.jetty.tls.CertificateMessage;
-import org.eclipse.jetty.tls.CertificateVerifyMessage;
-import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
-import org.eclipse.jetty.tls.FinishedMessage;
-import org.eclipse.jetty.tls.Message;
-import org.eclipse.jetty.tls.NewSessionTicketMessage;
-import org.eclipse.jetty.tls.ServerHelloMessage;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.Scheduler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+ import org.eclipse.jetty.io.AbstractEndPoint;
+ import org.eclipse.jetty.io.ClientConnectionFactory;
+ import org.eclipse.jetty.io.ClientConnector;
+ import org.eclipse.jetty.io.RetainableByteBuffer;
+ import org.eclipse.jetty.quic.api.QuicVersion;
+ import org.eclipse.jetty.quic.api.Session;
+ import org.eclipse.jetty.quic.api.frames.CryptoFrame;
+ import org.eclipse.jetty.quic.api.frames.Frame;
+ import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
+ import org.eclipse.jetty.quic.api.frames.NewTokenFrame;
+ import org.eclipse.jetty.quic.api.frames.TransportParameters;
+ import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
+ import org.eclipse.jetty.quic.client.QuicClient;
+ import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+ import org.eclipse.jetty.quic.client.internal.tls.ClientTLSConfiguration;
+ import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
+ import org.eclipse.jetty.quic.common.EncryptionLevel;
+ import org.eclipse.jetty.quic.common.FlowController;
+ import org.eclipse.jetty.quic.common.PacketTracker;
+ import org.eclipse.jetty.quic.common.QuicSession;
+ import org.eclipse.jetty.quic.common.StreamsController;
+ import org.eclipse.jetty.quic.common.packets.InitialPacket;
+ import org.eclipse.jetty.quic.common.packets.Packet;
+ import org.eclipse.jetty.quic.common.packets.PacketNumbers;
+ import org.eclipse.jetty.quic.common.packets.RetryPacket;
+ import org.eclipse.jetty.quic.common.packets.VersionNegotiationPacket;
+ import org.eclipse.jetty.quic.common.tls.HandshakeData;
+ import org.eclipse.jetty.quic.common.tls.TLSEngine;
+ import org.eclipse.jetty.quic.util.ErrorCode;
+ import org.eclipse.jetty.quic.util.QuicException;
+ import org.eclipse.jetty.tls.CertificateMessage;
+ import org.eclipse.jetty.tls.CertificateVerifyMessage;
+ import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
+ import org.eclipse.jetty.tls.FinishedMessage;
+ import org.eclipse.jetty.tls.Message;
+ import org.eclipse.jetty.tls.NewSessionTicketMessage;
+ import org.eclipse.jetty.tls.ServerHelloMessage;
+ import org.eclipse.jetty.util.Callback;
+ import org.eclipse.jetty.util.Promise;
+ import org.eclipse.jetty.util.ssl.SslContextFactory;
+ import org.eclipse.jetty.util.thread.Invocable;
+ import org.eclipse.jetty.util.thread.Scheduler;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
 
-public class ClientQuicSession extends QuicSession
+ public class ClientQuicSession extends QuicSession
 {
     public static final ByteBuffer NO_EARLY_DATA = ByteBuffer.allocate(0);
     private static final Logger LOG = LoggerFactory.getLogger(ClientQuicSession.class);
@@ -383,16 +383,23 @@ public class ClientQuicSession extends QuicSession
         // Verify the integrity of the RetryPacket.
         RetainableByteBuffer.Mutable retryAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), false, -1, 0, 0);
         generateRetryPacket(retryAccumulator, packet);
-        if (!getTLSEngine().verifyRetryIntegrity(retryAccumulator, getOriginalDestinationConnectionId()))
+        boolean verified = getTLSEngine().verifyRetryIntegrity(retryAccumulator, getOriginalDestinationConnectionId());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} {} on {}", verified ? "processing verified" : "discarding non-verified", packet, this);
+        if (!verified)
         {
             // RFC-9000[17.2.5.2]: discard retry packets that do not verify.
-            if (LOG.isDebugEnabled())
-                LOG.debug("discarding non-verified {} on {}", packet, this);
             return;
         }
 
         retryPacketProcessed = true;
         retryToken = packet.token();
+
+        // RFC-9001[5.2]: initial secrets must be regenerated with the new scid.
+        getTLSEngine().getPacketProtector().generateInitialKeys(getQuicVersion(), packet.sourceConnectionId());
+
+        // The RetryPacket implicitly acknowledges the first InitialPacket.
+        onAcknowledge(EncryptionLevel.INITIAL, 0);
 
         resetCrypto();
         getTLSEngine().retryHandshake();

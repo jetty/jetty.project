@@ -178,6 +178,10 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         /// Only sent by servers.
         public static final Id<byte[]> RETRY_SOURCE_CONNECTION_ID = Ids.create(0x10, BytesId::new);
 
+        /// The version information.
+        /// TODO: handle this as described in RFC-9368.
+        public static final Id<byte[]> VERSION_INFORMATION_ID = Ids.create(0x11, BytesId::new);
+
         /// Creates a new [TransportParameters.Id] with the given id and type.
         ///
         /// @param id the transport parameter ID

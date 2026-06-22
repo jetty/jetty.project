@@ -50,11 +50,8 @@ public class ExtensionsGenerator
         int totalLength = 0;
         for (Extension extension : extensions)
         {
-            ExtensionGenerator generator = generators.get(extension.code());
-            if (generator != null)
-                totalLength += generator.generate(accumulator, extension);
-            else
-                throw new UnsupportedOperationException("could not generate unsupported TLS extension " + extension);
+            ExtensionGenerator generator = generators.computeIfAbsent(extension.code(), UnknownExtensionGenerator::new);
+            totalLength += generator.generate(accumulator, extension);
         }
         return totalLength;
     }

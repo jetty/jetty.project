@@ -135,7 +135,7 @@ public class ServerTLSEngine extends TLSEngine
 
         List<Extension> clientExtensions = message.extensions();
 
-        if (clientExtensions.size() != clientExtensions.stream().map(Object::getClass).distinct().count())
+        if (clientExtensions.size() != clientExtensions.stream().mapToInt(Extension::code).distinct().count())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "duplicate_extension");
 
         List<String> clientProtocols = List.of();

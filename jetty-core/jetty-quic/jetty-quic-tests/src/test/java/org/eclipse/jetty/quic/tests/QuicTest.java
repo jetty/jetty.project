@@ -17,6 +17,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
@@ -74,28 +75,28 @@ public class QuicTest extends AbstractQuicTest
         });
 
         List<String> clientEvents = new ArrayList<>();
-        Session session = Promise.Completable.<Session>with(p ->
-            client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        CompletableFuture<Session> future = new CompletableFuture<>();
+        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        {
+            @Override
+            public void onPrepare(Session session, TransportParameters transportParameters)
             {
-                @Override
-                public void onPrepare(Session session, TransportParameters transportParameters)
-                {
-                    clientEvents.add("prepare");
-                }
+                clientEvents.add("prepare");
+            }
 
-                @Override
-                public void onTransportParameters(Session session, TransportParameters parameters)
-                {
-                    clientEvents.add("transportParameters");
-                }
+            @Override
+            public void onTransportParameters(Session session, TransportParameters parameters)
+            {
+                clientEvents.add("transportParameters");
+            }
 
-                @Override
-                public void onOpen(Session session)
-                {
-                    clientEvents.add("open");
-                }
-            }, p)
-        ).get(5, SECONDS);
+            @Override
+            public void onOpen(Session session)
+            {
+                clientEvents.add("open");
+            }
+        }, Promise.Invocable.toPromise(future));
+        Session session = future.get(5, SECONDS);
 
         assertNotNull(session);
 
