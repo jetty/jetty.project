@@ -38,7 +38,11 @@ public enum SignatureAlgorithm
 
     // EdDSA algorithms.
     ED25519(0x0807),
-    ED448(0x0808);
+    ED448(0x0808),
+
+    RSA_PSS_PSS_SHA256(0x0809),
+    RSA_PSS_PSS_SHA384(0x080A),
+    RSA_PSS_PSS_SHA512(0x080B);
 
     private final int code;
 
@@ -68,6 +72,8 @@ public enum SignatureAlgorithm
                 publicKey instanceof ECPublicKey ecPublicKey && ecPublicKey.getParams().getCurve().getField().getFieldSize() == 512;
             case ED25519, ED448 ->
                 publicKey instanceof EdECPublicKey edECPublicKey && edECPublicKey.getParams().getName().equalsIgnoreCase(name());
+            // TODO: support RSA_PSS_PSS_SHA.
+            default -> false;
         };
     }
 
@@ -82,6 +88,8 @@ public enum SignatureAlgorithm
             case ECDSA_SECP384R1_SHA384 -> ecSign(privateKey, content, 384);
             case ECDSA_SECP521R1_SHA512 -> ecSign(privateKey, content, 512);
             case ED25519, ED448 -> edSign(privateKey, content, name());
+            // TODO: support RSA_PSS_PSS_SHA.
+            default -> throw new UnsupportedOperationException();
         };
     }
 
@@ -123,6 +131,8 @@ public enum SignatureAlgorithm
             case ECDSA_SECP384R1_SHA384 -> ecVerify(publicKey, content, signature, 384);
             case ECDSA_SECP521R1_SHA512 -> ecVerify(publicKey, content, signature, 512);
             case ED25519, ED448 -> edVerify(publicKey, content, signature, name());
+            // TODO: support RSA_PSS_PSS_SHA.
+            default -> throw new UnsupportedOperationException();
         };
     }
 

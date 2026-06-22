@@ -22,10 +22,14 @@ import java.util.function.IntConsumer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /// A parser for a list of TLS extensions carried in a TLS message.
 public class ExtensionsParser implements ExtensionParser.Listener
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ExtensionsParser.class);
+
     private final Map<Integer, ExtensionParser> parsers = new HashMap<>();
     private final List<Extension> extensions = new ArrayList<>();
     private State state = State.LENGTH;
@@ -49,6 +53,8 @@ public class ExtensionsParser implements ExtensionParser.Listener
     @Override
     public void onExtension(Extension extension)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("parsed TLS extension: {}", extension);
         extensions.add(extension);
     }
 
@@ -132,9 +138,7 @@ public class ExtensionsParser implements ExtensionParser.Listener
                 }
                 case BODY ->
                 {
-                    ExtensionParser parser = parsers.get(code);
-                    if (parser == null)
-                        throw new UnsupportedOperationException("could not parse unsupported TLS extension 0x" + Integer.toHexString(code));
+                    ExtensionParser parser = parsers.computeIfAbsent(code, k -> new UnknownExtensionParser(code, this));
                     int parsed = parser.parse(buffer);
                     if (parsed < 0)
                         return null;
@@ -148,6 +152,10 @@ public class ExtensionsParser implements ExtensionParser.Listener
                         consumed = 0;
                         List<Extension> result = List.copyOf(extensions);
                         extensions.clear();
+
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("parsed TLS extensions: {}", String.join(System.lineSeparator(), result.stream().map(String::valueOf).toList()));
+
                         return result;
                     }
                     else

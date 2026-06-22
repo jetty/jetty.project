@@ -143,9 +143,10 @@ public class SignatureAlgorithmsExtensionParser implements ExtensionParser
     private int algorithmComplete()
     {
         SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.from(algorithm);
-        if (signatureAlgorithm == null)
-            throw new IllegalArgumentException("unknown signature algorithm " + Integer.toHexString(algorithm));
-        algorithms.add(signatureAlgorithm);
+        // TODO: cannot ignore signature algorithm, or TranscriptHash won't be the same.
+        //  This means SignatureAlgorithm must be a class to allow for unknown values.
+        if (signatureAlgorithm != null)
+            algorithms.add(signatureAlgorithm);
         algorithm = 0;
         if (listLength == 0)
         {

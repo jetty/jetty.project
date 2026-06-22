@@ -279,13 +279,11 @@ public class ServerQuicConnection extends QuicConnection
             tlsConfiguration.setApplicationProtocols(connector.getProtocols());
 
             // RFC-9000[18.2].
-            TransportParameters transportParameters = tlsConfiguration.getTransportParameters();
             if (idleTimeout > 0)
-                transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, idleTimeout);
-            transportParameters.put(TransportParameters.Ids.ORIGINAL_DESTINATION_CONNECTION_ID, dstConnectionId.bytes());
+                parameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, idleTimeout);
+            parameters.put(TransportParameters.Ids.ORIGINAL_DESTINATION_CONNECTION_ID, dstConnectionId.bytes());
             // TODO
-//            transportParameters.put(TransportParameters.Ids.PREFERRED_ADDRESS, null);
-            transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, session.getSourceConnectionId());
+//            parameters.put(TransportParameters.Ids.PREFERRED_ADDRESS, null);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("created new {} on {}", session, this);
@@ -379,7 +377,7 @@ public class ServerQuicConnection extends QuicConnection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing connection {}", this, failure);
-        ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "failure");
+        ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "failure", 0x00);
         for (ServerQuicSession session : sessions.values())
         {
             session.disconnect(frame, failure, Promise.Invocable.noop());

@@ -69,8 +69,17 @@ public class QuicTransport extends Transport.Wrapper
     @Override
     public void connect(SocketAddress socketAddress, Map<String, Object> context)
     {
-        ProtocolSessionListener listener = new ProtocolSessionListener(context);
-        client.connect(getWrapped(), client.getClientConnector().getSslContextFactory(), socketAddress, null, listener, context, Promise.noop());
+        // TODO: when coming from QuicClient, we arrive here with the context set up already,
+        //  and we just want to delegate to super.
+        //  However, we arrive here also from HttpClient/HTTP2Client/HTTP3Client, and we need
+        //  to set up QUIC-specific parameters that are typically set up in QuicClient, but
+        //  we don't want to duplicate code, nor overwrite existing parameters, nor recursing
+        //  and calling client.connect() again.
+
+//        Session.Listener listener = (Session.Listener)context.get(QuicClient.SESSION_LISTENER_CONTEXT_KEY);
+//        if (listener == null)
+//            listener = new ProtocolSessionListener(context);
+        super.connect(socketAddress, context);
     }
 
     private static class ProtocolSessionListener implements AbstractSession.Listener
@@ -105,7 +114,10 @@ public class QuicTransport extends Transport.Wrapper
         @Override
         public Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
         {
-            return new ProtocolStreamListener.Server(protocolSession.get());
+            // TODO: this needs to be done properly.
+            //  The StreamEP should be created in ProtocolStreamListener.Client.onNewStream()
+            //  rather than here, because here we don't have the Stream object.
+            return new ProtocolStreamListener.Client(null/*TODO*/);
         }
 
         @Override

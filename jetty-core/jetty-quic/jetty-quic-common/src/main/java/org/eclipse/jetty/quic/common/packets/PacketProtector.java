@@ -87,9 +87,8 @@ public class PacketProtector implements Encrypter, Decrypter
         try
         {
             CipherSuite cipherSuite = CipherSuite.TLS_AES_128_GCM_SHA256;
-            KeyManager keyManager = new KeyManager(EncryptionLevel.INITIAL, cipherSuite);
-            if (keyManagers.put(EncryptionLevel.INITIAL, keyManager) != null)
-                throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.INITIAL);
+            // RFC-9001[5.2]: initial keys may be regenerated in case of Retry packets.
+            KeyManager keyManager = keyManagers.computeIfAbsent(EncryptionLevel.INITIAL, k -> new KeyManager(k, cipherSuite));
 
             // RFC 9001, 5.2: initial secrets use SHA256.
             KDF kdf = KDF.getInstance("HKDF-SHA256");
@@ -304,7 +303,7 @@ public class PacketProtector implements Encrypter, Decrypter
         private final ReadKeys readKeys;
         private final WriteKeys writeKeys;
 
-        private KeyManager(EncryptionLevel encryptionLevel, CipherSuite cipherSuite) throws GeneralSecurityException
+        private KeyManager(EncryptionLevel encryptionLevel, CipherSuite cipherSuite)
         {
             this.encryptionLevel = encryptionLevel;
             this.cipherSuite = cipherSuite;
@@ -410,10 +409,17 @@ public class PacketProtector implements Encrypter, Decrypter
             private SecretKey initialization;
             private SecretKey protection;
 
-            private ReadKeys(CipherSuite cipherSuite) throws GeneralSecurityException
+            private ReadKeys(CipherSuite cipherSuite)
             {
-                this.payloadCipher = Cipher.getInstance(cipherSuite.payloadCipherName());
-                this.headerCipher = Cipher.getInstance(cipherSuite.headerCipherName());
+                try
+                {
+                    this.payloadCipher = Cipher.getInstance(cipherSuite.payloadCipherName());
+                    this.headerCipher = Cipher.getInstance(cipherSuite.headerCipherName());
+                }
+                catch (GeneralSecurityException x)
+                {
+                    throw TLSException.wrap(x);
+                }
             }
 
             public void updateKeys(SecretKey initial, SecretKey encryption, SecretKey initialization, SecretKey protection)
@@ -596,10 +602,17 @@ public class PacketProtector implements Encrypter, Decrypter
             private SecretKey initialization;
             private SecretKey protection;
 
-            private WriteKeys(CipherSuite cipherSuite) throws GeneralSecurityException
+            private WriteKeys(CipherSuite cipherSuite)
             {
-                this.payloadCipher = Cipher.getInstance(cipherSuite.payloadCipherName());
-                this.headerCipher = Cipher.getInstance(cipherSuite.headerCipherName());
+                try
+                {
+                    this.payloadCipher = Cipher.getInstance(cipherSuite.payloadCipherName());
+                    this.headerCipher = Cipher.getInstance(cipherSuite.headerCipherName());
+                }
+                catch (GeneralSecurityException x)
+                {
+                    throw TLSException.wrap(x);
+                }
             }
 
             private void updateKeys(SecretKey initial, SecretKey encryption, SecretKey initialization, SecretKey protection)

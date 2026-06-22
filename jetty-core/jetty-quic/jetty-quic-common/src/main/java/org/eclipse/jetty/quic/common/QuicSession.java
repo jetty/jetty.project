@@ -266,6 +266,11 @@ public abstract class QuicSession extends AbstractSession
         return srcConnectionId;
     }
 
+    public void setSourceConnectionId(byte[] srcConnectionId)
+    {
+        this.srcConnectionId = srcConnectionId;
+    }
+
     /// @return the negotiated application protocol
     public String getApplicationProtocol()
     {
@@ -995,12 +1000,6 @@ public abstract class QuicSession extends AbstractSession
                 //   well within the idle timeout; in case of no ack, the connection is broken.
                 notIdle();
 
-                // The packet was fully decrypted and parsed, ack it now.
-                // Processing of frames by a different layer (such as the
-                // TLS layer or the application layer) is independent of
-                // acknowledgments at the transport layer.
-                acknowledge(packet);
-
                 List<Invocable.Task> tasks = processPacket(packet);
                 for (Invocable.Task task : tasks)
                 {
@@ -1032,6 +1031,14 @@ public abstract class QuicSession extends AbstractSession
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("processing {} on {}", packet, this);
+
+            // The packet was fully decrypted and parsed, ack it now.
+            // Processing of frames by a different layer (such as the
+            // TLS layer or the application layer) is independent of
+            // acknowledgments at the transport layer.
+            // RetryPacket and VersionNegotiationPacket, handled by
+            // clients, must not be acked.
+            acknowledge(packet);
 
             return switch (packet)
             {
@@ -1502,6 +1509,15 @@ public abstract class QuicSession extends AbstractSession
             flusher.sendAcknowledgment(p, Callback.NOOP/*TODO*/);
     }
 
+    /// Implicitly acknowledge the given packet number, as if an [AckFrame]
+    /// for that packet number has been received.
+    protected void onAcknowledge(EncryptionLevel encryptionLevel, long packetNumber)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("implicit acknowledge for {}[{}] on {}", encryptionLevel, packetNumber, this);
+        flusher.onAckFrameReceived(encryptionLevel, new AckFrame(packetNumber, 0, 0, List.of()));
+    }
+
     public void packet(Packet packet, Callback callback)
     {
         flusher.sendPacket(packet, callback);
@@ -1726,7 +1742,11 @@ public abstract class QuicSession extends AbstractSession
         try (var _ = lock.tryLock())
         {
             String held = lock.isHeldByCurrentThread() ? "" : "?";
-            return "%s[%s:%s,dcid=%s,streams=%d]".formatted(super.toString(), held, closeState, StringUtil.toHexString(getDestinationConnectionId()), streams.size());
+            return "%s[%s:%s,dcid=%s,scid=%s,streams=%d]".formatted(
+                super.toString(), held, closeState,
+                StringUtil.toHexString(getDestinationConnectionId()),
+                StringUtil.toHexString(getSourceConnectionId()),
+                streams.size());
         }
     }
 

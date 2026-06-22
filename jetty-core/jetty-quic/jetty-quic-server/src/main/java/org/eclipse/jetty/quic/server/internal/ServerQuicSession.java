@@ -99,6 +99,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 
     void initialize(byte[] dstConnectionId)
     {
+        setDestinationConnectionId(dstConnectionId);
         PacketProtector packetProtector = getTLSEngine().getPacketProtector();
         packetProtector.generateInitialKeys(getQuicVersion(), dstConnectionId);
         getTLSEngine().getTLSConfiguration().setQuicVersion(getQuicVersion());
@@ -175,8 +176,10 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
                 byte[] origDstConnectionId = packet.destinationConnectionId();
                 setOriginalDestinationConnectionId(origDstConnectionId);
 
+                // RFC-9001[5.2]: initial secrets must be regenerated with the scid.
+                getTLSEngine().getPacketProtector().generateInitialKeys(getQuicVersion(), getSourceConnectionId());
+
                 token = getQuicConfiguration().getTokenFactory().newRetryToken(getRemoteSocketAddress(), origDstConnectionId);
-                // RFC-9000[17.2.5.1]: retry.dst=pkt.src; retry.src!=pkt.dst.
                 RetryPacket retryPacket = new RetryPacket(packet.quicVersion(), packet.sourceConnectionId(), getSourceConnectionId(), token, null);
                 RetainableByteBuffer.Mutable retryAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), false, -1, 0, 0);
                 generateRetryPacket(retryAccumulator, retryPacket);
@@ -191,6 +194,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
             }
 
             TransportParameters transportParameters = getTLSEngine().getTLSConfiguration().getTransportParameters();
+            transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, getSourceConnectionId());
             if (retryPacketSent)
                 transportParameters.put(TransportParameters.Ids.RETRY_SOURCE_CONNECTION_ID, getSourceConnectionId());
             notifyPrepare(transportParameters);
@@ -244,6 +248,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     {
         try
         {
+            // TODO: test and move this to the proper place, here might be too early.
             getTLSEngine().getPacketProtector().discardKeys(EncryptionLevel.HANDSHAKE);
             setEncryptionLevel(EncryptionLevel.ONE_RTT);
 

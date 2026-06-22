@@ -131,13 +131,14 @@ public class TransportParametersParser
 
     private void store(TransportParameters.Id<?> parameterId, byte[] parameterValue)
     {
-        if (parameterId instanceof TransportParameters.LongId longId)
-            varLenInt.tryDecode(ByteBuffer.wrap(parameterValue), v -> parameters.put(longId, v));
-        else if (parameterId instanceof TransportParameters.BytesId bytesId)
-            parameters.put(bytesId, parameterValue);
-            // TODO: preferred address
-        else
-            throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "unsupported_transport_parameter_id");
+        switch (parameterId)
+        {
+            case TransportParameters.LongId longId ->
+                varLenInt.tryDecode(ByteBuffer.wrap(parameterValue), v -> parameters.put(longId, v));
+            case TransportParameters.BytesId bytesId ->
+                parameters.put(bytesId, parameterValue);
+            // TODO: preferred_address and version_information.
+         }
     }
 
     private TransportParameters result()
@@ -157,11 +158,10 @@ public class TransportParametersParser
         TransportParameters.Id<?> id = TransportParameters.Ids.get(parameterId);
         if (id != null)
             return id;
-        // It is a grease id (RFC 9000, section 18.1).
-        if (TransportParameters.Ids.isGrease(parameterId))
-            return TransportParameters.Ids.create(parameterId, TransportParameters.BytesId::new);
-        // Unknown id, bail out.
-        return null;
+        // RFC-9000[18.1]: either a grease id, or an unknown id.
+        // In both cases the parameter must be kept since it is part
+        // of TLS messages that are used to derive cryptographic keys.
+        return TransportParameters.Ids.create(parameterId, TransportParameters.BytesId::new);
     }
 
     private enum State
