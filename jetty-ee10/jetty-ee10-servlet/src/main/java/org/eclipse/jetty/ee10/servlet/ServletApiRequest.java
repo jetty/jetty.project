@@ -277,7 +277,8 @@ public class ServletApiRequest implements HttpServletRequest
         AuthenticationState authenticationState = getAuthenticationState();
         if (authenticationState instanceof AuthenticationState.Deferred deferred)
         {
-            AuthenticationState undeferred = deferred.authenticate(getRequest());
+            Request wrappedCoreRequest = ServletCoreRequest.wrap(_servletContextRequest.getHttpServletRequest());
+            AuthenticationState undeferred = deferred.authenticate(wrappedCoreRequest);
             if (undeferred != null)
                 authenticationState = undeferred;
         }
@@ -292,8 +293,24 @@ public class ServletApiRequest implements HttpServletRequest
             AuthenticationState undeferred;
             try (Blocker.Callback callback = Blocker.callback())
             {
-                Response wrappedCoreResponse = ServletCoreResponse.wrap(getRequest(), response, false);
-                undeferred = deferred.authenticate(getRequest(), wrappedCoreResponse, callback);
+                // Find the most wrapped HttpServletRequest to use for the authentication.
+                HttpServletRequest httpServletRequest;
+                if (_async == null)
+                {
+                    httpServletRequest = _servletContextRequest.getHttpServletRequest();
+                }
+                else
+                {
+                    if (_async.getRequest() instanceof HttpServletRequest asyncHttpServletRequest)
+                        httpServletRequest = asyncHttpServletRequest;
+                    else
+                        httpServletRequest = _servletContextRequest.getHttpServletRequest();
+                }
+
+                boolean included = httpServletRequest.getDispatcherType() == DispatcherType.INCLUDE;
+                Request wrappedCoreRequest = ServletCoreRequest.wrap(httpServletRequest);
+                Response wrappedCoreResponse = ServletCoreResponse.wrap(getRequest(), response, included);
+                undeferred = deferred.authenticate(wrappedCoreRequest, wrappedCoreResponse, callback);
                 if (undeferred instanceof AuthenticationState.ResponseSent)
                     callback.block();
                 else

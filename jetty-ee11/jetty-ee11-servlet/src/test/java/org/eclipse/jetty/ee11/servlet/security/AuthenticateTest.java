@@ -435,11 +435,10 @@ public class AuthenticateTest
                 }
             }, "/");
         });
-        String response;
 
-        response = _connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("UserPrincipal: admin"));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("UserPrincipal: admin"));
     }
 
     @Test

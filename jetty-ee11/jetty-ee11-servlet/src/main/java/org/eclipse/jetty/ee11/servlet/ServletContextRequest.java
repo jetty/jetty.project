@@ -80,8 +80,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
 
     static final Fields NO_PARAMS = new Fields(Collections.emptyMap());
     static final Fields BAD_PARAMS = new Fields(Collections.emptyMap());
-    private ServletRequest _servletRequest;
-    private ServletResponse _servletResponse;
 
     public static ServletContextRequest getServletContextRequest(ServletRequest request)
     {
@@ -118,6 +116,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     private HttpFields _trailers;
     private ManagedSession _managedSession;
     AbstractSessionManager.RequestedSession _requestedSession;
+    private ServletRequest _servletRequest;
+    private ServletResponse _servletResponse;
 
     protected ServletContextRequest(
         ServletContextHandler.ServletContextApi servletContextApi,
