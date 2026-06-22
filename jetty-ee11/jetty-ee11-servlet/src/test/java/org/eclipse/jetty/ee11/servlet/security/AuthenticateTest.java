@@ -30,6 +30,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
@@ -55,6 +56,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 
 public class AuthenticateTest
 {
@@ -268,11 +270,10 @@ public class AuthenticateTest
                 }
             }, "/");
         });
-        String response;
 
-        response = _connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("UserPrincipal: admin"));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("UserPrincipal: admin"));
     }
 
     @Test
@@ -317,11 +318,10 @@ public class AuthenticateTest
                 }
             }, "/");
         });
-        String response;
 
-        response = _connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("UserPrincipal: admin"));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("UserPrincipal: admin"));
     }
 
     @Test
@@ -367,11 +367,10 @@ public class AuthenticateTest
                 }
             }, "/");
         });
-        String response;
 
-        response = _connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n");
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("UserPrincipal: admin"));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("UserPrincipal: admin"));
     }
 
     @Test

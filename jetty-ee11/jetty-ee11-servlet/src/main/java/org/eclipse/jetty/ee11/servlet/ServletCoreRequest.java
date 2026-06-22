@@ -406,9 +406,9 @@ public class ServletCoreRequest implements Request
         }
 
         @Override
-        public QuotedCSV newQuotedCSV(boolean b)
+        public QuotedCSV newQuotedCSV(boolean keepQuotes)
         {
-            return new QuotedCSV(_baseHttpFields, b);
+            return new QuotedCSV(_baseHttpFields, keepQuotes);
         }
 
         @Override
