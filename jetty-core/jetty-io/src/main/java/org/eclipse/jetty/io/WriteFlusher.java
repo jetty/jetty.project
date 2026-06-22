@@ -329,7 +329,7 @@ public abstract class WriteFlusher
         catch (Throwable e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("write exception", e);
+                LOG.debug("write exception {}", this, e);
             if (updateState(__FLUSHING, new FailedState(e)))
                 callback.failed(e);
             else
@@ -364,10 +364,6 @@ public abstract class WriteFlusher
 
                 case IDLE:
                 case CANCELLING:
-                    for (Throwable t : suppressed)
-                    {
-                        LOG.warn("Failed Write Cause", t);
-                    }
                     return;
 
                 default:
@@ -422,7 +418,7 @@ public abstract class WriteFlusher
             if (buffers != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("flushed incomplete {}", BufferUtil.toDetailString(buffers));
+                    LOG.debug("flushed incomplete {} {}", BufferUtil.toDetailString(buffers), this);
                 if (buffers != pending._buffers)
                     pending = new PendingState(callback, address, buffers);
                 if (updateState(__COMPLETING, pending))
@@ -440,7 +436,7 @@ public abstract class WriteFlusher
         catch (Throwable e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("completeWrite exception", e);
+                LOG.debug("completeWrite exception {}", this, e);
             if (updateState(__COMPLETING, new FailedState(e)))
                 callback.failed(e);
             else
@@ -524,12 +520,8 @@ public abstract class WriteFlusher
                 case CANCEL:
                 case CANCELLING:
                 case FAILED:
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("ignored: {} {}", cause, this);
-                        if (LOG.isTraceEnabled())
-                            LOG.trace("IGNORED", cause);
-                    }
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("IGNORED {}", this, cause);
                     return false;
 
                 case PENDING:

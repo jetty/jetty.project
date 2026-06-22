@@ -33,8 +33,7 @@ public enum FrameType
     // defined RFC frames such as ALT-SVC, ORIGIN, etc.
     PREFACE(-1),
     DISCONNECT(-2),
-    FAILURE(-3),
-    FLUSH(-4);
+    FAILURE(-3);
 
     public static FrameType from(int type)
     {
