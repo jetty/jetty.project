@@ -560,6 +560,7 @@ public class Main
         // execute Jetty in another JVM
         if (args.isExec())
         {
+            StringBuilder reason = new StringBuilder("Forking second JVM");
             CommandLineBuilder cmd = args.getMainArgs(StartArgs.ALL_PARTS);
             cmd.debug();
 
@@ -568,7 +569,14 @@ public class Main
                 .filter(module -> !module.getJvmArgs().isEmpty())
                 .map(Module::getName)
                 .collect(Collectors.toList());
-            StartLog.warn("Forking second JVM due to forking module(s): %s. Use --dry-run to generate the command line to avoid forking.", execModules);
+            if (!execModules.isEmpty())
+                reason.append(" due to forking module(s): ").append(execModules);
+            else if (args.isJPMS())
+                reason.append(" due to use of --jpms");
+
+            reason.append(". Use --dry-run to generate the command line to avoid forking.");
+
+            StartLog.warn(reason.toString());
 
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
             StartLog.endStartLog();
