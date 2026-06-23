@@ -609,9 +609,9 @@ public class HttpOutput extends ServletOutputStream
         // Do not call _writeBlocker.callback() from within a lock as it itself also takes a lock.
         Blocker.Callback blocker = acquireBlocker ? _writeBlocker.callback() : null;
 
-        if (combineClosedCallback)
+        try (AutoLock ignored = _channelState.lock())
         {
-            try (AutoLock ignored = _channelState.lock())
+            if (combineClosedCallback)
             {
                 // Check if onWriteComplete fired while the lock was not held; when it does,
                 // it nulls _closedCallback so no blocking is needed anymore.
@@ -626,14 +626,9 @@ public class HttpOutput extends ServletOutputStream
                     blocker = null;
                 }
             }
-        }
 
-        if (LOG.isDebugEnabled())
-        {
-            try (AutoLock ignored = _channelState.lock())
-            {
+            if (LOG.isDebugEnabled())
                 LOG.debug("close() {} c={} b={}", lockedStateString(), content, blocker);
-            }
         }
 
         if (content == null)

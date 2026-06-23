@@ -606,9 +606,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         // Do not call _writeBlocker.acquire() from within a lock as it itself also takes a lock.
         Blocker blocker = acquireBlocker ? _writeBlocker.acquire() : null;
 
-        if (combineClosedCallback)
+        try (AutoLock l = _channelState.lock())
         {
-            try (AutoLock l = _channelState.lock())
+            if (combineClosedCallback)
             {
                 // Check if onWriteComplete fired while the lock was not held; when it does,
                 // it nulls _closedCallback so no blocking is needed anymore.
@@ -625,10 +625,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     blocker = null;
                 }
             }
-        }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("close() {} c={} b={}", stateString(), BufferUtil.toDetailString(content), blocker);
+            if (LOG.isDebugEnabled())
+                LOG.debug("close() {} c={} b={}", stateString(), BufferUtil.toDetailString(content), blocker);
+        }
 
         if (content == null)
         {
