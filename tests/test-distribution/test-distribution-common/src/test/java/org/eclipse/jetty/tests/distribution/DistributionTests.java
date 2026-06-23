@@ -1649,9 +1649,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @ValueSource(booleans = {false, true})
     public void testMultipleEnvironments(boolean jpms) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .build();
 
         List<String> modules = new ArrayList<>();
