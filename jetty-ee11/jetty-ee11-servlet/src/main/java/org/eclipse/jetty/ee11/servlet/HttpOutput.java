@@ -159,7 +159,7 @@ public class HttpOutput extends ServletOutputStream
 
     /**
      * @return The bytes written via the {@link jakarta.servlet.http.HttpServletResponse} API.  This
-     * may differ from the bytes reported by {@link org.eclipse.jetty.server.Response#getContentBytesWritten(Response)}
+     * may differ from the bytes reported by {@link Response#getContentBytesWritten(Response)}
      * due to buffering, compression, other interception or writes that bypass the servlet API.
      */
     public long getWritten()
@@ -362,7 +362,7 @@ public class HttpOutput extends ServletOutputStream
 
     public ByteBuffer takeContentAndClose()
     {
-        try (AutoLock l = _channelState.lock())
+        try (AutoLock ignored = _channelState.lock())
         {
             if (_state != State.OPEN)
                 throw new IllegalStateException(lockedStateString());
@@ -506,7 +506,8 @@ public class HttpOutput extends ServletOutputStream
     public void close() throws IOException
     {
         RetainableByteBuffer content = null;
-        Blocker.Callback blocker = null;
+        boolean acquireBlocker = false;
+        boolean combineClosedCallback = false;
         try (AutoLock ignored = _channelState.lock())
         {
             if (_softClose)
@@ -535,8 +536,8 @@ public class HttpOutput extends ServletOutputStream
                         case BLOCKING:
                         case BLOCKED:
                             // block until CLOSED state reached.
-                            blocker = _writeBlocker.callback();
-                            _closedCallback = Callback.combine(_closedCallback, blocker);
+                            acquireBlocker = true;
+                            combineClosedCallback = true;
                             break;
 
                         default:
@@ -553,7 +554,7 @@ public class HttpOutput extends ServletOutputStream
                             // Output is idle blocking state, but we still do an async close
                             _apiState = ApiState.BLOCKED;
                             _state = State.CLOSING;
-                            blocker = _writeBlocker.callback();
+                            acquireBlocker = true;
                             aggregate = _aggregate;
                             if (aggregate != null && aggregate.hasRemaining())
                             {
@@ -572,8 +573,8 @@ public class HttpOutput extends ServletOutputStream
                             // then trigger a close from onWriteComplete
                             _state = State.CLOSE;
                             // and block until it is complete
-                            blocker = _writeBlocker.callback();
-                            _closedCallback = Callback.combine(_closedCallback, blocker);
+                            acquireBlocker = true;
+                            combineClosedCallback = true;
                             break;
 
                         case ASYNC:
@@ -603,9 +604,36 @@ public class HttpOutput extends ServletOutputStream
                     }
                     break;
             }
+        }
 
-            if (LOG.isDebugEnabled())
+        // Do not call _writeBlocker.callback() from within a lock as it itself also takes a lock.
+        Blocker.Callback blocker = acquireBlocker ? _writeBlocker.callback() : null;
+
+        if (combineClosedCallback)
+        {
+            try (AutoLock ignored = _channelState.lock())
+            {
+                // Check if onWriteComplete fired while the lock was not held; when it does,
+                // it nulls _closedCallback so no blocking is needed anymore.
+                if (_closedCallback != null)
+                {
+                    _closedCallback = Callback.combine(_closedCallback, blocker);
+                }
+                else
+                {
+                    blocker.succeeded();
+                    blocker.close();
+                    blocker = null;
+                }
+            }
+        }
+
+        if (LOG.isDebugEnabled())
+        {
+            try (AutoLock ignored = _channelState.lock())
+            {
                 LOG.debug("close() {} c={} b={}", lockedStateString(), content, blocker);
+            }
         }
 
         if (content == null)
