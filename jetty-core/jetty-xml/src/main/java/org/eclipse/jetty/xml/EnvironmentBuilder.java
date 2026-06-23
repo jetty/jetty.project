@@ -96,7 +96,7 @@ public class EnvironmentBuilder
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Building environment {} with class-path {}", _name, _classPath);
-            return Environment.create(_name, new URLClassLoader(toURLs(_classPath), Environment.class.getClassLoader()));
+            return Environment.create(_name, new URLClassLoader(_name, toURLs(_classPath), Environment.class.getClassLoader()));
         }
 
         if (LOG.isDebugEnabled())
