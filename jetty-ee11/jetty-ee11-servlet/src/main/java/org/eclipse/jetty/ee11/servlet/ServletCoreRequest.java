@@ -417,7 +417,7 @@ public class ServletCoreRequest implements Request
             String value = _httpServletRequest.getHeader(name);
             if (value == null)
                 return null;
-            // If if getHeader() was overridden without also getHeaderNames() then _fields may not have the correct header value.
+            // If getHeader() was overridden without also getHeaderNames() then _fields may not have the correct header value.
             return new HttpField(name, value);
         }
 
@@ -428,7 +428,7 @@ public class ServletCoreRequest implements Request
             String value = _httpServletRequest.getHeader(header.asString());
             if (value == null)
                 return null;
-            // If if getHeader() was overridden without also getHeaderNames() then _fields may not have the correct header value.
+            // If getHeader() was overridden without also getHeaderNames() then _fields may not have the correct header value.
             return new HttpField(name, value);
         }
 

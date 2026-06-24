@@ -277,7 +277,8 @@ public class ServletApiRequest implements HttpServletRequest
         AuthenticationState authenticationState = getAuthenticationState();
         if (authenticationState instanceof AuthenticationState.Deferred deferred)
         {
-            Request wrappedCoreRequest = ServletCoreRequest.wrap(_servletContextRequest.getHttpServletRequest());
+            HttpServletRequest httpServletRequest = getWrappedRequest();
+            Request wrappedCoreRequest = ServletCoreRequest.wrap(httpServletRequest);
             AuthenticationState undeferred = deferred.authenticate(wrappedCoreRequest);
             if (undeferred != null)
                 authenticationState = undeferred;
@@ -293,23 +294,11 @@ public class ServletApiRequest implements HttpServletRequest
             AuthenticationState undeferred;
             try (Blocker.Callback callback = Blocker.callback())
             {
-                // Find the most wrapped HttpServletRequest to use for the authentication.
-                HttpServletRequest httpServletRequest;
-                if (_async == null)
-                {
-                    httpServletRequest = _servletContextRequest.getHttpServletRequest();
-                }
-                else
-                {
-                    if (_async.getRequest() instanceof HttpServletRequest asyncHttpServletRequest)
-                        httpServletRequest = asyncHttpServletRequest;
-                    else
-                        httpServletRequest = _servletContextRequest.getHttpServletRequest();
-                }
-
+                // Find the outermost wrapped HttpServletRequest to use for the authentication.
+                HttpServletRequest httpServletRequest = getWrappedRequest();
                 boolean included = httpServletRequest.getDispatcherType() == DispatcherType.INCLUDE;
                 Request wrappedCoreRequest = ServletCoreRequest.wrap(httpServletRequest);
-                Response wrappedCoreResponse = ServletCoreResponse.wrap(getRequest(), response, included);
+                Response wrappedCoreResponse = ServletCoreResponse.wrap(wrappedCoreRequest, response, included);
                 undeferred = deferred.authenticate(wrappedCoreRequest, wrappedCoreResponse, callback);
                 if (undeferred instanceof AuthenticationState.ResponseSent)
                     callback.block();
@@ -321,6 +310,23 @@ public class ServletApiRequest implements HttpServletRequest
                 authenticationState = undeferred;
         }
         return authenticationState;
+    }
+
+    private HttpServletRequest getWrappedRequest()
+    {
+        HttpServletRequest httpServletRequest;
+        if (_async == null)
+        {
+            httpServletRequest = _servletContextRequest.getHttpServletRequest();
+        }
+        else
+        {
+            if (_async.getRequest() instanceof HttpServletRequest asyncHttpServletRequest)
+                httpServletRequest = asyncHttpServletRequest;
+            else
+                httpServletRequest = _servletContextRequest.getHttpServletRequest();
+        }
+        return httpServletRequest;
     }
 
     @Override

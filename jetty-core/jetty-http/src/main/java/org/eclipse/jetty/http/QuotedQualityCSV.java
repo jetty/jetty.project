@@ -117,10 +117,13 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
      */
     public QuotedQualityCSV(HttpFields httpFields, ToIntFunction<String> secondaryOrdering)
     {
-        _compliance = MutableHttpFields.copyHttpCompliance(httpFields);
+        this(MutableHttpFields.copyHttpCompliance(httpFields), extractComplianceViolationListener(httpFields), secondaryOrdering);
+    }
+
+    private static ComplianceViolation.Listener extractComplianceViolationListener(HttpFields httpFields)
+    {
         Supplier<ComplianceViolation.Listener> supplier = MutableHttpFields.copyComplianceListener(httpFields);
-        _listener = (supplier != null) ? supplier.get() : null;
-        _secondaryOrdering = secondaryOrdering == null ? s -> 0 : secondaryOrdering;
+        return (supplier != null) ? supplier.get() : null;
     }
 
     private QuotedQualityCSV(ComplianceViolation.Mode compliance, ComplianceViolation.Listener listener, List<String> preferredOrder)

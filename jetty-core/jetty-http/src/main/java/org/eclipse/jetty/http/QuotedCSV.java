@@ -132,14 +132,13 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
 
     public QuotedCSV(HttpFields httpFields, boolean keepQuotes, String... values)
     {
-        super(keepQuotes);
-        _compliance = MutableHttpFields.copyHttpCompliance(httpFields);
+        this(MutableHttpFields.copyHttpCompliance(httpFields), extractComplianceViolationListener(httpFields), keepQuotes, values);
+    }
+
+    private static ComplianceViolation.Listener extractComplianceViolationListener(HttpFields httpFields)
+    {
         Supplier<ComplianceViolation.Listener> supplier = MutableHttpFields.copyComplianceListener(httpFields);
-        _listener = (supplier != null) ? supplier.get() : null;
-        for (String v : values)
-        {
-            addValue(v);
-        }
+        return (supplier != null) ? supplier.get() : null;
     }
 
     @Override
