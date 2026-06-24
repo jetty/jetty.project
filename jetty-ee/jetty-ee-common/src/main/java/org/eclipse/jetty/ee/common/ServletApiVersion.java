@@ -25,8 +25,6 @@ public enum ServletApiVersion
     V6_1("6.1"),
     V6_2("6.2");
 
-    private static volatile ServletApiVersion currentVersion;
-
     private final String version;
     private final int major;
     private final int minor;
@@ -62,7 +60,7 @@ public enum ServletApiVersion
         return servletApiVersion;
     }
 
-    public static ServletApiVersion initServletApiVersion()
+    private static ServletApiVersion lookupServletApiVersion()
     {
         ClassLoader classLoader = ServletApiVersion.class.getClassLoader();
         try
@@ -88,16 +86,19 @@ public enum ServletApiVersion
         }
     }
 
+    /**
+     * Get the Servlet API Version.
+     *
+     * <p>
+     *     This version DOES NOT CACHE the result and will lookup the version every call.
+     *     It is strongly recommended that you do not store this value in a static variable, as that
+     *     can lead to improper/invalid caching of the value on OSGi.
+     * </p>
+     * @return the Servlet API version.
+     */
     public static ServletApiVersion getServletApiVersion()
     {
-        ServletApiVersion version = currentVersion;
-        if (version == null)
-        {
-            // Resolve lazily and cache; initServletApiVersion() throws if it cannot detect.
-            version = initServletApiVersion();
-            currentVersion = version;
-        }
-        return version;
+        return lookupServletApiVersion();
     }
 
     private static class Mapping

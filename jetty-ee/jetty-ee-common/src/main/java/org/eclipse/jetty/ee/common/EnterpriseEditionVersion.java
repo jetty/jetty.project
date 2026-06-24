@@ -52,28 +52,26 @@ public enum EnterpriseEditionVersion
         EnterpriseEditionVersion getVersion();
     }
 
-    private static volatile EnterpriseEditionVersion currentVersion;
-
+    /**
+     * Get the Jakarta EE Version.
+     *
+     * <p>
+     *     This version DOES NOT CACHE the result and will lookup the version every call.
+     *     It is strongly recommended that you do not store this value in a static variable, as that
+     *     can lead to improper/invalid caching of the value on OSGi.
+     * </p>
+     * @return the Jakarta EE Version.
+     */
     public static EnterpriseEditionVersion getEnterpriseEditionVersion()
     {
-        EnterpriseEditionVersion version = currentVersion;
-        if (version != null)
-            return version;
-
         // Resolve lazily. A too-early lookup (eg: during OSGi boot bundle activation, before
         // SPIFly has registered the EnterpriseEditionVersion.Service providers) finds nothing
         // and must not be cached, otherwise the wrong default would be frozen forever.
-        version = initEnterpriseEditionVersion();
+        EnterpriseEditionVersion version = lookupEnterpriseEditionVersion();
         if (version != null)
-        {
-            // Cache only a successful resolution.
-            currentVersion = version;
             return version;
-        }
-
-        // No provider found (yet): use EE11 as a transient default without caching it,
-        // so a later call can still resolve the real version.
-        return EE11;
+        // Default if no version discovered during lookup.
+        return EnterpriseEditionVersion.EE11;
     }
 
     private final int version;
@@ -95,7 +93,7 @@ public enum EnterpriseEditionVersion
         return this.environmentName;
     }
 
-    private static EnterpriseEditionVersion initEnterpriseEditionVersion()
+    private static EnterpriseEditionVersion lookupEnterpriseEditionVersion()
     {
         ServiceLoader<EnterpriseEditionVersion.Service> loader = ServiceLoader.load(Service.class);
         loader.stream()

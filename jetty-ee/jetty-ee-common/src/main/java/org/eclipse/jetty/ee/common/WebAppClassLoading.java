@@ -70,7 +70,8 @@ public class WebAppClassLoading
      * by {@link #getHiddenClasses(Environment)}.
      */
     public static final ClassMatcher DEFAULT_HIDDEN_CLASSES = new ClassMatcher(
-        "org.eclipse.jetty."                // hide jetty classes
+        "org.eclipse.jetty.",                     // hide jetty classes
+        "-org.eclipse.jetty.ee.common.internal."  // expose the ee-common internal classes to ServiceLoader in EnterpriseEditionVersion.
     );
 
     /**

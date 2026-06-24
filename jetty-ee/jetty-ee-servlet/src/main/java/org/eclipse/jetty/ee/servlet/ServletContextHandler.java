@@ -134,12 +134,7 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
 public class ServletContextHandler extends ContextHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
-    public static final Environment ENVIRONMENT = Environment.ensure(EnterpriseEditionVersion.getEnterpriseEditionVersion().environmentName(), ServletContextHandler.class);
-    /**
-     * @deprecated Use {@link ServletContextHandler#ENVIRONMENT} instead.
-     */
-    @Deprecated(since = "12.0.9", forRemoval = true)
-    public static final Environment __environment = ENVIRONMENT;
+
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
         {
             ServletContextListener.class,
@@ -163,11 +158,34 @@ public class ServletContextHandler extends ContextHandler
     public static final int NO_SESSIONS = 0;
     public static final int NO_SECURITY = 0;
 
+    private static Environment environment;
+
     public enum ContextStatus
     {
         NOTSET,
         INITIALIZED,
         DESTROYED
+    }
+
+    public static String getEnvironmentName()
+    {
+        Environment env = getEnvironment();
+        if (env == null)
+            throw new IllegalStateException("No Jetty Environment exists yet for this ServletContext");
+        return env.getName();
+    }
+
+    public static Environment getEnvironment()
+    {
+        if (environment == null)
+        {
+            EnterpriseEditionVersion version = EnterpriseEditionVersion.getEnterpriseEditionVersion();
+            if (version != null)
+            {
+                environment = Environment.ensure(version.environmentName(), ServletContextHandler.class);
+            }
+        }
+        return environment;
     }
 
     public static ServletContextHandler getServletContextHandler(jakarta.servlet.ServletContext servletContext, String purpose)

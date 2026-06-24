@@ -162,7 +162,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     
                     //try environment scope next
                     if (!bound)
-                        bound = NamingEntryUtil.bindToENC(ServletContextHandler.ENVIRONMENT.getName(), name, mappedName);
+                        bound = NamingEntryUtil.bindToENC(ServletContextHandler.getEnvironmentName(), name, mappedName);
                     
                     //try Server scope next
                     if (!bound)
@@ -319,7 +319,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     
                     //try the environment's scope
                     if (!bound)
-                        bound = NamingEntryUtil.bindToENC(ServletContextHandler.ENVIRONMENT.getName(), name, mappedName);
+                        bound = NamingEntryUtil.bindToENC(ServletContextHandler.getEnvironmentName(), name, mappedName);
                     
                     //try the server's scope
                     if (!bound)

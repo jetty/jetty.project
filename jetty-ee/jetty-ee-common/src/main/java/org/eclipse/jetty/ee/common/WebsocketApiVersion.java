@@ -17,18 +17,12 @@ import java.lang.module.ModuleDescriptor;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public enum WebsocketApiVersion
 {
     v2_0("2.0"),
     v2_1("2.1"),
     v2_2("2.2");
 
-    private static volatile WebsocketApiVersion currentVersion;
-
-    private static Logger LOG = LoggerFactory.getLogger(WebsocketApiVersion.class);
     private final String version;
     private final int major;
     private final int minor;
@@ -64,7 +58,7 @@ public enum WebsocketApiVersion
         return servletApiVersion;
     }
 
-    public static WebsocketApiVersion initWebsocketApiVersion()
+    private static WebsocketApiVersion initWebsocketApiVersion()
     {
         ClassLoader classLoader = WebsocketApiVersion.class.getClassLoader();
         try
@@ -90,16 +84,20 @@ public enum WebsocketApiVersion
         }
     }
 
+    /**
+     * Get the WebSocket API Version.
+     *
+     * <p>
+     *     This version DOES NOT CACHE the result and will lookup the version every call.
+     *     It is strongly recommended that you do not store this value in a static variable, as that
+     *     can lead to improper/invalid caching of the value on OSGi.
+     * </p>
+     * @return the WebSocket API version.
+     */
     public static WebsocketApiVersion getWebsocketApiVersion()
     {
-        WebsocketApiVersion version = currentVersion;
-        if (version == null)
-        {
-            // Resolve lazily and cache; initWebsocketApiVersion() throws if it cannot detect.
-            version = initWebsocketApiVersion();
-            currentVersion = version;
-        }
-        return version;
+        // Resolve lazily and cache; initWebsocketApiVersion() throws if it cannot detect.
+        return initWebsocketApiVersion();
     }
 
     private static class Mapping

@@ -36,12 +36,20 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     public static final String PROPERTY_WEB_INF = "web-inf";
     public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
     public static final String JETTY_WEB_XML = "jetty-web.xml";
-    public static final String JETTY_EE_WEB_XML = "jetty-%s-web.xml".formatted(EnterpriseEditionVersion.getEnterpriseEditionVersion().environmentName());
 
     public JettyWebXmlConfiguration()
     {
         super(new Builder()
             .addDependencies(WebXmlConfiguration.class, FragmentConfiguration.class, MetaInfConfiguration.class));
+    }
+
+    public String getJettyEeWebXml()
+    {
+        String environmentName = EnterpriseEditionVersion.getEnterpriseEditionVersion().environmentName();
+
+        // The use of EnterpriseEditionVersion.getEnterpriseEditionVersion() cannot occur during phases where
+        // the ClassLoader isn't used or isn't available yet (like OSGi boot activation)
+        return "jetty-%s-web.xml".formatted(environmentName);
     }
 
     /**
@@ -95,7 +103,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
      */
     private Resource resolveJettyWebXml(Resource webInf)
     {
-        String xmlFile = JETTY_EE_WEB_XML;
+        String xmlFile = getJettyEeWebXml();
         try
         {
             if (webInf == null || !webInf.isDirectory())
