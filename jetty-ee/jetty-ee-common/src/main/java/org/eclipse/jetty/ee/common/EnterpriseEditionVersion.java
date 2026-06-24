@@ -95,17 +95,19 @@ public enum EnterpriseEditionVersion
 
     private static EnterpriseEditionVersion lookupEnterpriseEditionVersion()
     {
-        ServiceLoader<EnterpriseEditionVersion.Service> loader = ServiceLoader.load(Service.class);
-        loader.stream()
-            .forEach(serviceProvider ->
-            {
-                Service service = serviceProvider.get();
-                LOG.info("Found Service: {}", service.getClass().getName());
-            });
-
-        List<Service> services = TypeUtil.serviceProviderStream(ServiceLoader.load(Service.class))
+        // Resolve the SPI with the same ClassLoader that defined the Service interface (the
+        // per-environment ClassLoader that loaded EnterpriseEditionVersion), NOT the thread
+        // context ClassLoader. Using the TCCL risks resolving the providers against a different
+        // copy of EnterpriseEditionVersion.Service (eg: when jetty-ee-common is also visible to a
+        // WebAppClassLoader), which makes ServiceLoader reject them with "not a subtype".
+        ClassLoader classLoader = EnterpriseEditionVersion.class.getClassLoader();
+        List<Service> services = TypeUtil.serviceProviderStream(ServiceLoader.load(Service.class, classLoader))
             .flatMap(p -> Stream.of(p.get()))
             .toList();
+        if (LOG.isDebugEnabled())
+        {
+            services.forEach(service -> LOG.debug("Found Service: {}", service.getClass().getName()));
+        }
         for (Service service : services)
         {
             EnterpriseEditionVersion ver = service.getVersion();
