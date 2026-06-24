@@ -13,9 +13,15 @@
 
 package org.eclipse.jetty.ee.common;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.ServiceLoader;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -93,38 +99,120 @@ public enum EnterpriseEditionVersion
         return this.environmentName;
     }
 
+    /**
+     * The classpath resource that, when present in an environment's {@link ClassLoader}, declares the
+     * Jakarta {@link EnterpriseEditionVersion} of that environment via an {@code environment=<name>}
+     * property (eg: {@code environment=ee11}). It is contributed by the per-environment modules
+     * (eg: {@code jetty-ee11-servlet}).
+     */
+    public static final String ENVIRONMENT_PROPERTIES = "META-INF/org.eclipse.jetty/env.properties";
+
     private static EnterpriseEditionVersion lookupEnterpriseEditionVersion()
     {
-        // Resolve the SPI with the same ClassLoader that defined the Service interface (the
-        // per-environment ClassLoader that loaded EnterpriseEditionVersion), NOT the thread
-        // context ClassLoader. Using the TCCL risks resolving the providers against a different
-        // copy of EnterpriseEditionVersion.Service (eg: when jetty-ee-common is also visible to a
-        // WebAppClassLoader), which makes ServiceLoader reject them with "not a subtype".
-        ClassLoader classLoader = EnterpriseEditionVersion.class.getClassLoader();
-        List<Service> services = TypeUtil.serviceProviderStream(ServiceLoader.load(Service.class, classLoader))
-            .flatMap(p -> Stream.of(p.get()))
-            .toList();
-        if (LOG.isDebugEnabled())
+        // (1) Standard and JPMS distributions declare the environment with the ENVIRONMENT_PROPERTIES
+        //     marker placed in the per-environment ClassLoader. It MUST be read via the thread context
+        //     ClassLoader: during deployment, configuration and request handling that is the
+        //     per-environment ClassLoader. The ClassLoader that defined this class cannot be relied on,
+        //     because under JPMS jetty-ee-common is a single shared module whose ClassLoader cannot see
+        //     the per-environment marker (it lives in a child environment layer).
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        EnterpriseEditionVersion version = fromEnvironmentMarker(contextClassLoader);
+        if (version == null)
         {
-            services.forEach(service -> LOG.debug("Found Service: {}", service.getClass().getName()));
+            ClassLoader localClassLoader = EnterpriseEditionVersion.class.getClassLoader();
+            if (localClassLoader != contextClassLoader)
+                version = fromEnvironmentMarker(localClassLoader);
         }
-        for (Service service : services)
-        {
-            EnterpriseEditionVersion ver = service.getVersion();
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("{}.getVersion() gives {}", service.getClass().getName(), ver);
-            }
-            if (ver != null)
-            {
-                return ver;
-            }
-        }
+        if (version != null)
+            return version;
 
-        // No match found.
+        // (2) OSGi registers EnterpriseEditionVersion.Service providers (eg: EnterpriseEdition11Service)
+        //     per environment bundle via SPIFly. Discover them via ServiceLoader against the context
+        //     ClassLoader. serviceStream(...) skips (rather than aborts on) any provider that a foreign
+        //     ClassLoader makes ServiceLoader reject (eg: "not a subtype" / "Provider not found").
+        version = TypeUtil.serviceStream(ServiceLoader.load(Service.class, contextClassLoader))
+            .map(Service::getVersion)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+        if (version != null)
+            return version;
+
+        // No environment discovered during lookup.
         if (LOG.isInfoEnabled())
-        {
             LOG.info("EnterpriseEditionVersion not found in environment and/or classloader, defaulting to EE11");
+        return null;
+    }
+
+    /**
+     * Detect the {@link EnterpriseEditionVersion} from the {@link #ENVIRONMENT_PROPERTIES} marker
+     * visible to the given {@link ClassLoader}.
+     *
+     * @param classLoader the ClassLoader to inspect, may be {@code null}
+     * @return the detected version, or {@code null} if no single, recognized marker was found
+     */
+    public static EnterpriseEditionVersion fromEnvironmentMarker(ClassLoader classLoader)
+    {
+        if (classLoader == null)
+            return null;
+
+        try
+        {
+            List<URL> hits = Collections.list(classLoader.getResources(ENVIRONMENT_PROPERTIES));
+            if (hits.isEmpty())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("No {} resources found in {}", ENVIRONMENT_PROPERTIES, classLoader);
+                return null;
+            }
+            if (hits.size() > 1)
+            {
+                // Multiple environments visible to a single ClassLoader is ambiguous: do not guess.
+                if (LOG.isWarnEnabled())
+                    LOG.warn("Multiple environments detected in the same classloader: {}",
+                        hits.stream().map(URL::toString).collect(Collectors.joining(", ")));
+                return null;
+            }
+
+            URL url = hits.getFirst();
+            Properties props = new Properties();
+            try (InputStream in = url.openStream())
+            {
+                props.load(in);
+            }
+            String name = props.getProperty("environment");
+            EnterpriseEditionVersion version = fromEnvironmentName(name);
+            if (version == null)
+            {
+                if (LOG.isWarnEnabled())
+                    LOG.warn("Unrecognized Jetty environment [{}] in {}", name, url);
+            }
+            else if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Found declared [environment={}] in {}", name, url);
+            }
+            return version;
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to read {} from {}", ENVIRONMENT_PROPERTIES, classLoader, e);
+            return null;
+        }
+    }
+
+    /**
+     * @param environmentName the environment name (eg: {@code ee11}), case-insensitive
+     * @return the matching {@link EnterpriseEditionVersion}, or {@code null} if {@code null} or unrecognized
+     */
+    public static EnterpriseEditionVersion fromEnvironmentName(String environmentName)
+    {
+        if (environmentName == null)
+            return null;
+        for (EnterpriseEditionVersion version : values())
+        {
+            if (version.environmentName.equalsIgnoreCase(environmentName))
+                return version;
         }
         return null;
     }

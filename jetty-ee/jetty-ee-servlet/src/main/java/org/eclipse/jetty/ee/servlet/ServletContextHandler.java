@@ -158,8 +158,6 @@ public class ServletContextHandler extends ContextHandler
     public static final int NO_SESSIONS = 0;
     public static final int NO_SECURITY = 0;
 
-    private static Environment environment;
-
     public enum ContextStatus
     {
         NOTSET,
@@ -177,15 +175,14 @@ public class ServletContextHandler extends ContextHandler
 
     public static Environment getEnvironment()
     {
-        if (environment == null)
-        {
-            EnterpriseEditionVersion version = EnterpriseEditionVersion.getEnterpriseEditionVersion();
-            if (version != null)
-            {
-                environment = Environment.ensure(version.environmentName(), ServletContextHandler.class);
-            }
-        }
-        return environment;
+        // Resolve per call, never cache in a static field: under JPMS this class is shared across
+        // every environment (ee10, ee11, ...), so a static cache would freeze the first environment
+        // resolved and return it for all the others. EnterpriseEditionVersion.getEnterpriseEditionVersion()
+        // is likewise documented as not cacheable.
+        EnterpriseEditionVersion version = EnterpriseEditionVersion.getEnterpriseEditionVersion();
+        if (version == null)
+            return null;
+        return Environment.ensure(version.environmentName(), ServletContextHandler.class);
     }
 
     public static ServletContextHandler getServletContextHandler(jakarta.servlet.ServletContext servletContext, String purpose)

@@ -13,91 +13,31 @@
 
 package org.eclipse.jetty.ee.common.internal;
 
-import java.io.InputStream;
-import java.net.URL;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
-import java.util.stream.Collectors;
-
 import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+/**
+ * {@link EnterpriseEditionVersion.Service} that derives the environment from the
+ * {@link EnterpriseEditionVersion#ENVIRONMENT_PROPERTIES} marker resource.
+ *
+ * <p>The marker lives in the per-environment {@link ClassLoader} (eg: the {@code jetty-ee11-servlet}
+ * module), so it is resolved via the {@link Thread#getContextClassLoader() thread context ClassLoader}
+ * which during deployment, configuration and request handling is that per-environment ClassLoader.
+ * The ClassLoader that defined this class cannot be used: under JPMS {@code jetty-ee-common} is a
+ * single shared module whose ClassLoader cannot see the per-environment marker.</p>
+ */
 public class EnterpriseEditionMetaInfEnvService implements EnterpriseEditionVersion.Service
 {
-    private static final Logger LOG = LoggerFactory.getLogger(EnterpriseEditionMetaInfEnvService.class);
-
     @Override
     public EnterpriseEditionVersion getVersion()
     {
-        String resourceName = "META-INF/org.eclipse.jetty/env.properties";
-        try
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        EnterpriseEditionVersion version = EnterpriseEditionVersion.fromEnvironmentMarker(contextClassLoader);
+        if (version == null)
         {
-            ClassLoader cl = EnterpriseEditionVersion.class.getClassLoader();
-            List<URL> hits = Collections.list(cl.getResources(resourceName));
-
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("Looking for {}: found {}", resourceName,
-                    hits.stream().map(URL::toString).collect(Collectors.joining(", ")));
-            }
-
-            // Not in classloader (eg: when using jetty-ee-common jars directly)
-            if (hits.isEmpty())
-            {
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("No {} resources found", resourceName);
-                }
-                return null;
-            }
-
-            if (hits.size() > 1)
-            {
-                if (LOG.isWarnEnabled())
-                {
-                    LOG.warn("Multiple environments detected in the same classloader: {}",
-                        hits.stream().map(URL::toString).collect(Collectors.joining(", ")));
-                }
-                return null;
-            }
-
-            Properties props = new Properties();
-            URL url = hits.getFirst();
-            try (InputStream in = url.openStream())
-            {
-                props.load(in);
-                String env = props.getProperty("environment");
-
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("Found declared [environment={}] in {}", env, url);
-                }
-
-                return switch(env)
-                {
-                    case "ee10" -> EnterpriseEditionVersion.EE10;
-                    case "ee11" -> EnterpriseEditionVersion.EE11;
-                    case "ee12" -> EnterpriseEditionVersion.EE12;
-                    default ->
-                    {
-                        if (LOG.isWarnEnabled())
-                        {
-                            LOG.warn("Unrecognized Jetty environment [{}]", env);
-                        }
-                        yield null;
-                    }
-                };
-            }
+            ClassLoader localClassLoader = getClass().getClassLoader();
+            if (localClassLoader != contextClassLoader)
+                version = EnterpriseEditionVersion.fromEnvironmentMarker(localClassLoader);
         }
-        catch (Throwable e)
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("Unable to process resources of [{}]", resourceName, e);
-            }
-            return null;
-        }
+        return version;
     }
 }
