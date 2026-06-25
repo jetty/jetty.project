@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.ee.common;
 
-import java.lang.module.ModuleDescriptor;
 import java.util.HashMap;
 import java.util.Map;
 
 public enum WebsocketApiVersion
 {
-    v2_0("2.0"),
-    v2_1("2.1"),
-    v2_2("2.2");
+    V2_0("2.0"),
+    V2_1("2.1"),
+    V2_2("2.2");
 
     private final String version;
     private final int major;
@@ -58,32 +57,6 @@ public enum WebsocketApiVersion
         return servletApiVersion;
     }
 
-    private static WebsocketApiVersion initWebsocketApiVersion()
-    {
-        ClassLoader classLoader = WebsocketApiVersion.class.getClassLoader();
-        try
-        {
-            Class<?> loadedClass = classLoader.loadClass("jakarta.websocket.Session");
-            String specificationVersion = loadedClass.getPackage().getSpecificationVersion();
-            if (specificationVersion == null)
-            {
-                specificationVersion = classLoader.getDefinedPackage("jakarta.websocket").getSpecificationVersion();
-            }
-            if (specificationVersion == null)
-            {
-                specificationVersion = loadedClass.getModule().getDescriptor().version()
-                    .map(ModuleDescriptor.Version::toString)
-                    .map(version -> version.substring(0, version.lastIndexOf('.')))
-                    .orElse(null);
-            }
-            return WebsocketApiVersion.from(specificationVersion);
-        }
-        catch (ClassNotFoundException | NoClassDefFoundError e)
-        {
-            throw new IllegalStateException("Cannot detect websocket API version", e);
-        }
-    }
-
     /**
      * Get the WebSocket API Version.
      *
@@ -96,8 +69,13 @@ public enum WebsocketApiVersion
      */
     public static WebsocketApiVersion getWebsocketApiVersion()
     {
-        // Resolve lazily and cache; initWebsocketApiVersion() throws if it cannot detect.
-        return initWebsocketApiVersion();
+        EnterpriseEditionVersion version1 = EnterpriseEditionVersion.getEnterpriseEditionVersion();
+        return switch (version1)
+        {
+            case EE10 -> V2_0;
+            case EE11 -> V2_1;
+            case EE12 -> V2_2;
+        };
     }
 
     private static class Mapping

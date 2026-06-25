@@ -13,14 +13,11 @@
 
 package org.eclipse.jetty.ee.common;
 
-import java.lang.module.ModuleDescriptor;
 import java.util.HashMap;
 import java.util.Map;
 
 public enum ServletApiVersion
 {
-    V4_0("4.0"),
-    V5_0("5.0"),
     V6_0("6.0"),
     V6_1("6.1"),
     V6_2("6.2");
@@ -60,32 +57,6 @@ public enum ServletApiVersion
         return servletApiVersion;
     }
 
-    private static ServletApiVersion lookupServletApiVersion()
-    {
-        ClassLoader classLoader = ServletApiVersion.class.getClassLoader();
-        try
-        {
-            Class<?> loadedClass = classLoader.loadClass("jakarta.servlet.ServletRequest");
-            String specificationVersion = loadedClass.getPackage().getSpecificationVersion();
-            if (specificationVersion == null)
-            {
-                specificationVersion = classLoader.getDefinedPackage("jakarta.servlet").getSpecificationVersion();
-            }
-            if (specificationVersion == null)
-            {
-                specificationVersion = loadedClass.getModule().getDescriptor().version()
-                    .map(ModuleDescriptor.Version::toString)
-                    .map(version -> version.substring(0, version.lastIndexOf('.')))
-                    .orElse(null);
-            }
-            return ServletApiVersion.from(specificationVersion);
-        }
-        catch (ClassNotFoundException | NoClassDefFoundError e)
-        {
-            throw new IllegalStateException("Cannot detect servlet API version", e);
-        }
-    }
-
     /**
      * Get the Servlet API Version.
      *
@@ -98,7 +69,13 @@ public enum ServletApiVersion
      */
     public static ServletApiVersion getServletApiVersion()
     {
-        return lookupServletApiVersion();
+        EnterpriseEditionVersion version1 = EnterpriseEditionVersion.getEnterpriseEditionVersion();
+        return switch (version1)
+        {
+            case EE10 -> V6_0;
+            case EE11 -> V6_1;
+            case EE12 -> V6_2;
+        };
     }
 
     private static class Mapping
