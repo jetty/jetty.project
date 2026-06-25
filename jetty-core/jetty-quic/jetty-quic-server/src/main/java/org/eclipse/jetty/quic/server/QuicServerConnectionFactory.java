@@ -15,7 +15,6 @@ package org.eclipse.jetty.quic.server;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.quic.api.Session;
@@ -25,11 +24,12 @@ import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.common.AbstractSession;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.ProtocolStreamListener;
+import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.server.internal.ServerQuicSession;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +98,7 @@ public class QuicServerConnectionFactory extends AbstractQuicServerConnectionFac
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("could not create ProtocolSession", x);
-                session.disconnect(new ConnectionCloseFrame(ErrorCode.APPLICATION_ERROR.code(), "invalid_protocol"), x, Promise.Invocable.noop());
+                ((QuicSession)session).disconnect(ErrorCode.APPLICATION_ERROR.code(), "invalid_protocol", 0x00, x, Callback.NOOP);
             }
         }
 
@@ -106,15 +106,6 @@ public class QuicServerConnectionFactory extends AbstractQuicServerConnectionFac
         public Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
         {
             return new ProtocolStreamListener.Server(protocolSession.get());
-        }
-
-        @Override
-        public boolean onIdleTimeout(Session session, TimeoutException failure)
-        {
-            ProtocolSession pSession = protocolSession.get();
-            if (pSession != null)
-                return pSession.onIdleTimeout(failure);
-            return true;
         }
 
         @Override
@@ -127,13 +118,13 @@ public class QuicServerConnectionFactory extends AbstractQuicServerConnectionFac
         }
 
         @Override
-        public void onLocalClose(Session session, ConnectionCloseFrame frame, Promise.Invocable<Session> promise)
+        public void onLocalClose(Session session, long appError, String reason, Callback callback)
         {
             ProtocolSession pSession = protocolSession.get();
             if (pSession != null)
-                pSession.close(frame, Promise.Invocable.toPromise(promise, ps -> session));
+                pSession.close(appError, reason, callback);
             else
-                promise.succeeded(session);
+                callback.succeeded();
         }
 
         @Override

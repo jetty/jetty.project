@@ -23,7 +23,6 @@ import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -116,7 +115,7 @@ public class InstructionFlusher extends IteratingCallback
 
         // Cannot continue without the instruction stream, disconnect the session.
         ConnectionCloseFrame frame = new ConnectionCloseFrame(HTTP3ErrorCode.INTERNAL_ERROR.code(), "instruction_stream_failure");
-        endPoint.getProtocolSession().disconnect(frame, failure, Promise.Invocable.noop());
+        endPoint.getProtocolSession().disconnect(frame, failure, NOOP);
     }
 
     @Override

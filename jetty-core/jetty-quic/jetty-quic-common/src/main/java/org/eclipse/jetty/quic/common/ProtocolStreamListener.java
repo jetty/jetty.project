@@ -13,12 +13,10 @@
 
 package org.eclipse.jetty.quic.common;
 
-import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.Frame;
-import org.eclipse.jetty.util.Promise;
 
 public abstract class ProtocolStreamListener implements Stream.Listener
 {
@@ -28,18 +26,6 @@ public abstract class ProtocolStreamListener implements Stream.Listener
     public void onDataAvailable(Stream stream, boolean immediate)
     {
         getStreamEndPoint().fillable();
-    }
-
-    @Override
-    public void onIdleTimeout(Stream stream, TimeoutException failure, Promise.Invocable<Boolean> promise)
-    {
-        getStreamEndPoint().onIdleTimeout(failure, promise);
-    }
-
-    @Override
-    public void onFailure(Stream stream, Throwable failure)
-    {
-        getStreamEndPoint().onFailure(failure);
     }
 
     public static class Client extends ProtocolStreamListener

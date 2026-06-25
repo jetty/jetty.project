@@ -21,7 +21,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
-import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
+import org.eclipse.jetty.quic.common.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.tls.generator.QuicTransportParametersExtensionGenerator;
 import org.eclipse.jetty.quic.common.tls.parser.QuicTransportParametersExtensionParser;
 import org.eclipse.jetty.quic.util.VarLenInt;

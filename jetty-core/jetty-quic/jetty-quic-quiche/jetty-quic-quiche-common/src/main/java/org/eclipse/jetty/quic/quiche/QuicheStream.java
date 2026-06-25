@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.WritePendingException;
 import java.util.Objects;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
@@ -25,13 +24,10 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.common.AbstractStream;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
-import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,8 +102,8 @@ public class QuicheStream extends AbstractStream
 
         if (hasDemand && resetFailure == null)
             notifyDataAvailable();
-        else if (resetFailure != null)
-            notifyFailure(resetFailure);
+//        else if (resetFailure != null)
+//            notifyFailure(resetFailure);
     }
 
     private Throwable isReset()
@@ -264,7 +260,7 @@ public class QuicheStream extends AbstractStream
     }
 
     @Override
-    public void data(boolean last, RetainableByteBuffer buffer, Promise.Invocable<Stream> promise)
+    public void data(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
         Writer current;
         while (true)
@@ -272,21 +268,14 @@ public class QuicheStream extends AbstractStream
             current = writer.get();
             if (current != null)
             {
-                promise.failed(new WritePendingException());
+                callback.failed(new WritePendingException());
                 return;
             }
-            current = Writer.forWriting(last, buffer, promise);
+            current = Writer.forWriting(last, buffer, callback);
             if (writer.compareAndSet(null, current))
                 break;
         }
         write(current);
-    }
-
-    @Override
-    public void setIdleTimeout(long idleTimeout)
-    {
-        super.setIdleTimeout(idleTimeout);
-        session.scheduleIdleTimeout(this);
     }
 
     private void write(Writer current)
@@ -335,12 +324,12 @@ public class QuicheStream extends AbstractStream
             if (LOG.isDebugEnabled())
                 LOG.debug("written {} for {}", current, this);
 
-            current.promise().succeeded(this);
+            current.callback().succeeded();
         }
         catch (Throwable x)
         {
             updateCloseState(CloseState.LOCALLY_CLOSED);
-            current.promise().failed(x);
+            current.callback().failed(x);
         }
     }
 
@@ -392,46 +381,40 @@ public class QuicheStream extends AbstractStream
     }
 
     @Override
-    public void maxData(long maxData, Promise.Invocable<Stream> promise)
+    public void maxData(long maxData, Callback callback)
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void reset(long appErrorCode, Promise.Invocable<Stream> promise)
+    public void reset(long appErrorCode, Callback callback)
     {
         updateCloseState(CloseState.LOCALLY_CLOSED);
-        session.shutdownStream(this, true, appErrorCode, promise);
+        session.shutdownStream(this, true, appErrorCode, callback);
     }
 
     @Override
-    public void stopSending(long appErrorCode, Promise.Invocable<Stream> promise)
+    public void stopSending(long appErrorCode, Callback callback)
     {
         // Ask the other peer to stop sending, but there may be
         // data in flight, so cannot update the close state here.
-        session.shutdownStream(this, false, appErrorCode, promise);
+        session.shutdownStream(this, false, appErrorCode, callback);
     }
 
     @Override
-    public void dataBlocked(long offset, Promise.Invocable<Stream> promise)
+    public void disconnect(long appErrorCode, Throwable failure, Callback callback)
     {
-        throw new UnsupportedOperationException();
+        disconnect(true, appErrorCode, failure, callback);
     }
 
-    @Override
-    public void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise)
-    {
-        disconnect(true, appErrorCode, failure, promise);
-    }
-
-    void disconnect(boolean stopAndReset, long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise)
+    void disconnect(boolean stopAndReset, long appErrorCode, Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with error 0x{} stop&reset={} {} {}", Long.toHexString(appErrorCode), stopAndReset, this, String.valueOf(failure));
 
         Writer writer = this.writer.get();
         if (writer != null)
-            writer.promise().failed(failure != null ? failure : new AsynchronousCloseException());
+            writer.callback().failed(failure != null ? failure : new AsynchronousCloseException());
 
         CloseState previous = closeState.getAndSet(CloseState.CLOSED);
         if (previous != CloseState.CLOSED)
@@ -448,7 +431,7 @@ public class QuicheStream extends AbstractStream
 
         if (!stopAndReset || previous == CloseState.CLOSED)
         {
-            promise.succeeded(this);
+            callback.succeeded();
             return;
         }
 
@@ -458,37 +441,17 @@ public class QuicheStream extends AbstractStream
         if (stopSending)
         {
             if (reset)
-                stopSending(appErrorCode, Promise.Invocable.from(promise.getInvocationType(), s -> reset(appErrorCode, promise), promise::failed));
+                stopSending(appErrorCode, Callback.from(callback.getInvocationType(), () -> reset(appErrorCode, callback), callback::failed));
             else
-                stopSending(appErrorCode, promise);
+                stopSending(appErrorCode, callback);
         }
         else
         {
             if (reset)
-                reset(appErrorCode, promise);
+                reset(appErrorCode, callback);
             else
-                promise.succeeded(this);
+                callback.succeeded();
         }
-    }
-
-    void onIdleTimeout(TimeoutException timeout)
-    {
-        notifyIdleTimeout(timeout, Promise.Invocable.from(Invocable.InvocationType.NON_BLOCKING, (expired, x) ->
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("stream idle timeout {}ms {} on {}", getIdleTimeout(), expired ? "expired" : "ignored", this);
-            if (x == null)
-            {
-                if (expired)
-                    disconnect(ErrorCode.NO_ERROR.code(), timeout, Promise.Invocable.noop());
-                else
-                    notIdle();
-            }
-            else
-            {
-                disconnect(ErrorCode.NO_ERROR.code(), ExceptionUtil.combine(timeout, x), Promise.Invocable.noop());
-            }
-        }));
     }
 
     void resumeWrite()
@@ -530,39 +493,22 @@ public class QuicheStream extends AbstractStream
         }
     }
 
-    private void notifyIdleTimeout(TimeoutException failure, Promise.Invocable<Boolean> promise)
-    {
-        Stream.Listener listener = getListener();
-        try
-        {
-            if (listener != null)
-                listener.onIdleTimeout(this, failure, promise);
-            else
-                promise.succeeded(true);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure while notifying listener {}", listener, x);
-            promise.failed(x);
-        }
-    }
-
     @Override
     public String toString()
     {
         return "%s[%s,writer=%s]".formatted(super.toString(), closeState, writer);
     }
 
-    private record Writer(boolean last, RetainableByteBuffer buffer, Promise.Invocable<Stream> promise, boolean pending)
+    private record Writer(boolean last, RetainableByteBuffer buffer, Callback callback, boolean pending)
     {
-        private static Writer forWriting(boolean last, RetainableByteBuffer buffer, Promise.Invocable<Stream> promise)
+        private static Writer forWriting(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
-            return new Writer(last, buffer, promise, false);
+            return new Writer(last, buffer, callback, false);
         }
 
         public static Writer forPending(Writer writer)
         {
-            return new Writer(writer.last, writer.buffer, writer.promise, true);
+            return new Writer(writer.last, writer.buffer, writer.callback, true);
         }
 
         @Override

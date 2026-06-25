@@ -19,7 +19,6 @@ import java.util.function.Function;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
-import org.eclipse.jetty.util.Promise;
 
 /// A QUIC frame carrying stream data bytes.
 public final class StreamFrame extends Frame.WithStreamId.Abstract implements Frame.WithData
@@ -60,7 +59,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     /// Creates a stream frame for a [Stream].
     ///
     /// Applications should not use this constructor but instead
-    /// use [Stream#data(boolean, RetainableByteBuffer, Promise.Invocable)].
+    /// use [Stream#data(boolean, RetainableByteBuffer, org.eclipse.jetty.util.Callback)].
     ///
     /// @param streamId the stream id generated using [Session#newStreamId(boolean)]
     /// @param data the data bytes to send
@@ -75,7 +74,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     /// Creates a stream frame for a [Stream].
     ///
     /// Applications should not use this constructor but instead
-    /// use [Stream#data(boolean, RetainableByteBuffer, Promise.Invocable)].
+    /// use [Stream#data(boolean, RetainableByteBuffer, org.eclipse.jetty.util.Callback)].
     ///
     /// @param frameType the frame type
     /// @param streamId the stream id generated using [Session#newStreamId(boolean)]

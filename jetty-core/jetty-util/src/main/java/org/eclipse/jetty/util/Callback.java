@@ -230,6 +230,34 @@ public interface Callback extends Invocable
         };
     }
 
+    /// Creates a `Callback` with the given [InvocationType] from the given completion [Consumer].
+    ///
+    /// @param invocationType the [InvocationType]
+    /// @param completion the [Consumer] invoked when this `Callback` is completed
+    static Callback from(InvocationType invocationType, Consumer<Throwable> completion)
+    {
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                completion.accept(null);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                completion.accept(x);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
+            }
+        };
+    }
+
     /**
      * Creates a callback that runs completed when it succeeds or fails
      *
@@ -759,7 +787,7 @@ public interface Callback extends Invocable
 
         public Completable()
         {
-            this(Invocable.InvocationType.NON_BLOCKING);
+            this(InvocationType.NON_BLOCKING);
         }
 
         public Completable(InvocationType invocationType)

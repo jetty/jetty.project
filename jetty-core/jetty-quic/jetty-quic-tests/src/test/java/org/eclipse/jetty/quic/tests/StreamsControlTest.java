@@ -25,6 +25,7 @@ import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
@@ -98,7 +99,7 @@ public class StreamsControlTest extends AbstractQuicTest
         assertTrue(frame.isBidirectional());
         streamsBlockedFrameRef.set(null);
 
-        stream1.disconnect(ErrorCode.NO_ERROR.code(), null, Promise.Invocable.noop());
+        stream1.disconnect(ErrorCode.NO_ERROR.code(), null, Callback.NOOP);
         assertTrue(maxStreamsLatch.await(5, SECONDS));
 
         await().atMost(5, SECONDS).until(serverSessionRef.get()::getStreams, hasSize(0));
@@ -111,6 +112,6 @@ public class StreamsControlTest extends AbstractQuicTest
         // Verify that another stream can be opened.
         long streamId3 = clientSession.newStreamId(true);
         Stream stream3 = clientSession.newStream(streamId3, Stream.Listener.DEFAULT);
-        stream3.disconnect(ErrorCode.NO_ERROR.code(), null, Promise.Invocable.noop());
+        stream3.disconnect(ErrorCode.NO_ERROR.code(), null, Callback.NOOP);
     }
 }

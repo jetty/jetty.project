@@ -20,7 +20,7 @@ import org.eclipse.jetty.http3.parser.ControlParser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -103,7 +103,7 @@ public class ControlStreamConnection extends AbstractConnection.NonBlocking impl
                 else if (filled < 0)
                 {
                     buffer = Retainable.dispose(buffer);
-                    getEndPoint().disconnect(HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code(), null, true, Promise.Invocable.noop());
+                    getEndPoint().disconnect(HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code(), null, true, Callback.NOOP);
                     break;
                 }
             }
@@ -113,7 +113,7 @@ public class ControlStreamConnection extends AbstractConnection.NonBlocking impl
             if (LOG.isDebugEnabled())
                 LOG.debug("could not process control stream {}", getEndPoint(), x);
             buffer = Retainable.dispose(buffer);
-            getEndPoint().disconnect(HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code(), x, true, Promise.Invocable.noop());
+            getEndPoint().disconnect(HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code(), x, true, Callback.NOOP);
         }
     }
 }

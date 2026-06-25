@@ -18,8 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.quic.api.Stream;
-import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +76,7 @@ public class DefaultFlowController implements FlowController
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("session unstalling read/recv/max->newMax {}/{}/{}->{} {}", sessionReadOffset, sessionReceived, sessionMax, sessionNewMax, quicSession);
-            quicSession.maxData(new MaxDataFrame(sessionNewMax), Promise.Invocable.noop());
+            quicSession.maxData(sessionNewMax, Callback.NOOP);
         }
 
         AtomicLong streamRead = streamsRead.get(stream);
@@ -96,7 +95,7 @@ public class DefaultFlowController implements FlowController
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("stream unstalling read/recv/max->newMax {}/{}/{}->{} {}", streamReadOffset, streamReceived, streamMax, streamNewMax, quicStream);
-            quicStream.maxData(streamNewMax, Promise.Invocable.noop());
+            quicStream.maxData(streamNewMax, Callback.NOOP);
         }
     }
 

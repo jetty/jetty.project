@@ -17,7 +17,6 @@ import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicMarkableReference;
@@ -25,7 +24,6 @@ import java.util.concurrent.atomic.AtomicMarkableReference;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.ResetFrame;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
@@ -34,10 +32,9 @@ import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.frames.FrameStream;
-import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -98,13 +95,6 @@ public class QuicStream extends AbstractStream
         {
             return closeState.isRemotelyClosed();
         }
-    }
-
-    @Override
-    public void setIdleTimeout(long idleTimeout)
-    {
-        super.setIdleTimeout(idleTimeout);
-        session.scheduleTimeout(this);
     }
 
     void onStreamFrameSent(Frame frame)
@@ -188,8 +178,6 @@ public class QuicStream extends AbstractStream
 
         if (terminated)
             session.remove(this);
-        else
-            notIdle();
 
         return chunk;
     }
@@ -217,12 +205,12 @@ public class QuicStream extends AbstractStream
     }
 
     @Override
-    public void data(boolean last, RetainableByteBuffer data, Promise.Invocable<Stream> promise)
+    public void data(boolean last, RetainableByteBuffer data, Callback callback)
     {
         try
         {
             // Avoid infinite buffering in the session flusher.
-            if (!sender.begin(last, promise))
+            if (!sender.begin(last, callback))
                 throw new WritePendingException();
 
             // If already locally closed, fail the write.
@@ -236,14 +224,14 @@ public class QuicStream extends AbstractStream
         }
         catch (Throwable x)
         {
-            promise.failed(x);
+            callback.failed(x);
         }
     }
 
     @Override
-    public void maxData(long maxData, Promise.Invocable<Stream> promise)
+    public void maxData(long maxData, Callback callback)
     {
-        session.maxData(this, new StreamMaxDataFrame(getId(), maxData), promise);
+        session.maxData(this, new StreamMaxDataFrame(getId(), maxData), callback);
     }
 
     long getMaxData()
@@ -302,7 +290,7 @@ public class QuicStream extends AbstractStream
     }
 
     @Override
-    public void reset(long appErrorCode, Promise.Invocable<Stream> promise)
+    public void reset(long appErrorCode, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("resetting appError={} on {}", appErrorCode, this);
@@ -310,7 +298,7 @@ public class QuicStream extends AbstractStream
         // Remote unidirectional (receive-only) stream: cannot be reset.
         if (!isBidirectional() && !isLocal())
         {
-            promise.failed(new UnsupportedOperationException("cannot reset remote unidirectional stream"));
+            callback.failed(new UnsupportedOperationException("cannot reset remote unidirectional stream"));
             return;
         }
 
@@ -321,7 +309,7 @@ public class QuicStream extends AbstractStream
         }
         if (closing)
         {
-            session.reset(this, new ResetFrame(getId(), appErrorCode, -1), Promise.Invocable.from(promise, () ->
+            session.reset(this, new ResetFrame(getId(), appErrorCode, -1), Callback.from(callback, () ->
             {
                 boolean terminated;
                 try (var _ = lock.lock())
@@ -334,55 +322,33 @@ public class QuicStream extends AbstractStream
         }
         else
         {
-            promise.succeeded(this);
+            callback.succeeded();
         }
     }
 
     @Override
-    public void stopSending(long appErrorCode, Promise.Invocable<Stream> promise)
+    public void stopSending(long appErrorCode, Callback callback)
     {
-        session.stopSending(this, new StopSendingFrame(getId(), appErrorCode), promise);
+        session.stopSending(this, new StopSendingFrame(getId(), appErrorCode), callback);
     }
 
     @Override
-    public void dataBlocked(long offset, Promise.Invocable<Stream> promise)
-    {
-        session.dataBlocked(this, new StreamDataBlockedFrame(getId(), offset), promise);
-    }
-
-    @Override
-    public void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise)
+    public void disconnect(long appErrorCode, Throwable failure, Callback callback)
     {
         if (disconnected.compareAndSet(false, true))
         {
-            stopSending(appErrorCode, Promise.Invocable.from(NON_BLOCKING, (s, x) ->
+            stopSending(appErrorCode, Callback.from(callback.getInvocationType(), x ->
             {
                 if (x == null)
-                    s.reset(appErrorCode, promise);
+                    reset(appErrorCode, callback);
                 else
-                    promise.failed(x);
+                    callback.failed(x);
             }));
         }
         else
         {
-            promise.succeeded(this);
+            callback.succeeded();
         }
-    }
-
-    void onIdleTimeout(TimeoutException failure)
-    {
-        notifyIdleTimeout(failure, Promise.Invocable.from(NON_BLOCKING, (timeout, x) ->
-        {
-            boolean confirmed = x != null || timeout;
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("idle timeout {} ms {} on {}", getIdleTimeout(), confirmed ? "confirmed" : "ignored", this);
-
-            if (confirmed)
-                disconnect(ErrorCode.NO_ERROR.code(), failure, Promise.Invocable.noop());
-            else
-                notIdle();
-        }));
     }
 
     Invocable.Task processFrames(List<Frame.WithStreamId> frames)
@@ -401,7 +367,6 @@ public class QuicStream extends AbstractStream
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", frame, this);
 
-        notIdle();
         switch (frame)
         {
             case ResetFrame resetFrame -> frameStream.offer(resetFrame);
@@ -426,7 +391,7 @@ public class QuicStream extends AbstractStream
     {
         notifyStopSendingFrame(frame);
         // RFC-9000[3.5]: receiving a STOP_SENDING requires sending a RESET_STREAM.
-        reset(frame.applicationErrorCode(), Promise.Invocable.noop());
+        reset(frame.applicationErrorCode(), Callback.NOOP);
     }
 
     private void processResetFrame(ResetFrame resetFrame)
@@ -560,20 +525,6 @@ public class QuicStream extends AbstractStream
         }
     }
 
-    private void notifyIdleTimeout(TimeoutException failure, Promise.Invocable<Boolean> promise)
-    {
-        Listener listener = getListener();
-        try
-        {
-            listener.onIdleTimeout(this, failure, promise);
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("failure while notifying listener {}", listener, x);
-        }
-    }
-
     @Override
     public String toString()
     {
@@ -584,25 +535,25 @@ public class QuicStream extends AbstractStream
         }
     }
 
-    private class Sender implements Promise.Invocable<Stream>
+    private class Sender implements Callback
     {
-        private final AtomicMarkableReference<Invocable<Stream>> sendPromise = new AtomicMarkableReference<>(null, false);
+        private final AtomicMarkableReference<Callback> sendCallback = new AtomicMarkableReference<>(null, false);
 
-        private boolean begin(boolean last, Invocable<Stream> promise)
+        private boolean begin(boolean last, Callback callback)
         {
-            return sendPromise.compareAndSet(null, promise, false, last);
+            return sendCallback.compareAndSet(null, callback, false, last);
         }
 
         @Override
-        public void succeeded(Stream result)
+        public void succeeded()
         {
             boolean[] mark = new boolean[1];
-            Invocable<Stream> promise;
+            Callback callback;
             while (true)
             {
-                promise = sendPromise.get(mark);
+                callback = sendCallback.get(mark);
                 boolean last = mark[0];
-                if (sendPromise.compareAndSet(promise, null, last, last))
+                if (sendCallback.compareAndSet(callback, null, last, last))
                     break;
             }
 
@@ -616,19 +567,19 @@ public class QuicStream extends AbstractStream
                 if (terminated)
                     session.remove(QuicStream.this);
             }
-            promise.succeeded(result);
+            callback.succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
             boolean[] mark = new boolean[1];
-            Invocable<Stream> promise;
+            Callback callback;
             while (true)
             {
-                promise = sendPromise.get(mark);
+                callback = sendCallback.get(mark);
                 boolean last = mark[0];
-                if (sendPromise.compareAndSet(promise, null, last, true))
+                if (sendCallback.compareAndSet(callback, null, last, true))
                     break;
             }
             boolean terminated;
@@ -638,13 +589,14 @@ public class QuicStream extends AbstractStream
             }
             if (terminated)
                 session.remove(QuicStream.this);
-            promise.failed(x);
+            callback.failed(x);
         }
 
         @Override
         public InvocationType getInvocationType()
         {
-            return sendPromise.get(new boolean[1]).getInvocationType();
+            Callback callback = sendCallback.get(new boolean[1]);
+            return Invocable.getInvocationType(callback);
         }
     }
 

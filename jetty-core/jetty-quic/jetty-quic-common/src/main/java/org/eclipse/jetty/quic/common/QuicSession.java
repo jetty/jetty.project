@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
@@ -80,7 +78,6 @@ import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -129,7 +126,6 @@ public abstract class QuicSession extends AbstractSession
     private final FlowController flowController;
     private final StreamsController streamsController;
     private final boolean client;
-    private final StreamTimeouts streamTimeouts;
     private final PacketsParser parser;
     private final QuicFlusher flusher;
     private CloseState closeState = CloseState.NOT_CLOSED;
@@ -170,8 +166,6 @@ public abstract class QuicSession extends AbstractSession
         this.streamsController = streamsController;
         installBean(streamsController);
         this.client = client;
-        this.streamTimeouts = new StreamTimeouts(scheduler);
-        installBean(streamTimeouts);
         this.parser = new PacketsParser(tlsEngine.getPacketProtector(), packetNumbers, new FramesParser());
         installBean(parser);
         this.flusher = new QuicFlusher(this);
@@ -336,17 +330,12 @@ public abstract class QuicSession extends AbstractSession
         if (!updateToClosing())
             return;
 
-        // Serialize failure and disconnect events.
-        // Dispatch the task to free the scheduler thread.
-        offerTask(new ReadyTask(NON_BLOCKING, () ->
-        {
-            notifyFailure(timeout);
+        // RFC-9000[10.1]: the idle timeout should close the
+        // connection silently, but we send a ConnectionCloseFrame
+        // to inform the other peer that the connection is broken.
 
-            // RFC-9000[10.1]: the idle timeout should close the
-            // connection silently, but we send a ConnectionCloseFrame
-            // to inform the other peer that the connection is broken.
-            serializedDisconnect(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "idle_timeout"), timeout, Promise.Invocable.noop());
-        }), true);
+        // Notify upwards.
+        close(ErrorCode.NO_ERROR.code(), "idle_timeout", Callback.NOOP);
     }
 
     protected void setEncryptionLevel(EncryptionLevel encryptionLevel)
@@ -368,17 +357,11 @@ public abstract class QuicSession extends AbstractSession
     protected void doStop() throws Exception
     {
         // TODO: handle external stop.
-        //  streamTimeouts.destroy().
 
         if (keepAliveTask != null)
             keepAliveTask.cancel();
 
         super.doStop();
-    }
-
-    void scheduleTimeout(QuicStream stream)
-    {
-        streamTimeouts.schedule(stream);
     }
 
     public void bytesWritten(long bytesWritten)
@@ -503,8 +486,6 @@ public abstract class QuicSession extends AbstractSession
         if (stream == null)
             throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "local_stream_count_exceeded");
 
-        stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
-
         // A local stream can only send up to what the remote stream wants to receive.
         Long maxSendData = stream.isBidirectional()
             ? remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE)
@@ -575,8 +556,6 @@ public abstract class QuicSession extends AbstractSession
                 throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "remote_stream_count_exceeded");
             }
         }
-
-        stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
         // A remote stream can only send up to what the local stream wants to receive.
         Long maxSendData = bidirectional
@@ -654,97 +633,72 @@ public abstract class QuicSession extends AbstractSession
     }
 
     @Override
-    public void maxStreams(MaxStreamsFrame frame, Promise.Invocable<Session> promise)
+    public void maxStreams(long maxStreams, boolean bidirectional, Callback callback)
     {
-        long max = frame.maxStreams();
-        if (max > StreamId.MAX_PROGRESSIVE)
+        if (maxStreams > StreamId.MAX_PROGRESSIVE)
         {
-            promise.failed(new QuicException(ErrorCode.STREAM_STATE_ERROR, "invalid_max_streams"));
+            callback.failed(new QuicException(ErrorCode.STREAM_STATE_ERROR, "invalid_max_streams"));
             return;
         }
 
-        AtomicLong maxStreams = frame.isBidirectional() ? biRemoteStreamMaxCount : uniRemoteStreamMaxCount;
-        if (Atomics.updateMax(maxStreams, max))
-        {
-            Callback callback = Promise.Invocable.toCallback(promise, this);
-            sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
-        }
+        AtomicLong maxCount = bidirectional ? biRemoteStreamMaxCount : uniRemoteStreamMaxCount;
+        if (Atomics.updateMax(maxCount, maxStreams))
+            sendFrames(EncryptionLevel.ONE_RTT, List.of(new MaxStreamsFrame(maxStreams, bidirectional)), callback);
         else
-        {
-            promise.succeeded(this);
-        }
+            callback.succeeded();
     }
 
     @Override
-    public void ping(Promise.Invocable<Session> promise)
+    public void ping(Callback callback)
     {
         List<Frame> frames = List.of(PingFrame.INSTANCE);
-        sendFrames(EncryptionLevel.ONE_RTT, frames, Promise.Invocable.toCallback(promise, this));
+        sendFrames(EncryptionLevel.ONE_RTT, frames, callback);
     }
 
     @Override
-    public void maxData(MaxDataFrame frame, Promise.Invocable<Session> promise)
+    public void maxData(long maxData, Callback callback)
     {
-        long max = frame.maxData();
-        if (max > VarLenInt.MAX_VALUE)
+        if (maxData > VarLenInt.MAX_VALUE)
         {
-            promise.failed(new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_max_data"));
+            callback.failed(new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_max_data"));
             return;
         }
-        if (updateRecvMaxOffset(max))
-        {
-            Callback callback = Promise.Invocable.toCallback(promise, this);
-            sendFrames(EncryptionLevel.ONE_RTT, List.of(frame), callback);
-        }
+        if (updateRecvMaxOffset(maxData))
+            sendFrames(EncryptionLevel.ONE_RTT, List.of(new MaxDataFrame(maxData)), callback);
         else
-        {
-            promise.succeeded(this);
-        }
+            callback.succeeded();
     }
 
-    public void data(QuicStream stream, StreamFrame frame, Promise.Invocable<Stream> promise)
+    public void data(QuicStream stream, StreamFrame frame, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("sending data {} on {} on {}", frame, stream, this);
-        flusher.sendFrames(stream, List.of(frame), Promise.Invocable.toCallback(promise, stream));
+        flusher.sendFrames(stream, List.of(frame), callback);
     }
 
-    void maxData(QuicStream stream, StreamMaxDataFrame frame, Promise.Invocable<Stream> promise)
+    void maxData(QuicStream stream, StreamMaxDataFrame frame, Callback callback)
     {
         long max = frame.maxData();
         if (max > VarLenInt.MAX_VALUE)
         {
-            promise.failed(new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_stream_max_data"));
+            callback.failed(new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_stream_max_data"));
             return;
         }
         if (stream.updateRecvMaxOffset(max))
-        {
-            Callback callback = Promise.Invocable.toCallback(promise, stream);
             sendFrames(stream, List.of(frame), callback);
-        }
         else
-        {
-            promise.succeeded(stream);
-        }
+            callback.succeeded();
     }
 
-    public void reset(QuicStream stream, ResetFrame frame, Promise.Invocable<Stream> promise)
+    public void reset(QuicStream stream, ResetFrame frame, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("resetting {} for {} on {}", frame, stream, this);
-        Callback callback = Promise.Invocable.toCallback(promise, stream);
         sendFrames(stream, List.of(frame), callback);
     }
 
-    void stopSending(QuicStream stream, StopSendingFrame frame, Promise.Invocable<Stream> promise)
+    void stopSending(QuicStream stream, StopSendingFrame frame, Callback callback)
     {
-        Callback callback = Promise.Invocable.toCallback(promise, stream);
-        sendFrames(stream, List.of(frame), callback);
-    }
-
-    void dataBlocked(QuicStream stream, StreamDataBlockedFrame frame, Promise.Invocable<Stream> promise)
-    {
-        Callback callback = Promise.Invocable.toCallback(promise, stream);
         sendFrames(stream, List.of(frame), callback);
     }
 
@@ -771,15 +725,37 @@ public abstract class QuicSession extends AbstractSession
     }
 
     @Override
-    public void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<Session> promise)
+    public void disconnect(long appError, String reason, Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("disconnecting {} on {}", frame, this);
+            LOG.debug("disconnecting {}/{} on {}", appError, reason, this);
 
+        disconnect(new ConnectionCloseFrame(appError, reason), failure, callback);
+    }
+
+    /// Disconnects this session with the given QUIC error code, reason and frame type.
+    ///
+    /// This method eventually sends a [ConnectionCloseFrame] of type `0x1C`.
+    ///
+    /// @param quicError the QUIC error code
+    /// @param reason the error reason
+    /// @param causeFrameType the frame type that caused the error
+    /// @param failure the error
+    /// @param callback the [Callback] to notify when the termination is complete
+    public void disconnect(long quicError, String reason, long causeFrameType, Throwable failure, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("terminating {}/{}/{} on {}", quicError, reason, causeFrameType, this);
+
+        disconnect(new ConnectionCloseFrame(quicError, reason, causeFrameType), failure, callback);
+    }
+
+    private void disconnect(ConnectionCloseFrame frame, Throwable failure, Callback callback)
+    {
         if (updateToClosing())
-            offerTask(new ReadyTask(NON_BLOCKING, () -> serializedDisconnect(frame, failure, promise)), false);
+            offerTask(new ReadyTask(NON_BLOCKING, () -> serializedDisconnect(frame, failure, callback)), false);
         else
-            promise.succeeded(this);
+            callback.succeeded();
     }
 
     private boolean updateToClosing()
@@ -817,7 +793,7 @@ public abstract class QuicSession extends AbstractSession
         return disconnect;
     }
 
-    private void serializedDisconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<Session> promise)
+    private void serializedDisconnect(ConnectionCloseFrame frame, Throwable failure, Callback callback)
     {
         // This method should be called by a Task submitted to the connection's execution strategy,
         // to serialize notification of failure and/or disconnect events with read events.
@@ -832,7 +808,6 @@ public abstract class QuicSession extends AbstractSession
         }
         streamsToFail.forEach(stream -> stream.processFailure(failure));
 
-        Callback callback = Promise.Invocable.toCallback(promise, this);
         flusher.sendFrames(encryptionLevel, List.of(frame), Callback.from(callback, this::disconnectComplete));
     }
 
@@ -945,8 +920,7 @@ public abstract class QuicSession extends AbstractSession
                     // encoded packets, so we just disconnect.
                     buffer.skip(buffer.remaining());
                     QuicException quicException = new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_packet");
-                    ConnectionCloseFrame frame = new ConnectionCloseFrame(quicException.getErrorCode().code(), quicException.getMessage(), 0);
-                    disconnect(frame, quicException, Promise.Invocable.noop());
+                    disconnect(quicException.getErrorCode().code(), quicException.getMessage(), 0x00, quicException, Callback.NOOP);
                     return;
                 }
 
@@ -1022,7 +996,7 @@ public abstract class QuicSession extends AbstractSession
             // Use a power-of-2 backoff to avoid sending too many
             // frames in reply to those sent by the remote peer.
             if (Long.bitCount(++closeBackoff) == 1)
-                serializedDisconnect(closeFrame, null, Promise.Invocable.noop());
+                serializedDisconnect(closeFrame, null, Callback.NOOP);
         }
     }
 
@@ -1673,7 +1647,7 @@ public abstract class QuicSession extends AbstractSession
                         //  and ack for it?
                         QuicStream stream = getStream(resetFrame.streamId());
                         if (stream != null && !stream.isLocallyClosed())
-                            stream.reset(resetFrame.applicationErrorCode(), Promise.Invocable.noop());
+                            stream.reset(resetFrame.applicationErrorCode(), Callback.NOOP);
                     }
                     case RetireConnectionIdFrame retireConnectionIdFrame ->
                     {
@@ -1684,7 +1658,7 @@ public abstract class QuicSession extends AbstractSession
                         // TODO: Same comment as reset().
                         QuicStream stream = getStream(stopSendingFrame.streamId());
                         if (stream != null && !stream.isRemotelyClosed())
-                            stream.stopSending(stopSendingFrame.applicationErrorCode(), Promise.Invocable.noop());
+                            stream.stopSending(stopSendingFrame.applicationErrorCode(), Callback.NOOP);
                     }
                     case StreamDataBlockedFrame streamDataBlockedFrame ->
                     {
@@ -1698,7 +1672,7 @@ public abstract class QuicSession extends AbstractSession
                             streamFrame.rewind();
                             // Bypass stream.data() since the stream may be writing
                             // and this additional write would cause WritePendingException.
-                            data(stream, streamFrame, Promise.Invocable.noop());
+                            data(stream, streamFrame, Callback.NOOP);
                         }
                         else
                         {
@@ -1725,22 +1699,34 @@ public abstract class QuicSession extends AbstractSession
         if (LOG.isDebugEnabled())
             LOG.debug("failure on {}", this, x);
 
-        ConnectionCloseFrame frame = switch (x)
+        // Serialize failure and disconnect events.
+        offerTask(new ReadyTask(NON_BLOCKING, () ->
         {
-            case TLSException tls ->
+            notifyFailure(x);
+
+            long errorCode;
+            long causeFrameType;
+            switch (x)
             {
-                // RFC-9000[20.1]: convert TLS alerts into CRYPTO_ERRORs.
-                long code = ErrorCode.CRYPTO_ERROR.code() + tls.getAlert().code();
-                yield new ConnectionCloseFrame(code, x.getMessage(), 0x06);
-            }
-            case QuicException quic ->
-                new ConnectionCloseFrame(quic.getErrorCode().code(), quic.getMessage(), quic.getFrameType());
-            default -> new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), x.getMessage(), 0x00);
-        };
-
-        notifyFailure(x);
-
-        disconnect(frame, x, Promise.Invocable.noop());
+                case TLSException tls ->
+                {
+                    // RFC-9000[20.1]: convert TLS alerts into CRYPTO_ERRORs.
+                    errorCode = ErrorCode.CRYPTO_ERROR.code() + tls.getAlert().code();
+                    causeFrameType = 0x06;
+                }
+                case QuicException quic ->
+                {
+                    errorCode = quic.getErrorCode().code();
+                    causeFrameType = quic.getFrameType();
+                }
+                default ->
+                {
+                    errorCode = ErrorCode.INTERNAL_ERROR.code();
+                    causeFrameType =0x00;
+                }
+            };
+            disconnect(errorCode, x.getMessage(), causeFrameType, x, Callback.NOOP);
+        }), false);
     }
 
     public void dispose()
@@ -1819,32 +1805,6 @@ public abstract class QuicSession extends AbstractSession
         public void onIncomingPacket(Session session, Packet packet)
         {
             process(packet);
-        }
-    }
-
-    private class StreamTimeouts extends CyclicTimeouts<QuicStream>
-    {
-        private StreamTimeouts(Scheduler scheduler)
-        {
-            super(scheduler);
-        }
-
-        @Override
-        protected Iterator<QuicStream> iterator()
-        {
-            List<QuicStream> result;
-            try (var _ = lock.lock())
-            {
-                result = List.copyOf(streams.values());
-            }
-            return result.iterator();
-        }
-
-        @Override
-        protected boolean onExpired(QuicStream stream)
-        {
-            getExecutor().execute(() -> stream.onIdleTimeout(new TimeoutException("Idle timeout " + stream.getIdleTimeout() + " ms elapsed")));
-            return false;
         }
     }
 

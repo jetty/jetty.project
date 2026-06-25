@@ -23,13 +23,13 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.HKDFParameterSpec;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.ZeroRTTStore;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.HandshakeData;
 import org.eclipse.jetty.quic.common.tls.TLSEngine;
 import org.eclipse.jetty.quic.common.tls.X509KeyStorePair;
+import org.eclipse.jetty.quic.common.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.CertificateRequestMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;

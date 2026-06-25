@@ -32,6 +32,7 @@ import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.RTTData;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -100,7 +101,7 @@ public class CongestionTest extends AbstractQuicTest
                             if (chunk.isLast())
                                 break;
                         }
-                        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.wrap(data)), Promise.Invocable.noop());
+                        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.wrap(data)), Callback.NOOP);
                     }
                 };
             }
@@ -174,7 +175,7 @@ public class CongestionTest extends AbstractQuicTest
                 clientDataLatch.countDown();
             }
         });
-        clientStream.data(true, RetainableByteBuffer.EMPTY, Promise.Invocable.noop());
+        clientStream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
         clientStream.demand();
 
         assertTrue(clientDataLatch.await(5, SECONDS));

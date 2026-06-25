@@ -30,6 +30,7 @@ import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.packets.Packet;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
@@ -56,7 +57,7 @@ public class PacketLossTest extends AbstractQuicTest
                     @Override
                     public void onNewStream(Stream stream, Frame.WithStreamId frame)
                     {
-                        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.wrap(data)), Promise.Invocable.noop());
+                        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.wrap(data)), Callback.NOOP);
                     }
                 };
             }
@@ -121,7 +122,7 @@ public class PacketLossTest extends AbstractQuicTest
                 }
             }
         });
-        stream.data(true, RetainableByteBuffer.EMPTY, Promise.Invocable.noop());
+        stream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
         stream.demand();
 
         completable.get(5, TimeUnit.SECONDS);
@@ -168,7 +169,7 @@ public class PacketLossTest extends AbstractQuicTest
                                 break;
                         }
 
-                        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.wrap(data)), Promise.Invocable.noop());
+                        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.wrap(data)), Callback.NOOP);
                     }
                 };
             }
@@ -236,7 +237,7 @@ public class PacketLossTest extends AbstractQuicTest
                 }
             }
         });
-        clientStream.data(true, RetainableByteBuffer.EMPTY, Promise.Invocable.noop());
+        clientStream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
         clientStream.demand();
 
         completable.get(5, TimeUnit.SECONDS);

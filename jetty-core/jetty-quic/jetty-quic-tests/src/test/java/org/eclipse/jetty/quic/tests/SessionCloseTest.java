@@ -31,6 +31,7 @@ import org.eclipse.jetty.quic.common.SessionContainer;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
@@ -285,10 +286,10 @@ public class SessionCloseTest extends AbstractQuicTest
         Session clientSession = future.get(5, SECONDS);
 
         // Disconnect the client: incoming packets should be dropped.
-        clientSession.disconnect(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "test", 0x00), null, Promise.Invocable.noop());
+        ((QuicSession)clientSession).disconnect(ErrorCode.NO_ERROR.code(), "test", 0x00, new Exception(), Callback.NOOP);
 
         Session serverSession = await().atMost(5, SECONDS).until(serverSessionRef::get, Objects::nonNull);
-        serverSession.ping(Promise.Invocable.noop());
+        serverSession.ping(Callback.NOOP);
 
         assertFalse(clientPingLatch.await(1, SECONDS));
     }

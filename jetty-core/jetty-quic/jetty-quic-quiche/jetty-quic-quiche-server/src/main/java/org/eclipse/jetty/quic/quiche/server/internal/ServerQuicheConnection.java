@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -30,8 +31,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
-import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.quiche.PemPaths;
 import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
@@ -42,10 +43,9 @@ import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -140,14 +140,15 @@ public class ServerQuicheConnection extends QuicheConnection
         if (interested)
             return null;
 
-        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
+        RetainableByteBuffer buffer = getByteBufferPool().acquire(getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
+        ByteBuffer cipherBuffer = buffer.getByteBuffer();
         try
         {
             while (true)
             {
-                buffer.clear();
-                SocketAddress remoteAddress = getEndPoint().receive(buffer);
-                long fill = remoteAddress == EndPoint.EOF ? -1 : buffer.remaining();
+                BufferUtil.clear(cipherBuffer);
+                SocketAddress remoteAddress = getEndPoint().receive(cipherBuffer);
+                int fill = remoteAddress == EndPoint.EOF ? -1 : cipherBuffer.remaining();
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled cipher buffer with {} byte(s)", fill);
                 if (fill < 0)
@@ -164,26 +165,20 @@ public class ServerQuicheConnection extends QuicheConnection
                 }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("peer ip address: {}, ciphertext packet size: {}", remoteAddress, buffer.remaining());
+                    LOG.debug("peer ip address: {}, ciphertext packet size: {}", remoteAddress, cipherBuffer.remaining());
 
-                QuicheConnectionId[] result = new QuicheConnectionId[1];
-                buffer.read(b ->
-                {
-                    result[0] = QuicheConnectionId.fromPacket(b);
-                    return 0;
-                });
-                QuicheConnectionId connectionId = result[0];
-                if (connectionId == null)
+                QuicheConnectionId quicheConnectionId = QuicheConnectionId.fromPacket(cipherBuffer);
+                if (quicheConnectionId == null)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("packet contains undecipherable connection id, dropping it");
                     continue;
                 }
                 if (LOG.isDebugEnabled())
-                    LOG.debug("packet contains connection id {}", connectionId);
+                    LOG.debug("packet contains connection id {}", quicheConnectionId);
 
                 InetSocketAddress inetRemoteAddress = Quiche.toInetSocketAddress(remoteAddress, true);
-                Runnable task = process(connectionId, inetRemoteAddress, buffer);
+                Runnable task = process(quicheConnectionId, inetRemoteAddress, cipherBuffer);
                 if (task == null)
                     continue;
 
@@ -201,7 +196,7 @@ public class ServerQuicheConnection extends QuicheConnection
         }
     }
 
-    private Runnable process(QuicheConnectionId connectionId, SocketAddress remoteAddress, RetainableByteBuffer cipherBuffer) throws IOException
+    private Runnable process(QuicheConnectionId connectionId, SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
     {
         ServerQuicheSession session = sessions.get(connectionId);
         if (session == null)
@@ -233,40 +228,19 @@ public class ServerQuicheConnection extends QuicheConnection
         return session.process(remoteAddress, cipherBuffer);
     }
 
-    private ServerQuicheSession createSession(SocketAddress remoteAddress, RetainableByteBuffer cipherBuffer) throws IOException
+    private ServerQuicheSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
     {
         InetSocketAddress inetRemoteAddress = (InetSocketAddress)remoteAddress;
-
-        Quiche[] result = new Quiche[1];
-        cipherBuffer.read(b ->
-        {
-            int r = b.remaining();
-            // TODO make the token validator configurable
-            SimpleTokenValidator tokenValidator = new SimpleTokenValidator(inetRemoteAddress);
-            result[0] = Quiche.tryAccept(newQuicheConfig(), tokenValidator, b, inetLocalAddress, inetRemoteAddress);
-            return r - b.remaining();
-        });
-        Quiche quiche = result[0];
+        // TODO make the token validator configurable
+        Quiche quiche = Quiche.tryAccept(newQuicheConfig(), new SimpleTokenValidator(inetRemoteAddress), cipherBuffer, inetLocalAddress, inetRemoteAddress);
         if (quiche == null)
         {
-            RetainableByteBuffer.Mutable negotiationBuffer = getByteBufferPool().acquire(quicConfiguration.getOutputBufferSize(), quicConfiguration.isUseOutputDirectByteBuffers());
+            RetainableByteBuffer negotiationBuffer = getByteBufferPool().acquire(quicConfiguration.getOutputBufferSize(), quicConfiguration.isUseOutputDirectByteBuffers());
+            ByteBuffer byteBuffer = negotiationBuffer.getByteBuffer();
+            BufferUtil.clearToFill(byteBuffer);
 
             // TODO make the token minter configurable
-            SimpleTokenMinter tokenMinter = new SimpleTokenMinter(inetRemoteAddress);
-
-            boolean[] boolResult = new boolean[1];
-            cipherBuffer.read(input ->
-            {
-                int r = input.remaining();
-                negotiationBuffer.write(output ->
-                {
-                    boolResult[0] = Quiche.negotiate(tokenMinter, input, output);
-                    return output.remaining();
-                });
-                return r - input.remaining();
-            });
-
-            if (!boolResult[0])
+            if (!Quiche.negotiate(new SimpleTokenMinter(inetRemoteAddress), cipherBuffer, byteBuffer))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("connection negotiation failed, dropping packet");
@@ -274,7 +248,8 @@ public class ServerQuicheConnection extends QuicheConnection
                 return null;
             }
 
-            write(Callback.from(negotiationBuffer::release), remoteAddress, negotiationBuffer);
+            BufferUtil.flipToFlush(byteBuffer, 0);
+            write(Callback.from(negotiationBuffer::release), remoteAddress, byteBuffer);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("connection negotiation packet sent");
@@ -290,10 +265,9 @@ public class ServerQuicheConnection extends QuicheConnection
         }
     }
 
-    @Override
-    public void write(Callback callback, SocketAddress remoteAddress, RetainableByteBuffer buffer)
+    public void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers)
     {
-        flusher.offer(callback, remoteAddress, buffer);
+        flusher.offer(callback, remoteAddress, buffers);
         flusher.iterate();
     }
 
@@ -347,10 +321,10 @@ public class ServerQuicheConnection extends QuicheConnection
     public void close()
     {
         // This method has blocking semantic.
-        try (Blocker.Promise<Void> promise = Blocker.promise())
+        try (Blocker.Callback callback = Blocker.callback())
         {
-            close(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "close"), promise);
-            promise.block();
+            close(ErrorCode.NO_ERROR.code(), "close", callback);
+            callback.block();
         }
         catch (IOException x)
         {
@@ -358,11 +332,11 @@ public class ServerQuicheConnection extends QuicheConnection
         }
     }
 
-    private void close(ConnectionCloseFrame frame, Promise.Invocable<Void> promise)
+    private void close(long appError, String reason, Callback callback)
     {
         if (!closed.compareAndSet(false, true))
         {
-            promise.succeeded(null);
+            callback.succeeded();
             return;
         }
 
@@ -373,18 +347,17 @@ public class ServerQuicheConnection extends QuicheConnection
         for (ServerQuicheSession session : sessions.values())
         {
             CompletableFuture<Session> completable = new CompletableFuture<>();
-            session.close(frame, Promise.Invocable.toPromise(completable));
+            session.close(appError, reason, Callback.from(completable));
             closes.add(completable);
         }
-        CompletableFuture.allOf(closes.toArray(CompletableFuture[]::new))
-            .whenComplete(Promise.Invocable.toBiConsumer(promise));
+        callback.completeWith(CompletableFuture.allOf(closes.toArray(CompletableFuture[]::new)));
     }
 
     @Override
-    public void disconnect(QuicheSession session, ConnectionCloseFrame frame, Throwable failure)
+    public void disconnect(QuicheSession session, Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("disconnect {} {} on {}", frame, session, this);
+            LOG.debug("disconnect {} on {}", session, this);
         QuicheConnectionId connectionId = session.getConnectionId();
         if (connectionId != null)
             sessions.remove(connectionId);
@@ -396,10 +369,9 @@ public class ServerQuicheConnection extends QuicheConnection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing connection {}", this, failure);
-        ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "failure");
         for (ServerQuicheSession session : sessions.values())
         {
-            session.disconnect(frame, failure, Promise.Invocable.noop());
+            session.disconnect(ErrorCode.INTERNAL_ERROR.code(), "failure", failure, Callback.NOOP);
         }
     }
 
@@ -432,11 +404,11 @@ public class ServerQuicheConnection extends QuicheConnection
         private final ArrayDeque<Entry> queue = new ArrayDeque<>();
         private Entry entry;
 
-        private void offer(Callback callback, SocketAddress address, RetainableByteBuffer buffer)
+        private void offer(Callback callback, SocketAddress address, ByteBuffer[] buffers)
         {
             try (AutoLock ignored = lock.lock())
             {
-                queue.offer(new Entry(callback, address, buffer));
+                queue.offer(new Entry(callback, address, buffers));
             }
         }
 
@@ -450,7 +422,7 @@ public class ServerQuicheConnection extends QuicheConnection
             if (entry == null)
                 return Action.IDLE;
 
-            getEndPoint().write(entry.buffer(), entry.address(), this);
+            getEndPoint().write(this, entry.address, entry.buffers);
             return Action.SCHEDULED;
         }
 
@@ -475,7 +447,7 @@ public class ServerQuicheConnection extends QuicheConnection
             return entry.callback.getInvocationType();
         }
 
-        private record Entry(Callback callback, SocketAddress address, RetainableByteBuffer buffer)
+        private record Entry(Callback callback, SocketAddress address, ByteBuffer[] buffers)
         {
         }
     }

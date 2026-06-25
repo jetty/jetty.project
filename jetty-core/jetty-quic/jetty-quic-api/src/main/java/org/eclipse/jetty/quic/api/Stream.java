@@ -14,16 +14,14 @@
 package org.eclipse.jetty.quic.api;
 
 import java.util.EventListener;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
-import org.eclipse.jetty.quic.api.frames.ResetFrame;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
 
 /// A stream represents a unidirectional or bidirectional exchange
@@ -63,8 +61,8 @@ public interface Stream
     /// A locally closed stream will not send further data.
     ///
     /// A stream becomes locally closed when either it has sent
-    /// [the last data][#data(boolean, RetainableByteBuffer, Promise.Invocable)],
-    /// or sent a [reset frame][#reset(long, Promise.Invocable)].
+    /// [the last data][#data(boolean, RetainableByteBuffer, Callback)],
+    /// or sent a [reset frame][#reset(long, Callback)].
     ///
     /// @return whether the stream is locally closed
     /// @see #isRemotelyClosed()
@@ -82,12 +80,6 @@ public interface Stream
     /// @see #isLocallyClosed()
     /// @see #isTerminated()
     boolean isRemotelyClosed();
-
-    /// @return the idle timeout in milliseconds
-    long getIdleTimeout();
-
-    /// @param idleTimeout the idle timeout in milliseconds
-    void setIdleTimeout(long idleTimeout);
 
     /// @return the [Session] this stream is associated to
     Session getSession();
@@ -150,17 +142,17 @@ public interface Stream
     ///
     /// @param last whether the data bytes are the last
     /// @param data the list of data bytes to send
-    /// @param promise the [Promise.Invocable] that gets notified when the
+    /// @param callback the [Callback] that gets notified when the
     /// data has been sent
-    void data(boolean last, RetainableByteBuffer data, Promise.Invocable<Stream> promise);
+    void data(boolean last, RetainableByteBuffer data, Callback callback);
 
     /// Sends a `MAX_STREAM_DATA` frame with the new total max data bytes
     /// that this peer is willing to receive.
     ///
     /// @param maxData the max data bytes this peer is willing to receive
-    /// @param promise the [Promise.Invocable] that gets notified when the
+    /// @param callback the [Callback] that gets notified when the
     /// frame has been sent
-    void maxData(long maxData, Promise.Invocable<Stream> promise);
+    void maxData(long maxData, Callback callback);
 
     /// Sends a `RESET_STREAM` frame, with the given application error
     /// code.
@@ -169,36 +161,29 @@ public interface Stream
     /// and the stream is locally closed.
     ///
     /// @param appErrorCode the application error code
-    /// @param promise the [Promise.Invocable] that gets notified when the
+    /// @param callback the [Callback] that gets notified when the
     /// frame has been sent
-    void reset(long appErrorCode, Promise.Invocable<Stream> promise);
+    void reset(long appErrorCode, Callback callback);
 
     /// Sends a `STOP_SENDING` frame, with the given application error
     /// code.
     ///
     /// @param appErrorCode the application error code
-    /// @param promise the [Promise.Invocable] that gets notified when the
+    /// @param callback the [Callback] that gets notified when the
     /// frame has been sent
-    void stopSending(long appErrorCode, Promise.Invocable<Stream> promise);
-
-    /// Sends a `STREAM_DATA_BLOCKED` frame, with the given data offset.
-    ///
-    /// @param offset the data offset
-    /// @param promise the [Promise.Invocable] that gets notified when the
-    /// frame has been sent
-    void dataBlocked(long offset, Promise.Invocable<Stream> promise);
+    void stopSending(long appErrorCode, Callback callback);
 
     /// Abruptly terminates this stream with the given error.
     ///
     /// This method removes this stream from its session and
-    /// then terminates the QUIC stream, via [#stopSending(long, Promise.Invocable)],
-    /// and then a [#reset(long, Promise.Invocable)].
+    /// then terminates the QUIC stream, via [#stopSending(long, Callback)],
+    /// and then a [#reset(long, Callback)].
     ///
     /// @param appErrorCode the application error code
     /// @param failure the failure that caused the disconnect of the stream
-    /// @param promise the [Promise.Invocable] that gets notified when the
+    /// @param callback the [Callback] that gets notified when the
     /// disconnect is completed
-    void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise);
+    void disconnect(long appErrorCode, Throwable failure, Callback callback);
 
     /// A [Stream.Listener] is the passive counterpart of a [Stream]
     /// and receives events, triggered by the remote peer, happening on the stream.
@@ -311,10 +296,10 @@ public interface Stream
         ///
         /// @param stream the stream
         /// @param immediate `true` when data is immediately available at the time
-        /// [#demand()] is invoked (this method is directly invoked from [#demand()];
+        /// [#demand()] is invoked (this method is directly invoked from [#demand()]);
         /// `false` when data was not immediately available at the time [#demand()]
         /// was called, but is now available (this method is invoked from the network layer,
-        /// not directly from [#demand()]
+        /// not directly from [#demand()])
         /// @see Stream#demand()
         default void onDataAvailable(Stream stream, boolean immediate)
         {
@@ -351,42 +336,10 @@ public interface Stream
         {
         }
 
-        // TODO: remove.
-        /// Invoked when a `RESET_STREAM` frame has been received.
-        ///
-        /// This event is only emitted for informational purposes.
-        ///
-        /// @param stream the stream
-        /// @param frame the frame
-        default void onReset(Stream stream, ResetFrame frame)
-        {
-        }
-
         /// Invoked when the stream has been [terminated][Stream#isTerminated()].
         ///
         /// @param stream the stream
         default void onTerminated(Stream stream)
-        {
-        }
-
-        // TODO: onIdleTimeout and onFailure should be removed, as we notify failures through read().
-        //  Unless we want to give an option to ignore the idle timeout at stream level?
-
-        /// Invoked when the stream is idle for longer than the idle timeout.
-        ///
-        /// @param stream the stream
-        /// @param failure the idle timeout failure
-        /// @param promise the promise to complete to notify the other peer that this stream is closing
-        default void onIdleTimeout(Stream stream, TimeoutException failure, Promise.Invocable<Boolean> promise)
-        {
-            promise.succeeded(true);
-        }
-
-        /// Invoked when a stream failure is detected.
-        ///
-        /// @param stream the stream
-        /// @param failure the stream failure
-        default void onFailure(Stream stream, Throwable failure)
         {
         }
 
