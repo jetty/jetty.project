@@ -41,6 +41,7 @@ import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.compression.server.CompressionConfig;
 import org.eclipse.jetty.compression.server.CompressionHandler;
+import org.eclipse.jetty.ee.common.CachingWebAppClassLoader;
 import org.eclipse.jetty.ee.servlet.DefaultServlet;
 import org.eclipse.jetty.ee.servlet.ResourceServlet;
 import org.eclipse.jetty.ee.servlet.ServletContextHandler;
@@ -730,11 +731,11 @@ public class HTTPServerDocs
         // tag::handlerTree[]
         Server server = new Server();
 
-        GzipHandler gzipHandler = new GzipHandler();
-        server.setHandler(gzipHandler);
+        StatisticsHandler statsHandler = new StatisticsHandler();
+        server.setHandler(statsHandler);
 
         Handler.Sequence sequence = new Handler.Sequence();
-        gzipHandler.setHandler(sequence);
+        statsHandler.setHandler(sequence);
 
         sequence.addHandler(new App1Handler());
         sequence.addHandler(new App2Handler());
@@ -1340,6 +1341,22 @@ public class HTTPServerDocs
         context.setContextPath("/app");
 
         server.start();
+    }
+
+    public void cachingWebAppClassLoader() throws Exception
+    {
+        // tag::cachingWebAppClassLoader[]
+        // Create a WebAppContext.
+        WebAppContext context = new WebAppContext();
+
+        // Configure a CachingWebAppClassLoader.
+        context.setClassLoader(new CachingWebAppClassLoader(context));
+
+        // Configure the path of the packaged web application (file or directory).
+        context.setWar("/path/to/webapp.war");
+        // Configure the contextPath.
+        context.setContextPath("/app");
+        // end::cachingWebAppClassLoader[]
     }
 
     public void protectAndExpose()
