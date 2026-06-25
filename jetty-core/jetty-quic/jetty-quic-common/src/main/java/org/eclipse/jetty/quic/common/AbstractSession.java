@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.quic.common;
 
+import java.nio.channels.ClosedChannelException;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
@@ -27,7 +27,7 @@ import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
 import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
@@ -96,14 +96,14 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
     }
 
     @Override
-    public void close(ConnectionCloseFrame frame, Promise.Invocable<Session> promise)
+    public void close(long appError, String reason, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("closing {} {}", frame, this);
+            LOG.debug("closing {}/{} {}", appError, reason, this);
 
         // Propagate upwards.
-        notifyLocalClose(frame, Promise.Invocable.from(promise.getInvocationType(), (_, _) ->
-            disconnect(frame, null, promise)));
+        notifyLocalClose(appError, reason, Callback.from(callback.getInvocationType(), _ ->
+            disconnect(appError, reason, new ClosedChannelException(), callback)));
     }
 
     protected void notifyOpen()
@@ -244,34 +244,20 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         }
     }
 
-    protected boolean notifyIdleTimeout(TimeoutException failure)
-    {
-        try
-        {
-            return listener.onIdleTimeout(this, failure);
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("failure while notifying listener {}", listener, x);
-            return true;
-        }
-    }
-
-    protected void notifyLocalClose(ConnectionCloseFrame frame, Promise.Invocable<Session> promise)
+    protected void notifyLocalClose(long appError, String reason, Callback callback)
     {
         try
         {
             if (listener instanceof AbstractSession.Listener extended)
-                extended.onLocalClose(this, frame, promise);
+                extended.onLocalClose(this, appError, reason, callback);
             else
-                promise.succeeded(this);
+                callback.succeeded();
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failure while notifying listener {}", listener, x);
-            promise.failed(x);
+            callback.failed(x);
         }
     }
 
@@ -328,6 +314,6 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
     {
         CompletableFuture<Session> onLocalShutdown(Session session);
 
-        void onLocalClose(Session session, ConnectionCloseFrame frame, Promise.Invocable<Session> promise);
+        void onLocalClose(Session session, long appError, String reason, Callback callback);
     }
 }

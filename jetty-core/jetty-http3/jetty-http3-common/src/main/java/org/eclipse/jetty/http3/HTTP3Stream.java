@@ -25,6 +25,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Attachable;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
@@ -411,10 +412,10 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     @Override
     public void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<Stream> promise)
     {
-        disconnect(appErrorCode, failure, failure != null, promise);
+        disconnect(appErrorCode, failure, failure != null, Callback.from(promise.getInvocationType(), () -> promise.succeeded(this), promise::failed));
     }
 
-    private void disconnect(long appErrorCode, Throwable failure, boolean notifyFailure, Promise.Invocable<Stream> promise)
+    private void disconnect(long appErrorCode, Throwable failure, boolean notifyFailure, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with error 0x{} {} {}", Long.toHexString(appErrorCode), this, String.valueOf(failure));
@@ -430,9 +431,9 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
         session.removeStream(this);
 
-        // Propagate outwards.
+        // Propagate downwards.
         HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
-        connection.disconnect(appErrorCode, failure, Promise.Invocable.toPromise(promise, streamEndPoint -> this));
+        connection.disconnect(appErrorCode, failure, callback);
     }
 
     @Override

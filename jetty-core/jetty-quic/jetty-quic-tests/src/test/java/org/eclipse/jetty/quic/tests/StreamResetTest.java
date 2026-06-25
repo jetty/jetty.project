@@ -27,6 +27,7 @@ import org.eclipse.jetty.quic.api.frames.ResetFrame;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStream;
 import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -58,11 +59,11 @@ public class StreamResetTest extends AbstractQuicTest
                     public void onNewStream(Stream stream, Frame.WithStreamId frame)
                     {
                         // Sending a reset to a receive-only stream is an error.
-                        stream.reset(ErrorCode.NO_ERROR.code(), Promise.Invocable.from(NON_BLOCKING, (_, x) ->
+                        stream.reset(ErrorCode.NO_ERROR.code(), Callback.from(NON_BLOCKING, x ->
                         {
                             assertNotNull(x);
                             // Bypass the Stream API to actually send the reset frame.
-                            ((QuicSession)stream.getSession()).reset((QuicStream)stream, new ResetFrame(stream.getId(), ErrorCode.NO_ERROR.code(), -1), Promise.Invocable.noop());
+                            ((QuicSession)stream.getSession()).reset((QuicStream)stream, new ResetFrame(stream.getId(), ErrorCode.NO_ERROR.code(), -1), Callback.NOOP);
                         }));
                     }
                 };
@@ -95,7 +96,7 @@ public class StreamResetTest extends AbstractQuicTest
 
         long streamId = clientSession.newStreamId(false);
         Stream clientStream = clientSession.newStream(streamId, new Stream.Listener() {});
-        clientStream.data(false, RetainableByteBuffer.wrap(ByteBuffer.allocate(1)), Promise.Invocable.noop());
+        clientStream.data(false, RetainableByteBuffer.wrap(ByteBuffer.allocate(1)), Callback.NOOP);
 
         Session serverSession = await().atMost(5, SECONDS).until(serverSessionRef::get, notNullValue());
 

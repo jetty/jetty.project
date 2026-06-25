@@ -16,7 +16,6 @@ package org.eclipse.jetty.quic.api;
 import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.EventListener;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
@@ -27,7 +26,6 @@ import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
 import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
 
 /// Represents a QUIC connection to a remote peer.
 ///
@@ -49,7 +47,7 @@ public interface Session
 
     /// Creates a new local QUIC stream with the given stream id and listener.
     /// No communication happens with the other peer until [Stream] methods are
-    /// called to send frames, such as [Stream#data(boolean, RetainableByteBuffer, Promise.Invocable)].
+    /// called to send frames, such as [Stream#data(boolean, RetainableByteBuffer, Callback)].
     ///
     /// @param streamId the QUIC stream id
     /// @param listener the listener of stream events
@@ -65,54 +63,50 @@ public interface Session
 
     /// Sends a MAX_STREAMS frame on this session.
     ///
-    /// @param frame the frame to send
-    /// @param promise the [Promise.Invocable] that gets notified when the frame has been sent
-    void maxStreams(MaxStreamsFrame frame, Promise.Invocable<Session> promise);
+    /// @param callback the [Callback] that gets notified when the frame has been sent
+    void maxStreams(long maxStreams, boolean bidirectional, Callback callback);
 
     /// Sends a PING frame on this connection.
     ///
-    /// @param promise the [Promise.Invocable] that gets notified when the frame has been sent
-    void ping(Promise.Invocable<Session> promise);
+    /// @param callback the [Callback] that gets notified when the frame has been sent
+    void ping(Callback callback);
 
     /// Sends a MAX_DATA frame on this connection.
     ///
-    /// @param frame the frame to send
-    /// @param promise the [Promise.Invocable] that gets notified when the frame has been sent
-    void maxData(MaxDataFrame frame, Promise.Invocable<Session> promise);
+    /// @param callback the [Callback] that gets notified when the frame has been sent
+    void maxData(long maxData, Callback callback);
 
-    /// Closes this session with the given `CONNECTION_CLOSE` frame.
+    /// Closes this session with the given application error and reason.
     ///
-    /// Applications should use this method in conjunction with
-    /// [ConnectionCloseFrame#ConnectionCloseFrame(long, String)].
-    ///
-    /// Differently from [#disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)],
+    /// Differently from [#disconnect(long, String, Throwable, Callback)],
     /// this method performs close actions upwards, towards the application,
     /// that may perform additional actions such as writing to the network
     /// (for example, close frames for a protocol on top of QUIC).
     ///
     /// After finishing the upward actions,
-    /// [#disconnect(ConnectionCloseFrame, Throwable, Promise.Invocable)] should be
-    /// called to perform close actions downwards and eventually send
-    /// the QUIC close frame and finally disconnect at the network level,
-    /// if necessary.
+    /// [#disconnect(long, String, Throwable, Callback)] is called,
+    /// with the given application error and reason.
+    /// Applications may override the error and reason by calling themselves
+    /// [#disconnect(long, String, Throwable, Callback)] with different
+    /// parameters.
     ///
-    /// @param frame the frame carrying the error code and reason
-    /// @param promise the [Callback] that gets notified when the close is complete
-    void close(ConnectionCloseFrame frame, Promise.Invocable<Session> promise);
+    /// @param appError the application error code for the close
+    /// @param reason the reason for the close
+    /// @param callback the [Callback] that gets notified when the close is complete
+    void close(long appError, String reason, Callback callback);
 
-    /// Disconnects this session, with the given `CONNECTION_CLOSE`
-    /// and failure cause, if any.
+    /// Disconnects this session, with the given application error and reason.
     ///
-    /// Differently from [#close(ConnectionCloseFrame, Promise.Invocable)],
+    /// This method eventually sends a [ConnectionCloseFrame] of type `0x1D`.
+    ///
+    /// Differently from [#close(long, String, Callback)],
     /// this method performs disconnect actions downwards, towards the
-    /// network: typically cleanup actions and eventually sends the
-    /// given QUIC close frame and finally disconnect at the network level,
-    /// if necessary.
+    /// network: typically cleanup actions, sending the close frame
+    /// and finally disconnect at the network level, if necessary.
     ///
-    /// @param frame the frame carrying the error code and reason
     /// @param failure the failure which caused the disconnection, or `null`
-    /// @param promise the [Promise.Invocable] that gets notified when the disconnect is complete
-    void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<Session> promise);
+    /// @param callback the [Callback] that gets notified when the disconnect is complete
+    void disconnect(long appError, String reason, Throwable failure, Callback callback);
 
     /// @return the local [SocketAddress] associated with this session
     SocketAddress getLocalSocketAddress();
@@ -206,24 +200,6 @@ public interface Session
         /// @param frame the DATA_BLOCKED frame
         default void onDataBlocked(Session session, DataBlockedFrame frame)
         {
-        }
-
-        /// Callback method invoked when the idle timeout expires.
-        ///
-        /// @param session the QUIC session
-        /// @param failure the idle timeout failure
-        /// @return `true` to close the session, `false` to ignore the idle timeout
-        /// @see #getIdleTimeout()
-        // TODO: remove this method, as QUIC idle timeout cannot be ignored:
-        //  when they happen, they are fatal.
-        //  The solution is to not make them happen via a keep-alive mechanism
-        //  or by setting them to 0, and have the upper layer configured with
-        //  an idle timeout, which will then trigger the upper protocol close.
-        //  If QUIC detects an idle timeout, for the upper layer is a fatal failure,
-        //  and the upper layer cannot return "false" to indicate to ignore the idle timeout.
-        default boolean onIdleTimeout(Session session, TimeoutException failure)
-        {
-            return true;
         }
 
         /// Callback method invoked when a CONNECTION_CLOSE frame has been received.

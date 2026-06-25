@@ -23,7 +23,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -71,7 +70,7 @@ public abstract class QuicheConnection extends AbstractConnection
     @Override
     public abstract boolean onIdleExpired(TimeoutException timeoutException);
 
-    public abstract void disconnect(QuicheSession session, ConnectionCloseFrame frame, Throwable failure);
+    public abstract void disconnect(QuicheSession session, Throwable failure);
 
     private class FillableCallback implements Callback
     {

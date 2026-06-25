@@ -13,22 +13,19 @@
 
 package org.eclipse.jetty.quic.common;
 
-import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractStream implements Stream, CyclicTimeouts.Expirable
+public abstract class AbstractStream implements Stream
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractStream.class);
 
     private final long streamId;
     private final boolean local;
     private Stream.Listener listener;
-    private long idleTimeout;
-    private long expireNanoTime = Long.MAX_VALUE;
 
     protected AbstractStream(long streamId, boolean local)
     {
@@ -64,31 +61,6 @@ public abstract class AbstractStream implements Stream, CyclicTimeouts.Expirable
         this.listener = listener;
     }
 
-    public long getIdleTimeout()
-    {
-        return idleTimeout;
-    }
-
-    @Override
-    public void setIdleTimeout(long idleTimeout)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("setting idle timeout {} ms for {}", idleTimeout, this);
-        this.idleTimeout = idleTimeout;
-        notIdle();
-    }
-
-    protected void notIdle()
-    {
-        expireNanoTime = CyclicTimeouts.Expirable.calcExpireNanoTime(getIdleTimeout());
-    }
-
-    @Override
-    public long getExpireNanoTime()
-    {
-        return expireNanoTime;
-    }
-
     public void onNewStream(Frame.WithStreamId frame)
     {
         notifyNewStream(frame);
@@ -115,21 +87,6 @@ public abstract class AbstractStream implements Stream, CyclicTimeouts.Expirable
         {
             if (listener != null)
                 listener.onTerminated(this);
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("failure while notifying listener {}", listener, x);
-        }
-    }
-
-    protected void notifyFailure(Throwable failure)
-    {
-        Stream.Listener listener = getListener();
-        try
-        {
-            if (listener != null)
-                listener.onFailure(this, failure);
         }
         catch (Throwable x)
         {

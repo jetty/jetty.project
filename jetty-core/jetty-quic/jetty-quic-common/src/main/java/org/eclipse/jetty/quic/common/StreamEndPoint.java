@@ -20,7 +20,6 @@ import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -59,6 +57,7 @@ public class StreamEndPoint implements EndPoint
     private Connection connection;
     private Content.Chunk chunk;
     private Callback fillInterest;
+    private long idleTimeout;
 
     public StreamEndPoint(ProtocolSession protocolSession, Stream stream)
     {
@@ -109,13 +108,13 @@ public class StreamEndPoint implements EndPoint
     @Override
     public long getIdleTimeout()
     {
-        return stream.getIdleTimeout();
+        return idleTimeout;
     }
 
     @Override
     public void setIdleTimeout(long idleTimeout)
     {
-        stream.setIdleTimeout(idleTimeout);
+        this.idleTimeout = idleTimeout;
     }
 
     @Override
@@ -130,7 +129,7 @@ public class StreamEndPoint implements EndPoint
                 case CLOSING:
                     if (!writeState.compareAndSet(current, WriteState.CLOSED))
                         break;
-                    shutdownOutput(ErrorCode.NO_ERROR.code(), Promise.Invocable.noop());
+                    shutdownOutput(ErrorCode.NO_ERROR.code(), Callback.NOOP);
                     return;
                 case PENDING:
                     if (!writeState.compareAndSet(current, WriteState.CLOSING))
@@ -163,24 +162,24 @@ public class StreamEndPoint implements EndPoint
     {
         if (LOG.isDebugEnabled())
             LOG.debug("shutting down input with error 0x{} on {}", Long.toHexString(appError), this);
-        stream.stopSending(appError, Promise.Invocable.noop());
+        stream.stopSending(appError, Callback.NOOP);
     }
 
-    public void shutdownOutput(long appError, Promise.Invocable<StreamEndPoint> promise)
+    public void shutdownOutput(long appError, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("shutting down output with error 0x{} on {}", Long.toHexString(appError), this);
-        stream.reset(appError, Promise.Invocable.toPromise(promise, stream -> this));
+        stream.reset(appError, callback);
     }
 
     @Override
     public void close(Throwable failure)
     {
         // Implemented from EndPoint, must have blocking semantic.
-        try (Blocker.Promise<StreamEndPoint> promise = Blocker.promise())
+        try (Blocker.Callback callback = Blocker.callback())
         {
-            disconnect(ErrorCode.NO_ERROR.code(), failure, true, Promise.Invocable.from(() -> onClose(failure), promise));
-            promise.block();
+            disconnect(ErrorCode.NO_ERROR.code(), failure, true, Callback.from(() -> onClose(failure), callback));
+            callback.block();
         }
         catch (Throwable x)
         {
@@ -189,7 +188,7 @@ public class StreamEndPoint implements EndPoint
         }
     }
 
-    public void disconnect(long appError, Throwable failure, boolean disconnectStream, Promise.Invocable<StreamEndPoint> promise)
+    public void disconnect(long appError, Throwable failure, boolean disconnectStream, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with error 0x{} disconnectStream={} {} {}", Long.toHexString(appError), disconnectStream, this, String.valueOf(failure));
@@ -200,51 +199,18 @@ public class StreamEndPoint implements EndPoint
 
         if (!disconnectStream)
         {
-            promise.succeeded(this);
+            callback.succeeded();
             return;
         }
 
         // Propagate downwards.
-        stream.disconnect(appError, failure, Promise.Invocable.toPromise(promise, s -> this));
+        stream.disconnect(appError, failure, callback);
     }
 
     @Override
     public void onClose(Throwable failure)
     {
         getConnection().onClose(failure);
-    }
-
-    void onIdleTimeout(TimeoutException timeout, Promise.Invocable<Boolean> promise)
-    {
-        promise.succeeded(true);
-    }
-
-    void onFailure(Throwable failure)
-    {
-        Callback callback;
-        try (AutoLock ignored = lock.lock())
-        {
-            if (chunk == null)
-            {
-                chunk = Content.Chunk.from(failure);
-            }
-            else
-            {
-                // Keep EOF or existing failure, otherwise release and replace.
-                if (!chunk.isLast() || chunk.hasRemaining())
-                {
-                    chunk.release();
-                    chunk = Content.Chunk.from(failure);
-                }
-            }
-
-            callback = fillInterest;
-            fillInterest = null;
-        }
-        if (callback != null)
-            callback.failed(failure);
-        else
-            protocolSession.onStreamFailure(stream.getId(), failure);
     }
 
     @Override
@@ -444,10 +410,10 @@ public class StreamEndPoint implements EndPoint
 
                         RetainableByteBuffer.Mutable buffer = new RetainableByteBuffer.DynamicCapacity(protocolSession.getByteBufferPool(), true, -1, 0, 0);
                         buffers.forEach(buffer::add);
-                        stream.data(last, buffer, new Promise.Invocable.Abstract<>(callback.getInvocationType())
+                        stream.data(last, buffer, new Callback()
                         {
                             @Override
-                            public void succeeded(Stream result)
+                            public void succeeded()
                             {
                                 buffer.release();
                                 writeSuccess(callback);
@@ -458,6 +424,12 @@ public class StreamEndPoint implements EndPoint
                             {
                                 buffer.release();
                                 writeFailure(x, callback);
+                            }
+
+                            @Override
+                            public InvocationType getInvocationType()
+                            {
+                                return callback.getInvocationType();
                             }
                         });
                     }

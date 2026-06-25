@@ -31,7 +31,6 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     private int outputBufferSize = 2048;
     private boolean useOutputDirectByteBuffers = true;
     private int minInputBufferSpace = 1500;
-    private long streamIdleTimeout;
     private long sessionMaxData;
     private long biLocalStreamMaxData;
     private long biRemoteStreamMaxData;
@@ -112,16 +111,6 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     public void setMinInputBufferSpace(int minInputBufferSpace)
     {
         this.minInputBufferSpace = minInputBufferSpace;
-    }
-
-    public long getStreamIdleTimeout()
-    {
-        return streamIdleTimeout;
-    }
-
-    public void setStreamIdleTimeout(long streamIdleTimeout)
-    {
-        this.streamIdleTimeout = streamIdleTimeout;
     }
 
     /// The session max data sent by a local peer to indicate the max data it is willing to receive.

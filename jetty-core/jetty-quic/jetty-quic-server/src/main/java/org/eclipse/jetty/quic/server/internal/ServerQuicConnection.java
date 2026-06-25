@@ -34,7 +34,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
-import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.CongestionController;
 import org.eclipse.jetty.quic.common.FlowController;
@@ -57,7 +56,6 @@ import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable.Task;
@@ -325,10 +323,10 @@ public class ServerQuicConnection extends QuicConnection
     public void close()
     {
         // This method has blocking semantic.
-        try (Blocker.Promise<Void> promise = Blocker.promise())
+        try (Blocker.Callback callback = Blocker.callback())
         {
-            close(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "close", 0x00), promise);
-            promise.block();
+            close(ErrorCode.NO_ERROR.code(), "close", callback);
+            callback.block();
         }
         catch (IOException x)
         {
@@ -336,11 +334,11 @@ public class ServerQuicConnection extends QuicConnection
         }
     }
 
-    private void close(ConnectionCloseFrame frame, Promise.Invocable<Void> promise)
+    private void close(long appError, String reason, Callback callback)
     {
         if (!closed.compareAndSet(false, true))
         {
-            promise.succeeded(null);
+            callback.succeeded();
             return;
         }
 
@@ -351,11 +349,10 @@ public class ServerQuicConnection extends QuicConnection
         for (ServerQuicSession session : sessions.values())
         {
             CompletableFuture<Session> completable = new CompletableFuture<>();
-            session.close(frame, Promise.Invocable.toPromise(completable));
+            session.close(appError, reason, Callback.from(completable));
             closes.add(completable);
         }
-        CompletableFuture.allOf(closes.toArray(CompletableFuture[]::new))
-            .whenComplete(Promise.Invocable.toBiConsumer(promise));
+        callback.completeWith(CompletableFuture.allOf(closes.toArray(CompletableFuture[]::new)));
     }
 
     @Override
@@ -377,10 +374,9 @@ public class ServerQuicConnection extends QuicConnection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing connection {}", this, failure);
-        ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "failure", 0x00);
         for (ServerQuicSession session : sessions.values())
         {
-            session.disconnect(frame, failure, Promise.Invocable.noop());
+            session.disconnect(ErrorCode.INTERNAL_ERROR.code(), "failure", 0x00, failure, Callback.NOOP);
         }
     }
 

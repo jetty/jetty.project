@@ -28,7 +28,6 @@ import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -136,7 +135,7 @@ public class ControlFlusher extends IteratingCallback
 
         // Cannot continue without the control stream, close the session.
         ConnectionCloseFrame frame = new ConnectionCloseFrame(HTTP3ErrorCode.INTERNAL_ERROR.code(), "control_stream_failure");
-        endPoint.getProtocolSession().disconnect(frame, failure, Promise.Invocable.noop());
+        endPoint.getProtocolSession().disconnect(frame, failure, NOOP);
     }
 
     @Override

@@ -24,6 +24,7 @@ module org.eclipse.jetty.quic.common
     exports org.eclipse.jetty.quic.common.frames;
     exports org.eclipse.jetty.quic.common.packets;
     exports org.eclipse.jetty.quic.common.tls;
+    exports org.eclipse.jetty.quic.common.tls.ext;
     exports org.eclipse.jetty.quic.common.tls.parser;
     exports org.eclipse.jetty.quic.common.tls.generator;
 }

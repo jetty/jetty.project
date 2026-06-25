@@ -16,7 +16,6 @@ package org.eclipse.jetty.quic.client;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -31,8 +30,9 @@ import org.eclipse.jetty.quic.client.internal.QuicClientConnectionFactory;
 import org.eclipse.jetty.quic.common.AbstractSession;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.ProtocolStreamListener;
+import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.util.ErrorCode;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,7 +107,7 @@ public class QuicTransport extends Transport.Wrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("could not create ProtocolSession", x);
-                session.disconnect(new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "invalid_protocol"), x, Promise.Invocable.noop());
+                ((QuicSession)session).disconnect(ErrorCode.INTERNAL_ERROR.code(), "invalid_protocol", 0x00, x, Callback.NOOP);
             }
         }
 
@@ -121,15 +121,6 @@ public class QuicTransport extends Transport.Wrapper
         }
 
         @Override
-        public boolean onIdleTimeout(Session session, TimeoutException failure)
-        {
-            ProtocolSession pSession = protocolSession.get();
-            if (pSession != null)
-                return pSession.onIdleTimeout(failure);
-            return true;
-        }
-
-        @Override
         public CompletableFuture<Session> onLocalShutdown(Session session)
         {
             ProtocolSession pSession = protocolSession.get();
@@ -139,13 +130,13 @@ public class QuicTransport extends Transport.Wrapper
         }
 
         @Override
-        public void onLocalClose(Session session, ConnectionCloseFrame frame, Promise.Invocable<Session> promise)
+        public void onLocalClose(Session session, long appError, String reason, Callback callback)
         {
             ProtocolSession pSession = protocolSession.get();
             if (pSession != null)
-                pSession.close(frame, Promise.Invocable.toPromise(promise, ps -> session));
+                pSession.close(appError, reason, callback);
             else
-                promise.succeeded(session);
+                callback.succeeded();
         }
 
         @Override

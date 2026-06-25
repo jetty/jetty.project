@@ -22,14 +22,13 @@ import javax.net.ssl.SSLHandshakeException;
 
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.quic.api.Session;
-import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.common.StreamId;
 import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.QuicheSession;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -128,8 +127,7 @@ public class ServerQuicheSession extends QuicheSession implements CyclicTimeouts
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("process failure for {}", this, x);
-            ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.CONNECTION_REFUSED_ERROR.code(), "session_failure");
-            disconnect(frame, x, Promise.Invocable.noop());
+            disconnect(ErrorCode.CONNECTION_REFUSED_ERROR.code(), "session_failure", x, Callback.NOOP);
             return null;
         }
     }
@@ -138,8 +136,8 @@ public class ServerQuicheSession extends QuicheSession implements CyclicTimeouts
     {
         if (getConnection().getSslContextFactory().getNeedClientAuth() && getPeerCertificates() == null)
         {
-            ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.CONNECTION_REFUSED_ERROR.code(), "missing_peer_certificates");
-            disconnect(frame, new SSLHandshakeException(frame.reason()), Promise.Invocable.noop());
+            String reason = "missing_peer_certificates";
+            disconnect(ErrorCode.CONNECTION_REFUSED_ERROR.code(), reason, new SSLHandshakeException(reason), Callback.NOOP);
             return false;
         }
         return true;

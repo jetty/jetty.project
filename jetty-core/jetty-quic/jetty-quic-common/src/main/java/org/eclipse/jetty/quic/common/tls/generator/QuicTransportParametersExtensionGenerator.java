@@ -15,8 +15,8 @@ package org.eclipse.jetty.quic.common.tls.generator;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
-import org.eclipse.jetty.quic.api.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.TransportParametersGenerator;
+import org.eclipse.jetty.quic.common.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.tls.common.generator.ExtensionGenerator;
 import org.eclipse.jetty.tls.ext.Extension;
 

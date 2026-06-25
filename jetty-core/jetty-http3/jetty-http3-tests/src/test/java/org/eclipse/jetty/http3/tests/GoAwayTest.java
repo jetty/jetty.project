@@ -37,11 +37,11 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.common.SessionContainer;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -763,8 +763,7 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         // Issue a network disconnection.
-        ConnectionCloseFrame disconnect = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "disconnect");
-        clientSession.getProtocolSession().getSession().disconnect(disconnect, null, Promise.Invocable.noop());
+        clientSession.getProtocolSession().getSession().disconnect(ErrorCode.INTERNAL_ERROR.code(), "disconnect", null, Callback.NOOP);
 
         assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
 
@@ -806,8 +805,7 @@ public class GoAwayTest extends AbstractClientServerTest
             public void onGoAway(Session session, GoAwayFrame frame)
             {
                 // Reply to the graceful GOAWAY from the server with a network disconnection.
-                ConnectionCloseFrame disconnect = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "disconnect");
-                ((HTTP3Session)session).getProtocolSession().getSession().disconnect(disconnect, null, Promise.Invocable.noop());
+                ((HTTP3Session)session).getProtocolSession().getSession().disconnect(ErrorCode.INTERNAL_ERROR.code(), "disconnect", null, Callback.NOOP);
             }
         });
 
@@ -1184,8 +1182,7 @@ public class GoAwayTest extends AbstractClientServerTest
         // Neither the client nor the server are finishing
         // the pending stream, so force the disconnect on the server.
         HTTP3Session serverSession = (HTTP3Session)serverSessionRef.get();
-        ConnectionCloseFrame disconnect = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "disconnect");
-        serverSession.getProtocolSession().getSession().disconnect(disconnect, null, Promise.Invocable.noop());
+        serverSession.getProtocolSession().getSession().disconnect(ErrorCode.INTERNAL_ERROR.code(), "disconnect", null, Callback.NOOP);
 
         assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientDisconnectLatch.await(5, TimeUnit.SECONDS));

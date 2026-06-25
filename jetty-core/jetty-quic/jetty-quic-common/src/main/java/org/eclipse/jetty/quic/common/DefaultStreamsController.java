@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 
 /// The default implementation for the controller of the maximum number of streams
 /// of a session.
@@ -64,7 +64,7 @@ public class DefaultStreamsController implements StreamsController
         boolean needsMore = newMax > max;
         boolean hasEnough = max - opened > budget / 2;
         if (needsMore && !hasEnough)
-            session.maxStreams(new MaxStreamsFrame(newMax, bidirectional), Promise.Invocable.noop());
+            session.maxStreams(newMax, bidirectional, Callback.NOOP);
     }
 
     public static class Factory implements StreamsController.Factory

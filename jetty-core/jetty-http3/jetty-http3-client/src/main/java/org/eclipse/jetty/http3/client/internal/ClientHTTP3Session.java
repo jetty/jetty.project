@@ -234,12 +234,12 @@ public class ClientHTTP3Session extends ClientProtocolSession
     }
 
     @Override
-    public void close(ConnectionCloseFrame frame, Promise.Invocable<ProtocolSession> promise)
+    public void close(long appError, String reason, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("session closed locally {} {}", frame, this);
-        // Propagate the close inwards.
-        session.close(frame.errorCode(), frame.reason(), Promise.Invocable.toPromise(promise, s -> this));
+            LOG.debug("session closed locally {}/{} {}", appError, reason, this);
+        // Propagate the close upwards.
+        session.close(appError, reason, callback);
     }
 
     @Override
@@ -247,7 +247,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("session closed remotely {} {}", frame, this);
-        // Propagate the close inwards.
+        // Propagate the close upwards.
         session.onClose(frame.errorCode(), frame.reason());
     }
 
@@ -289,7 +289,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
     @Override
     public CompletableFuture<ProtocolSession> shutdown()
     {
-        // Propagate inwards.
+        // Propagate upwards.
         return session.shutdown().thenApply(s -> this);
     }
 

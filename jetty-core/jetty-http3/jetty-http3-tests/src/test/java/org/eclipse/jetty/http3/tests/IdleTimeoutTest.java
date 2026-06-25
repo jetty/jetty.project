@@ -34,7 +34,6 @@ import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.QuicheStream;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -128,10 +128,10 @@ public class IdleTimeoutTest
                             }
 
                             @Override
-                            public void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<org.eclipse.jetty.quic.api.Session> promise)
+                            public void disconnect(long appError, String reason, Throwable failure, Callback callback)
                             {
                                 closeLatch.countDown();
-                                super.disconnect(frame, failure, promise);
+                                super.disconnect(appError, reason, failure, callback);
                             }
                         };
                     }

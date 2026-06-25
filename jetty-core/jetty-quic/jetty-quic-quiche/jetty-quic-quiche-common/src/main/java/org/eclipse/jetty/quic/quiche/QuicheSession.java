@@ -24,7 +24,6 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -35,21 +34,18 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeout;
-import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
-import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
-import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
 import org.eclipse.jetty.quic.common.AbstractSession;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -80,7 +76,6 @@ public abstract class QuicheSession extends AbstractSession
     private final QuicheConnection connection;
     private final SocketAddress localAddress;
     private final SocketAddress remoteAddress;
-    private final StreamTimeouts streamTimeouts;
     private final Flusher flusher;
     private final StreamsProducer producer;
     private final AdaptiveExecutionStrategy strategy;
@@ -97,7 +92,6 @@ public abstract class QuicheSession extends AbstractSession
         this.connection = connection;
         this.localAddress = localAddress;
         this.remoteAddress = remoteAddress;
-        this.streamTimeouts = new StreamTimeouts(scheduler);
         this.flusher = new Flusher(scheduler);
         this.producer = new StreamsProducer();
         this.strategy = new AdaptiveExecutionStrategy(producer, executor);
@@ -143,8 +137,6 @@ public abstract class QuicheSession extends AbstractSession
         QuicheStream stream = new QuicheStream(this, streamId, true);
         if (streams.putIfAbsent(streamId, stream) == null)
         {
-            stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
-
             if (LOG.isDebugEnabled())
                 LOG.debug("created local {} on {}", stream, this);
 
@@ -159,8 +151,6 @@ public abstract class QuicheSession extends AbstractSession
 
         if (streams.putIfAbsent(streamId, stream) != null)
             throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "duplicate_remote_stream");
-
-        stream.setIdleTimeout(getQuicConfiguration().getStreamIdleTimeout());
 
         // The frame is not available from Quiche.
         Stream.Listener listener = notifyNewStream(null);
@@ -194,47 +184,47 @@ public abstract class QuicheSession extends AbstractSession
     }
 
     @Override
-    public void maxStreams(MaxStreamsFrame frame, Promise.Invocable<Session> promise)
+    public void maxStreams(long maxStreams, boolean bidirectional, Callback callback)
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void ping(Promise.Invocable<Session> promise)
+    public void ping(Callback callback)
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void maxData(MaxDataFrame frame, Promise.Invocable<Session> promise)
+    public void maxData(long maxData, Callback callback)
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void disconnect(ConnectionCloseFrame frame, Throwable failure, Promise.Invocable<Session> promise)
+    public void disconnect(long appError, String reason, Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("disconnecting {} {}", frame, this, failure);
+            LOG.debug("disconnecting {}/{} {}", appError, reason, this, failure);
 
         // Terminate all the streams.
         // This clears the streams map of this class.
         for (QuicheStream stream : streams.values())
         {
             // This is a session failure, there is no need to stop/reset the stream.
-            stream.disconnect(false, frame.errorCode(), failure, Promise.Invocable.noop());
+            stream.disconnect(false, appError, failure, Callback.NOOP);
         }
 
-        quiche.close(frame.errorCode(), frame.reason());
+        quiche.close(appError, reason);
         flush();
 
-        Promise.completeWith(promise, flusher.disconnect()
+        callback.completeWith(flusher.disconnect()
             .whenComplete((r, x) ->
             {
                 LifeCycle.stop(this);
                 emitDisconnect();
                 // Propagate downwards.
-                getConnection().disconnect(this, frame, failure);
+                getConnection().disconnect(this, failure);
             }));
     }
 
@@ -272,12 +262,7 @@ public abstract class QuicheSession extends AbstractSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout {} ms expired for {}", getIdleTimeout(), this);
-        return notifyIdleTimeout(timeout);
-    }
-
-    void scheduleIdleTimeout(QuicheStream stream)
-    {
-        streamTimeouts.schedule(stream);
+        return true;
     }
 
     public QuicheConnectionId getConnectionId()
@@ -418,17 +403,17 @@ public abstract class QuicheSession extends AbstractSession
         }
     }
 
-    void shutdownStream(QuicheStream stream, boolean writeSide, long appErrorCode, Promise.Invocable<Stream> promise)
+    void shutdownStream(QuicheStream stream, boolean writeSide, long appErrorCode, Callback callback)
     {
         try
         {
             quiche.shutdownStream(stream.getId(), writeSide, appErrorCode);
             flush();
-            promise.succeeded(stream);
+            callback.succeeded();
         }
         catch (Throwable x)
         {
-            promise.failed(x);
+            callback.failed(x);
         }
     }
 
@@ -450,29 +435,6 @@ public abstract class QuicheSession extends AbstractSession
             return;
         opened = true;
         emitOpen();
-    }
-
-    private class StreamTimeouts extends CyclicTimeouts<QuicheStream>
-    {
-        private StreamTimeouts(Scheduler scheduler)
-        {
-            super(scheduler);
-        }
-
-        @Override
-        protected Iterator<QuicheStream> iterator()
-        {
-            return streams.values().iterator();
-        }
-
-        @Override
-        protected boolean onExpired(QuicheStream stream)
-        {
-            stream.onIdleTimeout(new TimeoutException("Idle timeout " + stream.getIdleTimeout() + " ms elapsed"));
-            // The implementation of the Iterator returned above does not support
-            // removal, but the stream will be removed by stream.onIdleTimeout().
-            return false;
-        }
     }
 
     private class Flusher extends IteratingCallback

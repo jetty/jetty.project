@@ -43,7 +43,6 @@ import org.eclipse.jetty.quic.server.ServerProtocolSession;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -260,10 +259,12 @@ public class ServerHTTP3Session extends ServerProtocolSession
     }
 
     @Override
-    public void close(ConnectionCloseFrame frame, Promise.Invocable<ProtocolSession> promise)
+    public void close(long appError, String reason, Callback callback)
     {
-        // Propagate the close inwards.
-        session.close(frame.errorCode(), frame.reason(), Promise.Invocable.toPromise(promise, s -> this));
+        if (LOG.isDebugEnabled())
+            LOG.debug("session closed locally {}/{} {}", appError, reason, this);
+        // Propagate the close upwards.
+        session.close(appError, reason, callback);
     }
 
     private void onFailure(long error, String reason, Throwable failure)
@@ -274,7 +275,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
     @Override
     public CompletableFuture<ProtocolSession> shutdown()
     {
-        // Propagate inwards.
+        // Propagate upwards.
         return session.shutdown().thenApply(s -> this);
     }
 
@@ -283,7 +284,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("session closed remotely {} {}", frame, this);
-        // Forward the close inwards.
+        // Forward the close upwards.
         session.onClose(frame.errorCode(), frame.reason());
     }
 

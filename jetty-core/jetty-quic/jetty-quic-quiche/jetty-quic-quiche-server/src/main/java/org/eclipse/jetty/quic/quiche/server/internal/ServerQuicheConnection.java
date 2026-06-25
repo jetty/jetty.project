@@ -33,7 +33,6 @@ import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
-import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.quiche.PemPaths;
 import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
@@ -47,7 +46,6 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -323,10 +321,10 @@ public class ServerQuicheConnection extends QuicheConnection
     public void close()
     {
         // This method has blocking semantic.
-        try (Blocker.Promise<Void> promise = Blocker.promise())
+        try (Blocker.Callback callback = Blocker.callback())
         {
-            close(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "close"), promise);
-            promise.block();
+            close(ErrorCode.NO_ERROR.code(), "close", callback);
+            callback.block();
         }
         catch (IOException x)
         {
@@ -334,11 +332,11 @@ public class ServerQuicheConnection extends QuicheConnection
         }
     }
 
-    private void close(ConnectionCloseFrame frame, Promise.Invocable<Void> promise)
+    private void close(long appError, String reason, Callback callback)
     {
         if (!closed.compareAndSet(false, true))
         {
-            promise.succeeded(null);
+            callback.succeeded();
             return;
         }
 
@@ -349,18 +347,17 @@ public class ServerQuicheConnection extends QuicheConnection
         for (ServerQuicheSession session : sessions.values())
         {
             CompletableFuture<Session> completable = new CompletableFuture<>();
-            session.close(frame, Promise.Invocable.toPromise(completable));
+            session.close(appError, reason, Callback.from(completable));
             closes.add(completable);
         }
-        CompletableFuture.allOf(closes.toArray(CompletableFuture[]::new))
-            .whenComplete(Promise.Invocable.toBiConsumer(promise));
+        callback.completeWith(CompletableFuture.allOf(closes.toArray(CompletableFuture[]::new)));
     }
 
     @Override
-    public void disconnect(QuicheSession session, ConnectionCloseFrame frame, Throwable failure)
+    public void disconnect(QuicheSession session, Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("disconnect {} {} on {}", frame, session, this);
+            LOG.debug("disconnect {} on {}", session, this);
         QuicheConnectionId connectionId = session.getConnectionId();
         if (connectionId != null)
             sessions.remove(connectionId);
@@ -372,10 +369,9 @@ public class ServerQuicheConnection extends QuicheConnection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing connection {}", this, failure);
-        ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "failure");
         for (ServerQuicheSession session : sessions.values())
         {
-            session.disconnect(frame, failure, Promise.Invocable.noop());
+            session.disconnect(ErrorCode.INTERNAL_ERROR.code(), "failure", failure, Callback.NOOP);
         }
     }
 

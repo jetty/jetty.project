@@ -25,7 +25,6 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
 import org.eclipse.jetty.quic.common.CongestionController;
@@ -41,7 +40,6 @@ import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,11 +185,10 @@ public class ClientQuicConnection extends QuicConnection implements Callback
         if (quicSession != null)
         {
             // This method has blocking semantic.
-            try (Blocker.Promise<Void> blocker = Blocker.promise())
+            try (Blocker.Callback blocker = Blocker.callback())
             {
-                ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "close", 0x00);
                 // Propagate upwards.
-                quicSession.close(frame, Promise.Invocable.toPromise(blocker, _ -> null));
+                quicSession.close(ErrorCode.NO_ERROR.code(), "close", blocker);
                 blocker.block();
             }
             catch (IOException x)
@@ -219,7 +216,6 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing connection {}", this, failure);
-        ConnectionCloseFrame frame = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "failure");
-        session.disconnect(frame, failure, Promise.Invocable.noop());
+        session.disconnect(ErrorCode.INTERNAL_ERROR.code(), "failure", 0x00, failure, NOOP);
     }
 }

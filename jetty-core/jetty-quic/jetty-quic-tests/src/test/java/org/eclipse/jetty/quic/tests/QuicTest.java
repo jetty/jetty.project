@@ -32,6 +32,7 @@ import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStream;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -133,10 +134,10 @@ public class QuicTest extends AbstractQuicTest
                             stream.demand();
                             return;
                         }
-                        stream.data(chunk.isLast(), chunk, Promise.Invocable.from(NON_BLOCKING, (s, x) ->
+                        stream.data(chunk.isLast(), chunk, Callback.from(NON_BLOCKING, x ->
                         {
                             if (x == null && !chunk.isLast())
-                                s.demand();
+                                stream.demand();
                         }));
                     }
                 };
@@ -175,7 +176,7 @@ public class QuicTest extends AbstractQuicTest
 
         byte[] bytes = new byte[length];
         ThreadLocalRandom.current().nextBytes(bytes);
-        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.wrap(bytes)), Promise.Invocable.noop());
+        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.wrap(bytes)), Callback.NOOP);
 
         stream.demand();
 
@@ -201,7 +202,7 @@ public class QuicTest extends AbstractQuicTest
                     @Override
                     public void onNewStream(Stream stream, Frame.WithStreamId frame)
                     {
-                        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.allocate(length)), Promise.Invocable.noop());
+                        stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.allocate(length)), Callback.NOOP);
                     }
                 };
             }
@@ -243,7 +244,7 @@ public class QuicTest extends AbstractQuicTest
                 }
             }
         });
-        clientStream.data(true, RetainableByteBuffer.EMPTY, Promise.Invocable.noop());
+        clientStream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
         clientStream.demand();
 
         assertTrue(clientDataLatch.await(15, SECONDS));
@@ -285,7 +286,7 @@ public class QuicTest extends AbstractQuicTest
                             if (chunk.isLast())
                                 break;
                         }
-                        stream.data(true, RetainableByteBuffer.EMPTY, Promise.Invocable.noop());
+                        stream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
                     }
                 };
             }
@@ -318,7 +319,7 @@ public class QuicTest extends AbstractQuicTest
             }
         });
 
-        clientStream.data(true, RetainableByteBuffer.EMPTY, Promise.Invocable.noop());
+        clientStream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
         clientStream.demand();
 
         assertTrue(clientDataLatch.await(5, SECONDS));
@@ -330,12 +331,12 @@ public class QuicTest extends AbstractQuicTest
         Thread.sleep(500);
 
         // Send another StreamFrame, simulating that the server receives a re-transmission that's not necessary.
-        ((QuicSession)clientSession).data((QuicStream)clientStream, new StreamFrame(clientStream.getId(), RetainableByteBuffer.EMPTY, false), Promise.Invocable.noop());
+        ((QuicSession)clientSession).data((QuicStream)clientStream, new StreamFrame(clientStream.getId(), RetainableByteBuffer.EMPTY, false), Callback.NOOP);
         // Wait for the frame to reach the server, but it should be discarded.
         await().during(1, SECONDS).atMost(5, SECONDS).untilAsserted(() -> assertThat(serverSession.getStreams(), empty()));
 
         // Send a StreamFrame from the server, simulating a re-transmission.
-        ((QuicSession)serverSession).data((QuicStream)serverStream, new StreamFrame(clientStream.getId(), RetainableByteBuffer.EMPTY, false), Promise.Invocable.noop());
+        ((QuicSession)serverSession).data((QuicStream)serverStream, new StreamFrame(clientStream.getId(), RetainableByteBuffer.EMPTY, false), Callback.NOOP);
         // Wait for the frame to reach the client, but it should be discarded.
         await().during(1, SECONDS).atMost(5, SECONDS).untilAsserted(() -> assertThat(clientSession.getStreams(), empty()));
     }

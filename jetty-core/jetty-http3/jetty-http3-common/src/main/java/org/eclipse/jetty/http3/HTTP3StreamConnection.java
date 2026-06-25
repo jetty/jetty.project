@@ -30,7 +30,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -393,13 +392,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         getEndPoint().shutdownInput(HTTP3ErrorCode.NO_ERROR.code());
     }
 
-    void disconnect(long appErrorCode, Throwable failure, Promise.Invocable<StreamEndPoint> promise)
+    void disconnect(long appErrorCode, Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with error 0x{} {} {}", Long.toHexString(appErrorCode), this, String.valueOf(failure));
         tryReleaseData(true);
-        // Propagate outwards.
-        getEndPoint().disconnect(appErrorCode, failure, true, promise);
+        // Propagate downwards.
+        getEndPoint().disconnect(appErrorCode, failure, true, callback);
     }
 
     private void tryReleaseData(boolean force)

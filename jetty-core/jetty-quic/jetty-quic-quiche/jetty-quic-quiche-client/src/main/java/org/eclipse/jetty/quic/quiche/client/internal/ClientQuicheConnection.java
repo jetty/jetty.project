@@ -32,7 +32,6 @@ import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
-import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.quiche.PemPaths;
 import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
@@ -264,10 +263,10 @@ public class ClientQuicheConnection extends QuicheConnection
     public void close()
     {
         // This method has blocking semantic.
-        try (Blocker.Promise<Session> promise = Blocker.promise())
+        try (Blocker.Callback callback = Blocker.callback())
         {
-            close(new ConnectionCloseFrame(ErrorCode.NO_ERROR.code(), "close"), promise);
-            promise.block();
+            close(ErrorCode.NO_ERROR.code(), "close", callback);
+            callback.block();
         }
         catch (IOException x)
         {
@@ -275,11 +274,11 @@ public class ClientQuicheConnection extends QuicheConnection
         }
     }
 
-    private void close(ConnectionCloseFrame frame, Promise.Invocable<Session> promise)
+    private void close(long appError, String reason, Callback callback)
     {
         if (!closed.compareAndSet(false, true))
         {
-            promise.succeeded(session);
+            callback.succeeded();
             return;
         }
 
@@ -287,11 +286,11 @@ public class ClientQuicheConnection extends QuicheConnection
             LOG.debug("closing {}", this);
 
         // Propagate the close upwards.
-        session.close(frame, promise);
+        session.close(appError, reason, callback);
     }
 
     @Override
-    public void disconnect(QuicheSession session, ConnectionCloseFrame frame, Throwable failure)
+    public void disconnect(QuicheSession session, Throwable failure)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting {}", this);
@@ -301,7 +300,7 @@ public class ClientQuicheConnection extends QuicheConnection
 
     private void fail(long error, String reason, Throwable failure)
     {
-        disconnect(session, new ConnectionCloseFrame(error, reason), failure);
+        disconnect(session, failure);
         Promise<?> promise = (Promise<?>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
         if (promise != null)
             promise.failed(failure);

@@ -33,11 +33,13 @@ import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStream;
 import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -91,8 +93,7 @@ public class FlowControlTest extends AbstractQuicTest
                             chunk.release();
                             if (chunk.isLast())
                             {
-                                Promise.Invocable<Stream> promise = Promise.Invocable.from(Promise.Invocable.noop(), serverDataLatch::countDown);
-                                stream.reset(ErrorCode.NO_ERROR.code(), promise);
+                                stream.reset(ErrorCode.NO_ERROR.code(), Callback.from(NON_BLOCKING, serverDataLatch::countDown));
                                 return;
                             }
                         }
@@ -134,7 +135,7 @@ public class FlowControlTest extends AbstractQuicTest
         long totalData = maxData + excessData;
         ByteBuffer byteBuffer = ByteBuffer.allocate(maxData + excessData);
         CompletableFuture<Stream> streamFuture = new  CompletableFuture<>();
-        clientStream.data(true, RetainableByteBuffer.wrap(byteBuffer), Promise.Invocable.toPromise(streamFuture));
+        clientStream.data(true, RetainableByteBuffer.wrap(byteBuffer), Callback.from(streamFuture));
         await().during(1, SECONDS).atMost(5, SECONDS).until(() -> !streamFuture.isDone());
 
         // The client must send a DATA_BLOCKED frame to the server.
@@ -207,8 +208,7 @@ public class FlowControlTest extends AbstractQuicTest
                             chunk.release();
                             if (chunk.isLast())
                             {
-                                Promise.Invocable<Stream> promise = Promise.Invocable.from(Promise.Invocable.noop(), serverDataLatch::countDown);
-                                stream.data(true, RetainableByteBuffer.EMPTY, promise);
+                                stream.data(true, RetainableByteBuffer.EMPTY, Callback.from(NON_BLOCKING, serverDataLatch::countDown));
                                 return;
                             }
                         }
@@ -244,13 +244,13 @@ public class FlowControlTest extends AbstractQuicTest
         int chunk1 = 300;
         ByteBuffer byteBuffer1 = ByteBuffer.allocate(chunk1);
         CompletableFuture<Stream> streamFuture1 = new  CompletableFuture<>();
-        clientStream1.data(false, RetainableByteBuffer.wrap(byteBuffer1), Promise.Invocable.toPromise(streamFuture1));
+        clientStream1.data(false, RetainableByteBuffer.wrap(byteBuffer1), Callback.from(streamFuture1));
         streamFuture1.get(5, SECONDS);
 
         int chunk2 = maxData - chunk1;
         ByteBuffer byteBuffer2 = ByteBuffer.allocate(chunk2);
         CompletableFuture<Stream> streamFuture2 = new  CompletableFuture<>();
-        clientStream2.data(false, RetainableByteBuffer.wrap(byteBuffer2), Promise.Invocable.toPromise(streamFuture2));
+        clientStream2.data(false, RetainableByteBuffer.wrap(byteBuffer2), Callback.from(streamFuture2));
         streamFuture2.get(5, SECONDS);
 
         // Verify that the session is flow control stalled.
@@ -261,13 +261,13 @@ public class FlowControlTest extends AbstractQuicTest
         int excess1 = 30;
         ByteBuffer byteBuffer3 = ByteBuffer.allocate(excess1);
         CompletableFuture<Stream> streamFuture3 = new  CompletableFuture<>();
-        clientStream1.data(true, RetainableByteBuffer.wrap(byteBuffer3), Promise.Invocable.toPromise(streamFuture3));
+        clientStream1.data(true, RetainableByteBuffer.wrap(byteBuffer3), Callback.from(streamFuture3));
         await().during(1, SECONDS).atMost(5, SECONDS).until(() -> !streamFuture3.isDone());
 
         int excess2 = 20;
         ByteBuffer byteBuffer4 = ByteBuffer.allocate(excess2);
         CompletableFuture<Stream> streamFuture4 = new  CompletableFuture<>();
-        clientStream2.data(true, RetainableByteBuffer.wrap(byteBuffer4), Promise.Invocable.toPromise(streamFuture4));
+        clientStream2.data(true, RetainableByteBuffer.wrap(byteBuffer4), Callback.from(streamFuture4));
         await().during(1, SECONDS).atMost(5, SECONDS).until(() -> !streamFuture4.isDone());
 
         // The client must send only 1 DATA_BLOCKED frame to the server.
@@ -347,8 +347,7 @@ public class FlowControlTest extends AbstractQuicTest
                             chunk.release();
                             if (chunk.isLast())
                             {
-                                Promise.Invocable<Stream> promise = Promise.Invocable.from(Promise.Invocable.noop(), serverDataLatch::countDown);
-                                stream.reset(ErrorCode.NO_ERROR.code(), promise);
+                                stream.reset(ErrorCode.NO_ERROR.code(), Callback.from(NON_BLOCKING, serverDataLatch::countDown));
                                 return;
                             }
                         }
@@ -377,7 +376,7 @@ public class FlowControlTest extends AbstractQuicTest
         long totalData = maxData + excessData;
         ByteBuffer byteBuffer = ByteBuffer.allocate(maxData + excessData);
         CompletableFuture<Stream> streamFuture = new  CompletableFuture<>();
-        clientStream.data(true, RetainableByteBuffer.wrap(byteBuffer), Promise.Invocable.toPromise(streamFuture));
+        clientStream.data(true, RetainableByteBuffer.wrap(byteBuffer), Callback.from(streamFuture));
         await().during(1, SECONDS).atMost(5, SECONDS).until(() -> !streamFuture.isDone());
 
         // The client must send a DATA_BLOCKED frame to the server.

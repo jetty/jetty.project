@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.api.tls.ext;
+package org.eclipse.jetty.quic.common.tls.ext;
 
 import java.util.Objects;
 

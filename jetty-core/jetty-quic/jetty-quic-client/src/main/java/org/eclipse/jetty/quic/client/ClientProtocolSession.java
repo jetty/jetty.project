@@ -27,7 +27,7 @@ import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.ProtocolStreamListener;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.util.ErrorCode;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +64,7 @@ public class ClientProtocolSession extends ProtocolSession
             if (LOG.isDebugEnabled())
                 LOG.debug("could not create stream", x);
             ConnectionCloseFrame disconnect = new ConnectionCloseFrame(ErrorCode.INTERNAL_ERROR.code(), "start_failure");
-            disconnect(disconnect, x, Promise.Invocable.noop());
+            disconnect(disconnect, x, Callback.NOOP);
         }
     }
 
