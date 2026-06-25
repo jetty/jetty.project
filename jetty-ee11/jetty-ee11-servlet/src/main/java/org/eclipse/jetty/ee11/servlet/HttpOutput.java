@@ -609,26 +609,28 @@ public class HttpOutput extends ServletOutputStream
         // Do not call _writeBlocker.callback() from within a lock as it itself also takes a lock.
         Blocker.Callback blocker = acquireBlocker ? _writeBlocker.callback() : null;
 
+        boolean releaseBlocker = false;
         try (AutoLock ignored = _channelState.lock())
         {
             if (combineClosedCallback)
             {
-                // Check if onWriteComplete fired while the lock was not held; when it does,
-                // it nulls _closedCallback so no blocking is needed anymore.
+                // Check if onWriteComplete() fired while the lock was not held; if it did, it nulled the
+                // _closedCallback field so blocking is not necessary anymore, and the blocker can be released.
                 if (_closedCallback != null)
-                {
                     _closedCallback = Callback.combine(_closedCallback, blocker);
-                }
                 else
-                {
-                    blocker.succeeded();
-                    blocker.close();
-                    blocker = null;
-                }
+                    releaseBlocker = true;
             }
 
             if (LOG.isDebugEnabled())
                 LOG.debug("close() {} c={} b={}", lockedStateString(), content, blocker);
+        }
+
+        if (releaseBlocker)
+        {
+            blocker.succeeded();
+            blocker.close();
+            blocker = null;
         }
 
         if (content == null)
@@ -637,7 +639,8 @@ public class HttpOutput extends ServletOutputStream
                 // nothing to do or block for.
                 return;
 
-            // Just wait for some other close to finish.
+            // Just wait for some other close()/complete(Callback) to finish,
+            // as the blocker has been combined into the _closedCallback field.
             try (Blocker.Callback cb = blocker)
             {
                 cb.block();
@@ -647,14 +650,14 @@ public class HttpOutput extends ServletOutputStream
         {
             if (blocker == null)
             {
-                // Do an async close
+                // Do an async close.
                 Callback callback = new WriteCompleteCB();
                 callback = Callback.from(callback, content::release);
                 channelWrite(content, true, callback);
             }
             else
             {
-                // Do a blocking close
+                // Do a blocking close.
                 try (Blocker.Callback b = blocker)
                 {
                     channelWrite(content, true, blocker);
