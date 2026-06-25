@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.ee.servlet.DefaultServlet;
 import org.eclipse.jetty.ee.servlet.ServletHolder;
 import org.eclipse.jetty.ee.servlet.ServletMapping;
@@ -208,13 +209,10 @@ public class StandardDescriptorProcessorTest
         FS.ensureDirExists(descriptorXml.getParent());
         Files.writeString(descriptorXml, """
             <?xml version="1.0" encoding="UTF-8"?>
-            <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
-              version="6.0">
+            <web-app %s>
               <name>Test WebApp</name>
             </web-app>
-            """);
+            """.formatted(ServletApiVersion.V6_0.getWebXmlAttributes()));
         wac.setDescriptor(descriptorXml.toUri().toASCIIString());
 
         final Map<String, String> CREATE_JAR_ENV = new HashMap<>();

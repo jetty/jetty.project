@@ -18,6 +18,11 @@ import java.util.Map;
 
 public enum ServletApiVersion
 {
+    V2_5("2.5"),
+    V3_0("3.0"),
+    V3_1("3.1"),
+    V4_0("4.0"),
+    V5_0("5.0"),
     V6_0("6.0"),
     V6_1("6.1"),
     V6_2("6.2");
@@ -53,6 +58,36 @@ public enum ServletApiVersion
     {
         return switch(this)
         {
+            case V2_5 -> """
+                  xmlns="http://java.sun.com/xml/ns/javaee"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+                  version="2.5"
+                """;
+            case V3_0 -> """
+                  xmlns="http://java.sun.com/xml/ns/javaee"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+                  version="3.0"
+                """;
+            case V3_1 -> """
+                  xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+                  version="3.1"
+                """;
+            case V4_0 -> """
+                  xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+                  version="4.0"
+                """;
+            case V5_0 -> """
+                  xmlns="https://jakarta.ee/xml/ns/jakartaee"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
+                  version="5.0"
+                """;
             case V6_0 -> """
                   xmlns="https://jakarta.ee/xml/ns/jakartaee"
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
