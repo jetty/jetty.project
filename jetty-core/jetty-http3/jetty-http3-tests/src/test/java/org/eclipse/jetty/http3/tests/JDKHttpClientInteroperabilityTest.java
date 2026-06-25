@@ -99,6 +99,8 @@ public class JDKHttpClientInteroperabilityTest
         }
     }
 
+    // TODO: test using client certificates, to verify also the interoperability when the client sends a certificate.
+
     @Test
     public void testExternalServer() throws Exception
     {

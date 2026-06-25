@@ -16,8 +16,8 @@ package org.eclipse.jetty.quic.common.internal.packets;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
+import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
-import org.eclipse.jetty.quic.common.packets.ShortHeaderPacket;
 
 public class ShortHeaderPacketsParser
 {
@@ -33,7 +33,7 @@ public class ShortHeaderPacketsParser
         parser.setDestinationConnectionId(dstConnectionId);
     }
 
-    public ShortHeaderPacket parse(RetainableByteBuffer buffer) throws Exception
+    public Packet parse(RetainableByteBuffer buffer) throws Exception
     {
         return parser.parse(buffer);
     }

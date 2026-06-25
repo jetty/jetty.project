@@ -52,7 +52,6 @@ public class QuicStream extends AbstractStream
 
     private final AutoLock lock = new AutoLock();
     private final AtomicBiInteger framesInFlight = new AtomicBiInteger();
-    private final FrameStream frameStream = new FrameStream(this::processDataFrame);
     private final Deque<Content.Chunk> dataQueue = new ArrayDeque<>(1);
     private final CloseState closeState = new CloseState();
     private final Sender sender = new Sender();
@@ -60,8 +59,9 @@ public class QuicStream extends AbstractStream
     private final AtomicLong recvMaxOffset = new AtomicLong();
     private final AtomicLong sentOffset = new AtomicLong();
     private final AtomicLong sentMaxOffset = new AtomicLong();
-    private final QuicSession session;
     private final AtomicBoolean disconnected = new AtomicBoolean();
+    private final QuicSession session;
+    private final FrameStream frameStream;
     private boolean readDemand;
     private boolean readStalled;
 
@@ -69,6 +69,7 @@ public class QuicStream extends AbstractStream
     {
         super(streamId, local);
         this.session = session;
+        this.frameStream = new FrameStream.Stream(streamId, this::processDataFrame);
         this.readStalled = true;
     }
 

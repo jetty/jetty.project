@@ -177,8 +177,8 @@ public abstract class QuicSession extends AbstractSession
         this.flusher = new QuicFlusher(this);
         installBean(flusher);
         this.packetListener = new PacketProcessor();
-        this.dstConnectionId = BufferUtil.EMPTY_BYTES;
-        this.srcConnectionId = tlsEngine.newRandomBytes(8);
+        setDestinationConnectionId(BufferUtil.EMPTY_BYTES);
+        setSourceConnectionId(tlsEngine.newRandomBytes(8));
         this.keepAliveTask = () -> false;
 
         biRemoteStreamMaxCount.set(quicConfiguration.getBidirectionalMaxStreams());
@@ -258,7 +258,6 @@ public abstract class QuicSession extends AbstractSession
     protected void setDestinationConnectionId(byte[] dstConnectionId)
     {
         this.dstConnectionId = dstConnectionId;
-        parser.setDestinationConnectionId(dstConnectionId);
     }
 
     public byte[] getSourceConnectionId()
@@ -269,6 +268,8 @@ public abstract class QuicSession extends AbstractSession
     public void setSourceConnectionId(byte[] srcConnectionId)
     {
         this.srcConnectionId = srcConnectionId;
+        // RFC-9000[17.3]: received packets' dcid bytes are the local scid.
+        parser.setDestinationConnectionId(srcConnectionId);
     }
 
     /// @return the negotiated application protocol
@@ -1048,7 +1049,7 @@ public abstract class QuicSession extends AbstractSession
                 }
                 case HandshakePacket handshakePacket ->
                 {
-                    getTLSEngine().getPacketProtector().discardKeys(EncryptionLevel.INITIAL);
+                    discardEncryptionLevel(EncryptionLevel.INITIAL);
                     setEncryptionLevel(EncryptionLevel.HANDSHAKE);
                     yield processFrames(handshakePacket);
                 }
@@ -1193,7 +1194,7 @@ public abstract class QuicSession extends AbstractSession
             case CryptoFrame cryptoFrame ->
             {
                 EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
-                cryptoStreams.computeIfAbsent(encryptionLevel, _ -> new FrameStream(this::processCryptoFrame)).offer(cryptoFrame);
+                cryptoStreams.computeIfAbsent(encryptionLevel, e -> new FrameStream.Crypto(e, this::processCryptoFrame)).offer(cryptoFrame);
             }
             case DataBlockedFrame dataBlockedFrame -> notifyDataBlocked(dataBlockedFrame);
             case MaxDataFrame maxDataFrame ->
@@ -1209,6 +1210,10 @@ public abstract class QuicSession extends AbstractSession
             }
             case PingFrame _ -> notifyPing();
             case StreamsBlockedFrame streamsBlockedFrame -> notifyStreamsBlocked(streamsBlockedFrame);
+            case NewConnectionIdFrame newConnectionIdFrame ->
+            {
+                // TODO
+            }
             default -> throw new UnsupportedOperationException();
         }
     }
@@ -1268,6 +1273,16 @@ public abstract class QuicSession extends AbstractSession
                 case DRAINING, CLOSED -> false;
             };
         }
+    }
+
+    protected void discardEncryptionLevel(EncryptionLevel encryptionLevel)
+    {
+        flusher.onScheduledTask(() ->
+        {
+            getTLSEngine().getPacketProtector().discardKeys(encryptionLevel);
+            flusher.discard(encryptionLevel);
+            getPacketTracker().discard(encryptionLevel);
+        });
     }
 
     long getMaxData()

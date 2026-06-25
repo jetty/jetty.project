@@ -37,7 +37,7 @@ public class FrameStreamTest
     public void testInOrderOfferNotifiesInOrder()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream(output::add);
+        FrameStream stream = new FrameStream.Stream(0, output::add);
 
         int length1 = 5;
         stream.offer(new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(length1))));
@@ -56,7 +56,7 @@ public class FrameStreamTest
     public void testOutOfOrderOfferNotifiesInOrder()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream(output::add);
+        FrameStream stream = new FrameStream.Stream(0, output::add);
 
         int length1 = 5;
         int length2 = 7;
@@ -74,7 +74,7 @@ public class FrameStreamTest
     public void testDuplicateOfferIsDiscarded()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream(output::add);
+        FrameStream stream = new FrameStream.Stream(0, output::add);
 
         int length1 = 5;
         stream.offer(new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(length1))));
@@ -100,7 +100,7 @@ public class FrameStreamTest
     public void testOfferSmallerThanGap()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream(output::add);
+        FrameStream stream = new FrameStream.Stream(0, output::add);
 
         int length1 = 5;
         int length2 = 7;
@@ -126,7 +126,7 @@ public class FrameStreamTest
     public void testOfferGapThatOverlapsPastLength()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream(output::add);
+        FrameStream stream = new FrameStream.Stream(0, output::add);
 
         int length1 = 5;
         int length2 = 7;
@@ -154,7 +154,7 @@ public class FrameStreamTest
     public void testEmptyInitialOfferIsNotifiedThenEmptyOfferIsAlsoNotified()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream(output::add);
+        FrameStream stream = new FrameStream.Stream(0, output::add);
 
         stream.offer(new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(0))));
 
@@ -172,7 +172,7 @@ public class FrameStreamTest
     public void testResetFrameReceivedWithNoData()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream(output::add);
+        FrameStream stream = new FrameStream.Stream(0, output::add);
 
         stream.offer(new ResetFrame(0, 0, 0));
         assertEquals(1, output.size());
@@ -192,7 +192,7 @@ public class FrameStreamTest
     public void testResetFrameReceivedAfterLastData()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream(output::add);
+        FrameStream stream = new FrameStream.Stream(0, output::add);
 
         int finalSize = 32;
         stream.offer(new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(finalSize)), 0, true, true, true));
@@ -215,7 +215,7 @@ public class FrameStreamTest
     public void testLastDataAfterLastData()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream(output::add);
+        FrameStream stream = new FrameStream.Stream(0, output::add);
 
         int finalSize = 32;
         StreamFrame last = new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(finalSize)), 0, true, true, true);
@@ -231,7 +231,7 @@ public class FrameStreamTest
     public void testResetFrameReceivedInOrderIsNotified()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream(output::add);
+        FrameStream stream = new FrameStream.Stream(0, output::add);
 
         stream.offer(new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(32)), 0, true, true, false));
         assertEquals(1, output.size());
@@ -248,7 +248,7 @@ public class FrameStreamTest
     public void testResetFrameReceivedOutOfOrderIsNotified()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream(output::add);
+        FrameStream stream = new FrameStream.Stream(0, output::add);
 
         StreamFrame data1 = new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(32)), 0, true, true, false);
         stream.offer(data1);

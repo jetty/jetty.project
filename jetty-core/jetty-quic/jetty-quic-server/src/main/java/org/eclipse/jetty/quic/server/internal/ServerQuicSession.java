@@ -248,8 +248,8 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     {
         try
         {
-            // TODO: test and move this to the proper place, here might be too early.
-            getTLSEngine().getPacketProtector().discardKeys(EncryptionLevel.HANDSHAKE);
+            // RFC-9001[4.9.2]: handshake keys must be discarded when the TLS handshake is confirmed.
+            discardEncryptionLevel(EncryptionLevel.HANDSHAKE);
             setEncryptionLevel(EncryptionLevel.ONE_RTT);
 
             notifyOpen();

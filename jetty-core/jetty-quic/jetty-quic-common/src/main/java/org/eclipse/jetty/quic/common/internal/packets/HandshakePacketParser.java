@@ -38,10 +38,6 @@ public class HandshakePacketParser implements PacketParser
     private final Decrypter decrypter;
     private final PacketNumbers packetNumbers;
     private final FramesParser framesParser;
-    private QuicVersion quicVersion;
-    private byte[] dstConnectionId;
-    private byte[] srcConnectionId;
-    private long packetNumber;
 
     public HandshakePacketParser(Decrypter decrypter, PacketNumbers packetNumbers, FramesParser framesParser)
     {
@@ -61,6 +57,12 @@ public class HandshakePacketParser implements PacketParser
         if (LOG.isDebugEnabled())
             LOG.debug("decrypted HandshakePacket {}", packetBuffers);
 
+        if (packetBuffers == null)
+        {
+            buffer.skip(packetLength(buffer));
+            return Packet.DISCARD;
+        }
+
         // TODO: we can introduce a PacketBuffers.Listener to invoke here:
         //  listener.onPacketBuffers(packetBuffers, Promise<Boolean> promise);
         //  The promise boolean indicates whether to continue processing.
@@ -76,21 +78,21 @@ public class HandshakePacketParser implements PacketParser
         int encodedPacketNumberLength = (form & 0x03) + 1;
 
         int versionCode = byteBuffer.getInt();
-        quicVersion = QuicVersion.from(versionCode);
+        QuicVersion quicVersion = QuicVersion.from(versionCode);
 
         int length = byteBuffer.get();
-        dstConnectionId = new byte[length];
+        byte[] dstConnectionId = new byte[length];
         byteBuffer.get(dstConnectionId);
 
         length = byteBuffer.get();
-        srcConnectionId = new byte[length];
+        byte[] srcConnectionId = new byte[length];
         byteBuffer.get(srcConnectionId);
 
         length = VarLenInt.decodeInt(byteBuffer);
 
         byte[] encodedPacketNumber = new byte[encodedPacketNumberLength];
         byteBuffer.get(encodedPacketNumber);
-        packetNumber = packetNumbers.decode(EncryptionLevel.HANDSHAKE, encodedPacketNumber);
+        long packetNumber = packetNumbers.decode(EncryptionLevel.HANDSHAKE, encodedPacketNumber);
 
         assert byteBuffer.remaining() == 0;
         header.release();
@@ -111,5 +113,25 @@ public class HandshakePacketParser implements PacketParser
             LOG.debug("parsed {}", packet);
 
         return packet;
+    }
+
+    private long packetLength(RetainableByteBuffer buffer)
+    {
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        int position = byteBuffer.position();
+        // Form byte and QUIC version.
+        int offset = 1 + 4;
+        // DCID length and value.
+        int dcidLength = byteBuffer.get(position + offset) & 0xFF;
+        offset += 1 + dcidLength;
+        // SCID length and value.
+        int scidLength = byteBuffer.get(position + offset) & 0xFF;
+        offset += 1 + scidLength;
+        // Packet length.
+        byteBuffer.position(position + offset);
+        long payloadLength = VarLenInt.decodeLong(byteBuffer);
+        int headerLength = byteBuffer.position() - position;
+        byteBuffer.position(position);
+        return headerLength + payloadLength;
     }
 }

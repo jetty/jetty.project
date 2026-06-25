@@ -21,6 +21,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.ResetFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.util.TypeUtil;
@@ -34,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /// within QUIC packets, and this class is responsible
 /// for reordering them before delivering them to the
 /// application via the provided listener.
-public class FrameStream
+public sealed abstract class FrameStream
 {
     private static final Logger LOG = LoggerFactory.getLogger(FrameStream.class);
 
@@ -152,6 +153,11 @@ public class FrameStream
         return offset;
     }
 
+    int queueSize()
+    {
+        return frames.size();
+    }
+
     private void notifyFrame(Frame.WithOffset frame)
     {
         try
@@ -169,5 +175,39 @@ public class FrameStream
     public String toString()
     {
         return "%s@%x[offset=%d,queue=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), offset, frames.size());
+    }
+
+    public static final class Crypto extends FrameStream
+    {
+        private final EncryptionLevel encryptionLevel;
+
+        public Crypto(EncryptionLevel encryptionLevel, Consumer<Frame.WithOffset> listener)
+        {
+            super(listener);
+            this.encryptionLevel = encryptionLevel;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[%s,offset=%d,queue=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), encryptionLevel, offset(), queueSize());
+        }
+    }
+
+    public static final class Stream extends FrameStream
+    {
+        private final long streamId;
+
+        public Stream(long streamId, Consumer<Frame.WithOffset> listener)
+        {
+            super(listener);
+            this.streamId = streamId;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x[#%d,offset=%d,queue=%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), streamId, offset(), queueSize());
+        }
     }
 }

@@ -239,6 +239,7 @@ public class PacketProtector implements Encrypter, Decrypter
         // The master secret is not needed anymore, as both the application
         // keys and the resumption master secret have been generated.
         KeyManager.destroy(masterSecret);
+        masterSecret = null;
 
         // The resumption master secret does not need to be stored here:
         // it is either stored externally or in the session ticket.
@@ -249,14 +250,18 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         // RFC-9001[4.9].
         KeyManager removed = keyManagers.remove(encryptionLevel);
-        if (removed != null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("discarded {} keys on {}", encryptionLevel, this);
-            removed.destroy();
-        }
+        if (removed == null)
+            return;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("discarded {} keys on {}", encryptionLevel, this);
+        removed.destroy();
+
         if (encryptionLevel == EncryptionLevel.HANDSHAKE)
+        {
             KeyManager.destroy(handshakeSecret);
+            handshakeSecret = null;
+        }
     }
 
     @Override
@@ -271,9 +276,10 @@ public class PacketProtector implements Encrypter, Decrypter
     @Override
     public PacketBuffers decryptLongHeaderPacket(EncryptionLevel encryptionLevel, RetainableByteBuffer encrypted) throws Exception
     {
+        // We might receive a Packet for an encryption level that has already been discarded.
         KeyManager keyManager = keyManagers.get(encryptionLevel);
         if (keyManager == null)
-            throw new IllegalStateException("no KeyManager for encryption level " + encryptionLevel);
+            return null;
         return keyManager.decryptLongHeaderPacket(encrypted);
     }
 
@@ -282,7 +288,7 @@ public class PacketProtector implements Encrypter, Decrypter
     {
         KeyManager keyManager = keyManagers.get(EncryptionLevel.ONE_RTT);
         if (keyManager == null)
-            throw new IllegalStateException("no KeyManager for encryption level " + EncryptionLevel.ONE_RTT);
+            return null;
         return keyManager.decryptShortHeaderPacket(dstConnectionId, encrypted);
     }
 
