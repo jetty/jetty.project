@@ -331,6 +331,11 @@ public class PacketTracker
         return trackers.get(PacketNumberSpace.from(encryptionLevel)).probeTimeoutTask != null;
     }
 
+    void discard(EncryptionLevel encryptionLevel)
+    {
+        trackers.get(PacketNumberSpace.from(encryptionLevel)).discard();
+    }
+
     @Override
     public String toString()
     {
@@ -389,6 +394,8 @@ public class PacketTracker
                 if (entry != null)
                 {
                     ackedLength += entry.length();
+
+                    // Process and then close the packet.
                     try (Packet.WithFrames packet = entry.packet())
                     {
                         output.add(packet);
@@ -491,8 +498,7 @@ public class PacketTracker
 
         private void tryScheduleLossTimeout(QuicSession session, long timeoutNanos)
         {
-            if (lossTimeoutTask != null)
-                lossTimeoutTask.cancel();
+            cancelLossTimeout();
 
             if (LOG.isDebugEnabled())
                 LOG.debug("scheduling loss timeout in {} ns on {}", timeoutNanos, this);
@@ -538,6 +544,17 @@ public class PacketTracker
             probeTimeoutTask = scheduler.schedule(task, delayNanos, TimeUnit.NANOSECONDS);
         }
 
+        private void cancelLossTimeout()
+        {
+            if (lossTimeoutTask == null)
+                return;
+
+            boolean cancelled = lossTimeoutTask.cancel();
+            lossTimeoutTask = null;
+            if (LOG.isDebugEnabled())
+                LOG.debug("cancelled {} loss timeout on {}", cancelled, this);
+        }
+
         private void cancelProbeTimeout()
         {
             if (probeTimeoutTask == null)
@@ -547,6 +564,17 @@ public class PacketTracker
             probeTimeoutTask = null;
             if (LOG.isDebugEnabled())
                 LOG.debug("cancelled {} probe timeout on {}", cancelled, this);
+        }
+
+        private void discard()
+        {
+            cancelLossTimeout();
+            cancelProbeTimeout();
+
+            entries.values().forEach(entry -> entry.packet().close());
+            entries.clear();
+
+            probeTimeoutBackoff = 0;
         }
 
         @Override

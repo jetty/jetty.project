@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.quic.common.internal;
 
+import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Queue;
 
 import org.eclipse.jetty.io.EndPoint;
@@ -45,7 +47,6 @@ class PacketFlusher implements Callback
     {
         try (var _ = lock.lock())
         {
-            // TODO: check if closed/failed, etc.
             PacketEntry entry = new PacketEntry(packet, callback);
             boolean result = packetEntries.add(entry);
             if (LOG.isDebugEnabled())
@@ -98,6 +99,26 @@ class PacketFlusher implements Callback
         processingPacketEntry.failed(x);
         processingPacketEntry = null;
         // TODO: fail the queued entries.
+    }
+
+    void discard()
+    {
+        List<PacketEntry> entries;
+        try (var _ = lock.lock())
+        {
+            entries = List.copyOf(packetEntries);
+            packetEntries.clear();
+        }
+
+        Throwable failure = null;
+        for (PacketEntry e : entries)
+        {
+            if (failure == null)
+                failure = new IOException("discarded");
+            e.failed(failure);
+
+            e.packet().close();
+        }
     }
 
     record PacketEntry(Packet packet, Callback callback) implements QuicFlusher.Entry

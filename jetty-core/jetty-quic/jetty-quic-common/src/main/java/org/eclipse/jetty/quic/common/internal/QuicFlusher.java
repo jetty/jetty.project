@@ -210,6 +210,31 @@ public class QuicFlusher extends IteratingCallback
         session.getExecutor().execute(this::iterate);
     }
 
+    public void discard(EncryptionLevel encryptionLevel)
+    {
+        List<AckEntry> acks = new ArrayList<>();
+        try (var _ = lock.lock())
+        {
+            ackEntries.removeIf(e ->
+            {
+                boolean remove = e.encryptionLevel() == encryptionLevel;
+                if (remove)
+                    acks.add(e);
+                return remove;
+            });
+        }
+        acks.forEach(e -> e.frame().close());
+
+        switch (encryptionLevel)
+        {
+            case INITIAL -> initialFlusher.discard();
+            case HANDSHAKE -> handshakeFlusher.discard();
+            default ->
+            {
+            }
+        }
+    }
+
     @Override
     protected Action process() throws Throwable
     {

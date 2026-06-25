@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.common.internal;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -374,6 +375,28 @@ class CryptoFlusher implements Callback
     void resetCrypto()
     {
         cryptoOffset = 0;
+    }
+
+    void discard()
+    {
+        List<FramesEntry> allEntries;
+        try (var _ = lock())
+        {
+            allEntries = new ArrayList<>(entries);
+            entries.clear();
+            allEntries.addAll(ccEntries);
+            ccEntries.clear();
+        }
+
+        Throwable failure = null;
+        for (FramesEntry e : allEntries)
+        {
+            if (failure == null)
+                failure = new IOException("discarded");
+            e.failed(failure);
+
+            e.frames().forEach(Frame::close);
+        }
     }
 
     @Override

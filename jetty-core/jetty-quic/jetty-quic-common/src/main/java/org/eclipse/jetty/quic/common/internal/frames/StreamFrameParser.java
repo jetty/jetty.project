@@ -121,33 +121,31 @@ public class StreamFrameParser implements FrameParser
     private StreamFrame result(RetainableByteBuffer data, boolean complete)
     {
         long type = frameType;
-        long off = offset;
 
-        if (!complete)
-        {
-            // The frame is not complete, generate a synthetic frame.
-
-            // Update the offset and set the offset bit.
-            if (off < 0)
-                off = 0;
-            type |= StreamFrame.OFFSET_MASK;
-
-            // Clear the endStream bit.
-            boolean endStream = (type & StreamFrame.END_STREAM_MASK) == StreamFrame.END_STREAM_MASK;
-            if (endStream)
-                type &= ~StreamFrame.END_STREAM_MASK;
-
-            // Update the offset for the next chunk
-            // of data, and remain in DATA state.
-            offset += data.remaining();
-        }
-
-        StreamFrame frame = new StreamFrame(type, streamId, data, off, complete);
+        long off = hasOffset ? offset : 0;
 
         if (complete)
+        {
+            StreamFrame frame = new StreamFrame(type, streamId, data, off, true);
             reset();
+            return frame;
+        }
 
-        return frame;
+        // The frame is not complete, generate a synthetic frame.
+
+        // Always set the offset bit for synthetic frames.
+        type |= StreamFrame.OFFSET_MASK;
+
+        // Clear the endStream bit.
+        boolean endStream = (type & StreamFrame.END_STREAM_MASK) == StreamFrame.END_STREAM_MASK;
+        if (endStream)
+            type &= ~StreamFrame.END_STREAM_MASK;
+
+        // Update the offset for the next chunk
+        // of data, and remain in DATA state.
+        offset += data.remaining();
+
+        return new StreamFrame(type, streamId, data, off, false);
     }
 
     private void reset()

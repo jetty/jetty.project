@@ -23,6 +23,7 @@ import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.packets.OneRTTPacket;
+import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
@@ -50,7 +51,7 @@ public class OneRTTPacketParser implements PacketParser
     }
 
     @Override
-    public OneRTTPacket parse(RetainableByteBuffer buffer) throws Exception
+    public Packet parse(RetainableByteBuffer buffer) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("parsing OneRTTPacket {}", BufferUtil.toDetailString(buffer.getByteBuffer()));
@@ -59,6 +60,12 @@ public class OneRTTPacketParser implements PacketParser
 
         if (LOG.isDebugEnabled())
             LOG.debug("decrypted OneRTTPacket {}", packetBuffers);
+
+        if (packetBuffers == null)
+        {
+            buffer.skip(buffer.size());
+            return Packet.DISCARD;
+        }
 
         // TODO: we can introduce a PacketBuffers.Listener to invoke here:
         //  listener.onPacketBuffers(packetBuffers, Promise<Boolean> promise);

@@ -57,6 +57,12 @@ public class InitialPacketParser implements PacketParser
         if (LOG.isDebugEnabled())
             LOG.debug("decrypted InitialPacket {}", packetBuffers);
 
+        if (packetBuffers == null)
+        {
+            buffer.skip(packetLength(buffer));
+            return Packet.DISCARD;
+        }
+
         // TODO: we can introduce a PacketBuffers.Listener to invoke here:
         //  listener.onPacketBuffers(packetBuffers, Promise<Boolean> promise);
         //  The promise boolean indicates whether to continue processing.
@@ -111,5 +117,29 @@ public class InitialPacketParser implements PacketParser
             LOG.debug("parsed {}", packet);
 
         return packet;
+    }
+
+    private long packetLength(RetainableByteBuffer buffer)
+    {
+        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        int position = byteBuffer.position();
+        // Form byte and QUIC version.
+        int offset = 1 + 4;
+        // DCID length and value.
+        int dcidLength = byteBuffer.get(position + offset) & 0xFF;
+        offset += 1 + dcidLength;
+        // SCID length and value.
+        int scidLength = byteBuffer.get(position + offset) & 0xFF;
+        offset += 1 + scidLength;
+        int tokenPosition = position + offset;
+        byteBuffer.position(tokenPosition);
+        int tokenLength = VarLenInt.decodeInt(byteBuffer);
+        offset += (byteBuffer.position() - tokenPosition) + tokenLength;
+        // Packet length.
+        byteBuffer.position(position + offset);
+        long payloadLength = VarLenInt.decodeLong(byteBuffer);
+        int headerLength = byteBuffer.position() - position;
+        byteBuffer.position(position);
+        return headerLength + payloadLength;
     }
 }
