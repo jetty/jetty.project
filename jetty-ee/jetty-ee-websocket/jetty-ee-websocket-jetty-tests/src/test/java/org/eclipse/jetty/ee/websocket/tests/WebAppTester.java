@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee.websocket.tests;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -23,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.ee.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.ee.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee.webapp.Configuration;
@@ -33,7 +33,6 @@ import org.eclipse.jetty.ee.webapp.JndiConfiguration;
 import org.eclipse.jetty.ee.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee.webapp.WebAppConfiguration;
 import org.eclipse.jetty.ee.webapp.WebAppContext;
-import org.eclipse.jetty.ee.webapp.WebDescriptor;
 import org.eclipse.jetty.ee.webapp.WebInfConfiguration;
 import org.eclipse.jetty.ee.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -194,12 +194,13 @@ public class WebAppTester extends ContainerLifeCycle
 
         public void createWebInf() throws IOException
         {
-            String emptyWebXml = WebDescriptor.WEB_APP_ELEMENT + "</web-app>";
-            File webXml = _webInf.resolve("web.xml").toFile();
-            try (FileWriter out = new FileWriter(webXml))
-            {
-                out.write(emptyWebXml);
-            }
+            String emptyWebXml =
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <web-app %s>
+                </web-app>
+                """.formatted(ServletApiVersion.getServletApiVersion().getWebXmlAttributes());
+            Files.writeString(_webInf.resolve("web.xml"), emptyWebXml, UTF_8);
         }
 
         public void copyWebInf(String testResourceName) throws IOException

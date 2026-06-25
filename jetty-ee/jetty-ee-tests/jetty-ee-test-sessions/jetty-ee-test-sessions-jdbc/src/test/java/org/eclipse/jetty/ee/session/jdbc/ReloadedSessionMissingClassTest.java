@@ -23,9 +23,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.ee.session.SessionTestSupport;
 import org.eclipse.jetty.ee.webapp.WebAppContext;
-import org.eclipse.jetty.ee.webapp.WebDescriptor;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
@@ -74,12 +74,14 @@ public class ReloadedSessionMissingClassTest
         webInfDir.mkdir();
 
         File webXml = new File(webInfDir, "web.xml");
-        String xml = WebDescriptor.WEB_APP_ELEMENT +
-                "\n" +
-                "  <session-config>\n" +
-                "    <session-timeout>1</session-timeout>\n" +
-                "  </session-config>\n" +
-                "</web-app>";
+        String xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <web-app %s>
+              <session-config>
+                <session-timeout>1</session-timeout>
+              </session-config>
+            </web-app>
+            """.formatted(ServletApiVersion.getServletApiVersion().getWebXmlAttributes());
         FileWriter w = new FileWriter(webXml);
         w.write(xml);
         w.close();

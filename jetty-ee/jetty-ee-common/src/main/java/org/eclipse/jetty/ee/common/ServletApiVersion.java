@@ -49,6 +49,31 @@ public enum ServletApiVersion
         return minor;
     }
 
+    public String getWebXmlAttributes()
+    {
+        return switch(this)
+        {
+            case V6_0 -> """
+                  xmlns="https://jakarta.ee/xml/ns/jakartaee"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+                  version="6.0"
+                """;
+            case V6_1 -> """
+                  xmlns="https://jakarta.ee/xml/ns/jakartaee"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd"
+                  version="6.1"
+                """;
+            case V6_2 -> """
+                  xmlns="https://jakarta.ee/xml/ns/jakartaee"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_2.xsd"
+                  version="6.2"
+                """;
+        };
+    }
+
     public static ServletApiVersion from(String version)
     {
         ServletApiVersion servletApiVersion = Mapping.versions.get(version);
