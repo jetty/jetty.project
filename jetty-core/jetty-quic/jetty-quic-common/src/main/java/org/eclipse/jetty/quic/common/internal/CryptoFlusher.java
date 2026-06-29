@@ -369,7 +369,7 @@ class CryptoFlusher implements Callback
             LOG.debug("write failed to {} on {}", getQuicSession().getEndPoint(), this, x);
         writing.forEach(e -> e.failed(x));
         writing.clear();
-        // TODO: fail the queued entries.
+        fail(x);
     }
 
     void resetCrypto()
@@ -378,6 +378,11 @@ class CryptoFlusher implements Callback
     }
 
     void discard()
+    {
+        fail(new IOException("discarded"));
+    }
+
+    private void fail(Throwable failure)
     {
         List<FramesEntry> allEntries;
         try (var _ = lock())
@@ -388,13 +393,9 @@ class CryptoFlusher implements Callback
             ccEntries.clear();
         }
 
-        Throwable failure = null;
         for (FramesEntry e : allEntries)
         {
-            if (failure == null)
-                failure = new IOException("discarded");
             e.failed(failure);
-
             e.frames().forEach(Frame::close);
         }
     }

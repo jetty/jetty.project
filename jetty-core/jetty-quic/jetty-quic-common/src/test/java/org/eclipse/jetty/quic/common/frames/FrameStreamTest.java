@@ -20,7 +20,7 @@ import java.util.List;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
-import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
@@ -174,11 +174,11 @@ public class FrameStreamTest
         List<Frame> output = new ArrayList<>();
         FrameStream stream = new FrameStream.Stream(0, output::add);
 
-        stream.offer(new ResetFrame(0, 0, 0));
+        stream.offer(new ResetStreamFrame(0, 0, 0));
         assertEquals(1, output.size());
 
         // Another ResetFrame is discarded.
-        stream.offer(new ResetFrame(0, 0, 0));
+        stream.offer(new ResetStreamFrame(0, 0, 0));
         assertEquals(1, output.size());
 
         // An empty data frame is discarded.
@@ -199,15 +199,15 @@ public class FrameStreamTest
         assertEquals(1, output.size());
 
         // A reset with same finalSize is discarded.
-        stream.offer(new ResetFrame(0, 0, finalSize));
+        stream.offer(new ResetStreamFrame(0, 0, finalSize));
         assertEquals(1, output.size());
 
         // A reset with smaller finalSize throws.
-        QuicException failure = assertThrows(QuicException.class, () -> stream.offer(new ResetFrame(0, 0, finalSize - 1)));
+        QuicException failure = assertThrows(QuicException.class, () -> stream.offer(new ResetStreamFrame(0, 0, finalSize - 1)));
         assertSame(ErrorCode.FINAL_SIZE_ERROR, failure.getErrorCode());
 
         // A reset with larger finalSize throws.
-        failure = assertThrows(QuicException.class, () -> stream.offer(new ResetFrame(0, 0, finalSize + 1)));
+        failure = assertThrows(QuicException.class, () -> stream.offer(new ResetStreamFrame(0, 0, finalSize + 1)));
         assertSame(ErrorCode.FINAL_SIZE_ERROR, failure.getErrorCode());
     }
 
@@ -237,11 +237,11 @@ public class FrameStreamTest
         assertEquals(1, output.size());
 
         long finalSize = stream.offset();
-        stream.offer(new ResetFrame(0, 0, finalSize));
+        stream.offer(new ResetStreamFrame(0, 0, finalSize));
         assertEquals(2, output.size());
 
         assertEquals(finalSize, stream.offset());
-        assertInstanceOf(ResetFrame.class, output.getLast());
+        assertInstanceOf(ResetStreamFrame.class, output.getLast());
     }
 
     @Test
@@ -256,13 +256,13 @@ public class FrameStreamTest
 
         StreamFrame data2 = new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(16)), stream.offset(), true, true, false);
 
-        stream.offer(new ResetFrame(0, 0, stream.offset() + data2.length()));
+        stream.offer(new ResetStreamFrame(0, 0, stream.offset() + data2.length()));
         assertEquals(1, output.size());
 
         stream.offer(data2);
         assertEquals(3, output.size());
 
         assertEquals(data1.length() + data2.length(), stream.offset());
-        assertInstanceOf(ResetFrame.class, output.getLast());
+        assertInstanceOf(ResetStreamFrame.class, output.getLast());
     }
 }

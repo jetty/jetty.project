@@ -221,7 +221,8 @@ public interface Session
         /// Callback method invoked when the session has been disconnected.
         ///
         /// @param session the QUIC session
-        default void onDisconnect(Session session)
+        /// @param frame the CONNECTION_CLOSE frame that has been sent
+        default void onDisconnect(Session session, ConnectionCloseFrame frame)
         {
         }
 

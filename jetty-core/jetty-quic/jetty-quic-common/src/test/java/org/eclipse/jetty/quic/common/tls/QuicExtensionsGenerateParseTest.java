@@ -53,17 +53,13 @@ public class QuicExtensionsGenerateParseTest
         // Larger long value.
         generatedParams.put(TransportParameters.Ids.INITIAL_MAX_DATA, 2147483648L);
         // Larger grease id.
-        generatedParams.put(TransportParameters.Ids.create(0xFF02DE1AL, TransportParameters.BytesId::new), new byte[]{13, 7, 19});
-        // Remove it from the static Ids map, so parsing does not find this id.
-        TransportParameters.Ids.remove(0xFF02DE1AL);
+        generatedParams.put(new TransportParameters.BytesId(0xFF02DE1AL), new byte[]{13, 7, 19});
         // Unknown id. Generated as long, will be parsed as bytes.
         long unknownId = 0x5000;
         long unknownValue = 1052198;
         byte[] unknownValueBytes = new byte[VarLenInt.length(unknownValue)];
         VarLenInt.encode(ByteBuffer.wrap(unknownValueBytes), unknownValue);
-        generatedParams.put(TransportParameters.Ids.create(unknownId, TransportParameters.LongId::new), unknownValue);
-        // Remove it from the static Ids map, so parsing does not find this id.
-        TransportParameters.Ids.remove(unknownId);
+        generatedParams.put(new TransportParameters.LongId(unknownId), unknownValue);
         // Zero-length value.
         // When being the last, it is an edge case for parsing,
         // since there are no more bytes to read in the buffer.

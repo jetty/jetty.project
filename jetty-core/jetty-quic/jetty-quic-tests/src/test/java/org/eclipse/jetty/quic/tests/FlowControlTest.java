@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class FlowControlTest extends AbstractQuicTest
+public class FlowControlTest extends AbstractTest
 {
     @Test
     public void testSessionFlowControlStall() throws Exception
@@ -117,7 +117,7 @@ public class FlowControlTest extends AbstractQuicTest
 
         CountDownLatch clientMaxDataLatch = new CountDownLatch(1);
         CompletableFuture<Session> sessionFuture = new  CompletableFuture<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onMaxData(Session session, MaxDataFrame frame)
@@ -140,7 +140,7 @@ public class FlowControlTest extends AbstractQuicTest
 
         // The client must send a DATA_BLOCKED frame to the server.
         assertTrue(serverDataBlockedLatch.await(5, SECONDS));
-        assertEquals(maxData, clientSession.getSentMaxOffset());
+        assertEquals(maxData, clientSession.getSendMaxOffset());
         // The server did not consume the data, so it must not send a MAX_DATA frame.
         assertFalse(clientMaxDataLatch.await(1, SECONDS));
         // The client must have sent only part of the data.
@@ -157,7 +157,7 @@ public class FlowControlTest extends AbstractQuicTest
 
         QuicSession serverSession = serverStream.getSession();
         assertEquals(totalData, clientSession.getSentOffset());
-        assertEquals(2 * maxData, clientSession.getSentMaxOffset());
+        assertEquals(2 * maxData, clientSession.getSendMaxOffset());
         assertEquals(totalData, clientStream.getSentOffset());
         assertEquals(totalData, serverSession.getRecvOffset());
         assertEquals(2 * maxData, serverSession.getRecvMaxOffset());
@@ -225,7 +225,7 @@ public class FlowControlTest extends AbstractQuicTest
 
         CountDownLatch clientMaxDataLatch = new CountDownLatch(1);
         CompletableFuture<Session> sessionFuture = new  CompletableFuture<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onMaxData(Session session, MaxDataFrame frame)
@@ -272,7 +272,7 @@ public class FlowControlTest extends AbstractQuicTest
 
         // The client must send only 1 DATA_BLOCKED frame to the server.
         await().during(1, SECONDS).atMost(5, SECONDS).until(serverDataBlockedCounter::get, equalTo(1));
-        assertEquals(maxData, clientSession.getSentMaxOffset());
+        assertEquals(maxData, clientSession.getSendMaxOffset());
         // The server did not consume the data, so it must not send a MAX_DATA frame.
         assertFalse(clientMaxDataLatch.await(1, SECONDS));
 
@@ -284,18 +284,18 @@ public class FlowControlTest extends AbstractQuicTest
         assertTrue(clientMaxDataLatch.await(5, SECONDS));
         streamFuture3.get(5, SECONDS);
         streamFuture4.get(5, SECONDS);
+        // All chunks and excesses have been read by the server.
         assertTrue(serverDataLatch.await(5, SECONDS));
 
         int totalData = maxData + excess1 + excess2;
         assertEquals(totalData, clientSession.getSentOffset());
-        // The read of the first chunk triggers MAX_DATA at 300/500/500->800.
-        // The read of the second chunk does not trigger MAX_DATA at 500/500/800.
-        assertEquals(chunk1 + maxData, clientSession.getSentMaxOffset());
         assertEquals(chunk1 + excess1, clientStream1.getSentOffset());
         assertEquals(chunk2 + excess2, clientStream2.getSentOffset());
+
         assertEquals(totalData, serverSession.getRecvOffset());
-        // The read of the third chunk triggers MAX_DATA at 530/550/800->1030.
-        assertEquals(maxData + excess1 + maxData, serverSession.getRecvMaxOffset());
+        long newMaxData = maxData + excess1 + maxData;
+        await().atMost(5, SECONDS).until(clientSession::getSendMaxOffset, equalTo(newMaxData));
+        assertEquals(newMaxData, serverSession.getRecvMaxOffset());
     }
 
     @Test
@@ -303,7 +303,7 @@ public class FlowControlTest extends AbstractQuicTest
     {
         int maxData = 512;
         AtomicReference<Stream> serverStreamRef = new AtomicReference<>();
-        CountDownLatch serverDataBlockedLatch = new CountDownLatch(1);
+        AtomicInteger serverDataBlockedCounter = new AtomicInteger();
         CountDownLatch serverDataLatch = new CountDownLatch(1);
         start(() -> new Session.Listener()
         {
@@ -330,7 +330,7 @@ public class FlowControlTest extends AbstractQuicTest
                     @Override
                     public void onDataBlocked(Stream stream, StreamDataBlockedFrame frame)
                     {
-                        serverDataBlockedLatch.countDown();
+                        serverDataBlockedCounter.incrementAndGet();
                     }
 
                     @Override
@@ -357,7 +357,7 @@ public class FlowControlTest extends AbstractQuicTest
         });
 
         CompletableFuture<Session> sessionFuture = new  CompletableFuture<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, Promise.Invocable.toPromise(sessionFuture));
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener() {}, Promise.Invocable.toPromise(sessionFuture));
         QuicSession clientSession = (QuicSession)sessionFuture.get(5, SECONDS);
 
         long streamId = clientSession.newStreamId(true);
@@ -379,16 +379,20 @@ public class FlowControlTest extends AbstractQuicTest
         clientStream.data(true, RetainableByteBuffer.wrap(byteBuffer), Callback.from(streamFuture));
         await().during(1, SECONDS).atMost(5, SECONDS).until(() -> !streamFuture.isDone());
 
-        // The client must send a DATA_BLOCKED frame to the server.
-        assertTrue(serverDataBlockedLatch.await(5, SECONDS));
-        assertEquals(maxData, clientStream.getSentMaxOffset());
+        // The client must send a STREAM_DATA_BLOCKED frame to the server.
+        await().atMost(5, SECONDS).until(serverDataBlockedCounter::get, equalTo(1));
+        assertEquals(maxData, clientStream.getSendMaxOffset());
         // The server did not consume the data, so it must not send a MAX_DATA frame.
         assertFalse(clientMaxDataLatch.await(1, SECONDS));
         // The client must have sent only part of the data.
         assertEquals(excessData, byteBuffer.remaining());
 
+        // Trying to flush more must not result in another STREAM_DATA_BLOCKED.
+        clientSession.ping(Callback.NOOP);
+        await().during(1, SECONDS).atMost(5, SECONDS).until(serverDataBlockedCounter::get, equalTo(1));
+
         // Read from the server to consume the data.
-        // The server must send a MAX_DATA and the client finish sending.
+        // The server must send a STREAM_MAX_DATA and the client finish sending.
         QuicStream serverStream = (QuicStream)serverStreamRef.get();
         serverStream.demand();
 
@@ -399,7 +403,7 @@ public class FlowControlTest extends AbstractQuicTest
         QuicSession serverSession = serverStream.getSession();
         assertEquals(totalData, clientSession.getSentOffset());
         assertEquals(totalData, clientStream.getSentOffset());
-        assertEquals(2 * maxData, clientStream.getSentMaxOffset());
+        assertEquals(2 * maxData, clientStream.getSendMaxOffset());
         assertEquals(totalData, serverSession.getRecvOffset());
         assertEquals(totalData, serverStream.getRecvOffset());
         assertEquals(2 * maxData, serverStream.getRecvMaxOffset());

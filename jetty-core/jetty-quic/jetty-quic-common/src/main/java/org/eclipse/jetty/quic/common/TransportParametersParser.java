@@ -111,7 +111,8 @@ public class TransportParametersParser
                 {
                     if (remaining >= parameterLength)
                     {
-                        byteBuffer.get(parameterValue);
+                        int offset = parameterValue.length - parameterLength;
+                        byteBuffer.get(parameterValue, offset, parameterLength);
                         store(parameterId, parameterValue);
                         length -= parameterLength;
                         if (length == 0)
@@ -123,6 +124,7 @@ public class TransportParametersParser
                         int offset = parameterValue.length - parameterLength;
                         byteBuffer.get(parameterValue, offset, remaining);
                         parameterLength -= remaining;
+                        length -= remaining;
                     }
                 }
             }
@@ -155,13 +157,10 @@ public class TransportParametersParser
 
     private TransportParameters.Id<?> convert(long parameterId)
     {
-        TransportParameters.Id<?> id = TransportParameters.Ids.get(parameterId);
-        if (id != null)
-            return id;
         // RFC-9000[18.1]: either a grease id, or an unknown id.
         // In both cases the parameter must be kept since it is part
         // of TLS messages that are used to derive cryptographic keys.
-        return TransportParameters.Ids.create(parameterId, TransportParameters.BytesId::new);
+        return TransportParameters.Ids.from(parameterId);
     }
 
     private enum State

@@ -16,7 +16,6 @@ package org.eclipse.jetty.quic.tests;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -38,7 +37,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -46,7 +44,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SessionIdleTimeoutTest extends AbstractQuicTest
+public class SessionIdleTimeoutTest extends AbstractTest
 {
     @Test
     public void testClientOnlyIdleTimeout() throws Exception
@@ -74,21 +72,20 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 serverDisconnectLatch.countDown();
             }
         });
-        connector.setIdleTimeout(0);
+        serverConnector.setIdleTimeout(0);
         server.start();
         prepareClient();
-        client.getClientConnector().setIdleTimeout(Duration.ofMillis(idleTimeout));
-        client.start();
+        quicClient.getClientConnector().setIdleTimeout(Duration.ofMillis(idleTimeout));
+        quicClient.start();
 
-        CountDownLatch clientFailureLatch = new CountDownLatch(1);
         CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onPrepare(Session session, TransportParameters parameters)
@@ -97,14 +94,7 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
             }
 
             @Override
-            public void onFailure(Session session, Throwable failure)
-            {
-                if (failure instanceof TimeoutException)
-                    clientFailureLatch.countDown();
-            }
-
-            @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -115,8 +105,7 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
         // RFC-9000[10.1] says the connection should be silently closed,
         // but we actually send a CLOSE_CONNECTION to the remote peer,
         // so that it can detect earlier that the connection is broken.
-        assertTrue(clientFailureLatch.await(2 * idleTimeout, MILLISECONDS));
-        assertTrue(clientDisconnectLatch.await(1, SECONDS));
+        assertTrue(clientDisconnectLatch.await(2 * idleTimeout, MILLISECONDS));
         assertTrue(serverCloseLatch.await(1, SECONDS));
         assertTrue(serverDisconnectLatch.await(1, SECONDS));
 
@@ -134,7 +123,6 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
         long idleTimeout = 1000;
 
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
-        CountDownLatch serverFailureLatch = new CountDownLatch(1);
         CountDownLatch serverDisconnectLatch = new CountDownLatch(1);
         prepareServer(() -> new Session.Listener()
         {
@@ -152,28 +140,21 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
             }
 
             @Override
-            public void onFailure(Session session, Throwable failure)
-            {
-                if (failure instanceof TimeoutException)
-                    serverFailureLatch.countDown();
-            }
-
-            @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 serverDisconnectLatch.countDown();
             }
         });
-        connector.setIdleTimeout(idleTimeout);
+        serverConnector.setIdleTimeout(idleTimeout);
         server.start();
         prepareClient();
-        client.getClientConnector().setIdleTimeout(Duration.ZERO);
-        client.start();
+        quicClient.getClientConnector().setIdleTimeout(Duration.ZERO);
+        quicClient.start();
 
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
         CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onClose(Session session, ConnectionCloseFrame frame)
@@ -182,7 +163,7 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -195,8 +176,7 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
         // RFC-9000[10.1] says the connection should be silently closed,
         // but we actually send a CLOSE_CONNECTION to the remote peer,
         // so that it can detect earlier that the connection is broken.
-        assertTrue(serverFailureLatch.await(2 * idleTimeout, MILLISECONDS));
-        assertTrue(serverDisconnectLatch.await(1, SECONDS));
+        assertTrue(serverDisconnectLatch.await(2 * idleTimeout, MILLISECONDS));
         assertTrue(clientCloseLatch.await(1, SECONDS));
         assertTrue(clientDisconnectLatch.await(1, SECONDS));
 
@@ -226,28 +206,27 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
                 ((QuicSession)session).setKeepAliveEnabled(false);
             }
         });
-        connector.setIdleTimeout(serverIdleTimeout);
+        serverConnector.setIdleTimeout(serverIdleTimeout);
         server.start();
         prepareClient();
-        client.getClientConnector().setIdleTimeout(Duration.ofMillis(clientIdleTimeout));
-        client.start();
+        quicClient.getClientConnector().setIdleTimeout(Duration.ofMillis(clientIdleTimeout));
+        quicClient.start();
 
-        CountDownLatch clientFailureLatch = new CountDownLatch(1);
+        CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
-            public void onFailure(Session session, Throwable failure)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
-                if (failure instanceof TimeoutException)
-                    clientFailureLatch.countDown();
+                clientDisconnectLatch.countDown();
             }
         }, promise);
         Session clientSession = promise.get(5, SECONDS);
         ((QuicSession)clientSession).setKeepAliveEnabled(false);
 
         // The client must idle timeout at the server's idle timeout.
-        assertTrue(clientFailureLatch.await(2 * serverIdleTimeout, MILLISECONDS));
+        assertTrue(clientDisconnectLatch.await(2 * serverIdleTimeout, MILLISECONDS));
     }
 
     @Test
@@ -264,11 +243,11 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
                 ((QuicSession)session).setKeepAliveEnabled(false);
             }
         });
-        client.getClientConnector().setIdleTimeout(Duration.ofMillis(clientIdleTimeout));
+        quicClient.getClientConnector().setIdleTimeout(Duration.ofMillis(clientIdleTimeout));
 
         CountDownLatch clientFailureLatch = new CountDownLatch(1);
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onFailure(Session session, Throwable failure)
@@ -296,16 +275,16 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
                 ((QuicSession)session).setKeepAliveEnabled(false);
             }
         });
-        client.getClientConnector().setIdleTimeout(Duration.ofMillis(clientIdleTimeout));
+        quicClient.getClientConnector().setIdleTimeout(Duration.ofMillis(clientIdleTimeout));
 
-        CountDownLatch clientFailureLatch = new CountDownLatch(1);
+        CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
-            public void onFailure(Session session, Throwable failure)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
-                clientFailureLatch.countDown();
+                clientDisconnectLatch.countDown();
             }
         }, promise);
         Session clientSession = promise.get(5, SECONDS);
@@ -326,7 +305,7 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
             }
         });
 
-        assertTrue(clientFailureLatch.await(2 * clientIdleTimeout, MILLISECONDS));
+        assertTrue(clientDisconnectLatch.await(2 * clientIdleTimeout, MILLISECONDS));
     }
 
     @Test
@@ -338,6 +317,12 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
         prepareServer(() -> new Session.Listener()
         {
+            @Override
+            public void onPrepare(Session session, TransportParameters transportParameters)
+            {
+                transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL, 2L);
+            }
+
             @Override
             public void onOpen(Session session)
             {
@@ -353,16 +338,15 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
                 serverCloseLatch.countDown();
             }
         });
-        connector.setIdleTimeout(0);
+        serverConnector.setIdleTimeout(0);
         server.start();
         prepareClient();
-        client.getClientConnector().setIdleTimeout(Duration.ofMillis(idleTimeout));
-        client.start();
+        quicClient.getClientConnector().setIdleTimeout(Duration.ofMillis(idleTimeout));
+        quicClient.start();
 
-        CountDownLatch clientFailureLatch = new CountDownLatch(1);
         CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onPrepare(Session session, TransportParameters parameters)
@@ -371,14 +355,7 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
             }
 
             @Override
-            public void onFailure(Session session, Throwable failure)
-            {
-                if (failure instanceof TimeoutException)
-                    clientFailureLatch.countDown();
-            }
-
-            @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -387,7 +364,7 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
         ((QuicSession)clientSession).setKeepAliveEnabled(false);
 
         CountDownLatch clientStreamFailureLatch = new CountDownLatch(2);
-        CountDownLatch clientStreamCloseLatch = new CountDownLatch(2);
+        CountDownLatch clientStreamTerminatedLatch = new CountDownLatch(2);
         long streamId1 = clientSession.newStreamId(true);
         Stream clientStream1 = clientSession.newStream(streamId1, new Stream.Listener()
         {
@@ -402,7 +379,7 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
             @Override
             public void onTerminated(Stream stream)
             {
-                clientStreamCloseLatch.countDown();
+                clientStreamTerminatedLatch.countDown();
             }
         });
         Consumer<Throwable> throwableConsumer = _ -> clientStream1.demand();
@@ -421,7 +398,7 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
             @Override
             public void onTerminated(Stream stream)
             {
-                clientStreamCloseLatch.countDown();
+                clientStreamTerminatedLatch.countDown();
             }
         });
         clientStream2.data(true, RetainableByteBuffer.EMPTY, Callback.from(NON_BLOCKING, _ -> clientStream2.demand()));
@@ -430,12 +407,11 @@ public class SessionIdleTimeoutTest extends AbstractQuicTest
         await().atMost(5, SECONDS).until(serverSession::getStreams, hasSize(2));
 
         assertTrue(clientStreamFailureLatch.await(2 * idleTimeout, MILLISECONDS));
-        assertTrue(clientStreamCloseLatch.await(5, SECONDS));
+        assertTrue(clientStreamTerminatedLatch.await(5, SECONDS));
 
         // The client sent a CONNECTION_CLOSE frame to the server.
         assertTrue(serverCloseLatch.await(5, SECONDS));
-        // The server streams are remotely closed, but not locally closed.
-        assertThat(serverSession.getStreams(), hasSize(2));
+        await().atMost(5, SECONDS).until(serverSession::getStreams, hasSize(0));
 
         // Wait for the server-side session to be closed, typically 3 PTOs.
         ServerQuicConnection connection = (ServerQuicConnection)((QuicSession)serverSession).getQuicConnection();

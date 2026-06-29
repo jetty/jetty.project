@@ -23,10 +23,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -49,7 +50,7 @@ import org.eclipse.jetty.quic.api.frames.PaddingFrame;
 import org.eclipse.jetty.quic.api.frames.PathChallengeFrame;
 import org.eclipse.jetty.quic.api.frames.PathResponseFrame;
 import org.eclipse.jetty.quic.api.frames.PingFrame;
-import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
 import org.eclipse.jetty.quic.api.frames.RetireConnectionIdFrame;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
@@ -116,7 +117,9 @@ public abstract class QuicSession extends AbstractSession
     private final AtomicLong recvOffset = new AtomicLong();
     private final AtomicLong recvMaxOffset = new AtomicLong();
     private final AtomicLong sentOffset = new AtomicLong();
-    private final AtomicLong sentMaxOffset = new AtomicLong();
+    private final AtomicLong sendMaxOffset = new AtomicLong();
+    private final AtomicBoolean flowControlStalled = new AtomicBoolean();
+    private final AtomicReference<ConnectionCloseFrame> closeFrame = new AtomicReference<>();
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private final QuicConnection connection;
@@ -140,10 +143,8 @@ public abstract class QuicSession extends AbstractSession
     private TransportParameters remoteTransportParameters;
     private volatile boolean biLocalStreamsStalled;
     private volatile boolean uniLocalStreamsStalled;
-    private volatile boolean flowControlStalled;
     private Scheduler.Task keepAliveTask;
     private EncryptionLevel encryptionLevel = EncryptionLevel.INITIAL;
-    private ConnectionCloseFrame closeFrame;
     private long closeBackoff;
 
     protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, TLSEngine tlsEngine, FlowController flowController, StreamsController streamsController, Session.Listener listener, boolean client)
@@ -312,6 +313,8 @@ public abstract class QuicSession extends AbstractSession
 
     private void sendKeepAlive()
     {
+        if (!isOpen())
+            return;
         if (LOG.isDebugEnabled())
             LOG.debug("sending keepalive on {}", this);
         sendProbe(encryptionLevel);
@@ -325,10 +328,9 @@ public abstract class QuicSession extends AbstractSession
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout expired on {}", this);
 
-        // RFC-9000[10]: QUIC idle timeouts are fatal and cannot be ignored.
-        // We use a keep-alive mechanism to avoid that idle timouts fire.
-        if (!updateToClosing())
-            return;
+        // RFC-9000[10]: QUIC idle timeouts are fatal and cannot be ignored,
+        // so we use the keep-alive mechanism to avoid that they fire, and
+        // idle timeouts are initiated by upper layer protocols.
 
         // RFC-9000[10.1]: the idle timeout should close the
         // connection silently, but we send a ConnectionCloseFrame
@@ -491,7 +493,7 @@ public abstract class QuicSession extends AbstractSession
             ? remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE)
             : remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
         if (maxSendData != null)
-            stream.updateSentMaxOffset(maxSendData);
+            stream.updateSendMaxOffset(maxSendData);
 
         // A local stream can only receive up to what the local stream wants to receive.
         Long maxRecvData = stream.isBidirectional()
@@ -562,7 +564,7 @@ public abstract class QuicSession extends AbstractSession
             ? remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
             : remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
         if (maxSendData != null)
-            stream.updateSentMaxOffset(maxSendData);
+            stream.updateSendMaxOffset(maxSendData);
 
         // A remote stream can only receive up to what the remote stream wants to receive.
         Long maxRecvData = stream.isBidirectional()
@@ -690,7 +692,7 @@ public abstract class QuicSession extends AbstractSession
             callback.succeeded();
     }
 
-    public void reset(QuicStream stream, ResetFrame frame, Callback callback)
+    public void reset(QuicStream stream, ResetStreamFrame frame, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("resetting {} for {} on {}", frame, stream, this);
@@ -745,7 +747,7 @@ public abstract class QuicSession extends AbstractSession
     public void disconnect(long quicError, String reason, long causeFrameType, Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("terminating {}/{}/{} on {}", quicError, reason, causeFrameType, this);
+            LOG.debug("disconnecting {}/{}/{} on {}", quicError, reason, causeFrameType, this);
 
         disconnect(new ConnectionCloseFrame(quicError, reason, causeFrameType), failure, callback);
     }
@@ -753,9 +755,17 @@ public abstract class QuicSession extends AbstractSession
     private void disconnect(ConnectionCloseFrame frame, Throwable failure, Callback callback)
     {
         if (updateToClosing())
-            offerTask(new ReadyTask(NON_BLOCKING, () -> serializedDisconnect(frame, failure, callback)), false);
+        {
+            // Remember the close frame to send it again if necessary.
+            closeFrame.compareAndSet(null, frame);
+            if (failure == null)
+                failure = new QuicException(ErrorCode.from(frame.errorCode()), frame.reason(), frame.causeFrameType());
+            disconnect(failure, callback);
+        }
         else
+        {
             callback.succeeded();
+        }
     }
 
     private boolean updateToClosing()
@@ -793,27 +803,25 @@ public abstract class QuicSession extends AbstractSession
         return disconnect;
     }
 
-    private void serializedDisconnect(ConnectionCloseFrame frame, Throwable failure, Callback callback)
+    private void disconnect(Throwable failure, Callback callback)
     {
-        // This method should be called by a Task submitted to the connection's execution strategy,
-        // to serialize notification of failure and/or disconnect events with read events.
-
-        closeFrame = Objects.requireNonNullElse(closeFrame, frame);
-
         // Tear down all the streams.
         List<QuicStream> streamsToFail;
         try (var _ = lock.lock())
         {
             streamsToFail = List.copyOf(streams.values());
         }
-        streamsToFail.forEach(stream -> stream.processFailure(failure));
+        streamsToFail.stream()
+            .map(stream -> stream.processFailure(failure))
+            .forEach(t -> offerTask(t, false));
 
-        flusher.sendFrames(encryptionLevel, List.of(frame), Callback.from(callback, this::disconnectComplete));
+        ConnectionCloseFrame frame = closeFrame.get();
+        flusher.sendFrames(encryptionLevel, List.of(frame), Callback.from(callback, () -> disconnectComplete(frame)));
     }
 
-    private void disconnectComplete()
+    private void disconnectComplete(ConnectionCloseFrame frame)
     {
-        emitDisconnect();
+        emitDisconnect(frame);
         dispose();
     }
 
@@ -991,12 +999,25 @@ public abstract class QuicSession extends AbstractSession
         }
         else
         {
+            if (packet instanceof Packet.WithFrames pwf)
+            {
+                if (pwf.frames().stream().anyMatch(f -> f instanceof ConnectionCloseFrame))
+                {
+                    updateToDraining();
+                    return;
+                }
+            }
+
             // RFC-9000[10.2.1]: send a ConnectionCloseFrame in
             // response to any packet received in CLOSING state.
             // Use a power-of-2 backoff to avoid sending too many
             // frames in reply to those sent by the remote peer.
             if (Long.bitCount(++closeBackoff) == 1)
-                serializedDisconnect(closeFrame, null, Callback.NOOP);
+            {
+                ConnectionCloseFrame frame = closeFrame.get();
+                Throwable failure = new QuicException(ErrorCode.from(frame.errorCode()), frame.reason(), frame.causeFrameType());
+                disconnect(failure, Callback.NOOP);
+            }
         }
     }
 
@@ -1120,12 +1141,12 @@ public abstract class QuicSession extends AbstractSession
         {
             streamOffset = Math.max(streamOffset, switch (frame)
             {
-                case ResetFrame resetFrame ->
+                case ResetStreamFrame resetStreamFrame ->
                 {
                     // RFC-9000[19.4]: local unidirectional stream receiving a reset produces a connection error.
                     if (stream.isLocal() && !stream.isBidirectional())
                         throw new QuicException(ErrorCode.STREAM_STATE_ERROR, "local_unidirectional_stream_reset", frame.type());
-                    yield resetFrame.finalSize();
+                    yield resetStreamFrame.finalSize();
                 }
                 case StreamFrame streamFrame -> streamFrame.offset() + streamFrame.length();
                 case StreamMaxDataFrame streamMaxDataFrame ->
@@ -1210,7 +1231,9 @@ public abstract class QuicSession extends AbstractSession
             streamsToFail = List.copyOf(streams.values());
         }
         Throwable failure = new QuicException(ErrorCode.from(frame.errorCode()), frame.reason(), frame.causeFrameType());
-        streamsToFail.forEach(stream -> stream.processFailure(failure));
+        streamsToFail.stream()
+            .map(stream -> stream.processFailure(failure))
+            .forEach(t -> offerTask(t, false));
 
         getTLSEngine().tryFail(failure);
 
@@ -1218,7 +1241,7 @@ public abstract class QuicSession extends AbstractSession
 
         // RFC-9000[10.2]: in the draining state we must not send
         // any frames, so just perform the after-complete actions.
-        disconnectComplete();
+        disconnectComplete(frame);
     }
 
     private boolean updateToDraining()
@@ -1317,7 +1340,7 @@ public abstract class QuicSession extends AbstractSession
     /// @return the number of bytes that it is possible to send
     public long getSendWindow()
     {
-        return sentMaxOffset.get() - getSentOffset();
+        return sendMaxOffset.get() - getSentOffset();
     }
 
     /// The sent data offset for this session.
@@ -1339,27 +1362,26 @@ public abstract class QuicSession extends AbstractSession
         Atomics.updateMax(sentOffset, offset);
     }
 
-    public long getSentMaxOffset()
+    /// @return the send max data offset for this session
+    public long getSendMaxOffset()
     {
-        return sentMaxOffset.get();
+        return sendMaxOffset.get();
     }
 
-    /// Updates the send max data for this session.
+    /// Updates the send max data offset for this session.
     ///
     /// This method is called initially when receiving
     /// the [TransportParameters.Ids#INITIAL_MAX_DATA],
     /// and later when receiving [MaxDataFrame]s.
-    public void updateSentMaxOffset(long newValue)
+    public void updateSendMaxOffset(long newValue)
     {
-        if (Atomics.updateMax(sentMaxOffset, newValue))
-            flowControlStalled = false;
+        if (Atomics.updateMax(sendMaxOffset, newValue))
+            flowControlStalled.set(false);
     }
 
     public boolean stallFlowControl()
     {
-        boolean stalled = flowControlStalled;
-        flowControlStalled = true;
-        return !stalled;
+        return flowControlStalled.compareAndSet(false, true);
     }
 
     private boolean updateMaxStreams(boolean bidirectional, long newValue)
@@ -1458,7 +1480,7 @@ public abstract class QuicSession extends AbstractSession
             if (local)
                 updateRecvMaxOffset(maxData);
             else
-                updateSentMaxOffset(maxData);
+                updateSendMaxOffset(maxData);
         }
 
         Long ackMaxDelay = parameters.get(TransportParameters.Ids.MAX_ACK_DELAY);
@@ -1640,14 +1662,14 @@ public abstract class QuicSession extends AbstractSession
                     {
                         // TODO: payload must be refreshed.
                     }
-                    case ResetFrame resetFrame ->
+                    case ResetStreamFrame resetStreamFrame ->
                     {
                         // TODO: reset() sets the stream to locally closed after the send.
                         //  However, we should think about making it so after we received
                         //  and ack for it?
-                        QuicStream stream = getStream(resetFrame.streamId());
+                        QuicStream stream = getStream(resetStreamFrame.streamId());
                         if (stream != null && !stream.isLocallyClosed())
-                            stream.reset(resetFrame.applicationErrorCode(), Callback.NOOP);
+                            stream.reset(resetStreamFrame.applicationErrorCode(), Callback.NOOP);
                     }
                     case RetireConnectionIdFrame retireConnectionIdFrame ->
                     {
@@ -1702,6 +1724,11 @@ public abstract class QuicSession extends AbstractSession
         // Serialize failure and disconnect events.
         offerTask(new ReadyTask(NON_BLOCKING, () ->
         {
+            // TODO: must decide whether this needs to notify upwards,
+            //  which may require a Callback like close(), and then disconnect.
+            //  The failure notified upwards should just dispose things
+            //  without attempting network communication (differently from close).
+
             notifyFailure(x);
 
             long errorCode;
@@ -1722,9 +1749,9 @@ public abstract class QuicSession extends AbstractSession
                 default ->
                 {
                     errorCode = ErrorCode.INTERNAL_ERROR.code();
-                    causeFrameType =0x00;
+                    causeFrameType = 0x00;
                 }
-            };
+            }
             disconnect(errorCode, x.getMessage(), causeFrameType, x, Callback.NOOP);
         }), false);
     }

@@ -40,40 +40,52 @@ import org.eclipse.jetty.tls.KeyShare;
 import org.eclipse.jetty.tls.NamedGroup;
 import org.eclipse.jetty.tls.TLSException;
 
+import static org.eclipse.jetty.tls.NamedGroup.ffdhe2048_code;
+import static org.eclipse.jetty.tls.NamedGroup.ffdhe3072_code;
+import static org.eclipse.jetty.tls.NamedGroup.ffdhe4096_code;
+import static org.eclipse.jetty.tls.NamedGroup.ffdhe6144_code;
+import static org.eclipse.jetty.tls.NamedGroup.ffdhe8192_code;
+import static org.eclipse.jetty.tls.NamedGroup.secp256r1_code;
+import static org.eclipse.jetty.tls.NamedGroup.secp384r1_code;
+import static org.eclipse.jetty.tls.NamedGroup.secp521r1_code;
+import static org.eclipse.jetty.tls.NamedGroup.x25519_code;
+import static org.eclipse.jetty.tls.NamedGroup.x448_code;
+
 public record GroupKeyPair(NamedGroup group, KeyPair keyPair)
 {
     public static GroupKeyPair from(NamedGroup group) throws Exception
     {
-        return switch (group)
+        return switch (group.code())
         {
-            case x448, x25519 ->
+            case x448_code, x25519_code ->
             {
                 KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(group.name());
                 KeyPair keyPair = keyPairGenerator.generateKeyPair();
                 yield new GroupKeyPair(group, keyPair);
             }
-            case secp256r1, secp384r1, secp521r1 ->
+            case secp256r1_code, secp384r1_code, secp521r1_code ->
             {
                 KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
                 keyPairGenerator.initialize(new ECGenParameterSpec(group.name()));
                 KeyPair keyPair = keyPairGenerator.generateKeyPair();
                 yield new GroupKeyPair(group, keyPair);
             }
-            case ffdhe2048, ffdhe3072, ffdhe4096, ffdhe6144, ffdhe8192 ->
+            case ffdhe2048_code, ffdhe3072_code, ffdhe4096_code, ffdhe6144_code, ffdhe8192_code ->
             {
                 KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DH");
                 keyPairGenerator.initialize(Integer.parseInt(group.name().substring("ffdhe".length())));
                 KeyPair keyPair = keyPairGenerator.generateKeyPair();
                 yield new GroupKeyPair(group, keyPair);
             }
+            default -> throw new UnsupportedOperationException("unknown " + group);
         };
     }
 
     public KeyShare toKeyShare()
     {
-        return switch (group())
+        return switch (group().code())
         {
-            case x25519, x448 ->
+            case x25519_code, x448_code ->
             {
                 // RFC 8446, Section 4.2.8.2.
                 XECPublicKey publicKey = (XECPublicKey)keyPair().getPublic();
@@ -81,7 +93,7 @@ public record GroupKeyPair(NamedGroup group, KeyPair keyPair)
                 // RFC 7748, Section 5: the coordinate is little-endian, BigInteger returns big-endian.
                 yield new KeyShare(group, reverse(bytes));
             }
-            case secp256r1, secp384r1, secp521r1 ->
+            case secp256r1_code, secp384r1_code, secp521r1_code ->
             {
                 // RFC 8446, Section 4.2.8.2.
                 ECPublicKey publicKey = (ECPublicKey)keyPair().getPublic();
@@ -95,12 +107,13 @@ public record GroupKeyPair(NamedGroup group, KeyPair keyPair)
                 System.arraycopy(y, 0, keyShare, 1 + x.length, y.length);
                 yield new KeyShare(group, keyShare);
             }
-            case ffdhe2048, ffdhe3072, ffdhe4096, ffdhe6144, ffdhe8192 ->
+            case ffdhe2048_code, ffdhe3072_code, ffdhe4096_code, ffdhe6144_code, ffdhe8192_code ->
             {
                 // RFC 8446, Section 4.2.8.1.
                 DHPublicKey pub = (DHPublicKey)keyPair().getPublic();
                 yield new KeyShare(group, toFixedLengthBytes(pub.getY(), length(group())));
             }
+            default -> throw new UnsupportedOperationException("unknown " + group);
         };
     }
 
@@ -112,18 +125,19 @@ public record GroupKeyPair(NamedGroup group, KeyPair keyPair)
         try
         {
             int length = length(keyShare.namedGroup());
-            return switch (group())
+            return switch (group().code())
             {
-                case x25519 -> xGenerateSharedSecret(keyShare, NamedParameterSpec.X25519, length);
-                case x448 -> xGenerateSharedSecret(keyShare, NamedParameterSpec.X448, length);
-                case secp256r1 -> secpGenerateSharedSecret(keyShare, length);
-                case secp384r1 -> secpGenerateSharedSecret(keyShare, length);
-                case secp521r1 -> secpGenerateSharedSecret(keyShare, length);
-                case ffdhe2048 -> ffdheGenerateSharedSecret(keyShare, length);
-                case ffdhe3072 -> ffdheGenerateSharedSecret(keyShare, length);
-                case ffdhe4096 -> ffdheGenerateSharedSecret(keyShare, length);
-                case ffdhe6144 -> ffdheGenerateSharedSecret(keyShare, length);
-                case ffdhe8192 -> ffdheGenerateSharedSecret(keyShare, length);
+                case x25519_code -> xGenerateSharedSecret(keyShare, NamedParameterSpec.X25519, length);
+                case x448_code -> xGenerateSharedSecret(keyShare, NamedParameterSpec.X448, length);
+                case secp256r1_code -> secpGenerateSharedSecret(keyShare, length);
+                case secp384r1_code -> secpGenerateSharedSecret(keyShare, length);
+                case secp521r1_code -> secpGenerateSharedSecret(keyShare, length);
+                case ffdhe2048_code -> ffdheGenerateSharedSecret(keyShare, length);
+                case ffdhe3072_code -> ffdheGenerateSharedSecret(keyShare, length);
+                case ffdhe4096_code -> ffdheGenerateSharedSecret(keyShare, length);
+                case ffdhe6144_code -> ffdheGenerateSharedSecret(keyShare, length);
+                case ffdhe8192_code -> ffdheGenerateSharedSecret(keyShare, length);
+                default -> throw new UnsupportedOperationException("unknown " + group);
             };
         }
         catch (TLSException x)
@@ -226,18 +240,19 @@ public record GroupKeyPair(NamedGroup group, KeyPair keyPair)
 
     private static int length(NamedGroup group)
     {
-        return switch (group)
+        return switch (group.code())
         {
-            case x25519 -> 32;
-            case x448 -> 56;
-            case secp256r1 -> 32;
-            case secp384r1 -> 48;
-            case secp521r1 -> 66;
-            case ffdhe2048 -> 256;
-            case ffdhe3072 -> 384;
-            case ffdhe4096 -> 512;
-            case ffdhe6144 -> 768;
-            case ffdhe8192 -> 1024;
+            case x25519_code -> 32;
+            case x448_code -> 56;
+            case secp256r1_code -> 32;
+            case secp384r1_code -> 48;
+            case secp521r1_code -> 66;
+            case ffdhe2048_code -> 256;
+            case ffdhe3072_code -> 384;
+            case ffdhe4096_code -> 512;
+            case ffdhe6144_code -> 768;
+            case ffdhe8192_code -> 1024;
+            default -> throw new UnsupportedOperationException("unknown " + group);
         };
     }
 

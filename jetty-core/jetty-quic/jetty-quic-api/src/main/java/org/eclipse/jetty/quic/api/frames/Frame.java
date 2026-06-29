@@ -75,7 +75,7 @@ public sealed interface Frame extends AutoCloseable
         long streamId();
 
         abstract sealed class Abstract extends Frame.Abstract implements WithStreamId permits
-            ResetFrame,
+            ResetStreamFrame,
             StopSendingFrame,
             StreamDataBlockedFrame,
             StreamFrame,
@@ -104,7 +104,7 @@ public sealed interface Frame extends AutoCloseable
     }
 
     /// A QUIC frame carrying an offset and a length.
-    sealed interface WithOffset extends Frame, Comparable<WithOffset> permits ResetFrame, WithData
+    sealed interface WithOffset extends Frame, Comparable<WithOffset> permits ResetStreamFrame, WithData
     {
         long offset();
 

@@ -39,7 +39,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 
-public class PacketLossTest extends AbstractQuicTest
+public class PacketLossTest extends AbstractTest
 {
     @Test
     public void testFirstApplicationPacketLostIsRetransmitted() throws Exception
@@ -64,7 +64,7 @@ public class PacketLossTest extends AbstractQuicTest
         });
 
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, promise);
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener() {}, promise);
         QuicSession session = (QuicSession)promise.get(5, TimeUnit.SECONDS);
 
         session.setPacketListener(new QuicSession.PacketListener.Wrapper(session.getPacketListener())
@@ -176,7 +176,7 @@ public class PacketLossTest extends AbstractQuicTest
         });
 
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, promise);
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener() {}, promise);
         QuicSession clientSession = (QuicSession)promise.get(5, TimeUnit.SECONDS);
 
         clientSession.setPacketListener(new QuicSession.PacketListener.Wrapper(clientSession.getPacketListener())

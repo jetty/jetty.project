@@ -23,7 +23,8 @@ import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
-import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStream;
 import org.eclipse.jetty.quic.util.ErrorCode;
@@ -35,11 +36,13 @@ import org.junit.jupiter.api.Test;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class StreamResetTest extends AbstractQuicTest
+public class StreamResetTest extends AbstractTest
 {
     @Test
     public void testResetReceivedForSendOnlyStream() throws Exception
@@ -50,6 +53,12 @@ public class StreamResetTest extends AbstractQuicTest
         start(() -> new Session.Listener()
         {
             @Override
+            public void onPrepare(Session session, TransportParameters transportParameters)
+            {
+                transportParameters.put(TransportParameters.Ids.INITIAL_MAX_STREAMS_UNIDIRECTIONAL, 1L);
+            }
+
+            @Override
             public Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
             {
                 serverSessionRef.set(session);
@@ -58,12 +67,12 @@ public class StreamResetTest extends AbstractQuicTest
                     @Override
                     public void onNewStream(Stream stream, Frame.WithStreamId frame)
                     {
-                        // Sending a reset to a receive-only stream is an error.
+                        // Sending a reset to a receive-only stream is a connection error.
                         stream.reset(ErrorCode.NO_ERROR.code(), Callback.from(NON_BLOCKING, x ->
                         {
                             assertNotNull(x);
                             // Bypass the Stream API to actually send the reset frame.
-                            ((QuicSession)stream.getSession()).reset((QuicStream)stream, new ResetFrame(stream.getId(), ErrorCode.NO_ERROR.code(), -1), Callback.NOOP);
+                            ((QuicSession)stream.getSession()).reset((QuicStream)stream, new ResetStreamFrame(stream.getId(), ErrorCode.NO_ERROR.code(), -1), Callback.NOOP);
                         }));
                     }
                 };
@@ -72,11 +81,12 @@ public class StreamResetTest extends AbstractQuicTest
             @Override
             public void onClose(Session session, ConnectionCloseFrame frame)
             {
+                assertEquals(ErrorCode.STREAM_STATE_ERROR.code(), frame.errorCode());
                 serverCloseLatch.countDown();
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -84,10 +94,10 @@ public class StreamResetTest extends AbstractQuicTest
 
         CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -96,7 +106,7 @@ public class StreamResetTest extends AbstractQuicTest
 
         long streamId = clientSession.newStreamId(false);
         Stream clientStream = clientSession.newStream(streamId, new Stream.Listener() {});
-        clientStream.data(false, RetainableByteBuffer.wrap(ByteBuffer.allocate(1)), Callback.NOOP);
+        clientStream.data(false, RetainableByteBuffer.wrap(ByteBuffer.allocate(0)), Callback.NOOP);
 
         Session serverSession = await().atMost(5, SECONDS).until(serverSessionRef::get, notNullValue());
 
@@ -104,8 +114,7 @@ public class StreamResetTest extends AbstractQuicTest
         assertTrue(serverDisconnectLatch.await(5, SECONDS));
         assertTrue(clientDisconnectLatch.await(5, SECONDS));
 
-        await().atMost(5, SECONDS).until(serverSession::getStreams, Matchers.empty());
-        await().atMost(5, SECONDS).until(clientSession::getStreams, Matchers.empty());
-
+        await().atMost(5, SECONDS).untilAsserted(serverSession::getStreams, streams -> assertThat(String.valueOf(streams), streams, Matchers.empty()));
+        await().atMost(5, SECONDS).untilAsserted(clientSession::getStreams, streams -> assertThat(String.valueOf(streams), streams, Matchers.empty()));
     }
 }

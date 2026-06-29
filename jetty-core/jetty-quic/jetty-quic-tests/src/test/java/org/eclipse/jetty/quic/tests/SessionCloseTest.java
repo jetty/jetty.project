@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-public class SessionCloseTest extends AbstractQuicTest
+public class SessionCloseTest extends AbstractTest
 {
     @Test
     public void testClientConnectTimeout() throws Exception
@@ -53,16 +53,16 @@ public class SessionCloseTest extends AbstractQuicTest
         start(() -> new Session.Listener() {});
 
         long connectTimeout = 1000;
-        client.getClientConnector().setConnectTimeout(Duration.ofMillis(connectTimeout));
+        quicClient.getClientConnector().setConnectTimeout(Duration.ofMillis(connectTimeout));
 
-        SocketAddress remoteAddress = new InetSocketAddress("localhost", connector.getLocalPort());
+        SocketAddress remoteAddress = new InetSocketAddress("localhost", serverConnector.getLocalPort());
         // Stop the server connector so that client packets won't reach the server.
-        connector.stop();
+        serverConnector.stop();
 
         CountDownLatch clientFailureLatch = new CountDownLatch(1);
         CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         CompletableFuture<Session> future = new CompletableFuture<>();
-        client.connect(remoteAddress, new Session.Listener()
+        quicClient.connect(remoteAddress, new Session.Listener()
         {
             @Override
             public void onFailure(Session session, Throwable failure)
@@ -71,7 +71,7 @@ public class SessionCloseTest extends AbstractQuicTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -104,19 +104,19 @@ public class SessionCloseTest extends AbstractQuicTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 serverDisconnectLatch.countDown();
             }
         });
 
         // Make the server fail with no cipher suites in common.
-        connector.getServerQuicConfiguration().setCipherSuites(List.of());
+        serverConnector.getServerQuicConfiguration().setCipherSuites(List.of());
 
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
         CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         CompletableFuture<Session> future = new CompletableFuture<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onClose(Session session, ConnectionCloseFrame frame)
@@ -125,7 +125,7 @@ public class SessionCloseTest extends AbstractQuicTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -152,19 +152,19 @@ public class SessionCloseTest extends AbstractQuicTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 serverDisconnectLatch.countDown();
             }
         });
 
         // Make the client fail with no protocols in common.
-        client.setApplicationProtocols(List.of("http/1.1"));
+        quicClient.setApplicationProtocols(List.of("http/1.1"));
 
         CountDownLatch clientFailureLatch = new CountDownLatch(1);
         CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         CompletableFuture<Session> future = new CompletableFuture<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onFailure(Session session, Throwable failure)
@@ -173,7 +173,7 @@ public class SessionCloseTest extends AbstractQuicTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -200,7 +200,7 @@ public class SessionCloseTest extends AbstractQuicTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -214,7 +214,7 @@ public class SessionCloseTest extends AbstractQuicTest
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
         CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         CompletableFuture<Session> future = new CompletableFuture<>();
-        client.connect(new InetSocketAddress(serverAddress, connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress(serverAddress, serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onClose(Session session, ConnectionCloseFrame frame)
@@ -223,7 +223,7 @@ public class SessionCloseTest extends AbstractQuicTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -266,8 +266,9 @@ public class SessionCloseTest extends AbstractQuicTest
                     {
                         // Drop ConnectionCloseFrames so we can send.
                         boolean drop = packet instanceof Packet.WithFrames pwf && pwf.frames().stream().anyMatch(ConnectionCloseFrame.class::isInstance);
-                        if (!drop)
-                            super.onIncomingPacket(session, packet);
+                        if (drop)
+                            return;
+                        super.onIncomingPacket(session, packet);
                     }
                 });
             }
@@ -275,7 +276,7 @@ public class SessionCloseTest extends AbstractQuicTest
 
         CountDownLatch clientPingLatch = new CountDownLatch(1);
         CompletableFuture<Session> future = new CompletableFuture<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onPing(Session session)
@@ -314,7 +315,7 @@ public class SessionCloseTest extends AbstractQuicTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -322,10 +323,10 @@ public class SessionCloseTest extends AbstractQuicTest
 
         CountDownLatch clientDisconnectLatch = new CountDownLatch(2);
         CompletableFuture<Session> future1 = new CompletableFuture<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -333,24 +334,24 @@ public class SessionCloseTest extends AbstractQuicTest
         assertNotNull(future1.get(5, SECONDS));
 
         CompletableFuture<Session> future2 = new CompletableFuture<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 clientDisconnectLatch.countDown();
             }
         }, Promise.Invocable.toPromise(future2));
         assertNotNull(future2.get(5, SECONDS));
 
-        client.stop();
+        quicClient.stop();
 
         assertTrue(clientDisconnectLatch.await(5, SECONDS));
         assertTrue(serverCloseLatch.await(5, SECONDS));
         assertTrue(serverDisconnectLatch.await(5, SECONDS));
 
-        await().atMost(5, SECONDS).until(() -> client.getBean(SessionContainer.class).isEmpty());
-        await().atMost(5, SECONDS).until(() -> connector.getBean(SessionContainer.class).isEmpty());
+        await().atMost(5, SECONDS).until(() -> quicClient.getBean(SessionContainer.class).isEmpty());
+        await().atMost(5, SECONDS).until(() -> serverConnector.getBean(SessionContainer.class).isEmpty());
     }
 
     @Test
@@ -360,7 +361,7 @@ public class SessionCloseTest extends AbstractQuicTest
         start(() -> new Session.Listener()
         {
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -369,7 +370,7 @@ public class SessionCloseTest extends AbstractQuicTest
         CountDownLatch clientCloseLatch = new CountDownLatch(2);
         CountDownLatch clientDisconnectLatch = new CountDownLatch(2);
         CompletableFuture<Session> future1 = new CompletableFuture<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onClose(Session session, ConnectionCloseFrame frame)
@@ -378,7 +379,7 @@ public class SessionCloseTest extends AbstractQuicTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -386,7 +387,7 @@ public class SessionCloseTest extends AbstractQuicTest
         assertNotNull(future1.get(5, SECONDS));
 
         CompletableFuture<Session> future2 = new CompletableFuture<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onClose(Session session, ConnectionCloseFrame frame)
@@ -395,7 +396,7 @@ public class SessionCloseTest extends AbstractQuicTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, ConnectionCloseFrame frame)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -408,7 +409,7 @@ public class SessionCloseTest extends AbstractQuicTest
         assertTrue(clientCloseLatch.await(5, SECONDS));
         assertTrue(clientDisconnectLatch.await(5, SECONDS));
 
-        await().atMost(5, SECONDS).until(() -> connector.getBean(SessionContainer.class).isEmpty());
-        await().atMost(5, SECONDS).until(() -> client.getBean(SessionContainer.class).isEmpty());
+        await().atMost(5, SECONDS).until(() -> serverConnector.getBean(SessionContainer.class).isEmpty());
+        await().atMost(5, SECONDS).until(() -> quicClient.getBean(SessionContainer.class).isEmpty());
     }
 }

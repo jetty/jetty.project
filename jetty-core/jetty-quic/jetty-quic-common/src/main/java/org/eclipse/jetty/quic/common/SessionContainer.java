@@ -21,6 +21,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.eclipse.jetty.quic.api.Session;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -60,7 +61,7 @@ public class SessionContainer extends AbstractLifeCycle implements Session.Liste
     }
 
     @Override
-    public void onDisconnect(Session session)
+    public void onDisconnect(Session session, ConnectionCloseFrame frame)
     {
         lock.readLock().lock();
         try

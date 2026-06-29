@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.quic.common.tls.parser;
 
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -27,6 +26,7 @@ public class QuicTransportParametersExtensionParser implements ExtensionParser
 {
     private final TransportParametersParser parser = new TransportParametersParser(new VarLenInt());
     private final ExtensionParser.Listener listener;
+    private int totalLength;
 
     public QuicTransportParametersExtensionParser(Listener listener)
     {
@@ -45,9 +45,12 @@ public class QuicTransportParametersExtensionParser implements ExtensionParser
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         int remaining = byteBuffer.remaining();
         TransportParameters parameters = parser.parse(byteBuffer);
+        totalLength += remaining - byteBuffer.remaining();
         if (parameters == null)
-            throw new BufferUnderflowException();
+            return -1;
         listener.onExtension(new QuicTransportParametersExtension(parameters));
-        return remaining - byteBuffer.remaining();
+        int result = totalLength;
+        totalLength = 0;
+        return result;
     }
 }

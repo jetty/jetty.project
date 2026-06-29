@@ -106,6 +106,9 @@ public class QuicFlusher extends IteratingCallback
 
     public void sendAcknowledgment(Packet.WithFrames packet, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sending acknowledgment for {} on {}", packet, this);
+
         EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
         switch (encryptionLevel)
         {
@@ -125,6 +128,9 @@ public class QuicFlusher extends IteratingCallback
     /// @param callback the [Callback] to notify when the send is complete
     public void sendPacket(Packet packet, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sending {} on {}", packet, this);
+
         if (packetFlusher.sendPacket(packet, callback))
             iterate();
     }
@@ -136,6 +142,9 @@ public class QuicFlusher extends IteratingCallback
     /// @param callback the [Callback] to notify when the send is complete
     public void sendFrames(EncryptionLevel encryptionLevel, List<Frame> frames, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sending {} {} on {}", encryptionLevel, frames, this);
+
         boolean flush = switch (encryptionLevel)
         {
             case INITIAL -> initialFlusher.sendFrames(frames, callback);
@@ -149,6 +158,9 @@ public class QuicFlusher extends IteratingCallback
 
     public void sendProbe(EncryptionLevel encryptionLevel)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sending {} probe on {}", encryptionLevel, this);
+
         boolean flush = switch (encryptionLevel)
         {
             case INITIAL -> initialFlusher.sendProbe();
@@ -167,6 +179,9 @@ public class QuicFlusher extends IteratingCallback
     /// @param callback the [Callback] to notify when the send is complete
     public void sendFrames(QuicStream stream, List<Frame> frames, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sending {} for {} on {}", frames, stream, this);
+
         if (oneRTTFlusher.sendFrames(stream, frames, callback))
             iterate();
     }

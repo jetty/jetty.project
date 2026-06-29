@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class StreamsControlTest extends AbstractQuicTest
+public class StreamsControlTest extends AbstractTest
 {
     @Test
     public void testMaxStreams() throws Exception
@@ -66,7 +66,7 @@ public class StreamsControlTest extends AbstractQuicTest
 
         CountDownLatch maxStreamsLatch = new CountDownLatch(1);
         CompletableFuture<Session> future = new CompletableFuture<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onMaxStreams(Session session, MaxStreamsFrame frame)

@@ -14,8 +14,8 @@
 package org.eclipse.jetty.quic.tests;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.quic.api.Session;
@@ -33,7 +33,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ZeroRTTQuicTest extends AbstractQuicTest
+public class ZeroRTTQuicTest extends AbstractTest
 {
     @Test
     public void testZeroRTT() throws Exception
@@ -41,9 +41,9 @@ public class ZeroRTTQuicTest extends AbstractQuicTest
         start(() -> new Session.Listener() {});
 
         // Establish a first connection.
-        List<Message> incomingTLSMessages = new ArrayList<>();
+        List<Message> incomingTLSMessages = new CopyOnWriteArrayList<>();
         Promise.Completable.<Session>with(p ->
-            client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), null, new Session.Listener()
+            quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), null, new Session.Listener()
             {
                 @Override
                 public void onPrepare(Session session, TransportParameters transportParameters)
@@ -65,11 +65,11 @@ public class ZeroRTTQuicTest extends AbstractQuicTest
         incomingTLSMessages.clear();
 
         // Make sure there is a zero-rtt entry to resume the second connection.
-        await().atMost(5, TimeUnit.SECONDS).until(client.getZeroRTTStore()::size, equalTo(1));
+        await().atMost(5, TimeUnit.SECONDS).until(quicClient.getZeroRTTStore()::size, equalTo(1));
 
         // Establish a second connection, it should be resumed (zero-RTT with no early data).
         Promise.Completable.<Session>with(p ->
-            client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), BufferUtil.EMPTY_BUFFER, new Session.Listener()
+            quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), BufferUtil.EMPTY_BUFFER, new Session.Listener()
             {
                 @Override
                 public void onPrepare(Session session, TransportParameters transportParameters)
