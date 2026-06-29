@@ -132,6 +132,8 @@ public abstract class QuicConnection extends AbstractConnection
 
     void offerTask(Invocable.Task task, boolean dispatch)
     {
+        if (task == null)
+            return;
         try (var _ = lock.lock())
         {
             tasks.offer(task);

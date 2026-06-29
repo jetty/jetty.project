@@ -16,7 +16,6 @@
     <module>jetty-quic-api</module>
     <module>jetty-quic-client</module>
     <module>jetty-quic-common</module>
-    <module>jetty-quic-quiche</module>
     <module>jetty-quic-util</module>
     <module>jetty-quic-tests</module>
     <module>jetty-quic-server</module>

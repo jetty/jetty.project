@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.quic.api.QuicVersion;
+import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
@@ -66,7 +68,13 @@ public class ClientTLSEngineTest
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, false), new QuicMessagesGenerator(byteBufferPool, true));
         PacketProtector packetProtector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        configuration = new ClientTLSConfiguration(new QuicClientQuicConfiguration(), sslContextFactory, new DefaultZeroRTTStore());
+        QuicClientQuicConfiguration quicConfig = new QuicClientQuicConfiguration();
+        TransportParameters transportParameters = new TransportParameters();
+        quicConfig.configure(transportParameters);
+        configuration = new ClientTLSConfiguration(quicConfig, sslContextFactory, new DefaultZeroRTTStore());
+        configuration.setTransportParameters(transportParameters);
+        // TODO: parametrize on the version.
+        configuration.setQuicVersion(QuicVersion.V1);
         configuration.setInputKeyMaterial(new byte[12]);
         engine = new ClientTLSEngine(packetProtector);
 

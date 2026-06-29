@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
-import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.util.ErrorCode;
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /// within QUIC packets, and this class is responsible
 /// for reordering them before delivering them to the
 /// application via the provided listener.
-public sealed abstract class FrameStream
+public abstract sealed class FrameStream
 {
     private static final Logger LOG = LoggerFactory.getLogger(FrameStream.class);
 
@@ -53,7 +53,7 @@ public sealed abstract class FrameStream
     {
         long finalSize = switch (frame)
         {
-            case ResetFrame resetFrame -> resetFrame.finalSize();
+            case ResetStreamFrame resetFrame -> resetFrame.finalSize();
             case StreamFrame streamFrame when streamFrame.isEndStream() -> streamFrame.offset() + streamFrame.length();
             default -> finalOffset;
         };
@@ -118,12 +118,12 @@ public sealed abstract class FrameStream
 
             switch (candidate)
             {
-                case ResetFrame resetFrame ->
+                case ResetStreamFrame resetStreamFrame ->
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("notifying, reset {} on {}", resetFrame, this);
+                        LOG.debug("notifying, reset {} on {}", resetStreamFrame, this);
                     frames.poll();
-                    notifyFrame(resetFrame);
+                    notifyFrame(resetStreamFrame);
                 }
                 case Frame.WithData dataFrame ->
                 {

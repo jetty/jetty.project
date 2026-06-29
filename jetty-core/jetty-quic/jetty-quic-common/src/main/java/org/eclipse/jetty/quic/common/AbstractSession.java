@@ -77,13 +77,13 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
             .forEach(this::notifyOpen);
     }
 
-    protected void emitDisconnect()
+    protected void emitDisconnect(ConnectionCloseFrame frame)
     {
-        notifyDisconnect();
+        notifyDisconnect(frame);
         configuration.getEventListeners().stream()
             .filter(l -> l instanceof Session.Listener)
             .map(Session.Listener.class::cast)
-            .forEach(this::notifyDisconnect);
+            .forEach(l -> notifyDisconnect(l, frame));
     }
 
     public abstract void offerTask(Runnable task, boolean dispatch);
@@ -287,16 +287,16 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         }
     }
 
-    protected void notifyDisconnect()
+    protected void notifyDisconnect(ConnectionCloseFrame frame)
     {
-        notifyDisconnect(listener);
+        notifyDisconnect(listener, frame);
     }
 
-    private void notifyDisconnect(Session.Listener listener)
+    private void notifyDisconnect(Session.Listener listener, ConnectionCloseFrame frame)
     {
         try
         {
-            listener.onDisconnect(this);
+            listener.onDisconnect(this, frame);
         }
         catch (Throwable x)
         {

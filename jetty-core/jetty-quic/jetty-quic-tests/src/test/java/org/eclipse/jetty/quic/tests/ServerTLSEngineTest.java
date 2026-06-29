@@ -67,7 +67,7 @@ public class ServerTLSEngineTest
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, true), new QuicMessagesGenerator(byteBufferPool, false));
         PacketProtector packetProtector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12"));
+        sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("server_keystore.p12"));
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.start();
         QuicServerQuicConfiguration quicConfiguration = new QuicServerQuicConfiguration();
@@ -133,15 +133,15 @@ public class ServerTLSEngineTest
         engine.onMessage(EncryptionLevel.INITIAL, message);
 
         assertThat(outMessages, empty());
-        assertHandshakeFailed(TLSException.Alert.ILLEGAL_PARAMETER);
+        assertHandshakeFailed(TLSException.Alert.MISSING_EXTENSION);
     }
 
-    private void assertHandshakeFailed(TLSException.Alert alert)
+    private void assertHandshakeFailed(TLSException.Alert expected)
     {
         Throwable failure = await().atMost(5, TimeUnit.SECONDS).until(handshake::get, notNullValue());
         assertInstanceOf(TLSException.class, failure);
         TLSException tlsException = (TLSException)failure;
-        assertSame(tlsException.getAlert(), alert);
+        assertSame(expected, tlsException.getAlert());
     }
 
     // TODO: and so on.

@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class QuicTest extends AbstractQuicTest
+public class QuicTest extends AbstractTest
 {
     @Test
     public void testEstablishConnection() throws Exception
@@ -77,7 +77,7 @@ public class QuicTest extends AbstractQuicTest
 
         List<String> clientEvents = new ArrayList<>();
         CompletableFuture<Session> future = new CompletableFuture<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onPrepare(Session session, TransportParameters transportParameters)
@@ -145,11 +145,11 @@ public class QuicTest extends AbstractQuicTest
         });
 
         Session clientSession = Promise.Completable.<Session>with(p ->
-            client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, p)
+            quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener() {}, p)
         ).get(5, SECONDS);
 
         CountDownLatch dataLatch = new CountDownLatch(1);
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(client.getClientConnector().getByteBufferPool(), false, -1, 0, 0);
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(quicClient.getClientConnector().getByteBufferPool(), false, -1, 0, 0);
         long streamId = clientSession.newStreamId(true);
         Stream stream = clientSession.newStream(streamId, new Stream.Listener()
         {
@@ -210,7 +210,7 @@ public class QuicTest extends AbstractQuicTest
 
         CountDownLatch clientDataLatch = new CountDownLatch(1);
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener()
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener()
         {
             @Override
             public void onPrepare(Session session, TransportParameters transportParameters)
@@ -293,7 +293,7 @@ public class QuicTest extends AbstractQuicTest
         });
 
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, promise);
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener() {}, promise);
         Session clientSession = promise.get(5, SECONDS);
 
         CountDownLatch clientDataLatch = new CountDownLatch(1);

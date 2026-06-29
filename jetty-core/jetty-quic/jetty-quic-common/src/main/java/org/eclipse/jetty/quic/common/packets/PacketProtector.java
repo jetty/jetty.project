@@ -45,6 +45,10 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.tls.CipherSuite.TLS_AES_128_GCM_SHA256_CODE;
+import static org.eclipse.jetty.tls.CipherSuite.TLS_AES_256_GCM_SHA384_CODE;
+import static org.eclipse.jetty.tls.CipherSuite.TLS_CHACHA20_POLY1305_SHA256_CODE;
+
 /// Performs QUIC packet protection and unprotection as per
 /// [RFC 9001](https://datatracker.ietf.org/doc/html/rfc9001).
 public class PacketProtector implements Encrypter, Decrypter
@@ -371,25 +375,27 @@ public class PacketProtector implements Encrypter, Decrypter
 
         private void initPayloadCipher(Cipher cipher, int cipherMode, SecretKey secretKey, byte[] nonce) throws GeneralSecurityException
         {
-            AlgorithmParameterSpec params = switch (cipherSuite)
+//            AlgorithmParameterSpec params = switch (cipherSuite)
+            AlgorithmParameterSpec params = switch (cipherSuite.code())
             {
-                case TLS_AES_128_GCM_SHA256, TLS_AES_256_GCM_SHA384 -> new GCMParameterSpec(cipherSuite.tagLength() * 8, nonce);
-                case TLS_CHACHA20_POLY1305_SHA256 -> new IvParameterSpec(nonce);
+                case TLS_AES_128_GCM_SHA256_CODE, TLS_AES_256_GCM_SHA384_CODE -> new GCMParameterSpec(cipherSuite.tagLength() * 8, nonce);
+                case TLS_CHACHA20_POLY1305_SHA256_CODE -> new IvParameterSpec(nonce);
+                default -> throw new UnsupportedOperationException("unsupported " + cipherSuite);
             };
             cipher.init(cipherMode, secretKey, params);
         }
 
         private byte[] newHeaderCipherMask(Cipher cipher, SecretKey secretKey, byte[] sample) throws GeneralSecurityException
         {
-            return switch (cipherSuite)
+            return switch (cipherSuite.code())
             {
-                case TLS_AES_128_GCM_SHA256, TLS_AES_256_GCM_SHA384 ->
+                case TLS_AES_128_GCM_SHA256_CODE, TLS_AES_256_GCM_SHA384_CODE ->
                 {
                     // RFC-9001[5.4.3].
                     cipher.init(Cipher.ENCRYPT_MODE, secretKey);
                     yield cipher.doFinal(sample);
                 }
-                case TLS_CHACHA20_POLY1305_SHA256 ->
+                case TLS_CHACHA20_POLY1305_SHA256_CODE ->
                 {
                     // RFC-9001[5.4.4].
                     int blockCounter = ByteBuffer.wrap(sample, 0, 4).order(ByteOrder.LITTLE_ENDIAN).getInt();
@@ -397,6 +403,7 @@ public class PacketProtector implements Encrypter, Decrypter
                     cipher.init(Cipher.ENCRYPT_MODE, secretKey, new ChaCha20ParameterSpec(nonce, blockCounter));
                     yield cipher.doFinal(new byte[5]);
                 }
+                default -> throw new UnsupportedOperationException("unsupported " + cipherSuite);
             };
         }
 

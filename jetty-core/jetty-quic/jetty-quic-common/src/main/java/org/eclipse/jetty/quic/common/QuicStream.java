@@ -25,7 +25,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
-import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
@@ -55,7 +55,8 @@ public class QuicStream extends AbstractStream
     private final AtomicLong recvOffset = new AtomicLong();
     private final AtomicLong recvMaxOffset = new AtomicLong();
     private final AtomicLong sentOffset = new AtomicLong();
-    private final AtomicLong sentMaxOffset = new AtomicLong();
+    private final AtomicLong sendMaxOffset = new AtomicLong();
+    private final AtomicBoolean flowControlStalled = new AtomicBoolean();
     private final AtomicBoolean disconnected = new AtomicBoolean();
     private final QuicSession session;
     private final FrameStream frameStream;
@@ -110,7 +111,7 @@ public class QuicStream extends AbstractStream
             LOG.debug("tracked ack of {} on {}", frame, this);
         boolean last = switch (frame)
         {
-            case ResetFrame _ -> true;
+            case ResetStreamFrame _ -> true;
             case StreamFrame sf -> sf.isEndStream();
             default -> false;
         };
@@ -128,7 +129,7 @@ public class QuicStream extends AbstractStream
                     boolean terminated;
                     try (var _ = lock.lock())
                     {
-                        terminated = closeState.localComplete();
+                        terminated = closeState.localAcked();
                     }
                     if (terminated)
                         session.remove(this);
@@ -189,14 +190,19 @@ public class QuicStream extends AbstractStream
         try (var _ = lock.lock())
         {
             readDemand = true;
+
+            // Field readStalled prevents infinite recursion in case
+            // that demand() is called when there is data to read().
             if (readStalled && !dataQueue.isEmpty())
             {
                 readStalled = false;
                 process = true;
             }
         }
+
         if (LOG.isDebugEnabled())
             LOG.debug("demand, {} data processing on {}", process ? "proceeding" : "stalling", this);
+
         if (process)
         {
             // Data is immediately available.
@@ -261,12 +267,12 @@ public class QuicStream extends AbstractStream
 
     public long getSendWindow()
     {
-        return getSentMaxOffset() - getSentOffset();
+        return getSendMaxOffset() - getSentOffset();
     }
 
-    public long getSentMaxOffset()
+    public long getSendMaxOffset()
     {
-        return sentMaxOffset.get();
+        return sendMaxOffset.get();
     }
 
     public long getSentOffset()
@@ -279,14 +285,20 @@ public class QuicStream extends AbstractStream
         Atomics.updateMax(sentOffset, sent);
     }
 
-    /// Updates the sent max data offset for this stream.
+    /// Updates the send max data offset for this stream.
     ///
     /// This method is called initially when receiving the
     /// [TransportParameters.Ids#INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE],
     /// and later when receiving [StreamMaxDataFrame]s.
-    public void updateSentMaxOffset(long maxData)
+    public void updateSendMaxOffset(long maxData)
     {
-        Atomics.updateMax(sentMaxOffset, maxData);
+        if (Atomics.updateMax(sendMaxOffset, maxData))
+            flowControlStalled.set(false);
+    }
+
+    public boolean stallFlowControl()
+    {
+        return flowControlStalled.compareAndSet(false, true);
     }
 
     @Override
@@ -309,7 +321,7 @@ public class QuicStream extends AbstractStream
         }
         if (closing)
         {
-            session.reset(this, new ResetFrame(getId(), appErrorCode, -1), Callback.from(callback, () ->
+            session.reset(this, new ResetStreamFrame(getId(), appErrorCode, -1), Callback.from(callback, () ->
             {
                 boolean terminated;
                 try (var _ = lock.lock())
@@ -369,7 +381,7 @@ public class QuicStream extends AbstractStream
 
         switch (frame)
         {
-            case ResetFrame resetFrame -> frameStream.offer(resetFrame);
+            case ResetStreamFrame resetStreamFrame -> frameStream.offer(resetStreamFrame);
             case StopSendingFrame stopSendingFrame -> processStopSendingFrame(stopSendingFrame);
             case StreamDataBlockedFrame streamDataBlockedFrame -> notifyDataBlockedFrame(streamDataBlockedFrame);
             case StreamFrame streamFrame -> frameStream.offer(streamFrame);
@@ -381,7 +393,7 @@ public class QuicStream extends AbstractStream
     {
         switch (frame)
         {
-            case ResetFrame resetFrame -> processResetFrame(resetFrame);
+            case ResetStreamFrame resetStreamFrame -> processResetStreamFrame(resetStreamFrame);
             case StreamFrame streamFrame -> processStreamFrame(streamFrame);
             default -> throw new AssertionError("unexpected_frame");
         }
@@ -394,7 +406,7 @@ public class QuicStream extends AbstractStream
         reset(frame.applicationErrorCode(), Callback.NOOP);
     }
 
-    private void processResetFrame(ResetFrame resetFrame)
+    private void processResetStreamFrame(ResetStreamFrame resetStreamFrame)
     {
         boolean process;
         try (var _ = lock.lock())
@@ -451,22 +463,36 @@ public class QuicStream extends AbstractStream
         }
     }
 
-    void processFailure(Throwable failure)
+    Invocable.Task processFailure(Throwable failure)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("processing failure on {}", this, failure);
-
-        boolean process;
-        try (var _ = lock.lock())
+        return new Invocable.Task.Abstract(getInvocationType())
         {
-            if (!closeState.remoteClosing())
-                return;
-            process = dataQueue.isEmpty() && readDemand;
-            dataQueue.offer(Content.Chunk.from(failure, true));
-        }
+            @Override
+            public void run()
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("processing failure on {}", QuicStream.this, failure);
 
-        if (process)
-            processDataAvailable(false);
+                boolean process;
+                List<Content.Chunk> chunks;
+                try (var _ = lock.lock())
+                {
+                    // Notify the application of the failure.
+                    process = dataQueue.isEmpty() && readDemand;
+
+                    // The chunks must be released to avoid leaking buffers.
+                    chunks = List.copyOf(dataQueue);
+                    dataQueue.clear();
+                    dataQueue.offer(Content.Chunk.from(failure, true));
+                }
+                chunks.forEach(Content.Chunk::release);
+
+                if (process)
+                    processDataAvailable(false);
+
+                session.remove(QuicStream.this);
+            }
+        };
     }
 
     private void notifyDataAvailable(boolean immediate)
@@ -525,13 +551,19 @@ public class QuicStream extends AbstractStream
         }
     }
 
+    private Invocable.InvocationType getInvocationType()
+    {
+        Listener listener = getListener();
+        return listener != null ? listener.getInvocationType() : NON_BLOCKING;
+    }
+
     @Override
     public String toString()
     {
         try (var l = lock.tryLock())
         {
             String held = l.isHeldByCurrentThread() ? "" : "?";
-            return "%s[%s:%s,dataQueue=%d,demand=%b,data/max=%d/%d]".formatted(super.toString(), held, closeState, dataQueue.size(), readDemand, getSentOffset(), getSentMaxOffset());
+            return "%s[%s:%s,dataQueue=%d,demand=%b,data/max=%d/%d]".formatted(super.toString(), held, closeState, dataQueue.size(), readDemand, getSentOffset(), getSendMaxOffset());
         }
     }
 
@@ -602,13 +634,21 @@ public class QuicStream extends AbstractStream
 
     private class CloseState
     {
+        /// State that indicates that a local close is initiated by sending a last data frame or a reset.
         private static final int LOCALLY_CLOSING = 0x01;
+        /// State that indicates that a previously initiated local close is complete.
         private static final int LOCALLY_CLOSED = 0x02;
-        private static final int LOCALLY_COMPLETE = 0x04;
-        private static final int LOCALLY_TERMINATED = LOCALLY_CLOSING | LOCALLY_CLOSED | LOCALLY_COMPLETE;
+        /// State that indicates that a local close has been acknowledged.
+        private static final int LOCALLY_ACKED = 0x04;
+        /// Mask that indicates that a local close has been initiated, completed and acknowledged.
+        private static final int LOCALLY_TERMINATED = LOCALLY_CLOSING | LOCALLY_CLOSED | LOCALLY_ACKED;
+        /// State that indicates that a remote close is initiated by receiving a last data frame or a reset.
         private static final int REMOTELY_CLOSING = 0x08;
+        /// State that indicates that a previously initiated remote close has been completed by reading it.
         private static final int REMOTELY_CLOSED = 0x10;
+        /// Mask that indicates that a remote close has been initiated and completed.
         private static final int REMOTELY_TERMINATED = REMOTELY_CLOSING | REMOTELY_CLOSED;
+        /// Mask that indicates that both local close and remote close have been terminated.
         private static final int TERMINATED = LOCALLY_TERMINATED | REMOTELY_TERMINATED;
 
         private int state;
@@ -629,10 +669,10 @@ public class QuicStream extends AbstractStream
             return update(LOCALLY_CLOSED);
         }
 
-        /// @return whether the local complete was terminal.
-        private boolean localComplete()
+        /// @return whether the local acknowledgement was terminal.
+        private boolean localAcked()
         {
-            return update(LOCALLY_COMPLETE);
+            return update(LOCALLY_ACKED);
         }
 
         /// @return whether the remote closing was initiated
@@ -685,8 +725,8 @@ public class QuicStream extends AbstractStream
             {
                 case LOCALLY_CLOSING -> "CLOSING";
                 case LOCALLY_CLOSED, LOCALLY_CLOSING | LOCALLY_CLOSED -> "CLOSED";
-                case LOCALLY_COMPLETE, LOCALLY_CLOSING | LOCALLY_COMPLETE -> "COMPLETE";
-                case LOCALLY_CLOSED | LOCALLY_COMPLETE, LOCALLY_TERMINATED -> "TERMINATED";
+                case LOCALLY_ACKED, LOCALLY_CLOSING | LOCALLY_ACKED -> "COMPLETE";
+                case LOCALLY_CLOSED | LOCALLY_ACKED, LOCALLY_TERMINATED -> "TERMINATED";
                 default -> "OPEN";
             };
             String remote = switch (state & REMOTELY_TERMINATED)
@@ -733,8 +773,7 @@ public class QuicStream extends AbstractStream
         @Override
         public InvocationType getInvocationType()
         {
-            Listener listener = getListener();
-            return listener == null ? NON_BLOCKING : listener.getInvocationType();
+            return QuicStream.this.getInvocationType();
         }
 
         @Override

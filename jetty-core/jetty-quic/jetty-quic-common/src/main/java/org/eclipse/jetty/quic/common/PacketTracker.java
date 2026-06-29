@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
-import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.util.NanoTime;
@@ -364,7 +364,7 @@ public class PacketTracker
             {
                 QuicStream stream = switch (frame)
                 {
-                    case ResetFrame rf -> session.getStream(rf.streamId());
+                    case ResetStreamFrame rf -> session.getStream(rf.streamId());
                     case StreamFrame sf -> session.getStream(sf.streamId());
                     default -> null;
                 };
@@ -404,7 +404,7 @@ public class PacketTracker
                         {
                             QuicStream stream = switch (frame)
                             {
-                                case ResetFrame rf -> session.getStream(rf.streamId());
+                                case ResetStreamFrame rf -> session.getStream(rf.streamId());
                                 case StreamFrame sf -> session.getStream(sf.streamId());
                                 default -> null;
                             };
@@ -484,7 +484,7 @@ public class PacketTracker
                 {
                     QuicStream stream = switch (frame)
                     {
-                        case ResetFrame rf -> session.getStream(rf.streamId());
+                        case ResetStreamFrame rf -> session.getStream(rf.streamId());
                         case StreamFrame sf -> session.getStream(sf.streamId());
                         default -> null;
                     };

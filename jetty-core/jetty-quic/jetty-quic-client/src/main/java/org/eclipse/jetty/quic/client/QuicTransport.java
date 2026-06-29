@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
@@ -29,11 +30,12 @@ import org.eclipse.jetty.quic.client.internal.ClientQuicSession;
 import org.eclipse.jetty.quic.client.internal.QuicClientConnectionFactory;
 import org.eclipse.jetty.quic.common.AbstractSession;
 import org.eclipse.jetty.quic.common.ProtocolSession;
-import org.eclipse.jetty.quic.common.ProtocolStreamListener;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,17 +71,20 @@ public class QuicTransport extends Transport.Wrapper
     @Override
     public void connect(SocketAddress socketAddress, Map<String, Object> context)
     {
-        // TODO: when coming from QuicClient, we arrive here with the context set up already,
-        //  and we just want to delegate to super.
-        //  However, we arrive here also from HttpClient/HTTP2Client/HTTP3Client, and we need
-        //  to set up QUIC-specific parameters that are typically set up in QuicClient, but
-        //  we don't want to duplicate code, nor overwrite existing parameters, nor recursing
-        //  and calling client.connect() again.
-
-//        Session.Listener listener = (Session.Listener)context.get(QuicClient.SESSION_LISTENER_CONTEXT_KEY);
-//        if (listener == null)
-//            listener = new ProtocolSessionListener(context);
-        super.connect(socketAddress, context);
+        if (context.containsKey(QuicClient.CONTEXT_KEY))
+        {
+            super.connect(socketAddress, context);
+        }
+        else
+        {
+            SslContextFactory.Client clientTLS = (SslContextFactory.Client)context.get(ClientConnector.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
+            Session.Listener listener = new ProtocolSessionListener(context);
+            @SuppressWarnings("unchecked")
+            Promise<Connection> ioPromise = (Promise<Connection>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
+            // Link the QUIC session promise to the IO connection promise in case of failures.
+            Promise<Session> promise = Promise.from(_ -> {}, ioPromise::failed);
+            client.connect(this, clientTLS, socketAddress, null, listener, context, promise);
+        }
     }
 
     private static class ProtocolSessionListener implements AbstractSession.Listener
@@ -114,10 +119,12 @@ public class QuicTransport extends Transport.Wrapper
         @Override
         public Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
         {
-            // TODO: this needs to be done properly.
-            //  The StreamEP should be created in ProtocolStreamListener.Client.onNewStream()
-            //  rather than here, because here we don't have the Stream object.
-            return new ProtocolStreamListener.Client(null/*TODO*/);
+            // TODO: do server open streams towards the client?
+            //  Use ProtocolStreamListener.Client if so.
+            //  Or should be use ProtocolStreamListener.Server because it's a remote stream?
+            //  Also, the Stream is not available here, it is in Stream.Listener.onNewStream().
+            //  See what's happening for H3 in HTTP3SessionClient.newRequest().
+            throw new UnsupportedOperationException();
         }
 
         @Override

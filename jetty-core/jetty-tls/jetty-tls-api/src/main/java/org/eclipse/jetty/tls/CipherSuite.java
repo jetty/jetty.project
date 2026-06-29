@@ -16,18 +16,28 @@ package org.eclipse.jetty.tls;
 import java.util.HashMap;
 import java.util.Map;
 
-public enum CipherSuite
+/// A TLS cipher suite.
+///
+/// NOTE: this class is not an enum because it has an open set of values
+/// that are part of TLS messages that are used to derive cryptographic keys.
+public final class CipherSuite
 {
-    TLS_AES_128_GCM_SHA256(0x1301),
-    TLS_AES_256_GCM_SHA384(0x1302),
-    TLS_CHACHA20_POLY1305_SHA256(0x1303);
+    private static final Map<Integer, CipherSuite> INSTANCES = new HashMap<>();
+
+    public static final int TLS_AES_128_GCM_SHA256_CODE = 0x1301;
+    public static final CipherSuite TLS_AES_128_GCM_SHA256 = create(TLS_AES_128_GCM_SHA256_CODE);
+
+    public static final int TLS_AES_256_GCM_SHA384_CODE = 0x1302;
+    public static final CipherSuite TLS_AES_256_GCM_SHA384 = create(TLS_AES_256_GCM_SHA384_CODE);
+
+    public static final int TLS_CHACHA20_POLY1305_SHA256_CODE = 0x1303;
+    public static final CipherSuite TLS_CHACHA20_POLY1305_SHA256 = create(TLS_CHACHA20_POLY1305_SHA256_CODE);
 
     private final int code;
 
-    CipherSuite(int code)
+    private CipherSuite(int code)
     {
         this.code = code;
-        Codes.CODES.put(code, this);
     }
 
     public int code()
@@ -37,71 +47,100 @@ public enum CipherSuite
 
     public int keyLength()
     {
-        return switch (this)
+        return switch (code())
         {
-            case TLS_AES_128_GCM_SHA256 -> 16;
-            case TLS_AES_256_GCM_SHA384 -> 32;
-            case TLS_CHACHA20_POLY1305_SHA256 -> 32;
+            case TLS_AES_128_GCM_SHA256_CODE -> 16;
+            case TLS_AES_256_GCM_SHA384_CODE -> 32;
+            case TLS_CHACHA20_POLY1305_SHA256_CODE -> 32;
+            default -> throw new UnsupportedOperationException("unknown cipher suite " + this);
         };
     }
 
     public int hashLength()
     {
-        return switch (this)
+        return switch (code())
         {
-            case TLS_AES_128_GCM_SHA256 -> 32;
-            case TLS_AES_256_GCM_SHA384 -> 48;
-            case TLS_CHACHA20_POLY1305_SHA256 -> 32;
+            case TLS_AES_128_GCM_SHA256_CODE -> 32;
+            case TLS_AES_256_GCM_SHA384_CODE -> 48;
+            case TLS_CHACHA20_POLY1305_SHA256_CODE -> 32;
+            default -> throw new UnsupportedOperationException("unknown cipher suite " + this);
         };
     }
 
     public int tagLength()
     {
-        return switch (this)
+        return switch (code())
         {
-            case TLS_AES_128_GCM_SHA256 -> 16;
-            case TLS_AES_256_GCM_SHA384 -> 16;
-            case TLS_CHACHA20_POLY1305_SHA256 -> 16;
+            case TLS_AES_128_GCM_SHA256_CODE -> 16;
+            case TLS_AES_256_GCM_SHA384_CODE -> 16;
+            case TLS_CHACHA20_POLY1305_SHA256_CODE -> 16;
+            default -> throw new UnsupportedOperationException("unknown cipher suite " + this);
         };
     }
 
     public String algorithm()
     {
-        return switch (this)
+        return switch (code())
         {
-            case TLS_AES_128_GCM_SHA256 -> "AES";
-            case TLS_AES_256_GCM_SHA384 -> "AES";
-            case TLS_CHACHA20_POLY1305_SHA256 -> "ChaCha20";
+            case TLS_AES_128_GCM_SHA256_CODE -> "AES";
+            case TLS_AES_256_GCM_SHA384_CODE -> "AES";
+            case TLS_CHACHA20_POLY1305_SHA256_CODE -> "ChaCha20";
+            default -> throw new UnsupportedOperationException("unknown cipher suite " + this);
         };
     }
 
     public String payloadCipherName()
     {
-        return switch (this)
+        return switch (code())
         {
-            case TLS_AES_128_GCM_SHA256 -> "AES/GCM/NoPadding";
-            case TLS_AES_256_GCM_SHA384 -> "AES/GCM/NoPadding";
-            case TLS_CHACHA20_POLY1305_SHA256 -> "ChaCha20-Poly1305";
+            case TLS_AES_128_GCM_SHA256_CODE -> "AES/GCM/NoPadding";
+            case TLS_AES_256_GCM_SHA384_CODE -> "AES/GCM/NoPadding";
+            case TLS_CHACHA20_POLY1305_SHA256_CODE -> "ChaCha20-Poly1305";
+            default -> throw new UnsupportedOperationException("unknown cipher suite " + this);
         };
     }
 
     public String headerCipherName()
     {
-        return switch (this)
+        return switch (code())
         {
-            case TLS_AES_128_GCM_SHA256 -> "AES/ECB/NoPadding";
-            case TLS_AES_256_GCM_SHA384 -> "AES/ECB/NoPadding";
-            case TLS_CHACHA20_POLY1305_SHA256 -> "ChaCha20";
+            case TLS_AES_128_GCM_SHA256_CODE -> "AES/ECB/NoPadding";
+            case TLS_AES_256_GCM_SHA384_CODE -> "AES/ECB/NoPadding";
+            case TLS_CHACHA20_POLY1305_SHA256_CODE -> "ChaCha20";
+            default -> throw new UnsupportedOperationException("unknown cipher suite " + this);
         };
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (this == obj)
+            return true;
+        if (obj instanceof CipherSuite that)
+            return code == that.code;
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Long.hashCode(code);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s[0x%x]".formatted(getClass().getSimpleName(), code);
     }
 
     public static CipherSuite from(int code)
     {
-        return Codes.CODES.get(code);
+        CipherSuite result = INSTANCES.get(code);
+        return result != null ? result : new CipherSuite(code);
     }
 
-    private static class Codes
+    private static CipherSuite create(int code)
     {
-        private static final Map<Integer, CipherSuite> CODES = new HashMap<>();
+        return INSTANCES.computeIfAbsent(code, CipherSuite::new);
     }
 }

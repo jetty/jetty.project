@@ -30,7 +30,7 @@ import org.eclipse.jetty.quic.api.frames.NewConnectionIdFrame;
 import org.eclipse.jetty.quic.api.frames.NewTokenFrame;
 import org.eclipse.jetty.quic.api.frames.PathChallengeFrame;
 import org.eclipse.jetty.quic.api.frames.PathResponseFrame;
-import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
 import org.eclipse.jetty.quic.api.frames.RetireConnectionIdFrame;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
@@ -142,7 +142,7 @@ public class FramesGenerator
         return generated;
     }
 
-    public GeneratedFrame generateResetStreamFrame(RetainableByteBuffer.Mutable accumulator, ResetFrame frame, long finalSize, long maxBytes)
+    public GeneratedFrame generateResetStreamFrame(RetainableByteBuffer.Mutable accumulator, ResetStreamFrame frame, long finalSize, long maxBytes)
     {
         long frameType = frame.type();
         int capacity = VarLenInt.length(frameType);
@@ -159,7 +159,7 @@ public class FramesGenerator
         VarLenInt.encode(accumulator, error);
         VarLenInt.encode(accumulator, finalSize);
 
-        return new GeneratedFrame(new ResetFrame(streamId, error, finalSize), capacity);
+        return new GeneratedFrame(new ResetStreamFrame(streamId, error, finalSize), capacity);
     }
 
     private long generateStopSendingFrame(RetainableByteBuffer.Mutable accumulator, StopSendingFrame frame, long maxBytes)
@@ -227,7 +227,7 @@ public class FramesGenerator
     /// * `maxBytes`, the maximum number of frame bytes allowed by congestion control
     public GeneratedFrame generateStreamFrame(RetainableByteBuffer.Mutable accumulator, StreamFrame frame, long offset, long maxData, long maxBytes)
     {
-        assert maxData > 0;
+        assert maxData > 0 || (maxData == 0 && frame.remaining() == 0);
 
         long frameType = frame.type();
         long availableBytes = maxBytes - VarLenInt.length(frameType);
@@ -247,14 +247,14 @@ public class FramesGenerator
 
         long dataBytes = Math.min(frame.remaining(), maxData);
 
-        // Handle the case where the bytes to send are more than they fit in the frame.
+        // Handle the case where the bytes to send are more than they fit in maxBytes.
         // The data bytes are calculated without taking into account the length field.
         // This means that the data bytes are temporarily overestimated, which may lead
         // to reserving more bytes for the length field than necessary.
         // VarLenInt encodes 0-63 in 1 byte, and 64-16383 in 2 bytes.
         // If the data length below is estimated at 64, this means that the length field
-        // will occupy 2 bytes; however, when correcting the data length subtracting the
-        // length field length (2 bytes), the data length will be 62, which can be encoded
+        // will occupy 2 bytes; however, when correcting the available frame bytes subtracting
+        // the length field length (2 bytes), the data length will be 62, which can be encoded
         // as just 1 byte, so 63 data bytes could have been generated, but we don't bother.
         long estimatedDataLength = Math.min(dataBytes, availableBytes);
         int dataLengthLength = 0;

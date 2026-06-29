@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongFunction;
 
@@ -102,7 +102,7 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
     {
         // The max N that can produce a grease parameter id that fits a VarLenInt.
         private static final long MAX_N = 148764065110560899L;
-        private static final Map<Long, Id<?>> ids = new HashMap<>();
+        private static final Map<Long, Id<?>> ids = new ConcurrentHashMap<>();
 
         /// The client original destination connection id of the first Initial packet.
         /// Only sent by servers.
@@ -113,7 +113,7 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
 
         /// The 16-byte stateless reset token.
         /// Only sent by servers.
-        public static final Id<Long> STATELESS_RESET_TOKEN = Ids.create(0x02, LongId::new);
+        public static final Id<byte[]> STATELESS_RESET_TOKEN = Ids.create(0x02, BytesId::new);
 
         /// The maximum UDP payload size.
         public static final Id<Long> MAX_UDP_PAYLOAD_SIZE = Ids.create(0x03, LongId::new);
@@ -182,61 +182,35 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         /// TODO: handle this as described in RFC-9368.
         public static final Id<byte[]> VERSION_INFORMATION_ID = Ids.create(0x11, BytesId::new);
 
-        /// Creates a new [TransportParameters.Id] with the given id and type.
-        ///
-        /// @param id the transport parameter ID
-        /// @param creator the function that creates the specific [TransportParameters.Id]
-        /// @return a new [TransportParameters.Id]
-        /// @param <R> the type of the [TransportParameters.Id]
-        /// @see #get(long)
-        @SuppressWarnings("unchecked")
-        public static <R> Id<R> create(long id, LongFunction<Id<R>> creator)
+        /// @return the parameter ID for the corresponding `id`
+        public static Id<?> from(long id)
         {
-            return (Id<R>)ids.computeIfAbsent(id, creator::apply);
+            Id<?> result = ids.get(id);
+            return result != null ? result : new BytesId(id);
         }
 
-        /// Removes the [TransportParameters.Id] corresponding to the given id.
-        ///
-        /// @param id the transport parameter ID
-        @SuppressWarnings("unchecked")
-        public static <R> Id<R> remove(long id)
-        {
-            return (Id<R>)ids.remove(id);
-        }
-
-        /// Returns a [TransportParameters.Id] with the given id.
-        ///
-        /// @param id the transport parameter ID
-        /// @return the [TransportParameters.Id] with the given id, or `null`
-        /// @param <R> the type of the [TransportParameters.Id]
-        @SuppressWarnings("unchecked")
-        public static <R> Id<R> get(long id)
-        {
-            return (Id<R>)ids.get(id);
-        }
-
-        /**
-         * @return a new grease transport parameter ID
-         * @see #isGrease(long)
-         */
+        /// @return a new grease transport parameter ID
+        /// @see #isGrease(long)
         public static long newGrease()
         {
             return 31 * ThreadLocalRandom.current().nextLong(MAX_N + 1) + 27;
         }
 
-        /**
-         * <p>Returns whether a transport parameter ID is a <em>grease</em> one, as defined by
-         * <a href="https://datatracker.ietf.org/doc/html/rfc9000#name-reserved-transport-paramete">
-         *     RFC 9000, section 18.1
-     *     </a>.</p>
-         *
-         * @param id the transport parameter ID to test
-         * @return whether the given transport parameter ID is a grease one
-         * @see #newGrease()
-         */
+        /// Returns whether a transport parameter ID is a _grease_ one, as defined by
+        /// [RFC 9000, section 18.1](https://datatracker.ietf.org/doc/html/rfc9000#name-reserved-transport-paramete).
+        ///
+        /// @param id the transport parameter ID to test
+        /// @return whether the given transport parameter ID is a grease one
+        /// @see #newGrease()
         public static boolean isGrease(long id)
         {
             return (id - 27) % 31 == 0;
+        }
+
+        @SuppressWarnings("unchecked")
+        private static <R> Id<R> create(long id, LongFunction<Id<R>> creator)
+        {
+            return (Id<R>)ids.computeIfAbsent(id, creator::apply);
         }
     }
 

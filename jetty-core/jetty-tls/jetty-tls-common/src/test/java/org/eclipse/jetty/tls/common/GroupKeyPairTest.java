@@ -18,14 +18,14 @@ import javax.crypto.SecretKey;
 import org.eclipse.jetty.tls.KeyShare;
 import org.eclipse.jetty.tls.NamedGroup;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GroupKeyPairTest
 {
     @ParameterizedTest
-    @EnumSource(NamedGroup.class)
+    @MethodSource("org.eclipse.jetty.tls.NamedGroup#values")
     public void testSharedSecret(NamedGroup group) throws Exception
     {
         GroupKeyPair clientGroupKeyPair = GroupKeyPair.from(group);

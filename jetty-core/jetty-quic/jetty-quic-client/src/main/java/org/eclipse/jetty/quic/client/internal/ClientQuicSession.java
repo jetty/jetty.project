@@ -174,8 +174,8 @@ public class ClientQuicSession extends QuicSession
             tlsConfiguration.setApplicationProtocols(protocols);
 
         TransportParameters transportParameters = new TransportParameters();
-        tlsConfiguration.setTransportParameters(transportParameters);
         getQuicConfiguration().configure(transportParameters);
+        tlsConfiguration.setTransportParameters(transportParameters);
         long idleTimeout = getIdleTimeout();
         if (idleTimeout > 0)
             transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, idleTimeout);

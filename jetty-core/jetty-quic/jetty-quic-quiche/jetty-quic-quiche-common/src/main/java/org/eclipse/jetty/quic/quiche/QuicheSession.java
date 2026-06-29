@@ -222,7 +222,7 @@ public abstract class QuicheSession extends AbstractSession
             .whenComplete((r, x) ->
             {
                 LifeCycle.stop(this);
-                emitDisconnect();
+                emitDisconnect(null);
                 // Propagate downwards.
                 getConnection().disconnect(this, failure);
             }));

@@ -26,7 +26,7 @@ import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
-import org.eclipse.jetty.quic.api.frames.ResetFrame;
+import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class FrameGeneratorParserTest
 {
@@ -70,15 +71,22 @@ public class FrameGeneratorParserTest
     @Test
     public void testResetFrame()
     {
-        ResetFrame frame = new ResetFrame(Integer.MAX_VALUE + 23L, 1, 218921347);
-        List<ResetFrame> list = generateParse(frame);
-        list.forEach(result ->
+        long finalSize = 218921347;
+        ResetStreamFrame frame = new ResetStreamFrame(Integer.MAX_VALUE + 23L, 1, -1);
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
+        GeneratedFrame generatedFrame = generator.generateResetStreamFrame(accumulator, frame, finalSize, Integer.MAX_VALUE);
+        assertNotNull(generatedFrame);
+        try (ResetStreamFrame generated = (ResetStreamFrame)generatedFrame.frame())
         {
-            assertEqual(ResetFrame::type, frame, result);
-            assertEqual(ResetFrame::streamId, frame, result);
-            assertEqual(ResetFrame::applicationErrorCode, frame, result);
-            assertEqual(ResetFrame::finalSize, frame, result);
-        });
+            List<ResetStreamFrame> list = parse(accumulator);
+            list.forEach(result ->
+            {
+                assertEqual(ResetStreamFrame::type, generated, result);
+                assertEqual(ResetStreamFrame::streamId, generated, result);
+                assertEqual(ResetStreamFrame::applicationErrorCode, generated, result);
+                assertEqual(ResetStreamFrame::finalSize, generated, result);
+            });
+        }
     }
 
     @Test
@@ -95,15 +103,60 @@ public class FrameGeneratorParserTest
     }
 
     @Test
-    public void testStreamFrame() throws Exception
+    public void testStreamFrame()
     {
         ByteBuffer bytes = StandardCharsets.UTF_8.encode("DATA");
-        StreamFrame frame = new StreamFrame(3290901290300L, RetainableByteBuffer.wrap(bytes), 120911129347656L, true, true, true);
+        StreamFrame frame = new StreamFrame(3290901290300L, RetainableByteBuffer.wrap(bytes), -1, true, true, true);
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        generator.generateFrame(accumulator, frame, Integer.MAX_VALUE);
-        bytes.clear();
-        List<StreamFrame> list = parse(accumulator);
-        list.forEach(result -> assertStreamFrameEqual(frame, result));
+        GeneratedFrame generatedFrame = generator.generateStreamFrame(accumulator, frame, 120911129347656L, Integer.MAX_VALUE, Integer.MAX_VALUE);
+        assertNotNull(generatedFrame);
+        try (StreamFrame generated = (StreamFrame)generatedFrame.frame())
+        {
+            bytes.clear();
+            List<StreamFrame> list = parse(accumulator);
+            generated.rewind();
+            list.forEach(result -> assertStreamFrameEqual(generated, result));
+        }
+    }
+
+    @Test
+    public void testStreamFrameLengthZeroMaxDataZero()
+    {
+        StreamFrame frame = new StreamFrame(3290901290300L, RetainableByteBuffer.EMPTY, -1, true, true, true);
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
+        // Use zero maxData, the frame must be generated.
+        GeneratedFrame generatedFrame = generator.generateStreamFrame(accumulator, frame, 120911129347656L, 0, Integer.MAX_VALUE);
+        assertNotNull(generatedFrame);
+        try (StreamFrame generated = (StreamFrame)generatedFrame.frame())
+        {
+            List<StreamFrame> list = parse(accumulator);
+            list.forEach(result -> assertStreamFrameEqual(generated, result));
+        }
+    }
+
+    @Test
+    public void testStreamFrameMaxBytes67()
+    {
+        // StreamFrame format: type(i) + streamId(i) + offset(i) + length(i) + data.
+        // A congestion window of 67-68 bytes with 1 byte for type, streamId, offset
+        // and length is special, because the frame length field goes from being
+        // VarLenInt encoded with 1 byte (0-63) to 2 bytes (64-16383).
+        // So despite 67-68 bytes are available, the generation only produces 66-67.
+        ByteBuffer bytes = ByteBuffer.allocate(64);
+        StreamFrame frame = new StreamFrame(0L, RetainableByteBuffer.wrap(bytes), -1, true, true, true);
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
+        int maxBytes = 67;
+        GeneratedFrame generatedFrame = generator.generateStreamFrame(accumulator, frame, 1L, Integer.MAX_VALUE, maxBytes);
+        assertNotNull(generatedFrame);
+        assertEquals(maxBytes - 1, generatedFrame.length());
+        assertEquals(2, frame.remaining());
+        try (StreamFrame generated = (StreamFrame)generatedFrame.frame())
+        {
+            bytes.clear();
+            List<StreamFrame> list = parse(accumulator);
+            generated.rewind();
+            list.forEach(result -> assertStreamFrameEqual(generated, result));
+        }
     }
 
     public static void assertStreamFrameEqual(StreamFrame frame, StreamFrame result)

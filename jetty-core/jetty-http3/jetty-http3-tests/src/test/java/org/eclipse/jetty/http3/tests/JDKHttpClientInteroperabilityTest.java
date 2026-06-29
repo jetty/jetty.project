@@ -100,23 +100,4 @@ public class JDKHttpClientInteroperabilityTest
     }
 
     // TODO: test using client certificates, to verify also the interoperability when the client sends a certificate.
-
-    @Test
-    public void testExternalServer() throws Exception
-    {
-        try (HttpClient jdkHttpClient = HttpClient.newHttpClient())
-        {
-            String content = "HELLO HTTP/3";
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://quic.nginx.org"))
-                .POST(HttpRequest.BodyPublishers.ofString(content))
-                .version(HttpClient.Version.valueOf("HTTP_3"))
-                .timeout(Duration.ofSeconds(5))
-                .build();
-
-            HttpResponse<String> response = jdkHttpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.US_ASCII));
-            assertEquals(200, response.statusCode());
-            assertEquals(content, response.body());
-        }
-    }
 }

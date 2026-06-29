@@ -31,7 +31,6 @@ import org.eclipse.jetty.quic.common.NewRenoCongestionControllerFactory;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.RTTData;
 import org.eclipse.jetty.quic.common.packets.Packet;
-import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
@@ -43,7 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CongestionTest extends AbstractQuicTest
+public class CongestionTest extends AbstractTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(CongestionTest.class);
 
@@ -106,7 +105,6 @@ public class CongestionTest extends AbstractQuicTest
                 };
             }
         });
-        QuicServerQuicConfiguration serverQuicConfig = connector.getServerQuicConfiguration();
         serverQuicConfig.setCongestionControllerFactory(new NewRenoCongestionControllerFactory()
         {
             @Override
@@ -145,10 +143,10 @@ public class CongestionTest extends AbstractQuicTest
         server.start();
 
         prepareClient();
-        client.start();
+        quicClient.start();
 
         Promise.Completable<Session> promise = new Promise.Completable<>();
-        client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Listener() {}, promise);
+        quicClient.connect(new InetSocketAddress("localhost", serverConnector.getLocalPort()), new Session.Listener() {}, promise);
         Session clientSession = promise.get(5, SECONDS);
 
         ByteBuffer received = ByteBuffer.allocate(data.length);
