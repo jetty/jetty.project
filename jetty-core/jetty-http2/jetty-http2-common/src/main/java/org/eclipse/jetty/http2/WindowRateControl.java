@@ -14,12 +14,8 @@
 package org.eclipse.jetty.http2;
 
 import java.time.Duration;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.NanoTime;
 
 /**
  * <p>An implementation of {@link RateControl} that limits the number of
@@ -29,14 +25,12 @@ import org.eclipse.jetty.util.NanoTime;
  * event is added to the queue. The size of the queue is maintained
  * separately in an AtomicInteger and if it exceeds the max
  * number of events then {@link #onEvent(Object)} returns {@code false}.</p>
+ *
+ * @deprecated use {@link org.eclipse.jetty.io.WindowRateControl} instead.
  */
-public class WindowRateControl implements RateControl
+@Deprecated(since = "12.1.11", forRemoval = true)
+public class WindowRateControl extends org.eclipse.jetty.io.WindowRateControl implements RateControl
 {
-    private final Queue<Long> events = new ConcurrentLinkedQueue<>();
-    private final AtomicInteger size = new AtomicInteger();
-    private final int maxEvents;
-    private final long window;
-
     public static WindowRateControl fromEventsPerSecond(int maxEvents)
     {
         return new WindowRateControl(maxEvents, Duration.ofSeconds(1));
@@ -44,41 +38,7 @@ public class WindowRateControl implements RateControl
 
     public WindowRateControl(int maxEvents, Duration window)
     {
-        this.maxEvents = maxEvents;
-        this.window = window.toNanos();
-        if (this.window == 0)
-            throw new IllegalArgumentException("Invalid duration " + window);
-    }
-
-    public int getEventsPerSecond()
-    {
-        try
-        {
-            long rate = maxEvents * 1_000_000_000L / window;
-            return Math.toIntExact(rate);
-        }
-        catch (ArithmeticException x)
-        {
-            return Integer.MAX_VALUE;
-        }
-    }
-
-    @Override
-    public boolean onEvent(Object event)
-    {
-        long now = NanoTime.now();
-        while (true)
-        {
-            Long time = events.peek();
-            if (time == null)
-                break;
-            if (NanoTime.isBefore(now, time))
-                break;
-            if (events.remove(time))
-                size.decrementAndGet();
-        }
-        events.add(now + window);
-        return size.incrementAndGet() <= maxEvents;
+        super(maxEvents, window);
     }
 
     public static class Factory implements RateControl.Factory

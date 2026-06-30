@@ -11,26 +11,36 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2;
-
-import org.eclipse.jetty.io.EndPoint;
+package org.eclipse.jetty.io;
 
 /**
  * Controls rate of events via {@link #onEvent(Object)}.
- *
- * @deprecated use {@link org.eclipse.jetty.io.RateControl} instead.
  */
-@Deprecated(since = "12.1.11", forRemoval = true)
-public interface RateControl extends org.eclipse.jetty.io.RateControl
+public interface RateControl
 {
     RateControl NO_RATE_CONTROL = event -> true;
 
     /**
-     * @deprecated use {@link org.eclipse.jetty.io.RateControl.Factory} instead.
+     * <p>Applications should call this method when they want to signal an
+     * event that is subject to rate control.</p>
+     * <p>Implementations should return true if the event does not exceed
+     * the desired rate, or false to signal that the event exceeded the
+     * desired rate.</p>
+     *
+     * @param event the event subject to rate control.
+     * @return true IFF the rate is within limits
      */
-    @Deprecated(since = "12.1.11", forRemoval = true)
-    interface Factory extends org.eclipse.jetty.io.RateControl.Factory
+    boolean onEvent(Object event);
+
+    /**
+     * Factory to create {@link RateControl} instances.
+     */
+    interface Factory
     {
+        /**
+         * @return a new RateControl instance for the given EndPoint
+         * @param endPoint the EndPoint for which the RateControl is created
+         */
         default RateControl newRateControl(EndPoint endPoint)
         {
             return NO_RATE_CONTROL;
