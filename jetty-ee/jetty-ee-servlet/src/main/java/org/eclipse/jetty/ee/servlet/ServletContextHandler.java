@@ -69,6 +69,7 @@ import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
+import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.ee.servlet.ServletContextResponse.EncodingFrom;
 import org.eclipse.jetty.ee.servlet.ServletContextResponse.OutputType;
 import org.eclipse.jetty.ee.servlet.security.ConstraintAware;
@@ -133,12 +134,7 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
 public class ServletContextHandler extends ContextHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
-    public static final Environment ENVIRONMENT = Environment.ensure(EnterpriseEditionVersion.getEnterpriseEditionVersion().name(), ServletContextHandler.class);
-    /**
-     * @deprecated Use {@link ServletContextHandler#ENVIRONMENT} instead.
-     */
-    @Deprecated(since = "12.0.9", forRemoval = true)
-    public static final Environment __environment = ENVIRONMENT;
+
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
         {
             ServletContextListener.class,
@@ -167,6 +163,26 @@ public class ServletContextHandler extends ContextHandler
         NOTSET,
         INITIALIZED,
         DESTROYED
+    }
+
+    public static String getEnvironmentName()
+    {
+        Environment env = getEnvironment();
+        if (env == null)
+            throw new IllegalStateException("No Jetty Environment exists yet for this ServletContext");
+        return env.getName();
+    }
+
+    public static Environment getEnvironment()
+    {
+        // Resolve per call, never cache in a static field: under JPMS this class is shared across
+        // every environment (ee10, ee11, ...), so a static cache would freeze the first environment
+        // resolved and return it for all the others. EnterpriseEditionVersion.getEnterpriseEditionVersion()
+        // is likewise documented as not cacheable.
+        EnterpriseEditionVersion version = EnterpriseEditionVersion.getEnterpriseEditionVersion();
+        if (version == null)
+            return null;
+        return Environment.ensure(version.environmentName(), ServletContextHandler.class);
     }
 
     public static ServletContextHandler getServletContextHandler(jakarta.servlet.ServletContext servletContext, String purpose)
@@ -2130,11 +2146,9 @@ public class ServletContextHandler extends ContextHandler
 
     public class ServletContextApi implements jakarta.servlet.ServletContext
     {
-        public static final int SERVLET_MAJOR_VERSION = 6;
-        public static final int SERVLET_MINOR_VERSION = 1;
-
-        private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
-        private int _effectiveMinorVersion = SERVLET_MINOR_VERSION;
+        private static final ServletApiVersion SERVLET_API_VERSION = ServletApiVersion.getServletApiVersion();
+        private int _effectiveMajorVersion = SERVLET_API_VERSION.getMajorVersion();
+        private int _effectiveMinorVersion = SERVLET_API_VERSION.getMinorVersion();
         protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
 
@@ -2151,13 +2165,13 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public int getMajorVersion()
         {
-            return SERVLET_MAJOR_VERSION;
+            return SERVLET_API_VERSION.getMajorVersion();
         }
 
         @Override
         public int getMinorVersion()
         {
-            return SERVLET_MINOR_VERSION;
+            return SERVLET_API_VERSION.getMinorVersion();
         }
 
         @Override

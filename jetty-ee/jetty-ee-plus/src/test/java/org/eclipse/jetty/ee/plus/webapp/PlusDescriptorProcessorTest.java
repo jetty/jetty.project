@@ -160,11 +160,11 @@ public class PlusDescriptorProcessorTest
 
         //Resource 1 declared in environment scope
         eeObject1 = new Object();
-        Resource res1 = new Resource(ServletContextHandler.ENVIRONMENT.getName(), "eeObject1", eeObject1);
+        Resource res1 = new Resource(ServletContextHandler.getEnvironmentName(), "eeObject1", eeObject1);
 
         //Resource 2 declared in environment scope
         eeObject2 = new Object();
-        Resource res2 = new Resource(ServletContextHandler.ENVIRONMENT.getName(), "eeObject2", eeObject2);
+        Resource res2 = new Resource(ServletContextHandler.getEnvironmentName(), "eeObject2", eeObject2);
 
         URL webXml = Thread.currentThread().getContextClassLoader().getResource("web.xml");
         webDescriptor = new WebDescriptor(context.getResourceFactory().newResource(webXml));

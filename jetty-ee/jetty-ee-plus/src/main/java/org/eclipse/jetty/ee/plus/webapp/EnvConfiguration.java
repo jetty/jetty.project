@@ -49,7 +49,6 @@ public class EnvConfiguration extends AbstractConfiguration
     private static final Logger LOG = LoggerFactory.getLogger(EnvConfiguration.class);
 
     private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
-    private static final String JETTY_EE_ENV_XML_FILENAME = "jetty-%s-env.xml".formatted(EnterpriseEditionVersion.getEnterpriseEditionVersion().name());
     private static final String JETTY_ENV_XML_FILENAME = "jetty-env.xml";
 
     public EnvConfiguration()
@@ -181,6 +180,13 @@ public class EnvConfiguration extends AbstractConfiguration
         }
     }
 
+    public String getJettyEeEnvXmlFilename()
+    {
+        // The use of EnterpriseEditionVersion.getEnterpriseEditionVersion() cannot occur during phases where
+        // the ClassLoader isn't used or isn't available yet (like OSGi boot activation)
+        return "jetty-%s-env.xml".formatted(EnterpriseEditionVersion.getEnterpriseEditionVersion().environmentName());
+    }
+
     /**
      * Bind all EnvEntries that have been declared, so that the processing of the
      * web.xml file can potentially override them.
@@ -202,8 +208,8 @@ public class EnvConfiguration extends AbstractConfiguration
             LOG.debug("Binding env entries from the server scope");
         doBindings(envCtx, context.getServer());
         if (LOG.isDebugEnabled())
-            LOG.debug("Binding env entries from environment {} scope", ServletContextHandler.ENVIRONMENT.getName());
-        doBindings(envCtx, ServletContextHandler.ENVIRONMENT.getName());
+            LOG.debug("Binding env entries from environment {} scope", ServletContextHandler.getEnvironmentName());
+        doBindings(envCtx, ServletContextHandler.getEnvironmentName());
         if (LOG.isDebugEnabled())
             LOG.debug("Binding env entries from the context scope");
         doBindings(envCtx, context);
@@ -249,8 +255,8 @@ public class EnvConfiguration extends AbstractConfiguration
     }
 
     /**
-     * Obtain a WEB-INF/jetty-ee-env.xml, falling back to
-     * looking for WEB-INF/jetty-env.xml.
+     * Obtain a {@code WEB-INF/jetty-ee##-env.xml} (environment specific), falling back to
+     * looking for {@code WEB-INF/jetty-env.xml} (generic).
      *
      * @param webInf the WEB-INF of the context to search
      * @return the file if it exists or null otherwise
@@ -262,8 +268,8 @@ public class EnvConfiguration extends AbstractConfiguration
             if (webInf == null || !webInf.isDirectory())
                 return null;
 
-            //try to find jetty-ee-env.xml
-            Resource xmlResource = webInf.resolve(JETTY_EE_ENV_XML_FILENAME);
+            //try to find jetty-ee##-env.xml (environment specific)
+            Resource xmlResource = webInf.resolve(getJettyEeEnvXmlFilename());
             if (!Resources.missing(xmlResource))
                 return xmlResource;
 

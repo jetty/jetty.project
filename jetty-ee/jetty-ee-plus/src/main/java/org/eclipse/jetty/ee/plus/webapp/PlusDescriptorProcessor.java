@@ -874,7 +874,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             return;
 
         //try the ee environment next
-        scope = ServletContextHandler.ENVIRONMENT.getName();
+        scope = ServletContextHandler.getEnvironmentName();
         bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
         if (bound)
             return;

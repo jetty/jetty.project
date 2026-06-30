@@ -55,12 +55,13 @@ public class EEActivator extends AbstractEEActivator
 {
     private static final Logger LOG = LoggerFactory.getLogger(EEActivator.class);
 
-    public static final String ENVIRONMENT = EnterpriseEditionVersion.getEnterpriseEditionVersion().name();
-
     @Override
     public String getEnvironment()
     {
-        return ENVIRONMENT;
+        // Resolve lazily: capturing this in a static (or eager) field would run during this
+        // boot bundle's own activation, before SPIFly has registered the
+        // EnterpriseEditionVersion.Service providers, and would freeze the wrong environment.
+        return EnterpriseEditionVersion.getEnterpriseEditionVersion().environmentName();
     }
 
     @Override
@@ -143,7 +144,7 @@ public class EEActivator extends AbstractEEActivator
                             Map<String, String> properties = new HashMap<>();
                             properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, metadata.getPath().toUri().toString());
                             properties.put(OSGiServerConstants.JETTY_HOME, (String)server.getAttribute(OSGiServerConstants.JETTY_HOME));
-                            properties.put("environment", ENVIRONMENT);
+                            properties.put("environment", getEnvironment());
                             xmlConfiguration.getProperties().putAll(properties);
                             xmlConfiguration.configure(contextHandler);
                             return null;
@@ -321,7 +322,7 @@ public class EEActivator extends AbstractEEActivator
                             Map<String, String> properties = new HashMap<>();
                             properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, metadata.getPath().toUri().toString());
                             properties.put(OSGiServerConstants.JETTY_HOME, (String)server.getAttribute(OSGiServerConstants.JETTY_HOME));
-                            properties.put("environment", ENVIRONMENT);
+                            properties.put("environment", getEnvironment());
                             xmlConfiguration.getProperties().putAll(properties);
                             xmlConfiguration.configure(webApp);
                             return null;

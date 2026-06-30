@@ -20,4 +20,6 @@ module org.eclipse.jetty.ee.common
     requires java.instrument;
 
     exports org.eclipse.jetty.ee.common;
+
+    uses org.eclipse.jetty.ee.common.EnterpriseEditionVersion.Service;
 }

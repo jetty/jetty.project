@@ -37,7 +37,7 @@ public class Transaction extends org.eclipse.jetty.plus.jndi.Transaction
     public Transaction(UserTransaction userTransaction)
         throws NamingException
     {
-        super(EnterpriseEditionVersion.getEnterpriseEditionVersion().name(), userTransaction);
+        super(EnterpriseEditionVersion.getEnterpriseEditionVersion().environmentName(), userTransaction);
     }
 
 }

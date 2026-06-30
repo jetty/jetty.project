@@ -13,11 +13,8 @@
 
 package org.eclipse.jetty.ee.test;
 
-import java.io.BufferedWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.AsyncContext;
@@ -30,6 +27,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.ee.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee.servlet.ServletHolder;
@@ -49,6 +47,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AnnotatedAsyncListenerTest
@@ -69,14 +68,14 @@ public class AnnotatedAsyncListenerTest
         Path webInf = webAppDir.resolve("WEB-INF");
         Files.createDirectories(webInf);
 
-        try (BufferedWriter writer = Files.newBufferedWriter(webInf.resolve("web.xml"), StandardCharsets.UTF_8, StandardOpenOption.CREATE))
-        {
-            writer.write("<web-app xmlns=\"http://xmlns.jcp.org/xml/ns/javaee\" " +
-                "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
-                "xsi:schemaLocation=\"http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd\" " +
-                "version=\"3.1\">" +
-                "</web-app>");
-        }
+        Files.writeString(webInf.resolve("web.xml"),
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <web-app %s>
+            </web-app>
+            """.formatted(ServletApiVersion.V3_1.getWebXmlAttributes()),
+            UTF_8
+        );
 
         WebAppContext context = new WebAppContext(webAppDir.toString(), "/");
         context.setConfigurations(new Configuration[]
