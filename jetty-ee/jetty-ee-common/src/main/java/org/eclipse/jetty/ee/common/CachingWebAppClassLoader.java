@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee.common;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Enumeration;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,28 +24,49 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * A WebAppClassLoader that caches {@link #getResource(String)} results.
- * Specifically this ClassLoader caches not found classes and resources,
- * which can greatly increase performance for applications that search
- * for resources.
- */
+/// A [WebAppClassLoader] that caches found and not-found [#getResource(String)] results.
+///
+/// Specifically this `ClassLoader` caches not-found classes and resources, and found resources
+/// (found classes are already cached by [java.net.URLClassLoader]), which can greatly increase
+/// performance for applications that search for resources.
 @ManagedObject
 public class CachingWebAppClassLoader extends WebAppClassLoader
 {
+    static
+    {
+        registerAsParallelCapable();
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(CachingWebAppClassLoader.class);
 
     private final Set<String> _notFound = ConcurrentHashMap.newKeySet();
     private final ConcurrentHashMap<String, URL> _cache = new ConcurrentHashMap<>();
-
-    public CachingWebAppClassLoader(ClassLoader parent, Context context) throws IOException
-    {
-        super(parent, context);
-    }
+    private final int _maxEntries;
 
     public CachingWebAppClassLoader(Context context) throws IOException
     {
-        super(context);
+        this(null, context);
+    }
+
+    public CachingWebAppClassLoader(ClassLoader parent, Context context) throws IOException
+    {
+        this(parent, context, 1024);
+    }
+
+    public CachingWebAppClassLoader(ClassLoader parent, Context context, int maxEntries) throws IOException
+    {
+        super(parent, context);
+        if (maxEntries <= 0)
+            throw new IllegalArgumentException("invalid max entries");
+        this._maxEntries = maxEntries;
+    }
+
+    @Override
+    public Enumeration<URL> getResources(String name) throws IOException
+    {
+        // Cannot cache Enumerations: they are
+        // not thread safe and cannot be rewound.
+        return super.getResources(name);
     }
 
     @Override
@@ -53,7 +75,7 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
         if (_notFound.contains(name))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Not found cache hit resource {}", name);
+                LOG.debug("Not-found cache hit resource {}", name);
             return null;
         }
 
@@ -66,14 +88,14 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
 
             if (url == null)
             {
-                // Still not found, cache the not-found result
+                // Still not found, cache the not-found result.
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Caching not found resource {}", name);
-                _notFound.add(name);
+                    LOG.debug("Caching not-found resource {}", name);
+                addNotFound(name);
             }
             else
             {
-                // Cache the new result
+                // Cache the new result.
                 _cache.putIfAbsent(name, url);
             }
         }
@@ -82,27 +104,37 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
     }
 
     @Override
-    public Class<?> loadClass(String name) throws ClassNotFoundException
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
     {
+        Class<?> klass = findLoadedClass(name);
+        if (klass != null)
+            return klass;
+
         if (_notFound.contains(name))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Not found cache hit resource {}", name);
-            throw new ClassNotFoundException(name + ": in notfound cache");
+                LOG.debug("Not-found cache hit class {}", name);
+            throw new ClassNotFoundException(name + ": in not-found cache");
         }
         try
         {
-            return super.loadClass(name);
+            return super.loadClass(name, resolve);
         }
         catch (ClassNotFoundException nfe)
         {
-            if (_notFound.add(name))
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("Caching not found {}", name, nfe);
-                }
+            addNotFound(name);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Caching not-found class {}", name, nfe);
             throw nfe;
         }
+    }
+
+    private void addNotFound(String name)
+    {
+        // Racy, but innocuous.
+        if (_notFound.size() > _maxEntries)
+            _notFound.clear();
+        _notFound.add(name);
     }
 
     @ManagedOperation
@@ -110,6 +142,13 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
     {
         _cache.clear();
         _notFound.clear();
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        super.close();
+        clearCache();
     }
 
     @Override

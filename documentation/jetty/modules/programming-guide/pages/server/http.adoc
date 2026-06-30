@@ -698,7 +698,7 @@ The corresponding `Handler` tree structure looks like the following:
 [,screen]
 ----
 Server
-└── GzipHandler
+└── StatisticsHandler
     └── Handler.Sequence
         ├── App1Handler
         └── App2Handler
@@ -723,7 +723,7 @@ If the `Handler` tree is not dynamic, then it is possible to create a non-blocki
 ----
 Server
 └── RewriteHandler
-    └── GzipHandler
+    └── StatisticsHandler
         └── ContextHandler
             └── AppHandler extends Handler.Abstract.NonBlocking
 ----
@@ -1131,15 +1131,15 @@ Server
 
 `SizeLimitHandler` tracks the sizes of request content and response content, and fails the request processing with an HTTP status code of https://www.rfc-editor.org/rfc/rfc9110.html#name-413-content-too-large[`413 Content Too Large`].
 
-Server applications can set up the `SizeLimitHandler` before or after handlers that modify the request content or response content such as <<handler-use-gzip,`GzipHandler`>>.
-When `SizeLimitHandler` is before `GzipHandler` in the `Handler` tree, it will limit the compressed content; when it is after, it will limit the uncompressed content.
+Server applications can set up the `SizeLimitHandler` before or after handlers that modify the request content or response content such as <<handler-use-compression,`CompressionHandler`>>.
+When `SizeLimitHandler` is before `CompressionHandler` in the `Handler` tree, it will limit the compressed content; when it is after, it will limit the uncompressed content.
 
 The `Handler` tree structure look like the following, to limit uncompressed content:
 
 [,screen]
 ----
 Server
-└── GzipHandler
+└── CompressionHandler
     └── SizeLimitHandler
         └── ContextHandlerCollection
             ├── ContextHandler 1
@@ -1462,13 +1462,13 @@ The `Handler` tree structure looks like the following:
 [,screen]
 ----
 Server
-└── (GzipHandler) // optional
+└── (CompressionHandler) // optional
     └── EagerContentHandler
         └── ContextHandler /app
             └── AppHandler
 ----
 
-`EagerContentHandler` should be installed in the `Handler` tree _after_ other ``Handler``s that may modify or transform the request content, like for example the `GzipHandler`.
+`EagerContentHandler` should be installed in the `Handler` tree _after_ other ``Handler``s that may modify or transform the request content, like for example the `CompressionHandler`.
 
 `EagerContentHandler` eagerly reads request content in the following cases:
 
@@ -1881,6 +1881,23 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 ----
 
 Specifying _protected_ and _hidden_ classes is also possible when using Jetty as a standalone server, as explained in xref:operations-guide:modules/standard.adoc#eeN-webapp[this section].
+
+[[handler-use-webapp-context-class-loading-caching]]
+===== CachingWebAppClassLoader
+
+A `WebAppClassLoader` may be repeatedly asked to load classes or to find resources that do not exist.
+In this case, the standard behavior is to try to load the class or find the resource _every time_, first by asking locally to the `WebAppClassLoader` itself, and then walking the parent `ClassLoader` hierarchy.
+
+`CachingWebAppClassLoader` is a `WebAppClassLoader` subclass that caches _not-found_ attempts to load classes and find resources, so that a subsequent attempt to load a class or find a resource that does not exist is immediately responded, rather than being performed again.
+
+`CachingWebAppClassLoader` may therefore increase performance, at the cost of dynamic resolution of classes or resources that may become available at a later time.
+
+Below you can find an example of how to set up `CachingWebAppClassLoader`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=cachingWebAppClassLoader]
+----
 
 [[handler-use-webapp-context-class-loading-jetty-libraries]]
 ===== Web Applications using Jetty Libraries
