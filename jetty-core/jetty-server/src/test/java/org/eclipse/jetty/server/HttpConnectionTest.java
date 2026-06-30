@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -1819,5 +1820,89 @@ public class HttpConnectionTest
             .distinct()
             .toList();
         assertThat(backingBuffers.size(), is(1));
+    }
+
+    @Test
+    public void testShutdownConnectorSendsConnectionClose() throws Exception
+    {
+        AtomicReference<Boolean> persistentOnWriteComplete = new AtomicReference<>();
+        CountDownLatch writeComplete = new CountDownLatch(1);
+        _server.setHandler(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                HttpConnection connection = (HttpConnection)request.getConnectionMetaData().getConnection();
+
+                _connector.shutdown();
+                response.setStatus(HttpStatus.OK_200);
+                response.write(true, BufferUtil.toBuffer("OK"), Callback.from(() ->
+                {
+                    persistentOnWriteComplete.set(connection.isPersistent());
+                    writeComplete.countDown();
+                    callback.succeeded();
+                }, callback::failed));
+                return true;
+            }
+        });
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.CONNECTION), is("close"));
+        assertThat(response.getContent(), is("OK"));
+        assertTrue(writeComplete.await(5, TimeUnit.SECONDS));
+        assertThat(persistentOnWriteComplete.get(), is(false));
+    }
+
+    @Test
+    public void testConnectionAttributesCanBeUpdatedAndRemoved() throws Exception
+    {
+        AtomicReference<Set<String>> namesAfterRemove = new AtomicReference<>();
+        AtomicReference<long[]> messageCounts = new AtomicReference<>();
+        CountDownLatch writeComplete = new CountDownLatch(1);
+        _server.setHandler(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                HttpConnection connection = (HttpConnection)request.getConnectionMetaData().getConnection();
+
+                assertThat(connection.setAttribute("test.attribute", "initial"), Matchers.nullValue());
+                assertThat(connection.getAttribute("test.attribute"), is("initial"));
+                assertThat(connection.setAttribute("test.attribute", "updated"), is("initial"));
+                assertThat(connection.removeAttribute("test.attribute"), is("updated"));
+                namesAfterRemove.set(connection.getAttributeNameSet());
+
+                response.write(true, BufferUtil.toBuffer("OK"), Callback.from(() ->
+                {
+                    messageCounts.set(new long[] {connection.getMessagesIn(), connection.getMessagesOut()});
+                    writeComplete.countDown();
+                    callback.succeeded();
+                }, callback::failed));
+                return true;
+            }
+        });
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), is("OK"));
+        assertTrue(writeComplete.await(5, TimeUnit.SECONDS));
+        assertThat(messageCounts.get()[0], is(1L));
+        assertThat(messageCounts.get()[1], is(1L));
+        assertThat(namesAfterRemove.get(), not(Matchers.hasItem("test.attribute")));
     }
 }
