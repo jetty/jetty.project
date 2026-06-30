@@ -270,9 +270,6 @@ public class FormTest
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             // Set response output mode
-            // TODO:
-            //  in EE10 use setCharacterEncoding(String)
-            //  in EE11 use setCharacterEncoding(Charset)
             resp.setCharacterEncoding(UTF_8);
             resp.setContentType("text/plain");
             // Grab a response output

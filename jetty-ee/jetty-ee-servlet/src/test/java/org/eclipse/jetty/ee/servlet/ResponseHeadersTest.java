@@ -364,8 +364,6 @@ public class ResponseHeadersTest
                 // and should never have a `charset=` entry on the `Content-Type` response header
                 response.setContentType("application/json");
                 // attempt to indicate that there is truly no charset meant to be used in the response header
-                // in EE10 use setCharacterEncoding(String)
-                // in EE11 use setCharacterEncoding(Charset)
                 response.setCharacterEncoding((Charset)null);
 
                 writer.println("{ \"what\": \"should this be?\" }");

@@ -2132,10 +2132,10 @@ public class ErrorPageTest
             writer.println("ERROR_EXCEPTION: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION));
             writer.println("ERROR_EXCEPTION_TYPE: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
             writer.println("ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
-        // New in EE11
+            // New in EE11
             writer.println("ERROR_METHOD: " + request.getAttribute(Dispatcher.ERROR_METHOD));
             writer.println("ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
-        // New in EE11
+            // New in EE11
             writer.println("ERROR_QUERY_STRING: " + request.getAttribute(Dispatcher.ERROR_QUERY_STRING));
 
             writer.printf("getRequestURI()=%s%n", valueOf(request.getRequestURI()));

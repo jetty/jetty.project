@@ -582,14 +582,15 @@ public class CrossContextDispatcherTest
 
         String form = "a=xxx";
         String rawResponse = _connector.getResponse(
-        // TODO: text block
-            "POST /context/dispatch/?forward=/reader HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: " + form.length() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                form);
+                """
+                POST /context/dispatch/?forward=/reader HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: application/x-www-form-urlencoded\r
+                Content-Length: %d\r
+                Connection: close\r
+                \r
+                %s
+                """.formatted(form.length(), form));
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("a="));
@@ -618,14 +619,15 @@ public class CrossContextDispatcherTest
 
         String form = "a=xxx";
         String rawResponse = _connector.getResponse(
-        // TODO: text block
-            "POST /context/dispatch/?forward=/reader&param=a HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: " + form.length() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                form);
+                """
+                POST /context/dispatch/?forward=/reader&param=a HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: application/x-www-form-urlencoded\r
+                Content-Length: %d\r
+                Connection: close\r
+                \r
+                %s
+                """.formatted(form.length(), form));
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
