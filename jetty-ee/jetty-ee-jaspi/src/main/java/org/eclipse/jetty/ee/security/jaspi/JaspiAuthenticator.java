@@ -21,8 +21,6 @@ import javax.security.auth.Subject;
 
 import jakarta.security.auth.message.AuthException;
 import jakarta.security.auth.message.AuthStatus;
-import jakarta.security.auth.message.callback.CallerPrincipalCallback;
-import jakarta.security.auth.message.callback.GroupPrincipalCallback;
 import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.security.auth.message.config.AuthConfigProvider;
 import jakarta.security.auth.message.config.RegistrationListener;
@@ -37,52 +35,38 @@ import org.eclipse.jetty.security.EmptyLoginService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.security.ServletAuthenticator;
 import org.eclipse.jetty.security.UserIdentity;
-import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 
+import static jakarta.security.auth.message.AuthStatus.SEND_CONTINUE;
+import static jakarta.security.auth.message.AuthStatus.SEND_FAILURE;
+import static jakarta.security.auth.message.AuthStatus.SEND_SUCCESS;
+import static jakarta.security.auth.message.AuthStatus.SUCCESS;
 import static org.eclipse.jetty.ee.security.jaspi.JaspiAuthenticatorFactory.MESSAGE_LAYER;
 
 /**
  * Implementation of Jetty {@link LoginAuthenticator} that is a bridge from Jakarta Authentication to Jetty Security.
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
-public class JaspiAuthenticator extends LoginAuthenticator
+public class JaspiAuthenticator extends LoginAuthenticator implements ServletAuthenticator
 {
+    public static final Principal UNAUTHENTICATED = () -> null;
+
     private final Subject _serviceSubject;
     private final String _appContext;
-    private final boolean _allowLazyAuthentication;
     private final AuthConfigFactory _authConfigFactory = AuthConfigFactory.getFactory();
-    private Map _authProperties;
-    private IdentityService _identityService;
+    private Map<String, Object> _authProperties;
     private ServletCallbackHandler _callbackHandler;
     private ServerAuthConfig _authConfig;
 
-    public JaspiAuthenticator(Subject serviceSubject, String appContext, boolean allowLazyAuthentication)
+    public JaspiAuthenticator(Subject serviceSubject, String appContext)
     {
         _serviceSubject = serviceSubject;
         _appContext = appContext;
-        _allowLazyAuthentication = allowLazyAuthentication;
-    }
-
-    @Deprecated
-    public JaspiAuthenticator(ServerAuthConfig authConfig, Map authProperties, ServletCallbackHandler callbackHandler, Subject serviceSubject, boolean allowLazyAuthentication, IdentityService identityService)
-    {
-        if (callbackHandler == null)
-            throw new NullPointerException("No CallbackHandler");
-        if (authConfig == null)
-            throw new NullPointerException("No AuthConfig");
-        this._authProperties = authProperties;
-        this._callbackHandler = callbackHandler;
-        this._serviceSubject = serviceSubject;
-        this._allowLazyAuthentication = allowLazyAuthentication;
-        this._identityService = identityService;
-        this._appContext = null;
-        this._authConfig = authConfig;
     }
 
     @Override
@@ -103,7 +87,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
         {
             _identityService = configuration.getIdentityService();
             _callbackHandler = new ServletCallbackHandler(loginService);
-            _authProperties = new HashMap();
+            _authProperties = new HashMap<>();
             for (String key : configuration.getParameterNames())
             {
                 _authProperties.put(key, configuration.getParameter(key));
@@ -152,19 +136,15 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
+    public AuthenticationState validateRequest(Request request, Response response, Callback ignored) throws ServerAuthException
     {
         boolean isDeferred = AuthenticationState.getAuthenticationState(request) instanceof AuthenticationState.Deferred;
         boolean isAuthenticationRequest = isDeferred && !AuthenticationState.Deferred.isDeferred(response);
         boolean isMandatory = !isDeferred || isAuthenticationRequest;
-        JaspiMessageInfo messageInfo = new JaspiMessageInfo(request, response, callback);
+        JaspiMessageInfo messageInfo = new JaspiMessageInfo(request, response);
         messageInfo.setMandatory(isMandatory);
         messageInfo.setAuthenticationRequest(isAuthenticationRequest);
-        return validateRequest(messageInfo);
-    }
 
-    public AuthenticationState validateRequest(JaspiMessageInfo messageInfo) throws ServerAuthException
-    {
         try
         {
             ServerAuthConfig authConfig = getAuthConfig();
@@ -174,86 +154,38 @@ public class JaspiAuthenticator extends LoginAuthenticator
             String authContextId = authConfig.getAuthContextID(messageInfo);
             ServerAuthContext authContext = authConfig.getAuthContext(authContextId, _serviceSubject, _authProperties);
             Subject clientSubject = new Subject();
-            AuthStatus authStatus;
-            CallerPrincipalCallback principalCallback;
-            GroupPrincipalCallback groupPrincipalCallback;
 
-            try
+            AuthStatus authStatus = authContext.validateRequest(messageInfo, clientSubject, _serviceSubject);
+            if (authStatus == SUCCESS)
             {
-                _callbackHandler.clear();
-                authStatus = authContext.validateRequest(messageInfo, clientSubject, _serviceSubject);
-                principalCallback = _callbackHandler.getThreadCallerPrincipalCallback();
-                groupPrincipalCallback = _callbackHandler.getThreadGroupPrincipalCallback();
-            }
-            finally
-            {
-                _callbackHandler.clear();
-            }
+                Set<JaspiUserIdentity> userInfoSet = clientSubject.getPrivateCredentials(JaspiUserIdentity.class);
+                if (userInfoSet.size() != 1)
+                    throw new ServerAuthException("incorrect JaspiUserIdentity set size " +  userInfoSet.size());
 
-            if (authStatus == AuthStatus.SEND_CONTINUE)
-                return AuthenticationState.CHALLENGE;
-            if (authStatus == AuthStatus.SEND_FAILURE)
-                return AuthenticationState.SEND_FAILURE;
+                JaspiUserIdentity userIdentity = userInfoSet.iterator().next();
+                if (userIdentity.getUserPrincipal() == UNAUTHENTICATED)
+                    return null;
+                if (userIdentity.getUserPrincipal() == null)
+                    throw new ServerAuthException("No Caller Principal set");
 
-            if (authStatus == AuthStatus.SUCCESS)
-            {
-                Set<UserIdentity> ids = clientSubject.getPrivateCredentials(UserIdentity.class);
-                UserIdentity userIdentity;
-                if (!ids.isEmpty())
-                {
-                    userIdentity = ids.iterator().next();
-                }
-                else
-                {
-                    if (principalCallback == null)
-                    {
-                        return null;
-                    }
-                    Principal principal = principalCallback.getPrincipal();
-                    if (principal == null)
-                    {
-                        String principalName = principalCallback.getName();
-
-                        // TODO: if the Principal class is provided it doesn't need to be in subject, why do we enforce this here?
-                        Set<Principal> principals = principalCallback.getSubject().getPrincipals();
-                        for (Principal p : principals)
-                        {
-                            if (p.getName().equals(principalName))
-                            {
-                                principal = p;
-                                break;
-                            }
-                        }
-                        if (principal == null)
-                        {
-                            principal = new UserPrincipal(principalName, null);
-                        }
-                    }
-                    String[] groups = groupPrincipalCallback == null ? null : groupPrincipalCallback.getGroups();
-                    userIdentity = _identityService.newUserIdentity(clientSubject, principal, groups);
-                }
-
-                HttpSession session = ((HttpServletRequest)messageInfo.getRequestMessage()).getSession(false);
-                AuthenticationState cached = (session == null ? null : (SessionAuthentication)session.getAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE));
-                if (cached != null)
-                    return cached;
+                // Set HttpServletRequest / HttpServletResponse from MessageInfo as they may be wrapped.
+                ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
+                assert servletContextRequest != null;
+                servletContextRequest.setHttpServletRequest((HttpServletRequest)messageInfo.getRequestMessage());
+                servletContextRequest.setHttpServletResponse((HttpServletResponse)messageInfo.getResponseMessage());
 
                 String authType = messageInfo.getAuthenticationType();
                 if (authType == null)
                     authType = getAuthenticationType();
                 return new UserAuthenticationSucceeded(authType, userIdentity);
             }
-            if (authStatus == AuthStatus.SEND_SUCCESS)
-            {
-                // we are processing a message in a secureResponse dialog.
+            else if (authStatus == SEND_SUCCESS)
                 return AuthenticationState.SEND_SUCCESS;
-            }
-            if (authStatus == AuthStatus.FAILURE)
-            {
-                return AuthenticationState.writeError(messageInfo.getBaseRequest(), messageInfo.getBaseResponse(), messageInfo.getCallback(), HttpServletResponse.SC_FORBIDDEN);
-            }
-            // should not happen
-            throw new IllegalStateException("No AuthStatus returned");
+            else if (authStatus == SEND_CONTINUE)
+                return AuthenticationState.CHALLENGE;
+            else if (authStatus == SEND_FAILURE)
+                return AuthenticationState.SEND_FAILURE;
+            throw new ServerAuthException("Bad AuthStatus "  + authStatus);
         }
         catch (AuthException e)
         {
@@ -261,11 +193,12 @@ public class JaspiAuthenticator extends LoginAuthenticator
         }
     }
 
-    // TODO This is not longer supported by core security
+    // TODO: find where in the lifecycle to tie this into.
     public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, AuthenticationState.Succeeded validatedSucceeded) throws ServerAuthException
     {
         ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
-        JaspiMessageInfo info = (JaspiMessageInfo)servletContextRequest.getServletApiRequest().getAttribute("org.eclipse.jetty.ee.security.jaspi.info");
+        assert servletContextRequest != null;
+        JaspiMessageInfo info = (JaspiMessageInfo)servletContextRequest.getHttpServletRequest().getAttribute("org.eclipse.jetty.ee11.security.jaspi.info");
         if (info == null)
             throw new NullPointerException("MessageInfo from request missing: " + request);
         return secureResponse(info, validatedSucceeded);
@@ -290,7 +223,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
         {
             throw new ServerAuthException(e);
         }
-    }   
+    }
 
     private static class JaspiAuthenticatorConfiguration extends Configuration.Wrapper
     {

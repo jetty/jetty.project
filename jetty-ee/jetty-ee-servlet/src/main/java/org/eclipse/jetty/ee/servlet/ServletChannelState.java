@@ -22,10 +22,11 @@ import jakarta.servlet.AsyncListener;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.UnavailableException;
-import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.ServletAuthenticator;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -162,6 +163,7 @@ public class ServletChannelState
      */
     public enum Action
     {
+        SECURITY_CHECK,   // handle a normal request dispatch
         DISPATCH,         // handle a normal request dispatch
         ASYNC_DISPATCH,   // handle an async request dispatch
         SEND_ERROR,       // Generate an error page or error dispatch
@@ -435,6 +437,13 @@ public class ServletChannelState
                             return Action.SEND_ERROR;
                         }
                     }
+
+                    SecurityHandler securityHandler = SecurityHandler.getCurrentSecurityHandler();
+                    if (securityHandler != null && securityHandler.getAuthenticator() instanceof ServletAuthenticator)
+                    {
+                        return Action.SECURITY_CHECK;
+                    }
+
                     return Action.DISPATCH;
 
                 case WOKEN:
@@ -1048,7 +1057,6 @@ public class ServletChannelState
         //       - after both unhandle and complete for async
 
         ServletContextRequest servletContextRequest = _servletChannel.getServletContextRequest();
-        HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
 
         final Request request = _servletChannel.getServletContextRequest();
         final Response response = _servletChannel.getServletContextResponse();

@@ -25,6 +25,7 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestWrapper;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
@@ -93,7 +94,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             request = wrapper.getRequest();
 
             if (request instanceof ServletApiRequest servletApiRequest &&
-                servletApiRequest.getServletRequestInfo() instanceof  ServletContextRequest servletContextRequest)
+                servletApiRequest.getServletRequestInfo() instanceof ServletContextRequest servletContextRequest)
                 return servletContextRequest;
         }
 
@@ -113,7 +114,9 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     private Charset _queryEncoding;
     private HttpFields _trailers;
     private ManagedSession _managedSession;
-    AbstractSessionManager.RequestedSession _requestedSession;
+    private AbstractSessionManager.RequestedSession _requestedSession;
+    private HttpServletRequest _httpServletRequest;
+    private HttpServletResponse _httpServletResponse;
 
     protected ServletContextRequest(
         ServletContextHandler.ServletContextApi servletContextApi,
@@ -155,7 +158,9 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             }
         };
         _servletApiRequest = newServletApiRequest();
-        _response =  newServletContextResponse(response);
+        _response = newServletContextResponse(response);
+        _httpServletRequest = _servletApiRequest;
+        _httpServletResponse = _response.getServletApiResponse();
 
         addIdleTimeoutListener(_servletChannel.getServletRequestState()::onIdleTimeout);
     }
@@ -239,7 +244,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
                 return new ServletApiRequest(this);
         }
         else
-           return new ServletApiRequest(this);
+            return new ServletApiRequest(this);
     }
 
     protected ServletContextResponse newServletContextResponse(Response response)
@@ -390,9 +395,24 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         return _servletApiRequest;
     }
 
+    public void setHttpServletRequest(HttpServletRequest httpServletRequest)
+    {
+        _httpServletRequest =  httpServletRequest;
+    }
+
+    public void setHttpServletResponse(HttpServletResponse httpServletResponse)
+    {
+        _httpServletResponse = httpServletResponse;
+    }
+
+    public HttpServletRequest getHttpServletRequest()
+    {
+        return _httpServletRequest;
+    }
+
     public HttpServletResponse getHttpServletResponse()
     {
-        return _response.getServletApiResponse();
+        return _httpServletResponse;
     }
 
     public String getServletName()

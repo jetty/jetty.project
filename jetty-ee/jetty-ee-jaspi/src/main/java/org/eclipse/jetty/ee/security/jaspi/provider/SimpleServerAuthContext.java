@@ -32,8 +32,7 @@ class SimpleServerAuthContext implements ServerAuthContext
 {
     private final ServerAuthModule serverAuthModule;
 
-    @SuppressWarnings("rawtypes")
-    public SimpleServerAuthContext(CallbackHandler callbackHandler, ServerAuthModule serverAuthModule, Map properties) throws AuthException
+    public SimpleServerAuthContext(CallbackHandler callbackHandler, ServerAuthModule serverAuthModule, Map<String, Object> properties) throws AuthException
     {
         this.serverAuthModule = serverAuthModule;
         serverAuthModule.initialize(null, null, callbackHandler, properties);

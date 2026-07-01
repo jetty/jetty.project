@@ -898,7 +898,7 @@ public class ResourceServlet extends HttpServlet
 
             ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
             if (servletContextRequest != null)
-                return servletContextRequest.getServletApiRequest();
+                return servletContextRequest.getHttpServletRequest();
 
             throw new IllegalStateException("instanceof " + request.getClass());
         }

@@ -507,6 +507,12 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         if (LOG.isDebugEnabled())
             LOG.debug("constraintAuthorization {}", constraintAuthorization);
         boolean mustValidate = constraintAuthorization != Authorization.ALLOWED;
+        if (_authenticator instanceof ServletAuthenticator)
+        {
+            // Ensure we do not call the Authenticator here because we need to call it within the ServletChannel.
+            request.setAttribute(ServletAuthenticator.MUST_VALIDATE_KEY, mustValidate);
+            mustValidate = false;
+        }
 
         try
         {
@@ -667,12 +673,13 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         }
     }
 
-    protected boolean isAuthorized(Constraint constraint, AuthenticationState authenticationState)
+    public boolean isAuthorized(Constraint constraint, AuthenticationState authenticationState)
     {
         UserIdentity userIdentity = authenticationState instanceof AuthenticationState.Succeeded user ? user.getUserIdentity() : null;
         return switch (constraint.getAuthorization())
         {
-            case FORBIDDEN, ALLOWED, INHERIT -> true;
+            case ALLOWED, INHERIT -> true;
+            case FORBIDDEN -> false;
             case ANY_USER -> userIdentity != null && userIdentity.getUserPrincipal() != null;
             case KNOWN_ROLE ->
             {

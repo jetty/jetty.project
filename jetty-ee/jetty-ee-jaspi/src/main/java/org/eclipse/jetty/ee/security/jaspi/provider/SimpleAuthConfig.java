@@ -25,20 +25,19 @@ import jakarta.security.auth.message.module.ServerAuthModule;
 
 /**
  * Simple implementation of the {@link ServerAuthConfig} interface.
- * 
+ * <p>
  * This implementation wires up the given {@link ServerAuthModule} to the appropriate Jakarta Authentication {@link ServerAuthContext} responsible 
  * for providing it.
  */
-@SuppressWarnings("rawtypes")
 class SimpleAuthConfig implements ServerAuthConfig
 {
     private final String _messageLayer;
     private final String _appContext;
     private final CallbackHandler _callbackHandler;
-    private final Map _properties;
+    private final Map<String, Object> _properties;
     private final ServerAuthModule _serverAuthModule;
 
-    public SimpleAuthConfig(String messageLayer, String appContext, CallbackHandler callbackHandler, Map properties, ServerAuthModule serverAuthModule)
+    public SimpleAuthConfig(String messageLayer, String appContext, CallbackHandler callbackHandler, Map<String, Object> properties, ServerAuthModule serverAuthModule)
     {
         _messageLayer = messageLayer;
         _appContext = appContext;
@@ -48,7 +47,7 @@ class SimpleAuthConfig implements ServerAuthConfig
     }
 
     @Override
-    public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject, Map properties) throws AuthException
+    public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject, Map<String, Object> properties) throws AuthException
     {
         return new SimpleServerAuthContext(_callbackHandler, _serverAuthModule, _properties);
     }

@@ -24,6 +24,8 @@ import jakarta.servlet.AsyncContext;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import org.eclipse.jetty.ee.servlet.ServletChannelState.Action;
 import org.eclipse.jetty.ee.servlet.internal.JettyWebConnection;
@@ -37,6 +39,11 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.security.AuthenticationState;
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.ServletAuthenticator;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -443,6 +450,41 @@ public class ServletChannel
                         // break loop without calling unhandle
                         break loop;
 
+                    case SECURITY_CHECK:
+                    {
+                        SecurityHandler securityHandler = SecurityHandler.getCurrentSecurityHandler();
+                        Authenticator authenticator = securityHandler.getAuthenticator();
+                        Boolean mustValidate = (Boolean)_request.getAttribute(ServletAuthenticator.MUST_VALIDATE_KEY);
+                        if (mustValidate == null)
+                            throw new IllegalStateException();
+                        Constraint constraint = (Constraint)_request.getAttribute(ServletAuthenticator.CONSTRAINT_KEY);
+                        if (constraint == null)
+                            throw new IllegalStateException();
+
+                        if (mustValidate)
+                        {
+                            // Use NOOP callback because JASPI uses Servlet APIs to write the response if needed.
+                            AuthenticationState authenticationState = authenticator.validateRequest(getServletContextRequest(), getServletContextResponse(), Callback.NOOP);
+                            if (authenticationState instanceof AuthenticationState.Succeeded)
+                            {
+                                if (!securityHandler.isAuthorized(constraint, authenticationState))
+                                {
+                                    // TODO: handle unauthorized request.
+                                    //  determine whether a servlet error response was written, or if we need to do one
+                                }
+                            }
+
+                            else
+                            {
+                                // we can transition to DISPATCH
+                            }
+                        }
+                        else
+                        {
+                            // we should dispatch
+                        }
+                    }
+
                     case DISPATCH:
                     {
                         reopen();
@@ -695,20 +737,20 @@ public class ServletChannel
         if (quiet != null || !getServer().isRunning())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(_servletContextRequest.getServletApiRequest().getRequestURI(), failure);
+                LOG.debug(_servletContextRequest.getHttpServletRequest().getRequestURI(), failure);
         }
         else if (noStack != null)
         {
             // No stack trace unless there is debug turned on
             if (LOG.isDebugEnabled())
-                LOG.warn("handleException {}", _servletContextRequest.getServletApiRequest().getRequestURI(), failure);
+                LOG.warn("handleException {}", _servletContextRequest.getHttpServletRequest().getRequestURI(), failure);
             else
-                LOG.warn("handleException {} {}", _servletContextRequest.getServletApiRequest().getRequestURI(), noStack.toString());
+                LOG.warn("handleException {} {}", _servletContextRequest.getHttpServletRequest().getRequestURI(), noStack.toString());
         }
         else
         {
             ServletContextRequest request = _servletContextRequest;
-            LOG.warn(request == null ? "unknown request" : request.getServletApiRequest().getRequestURI(), failure);
+            LOG.warn(request == null ? "unknown request" : request.getHttpServletRequest().getRequestURI(), failure);
         }
 
         try
@@ -862,17 +904,18 @@ public class ServletChannel
     {
         ServletContextHandler servletContextHandler = getServletContextHandler();
         ServletContextRequest servletContextRequest = getServletContextRequest();
-        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
+        HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
         try
         {
-            servletContextHandler.requestInitialized(servletContextRequest, servletApiRequest);
+            servletContextHandler.requestInitialized(servletContextRequest, httpServletRequest);
             ServletHandler servletHandler = servletContextHandler.getServletHandler();
             ServletHandler.MappedServlet mappedServlet = servletContextRequest.getMatchedResource().getResource();
-            mappedServlet.handle(servletHandler, Request.getPathInContext(servletContextRequest), servletApiRequest, servletContextRequest.getHttpServletResponse());
+            mappedServlet.handle(servletHandler, Request.getPathInContext(servletContextRequest), httpServletRequest, httpServletResponse);
         }
         finally
         {
-            servletContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
+            servletContextHandler.requestDestroyed(servletContextRequest, httpServletRequest);
         }
     }
 
@@ -885,7 +928,7 @@ public class ServletChannel
     {
         ServletContextHandler targetContextHandler = getServletContextHandler();
         ServletContextRequest servletContextRequest = getServletContextRequest();
-        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
         try
         {
             AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
@@ -898,7 +941,7 @@ public class ServletChannel
             else if (asyncContextEvent.getDispatchContext() == null)
             {
                 //the user dispatched to the current context
-                targetContextHandler.requestInitialized(servletContextRequest, servletApiRequest);
+                targetContextHandler.requestInitialized(servletContextRequest, httpServletRequest);
 
                 String pathInContext;
                 HttpURI uri;
@@ -946,7 +989,7 @@ public class ServletChannel
         }
         finally
         {
-            targetContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
+            targetContextHandler.requestDestroyed(servletContextRequest, httpServletRequest);
         }
     }
 

@@ -23,6 +23,9 @@ import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.security.auth.message.config.AuthConfigProvider;
 import jakarta.security.auth.message.config.RegistrationListener;
 import jakarta.security.auth.message.module.ServerAuthModule;
+import jakarta.servlet.ServletContext;
+import org.eclipse.jetty.ee.security.jaspi.provider.JaspiAuthConfigProvider;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,14 +97,35 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public String registerServerAuthModule(ServerAuthModule serverAuthModule, Object context)
     {
-        // TODO
+        if (context instanceof ServletContext servletContext)
+        {
+            String serverName = servletContext.getVirtualServerName();
+            if (StringUtil.isEmpty(serverName))
+                serverName = "server";
+            String contextPath = StringUtil.isEmpty(servletContext.getContextPath()) ? "/" : servletContext.getContextPath();
+            String appContext = serverName + " " + contextPath;
+
+            return registerConfigProvider(new JaspiAuthConfigProvider(serverAuthModule), JaspiAuthenticatorFactory.MESSAGE_LAYER, appContext, "ServerAuthModule Registration");
+        }
+
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void removeServerAuthModule(Object context)
     {
-        // TODO
+        if (context instanceof ServletContext servletContext)
+        {
+            String serverName = servletContext.getVirtualServerName();
+            if (StringUtil.isEmpty(serverName))
+                serverName = "server";
+            String contextPath = StringUtil.isEmpty(servletContext.getContextPath()) ? "/" : servletContext.getContextPath();
+            String appContext = serverName + " " + contextPath;
+
+            removeRegistration(appContext);
+            return;
+        }
+
         throw new UnsupportedOperationException();
     }
 

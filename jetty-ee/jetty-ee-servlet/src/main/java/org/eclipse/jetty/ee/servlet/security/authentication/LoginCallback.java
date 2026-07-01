@@ -22,6 +22,7 @@ import javax.security.auth.Subject;
  *
  * @version $Rev: 4792 $ $Date: 2009-03-18 22:55:52 +0100 (Wed, 18 Mar 2009) $
  */
+@Deprecated(since = "12.1.8", forRemoval = true)
 public interface LoginCallback
 {
     Subject getSubject();

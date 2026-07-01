@@ -86,6 +86,10 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     @Override
     public Authenticator getAuthenticator(Server server, Context context, Authenticator.Configuration configuration)
     {
+        Authenticator authenticator = super.getAuthenticator(server, context, configuration);
+        if (authenticator != null)
+            return authenticator;
+
         AuthConfigFactory factory = AuthConfigFactory.getFactory();
         if (factory == null)
             return null;
@@ -95,11 +99,10 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         String contextPath = StringUtil.isEmpty(context.getContextPath()) ? "/" : context.getContextPath();
         String appContext = serverName + " " + contextPath;
 
-        // We will only create the Authenticator if an AuthConfigProvider matches this context.
-        if (factory.getConfigProvider(MESSAGE_LAYER, appContext, null) == null)
-            return null;
-
-        return new JaspiAuthenticator(serviceSubject, appContext, true);
+        // We create an Authenticator even if no AuthConfigProvider is registered.
+        // We do this because the application can dynamically register one.
+        // TODO: review if we should really do this.
+        return new JaspiAuthenticator(serviceSubject, appContext);
     }
 
     /**

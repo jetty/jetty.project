@@ -24,10 +24,10 @@ import org.eclipse.jetty.util.security.Credential;
  */
 public class CredentialValidationCallback implements Callback
 {
-    private Credential _credential;
+    private final Subject _subject;
+    private final String _userName;
+    private final Credential _credential;
     private boolean _result;
-    private Subject _subject;
-    private String _userName;
 
     public CredentialValidationCallback(Subject subject, String userName, Credential credential)
     {
@@ -39,11 +39,6 @@ public class CredentialValidationCallback implements Callback
     public Credential getCredential()
     {
         return _credential;
-    }
-
-    public void clearCredential()
-    {
-        _credential = null;
     }
 
     public boolean getResult()

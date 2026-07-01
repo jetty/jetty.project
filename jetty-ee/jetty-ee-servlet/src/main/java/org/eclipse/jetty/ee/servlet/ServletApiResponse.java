@@ -130,7 +130,7 @@ public class ServletApiResponse implements HttpServletResponse
         if (sessionManager == null)
             return url;
         return sessionManager.encodeURI(getServletChannel().getRequest(), url,
-            getServletChannel().getServletContextRequest().getServletApiRequest().isRequestedSessionIdFromCookie());
+            getServletChannel().getServletContextRequest().getHttpServletRequest().isRequestedSessionIdFromCookie());
     }
 
     @Override

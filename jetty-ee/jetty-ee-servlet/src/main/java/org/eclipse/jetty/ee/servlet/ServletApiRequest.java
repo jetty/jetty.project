@@ -1459,8 +1459,9 @@ public class ServletApiRequest implements HttpServletRequest
     public AsyncContext forceStartAsync()
     {
         ServletRequestInfo servletRequestInfo = getServletRequestInfo();
-        ServletRequest servletRequest = servletRequestInfo.getServletChannel().getServletContextRequest().getServletApiRequest();
-        ServletResponse servletResponse = servletRequestInfo.getServletChannel().getServletContextResponse().getServletApiResponse();
+        ServletContextRequest servletContextRequest = servletRequestInfo.getServletChannel().getServletContextRequest();
+        ServletRequest servletRequest = servletContextRequest.getHttpServletRequest();
+        ServletResponse servletResponse = servletContextRequest.getHttpServletResponse();
         return forceStartAsync(servletRequest, servletResponse);
     }
 

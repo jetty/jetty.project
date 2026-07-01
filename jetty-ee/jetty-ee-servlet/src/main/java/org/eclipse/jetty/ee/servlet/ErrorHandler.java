@@ -72,7 +72,7 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
         generateCacheControl(response);
 
         ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
-        HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
+        HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
         HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
         ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
         String cacheControl = getCacheControl();

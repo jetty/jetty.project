@@ -120,7 +120,7 @@ class PushBuilderImpl implements PushBuilder
         String pushParam = null;
         if (_sessionId != null)
         {
-            if (_request.getServletApiRequest().isRequestedSessionIdFromURL())
+            if (_request.getHttpServletRequest().isRequestedSessionIdFromURL())
                 pushParam = "jsessionid=" + _sessionId;
         }
 

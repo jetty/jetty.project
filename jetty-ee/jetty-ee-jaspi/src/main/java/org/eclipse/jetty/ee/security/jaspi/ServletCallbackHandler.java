@@ -14,23 +14,22 @@
 package org.eclipse.jetty.ee.security.jaspi;
 
 import java.io.IOException;
+import java.security.Principal;
+import java.util.Set;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
 import jakarta.security.auth.message.callback.CallerPrincipalCallback;
-import jakarta.security.auth.message.callback.CertStoreCallback;
 import jakarta.security.auth.message.callback.GroupPrincipalCallback;
 import jakarta.security.auth.message.callback.PasswordValidationCallback;
-import jakarta.security.auth.message.callback.PrivateKeyCallback;
-import jakarta.security.auth.message.callback.SecretKeyCallback;
-import jakarta.security.auth.message.callback.TrustStoreCallback;
 import org.eclipse.jetty.ee.security.jaspi.callback.CredentialValidationCallback;
-import org.eclipse.jetty.ee.servlet.security.authentication.LoginCallback;
-import org.eclipse.jetty.ee.servlet.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.NamePrincipal;
 import org.eclipse.jetty.security.UserIdentity;
+
+import static org.eclipse.jetty.ee.security.jaspi.JaspiAuthenticator.UNAUTHENTICATED;
 
 /**
  * This {@link CallbackHandler} will bridge {@link Callback}s to handle to the given to the Jetty {@link LoginService}.
@@ -38,8 +37,6 @@ import org.eclipse.jetty.security.UserIdentity;
 public class ServletCallbackHandler implements CallbackHandler
 {
     private final LoginService _loginService;
-    private final ThreadLocal<CallerPrincipalCallback> _callerPrincipals = new ThreadLocal<>();
-    private final ThreadLocal<GroupPrincipalCallback> _groupPrincipals = new ThreadLocal<>();
 
     public ServletCallbackHandler(LoginService loginService)
     {
@@ -49,65 +46,43 @@ public class ServletCallbackHandler implements CallbackHandler
     @Override
     public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
     {
+        // TODO: we should actually write to the principals of the Subject.
+        //  The problem is that the UserIdentity interface doesn't expose the roles, which makes PasswordValidationCallback
+        //  and CredentialValidationCallback not currently possible to implement like this.
         for (Callback callback : callbacks)
         {
-            // jaspi to server communication
-            if (callback instanceof CallerPrincipalCallback)
+            if (callback instanceof CallerPrincipalCallback callerPrincipalCallback)
             {
-                _callerPrincipals.set((CallerPrincipalCallback)callback);
+                Principal principal;
+                if (callerPrincipalCallback.getPrincipal() != null)
+                    principal = callerPrincipalCallback.getPrincipal();
+                else if (callerPrincipalCallback.getName() != null)
+                    principal = new NamePrincipal(callerPrincipalCallback.getName());
+                else
+                    principal = UNAUTHENTICATED;
+
+                JaspiUserIdentity userIdentity = getJaspiUserIdentity(callerPrincipalCallback.getSubject());
+                userIdentity.setUserPrincipal(principal);
             }
-            else if (callback instanceof GroupPrincipalCallback)
+            else if (callback instanceof GroupPrincipalCallback groupPrincipalCallback)
             {
-                _groupPrincipals.set((GroupPrincipalCallback)callback);
+                String[] groups = groupPrincipalCallback.getGroups();
+                JaspiUserIdentity userIdentity = getJaspiUserIdentity(groupPrincipalCallback.getSubject());
+                userIdentity.addRoles(groups);
             }
             else if (callback instanceof PasswordValidationCallback passwordValidationCallback)
             {
-                @SuppressWarnings("unused")
-                Subject subject = passwordValidationCallback.getSubject();
-
-                UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null, null);
-
-                if (user != null)
-                {
-                    passwordValidationCallback.setResult(true);
-                    passwordValidationCallback.getSubject().getPrincipals().addAll(user.getSubject().getPrincipals());
-                    passwordValidationCallback.getSubject().getPrivateCredentials().add(user);
-                }
+                UserIdentity userIdentity = _loginService.login(passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null, null);
+                passwordValidationCallback.setResult(userIdentity != null);
+                JaspiUserIdentity userInfo = getJaspiUserIdentity(passwordValidationCallback.getSubject());
+                userInfo.setWrapped(userIdentity);
             }
             else if (callback instanceof CredentialValidationCallback credentialValidationCallback)
             {
-                Subject subject = credentialValidationCallback.getSubject();
-                LoginCallback loginCallback = new LoginCallbackImpl(subject,
-                    credentialValidationCallback.getUsername(),
-                    credentialValidationCallback.getCredential());
-
-                UserIdentity user = _loginService.login(credentialValidationCallback.getUsername(), credentialValidationCallback.getCredential(), null, null);
-
-                if (user != null)
-                {
-                    loginCallback.setUserPrincipal(user.getUserPrincipal());
-                    credentialValidationCallback.getSubject().getPrivateCredentials().add(loginCallback);
-                    credentialValidationCallback.setResult(true);
-                    credentialValidationCallback.getSubject().getPrincipals().addAll(user.getSubject().getPrincipals());
-                    credentialValidationCallback.getSubject().getPrivateCredentials().add(user);
-                }
-            }
-            // server to jaspi communication
-            else if (callback instanceof CertStoreCallback)
-            {
-                // TODO implement this
-            }
-            else if (callback instanceof PrivateKeyCallback)
-            {
-                // TODO implement this
-            }
-            else if (callback instanceof SecretKeyCallback)
-            {
-                // TODO implement this
-            }
-            else if (callback instanceof TrustStoreCallback)
-            {
-                // TODO implement this
+                UserIdentity userIdentity = _loginService.login(credentialValidationCallback.getUsername(), credentialValidationCallback.getCredential(), null, null);
+                credentialValidationCallback.setResult(userIdentity != null);
+                JaspiUserIdentity userInfo = getJaspiUserIdentity(credentialValidationCallback.getSubject());
+                userInfo.setWrapped(userIdentity);
             }
             else
             {
@@ -116,23 +91,18 @@ public class ServletCallbackHandler implements CallbackHandler
         }
     }
 
-    public CallerPrincipalCallback getThreadCallerPrincipalCallback()
+    private JaspiUserIdentity getJaspiUserIdentity(Subject subject) throws IOException
     {
-        CallerPrincipalCallback callerPrincipalCallback = _callerPrincipals.get();
-        _callerPrincipals.set(null);
-        return callerPrincipalCallback;
-    }
-
-    public GroupPrincipalCallback getThreadGroupPrincipalCallback()
-    {
-        GroupPrincipalCallback groupPrincipalCallback = _groupPrincipals.get();
-        _groupPrincipals.set(null);
-        return groupPrincipalCallback;
-    }
-
-    public void clear()
-    {
-        _callerPrincipals.remove();
-        _groupPrincipals.remove();
+        Set<JaspiUserIdentity> userIdentitySet = subject.getPrivateCredentials(JaspiUserIdentity.class);
+        if (userIdentitySet.isEmpty())
+        {
+            JaspiUserIdentity userIdentity = new JaspiUserIdentity(subject);
+            subject.getPrivateCredentials().add(userIdentity);
+            return userIdentity;
+        }
+        else if (userIdentitySet.size() == 1)
+            return userIdentitySet.iterator().next();
+        else
+            throw new IOException("Multiple user infos found");
     }
 }
