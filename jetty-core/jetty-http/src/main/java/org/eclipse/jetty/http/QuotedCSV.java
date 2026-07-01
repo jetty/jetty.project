@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 /**
  * Implements a quoted comma-separated list of values
@@ -127,6 +128,17 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
         {
             addValue(v);
         }
+    }
+
+    public QuotedCSV(HttpFields httpFields, boolean keepQuotes, String... values)
+    {
+        this(MutableHttpFields.copyHttpCompliance(httpFields), extractComplianceViolationListener(httpFields), keepQuotes, values);
+    }
+
+    private static ComplianceViolation.Listener extractComplianceViolationListener(HttpFields httpFields)
+    {
+        Supplier<ComplianceViolation.Listener> supplier = MutableHttpFields.copyComplianceListener(httpFields);
+        return (supplier != null) ? supplier.get() : null;
     }
 
     @Override

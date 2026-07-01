@@ -14,14 +14,23 @@
 package org.eclipse.jetty.ee11.servlet.security;
 
 import java.io.IOException;
+import java.util.EnumSet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.Authenticator;
@@ -32,10 +41,12 @@ import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.security.UserStore;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.URIUtil;
@@ -45,6 +56,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 
 public class AuthenticateTest
 {
@@ -182,6 +194,251 @@ public class AuthenticateTest
         response = _connector.getResponse("GET /ctx/?username=admin&password=password HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("UserPrincipal: admin"));
+    }
+
+    private static class TestHeaderAuthenticator extends LoginAuthenticator
+    {
+        @Override
+        public String getAuthenticationType()
+        {
+            return "CUSTOM";
+        }
+
+        @Override
+        public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
+        {
+            String username = request.getHeaders().get("X-Username");
+            String password = request.getHeaders().get("X-Password");
+            if (username != null && password != null)
+            {
+                UserIdentity user = login(username, Credential.getCredential(password), request, response);
+                if (user == null)
+                {
+                    if (response.isCommitted())
+                        return null;
+                    return AuthenticationState.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+                }
+                return new UserAuthenticationSucceeded(getAuthenticationType(), user);
+            }
+
+            if (response.isCommitted())
+                return null;
+
+            return AuthenticationState.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+        }
+    }
+
+    @Test
+    public void testWrappedRequest() throws Exception
+    {
+        configureServer(new TestHeaderAuthenticator(), servletContextHandler ->
+        {
+            servletContextHandler.addFilter(new HttpFilter()
+            {
+                @Override
+                protected void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws IOException, ServletException
+                {
+                    String pathInContext = URIUtil.addPaths(req.getServletPath(), req.getPathInfo());
+                    if (pathInContext.startsWith("/authenticate"))
+                    {
+                        // The request is wrapped to override some headers.
+                        req = new HttpServletRequestWrapper(req)
+                        {
+                            @Override
+                            public String getHeader(String name)
+                            {
+                                if ("X-Username".equalsIgnoreCase(name))
+                                    return "admin";
+                                if ("X-Password".equalsIgnoreCase(name))
+                                    return "password";
+                                return super.getHeader(name);
+                            }
+                        };
+                    }
+                    chain.doFilter(req, res);
+                }
+            }, "/*", EnumSet.allOf(DispatcherType.class));
+            servletContextHandler.addServlet(new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException
+                {
+                    boolean authenticate = req.authenticate(resp);
+                    if (!authenticate)
+                        return;
+                    resp.getWriter().println("UserPrincipal: " + req.getUserPrincipal());
+                }
+            }, "/");
+        });
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("UserPrincipal: admin"));
+    }
+
+    @Test
+    public void testAsyncRunnableWrappedRequest() throws Exception
+    {
+        configureServer(new TestHeaderAuthenticator(), servletContextHandler ->
+        {
+            servletContextHandler.addServlet(new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException
+                {
+                    // The request is wrapped to override some headers.
+                    HttpServletRequest wrappedRequest = new HttpServletRequestWrapper(req)
+                    {
+                        @Override
+                        public String getHeader(String name)
+                        {
+                            if ("X-Username".equalsIgnoreCase(name))
+                                return "admin";
+                            if ("X-Password".equalsIgnoreCase(name))
+                                return "password";
+                            return super.getHeader(name);
+                        }
+                    };
+
+                    AsyncContext asyncContext = req.startAsync(wrappedRequest, resp);
+                    asyncContext.start(() ->
+                    {
+                        try
+                        {
+                            boolean authenticate = wrappedRequest.authenticate(resp);
+                            if (authenticate)
+                                resp.getWriter().println("UserPrincipal: " + wrappedRequest.getUserPrincipal());
+                            asyncContext.complete();
+                        }
+                        catch (Throwable t)
+                        {
+                            throw new RuntimeException(t);
+                        }
+                    });
+                }
+            }, "/");
+        });
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("UserPrincipal: admin"));
+    }
+
+    @Test
+    public void testAsyncDispatchWrappedRequest() throws Exception
+    {
+        configureServer(new TestHeaderAuthenticator(), servletContextHandler ->
+        {
+            servletContextHandler.addServlet(new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException
+                {
+                    if (req.getDispatcherType() ==  DispatcherType.ASYNC)
+                    {
+                        try
+                        {
+                            boolean authenticate = req.authenticate(resp);
+                            if (authenticate)
+                                resp.getWriter().println("UserPrincipal: " + req.getUserPrincipal());
+                        }
+                        catch (Throwable t)
+                        {
+                            throw new RuntimeException(t);
+                        }
+                        return;
+                    }
+
+                    // The request is wrapped to override some headers then async dispatched.
+                    req = new HttpServletRequestWrapper(req)
+                    {
+                        @Override
+                        public String getHeader(String name)
+                        {
+                            if ("X-Username".equalsIgnoreCase(name))
+                                return "admin";
+                            if ("X-Password".equalsIgnoreCase(name))
+                                return "password";
+                            return super.getHeader(name);
+                        }
+                    };
+                    AsyncContext asyncContext = req.startAsync(req, resp);
+                    asyncContext.dispatch();
+                }
+            }, "/");
+        });
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("UserPrincipal: admin"));
+    }
+
+    @Test
+    public void testAsyncNewThreadWrappedRequest() throws Exception
+    {
+        configureServer(new TestHeaderAuthenticator(), servletContextHandler ->
+        {
+            AtomicInteger scopeCount = new AtomicInteger();
+            servletContextHandler.addEventListener(new ContextHandler.ContextScopeListener()
+            {
+                @Override
+                public void enterScope(Context context, Request request)
+                {
+                    scopeCount.incrementAndGet();
+                }
+
+                @Override
+                public void exitScope(Context context, Request request)
+                {
+                    scopeCount.decrementAndGet();
+                }
+            });
+            servletContextHandler.addServlet(new HttpServlet()
+            {
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException
+                {
+                    // The request is wrapped to override some headers then async dispatched.
+                    HttpServletRequest wrappedRequest = new HttpServletRequestWrapper(req)
+                    {
+                        @Override
+                        public String getHeader(String name)
+                        {
+                            if ("X-Username".equalsIgnoreCase(name))
+                                return "admin";
+                            if ("X-Password".equalsIgnoreCase(name))
+                                return "password";
+                            return super.getHeader(name);
+                        }
+                    };
+
+                    AsyncContext asyncContext = req.startAsync(wrappedRequest, resp);
+                    new Thread(() ->
+                    {
+                        // Await exiting the scope.
+                        Awaitility.await().atMost(5, java.util.concurrent.TimeUnit.SECONDS).until(() -> scopeCount.get() == 0);
+                        try
+                        {
+                            boolean authenticate = wrappedRequest.authenticate(resp);
+                            if (authenticate)
+                                resp.getWriter().println("UserPrincipal: " + wrappedRequest.getUserPrincipal());
+                        }
+                        catch (Throwable t)
+                        {
+                            throw new RuntimeException(t);
+                        }
+                        finally
+                        {
+                            asyncContext.complete();
+                        }
+                    }).start();
+                }
+            }, "/");
+        });
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("UserPrincipal: admin"));
     }
 
     @Test

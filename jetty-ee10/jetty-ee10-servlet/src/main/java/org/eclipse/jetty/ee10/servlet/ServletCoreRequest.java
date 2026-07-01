@@ -14,13 +14,18 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
@@ -28,7 +33,10 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.QuotedCSV;
+import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -71,25 +79,8 @@ public class ServletCoreRequest implements Request
         _wrapped = !(request instanceof ServletApiRequest);
         _servletContextRequest = ServletContextRequest.getServletContextRequest(_servletRequest);
         _attributes = attributes == null ? _servletContextRequest : attributes;
+        _httpFields = new HttpServletRequestHttpFields(request, _servletContextRequest.getHeaders());
 
-        // Copy the original headers to carry over the
-        // HttpCompliance and the violation listener.
-        HttpFields.Mutable fields = HttpFields.build(_servletContextRequest.getHeaders());
-        fields.clear();
-
-        Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements())
-        {
-            String headerName = headerNames.nextElement();
-            Enumeration<String> headerValues = request.getHeaders(headerName);
-            while (headerValues.hasMoreElements())
-            {
-                String headerValue = headerValues.nextElement();
-                fields.add(new HttpField(headerName, headerValue));
-            }
-        }
-
-        _httpFields = fields.asImmutable();
         String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
         boolean included = includedServletPath != null;
 
@@ -364,7 +355,9 @@ public class ServletCoreRequest implements Request
                 set = new HashSet<>();
                 Enumeration<String> e = _servletRequest.getAttributeNames();
                 while (e.hasMoreElements())
+                {
                     set.add(e.nextElement());
+                }
                 _attributeNames = set;
             }
             return set;
@@ -379,6 +372,94 @@ public class ServletCoreRequest implements Request
             {
                 _servletRequest.removeAttribute(e.nextElement());
             }
+        }
+    }
+
+    private static final class HttpServletRequestHttpFields implements HttpFields
+    {
+        private final HttpServletRequest _httpServletRequest;
+        private final List<HttpField> _fields;
+        private final HttpFields _baseHttpFields;
+
+        private HttpServletRequestHttpFields(HttpServletRequest httpServletRequest, HttpFields httpFields)
+        {
+            _httpServletRequest = httpServletRequest;
+            _baseHttpFields = httpFields;
+            _fields = new ArrayList<>();
+            Enumeration<String> headerNames = _httpServletRequest.getHeaderNames();
+            while (headerNames.hasMoreElements())
+            {
+                String name = headerNames.nextElement();
+                Enumeration<String> values = _httpServletRequest.getHeaders(name);
+                while (values.hasMoreElements())
+                {
+                    String value = values.nextElement();
+                    _fields.add(new HttpField(name, value));
+                }
+            }
+        }
+
+        @Override
+        public QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)
+        {
+            return new QuotedQualityCSV(_baseHttpFields, secondaryOrdering);
+        }
+
+        @Override
+        public QuotedCSV newQuotedCSV(boolean keepQuotes)
+        {
+            return new QuotedCSV(_baseHttpFields, keepQuotes);
+        }
+
+        @Override
+        public HttpField getField(String name)
+        {
+            String value = _httpServletRequest.getHeader(name);
+            if (value == null)
+                return null;
+            // If getHeader() was overridden without also getHeaderNames() then _fields may not have the correct header value.
+            return new HttpField(name, value);
+        }
+
+        @Override
+        public HttpField getField(HttpHeader header)
+        {
+            String name = header.asString();
+            String value = _httpServletRequest.getHeader(header.asString());
+            if (value == null)
+                return null;
+            // If getHeader() was overridden without also getHeaderNames() then _fields may not have the correct header value.
+            return new HttpField(name, value);
+        }
+
+        @Override
+        public String get(String name)
+        {
+            return _httpServletRequest.getHeader(name);
+        }
+
+        @Override
+        public String getLast(HttpHeader header)
+        {
+            return HttpFields.super.getLast(header);
+        }
+
+        @Override
+        public String get(HttpHeader header)
+        {
+            return _httpServletRequest.getHeader(header.asString());
+        }
+
+        @Override
+        public HttpFields asImmutable()
+        {
+            return this;
+        }
+
+        @Override
+        public ListIterator<HttpField> listIterator(int index)
+        {
+            return Collections.unmodifiableList(_fields).listIterator(index);
         }
     }
 }

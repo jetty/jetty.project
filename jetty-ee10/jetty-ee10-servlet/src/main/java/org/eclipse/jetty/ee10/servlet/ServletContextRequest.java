@@ -25,6 +25,8 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestWrapper;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
@@ -114,6 +116,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     private HttpFields _trailers;
     private ManagedSession _managedSession;
     AbstractSessionManager.RequestedSession _requestedSession;
+    private ServletRequest _servletRequest;
+    private ServletResponse _servletResponse;
 
     protected ServletContextRequest(
         ServletContextHandler.ServletContextApi servletContextApi,
@@ -389,9 +393,49 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         return _servletApiRequest;
     }
 
-    public HttpServletResponse getHttpServletResponse()
+    public ServletApiResponse getServletApiResponse()
     {
         return _response.getServletApiResponse();
+    }
+
+    public HttpServletRequest getHttpServletRequest()
+    {
+        ServletRequest servletRequest = getServletRequest();
+        if (servletRequest == null)
+            return getServletApiRequest();
+        if (!(servletRequest instanceof HttpServletRequest httpServletRequest))
+            throw new IllegalStateException("Not an HTTP request");
+        return httpServletRequest;
+    }
+
+    public HttpServletResponse getHttpServletResponse()
+    {
+        ServletResponse servletResponse = getServletResponse();
+        if (servletResponse == null)
+            return getServletApiResponse();
+        if  (!(servletResponse instanceof HttpServletResponse httpServletResponse))
+            throw new IllegalStateException("Not an HTTP response");
+        return httpServletResponse;
+    }
+
+    public ServletRequest getServletRequest()
+    {
+        return _servletRequest;
+    }
+
+    public ServletResponse getServletResponse()
+    {
+        return _servletResponse;
+    }
+
+    public void setServletRequest(ServletRequest servletRequest)
+    {
+        _servletRequest = servletRequest;
+    }
+
+    public void setServletResponse(ServletResponse servletResponse)
+    {
+        _servletResponse = servletResponse;
     }
 
     public String getServletName()
