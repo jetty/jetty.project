@@ -586,7 +586,6 @@ public class EagerContentHandlerTest
         // Test when the content-length is known so the failure is triggered directly from EagerContentHandler.
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
-            // Write the first request content which does not exceed the form limits.
             String request = """
                 POST /foo HTTP/1.1\r
                 Host: localhost\r
@@ -697,7 +696,6 @@ public class EagerContentHandlerTest
     {
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
-            // Write the first request content which does not exceed the form limits.
             StringBuilder request = new StringBuilder();
             request.append("""
                 POST /foo HTTP/1.1\r

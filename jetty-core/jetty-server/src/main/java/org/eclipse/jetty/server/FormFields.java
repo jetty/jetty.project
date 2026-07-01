@@ -401,18 +401,21 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     private static int findDefaultMaxFields(Request request)
     {
         int maxFields;
+
         if (request != null)
         {
+            // Use the per-request configuration if available.
             maxFields = parse(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE));
             if (maxFields != -1)
                 return maxFields;
 
+            // Use the default per-context configuration.
             maxFields = parse(request.getContext().getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE));
             if (maxFields != -1)
                 return maxFields;
         }
 
-        // Use value from the system property if it is set.
+        // Use the system-wide default from the system property if it is set.
         String property = System.getProperty(FormFields.MAX_FIELDS_ATTRIBUTE);
         maxFields = parse(property);
         if (maxFields != -1)
@@ -424,18 +427,21 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     private static int findDefaultMaxLength(Request request)
     {
         int maxLength;
+
         if (request != null)
         {
+            // Use the per-request configuration if available.
             maxLength = parse(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE));
             if (maxLength != -1)
                 return maxLength;
 
+            // Use the default per-context configuration.
             maxLength = parse(request.getContext().getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE));
             if (maxLength != -1)
                 return maxLength;
         }
 
-        // Use value from the system property if it is set.
+        // Use the system-wide default from the system property if it is set.
         String property = System.getProperty(FormFields.MAX_LENGTH_ATTRIBUTE);
         maxLength = parse(property);
         if (maxLength != -1)
