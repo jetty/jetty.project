@@ -1,3 +1,5 @@
+jetty-12.1.12-SNAPSHOT
+
 12.1.11 - 02 July 2026
  + 15156 Injecting authentication headers using request filters?
  + 15217 jetty-quic-quiche-foreign fails on Windows due to eager resolution of Unix-only quiche_conn_set_keylog_fd
