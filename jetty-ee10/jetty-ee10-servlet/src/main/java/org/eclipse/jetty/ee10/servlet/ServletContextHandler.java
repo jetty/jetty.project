@@ -798,11 +798,7 @@ public class ServletContextHandler extends ContextHandler
      * @param url the url to convert to a Resource
      * @return the Resource for that url
      * @throws IOException if unable to create a Resource from the URL
-     * @deprecated The use of {@link ResourceFactory#newResource(URL)} should be reserved for
-     *             configuration and initialization phases of the webapp, and avoided during
-     *             started phase of a webapp.<br/>
-     *             The use of this method during context started phase can result in
-     *             excessive memory consumption depending on the types of resources your webapp is using.
+     * @deprecated do not use this method, use {@link ResourceFactory#newResource(URL)}.
      */
     @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(URL url) throws IOException
@@ -815,11 +811,7 @@ public class ServletContextHandler extends ContextHandler
      *
      * @param uri the URI to convert to a Resource
      * @return the Resource for that URI
-     * @deprecated The use of {@link ResourceFactory#newResource(URI)} should be reserved for
-     *             configuration and initialization phases of the webapp, and avoided during
-     *             started phase of a webapp.<br/>
-     *             The use of this method during context started phase can result in
-     *             excessive memory consumption depending on the types of resources your webapp is using.
+     * @deprecated do not use this method, use {@link ResourceFactory#newResource(URI)}.
      */
     @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(URI uri)
@@ -832,11 +824,7 @@ public class ServletContextHandler extends ContextHandler
      *
      * @param urlOrPath The URL or path to convert
      * @return The Resource for the URL/path
-     * @deprecated The use of {@link ResourceFactory#newResource(String)} should be reserved for
-     *             configuration and initialization phases of the webapp, and avoided during
-     *             started phase of a webapp.<br/>
-     *             The use of this method during context started phase can result in
-     *             excessive memory consumption depending on the types of resources your webapp is using.
+     * @deprecated do not use this method, use {@link ResourceFactory#newResource(String)}.
      */
     @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(String urlOrPath)

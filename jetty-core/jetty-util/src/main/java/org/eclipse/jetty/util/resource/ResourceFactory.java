@@ -160,7 +160,17 @@ public interface ResourceFactory
     }
 
     /**
-     * Construct a resource from a uri.
+     * Construct a resource from a URI.
+     *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create root (or base) resources.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
+     * </p>
      *
      * @param uri A URI.
      * @return A Resource object.
@@ -169,6 +179,16 @@ public interface ResourceFactory
 
     /**
      * <p>Construct a Resource from a string reference into classloaders.</p>
+     *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create root (or base) resources.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
+     * </p>
      *
      * @param resource Resource as string representation
      * @return The new Resource
@@ -201,6 +221,16 @@ public interface ResourceFactory
      * <p>
      *     If a provided resource name starts with a {@code /} (example: {@code /org/example/ClassName.class})
      *     then the non-slash version is also tried against the same ClassLoader (example: {@code org/example/ClassName.class}).
+     * </p>
+     *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create root (or base) resources.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
      * </p>
      *
      * @param resource the resource name to find in a classloader
@@ -276,6 +306,16 @@ public interface ResourceFactory
      * Convenience method for {@code newClassLoaderResource(resource, true)}
      * </p>
      *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create root (or base) resources.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
+     * </p>
+     *
      * @param resource string representation of resource to find in a classloader
      * @return The new Resource
      * @throws IllegalArgumentException if string is blank
@@ -291,6 +331,16 @@ public interface ResourceFactory
      *
      * <p>
      * Convenience method {@code .newClassLoaderResource(resource, false)}
+     * </p>
+     *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create root (or base) resources.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
      * </p>
      *
      * @param resource the relative name of the resource
@@ -311,10 +361,14 @@ public interface ResourceFactory
      * </p>
      *
      * <p>
-     *     A Memory Resource is created from a the contents of
-     *     {@link URL#openStream()} and kept in memory from
-     *     that point forward.  Never accessing the URL
-     *     again to refresh it's contents.
+     *     Each call will create a new Memory Resource from the contents of
+     *     {@link URL#openStream()} and kept in memory for the duration
+     *     of this ResourceFactory implementation.  Never accessing the URL
+     *     again to refresh its contents.
+     * </p>
+     *
+     * <p>
+     *     The created Memory Resource does not support child resources.
      * </p>
      *
      * @param url the URL to load into memory
@@ -332,6 +386,16 @@ public interface ResourceFactory
 
     /**
      * Construct a resource from a string.
+     *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create root (or base) resources.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
+     * </p>
      *
      * @param resource A URL or filename.
      * @return A Resource object, or null if the string points to a location
@@ -388,6 +452,16 @@ public interface ResourceFactory
     /**
      * Construct a Resource from provided path.
      *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create root (or base) resources.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
+     * </p>
+     *
      * @param path the path
      * @return the Resource for the provided path, or null if the path
      *  does not exist
@@ -404,6 +478,16 @@ public interface ResourceFactory
     /**
      * Construct a possible combined {@code Resource} from a list of URIs.
      *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create root (or base) resources.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
+     * </p>
+     *
      * @param uris the URIs
      * @return the Resource for the provided URIs, or null if all
      *  the provided URIs do not exist
@@ -419,6 +503,16 @@ public interface ResourceFactory
 
     /**
      * Construct a {@link Resource} from a provided URL.
+     *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create root (or base) resources.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
+     * </p>
      *
      * @param url the URL
      * @return the Resource for the provided URL, or null if the
@@ -443,6 +537,16 @@ public interface ResourceFactory
     /**
      * Construct a {@link Resource} from a {@code file:} based URI that is mountable (eg: a jar file).
      *
+     * <p>
+     *     Each call will allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create root (or base) resources.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
+     * </p>
+     *
      * @param uri the URI
      * @return the Resource, mounted as a {@link java.nio.file.FileSystem}, or null if
      *   the uri points to a location that does not exist.
@@ -460,6 +564,16 @@ public interface ResourceFactory
      *
      * <p>
      *     The supported types: {@link Path}, {@link String}, {@link URI}, {@link URL}, and {@link Resource}
+     * </p>
+     *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create root (or base) resources.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
      * </p>
      *
      * @param obj if the object to convert
@@ -487,11 +601,28 @@ public interface ResourceFactory
 
     /**
      * Split a string of references, that may be split with '{@code ,}', or '{@code ;}', or '{@code |}' into a List of {@link Resource}.
+     *
      * <p>
-     *     Each part of the input string could be path references (unix or windows style), string URI references, or even glob references (eg: {@code /path/to/libs/*}).
+     *     Each part of the input string could be path references (UNIX or windows style), string URI references, or even glob references (eg: {@code /path/to/libs/*}).
      * </p>
+     *
+     * <p>
+     *     Convenience method for {@code split(string, ",;|", false)}
+     * </p>
+     *
      * <p>
      *     If the result of processing the input segment is a java archive, it will not automatically be mounted, the caller must perform the mount if necessary
+     * </p>
+     *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create a List of root (or base) resources.
+     *     Consider using {@link #combine(Resource...)} to make them into a single {@link Resource}.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
      * </p>
      *
      * @param str the input string of references
@@ -502,11 +633,71 @@ public interface ResourceFactory
         return split(str, ",;|", false);
     }
 
+    /**
+     * Split a string of references, that may be split with '{@code ,}', or '{@code ;}', or '{@code |}' into a List of {@link Resource}.
+     *
+     * <p>
+     *     Each part of the input string could be path references (UNIX or windows style), string URI references, or even glob references (eg: {@code /path/to/libs/*}).
+     * </p>
+     *
+     * <p>
+     *     Convenience method for {@code split(string, ",;|", unwrap)}
+     * </p>
+     *
+     * <p>
+     *     If the result of processing the input segment is a java archive, it will not automatically be mounted, the caller must perform the mount if necessary
+     * </p>
+     *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create a List of root (or base) resources.
+     *     Consider using {@link #combine(Resource...)} to make them into a single {@link Resource}.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
+     * </p>
+     *
+     * @param str the input string of references
+     * @param unwrap if true {@code jar:file} references will be unwrapped back to just the container
+     * @return list of resources
+     */
     default List<Resource> split(String str, boolean unwrap)
     {
         return split(str, ",;|", unwrap);
     }
 
+    /**
+     * Split a string of references, that may be split with '{@code ,}', or '{@code ;}', or '{@code |}' into a List of {@link Resource}.
+     *
+     * <p>
+     *     Each part of the input string could be path references (UNIX or windows style), string URI references, or even glob references (eg: {@code /path/to/libs/*}).
+     * </p>
+     *
+     * <p>
+     *     Convenience method for {@code split(string, delim, false)}
+     * </p>
+     *
+     * <p>
+     *     If the result of processing the input segment is a java archive, it will not automatically be mounted, the caller must perform the mount if necessary
+     * </p>
+     *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create a List of root (or base) resources.
+     *     Consider using {@link #combine(Resource...)} to make them into a single {@link Resource}.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
+     * </p>
+     *
+     * @param str the input string of references
+     * @param delim if true {@code jar:file} references will be unwrapped back to just the container
+     * @return list of resources
+     */
     default List<Resource> split(String str, String delim)
     {
         return split(str, delim, false);
@@ -514,19 +705,32 @@ public interface ResourceFactory
 
     /**
      * Split a string of references by provided delims into a List of {@link Resource}.
+     *
      * <p>
      *     Each part of the input string could be path references (unix or windows style),
      *     string URI references, or even glob references (eg: {@code /path/to/libs/*}).
      *     Note: that if you use the {@code :} character in your delims, then URI references will be impossible.
      * </p>
+     *
      * <p>
      *     If the result of processing the input segment is a java archive it will not be automatically mounted,
      *     the caller must mount if necessary
      * </p>
      *
+     * <p>
+     *     Each call may allocate a new JVM resource, whose lifecycle
+     *     is tied to this ResourceFactory implementation.
+     * </p>
+     *
+     * <p>
+     *     This method is used to create a List of root (or base) resources.
+     *     Consider using {@link #combine(Resource...)} to make them into a single {@link Resource}.
+     *     Child resources of these resources, should be created using {@link Resource#resolve(String)}
+     * </p>
+     *
      * @param str the input string of references
      * @param delims the list of delimiters
-     * @param unwrap if true jar:file references will be unwrapped back to just the container
+     * @param unwrap if true {@code jar:file} references will be unwrapped back to just the container
      * @return list of resources
      */
     default List<Resource> split(String str, String delims, boolean unwrap)
