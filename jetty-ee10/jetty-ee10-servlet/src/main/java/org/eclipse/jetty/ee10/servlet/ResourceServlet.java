@@ -79,7 +79,7 @@ import org.slf4j.LoggerFactory;
  *   <dd>
  *     The root directory to look for static resources. Defaults to the context's baseResource. Relative URI
  *     are {@link Resource#resolve(String) resolved} against the context's {@link ServletContextHandler#getBaseResource()}
- *     base resource, all other values are resolved using {@link ServletContextHandler#newResource(String)}.
+ *     base resource.
  *   </dd>
  *   <dt>cacheControl</dt>
  *   <dd>
