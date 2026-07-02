@@ -248,7 +248,7 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
         /**
          * Called to initiate eager loading of the content.  The content may be loaded within the scope
          * of this method, or within the scope of a callback as a result of a {@link Request#demand(Runnable)} call made by
-         * this methhod.
+         * this method.
          * @throws Exception If there is a problem
          */
         protected abstract void load() throws Exception;
