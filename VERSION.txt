@@ -1,3 +1,15 @@
+12.1.11 - 02 July 2026
+ + 15156 Injecting authentication headers using request filters?
+ + 15217 jetty-quic-quiche-foreign fails on Windows due to eager resolution of Unix-only quiche_conn_set_keylog_fd
+ + 15226 Jetty 12.0.28 server becomes inaccessible with thousands of qtp threads blocked in HttpChannelState.onIdleTimeout ReentrantLock
+ + 15228 Massive increase in memory usage between 12.1.8 and 12.1.10 caused by ZipFileSystems
+ + 15232 Jetty 12.1.x EE11 doesn't handle Session attributes properly
+ + 15234 Review error response codes from EagerContentHandler
+ + 15267 Introduce module for MinimumDataRateHandler
+ + 15308 CachingWebAppClassLoader is not registering as parallel capable
+ + 15333 Upgrade to Quiche version 0.29.2
+ + 15345 Move RateControl to jetty-io
+
 jetty-12.1.11-SNAPSHOT
 
 12.1.10 - 29 May 2026
