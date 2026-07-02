@@ -30,7 +30,7 @@ import static org.eclipse.jetty.quic.quiche.foreign.NativeHelper.C_POINTER;
 
 public class quiche_h
 {
-    private static final String EXPECTED_QUICHE_VERSION = "0.29.1";
+    private static final String EXPECTED_QUICHE_VERSION = "0.29.2";
     private static final Logger LOG = LoggerFactory.getLogger(quiche_h.class);
 
     static void initialize()
@@ -779,14 +779,6 @@ public class quiche_h
                 C_INT,
                 C_POINTER,
                 C_INT
-            ));
-        private static final MethodHandle quiche_conn_retired_scid_next = NativeHelper.downcallHandle(
-            "quiche_conn_retired_scid_next",
-            FunctionDescriptor.of(
-                C_BOOL,
-                C_POINTER,
-                C_POINTER,
-                C_POINTER
             ));
         private static final MethodHandle quiche_conn_retired_scids = NativeHelper.downcallHandle(
             "quiche_conn_retired_scids",
@@ -2166,18 +2158,6 @@ public class quiche_h
         try
         {
             return (long)DowncallHandles.quiche_conn_send_ack_eliciting_on_path.invokeExact(conn, local, local_len, peer, peer_len);
-        }
-        catch (Throwable x)
-        {
-            throw new AssertionError("should not reach here", x);
-        }
-    }
-
-    public static boolean quiche_conn_retired_scid_next(MemorySegment conn, MemorySegment out, MemorySegment out_len)
-    {
-        try
-        {
-            return (byte)DowncallHandles.quiche_conn_retired_scid_next.invokeExact(conn, out, out_len) != 0;
         }
         catch (Throwable x)
         {
