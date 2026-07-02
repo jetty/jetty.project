@@ -1102,9 +1102,18 @@ public class ServletApiRequest implements HttpServletRequest
                         try
                         {
                             ServletContextHandler contextHandler = getServletRequestInfo().getServletContextHandler();
-                            int maxKeys = contextHandler.getMaxFormKeys();
-                            int maxContentSize = contextHandler.getMaxFormContentSize();
-                            _contentParameters = FormFields.getFields(getRequest(), maxKeys, maxContentSize);
+
+                            // Try per-request and per-context max form fields.
+                            int maxFields = parse(getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE));
+                            if (maxFields == -1)
+                                maxFields = contextHandler.getMaxFormKeys();
+
+                            // Try per-request and per-context max form length.
+                            int maxLength = parse(getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE));
+                            if (maxLength == -1)
+                                maxLength = contextHandler.getMaxFormContentSize();
+
+                            _contentParameters = FormFields.getFields(getRequest(), maxFields, maxLength);
                         }
                         catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
@@ -1160,6 +1169,20 @@ public class ServletApiRequest implements HttpServletRequest
             {
                 throw new BadMessageException("Unable to parse form content", e);
             }
+        }
+    }
+
+    private static int parse(Object value)
+    {
+        if (value == null)
+            return -1;
+        try
+        {
+            return Integer.parseInt(value.toString());
+        }
+        catch (NumberFormatException x)
+        {
+            return -1;
         }
     }
 
