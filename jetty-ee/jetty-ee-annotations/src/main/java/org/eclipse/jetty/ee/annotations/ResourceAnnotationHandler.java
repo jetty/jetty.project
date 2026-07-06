@@ -24,7 +24,6 @@ import javax.naming.NamingException;
 
 import jakarta.annotation.Resource;
 import org.eclipse.jetty.ee.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.ee.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee.webapp.MetaData;
 import org.eclipse.jetty.ee.webapp.WebAppContext;
 import org.eclipse.jetty.plus.annotation.Injection;
@@ -162,7 +161,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     
                     //try environment scope next
                     if (!bound)
-                        bound = NamingEntryUtil.bindToENC(ServletContextHandler.getEnvironmentName(), name, mappedName);
+                        bound = NamingEntryUtil.bindToENC(_context.getEnvironmentName(), name, mappedName);
                     
                     //try Server scope next
                     if (!bound)
@@ -319,7 +318,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     
                     //try the environment's scope
                     if (!bound)
-                        bound = NamingEntryUtil.bindToENC(ServletContextHandler.getEnvironmentName(), name, mappedName);
+                        bound = NamingEntryUtil.bindToENC(_context.getEnvironmentName(), name, mappedName);
                     
                     //try the server's scope
                     if (!bound)

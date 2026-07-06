@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import jakarta.servlet.ServletContext;
@@ -64,7 +63,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -194,10 +192,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // is done after this instance is constructed.
         super(contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, options);
 
-        Environment environment = ServletContextHandler.getEnvironment();
-
-        _protectedClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(environment));
-        _hiddenClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(environment));
+        _protectedClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(getEnvironment()));
+        _hiddenClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(getEnvironment()));
 
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
         setProtectedTargets(__dftProtectedTargets);
@@ -503,9 +499,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     protected void doStart() throws Exception
     {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
-        Environment environment = ServletContextHandler.getEnvironment();
-        Objects.requireNonNull(environment, "Unable to get Environment");
-        Thread.currentThread().setContextClassLoader(environment.getClassLoader());
+        Thread.currentThread().setContextClassLoader(getEnvironment().getClassLoader());
         try
         {
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
@@ -896,7 +890,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         name = String.format("%s@%x", name, hashCode());
 
         dumpObjects(out, indent,
-            Dumpable.named("environment", ServletContextHandler.getEnvironmentName()),
+            Dumpable.named("environment", getEnvironmentName()),
             new ClassLoaderDump(getClassLoader()),
             new DumpableCollection("Protected classes " + name, protectedClasses),
             new DumpableCollection("Hidden classes " + name, hiddenClasses),
