@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.client;
 
 import java.util.List;
 
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.CongestionController;
 import org.eclipse.jetty.quic.common.DefaultFlowController;
@@ -33,6 +34,7 @@ public class QuicClientQuicConfiguration extends ClientQuicConfiguration
     private List<NamedGroup> namedGroups = List.of(NamedGroup.x25519/*, NamedGroup.secp256r1, NamedGroup.ffdhe2048*/);
     private List<CipherSuite> cipherSuites = List.of(CipherSuite.TLS_AES_128_GCM_SHA256);
     private CongestionController.Factory congestionControllerFactory = new NewRenoCongestionControllerFactory();
+    private RateControl.Factory rateControlFactory = new RateControl.Factory() {};
     private FlowController.Factory flowControllerFactory = new DefaultFlowController.Factory();
     private StreamsController.Factory streamsControllerFactory = new DefaultStreamsController.Factory();
 
@@ -74,6 +76,16 @@ public class QuicClientQuicConfiguration extends ClientQuicConfiguration
     public void setCongestionControllerFactory(CongestionController.Factory congestionControllerFactory)
     {
         this.congestionControllerFactory = congestionControllerFactory;
+    }
+
+    public RateControl.Factory getRateControlFactory()
+    {
+        return rateControlFactory;
+    }
+
+    public void setRateControlFactory(RateControl.Factory rateControlFactory)
+    {
+        this.rateControlFactory = rateControlFactory;
     }
 
     public FlowController.Factory getFlowControllerFactory()

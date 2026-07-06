@@ -154,6 +154,12 @@ public class PacketTracker
         return rttData;
     }
 
+    long getLargestAcknowledged(EncryptionLevel encryptionLevel)
+    {
+        PacketEntry largest = trackers.get(PacketNumberSpace.from(encryptionLevel)).largestAckedEntry;
+        return largest == null ? 0 : largest.packet().packetNumber();
+    }
+
     /// First entry point: when a packet is sent.
     public void processPacketSent(QuicSession session, Packet packet, long length, boolean dataStalled)
     {
@@ -192,7 +198,7 @@ public class PacketTracker
         Tracker tracker = trackers.get(space);
 
         List<Packet.WithFrames> ackedPackets = new ArrayList<>();
-        long ackedLength = tracker.acknowledgePackets(session, frame, ackedPackets);
+        tracker.acknowledgePackets(session, frame, ackedPackets);
 
         if (ackedPackets.isEmpty())
             return;
@@ -346,8 +352,8 @@ public class PacketTracker
     {
         private final LinkedHashMap<Long, PacketEntry> entries = new LinkedHashMap<>();
         private final PacketNumberSpace packetNumberSpace;
-        private Scheduler.Task lossTimeoutTask;
         private Scheduler.Task probeTimeoutTask;
+        private Scheduler.Task lossTimeoutTask;
         private PacketEntry largestAckedEntry;
         private boolean newlyAcked;
 
@@ -445,10 +451,11 @@ public class PacketTracker
 
                 // Detect loss by packet number.
                 // Assumes the sender does not introduce packet number gaps.
+                // TODO: we are the sender, so we know if we introduced gaps.
                 if (largestAckedPacketNumber >= packetNumber + getPacketReorderingThreshold())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("packet lost by number {}>{}+{} {} on {}", largestAckedPacketNumber, packetNumber, getPacketReorderingThreshold(), packet, this);
+                        LOG.debug("packet lost by number {}>={}+{} {} on {}", largestAckedPacketNumber, packetNumber, getPacketReorderingThreshold(), packet, this);
                     lostLength += entry.length();
                     output.add(packet);
                     iterator.remove();
@@ -460,7 +467,7 @@ public class PacketTracker
                 if (sentDelay >= lossDelay)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("packet lost by time sentDelay={} lossDelay={} {} on {}", sentDelay, lossDelay, packet, this);
+                        LOG.debug("packet lost by time sentDelay={} >= lossDelay={} {} on {}", sentDelay, lossDelay, packet, this);
                     lostLength += entry.length();
                     output.add(packet);
                     iterator.remove();

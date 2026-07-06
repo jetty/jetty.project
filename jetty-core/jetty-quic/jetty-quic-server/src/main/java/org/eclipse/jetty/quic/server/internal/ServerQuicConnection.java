@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.quic.server.internal.tls.ServerTLSConfiguration;
 import org.eclipse.jetty.quic.server.internal.tls.ServerTLSEngine;
 import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Blocker;
@@ -305,10 +307,11 @@ public class ServerQuicConnection extends QuicConnection
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
         ServerTLSConfiguration tlsConfiguration = new ServerTLSConfiguration(getServerQuicConfiguration(), getSslContextFactory());
         ServerTLSEngine tlsEngine = new ServerTLSEngine(protector, tlsConfiguration);
+        RateControl rateControl = quicConfiguration.getRateControlFactory().newRateControl(getEndPoint());
         FlowController flowController = quicConfiguration.getFlowControllerFactory().newFlowController();
         StreamsController streamsController = quicConfiguration.getStreamsControllerFactory().newStreamsController();
         Session.Listener listener = getSessionListenerFactory().newListener();
-        return new ServerQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, flowController, streamsController, listener);
+        return new ServerQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, rateControl, flowController, streamsController, listener);
     }
 
     @Override
@@ -376,7 +379,10 @@ public class ServerQuicConnection extends QuicConnection
             LOG.debug("failing connection {}", this, failure);
         for (ServerQuicSession session : sessions.values())
         {
-            session.disconnect(ErrorCode.INTERNAL_ERROR.code(), "failure", 0x00, failure, Callback.NOOP);
+            if (failure instanceof QuicException qx)
+                session.disconnect(qx.getErrorCode().code(), qx.getMessage(), qx.getFrameType(), failure, Callback.NOOP);
+            else
+                session.disconnect(ErrorCode.INTERNAL_ERROR.code(), "failure", 0x00, failure, Callback.NOOP);
         }
     }
 

@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
@@ -126,6 +127,7 @@ public abstract class QuicSession extends AbstractSession
     private final PacketTracker packetTracker;
     private final PacketNumbers packetNumbers;
     private final TLSEngine tlsEngine;
+    private final RateControl rateControl;
     private final FlowController flowController;
     private final StreamsController streamsController;
     private final boolean client;
@@ -147,7 +149,7 @@ public abstract class QuicSession extends AbstractSession
     private EncryptionLevel encryptionLevel = EncryptionLevel.INITIAL;
     private long closeBackoff;
 
-    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, TLSEngine tlsEngine, FlowController flowController, StreamsController streamsController, Session.Listener listener, boolean client)
+    protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicConfiguration quicConfiguration, QuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, TLSEngine tlsEngine, RateControl rateControl, FlowController flowController, StreamsController streamsController, Session.Listener listener, boolean client)
     {
         super(executor, quicConfiguration, listener);
         this.scheduler = scheduler;
@@ -162,6 +164,8 @@ public abstract class QuicSession extends AbstractSession
         installBean(packetNumbers);
         this.tlsEngine = tlsEngine;
         installBean(tlsEngine);
+        this.rateControl = rateControl;
+        installBean(rateControl);
         this.flowController = flowController;
         installBean(flowController);
         this.streamsController = streamsController;
@@ -545,18 +549,14 @@ public abstract class QuicSession extends AbstractSession
             // Create a new stream, if allowed.
             AtomicLong remoteStreamCount = bidirectional ? biRemoteStreamCount : uniRemoteStreamCount;
             long count = remoteStreamCount.get();
-            long max = bidirectional ? getBidirectionalRemoteStreamMaxCount() : getUnidirectionalRemoteStreamMaxCount();
-            if (max <= 0 || count < max)
-            {
-                remoteStreamCount.incrementAndGet();
 
-                stream = new QuicStream(this, streamId, false);
-                streams.put(streamId, stream);
-            }
-            else
-            {
+            long max = bidirectional ? getBidirectionalRemoteStreamMaxCount() : getUnidirectionalRemoteStreamMaxCount();
+            if (max > 0 && count >= max)
                 throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "remote_stream_count_exceeded");
-            }
+
+            remoteStreamCount.incrementAndGet();
+            stream = new QuicStream(this, streamId, false);
+            streams.put(streamId, stream);
         }
 
         // A remote stream can only send up to what the local stream wants to receive.
@@ -696,6 +696,7 @@ public abstract class QuicSession extends AbstractSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("resetting {} for {} on {}", frame, stream, this);
+        checkRateControl(frame);
         sendFrames(stream, List.of(frame), callback);
     }
 
@@ -1131,6 +1132,7 @@ public abstract class QuicSession extends AbstractSession
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("dropping frame {} for terminated stream #{} on {}", first, first.streamId(), this);
+            checkRateControl(first);
             return null;
         }
 
@@ -1184,16 +1186,30 @@ public abstract class QuicSession extends AbstractSession
             LOG.debug("processing {} in {} on {}", frame, packet, this);
         switch (frame)
         {
-            case AckFrame ackFrame -> processAckFrame(EncryptionLevel.from(packet), ackFrame);
+            case AckFrame ackFrame ->
+            {
+                EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
+                if (ackFrame.largestAcknowledged() <= getPacketTracker().getLargestAcknowledged(encryptionLevel))
+                    checkRateControl(frame);
+                processAckFrame(encryptionLevel, ackFrame);
+            }
             case ConnectionCloseFrame connectionCloseFrame -> processConnectionCloseFrame(connectionCloseFrame);
             case CryptoFrame cryptoFrame ->
             {
+                if (cryptoFrame.length() == 0)
+                    checkRateControl(frame);
                 EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
                 cryptoStreams.computeIfAbsent(encryptionLevel, e -> new FrameStream.Crypto(e, this::processCryptoFrame)).offer(cryptoFrame);
             }
-            case DataBlockedFrame dataBlockedFrame -> notifyDataBlocked(dataBlockedFrame);
+            case DataBlockedFrame dataBlockedFrame ->
+            {
+                checkRateControl(frame);
+                notifyDataBlocked(dataBlockedFrame);
+            }
             case MaxDataFrame maxDataFrame ->
             {
+                if (maxDataFrame.maxData() <= getSendMaxOffset())
+                    checkRateControl(frame);
                 // Serialize processing of maxData frames through the flusher.
                 flusher.processMaxData(maxDataFrame);
                 notifyMaxData(maxDataFrame);
@@ -1202,15 +1218,47 @@ public abstract class QuicSession extends AbstractSession
             {
                 if (updateMaxStreams(maxStreamsFrame.isBidirectional(), maxStreamsFrame.maxStreams()))
                     notifyMaxStreams(maxStreamsFrame);
+                else
+                    checkRateControl(frame);
             }
-            case PingFrame _ -> notifyPing();
-            case StreamsBlockedFrame streamsBlockedFrame -> notifyStreamsBlocked(streamsBlockedFrame);
             case NewConnectionIdFrame newConnectionIdFrame ->
             {
+                checkRateControl(frame);
                 // TODO
+            }
+            case PathChallengeFrame pathChallengeFrame ->
+            {
+                checkRateControl(frame);
+                // TODO
+            }
+            case PathResponseFrame pathResponseFrame ->
+            {
+                checkRateControl(frame);
+                // TODO
+            }
+            case PingFrame _ ->
+            {
+                checkRateControl(frame);
+                notifyPing();
+            }
+            case RetireConnectionIdFrame retireConnectionIdFrame ->
+            {
+                checkRateControl(frame);
+                // TODO
+            }
+            case StreamsBlockedFrame streamsBlockedFrame ->
+            {
+                checkRateControl(frame);
+                notifyStreamsBlocked(streamsBlockedFrame);
             }
             default -> throw new UnsupportedOperationException();
         }
+    }
+
+    void checkRateControl(Frame frame)
+    {
+        if (!rateControl.onEvent(frame))
+            throw new QuicException(ErrorCode.PROTOCOL_VIOLATION_ERROR, "invalid_frame_rate", frame.type());
     }
 
     private void processAckFrame(EncryptionLevel encryptionLevel, AckFrame frame)

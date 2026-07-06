@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
@@ -77,9 +78,9 @@ public class ClientQuicSession extends QuicSession
     private boolean retryPacketProcessed;
     private byte[] retryToken;
 
-    public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, ClientQuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, ClientTLSEngine clientTLSEngine, FlowController flowController, StreamsController streamsController, Map<String, Object> context)
+    public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, ClientQuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, ClientTLSEngine clientTLSEngine, RateControl rateControl, FlowController flowController, StreamsController streamsController, Map<String, Object> context)
     {
-        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), quicConfiguration, connection, packetTracker, packetNumbers, clientTLSEngine, flowController, streamsController, sessionListener(context), true);
+        super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), quicConfiguration, connection, packetTracker, packetNumbers, clientTLSEngine, rateControl, flowController, streamsController, sessionListener(context), true);
         this.context = context;
     }
 

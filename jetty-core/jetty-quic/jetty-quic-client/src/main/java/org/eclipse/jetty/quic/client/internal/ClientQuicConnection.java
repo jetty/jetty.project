@@ -24,6 +24,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.internal.tls.ClientTLSEngine;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
 import org.eclipse.jetty.quic.common.tls.generator.QuicMessagesGenerator;
 import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
@@ -93,9 +95,10 @@ public class ClientQuicConnection extends QuicConnection implements Callback
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, false), new QuicMessagesGenerator(byteBufferPool, true));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         ClientTLSEngine tlsEngine = new ClientTLSEngine(protector);
+        RateControl rateControl = quicConfiguration.getRateControlFactory().newRateControl(getEndPoint());
         FlowController flowController = quicConfiguration.getFlowControllerFactory().newFlowController();
         StreamsController streamsController = quicConfiguration.getStreamsControllerFactory().newStreamsController();
-        session = new ClientQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, flowController, streamsController, context);
+        session = new ClientQuicSession(connector, quicConfiguration, this, packetTracker, packetNumbers, tlsEngine, rateControl, flowController, streamsController, context);
         session.setIdleTimeout(getEndPoint().getIdleTimeout());
         LifeCycle.start(session);
         session.connect(this);
@@ -216,6 +219,9 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing connection {}", this, failure);
-        session.disconnect(ErrorCode.INTERNAL_ERROR.code(), "failure", 0x00, failure, NOOP);
+        if (failure instanceof QuicException qx)
+            session.disconnect(qx.getErrorCode().code(), qx.getMessage(), qx.getFrameType(), failure, NOOP);
+        else
+            session.disconnect(ErrorCode.INTERNAL_ERROR.code(), "failure", 0x00, failure, NOOP);
     }
 }
