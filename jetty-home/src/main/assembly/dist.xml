@@ -1,0 +1,51 @@
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3 http://maven.apache.org/xsd/assembly-1.1.3.xsd">
+    <id>jetty-home</id>
+    <formats>
+        <format>tar.gz</format>
+        <format>zip</format>
+    </formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>jetty-home-${project.version}</baseDirectory>
+    <fileSets>
+        <fileSet>
+            <directory>${project.basedir}/target/classes</directory>
+            <outputDirectory>/lib</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/modules</directory>
+            <outputDirectory>/modules</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/start.d</directory>
+            <outputDirectory>/start.d</outputDirectory>
+        </fileSet>
+    </fileSets>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>/lib</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
+            <useTransitiveDependencies>true</useTransitiveDependencies>
+            <unpack>false</unpack>
+            <includes>
+                <!-- Include only core Jetty and essential third-party jars -->
+                <include>org.eclipse.jetty:jetty-*</include>
+                <include>org.eclipse.jetty.toolchain:jetty-*</include>
+                <include>org.slf4j:slf4j-api</include>
+                <include>javax.servlet:javax.servlet-api</include>
+            </includes>
+            <excludes>
+                <!-- Exclude environment-specific JARs that should be downloadable -->
+                <exclude>org.eclipse.jetty:apache-jsp</exclude>
+                <exclude>org.eclipse.jetty:apache-jstl</exclude>
+                <exclude>org.eclipse.jetty.gcloud:jetty-gcloud-*</exclude>
+                <exclude>org.eclipse.jetty:jetty-rewrite</exclude>
+                <!-- Add more exclusions as needed -->
+            </excludes>
+        </dependencySet>
+    </dependencySets>
+</assembly>
