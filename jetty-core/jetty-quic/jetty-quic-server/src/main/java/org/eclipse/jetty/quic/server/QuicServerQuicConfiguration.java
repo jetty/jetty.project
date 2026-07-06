@@ -16,6 +16,8 @@ package org.eclipse.jetty.quic.server;
 import java.util.List;
 import java.util.Objects;
 
+import org.eclipse.jetty.io.RateControl;
+import org.eclipse.jetty.io.WindowRateControl;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.CongestionController;
 import org.eclipse.jetty.quic.common.DefaultFlowController;
@@ -38,6 +40,7 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
     private TokenFactory tokenFactory = new DefaultTokenFactory();
     private SessionTicket.Factory sessionTicketFactory = new DefaultSessionTicketFactory();
     private CongestionController.Factory congestionControllerFactory = new NewRenoCongestionControllerFactory();
+    private RateControl.Factory rateControlFactory = new WindowRateControl.Factory(128);
     private FlowController.Factory flowControllerFactory = new DefaultFlowController.Factory();
     private StreamsController.Factory streamsControllerFactory = new DefaultStreamsController.Factory();
     private int destinationConnectionIdLength = 8;
@@ -101,6 +104,16 @@ public class QuicServerQuicConfiguration extends ServerQuicConfiguration
     public void setCongestionControllerFactory(CongestionController.Factory congestionControllerFactory)
     {
         this.congestionControllerFactory = congestionControllerFactory;
+    }
+
+    public RateControl.Factory getRateControlFactory()
+    {
+        return rateControlFactory;
+    }
+
+    public void setRateControlFactory(RateControl.Factory rateControlFactory)
+    {
+        this.rateControlFactory = rateControlFactory;
     }
 
     public FlowController.Factory getFlowControllerFactory()

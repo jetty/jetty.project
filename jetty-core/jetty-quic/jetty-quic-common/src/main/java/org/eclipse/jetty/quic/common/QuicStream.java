@@ -381,11 +381,33 @@ public class QuicStream extends AbstractStream
 
         switch (frame)
         {
-            case ResetStreamFrame resetStreamFrame -> frameStream.offer(resetStreamFrame);
-            case StopSendingFrame stopSendingFrame -> processStopSendingFrame(stopSendingFrame);
-            case StreamDataBlockedFrame streamDataBlockedFrame -> notifyDataBlockedFrame(streamDataBlockedFrame);
-            case StreamFrame streamFrame -> frameStream.offer(streamFrame);
-            case StreamMaxDataFrame streamMaxDataFrame -> notifyMaxDataFrame(streamMaxDataFrame);
+            case ResetStreamFrame resetStreamFrame ->
+            {
+                session.checkRateControl(frame);
+                frameStream.offer(resetStreamFrame);
+            }
+            case StopSendingFrame stopSendingFrame ->
+            {
+                session.checkRateControl(frame);
+                processStopSendingFrame(stopSendingFrame);
+            }
+            case StreamDataBlockedFrame streamDataBlockedFrame ->
+            {
+                session.checkRateControl(frame);
+                notifyDataBlockedFrame(streamDataBlockedFrame);
+            }
+            case StreamFrame streamFrame ->
+            {
+                if (streamFrame.length() == 0)
+                    session.checkRateControl(frame);
+                frameStream.offer(streamFrame);
+            }
+            case StreamMaxDataFrame streamMaxDataFrame ->
+            {
+                if (streamMaxDataFrame.maxData() <= getSendMaxOffset())
+                    session.checkRateControl(frame);
+                notifyMaxDataFrame(streamMaxDataFrame);
+            }
         }
     }
 
