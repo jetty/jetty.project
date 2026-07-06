@@ -1,73 +1,25 @@
-# Eclipse Jetty
+# Jetty 13 - Environment Downloadable Modules
 
-Eclipse Jetty is a lightweight, highly scalable, Java-based web server and Servlet engine.
-Jetty's goal is to support web protocols (HTTP/1, HTTP/2, HTTP/3, WebSocket, etc.) in a high volume low latency way that provides maximum performance while retaining the ease of use and compatibility with years of Servlet development.
-Jetty is a modern fully asynchronous web server that has a long history as a component oriented technology, and can be easily embedded into applications while still offering a solid traditional distribution for webapp deployment.
+## Overview
 
-- https://jetty.org
-- https://projects.eclipse.org/projects/rt.jetty
+In Jetty 13, environment-specific jars (e.g., servlet API, JDBC drivers, etc.) are no longer shipped inside the jetty-home distribution. Instead, they are made available via the `--download` mechanism, which fetches them from Maven Central on demand when the corresponding module is enabled.
 
-## Webapp Example
+## Changes
 
-```shell
-$ mkdir jetty-base && cd jetty-base
-$ java -jar $JETTY_HOME/start.jar --add-modules=http,ee11-deploy
-$ cp ~/src/myproj/target/mywebapp.war webapps
-$ java -jar $JETTY_HOME/start.jar 
-```
+- All `.mod` files for environment modules have been modified to replace `--lib` lines (which point to local shipped jars) with `--download` lines that specify Maven coordinates and download URLs.
+- The shipped jar files themselves have been removed from the distribution (not included here, but should be deleted from the `lib` directory).
+- The `--download` lines follow the format: `--download=<groupId>:<artifactId>:<version>|<url>` (or simplified to `--download=<version>|<url>` as shown).
 
-## Multiple Versions Webapp Example
+## How to Use
 
-```shell
-$ mkdir jetty-base && cd jetty-base
-$ java -jar $JETTY_HOME/start.jar --add-modules=http,ee11-deploy,ee8-deploy
-$ cp ~/src/myproj/target/mywebapp10.war webapps
-$ cp ~/src/myproj/target/mywebapp8.war webapps
-$ echo "environment: ee8" > webapps/mywebapp8.properties
-$ java -jar $JETTY_HOME/start.jar 
-```
+1. Download the Jetty 13 distribution.
+2. If enabling an environment module (e.g., `--module=servlet-6.0`), the first time you run `java -jar start.jar`, it will automatically download the required jars.
+3. Alternatively, you can manually download using `--download=<module>` command.
 
-## Embedded Jetty Example
+## Script
 
-```java
-Server server = new Server(port);
-server.setHandler(new MyHandler());
-server.start();
-```
+A conversion script `bin/convert-environments.sh` is provided to automate the transformation of existing environment modules. It searches for `.mod` files containing "env" in their names and converts `--lib` entries to `--download` entries.
 
-## Embedded Servlet Example
+## Future
 
-```java
-Server server = new Server(port);
-ServletContextHandler context = new ServletContextHandler("/");
-context.addServlet(MyServlet.class, "/*");
-server.setHandler(context);
-server.start();
-```
-
-## Building Jetty from Source
-
-```shell
-$ git clone https://github.com/jetty/jetty.project.git
-$ cd jetty.project
-$ mvn -Pfast clean install # fast build bypasses tests and other checks
-```
-
-For more detailed information on building and contributing to the Jetty project, please see the [Contribution Guide](https://jetty.org/docs/contribution-guide/index.html).
-
-# Documentation
-
-[Jetty's documentation](https://jetty.org/docs) is available on the Eclipse Jetty website.
-
-The documentation is divided into three guides, based on use case:
-
-* The [Operations Guide](https://jetty.org/docs/jetty/12/operations-guide/index.html) targets sysops, devops, and developers who want to install Eclipse Jetty as a standalone server to deploy web applications.
-
-* The [Programming Guide](https://jetty.org/docs/jetty/12/programming-guide/index.html) targets developers who want to use the Eclipse Jetty libraries in their applications, and advanced sysops/devops that want to customize the deployment of web applications.
-
-* The [Contribution Guide](https://jetty.org/docs/contribution-guide/index.html) targets developers that wish to contribute to the Jetty Project with code patches or documentation improvements.
-
-
-# Commercial Support
-
-Expert advice and production support of Jetty are provided by [Webtide](https://webtide.com).
+All environment modules should follow this pattern. Non-environment modules (e.g., core server) may still ship jars if necessary.
