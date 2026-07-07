@@ -31,7 +31,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.buffer.ReadableBuffer;
@@ -308,7 +307,7 @@ public class AsyncIOTest extends AbstractTest
                 return failure;
             }
         };
-        responseRef.get().write(true, BufferUtil.EMPTY_BUFFER, cb);
+        responseRef.get().write(true, ReadableBuffer.EMPTY, cb);
         await().atMost(5, TimeUnit.SECONDS).until(cb::failure, instanceOf(EofException.class));
     }
 

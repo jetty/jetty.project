@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -42,7 +43,7 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.allocate(1), callback);
+                response.write(true, ReadableBuffer.allocate(1, false), callback);
                 return true;
             }
         });
@@ -91,7 +92,7 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.allocate(1), callback);
+                response.write(true, ReadableBuffer.allocate(1, false), callback);
                 return true;
             }
         });
@@ -143,7 +144,7 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, ReadableBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -180,7 +181,7 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, ReadableBuffer.wrap(content), callback);
                 return true;
             }
         });

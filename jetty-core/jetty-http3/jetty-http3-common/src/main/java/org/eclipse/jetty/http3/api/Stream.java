@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.api;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.MetaData;
@@ -22,6 +21,7 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data within a {@link Session}.</p>
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.Promise;
  * status code and response headers, and zero or more DATA frames containing response content.</p>
  * <p>Both client and server can end their side of the stream by sending a final frame with
  * the {@code last} flag set to {@code true}, see {@link HeadersFrame#HeadersFrame(MetaData, boolean)}
- * and {@link DataFrame#DataFrame(ByteBuffer, boolean)}.</p>
+ * and {@link DataFrame#DataFrame(ReadableBuffer, boolean)}.</p>
  */
 public interface Stream
 {

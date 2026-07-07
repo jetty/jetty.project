@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http2.ErrorCode;
@@ -51,7 +50,7 @@ public class MaxFrameSizeParseTest
         for (int i = 0; i < 2; ++i)
         {
             byte[] bytes = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0};
-            ReadableBuffer buffer = ReadableBuffer.wrap(ByteBuffer.wrap(bytes));
+            ReadableBuffer buffer = ReadableBuffer.wrap(bytes);
             WritableBuffer wb = buffer.toWritable();
             wb.position(0);
             wb.putInt(maxFrameSize + 1);

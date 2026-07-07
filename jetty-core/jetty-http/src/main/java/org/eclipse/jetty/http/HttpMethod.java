@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 /**
  * Known HTTP Methods
@@ -77,7 +76,6 @@ public enum HttpMethod
 
     private final String _method;
     private final byte[] _bytes;
-    private final ByteBuffer _buffer;
     private final Type _type;
 
     HttpMethod(Type type)
@@ -85,7 +83,6 @@ public enum HttpMethod
         _method = name().replace('_', '-');
         _type = type;
         _bytes = StringUtil.getBytes(_method);
-        _buffer = ByteBuffer.wrap(_bytes);
     }
 
     public byte[] getBytes()
@@ -118,11 +115,6 @@ public enum HttpMethod
     public boolean isIdempotent()
     {
         return _type.ordinal() >= Type.IDEMPOTENT.ordinal();
-    }
-
-    public ByteBuffer asBuffer()
-    {
-        return _buffer.asReadOnlyBuffer();
     }
 
     public String asString()
@@ -160,9 +152,9 @@ public enum HttpMethod
      * @param buffer buffer containing ISO-8859-1 characters, it is not modified.
      * @return An HttpMethod if a match or null if no easy match.
      */
-    public static HttpMethod lookAheadGet(ByteBuffer buffer)
+    public static HttpMethod lookAheadGet(ReadableBuffer buffer)
     {
-        int len = buffer.remaining();
+        long len = buffer.remaining();
         // Shortcut for 3 or 4 char methods, mostly for GET optimisation
         if (len > 4)
             return lookAheadGet(buffer, buffer.getInt(buffer.position()));
@@ -177,7 +169,7 @@ public enum HttpMethod
      *                  with the equivalent of {@code buffer.getInt(buffer.position())}
      * @return An HttpMethod if a match or null if no easy match.
      */
-    static HttpMethod lookAheadGet(ByteBuffer buffer, int lookAhead)
+    static HttpMethod lookAheadGet(ReadableBuffer buffer, int lookAhead)
     {
         return switch (lookAhead)
         {

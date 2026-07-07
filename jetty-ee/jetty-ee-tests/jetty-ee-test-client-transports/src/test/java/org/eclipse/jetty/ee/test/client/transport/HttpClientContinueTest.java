@@ -55,6 +55,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -152,7 +153,7 @@ public class HttpClientContinueTest extends AbstractTest
                             return thread.getState() == Thread.State.WAITING;
                         });
                         Callback.Completable callback = new Callback.Completable();
-                        content.write(b == contents[contents.length - 1], ByteBuffer.wrap(b), callback);
+                        content.write(b == contents[contents.length - 1], ReadableBuffer.wrap(b), callback);
                         callback.get();
                     }
                     catch (Throwable t)

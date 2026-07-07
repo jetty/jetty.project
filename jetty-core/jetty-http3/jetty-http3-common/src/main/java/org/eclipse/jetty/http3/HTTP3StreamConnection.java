@@ -268,7 +268,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     Frame frame = action.frame();
                     if (frame instanceof DataFrame dataFrame)
                     {
-                        if (dataFrame.isLast() && !dataFrame.getByteBuffer().hasRemaining())
+                        if (dataFrame.isLast() && dataFrame.getByteBuffer().remaining() == 0L)
                         {
                             tryReleaseData(true);
                             yield Content.Chunk.EOF;

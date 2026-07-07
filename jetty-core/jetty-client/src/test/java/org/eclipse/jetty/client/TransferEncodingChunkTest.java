@@ -19,7 +19,6 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +33,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -96,7 +96,7 @@ public class TransferEncodingChunkTest
 
             // Avoid that the headers and the chunk are sent in the same write.
             Thread.sleep(500);
-            asyncContent.write(true, ByteBuffer.wrap(encodedContent), Callback.NOOP);
+            asyncContent.write(true, ReadableBuffer.wrap(encodedContent), Callback.NOOP);
 
             Socket socket = server.accept();
             socket.setSoTimeout(500);

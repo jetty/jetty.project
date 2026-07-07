@@ -267,7 +267,7 @@ public class HTTP2Test extends AbstractTest
                 int download = (int)request.getHeaders().getLongField(downloadBytes);
                 byte[] content = new byte[download];
                 new Random().nextBytes(content);
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, ReadableBuffer.wrap(content), callback);
                 return true;
             }
         });

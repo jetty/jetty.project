@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 
 public class ContextResponse extends Response.Wrapper
@@ -31,7 +30,7 @@ public class ContextResponse extends Response.Wrapper
     }
 
     @Override
-    public void write(boolean last, ByteBuffer content, Callback callback)
+    public void write(boolean last, ReadableBuffer content, Callback callback)
     {
         Callback contextCallback = new Callback()
         {

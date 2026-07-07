@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,6 +25,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -205,7 +205,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(new byte[1024]), callback);
+                response.write(true, ReadableBuffer.wrap(new byte[1024]), callback);
                 return true;
             }
         });

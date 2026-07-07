@@ -16,11 +16,19 @@ package org.eclipse.jetty.util.internal;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ReadOnlyBufferException;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -48,7 +56,7 @@ public class AccumulatingReadBufferTest
             .flip());
         ReadableBuffer acc = ReadableBuffer.accumulate(List.of(rb));
 
-        assertThrows(IllegalStateException.class, acc::toWritable);
+        assertThrows(ReadOnlyBufferException.class, acc::toWritable);
     }
 
     @Test
@@ -658,28 +666,7 @@ public class AccumulatingReadBufferTest
             .flip());
         ReadableBuffer acc = ReadableBuffer.accumulate(List.of(rb1, rb2));
 
-        assertThrows(IllegalStateException.class, acc::compact);
-    }
-
-    @Test
-    public void testDrain()
-    {
-        ReadableBuffer rb1 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
-            .put((byte)0)
-            .put((byte)0)
-            .flip());
-        ReadableBuffer rb2 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
-            .put((byte)0)
-            .put((byte)1)
-            .flip());
-        ReadableBuffer acc = ReadableBuffer.accumulate(List.of(rb1, rb2));
-
-        assertEquals(0, acc.position());
-        assertEquals(4, acc.remaining());
-
-        acc.drain();
-        assertEquals(0, acc.position());
-        assertEquals(0, acc.remaining());
+        assertThrows(ReadOnlyBufferException.class, acc::compact);
     }
 
     @Test
@@ -706,7 +693,42 @@ public class AccumulatingReadBufferTest
     }
 
     @Test
-    public void testWriteToGathering() throws IOException
+    public void testEmptyBufferWriteToCallsTarget() throws Exception
+    {
+        ReadableBuffer acc = ReadableBuffer.accumulate(List.of());
+
+        AtomicInteger writeCount = new AtomicInteger();
+        long written = acc.writeTo(new TestGatheringTarget()
+        {
+            @Override
+            public long write(FileChannel input, long position, long count)
+            {
+                assertEquals(0L, count);
+                writeCount.incrementAndGet();
+                return 0;
+            }
+
+            @Override
+            public void write(ByteBuffer[] inputs)
+            {
+                long totalRemaining = Arrays.stream(inputs).mapToLong(ByteBuffer::remaining).sum();
+                assertEquals(0L, totalRemaining);
+                writeCount.incrementAndGet();
+            }
+
+            @Override
+            public void write(ByteBuffer input)
+            {
+                assertEquals(0L, input.remaining());
+                writeCount.incrementAndGet();
+            }
+        });
+        assertEquals(0L, written);
+        assertEquals(1, writeCount.get());
+    }
+
+    @Test
+    public void testWriteToGatheringOnly() throws IOException
     {
         ReadableBuffer rb1 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
             .putInt(11)
@@ -750,6 +772,84 @@ public class AccumulatingReadBufferTest
         assertEquals(12, writtenIntegers.get(1));
         assertEquals(13, writtenIntegers.get(2));
         assertEquals(14, writtenIntegers.get(3));
+    }
+
+    @Test
+    public void testWriteToGatheringAndTransferring() throws IOException
+    {
+        ReadableBuffer rb1 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+            .putInt(11)
+            .putInt(12)
+            .flip());
+        ReadableBuffer rb2 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+            .putInt(13)
+            .putInt(14)
+            .flip());
+        Path testResourcePathFile = MavenTestingUtils.getTestResourcePathFile("resource.txt");
+        ReadableBuffer rb3 = ReadableBuffer.wrap(testResourcePathFile, WritableBufferPool.SIZED_NON_POOLING);
+        ReadableBuffer rb4 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+            .putInt(15)
+            .putInt(16)
+            .flip());
+        ReadableBuffer rb5 = ReadableBuffer.wrap(ByteBuffer.allocate(10)
+            .putInt(17)
+            .putInt(18)
+            .flip());
+
+        ReadableBuffer acc = ReadableBuffer.accumulate(List.of(rb1, rb2, rb3, rb4, rb5));
+        assertEquals(0, acc.position());
+        assertEquals(52, acc.remaining());
+
+        List<Object> writtenObjects = new ArrayList<>();
+        long written = acc.writeTo(new TestGatheringTarget()
+        {
+            @Override
+            public long write(FileChannel input, long position, long count) throws IOException
+            {
+                ByteBuffer bb = ByteBuffer.allocate((int)count);
+                input.read(bb, position);
+                bb.flip();
+                String string = BufferUtil.toString(bb);
+                writtenObjects.add(string);
+                return count;
+            }
+
+            @Override
+            public void write(ByteBuffer[] inputs)
+            {
+                for (ByteBuffer input : inputs)
+                {
+                    while (input.hasRemaining())
+                    {
+                        writtenObjects.add(input.getInt());
+                    }
+                }
+            }
+
+            @Override
+            public void write(ByteBuffer input)
+            {
+                fail("gathering write should have been called instead");
+            }
+        });
+        assertEquals(52, written);
+
+        assertEquals(52, acc.position());
+        assertEquals(0, acc.remaining());
+        assertEquals(9, writtenObjects.size());
+        assertEquals(11, writtenObjects.get(0));
+        assertEquals(12, writtenObjects.get(1));
+        assertEquals(13, writtenObjects.get(2));
+        assertEquals(14, writtenObjects.get(3));
+        assertEquals("This is a text file\n", writtenObjects.get(4));
+        assertEquals(15, writtenObjects.get(5));
+        assertEquals(16, writtenObjects.get(6));
+        assertEquals(17, writtenObjects.get(7));
+        assertEquals(18, writtenObjects.get(8));
+    }
+
+    private abstract static class TestGatheringTarget implements ReadableBuffer.GatheringTarget, ReadableBuffer.TransferringTarget
+    {
     }
 
     @Test
@@ -1030,5 +1130,48 @@ public class AccumulatingReadBufferTest
         assertEquals(0, rb2.getRetained());
         assertEquals(0, rb3.getRetained());
         assertEquals(0, rb4.getRetained());
+    }
+
+    @Test
+    public void testSlicePositionLengthInterleavedPositions()
+    {
+        List<ReadableBuffer> buffers = List.of(
+            allocate(9, (byte)1),
+            allocate(76, (byte)2),
+            allocate(9, (byte)3),
+            allocate(16384, (byte)4),
+            allocate(9, (byte)5),
+            allocate(16384, (byte)6),
+            allocate(9, (byte)7),
+            allocate(16384, (byte)8),
+            allocate(9, (byte)9),
+            allocate(16383, (byte)10)
+        );
+
+        ReadableBuffer acc = ReadableBuffer.accumulate(buffers);
+        acc.position(16384);
+
+        {
+            ReadableBuffer slice = acc.slice(16384, 16384);
+            assertEquals(16384, slice.remaining());
+            slice.release();
+        }
+        {
+            ReadableBuffer slice = acc.slice(32768, 16384);
+            assertEquals(16384, slice.remaining());
+            slice.release();
+        }
+
+        buffers.forEach(ReadableBuffer::release);
+    }
+
+    private ReadableBuffer allocate(int capacity, byte fill)
+    {
+        byte[] bytes = new byte[capacity];
+        Arrays.fill(bytes, fill);
+        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+        byteBuffer.position(capacity);
+        byteBuffer.limit(capacity);
+        return WritableBuffer.wrap(byteBuffer).toReadable();
     }
 }

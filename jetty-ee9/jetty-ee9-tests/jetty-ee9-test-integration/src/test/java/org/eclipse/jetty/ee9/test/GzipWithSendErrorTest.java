@@ -48,6 +48,7 @@ import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -256,7 +257,7 @@ public class GzipWithSendErrorTest
         assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo(requestBytesSent));
 
         // Now provide rest
-        content.write(true, ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent), Callback.NOOP);
+        content.write(true, ReadableBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent), Callback.NOOP);
         
         content.close();
 
@@ -358,7 +359,7 @@ public class GzipWithSendErrorTest
         assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo(requestBytesSent));
 
         // Now provide rest
-        content.write(true, ByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent), Callback.NOOP);
+        content.write(true, ReadableBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent), Callback.NOOP);
         
         content.close();
 

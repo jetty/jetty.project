@@ -25,9 +25,8 @@ import java.util.Objects;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -259,7 +258,9 @@ public class IOResources
             Path path = resource.getPath();
             if (path != null)
             {
-                new PathToSinkCopier(path, sink, bufferPool, offset, length, callback).iterate();
+                ReadableBuffer pathBuffer = ReadableBuffer.wrap(path, offset, length, WritableBufferPool.wrap(bufferPool == null ? ByteBufferPool.SIZED_NON_POOLING : bufferPool));
+                sink.write(true, pathBuffer, callback);
+                pathBuffer.release();
                 return;
             }
 
@@ -267,7 +268,7 @@ public class IOResources
             if (resource instanceof MemoryResource memoryResource)
             {
                 ByteBuffer byteBuffer = BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(offset), Math.toIntExact(length));
-                sink.write(true, byteBuffer, callback);
+                sink.write(true, ReadableBuffer.wrap(byteBuffer), callback);
                 return;
             }
 
@@ -281,106 +282,6 @@ public class IOResources
         catch (Throwable x)
         {
             callback.failed(x);
-        }
-    }
-
-    private static class PathToSinkCopier extends IteratingNestedCallback
-    {
-        private final SeekableByteChannel channel;
-        private final Content.Sink sink;
-        private final ByteBufferPool.Sized pool;
-        private long remainingLength;
-        private RetainableByteBuffer retainableByteBuffer;
-        private boolean terminated;
-
-        public PathToSinkCopier(Path path, Content.Sink sink, ByteBufferPool.Sized pool, long offset, long length, Callback callback) throws IOException
-        {
-            super(callback);
-            this.sink = sink;
-            this.pool = pool == null ? ByteBufferPool.SIZED_NON_POOLING : pool;
-            this.remainingLength = length;
-            this.channel = Files.newByteChannel(path);
-            skipToOffset(channel, offset, length, this.pool);
-        }
-
-        private static void skipToOffset(SeekableByteChannel channel, long offset, long length, ByteBufferPool.Sized pool)
-        {
-            if (offset > 0L && length != 0L)
-            {
-                RetainableByteBuffer.Mutable byteBuffer = pool.acquire(1);
-                try
-                {
-                    channel.position(offset - 1);
-                    if (channel.read(byteBuffer.getByteBuffer().limit(1)) == -1)
-                        throw new IllegalArgumentException("Offset out of range");
-                }
-                catch (IOException e)
-                {
-                    throw new UncheckedIOException(e);
-                }
-                finally
-                {
-                    byteBuffer.release();
-                }
-            }
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-
-        @Override
-        protected Action process() throws Throwable
-        {
-            if (terminated)
-                return Action.SUCCEEDED;
-
-            if (retainableByteBuffer == null)
-                retainableByteBuffer = pool.acquire();
-
-            ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
-            BufferUtil.clearToFill(byteBuffer);
-            if (remainingLength >= 0 && remainingLength < Integer.MAX_VALUE)
-                byteBuffer.limit((int)Math.min(byteBuffer.capacity(), remainingLength));
-            boolean eof = false;
-            while (byteBuffer.hasRemaining() && !eof)
-            {
-                int read = channel.read(byteBuffer);
-                if (read == -1)
-                    eof = true;
-                else if (remainingLength >= 0)
-                    remainingLength -= read;
-            }
-            BufferUtil.flipToFlush(byteBuffer, 0);
-            terminated = eof || remainingLength == 0;
-            sink.write(terminated, byteBuffer, this);
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            if (retainableByteBuffer != null)
-                retainableByteBuffer.release();
-            IO.close(channel);
-            super.onCompleteSuccess();
-        }
-
-        @Override
-        protected void onFailure(Throwable x)
-        {
-            IO.close(channel);
-            super.onFailure(x);
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable cause)
-        {
-            if (retainableByteBuffer != null)
-                retainableByteBuffer.release();
-            super.onCompleteFailure(cause);
         }
     }
 }

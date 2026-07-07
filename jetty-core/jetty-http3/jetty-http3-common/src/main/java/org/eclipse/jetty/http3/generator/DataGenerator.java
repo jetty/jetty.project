@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http3.generator;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
@@ -23,6 +25,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 public class DataGenerator extends FrameGenerator
 {
@@ -43,7 +46,7 @@ public class DataGenerator extends FrameGenerator
 
     private long generateDataFrame(RetainableByteBuffer.Mutable accumulator, DataFrame frame)
     {
-        ByteBuffer data = frame.getByteBuffer();
+        ReadableBuffer data = frame.getByteBuffer();
         long dataLength = data.remaining();
         int headerLength = VarLenInt.length(FrameType.DATA.type()) + VarLenInt.length(dataLength);
         RetainableByteBuffer header = getByteBufferPool().acquire(headerLength, useDirectByteBuffers);
@@ -53,7 +56,14 @@ public class DataGenerator extends FrameGenerator
         VarLenInt.encode(byteBuffer, dataLength);
         byteBuffer.flip();
         accumulator.add(header);
-        accumulator.add(data);
+        try
+        {
+            data.writeTo(accumulator::append);
+        }
+        catch (IOException e)
+        {
+            throw new UncheckedIOException(e);
+        }
         return headerLength + dataLength;
     }
 }

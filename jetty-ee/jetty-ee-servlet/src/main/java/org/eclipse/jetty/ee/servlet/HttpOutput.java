@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -246,7 +247,7 @@ public class HttpOutput extends ServletOutputStream
 
     private void channelWrite(ByteBuffer content, boolean last, Callback callback)
     {
-        _servletChannel.getResponse().write(last, content, callback);
+        _servletChannel.getResponse().write(last, ReadableBuffer.wrap(content), callback);
     }
 
     private void channelWrite(RetainableByteBuffer content, boolean last, Callback callback)
@@ -1695,7 +1696,7 @@ public class HttpOutput extends ServletOutputStream
      * An iterating callback that will take content from an
      * InputStream and write it to this HttpOutput.
      * A non direct buffer of size {@link HttpOutput#getBufferSize()} is used.
-     * This callback is passed to the {@link Content.Sink#write(boolean, ByteBuffer, Callback)} to
+     * This callback is passed to the {@link Content.Sink#write(boolean, ReadableBuffer, Callback)} to
      * be notified as each buffer is written and only once all the input is consumed will the
      * wrapped {@link Callback#succeeded()} method be called.
      */
@@ -1778,7 +1779,7 @@ public class HttpOutput extends ServletOutputStream
      * ReadableByteChannel and write it to this HttpOutput.
      * A {@link ByteBuffer} of size {@link HttpOutput#getBufferSize()} is used that will be direct if
      * {@code HttpChannel#isUseOutputDirectByteBuffers()} is true.
-     * This callback is passed to the {@link Content.Sink#write(boolean, ByteBuffer, Callback)} to
+     * This callback is passed to the {@link Content.Sink#write(boolean, ReadableBuffer, Callback)} to
      * be notified as each buffer is written and only once all the input is consumed will the
      * wrapped {@link Callback#succeeded()} method be called.
      */

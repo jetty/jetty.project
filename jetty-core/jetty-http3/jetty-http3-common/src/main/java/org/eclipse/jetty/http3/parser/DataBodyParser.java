@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +98,7 @@ public class DataBodyParser extends BodyParser
 
     private void onData(ByteBuffer buffer, boolean last, boolean fragment)
     {
-        DataFrame frame = new DataFrame(buffer, last);
+        DataFrame frame = new DataFrame(ReadableBuffer.wrap(buffer), last);
         if (LOG.isDebugEnabled())
             LOG.debug("notifying fragment={} {}#{} left={}", fragment, frame, streamId, length);
         notifyData(frame);

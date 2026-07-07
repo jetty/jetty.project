@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -411,7 +412,7 @@ public class LocalConnector extends AbstractConnector
                 }
 
                 @Override
-                public boolean content(ByteBuffer item)
+                public boolean content(ReadableBuffer item)
                 {
                     return false;
                 }
@@ -444,7 +445,7 @@ public class LocalConnector extends AbstractConnector
                             if (!isOpen() || isOutputShutdown() || isShutdown())
                             {
                                 parser.atEOF();
-                                parser.parseNext(BufferUtil.EMPTY_BUFFER);
+                                parser.parseNext(ReadableBuffer.EMPTY);
                                 break;
                             }
                             else
@@ -458,7 +459,7 @@ public class LocalConnector extends AbstractConnector
                     while (BufferUtil.hasContent(chunk))
                     {
                         int pos = chunk.position();
-                        boolean complete = parser.parseNext(chunk);
+                        boolean complete = parser.parseNext(ReadableBuffer.wrap(chunk));
                         if (chunk.position() == pos)
                         {
                             // Nothing consumed

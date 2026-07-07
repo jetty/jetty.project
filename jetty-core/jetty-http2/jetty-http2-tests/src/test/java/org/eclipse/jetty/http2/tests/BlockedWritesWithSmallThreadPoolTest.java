@@ -227,7 +227,7 @@ public class BlockedWritesWithSmallThreadPoolTest
             {
                 serverEndPointRef.set((AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
                 // Large write that will TCP congest, but it is non-blocking.
-                response.write(true, ByteBuffer.allocate(contentLength), callback);
+                response.write(true, ReadableBuffer.allocate(contentLength, false), callback);
                 return true;
             }
         });

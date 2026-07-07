@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 public class AsyncRequestContent extends AsyncContent implements Request.Content
 {
@@ -42,6 +43,6 @@ public class AsyncRequestContent extends AsyncContent implements Request.Content
 
     public void write(ByteBuffer buffer, Callback callback)
     {
-        write(false, buffer, callback);
+        write(false, ReadableBuffer.wrap(buffer), callback);
     }
 }

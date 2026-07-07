@@ -67,6 +67,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
@@ -106,24 +107,25 @@ public class HttpClientTest extends AbstractTest
                 byte[] array = new byte[65536];
                 byteArrays.add(array);
                 Arrays.fill(array, (byte)'A');
-                ByteBuffer byteBuffer = ByteBuffer.wrap(array);
+                ReadableBuffer buffer = ReadableBuffer.wrap(array);
 
                 // Let the first 13 bytes untouched.
-                byteBuffer.position(13);
+                buffer.position(13);
 
                 try (Blocker.Callback cb = Blocker.callback())
                 {
                     // Write the first part: 40 KB.
-                    byteBuffer.limit(13 + 40 * 1024);
+                    ReadableBuffer slice = buffer.slice(13, 40 * 1024);
+                    buffer.position(buffer.position() + 40 * 1024);
                     barrier.await(); // Maximize concurrency on the server.
-                    response.write(false, byteBuffer, cb);
+                    response.write(false, slice, cb);
+                    slice.release();
                     cb.block();
                 }
 
                 // Write the second part: 24 KB - 13 bytes.
-                byteBuffer.limit(byteBuffer.capacity());
                 barrier.await(); // Maximize concurrency on the server.
-                response.write(true, byteBuffer, callback);
+                response.write(true, buffer, callback);
                 return true;
             }
         });
@@ -173,7 +175,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, BufferUtil.EMPTY_BUFFER, callback);
+                response.write(true, ReadableBuffer.EMPTY, callback);
                 return true;
             }
         });
@@ -199,7 +201,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toBuffer("some response content", StandardCharsets.UTF_8), callback);
+                response.write(true, BufferUtil.toReadableBuffer("some response content", StandardCharsets.UTF_8), callback);
                 return true;
             }
         });
@@ -229,11 +231,11 @@ public class HttpClientTest extends AbstractTest
                 // start chunked mode
                 try (Blocker.Callback blocker = Blocker.callback())
                 {
-                    response.write(false, BufferUtil.EMPTY_BUFFER, blocker);
+                    response.write(false, ReadableBuffer.EMPTY, blocker);
                     blocker.block();
                 }
 
-                response.write(true, BufferUtil.toBuffer("some response content", StandardCharsets.UTF_8), callback);
+                response.write(true, BufferUtil.toReadableBuffer("some response content", StandardCharsets.UTF_8), callback);
                 return true;
             }
         });
@@ -298,7 +300,7 @@ public class HttpClientTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, length);
-                response.write(true, ByteBuffer.wrap(bytes), callback);
+                response.write(true, ReadableBuffer.wrap(bytes), callback);
                 return true;
             }
         });
@@ -342,7 +344,7 @@ public class HttpClientTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
-                response.write(true, ByteBuffer.wrap(chunk2), callback);
+                response.write(true, ReadableBuffer.wrap(chunk2), callback);
                 return true;
             }
         });
@@ -473,7 +475,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.allocate(length), callback);
+                response.write(true, ReadableBuffer.allocate(length, false), callback);
                 return true;
             }
         });
@@ -672,7 +674,7 @@ public class HttpClientTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Large write to generate multiple DATA frames.
-                response.write(true, ByteBuffer.allocate(256 * 1024), callback);
+                response.write(true, ReadableBuffer.allocate(256 * 1024, false), callback);
                 return true;
             }
         });
@@ -755,7 +757,7 @@ public class HttpClientTest extends AbstractTest
                 if ("/notMapped".equals(target))
                     org.eclipse.jetty.server.Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
                 else
-                    response.write(true, ByteBuffer.wrap(data), callback);
+                    response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -804,7 +806,7 @@ public class HttpClientTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, length);
-                response.write(true, ByteBuffer.allocate(length), callback);
+                response.write(true, ReadableBuffer.allocate(length, false), callback);
                 return true;
             }
         });
@@ -1500,7 +1502,7 @@ public class HttpClientTest extends AbstractTest
                     boolean last = ++count == totalBytes;
                     if (count > totalBytes)
                         return Action.SUCCEEDED;
-                    response.write(last, ByteBuffer.wrap(new byte[1]), this);
+                    response.write(last, ReadableBuffer.wrap(new byte[1]), this);
                     return Action.SCHEDULED;
                 }
             };

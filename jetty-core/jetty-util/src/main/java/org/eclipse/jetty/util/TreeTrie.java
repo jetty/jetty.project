@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+
 /**
  * A Trie String lookup data structure using a tree
  * <p>This implementation is always case insensitive and is optimal for
@@ -353,13 +355,19 @@ class TreeTrie<V> extends AbstractTrie<V>
     {
         if (b.hasArray())
             return getBest(b.array(), b.arrayOffset() + b.position() + offset, len);
+        return getBest(_root, ReadableBuffer.wrap(b), offset, len);
+    }
+
+    @Override
+    public V getBest(ReadableBuffer b, long offset, long len)
+    {
         return getBest(_root, b, offset, len);
     }
 
-    private V getBest(Node<V> node, ByteBuffer b, int offset, int len)
+    private V getBest(Node<V> node, ReadableBuffer b, long offset, long len)
     {
         Node<V> next;
-        int pos = b.position() + offset;
+        long pos = b.position() + offset;
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(pos++);
