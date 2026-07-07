@@ -18,7 +18,6 @@ import java.util.Map;
 
 public enum WebsocketApiVersion
 {
-    V2_0("2.0"),
     V2_1("2.1"),
     V2_2("2.2"),
     V2_3("2.3");
