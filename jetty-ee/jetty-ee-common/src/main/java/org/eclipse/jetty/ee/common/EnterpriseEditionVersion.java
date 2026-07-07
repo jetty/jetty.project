@@ -76,6 +76,9 @@ public enum EnterpriseEditionVersion
         EnterpriseEditionVersion version = lookupEnterpriseEditionVersion();
         if (version != null)
             return version;
+        // No environment discovered during lookup.
+        if (LOG.isInfoEnabled())
+            LOG.info("EnterpriseEditionVersion not found in environment and/or classloader, defaulting to EE11");
         // Default if no version discovered during lookup.
         return EnterpriseEditionVersion.EE11;
     }
@@ -138,9 +141,6 @@ public enum EnterpriseEditionVersion
         if (version != null)
             return version;
 
-        // No environment discovered during lookup.
-        if (LOG.isInfoEnabled())
-            LOG.info("EnterpriseEditionVersion not found in environment and/or classloader, defaulting to EE11");
         return null;
     }
 

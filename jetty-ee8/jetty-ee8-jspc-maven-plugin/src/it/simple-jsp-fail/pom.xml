@@ -12,7 +12,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <java.version>17</java.version>
+    <java.version>25</java.version>
     <maven-war-plugin-version>3.0.0</maven-war-plugin-version>
     <jetty.version>@project.version@</jetty.version>
   </properties>

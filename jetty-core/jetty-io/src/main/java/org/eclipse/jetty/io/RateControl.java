@@ -11,16 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2;
-
-import org.eclipse.jetty.io.EndPoint;
+package org.eclipse.jetty.io;
 
 /**
  * Controls rate of events via {@link #onEvent(Object)}.
  */
 public interface RateControl
 {
-    public static final RateControl NO_RATE_CONTROL = event -> true;
+    RateControl NO_RATE_CONTROL = event -> true;
 
     /**
      * <p>Applications should call this method when they want to signal an
@@ -32,18 +30,18 @@ public interface RateControl
      * @param event the event subject to rate control.
      * @return true IFF the rate is within limits
      */
-    public boolean onEvent(Object event);
+    boolean onEvent(Object event);
 
     /**
-     * Factory to create RateControl instances.
+     * Factory to create {@link RateControl} instances.
      */
-    public interface Factory
+    interface Factory
     {
         /**
          * @return a new RateControl instance for the given EndPoint
          * @param endPoint the EndPoint for which the RateControl is created
          */
-        public default RateControl newRateControl(EndPoint endPoint)
+        default RateControl newRateControl(EndPoint endPoint)
         {
             return NO_RATE_CONTROL;
         }

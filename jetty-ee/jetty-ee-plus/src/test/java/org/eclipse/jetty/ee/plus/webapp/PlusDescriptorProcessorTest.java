@@ -20,7 +20,6 @@ import javax.naming.InitialContext;
 import javax.naming.Name;
 
 import org.eclipse.jetty.ee.common.WebAppClassLoader;
-import org.eclipse.jetty.ee.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee.webapp.Configuration;
 import org.eclipse.jetty.ee.webapp.Descriptor;
 import org.eclipse.jetty.ee.webapp.FragmentDescriptor;
@@ -160,11 +159,11 @@ public class PlusDescriptorProcessorTest
 
         //Resource 1 declared in environment scope
         eeObject1 = new Object();
-        Resource res1 = new Resource(ServletContextHandler.getEnvironmentName(), "eeObject1", eeObject1);
+        Resource res1 = new Resource(context.getEnvironmentName(), "eeObject1", eeObject1);
 
         //Resource 2 declared in environment scope
         eeObject2 = new Object();
-        Resource res2 = new Resource(ServletContextHandler.getEnvironmentName(), "eeObject2", eeObject2);
+        Resource res2 = new Resource(context.getEnvironmentName(), "eeObject2", eeObject2);
 
         URL webXml = Thread.currentThread().getContextClassLoader().getResource("web.xml");
         webDescriptor = new WebDescriptor(context.getResourceFactory().newResource(webXml));

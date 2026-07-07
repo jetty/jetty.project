@@ -165,26 +165,6 @@ public class ServletContextHandler extends ContextHandler
         DESTROYED
     }
 
-    public static String getEnvironmentName()
-    {
-        Environment env = getEnvironment();
-        if (env == null)
-            throw new IllegalStateException("No Jetty Environment exists yet for this ServletContext");
-        return env.getName();
-    }
-
-    public static Environment getEnvironment()
-    {
-        // Resolve per call, never cache in a static field: under JPMS this class is shared across
-        // every environment (ee10, ee11, ...), so a static cache would freeze the first environment
-        // resolved and return it for all the others. EnterpriseEditionVersion.getEnterpriseEditionVersion()
-        // is likewise documented as not cacheable.
-        EnterpriseEditionVersion version = EnterpriseEditionVersion.getEnterpriseEditionVersion();
-        if (version == null)
-            return null;
-        return Environment.ensure(version.environmentName(), ServletContextHandler.class);
-    }
-
     public static ServletContextHandler getServletContextHandler(jakarta.servlet.ServletContext servletContext, String purpose)
     {
         if (servletContext instanceof ServletContextApi servletContextApi)
@@ -248,6 +228,8 @@ public class ServletContextHandler extends ContextHandler
     private final Set<EventListener> _durableListeners = new HashSet<>();
 
     protected final DecoratedObjectFactory _objFactory;
+    protected final EnterpriseEditionVersion _enterpriseVersion;
+    protected final Environment _environment;
 //    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
@@ -294,6 +276,11 @@ public class ServletContextHandler extends ContextHandler
 
     public ServletContextHandler(String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
     {
+        _enterpriseVersion = EnterpriseEditionVersion.getEnterpriseEditionVersion();
+        if (_enterpriseVersion == null)
+            throw new RuntimeException("Unable to discover EnterpriseEditionVersion");
+        _environment = Environment.ensure(_enterpriseVersion.environmentName(), ServletContextHandler.class);
+
         _servletContext = newServletContextApi();
 
         if (contextPath != null)
@@ -800,9 +787,7 @@ public class ServletContextHandler extends ContextHandler
      * @param url the url to convert to a Resource
      * @return the Resource for that url
      * @throws IOException if unable to create a Resource from the URL
-     * @deprecated use {@code ResourceFactory.of(component).newResource(URL)} properly
-     *             at webapp initialization time only.  The use of this method during
-     *             context started phase can result in excessive memory consumption.
+     * @deprecated do not use this method, use {@link ResourceFactory#newResource(URL)}.
      */
     @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(URL url) throws IOException
@@ -811,13 +796,11 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
-     * Convert URL to Resource wrapper for {@link ResourceFactory#newResource(URI)} enables extensions to provide alternate resource implementations.
+     * Convert URI to Resource wrapper for {@link ResourceFactory#newResource(URI)} enables extensions to provide alternate resource implementations.
      *
      * @param uri the URI to convert to a Resource
      * @return the Resource for that URI
-     * @deprecated use {@code ResourceFactory.of(component).newResource(URI)} properly
-     *             at webapp initialization time only.  The use of this method during
-     *             context started phase can result in excessive memory consumption.
+     * @deprecated do not use this method, use {@link ResourceFactory#newResource(URI)}.
      */
     @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(URI uri)
@@ -826,13 +809,11 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
-     * Convert a URL or path to a Resource. The default implementation is a wrapper for {@link ResourceFactory#newResource(String)}.
+     * Convert a String URL or Path to a Resource. The default implementation is a wrapper for {@link ResourceFactory#newResource(String)}.
      *
      * @param urlOrPath The URL or path to convert
      * @return The Resource for the URL/path
-     * @deprecated use {@code ResourceFactory.of(component).newResource(String)} properly
-     *             at webapp initialization time only.  The use of this method during
-     *             context started phase can result in excessive memory consumption.
+     * @deprecated do not use this method, use {@link ResourceFactory#newResource(String)}.
      */
     @Deprecated(since = "12.1.11", forRemoval = true)
     public Resource newResource(String urlOrPath)
@@ -1732,6 +1713,26 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
+     * Get the Environment for this Context.
+     *
+     * @return the environment;
+     */
+    public Environment getEnvironment()
+    {
+        return _environment;
+    }
+
+    /**
+     * Get the Environment Name for this Context.
+     *
+     * @return the environment name;
+     */
+    public String getEnvironmentName()
+    {
+        return _environment.getName();
+    }
+
+    /**
      * The DecoratedObjectFactory for use by IoC containers (weld / spring / etc)
      *
      * @return The DecoratedObjectFactory
@@ -2133,14 +2134,17 @@ public class ServletContextHandler extends ContextHandler
 
     public class ServletContextApi implements jakarta.servlet.ServletContext
     {
-        private static final ServletApiVersion SERVLET_API_VERSION = ServletApiVersion.getServletApiVersion();
-        private int _effectiveMajorVersion = SERVLET_API_VERSION.getMajorVersion();
-        private int _effectiveMinorVersion = SERVLET_API_VERSION.getMinorVersion();
+        private final ServletApiVersion _servletApiVersion;
+        private int _effectiveMajorVersion;
+        private int _effectiveMinorVersion;
         protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
 
         public ServletContextApi()
         {
+            _servletApiVersion = ServletApiVersion.getServletApiVersion();
+            _effectiveMajorVersion = _servletApiVersion.getMajorVersion();
+            _effectiveMinorVersion = _servletApiVersion.getMinorVersion();
         }
 
         @Override
@@ -2152,13 +2156,13 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public int getMajorVersion()
         {
-            return SERVLET_API_VERSION.getMajorVersion();
+            return _servletApiVersion.getMajorVersion();
         }
 
         @Override
         public int getMinorVersion()
         {
-            return SERVLET_API_VERSION.getMinorVersion();
+            return _servletApiVersion.getMinorVersion();
         }
 
         @Override

@@ -278,7 +278,9 @@ public class ServletApiRequest implements HttpServletRequest
         AuthenticationState authenticationState = getAuthenticationState();
         if (authenticationState instanceof AuthenticationState.Deferred deferred)
         {
-            AuthenticationState undeferred = deferred.authenticate(getRequest());
+            HttpServletRequest httpServletRequest = getWrappedRequest();
+            Request wrappedCoreRequest = ServletCoreRequest.wrap(httpServletRequest);
+            AuthenticationState undeferred = deferred.authenticate(wrappedCoreRequest);
             if (undeferred != null)
                 authenticationState = undeferred;
         }
@@ -293,8 +295,12 @@ public class ServletApiRequest implements HttpServletRequest
             AuthenticationState undeferred;
             try (Blocker.Callback callback = Blocker.callback())
             {
-                Response wrappedCoreResponse = ServletCoreResponse.wrap(getRequest(), response, false);
-                undeferred = deferred.authenticate(getRequest(), wrappedCoreResponse, callback);
+                // Find the outermost wrapped HttpServletRequest to use for the authentication.
+                HttpServletRequest httpServletRequest = getWrappedRequest();
+                boolean included = httpServletRequest.getDispatcherType() == DispatcherType.INCLUDE;
+                Request wrappedCoreRequest = ServletCoreRequest.wrap(httpServletRequest);
+                Response wrappedCoreResponse = ServletCoreResponse.wrap(wrappedCoreRequest, response, included);
+                undeferred = deferred.authenticate(wrappedCoreRequest, wrappedCoreResponse, callback);
                 if (undeferred instanceof AuthenticationState.ResponseSent)
                     callback.block();
                 else
@@ -305,6 +311,23 @@ public class ServletApiRequest implements HttpServletRequest
                 authenticationState = undeferred;
         }
         return authenticationState;
+    }
+
+    private HttpServletRequest getWrappedRequest()
+    {
+        HttpServletRequest httpServletRequest;
+        if (_async == null)
+        {
+            httpServletRequest = _servletContextRequest.getHttpServletRequest();
+        }
+        else
+        {
+            if (_async.getRequest() instanceof HttpServletRequest asyncHttpServletRequest)
+                httpServletRequest = asyncHttpServletRequest;
+            else
+                httpServletRequest = _servletContextRequest.getHttpServletRequest();
+        }
+        return httpServletRequest;
     }
 
     @Override
@@ -1091,9 +1114,18 @@ public class ServletApiRequest implements HttpServletRequest
                         try
                         {
                             ServletContextHandler contextHandler = getServletRequestInfo().getServletContextHandler();
-                            int maxKeys = contextHandler.getMaxFormKeys();
-                            int maxContentSize = contextHandler.getMaxFormContentSize();
-                            _contentParameters = FormFields.getFields(getRequest(), maxKeys, maxContentSize);
+
+                            // Try per-request and per-context max form fields.
+                            int maxFields = parse(getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE));
+                            if (maxFields == -1)
+                                maxFields = contextHandler.getMaxFormKeys();
+
+                            // Try per-request and per-context max form length.
+                            int maxLength = parse(getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE));
+                            if (maxLength == -1)
+                                maxLength = contextHandler.getMaxFormContentSize();
+
+                            _contentParameters = FormFields.getFields(getRequest(), maxFields, maxLength);
                         }
                         catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                         {
@@ -1150,6 +1182,20 @@ public class ServletApiRequest implements HttpServletRequest
                 HttpException.throwIfHttpException(e);
                 throw new HttpException.IllegalStateException(HttpStatus.BAD_REQUEST_400, "Unable to parse form content", e);
             }
+        }
+    }
+
+    private static int parse(Object value)
+    {
+        if (value == null)
+            return -1;
+        try
+        {
+            return Integer.parseInt(value.toString());
+        }
+        catch (NumberFormatException x)
+        {
+            return -1;
         }
     }
 

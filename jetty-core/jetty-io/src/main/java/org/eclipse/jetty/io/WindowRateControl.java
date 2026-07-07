@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2;
+package org.eclipse.jetty.io;
 
 import java.time.Duration;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.NanoTime;
 
 /**
@@ -36,11 +35,6 @@ public class WindowRateControl implements RateControl
     private final AtomicInteger size = new AtomicInteger();
     private final int maxEvents;
     private final long window;
-
-    public static WindowRateControl fromEventsPerSecond(int maxEvents)
-    {
-        return new WindowRateControl(maxEvents, Duration.ofSeconds(1));
-    }
 
     public WindowRateControl(int maxEvents, Duration window)
     {
@@ -93,7 +87,7 @@ public class WindowRateControl implements RateControl
         @Override
         public RateControl newRateControl(EndPoint endPoint)
         {
-            return WindowRateControl.fromEventsPerSecond(maxEventRate);
+            return new WindowRateControl(maxEventRate, Duration.ofSeconds(1));
         }
     }
 }

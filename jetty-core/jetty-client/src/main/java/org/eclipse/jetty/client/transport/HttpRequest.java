@@ -134,7 +134,10 @@ public class HttpRequest implements Request
             newURI = HttpURI.from(getScheme(), getHost(), getPort(), null).toURI();
 
         HttpRequest newRequest = copyInstance(newURI);
-        newRequest.useVersion(getVersion());
+        if (isVersionExplicit())
+            newRequest.version(getVersion());
+        else
+            newRequest.useVersion(getVersion());
         newRequest.method(getMethod())
             .body(getBody())
             .idleTimeout(getIdleTimeout(), TimeUnit.MILLISECONDS)

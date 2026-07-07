@@ -18,7 +18,6 @@ import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
 import org.eclipse.jetty.ee.plus.jndi.Transaction;
-import org.eclipse.jetty.ee.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee.webapp.FragmentConfiguration;
 import org.eclipse.jetty.ee.webapp.JettyWebXmlConfiguration;
@@ -83,13 +82,13 @@ public class PlusConfiguration extends AbstractConfiguration
     {
         try
         {
-            Transaction.bindTransactionToENC(ServletContextHandler.getEnvironmentName());
+            Transaction.bindTransactionToENC(context.getEnvironmentName());
         }
         catch (NameNotFoundException e)
         {
             try
             {
-                org.eclipse.jetty.plus.jndi.Transaction.bindTransactionToENC(ServletContextHandler.getEnvironmentName());
+                org.eclipse.jetty.plus.jndi.Transaction.bindTransactionToENC(context.getEnvironmentName());
             }
             catch (NameNotFoundException x)
             {

@@ -73,7 +73,7 @@ public class FormFieldsTest
     {
         AsyncContent source = new AsyncContent();
         Attributes attributes = new Attributes.Mapped();
-        CompletableFuture<Fields> futureFields = FormFields.from(source, Invocable.InvocationType.NON_BLOCKING, attributes, charset, maxFields, maxLength);
+        CompletableFuture<Fields> futureFields = FormFields.from(source, Invocable.InvocationType.NON_BLOCKING, attributes, null, charset, maxFields, maxLength);
         assertFalse(futureFields.isDone());
 
         int last = chunks.size() - 1;
@@ -139,7 +139,7 @@ public class FormFieldsTest
     public void testInvalidFormFields(List<String> chunks, Charset charset, int maxFields, int maxLength, Class<? extends Exception> expectedException)
     {
         AsyncContent source = new AsyncContent();
-        CompletableFuture<Fields> futureFields = FormFields.from(source, Invocable.InvocationType.NON_BLOCKING, new Attributes.Mapped(), charset, maxFields, maxLength);
+        CompletableFuture<Fields> futureFields = FormFields.from(source, Invocable.InvocationType.NON_BLOCKING, new Attributes.Mapped(), null, charset, maxFields, maxLength);
         assertFalse(futureFields.isDone());
         int last = chunks.size() - 1;
         for (int i = 0; i <= last; i++)
