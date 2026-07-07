@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 /**
  * <p>A {@link Handler} that can limit the size of message bodies in requests and responses.</p>
@@ -140,7 +141,7 @@ public class SizeLimitHandler extends Handler.Wrapper
         }
 
         @Override
-        public void write(boolean last, ByteBuffer content, Callback callback)
+        public void write(boolean last, ReadableBuffer content, Callback callback)
         {
             if (_failure != null)
             {

@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -133,7 +134,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 byte[] bytes = buffer.toByteArray();
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, bytes.length);
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip,foo");
-                response.write(true, ByteBuffer.wrap(bytes), callback);
+                response.write(true, ReadableBuffer.wrap(bytes), callback);
                 return true;
             }
         });
@@ -215,7 +216,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 byte[] content = Arrays.copyOf(gzipBytes, 2 * gzipBytes.length);
                 System.arraycopy(gzipBytes, 0, content, gzipBytes.length, gzipBytes.length);
 
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, ReadableBuffer.wrap(content), callback);
                 return true;
             }
         });

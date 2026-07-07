@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -49,6 +48,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -661,7 +661,7 @@ public class ResourceService extends ContainerLifeCycle
         byte[] data = listing.getBytes(charset);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=" + charset.name());
         response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
-        response.write(true, ByteBuffer.wrap(data), callback);
+        response.write(true, ReadableBuffer.wrap(data), callback);
     }
 
     private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)

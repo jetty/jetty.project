@@ -16,7 +16,9 @@ package org.eclipse.jetty.util.internal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.ByteOrder;
+import java.nio.ReadOnlyBufferException;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Retainable;
@@ -32,14 +34,23 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
 
     public FixedSizeBuffer(ByteBuffer byteBuffer, Retainable retainable, boolean writeMode)
     {
-        this.byteBuffer = byteBuffer;
-        this.retainable = retainable;
+        this.byteBuffer = Objects.requireNonNull(byteBuffer);
+        this.retainable = Objects.requireNonNull(retainable);
         this.flushPosition = writeMode ? 0 : -1;
     }
 
     public ByteBuffer getByteBuffer()
     {
         return byteBuffer;
+    }
+
+    public FixedSizeBuffer asReadOnly()
+    {
+        if (flushPosition != -1)
+            throw new IllegalStateException("Cannot access read-only buffer in write mode");
+        if (byteBuffer.isReadOnly())
+            return this;
+        return new FixedSizeBuffer(byteBuffer.asReadOnlyBuffer(), retainable, false);
     }
 
     @Override
@@ -93,6 +104,14 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
     }
 
     @Override
+    public int getShort(long index)
+    {
+        if (flushPosition != -1)
+            throw new IllegalStateException("Cannot read from buffer in write mode");
+        return byteBuffer.getShort(Math.toIntExact(index));
+    }
+
+    @Override
     public int getInt()
     {
         if (flushPosition != -1)
@@ -101,11 +120,27 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
     }
 
     @Override
+    public int getInt(long index)
+    {
+        if (flushPosition != -1)
+            throw new IllegalStateException("Cannot read from buffer in write mode");
+        return byteBuffer.getInt(Math.toIntExact(index));
+    }
+
+    @Override
     public long getLong()
     {
         if (flushPosition != -1)
             throw new IllegalStateException("Cannot read from buffer in write mode");
         return byteBuffer.getLong();
+    }
+
+    @Override
+    public long getLong(long index)
+    {
+        if (flushPosition != -1)
+            throw new IllegalStateException("Cannot read from buffer in write mode");
+        return byteBuffer.getLong(Math.toIntExact(index));
     }
 
     @Override
@@ -151,14 +186,6 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
     }
 
     @Override
-    public String asString(Charset charset)
-    {
-        if (flushPosition != -1)
-            throw new IllegalStateException("Cannot convert to String in write mode");
-        return charset.decode(byteBuffer).toString();
-    }
-
-    @Override
     public ReadableBuffer slice()
     {
         if (flushPosition != -1)
@@ -177,6 +204,14 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
     }
 
     // Writable
+
+    @Override
+    public void byteOrder(boolean littleEndian)
+    {
+        if (flushPosition == -1)
+            throw new IllegalStateException("Cannot change byte order in read mode");
+        byteBuffer.order(littleEndian ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
+    }
 
     @Override
     public void put(byte b)
@@ -271,15 +306,6 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
     }
 
     @Override
-    public void drain()
-    {
-        if (flushPosition != -1)
-            throw new IllegalStateException("Cannot drain buffer in write mode");
-        byteBuffer.position(0);
-        byteBuffer.limit(0);
-    }
-
-    @Override
     public ReadableBuffer toReadable()
     {
         if (flushPosition == -1)
@@ -353,31 +379,30 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
         return retainable.getRetained();
     }
 
-    public static class WriteOnly extends FixedSizeBuffer
+    public static class Empty extends FixedSizeBuffer
     {
-        public WriteOnly(ByteBuffer byteBuffer, Retainable retainable)
+        public static final Empty READ_ONLY_INSTANCE = new Empty(false);
+        public static final Empty WRITE_ONLY_INSTANCE = new Empty(true);
+
+        private Empty(boolean writeMode)
         {
-            super(byteBuffer, retainable, true);
+            super(writeMode ? BufferUtil.EMPTY_BUFFER : BufferUtil.EMPTY_BUFFER.asReadOnlyBuffer(), Retainable.NON_RETAINABLE, writeMode);
         }
 
         @Override
         public ReadableBuffer toReadable()
         {
-            throw new IllegalStateException("Write-only instance");
-        }
-    }
-
-    public static class ReadOnly extends FixedSizeBuffer
-    {
-        public ReadOnly(ByteBuffer byteBuffer, Retainable retainable)
-        {
-            super(byteBuffer, retainable, false);
+            if (this != READ_ONLY_INSTANCE)
+                throw new UnsupportedOperationException("Write-only");
+            return super.toReadable();
         }
 
         @Override
         public WritableBuffer toWritable()
         {
-            throw new IllegalStateException("Read-only instance");
+            if (this != WRITE_ONLY_INSTANCE)
+                throw new ReadOnlyBufferException();
+            return super.toWritable();
         }
     }
 }

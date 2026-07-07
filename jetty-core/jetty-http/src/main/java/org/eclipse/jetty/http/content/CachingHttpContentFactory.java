@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http.content;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Set;
 import java.util.SortedSet;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -388,7 +390,10 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
                 length = TypeUtil.checkOffsetLengthSize(offset, length, buffer.remaining());
                 retained = tryRetain();
                 if (retained)
-                    sink.write(true, BufferUtil.slice(buffer.getByteBuffer(), Math.toIntExact(offset), Math.toIntExact(length)), Callback.from(this::release, callback));
+                {
+                    ByteBuffer slice = BufferUtil.slice(buffer.getByteBuffer(), Math.toIntExact(offset), Math.toIntExact(length));
+                    sink.write(true, ReadableBuffer.wrap(slice), Callback.from(this::release, callback));
+                }
                 else
                     getWrapped().writeTo(sink, offset, length, callback);
             }
@@ -573,7 +578,7 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
         @Override
         public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
-            sink.write(true, BufferUtil.EMPTY_BUFFER, callback);
+            sink.write(true, ReadableBuffer.EMPTY, callback);
         }
 
         @Override

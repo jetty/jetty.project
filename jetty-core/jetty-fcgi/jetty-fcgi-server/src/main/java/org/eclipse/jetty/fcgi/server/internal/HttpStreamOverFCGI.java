@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.fcgi.server.internal;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -23,14 +22,12 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
@@ -210,9 +207,16 @@ public class HttpStreamOverFCGI implements HttpStream
 
     public void onFailure(Throwable failure)
     {
-        Runnable task = getHttpChannel().onFailure(failure);
-        if (task != null)
-            task.run();
+        if (Content.Chunk.isFailure(_chunk, true))
+        {
+            _chunk.getFailure().addSuppressed(failure);
+        }
+        else
+        {
+            if (_chunk != null)
+                _chunk.release();
+            _chunk = Content.Chunk.from(failure, true);
+        }
     }
 
     @Override
@@ -222,9 +226,9 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer buffer, Callback callback)
     {
-        ReadableBuffer content = ReadableBuffer.wrap(byteBuffer);
+        ReadableBuffer content = buffer != null ? buffer : ReadableBuffer.EMPTY;
 
         if (LOG.isDebugEnabled())
             LOG.debug("send {} l={} {} {}", request, last, content, this);
@@ -242,10 +246,10 @@ public class HttpStreamOverFCGI implements HttpStream
                 {
                     List<ReadableBuffer> accumulator = new ArrayList<>();
                     generateResponseContent(accumulator, true, ReadableBuffer.EMPTY);
-                    ReadableBuffer buffer = ReadableBuffer.accumulate(accumulator);
+                    ReadableBuffer accumulated = ReadableBuffer.accumulate(accumulator);
                     accumulator.forEach(ReadableBuffer::release);
-                    flusher.flush(buffer, callback);
-                    buffer.release();
+                    flusher.flush(accumulated, callback);
+                    accumulated.release();
                 }
                 else
                 {
@@ -257,10 +261,10 @@ public class HttpStreamOverFCGI implements HttpStream
             {
                 List<ReadableBuffer> accumulator = new ArrayList<>();
                 generateResponseContent(accumulator, last, content);
-                ReadableBuffer buffer = ReadableBuffer.accumulate(accumulator);
+                ReadableBuffer accumulated = ReadableBuffer.accumulate(accumulator);
                 accumulator.forEach(ReadableBuffer::release);
-                flusher.flush(buffer, callback);
-                buffer.release();
+                flusher.flush(accumulated, callback);
+                accumulated.release();
             }
 
             if (last && _shutdown)

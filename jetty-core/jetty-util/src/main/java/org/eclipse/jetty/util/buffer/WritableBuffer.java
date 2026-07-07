@@ -26,14 +26,14 @@ import org.eclipse.jetty.util.internal.FixedSizeBuffer;
  *  <li>a list of NIO ByteBuffers</li>
  *  <li>a FileChannel</li>
  *  </ul>
- *  Note that {@link #toReadable()} can always be called to access the read-only API.
+ *  Note that {@link #toReadable()} can be called to access the read-only API if the byte container is not write-only.
  */
 public interface WritableBuffer
 {
     /**
      * An empty WritableBuffer that cannot be flipped to read-only mode.
      */
-    WritableBuffer EMPTY = new FixedSizeBuffer.WriteOnly(ByteBuffer.allocate(0), Retainable.NON_RETAINABLE);
+    WritableBuffer EMPTY = FixedSizeBuffer.Empty.WRITE_ONLY_INSTANCE;
 
     /**
      * Wraps the given NIO ByteBuffer that already is in fill node, using a new {@link Retainable.ReferenceCounter} for
@@ -68,6 +68,12 @@ public interface WritableBuffer
     {
         return new FixedSizeBuffer(direct ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size), new Retainable.ReferenceCounter(), true);
     }
+
+    /**
+     * Changes the byte order of this WritableBuffer.
+     * @param littleEndian true for little endian, false for big endian
+     */
+    void byteOrder(boolean littleEndian);
 
     /**
      * Returns the current position of this WritableBuffer, where the next bytes are to be written.
@@ -138,11 +144,12 @@ public interface WritableBuffer
      */
     void putShort(short s);
 
-    /// Writes a `short` at the given position.
-    /// 
-    /// @param position the position to write the `short`
-    /// @param s the `short` to write
-    /// @throws java.nio.BufferOverflowException if there are fewer than two bytes remaining in this buffer
+    /**
+     * Writes a `short` at the given position.
+     * @param position the position to write the `short`
+     * @param s the `short` to write
+     * @throws java.nio.BufferOverflowException if there are fewer than two bytes remaining in this buffer
+     */
     void putShort(long position, short s);
 
     /**
@@ -159,10 +166,11 @@ public interface WritableBuffer
      */
     void putLong(long l);
 
-    /// Writes the given bytes at the current position.
-    ///
-    /// @param bytes the bytes to write
-    /// @throws java.nio.BufferOverflowException if there are fewer than `bytes.length` remaining in this buffer
+    /**
+     * Writes the given bytes at the current position.
+     * @param bytes the bytes to write
+     * @throws java.nio.BufferOverflowException if there are fewer than `bytes.length` remaining in this buffer
+     */
     void putBytes(byte[] bytes);
 
     /**

@@ -345,7 +345,7 @@ public class StreamResetTest extends AbstractTest
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 Charset charset = StandardCharsets.UTF_8;
-                ByteBuffer data = charset.encode("AFTER RESET");
+                ReadableBuffer data = ReadableBuffer.wrap(charset.encode("AFTER RESET"));
 
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + charset.name());
@@ -737,7 +737,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(new byte[10 * windowSize]), Callback.from(callback::succeeded, x ->
+                response.write(true, ReadableBuffer.wrap(new byte[10 * windowSize]), Callback.from(callback::succeeded, x ->
                 {
                     writeLatch.countDown();
                     callback.succeeded();
@@ -1015,7 +1015,7 @@ public class StreamResetTest extends AbstractTest
             {
                 exchanger.exchange((SelectableChannelEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
                 // Large write, it blocks due to TCP congestion.
-                response.write(true, ByteBuffer.wrap(new byte[128 * 1024 * 1024]), callback);
+                response.write(true, ReadableBuffer.wrap(new byte[128 * 1024 * 1024]), callback);
             }
 
             private void service2(Response response, Callback callback) throws Exception

@@ -22,6 +22,7 @@ import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -32,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class AbstractGzipTest
 {
-    protected ArrayByteBufferPool.Tracking pool;
+    protected ArrayByteBufferPool.Tracking trackingPool;
     protected ByteBufferPool.Sized sizedPool;
     protected GzipCompression gzip;
 
@@ -83,21 +84,21 @@ public abstract class AbstractGzipTest
     @BeforeEach
     public void initPool()
     {
-        pool = new ArrayByteBufferPool.Tracking();
-        sizedPool = new ByteBufferPool.Sized(pool, true, 4096);
+        trackingPool = new ArrayByteBufferPool.Tracking();
+        sizedPool = new ByteBufferPool.Sized(trackingPool, true, 4096);
     }
 
     @AfterEach
     public void tearDown()
     {
         LifeCycle.stop(gzip);
-        assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
+        assertEquals(0, trackingPool.getLeaks().size(), () -> "LEAKS: " + trackingPool.dumpLeaks());
     }
 
     protected void startGzip() throws Exception
     {
         gzip = new GzipCompression();
-        gzip.setByteBufferPool(pool);
+        gzip.setBufferPool(WritableBufferPool.wrap(trackingPool));
         gzip.start();
     }
 }

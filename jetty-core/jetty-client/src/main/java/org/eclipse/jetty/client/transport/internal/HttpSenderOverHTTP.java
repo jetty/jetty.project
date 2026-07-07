@@ -31,6 +31,8 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,15 +169,29 @@ public class HttpSenderOverHTTP extends HttpSender
             int chunkMaxLength = generator.getChunkMaxLength();
             while (true)
             {
-                ByteBuffer headerByteBuffer = headerBuffer == null ? null : headerBuffer.getByteBuffer();
-                ByteBuffer chunkByteBuffer = chunkBuffer == null ? null : chunkBuffer.getByteBuffer();
-                HttpGenerator.Result result = generator.generateRequest(metaData, headerByteBuffer, chunkByteBuffer, content, lastContent);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Generated headers ({} bytes), chunk ({} bytes), content ({} bytes) - {}/{} for {}",
-                        headerByteBuffer == null ? -1 : headerByteBuffer.remaining(),
-                        chunkByteBuffer == null ? -1 : chunkByteBuffer.remaining(),
-                        content == null ? -1 : content.remaining(),
-                        result, generator, exchange.getRequest());
+                HttpGenerator.Result result;
+                ByteBuffer headerByteBuffer;
+                ByteBuffer chunkByteBuffer;
+                {
+                    headerByteBuffer = headerBuffer == null ? null : headerBuffer.getByteBuffer();
+                    chunkByteBuffer = chunkBuffer == null ? null : chunkBuffer.getByteBuffer();
+                    WritableBuffer headerWb = headerByteBuffer == null ? null : ReadableBuffer.wrap(headerByteBuffer).toWritable();
+                    WritableBuffer chunkWb = chunkByteBuffer == null ? null : ReadableBuffer.wrap(chunkByteBuffer).toWritable();
+
+                    result = generator.generateRequest(metaData, headerWb, chunkWb, ReadableBuffer.wrap(content), lastContent);
+
+                    if (headerWb != null)
+                        headerWb.toReadable();
+                    if (chunkWb != null)
+                        chunkWb.toReadable();
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Generated headers ({} bytes), chunk ({} bytes), content ({} bytes) - {}/{} for {}",
+                            headerByteBuffer == null ? -1 : headerByteBuffer.remaining(),
+                            chunkByteBuffer == null ? -1 : chunkByteBuffer.remaining(),
+                            content == null ? -1 : content.remaining(),
+                            result, generator, exchange.getRequest());
+                }
                 switch (result)
                 {
                     case NEED_HEADER:
@@ -307,12 +323,22 @@ public class HttpSenderOverHTTP extends HttpSender
             int chunkMaxLength = generator.getChunkMaxLength();
             while (true)
             {
-                ByteBuffer chunkByteBuffer = chunkBuffer == null ? null : chunkBuffer.getByteBuffer();
-                HttpGenerator.Result result = generator.generateRequest(null, null, chunkByteBuffer, content, lastContent);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Generated content ({} bytes, last={}) - {}/{}",
-                        content == null ? -1 : content.remaining(),
-                        lastContent, result, generator);
+                HttpGenerator.Result result;
+                ByteBuffer chunkByteBuffer;
+                {
+                    chunkByteBuffer = chunkBuffer == null ? null : chunkBuffer.getByteBuffer();
+                    WritableBuffer chunkWb = chunkByteBuffer == null ? null : ReadableBuffer.wrap(chunkByteBuffer).toWritable();
+
+                    result = generator.generateRequest(null, null, chunkWb, ReadableBuffer.wrap(content), lastContent);
+
+                    if (chunkWb != null)
+                        chunkWb.toReadable();
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Generated content ({} bytes, last={}) - {}/{}",
+                            content == null ? -1 : content.remaining(),
+                            lastContent, result, generator);
+                }
                 switch (result)
                 {
                     case NEED_CHUNK:

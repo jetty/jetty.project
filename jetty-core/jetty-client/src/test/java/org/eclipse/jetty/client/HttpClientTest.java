@@ -79,6 +79,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
@@ -184,7 +185,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -356,7 +357,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 if (paramValue.equals(value))
                 {
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
-                    response.write(true, ByteBuffer.wrap(content), callback);
+                    response.write(true, ReadableBuffer.wrap(content), callback);
                 }
                 return true;
             }
@@ -644,8 +645,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         AsyncRequestContent body = new AsyncRequestContent();
-        body.write(false, ByteBuffer.allocate(512), Callback.NOOP);
-        body.write(false, ByteBuffer.allocate(512), Callback.from(() -> body.fail(new IOException("explicitly_thrown_by_test"))));
+        body.write(false, ReadableBuffer.allocate(512, false), Callback.NOOP);
+        body.write(false, ReadableBuffer.allocate(512, false), Callback.from(() -> body.fail(new IOException("explicitly_thrown_by_test"))));
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -774,7 +775,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(new byte[length]), callback);
+                response.write(true, ReadableBuffer.wrap(new byte[length]), callback);
                 return true;
             }
         });
@@ -1205,7 +1206,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, ReadableBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -1272,7 +1273,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 byte[] content = "TEST".getBytes(UTF_8);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length);
                 Content.Sink.write(response, false, null);
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, ReadableBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -1434,7 +1435,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 // Send Connection: close to avoid that the server chunks the content with HTTP 1.1.
                 if (version.compareTo(HttpVersion.HTTP_1_0) > 0)
                     response.getHeaders().put("Connection", "close");
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -1499,7 +1500,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.allocate(1024), callback);
+                response.write(true, ReadableBuffer.allocate(1024, false), callback);
                 return true;
             }
         });
@@ -1829,7 +1830,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(bytes), callback);
+                response.write(true, ReadableBuffer.wrap(bytes), callback);
                 return true;
             }
         });

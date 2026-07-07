@@ -35,9 +35,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -272,12 +272,12 @@ public class HttpClientLoadTest extends AbstractTest
             {
                 case "GET" ->
                 {
-                    ByteBuffer content = BufferUtil.EMPTY_BUFFER;
+                    ReadableBuffer content = ReadableBuffer.EMPTY;
                     int contentLength = (int)request.getHeaders().getLongField("X-Download");
                     if (contentLength >= 0)
                     {
                         response.getHeaders().put("X-Content", contentLength);
-                        content = ByteBuffer.allocate(contentLength);
+                        content = ReadableBuffer.allocate(contentLength, false);
                     }
                     response.write(true, content, callback);
                 }

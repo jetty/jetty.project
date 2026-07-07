@@ -976,6 +976,12 @@ public class HttpClientTLSTest
                                 sslEngine.closeOutbound();
                                 return super.wrap(sslEngine, input, output);
                             }
+
+                            @Override
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                            {
+                                return wrap(sslEngine, new ByteBuffer[]{input}, output);
+                            }
                         };
                     }
                 };
@@ -1061,6 +1067,12 @@ public class HttpClientTLSTest
                                 {
                                     throw new SSLException(x);
                                 }
+                            }
+
+                            @Override
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                            {
+                                return wrap(sslEngine, new ByteBuffer[]{input}, output);
                             }
                         };
                     }

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.test.webapp;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -38,6 +37,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
@@ -108,7 +108,7 @@ public class StressHTTP2AbortTest
                 response.setStatus(200);
                 try (Blocker.Callback blocker = Blocker.callback())
                 {
-                    response.write(true, ByteBuffer.wrap(DATA), blocker);
+                    response.write(true, ReadableBuffer.wrap(DATA), blocker);
                     blocker.block();
                     callback.succeeded();
                 }

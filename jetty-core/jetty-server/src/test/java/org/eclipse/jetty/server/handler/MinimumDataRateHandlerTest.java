@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -114,7 +115,7 @@ public class MinimumDataRateHandlerTest
 
             ByteBuffer byteBuffer = endPoint.waitForResponse(false, 5, TimeUnit.SECONDS);
             assertNotNull(byteBuffer);
-            HttpTester.Response response = HttpTester.parseResponse(byteBuffer);
+            HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(byteBuffer));
             assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
             assertThat(response.getContent(), containsString("read rate is too low"));
         }
@@ -184,7 +185,7 @@ public class MinimumDataRateHandlerTest
 
             ByteBuffer byteBuffer = endPoint.waitForResponse(false, 5, TimeUnit.SECONDS);
             assertNotNull(byteBuffer);
-            HttpTester.Response response = HttpTester.parseResponse(byteBuffer);
+            HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(byteBuffer));
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
         }
     }
@@ -227,7 +228,7 @@ public class MinimumDataRateHandlerTest
 
                     if (counter < 100)
                     {
-                        response.write(false, ByteBuffer.allocate(10), new Callback()
+                        response.write(false, ReadableBuffer.allocate(10, false), new Callback()
                         {
                             @Override
                             public void succeeded()
@@ -244,7 +245,7 @@ public class MinimumDataRateHandlerTest
                     }
                     else
                     {
-                        response.write(true, ByteBuffer.allocate(0), callback);
+                        response.write(true, ReadableBuffer.allocate(0, false), callback);
                     }
                 }
                 catch (InterruptedException x)
@@ -269,7 +270,7 @@ public class MinimumDataRateHandlerTest
             String response = StandardCharsets.UTF_8.decode(byteBuffer.slice()).toString();
             assertThat(response, containsString("HTTP/1.1 200 OK"));
             // Cannot parse a full response, since it has been interrupted.
-            assertNull(HttpTester.parseResponse(byteBuffer));
+            assertNull(HttpTester.parseResponse(ReadableBuffer.wrap(byteBuffer)));
             assertThat(writeFailureRef.get().getMessage(), containsString("write rate is too low"));
         }
     }
@@ -290,11 +291,11 @@ public class MinimumDataRateHandlerTest
 
                 // A first small write to initialize the data rate check.
                 CompletableFuture<?> future = new CompletableFuture<>();
-                response.write(false, ByteBuffer.allocate(10), Callback.from(future));
+                response.write(false, ReadableBuffer.allocate(10, false), Callback.from(future));
                 future.get(5, TimeUnit.SECONDS);
 
                 // Write the rest.
-                response.write(false, ByteBuffer.allocate(990), callback);
+                response.write(false, ReadableBuffer.allocate(990, false), callback);
                 return true;
             }
         }, 0, minimumWriteRate));
@@ -309,7 +310,7 @@ public class MinimumDataRateHandlerTest
         {
             ByteBuffer byteBuffer = endPoint.waitForResponse(false, 5, TimeUnit.SECONDS);
             assertNotNull(byteBuffer);
-            HttpTester.Response response = HttpTester.parseResponse(byteBuffer);
+            HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(byteBuffer));
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
         }
     }
@@ -326,7 +327,7 @@ public class MinimumDataRateHandlerTest
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // Perform a single last write that takes too long to complete.
-                response.write(true, ByteBuffer.allocate(1000), new Callback.Nested(callback)
+                response.write(true, ReadableBuffer.allocate(1000, false), new Callback.Nested(callback)
                 {
                     @Override
                     public void failed(Throwable x)
@@ -351,14 +352,15 @@ public class MinimumDataRateHandlerTest
                 return super.handle(request, new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    public void write(boolean last, ReadableBuffer buffer, Callback callback)
                     {
                         // Only partially write the response to simulate TCP congestion.
                         // The data rate timeout should fire and fail the Handler callback.
-                        int length = byteBuffer.remaining() / 2;
-                        ByteBuffer partial = byteBuffer.slice(byteBuffer.position(), length);
-                        byteBuffer.position(byteBuffer.position() + length);
+                        long length = buffer.remaining() / 2;
+                        ReadableBuffer partial = buffer.slice(buffer.position(), length);
+                        buffer.position(buffer.position() + length);
                         super.write(false, partial, Callback.NOOP);
+                        partial.release();
                     }
                 }, callback);
             }
@@ -379,7 +381,7 @@ public class MinimumDataRateHandlerTest
             String response = StandardCharsets.UTF_8.decode(byteBuffer.slice()).toString();
             assertThat(response, containsString("HTTP/1.1 200 OK"));
             // Cannot parse a full response, since it has been interrupted.
-            assertNull(HttpTester.parseResponse(byteBuffer));
+            assertNull(HttpTester.parseResponse(ReadableBuffer.wrap(byteBuffer)));
             assertThat(writeFailureRef.get().getMessage(), containsString("write rate is too low"));
         }
     }

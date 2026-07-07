@@ -602,7 +602,7 @@ public class FlowControlStrategyTest
                 MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
                 stream.headers(responseFrame)
-                    .thenAccept(s -> s.data(ReadableBuffer.wrap(ByteBuffer.wrap(data)), true));
+                    .thenAccept(s -> s.data(ReadableBuffer.wrap(data), true));
                 return null;
             }
         });
@@ -703,7 +703,7 @@ public class FlowControlStrategyTest
             })
             .thenAccept(s ->
             {
-                ReadableBuffer requestContent = ReadableBuffer.wrap(ByteBuffer.wrap(requestData));
+                ReadableBuffer requestContent = ReadableBuffer.wrap(requestData);
                 s.data(requestContent, true);
             });
 

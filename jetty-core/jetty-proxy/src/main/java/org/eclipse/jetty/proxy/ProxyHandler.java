@@ -15,7 +15,6 @@ package org.eclipse.jetty.proxy;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -50,10 +49,10 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
@@ -706,9 +705,9 @@ public abstract class ProxyHandler extends Handler.Abstract
         @Override
         public void onContent(org.eclipse.jetty.client.Response serverToProxyResponse, Content.Chunk serverToProxyChunk, Runnable serverToProxyDemander)
         {
-            ByteBuffer serverToProxyContent = serverToProxyChunk.getByteBuffer();
+            ReadableBuffer serverToProxyContent = ReadableBuffer.wrap(serverToProxyChunk.getByteBuffer());
             if (LOG.isDebugEnabled())
-                LOG.debug("{} S2P received content {}", requestId(clientToProxyRequest), BufferUtil.toDetailString(serverToProxyContent));
+                LOG.debug("{} S2P received content {}", requestId(clientToProxyRequest), serverToProxyContent);
 
             serverToProxyChunk.retain();
             Callback callback = new Callback()
@@ -717,7 +716,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                 public void succeeded()
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} P2C succeeded to write content {}", requestId(clientToProxyRequest), BufferUtil.toDetailString(serverToProxyContent));
+                        LOG.debug("{} P2C succeeded to write content {}", requestId(clientToProxyRequest), serverToProxyContent);
                     serverToProxyChunk.release();
                     serverToProxyDemander.run();
                 }
@@ -726,7 +725,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                 public void failed(Throwable failure)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} P2C failed to write content {}", requestId(clientToProxyRequest), BufferUtil.toDetailString(serverToProxyContent), failure);
+                        LOG.debug("{} P2C failed to write content {}", requestId(clientToProxyRequest), serverToProxyContent, failure);
                     serverToProxyChunk.release();
                     // Cannot write towards the client, abort towards the server.
                     serverToProxyResponse.abort(failure);
@@ -745,7 +744,7 @@ public abstract class ProxyHandler extends Handler.Abstract
         @Override
         public void onSuccess(org.eclipse.jetty.client.Response serverToProxyResponse)
         {
-            proxyToClientResponse.write(true, BufferUtil.EMPTY_BUFFER, this);
+            proxyToClientResponse.write(true, ReadableBuffer.EMPTY, this);
         }
 
         @Override

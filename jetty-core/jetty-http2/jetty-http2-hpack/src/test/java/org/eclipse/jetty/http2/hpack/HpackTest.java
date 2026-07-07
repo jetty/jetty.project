@@ -119,7 +119,7 @@ public class HpackTest
             encoder.encode(wb, original0);
             ReadableBuffer rb = wb.toReadable();
             MetaData decoded0 = decoder.decode(rb);
-
+            rb.toWritable();
             assertMetaDataSame(original0, decoded0);
         }
 

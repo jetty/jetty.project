@@ -90,7 +90,7 @@ public class CancelWriteTest
                 RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(128 * 1024 * 1024, true);
                 ByteBuffer byteBuffer = buffer.getByteBuffer();
                 byteBuffer.clear();
-                response.write(true, byteBuffer, Callback.from(callback::succeeded, x ->
+                response.write(true, ReadableBuffer.wrap(byteBuffer), Callback.from(callback::succeeded, x ->
                 {
                     // Check that the WriteFlusher won't access the
                     // buffer anymore, so that it can be released.
@@ -182,7 +182,7 @@ public class CancelWriteTest
                 RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(1024, true);
                 ByteBuffer byteBuffer = buffer.getByteBuffer();
                 byteBuffer.clear();
-                response.write(true, byteBuffer, Callback.from(callback::succeeded, x ->
+                response.write(true, ReadableBuffer.wrap(byteBuffer), Callback.from(callback::succeeded, x ->
                 {
                     if (serverEndPointWriteFailureLatch.getCount() == 0L)
                         serverWriteFailureLatch.countDown();
@@ -273,7 +273,7 @@ public class CancelWriteTest
                 RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(1024, true);
                 ByteBuffer byteBuffer = buffer.getByteBuffer();
                 byteBuffer.clear();
-                response.write(true, byteBuffer, Callback.from(() ->
+                response.write(true, ReadableBuffer.wrap(byteBuffer), Callback.from(() ->
                     {
                         serverWriteSuccessLatch.countDown();
 
