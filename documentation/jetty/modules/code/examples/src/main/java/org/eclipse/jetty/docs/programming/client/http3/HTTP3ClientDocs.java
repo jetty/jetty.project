@@ -40,6 +40,7 @@ import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -181,14 +182,14 @@ public class HTTP3ClientDocs
 
         // Send the first DATA frame on the stream, with last=false
         // to signal that there are more frames in this stream.
-        stream.data(new DataFrame(buffer1, false), new Promise.Invocable.NonBlocking<>()
+        stream.data(new DataFrame(ReadableBuffer.wrap(buffer1), false), new Promise.Invocable.NonBlocking<>()
         {
             @Override
             public void succeeded(Stream result)
             {
                 // Only when the first chunk has been sent we can send the second,
                 // with last=true to signal that there will be no more frames.
-                result.data(new DataFrame(buffer2, true), Promise.Invocable.noop());
+                result.data(new DataFrame(ReadableBuffer.wrap(buffer2), true), Promise.Invocable.noop());
             }
         });
         // end::newStreamWithData[]

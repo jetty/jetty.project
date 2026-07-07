@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +92,7 @@ public class ConnectTunnelTest extends AbstractTest
             }
         });
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
-        ReadableBuffer data = ReadableBuffer.wrap(ByteBuffer.wrap(bytes));
+        ReadableBuffer data = ReadableBuffer.wrap(bytes);
         stream.data(data, true, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -150,7 +149,7 @@ public class ConnectTunnelTest extends AbstractTest
             }
         });
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
-        ReadableBuffer data = ReadableBuffer.wrap(ByteBuffer.wrap(bytes));
+        ReadableBuffer data = ReadableBuffer.wrap(bytes);
         stream.data(data, true, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));

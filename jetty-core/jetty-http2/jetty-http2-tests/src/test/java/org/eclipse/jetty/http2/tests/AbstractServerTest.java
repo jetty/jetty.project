@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -106,7 +105,7 @@ public class AbstractServerTest
                 int read = input.read(buffer);
                 if (read < 0)
                     return true;
-                parser.parse(ReadableBuffer.wrap(ByteBuffer.wrap(buffer, 0, read)));
+                parser.parse(ReadableBuffer.wrap(buffer, 0, read));
                 if (client.isClosed())
                     return true;
             }

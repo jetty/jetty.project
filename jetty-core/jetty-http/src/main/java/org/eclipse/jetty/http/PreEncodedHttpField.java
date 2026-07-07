@@ -109,7 +109,7 @@ public class PreEncodedHttpField extends HttpField
 
     public void putTo(WritableBuffer buffer, HttpVersion version)
     {
-        buffer.put(ReadableBuffer.wrap(ByteBuffer.wrap(_encodedFields.get(version))));
+        buffer.put(ReadableBuffer.wrap(_encodedFields.get(version)));
     }
 
     public void putTo(ByteBuffer bufferInFillMode, HttpVersion version)

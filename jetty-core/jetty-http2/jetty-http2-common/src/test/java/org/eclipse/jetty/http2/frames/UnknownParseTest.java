@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -41,7 +40,7 @@ public class UnknownParseTest
     @Test
     public void testParseOneByteAtATime()
     {
-        testParse(buffer -> ReadableBuffer.wrap(ByteBuffer.wrap(new byte[]{buffer.get()})));
+        testParse(buffer -> ReadableBuffer.wrap(new byte[]{buffer.get()}));
     }
 
     @Test
@@ -61,7 +60,7 @@ public class UnknownParseTest
 
         // 0x4001 == 16385 which is > Frame.DEFAULT_MAX_LENGTH.
         byte[] bytes = new byte[]{0, 0x40, 0x01, 64, 0, 0, 0, 0, 0};
-        ReadableBuffer buffer = ReadableBuffer.wrap(ByteBuffer.wrap(bytes));
+        ReadableBuffer buffer = ReadableBuffer.wrap(bytes);
         while (buffer.remaining() > 0L)
         {
             parser.parse(buffer);
@@ -87,7 +86,7 @@ public class UnknownParseTest
         for (int i = 0; i < 2; ++i)
         {
             byte[] bytes = new byte[]{0, 0, 4, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            ReadableBuffer buffer = ReadableBuffer.wrap(ByteBuffer.wrap(bytes));
+            ReadableBuffer buffer = ReadableBuffer.wrap(bytes);
             while (buffer.remaining() > 0L)
             {
                 parser.parse(fn.apply(buffer));

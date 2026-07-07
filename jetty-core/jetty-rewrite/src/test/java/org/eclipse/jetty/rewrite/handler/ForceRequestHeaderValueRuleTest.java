@@ -20,8 +20,8 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,7 +44,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
                 {
                     Content.Sink.write(response, false, "Request Header[%s]: [%s]%n".formatted(httpField.getName(), httpField.getValue()), Callback.NOOP);
                 }
-                response.write(true, BufferUtil.EMPTY_BUFFER, callback);
+                response.write(true, ReadableBuffer.EMPTY, callback);
                 return true;
             }
         });

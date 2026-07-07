@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee.servlet;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 /**
  * A core response wrapper that carries the servlet related response state,
@@ -220,7 +220,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     }
 
     @Override
-    public void write(boolean last, ByteBuffer content, Callback callback)
+    public void write(boolean last, ReadableBuffer content, Callback callback)
     {
         super.write(last, content, callback);
     }

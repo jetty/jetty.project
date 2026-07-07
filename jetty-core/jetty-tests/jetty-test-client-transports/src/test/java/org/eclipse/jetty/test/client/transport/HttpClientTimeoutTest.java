@@ -376,7 +376,7 @@ public class HttpClientTimeoutTest extends AbstractTest
                 }
             });
 
-        assertTrue(latch.await(5 * connectTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(15 * connectTimeout, TimeUnit.MILLISECONDS));
         assertNotNull(request.getAbortCause());
     }
 

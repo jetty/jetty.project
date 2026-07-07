@@ -14,7 +14,6 @@
 package org.eclipse.jetty.compression.brotli;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -76,12 +76,12 @@ public class BrotliEncoderSinkTest extends AbstractBrotliTest
             Content.Sink encoderSink = brotli.newEncoderSink(fileSink);
 
             Callback.Completable callback1 = new Callback.Completable();
-            encoderSink.write(true, ByteBuffer.wrap("Hello World!".getBytes(UTF_8)), callback1);
+            encoderSink.write(true, ReadableBuffer.wrap("Hello World!".getBytes(UTF_8)), callback1);
             callback1.get();
             assertThat(new String(decompress(baos.toByteArray()), UTF_8), is("Hello World!"));
 
             Callback.Completable callback2 = new Callback.Completable();
-            encoderSink.write(true, ByteBuffer.wrap("Hello again!".getBytes(UTF_8)), callback2);
+            encoderSink.write(true, ReadableBuffer.wrap("Hello again!".getBytes(UTF_8)), callback2);
             ExecutionException thrown = assertThrows(ExecutionException.class, callback2::get);
             assertInstanceOf(IllegalStateException.class, thrown.getCause());
         }

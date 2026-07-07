@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,13 +100,13 @@ public class HttpSenderOverHTTP3 extends HttpSender
                 {
                     HttpFields trailers = retrieveTrailers(request);
                     boolean hasTrailers = trailers != null;
-                    dataFrame = new DataFrame(contentBuffer, !hasTrailers);
+                    dataFrame = new DataFrame(ReadableBuffer.wrap(contentBuffer), !hasTrailers);
                     if (hasTrailers)
                         trailerFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
                 }
                 else
                 {
-                    dataFrame = new DataFrame(contentBuffer, false);
+                    dataFrame = new DataFrame(ReadableBuffer.wrap(contentBuffer), false);
                 }
             }
             else
@@ -185,7 +186,7 @@ public class HttpSenderOverHTTP3 extends HttpSender
             boolean hasTrailers = trailers != null && trailers.size() > 0;
             if (hasContent)
             {
-                DataFrame dataFrame = new DataFrame(contentBuffer, !hasTrailers);
+                DataFrame dataFrame = new DataFrame(ReadableBuffer.wrap(contentBuffer), !hasTrailers);
                 if (hasTrailers)
                 {
                     HeadersFrame trailerFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
@@ -205,7 +206,7 @@ public class HttpSenderOverHTTP3 extends HttpSender
                 }
                 else
                 {
-                    DataFrame dataFrame = new DataFrame(contentBuffer, true);
+                    DataFrame dataFrame = new DataFrame(ReadableBuffer.wrap(contentBuffer), true);
                     sendData(stream, dataFrame, true, callback);
                 }
             }
@@ -214,7 +215,7 @@ public class HttpSenderOverHTTP3 extends HttpSender
         {
             if (hasContent)
             {
-                DataFrame dataFrame = new DataFrame(contentBuffer, false);
+                DataFrame dataFrame = new DataFrame(ReadableBuffer.wrap(contentBuffer), false);
                 sendData(stream, dataFrame, false, callback);
             }
             else

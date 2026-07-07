@@ -25,6 +25,8 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 
 /**
  * <p>HTTP Testing helper class.</p>
@@ -57,22 +59,25 @@ public class HttpTester
 {
     public abstract static class Input
     {
-        protected final ByteBuffer _buffer;
+        protected final ReadableBuffer _buffer;
         protected boolean _eof = false;
         protected HttpParser _parser;
 
         public Input()
         {
-            this(BufferUtil.allocate(IO.DEFAULT_BUFFER_SIZE));
+            this(WritableBuffer.allocate(IO.DEFAULT_BUFFER_SIZE, false).toReadable());
+            _buffer.release();
         }
 
-        Input(ByteBuffer buffer)
+        Input(ReadableBuffer buffer)
         {
+            buffer.retain();
             _buffer = buffer;
         }
 
-        public ByteBuffer getBuffer()
+        public ReadableBuffer acquireBuffer()
         {
+            _buffer.retain();
             return _buffer;
         }
 
@@ -90,7 +95,7 @@ public class HttpTester
 
         public boolean isEOF()
         {
-            return BufferUtil.isEmpty(_buffer) && _eof;
+            return _buffer != null && _buffer.remaining() == 0L && _eof;
         }
 
         public abstract int fillBuffer() throws IOException;
@@ -98,10 +103,10 @@ public class HttpTester
 
     public static Input from(String string)
     {
-        return from(BufferUtil.toBuffer(string));
+        return from(BufferUtil.toReadableBuffer(string));
     }
 
-    public static Input from(ByteBuffer data)
+    public static Input from(ReadableBuffer data)
     {
         return new Input(data)
         {
@@ -121,13 +126,24 @@ public class HttpTester
             @Override
             public int fillBuffer() throws IOException
             {
-                BufferUtil.compact(_buffer);
-                int len = stream.read(_buffer.array(), _buffer.arrayOffset() + _buffer.limit(), BufferUtil.space(_buffer));
-                if (len < 0)
-                    _eof = true;
-                else
-                    _buffer.limit(_buffer.limit() + len);
-                return len;
+                WritableBuffer wb = _buffer.compact();
+                try
+                {
+                    int len = (int)wb.readFrom(output ->
+                    {
+                        int read = stream.read(output.array(), output.arrayOffset(), output.limit() - output.arrayOffset());
+                        if (read > 0)
+                            output.position(output.position() + read);
+                        return read == -1;
+                    });
+                    if (len < 0)
+                        _eof = true;
+                    return len;
+                }
+                finally
+                {
+                    wb.toReadable();
+                }
             }
         };
     }
@@ -139,13 +155,18 @@ public class HttpTester
             @Override
             public int fillBuffer() throws IOException
             {
-                BufferUtil.compact(_buffer);
-                int pos = BufferUtil.flipToFill(_buffer);
-                int len = channel.read(_buffer);
-                if (len < 0)
-                    _eof = true;
-                BufferUtil.flipToFlush(_buffer, pos);
-                return len;
+                WritableBuffer wb = _buffer.compact();
+                try
+                {
+                    int len = (int)wb.readFrom(output -> channel.read(output) == -1);
+                    if (len < 0)
+                        _eof = true;
+                    return len;
+                }
+                finally
+                {
+                    wb.toReadable();
+                }
             }
         };
     }
@@ -162,10 +183,10 @@ public class HttpTester
 
     public static Request parseRequest(String request)
     {
-        return parseRequest(BufferUtil.toBuffer(request));
+        return parseRequest(BufferUtil.toReadableBuffer(request));
     }
 
-    public static Request parseRequest(ByteBuffer buffer)
+    public static Request parseRequest(ReadableBuffer buffer)
     {
         try
         {
@@ -216,26 +237,26 @@ public class HttpTester
     {
         Response r = new Response();
         HttpParser parser = new HttpParser(r);
-        parser.parseNext(BufferUtil.toBuffer(response));
+        parser.parseNext(BufferUtil.toReadableBuffer(response));
         return r;
     }
 
     private static Response parseResponse(String response, boolean head)
     {
-        return parseResponse(BufferUtil.toBuffer(response), head);
+        return parseResponse(BufferUtil.toReadableBuffer(response), head);
     }
 
-    public static Response parseHeadResponse(ByteBuffer response)
+    public static Response parseHeadResponse(ReadableBuffer response)
     {
         return parseResponse(response, true);
     }
 
-    public static Response parseResponse(ByteBuffer response)
+    public static Response parseResponse(ReadableBuffer response)
     {
         return parseResponse(response, false);
     }
 
-    private static Response parseResponse(ByteBuffer response, boolean head)
+    public static Response parseResponse(ReadableBuffer response, boolean head)
     {
         try
         {
@@ -293,24 +314,30 @@ public class HttpTester
 
     private static void parse(Input input, HttpParser parser) throws IOException
     {
-        ByteBuffer buffer = input.getBuffer();
-
-        while (true)
+        ReadableBuffer buffer = input.acquireBuffer();
+        try
         {
-            if (BufferUtil.hasContent(buffer))
+            while (true)
             {
-                if (parser.parseNext(buffer))
+                if (buffer.remaining() > 0L)
+                {
+                    if (parser.parseNext(buffer))
+                        break;
+                }
+                int len = input.fillBuffer();
+                if (len == 0)
                     break;
+                if (len < 0)
+                {
+                    parser.atEOF();
+                    parser.parseNext(buffer);
+                    break;
+                }
             }
-            int len = input.fillBuffer();
-            if (len == 0)
-                break;
-            if (len < 0)
-            {
-                parser.atEOF();
-                parser.parseNext(buffer);
-                break;
-            }
+        }
+        finally
+        {
+            buffer.release();
         }
     }
 
@@ -446,7 +473,7 @@ public class HttpTester
         }
 
         @Override
-        public boolean content(ByteBuffer ref)
+        public boolean content(ReadableBuffer ref)
         {
             try
             {
@@ -480,9 +507,18 @@ public class HttpTester
                 loop:
                 while (!generator.isEnd())
                 {
-                    HttpGenerator.Result result = info instanceof MetaData.Request
-                        ? generator.generateRequest((MetaData.Request)info, header, chunk, content, true)
-                        : generator.generateResponse((MetaData.Response)info, false, header, chunk, content, true);
+                    HttpGenerator.Result result;
+                    {
+                        WritableBuffer wbHeader = header == null ? null : ReadableBuffer.wrap(header).toWritable();
+                        WritableBuffer wbChunk = chunk == null ? null : ReadableBuffer.wrap(chunk).toWritable();
+                        result = info instanceof MetaData.Request
+                            ? generator.generateRequest((MetaData.Request)info, wbHeader, wbChunk, ReadableBuffer.wrap(content), true)
+                            : generator.generateResponse((MetaData.Response)info, false, wbHeader, wbChunk, ReadableBuffer.wrap(content), true);
+                        if (wbHeader != null)
+                            wbHeader.toReadable();
+                        if (wbChunk != null)
+                            wbChunk.toReadable();
+                    }
                     switch (result)
                     {
                         case NEED_HEADER:

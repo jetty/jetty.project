@@ -21,10 +21,11 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
@@ -34,7 +35,7 @@ public abstract class Compression extends ContainerLifeCycle
     private final String etagSuffix;
     private final String etagSuffixQuote;
     private final Pattern etagSuffixPattern;
-    private ByteBufferPool byteBufferPool;
+    private WritableBufferPool bufferPool;
     private Container container;
     private int minCompressSize;
 
@@ -62,7 +63,7 @@ public abstract class Compression extends ContainerLifeCycle
      * @param length the requested size of the buffer
      * @return the ByteBuffer suitable for this compression implementation.
      */
-    public abstract RetainableByteBuffer.Mutable acquireByteBuffer(int length);
+    public abstract WritableBuffer acquireBuffer(int length);
 
     /**
      * Get an etag with suffix that represents this compression implementation.
@@ -99,14 +100,14 @@ public abstract class Compression extends ContainerLifeCycle
     {
     }
 
-    public ByteBufferPool getByteBufferPool()
+    public WritableBufferPool getBufferPool()
     {
-        return this.byteBufferPool;
+        return this.bufferPool;
     }
 
-    public void setByteBufferPool(ByteBufferPool byteBufferPool)
+    public void setBufferPool(WritableBufferPool bufferPool)
     {
-        this.byteBufferPool = byteBufferPool;
+        this.bufferPool = bufferPool;
     }
 
     /**
@@ -309,9 +310,9 @@ public abstract class Compression extends ContainerLifeCycle
     {
         super.doStart();
 
-        if (byteBufferPool == null)
+        if (bufferPool == null)
         {
-            byteBufferPool = ByteBufferPool.NON_POOLING;
+            bufferPool = WritableBufferPool.NON_POOLING;
         }
     }
 }

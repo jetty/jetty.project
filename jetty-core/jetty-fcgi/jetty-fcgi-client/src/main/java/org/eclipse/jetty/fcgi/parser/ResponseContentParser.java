@@ -107,12 +107,10 @@ public class ResponseContentParser extends StreamContentParser
                 {
                     case HEADERS ->
                     {
-                        // TODO: use directly the ReadableBuffer in httpParser.parseNext().
                         long position = buffer.position();
-                        ByteBuffer byteBuffer = BufferUtil.toBuffer(buffer, false);
-                        long length = byteBuffer.remaining();
-                        boolean handle = httpParser.parseNext(byteBuffer);
-                        long consumed = length - byteBuffer.remaining();
+                        long length = buffer.remaining();
+                        boolean handle = httpParser.parseNext(buffer);
+                        long consumed = length - buffer.remaining();
                         buffer.position(position + consumed);
                         if (handle)
                         {
@@ -149,7 +147,7 @@ public class ResponseContentParser extends StreamContentParser
                         long position = buffer.position();
                         ByteBuffer byteBuffer = BufferUtil.toBuffer(buffer, false);
                         long length = byteBuffer.remaining();
-                        boolean handle = httpParser.parseNext(byteBuffer);
+                        boolean handle = httpParser.parseNext(ReadableBuffer.wrap(byteBuffer));
                         long consumed = length - byteBuffer.remaining();
                         buffer.position(position + consumed);
                         if (handle)
@@ -276,9 +274,9 @@ public class ResponseContentParser extends StreamContentParser
         }
 
         @Override
-        public boolean content(ByteBuffer buffer)
+        public boolean content(ReadableBuffer buffer)
         {
-            return notifyContent(ReadableBuffer.wrap(buffer));
+            return notifyContent(buffer);
         }
 
         private boolean notifyContent(ReadableBuffer buffer)

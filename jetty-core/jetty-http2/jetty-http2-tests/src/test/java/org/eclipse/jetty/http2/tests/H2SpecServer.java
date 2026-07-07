@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -54,7 +55,7 @@ public class H2SpecServer
             public boolean handle(Request request, Response response, Callback callback)
             {
                 Content.Source.consumeAll(request, Callback.NOOP);
-                response.write(true, UTF_8.encode("hello"), callback);
+                response.write(true, ReadableBuffer.wrap(UTF_8.encode("hello")), callback);
                 return true;
             }
         });

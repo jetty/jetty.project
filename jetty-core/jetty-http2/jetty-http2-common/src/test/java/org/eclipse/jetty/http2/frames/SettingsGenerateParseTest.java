@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -134,7 +133,7 @@ public class SettingsGenerateParseTest
         ReadableBuffer buf = wb.toReadable();
 
         while (buf.remaining() > 0L)
-            parser.parse(ReadableBuffer.wrap(ByteBuffer.wrap(new byte[]{buf.get()})));
+            parser.parse(ReadableBuffer.wrap(new byte[]{buf.get()}));
 
         assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, errorRef.get());
     }
@@ -171,7 +170,7 @@ public class SettingsGenerateParseTest
             ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
             accumulator.forEach(ReadableBuffer::release);
             while (rb.remaining() > 0L)
-                parser.parse(ReadableBuffer.wrap(ByteBuffer.wrap(new byte[]{rb.get()})));
+                parser.parse(ReadableBuffer.wrap(new byte[]{rb.get()}));
 
             assertEquals(1, frames.size());
             SettingsFrame frame = frames.get(0);

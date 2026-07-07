@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -130,10 +129,10 @@ public class InterleavingTest extends AbstractTest
             {
                 // Write data for both streams from within the callback so that they get queued together.
 
-                ReadableBuffer buffer1 = ReadableBuffer.wrap(ByteBuffer.wrap(content1));
+                ReadableBuffer buffer1 = ReadableBuffer.wrap(content1);
                 serverStream1.data(buffer1, true, NOOP);
 
-                ReadableBuffer buffer2 = ReadableBuffer.wrap(ByteBuffer.wrap(content2));
+                ReadableBuffer buffer2 = ReadableBuffer.wrap(content2);
                 serverStream2.data(buffer2, true, NOOP);
             }
         });

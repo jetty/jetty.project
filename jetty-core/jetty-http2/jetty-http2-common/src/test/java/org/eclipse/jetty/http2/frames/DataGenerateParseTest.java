@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -55,7 +54,7 @@ public class DataGenerateParseTest
     @Test
     public void testGenerateParseSmallContentNoPadding()
     {
-        testGenerateParseContent(ReadableBuffer.wrap(ByteBuffer.wrap(smallContent)));
+        testGenerateParseContent(ReadableBuffer.wrap(smallContent));
     }
 
     private void testGenerateParseContent(ReadableBuffer content)
@@ -72,7 +71,7 @@ public class DataGenerateParseTest
     @Test
     public void testGenerateParseLargeContent()
     {
-        ReadableBuffer content = ReadableBuffer.wrap(ByteBuffer.wrap(largeContent));
+        ReadableBuffer content = ReadableBuffer.wrap(largeContent);
         List<DataFrame> frames = testGenerateParse(content);
         assertEquals(8, frames.size());
         WritableBuffer aggregate = WritableBuffer.allocate((int)content.remaining(), false);
@@ -151,7 +150,7 @@ public class DataGenerateParseTest
         for (int i = 0; i < 2; ++i)
         {
             List<ReadableBuffer> accumulator = new ArrayList<>();
-            ReadableBuffer data = ReadableBuffer.wrap(ByteBuffer.wrap(largeContent));
+            ReadableBuffer data = ReadableBuffer.wrap(largeContent);
             ReadableBuffer slice = data.slice();
             int generated = 0;
             while (true)

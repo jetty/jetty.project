@@ -17,7 +17,6 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
@@ -71,6 +70,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -303,7 +303,7 @@ public interface Request extends Attributes, Content.Source
      * (see {@link #addFailureListener(Consumer)}); or {@code false} to ignore that specific
      * timeout and for another timeout to occur after another idle period.</p>
      * <p>Idle timeout listeners are only invoked if there are no pending
-     * {@link #demand(Runnable)} or {@link Response#write(boolean, ByteBuffer, Callback)}
+     * {@link #demand(Runnable)} or {@link Response#write(boolean, ReadableBuffer, Callback)}
      * operations.</p>
      * <p>Listeners are processed in the same order they are added, and the first that
      * returns {@code true} stops the processing of subsequent listeners, which are
@@ -320,9 +320,9 @@ public interface Request extends Attributes, Content.Source
      * <ul>
      *     <li>Pending {@link #demand(Runnable)} have been woken up.</li>
      *     <li>Calls to {@link #read()} will return the {@code Throwable} failure.</li>
-     *     <li>Pending and new {@link Response#write(boolean, ByteBuffer, Callback)} calls
+     *     <li>Pending and new {@link Response#write(boolean, ReadableBuffer, Callback)} calls
      *     will be failed by calling {@link Callback#failed(Throwable)} on the callback
-     *     passed to {@link Response#write(boolean, ByteBuffer, Callback)}.</li>
+     *     passed to {@link Response#write(boolean, ReadableBuffer, Callback)}.</li>
      * </ul>
      * <p>Listeners are processed in the same order they are added.</p>
      *

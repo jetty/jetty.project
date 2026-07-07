@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -135,7 +136,7 @@ public class CustomTransportTest
                         // Remove Content-Encoding, as the content has already been decoded.
                         response.getHeaders().remove(HttpHeader.CONTENT_ENCODING);
                         // Copy the response content.
-                        response.write(true, ByteBuffer.wrap(r.getContent()), callback);
+                        response.write(true, ReadableBuffer.wrap(r.getContent()), callback);
                     }
                     else
                     {

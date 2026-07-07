@@ -81,7 +81,7 @@ public class ContextHandlerDeepTest
                         request.getHttpURI().getPath()
                     );
 
-                response.write(true, BufferUtil.toBuffer(msg), callback);
+                response.write(true, BufferUtil.toReadableBuffer(msg), callback);
                 return true;
             }
         });

@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -57,7 +58,7 @@ public class RedirectCacheTest extends AbstractHttpClientServerTest
                 else if ("/new".equals(path))
                 {
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, StandardCharsets.UTF_8.encode("ok"), callback);
+                    response.write(true, ReadableBuffer.wrap(StandardCharsets.UTF_8.encode("ok")), callback);
                 }
                 else
                 {
@@ -115,7 +116,7 @@ public class RedirectCacheTest extends AbstractHttpClientServerTest
                 else if ("/new".equals(path))
                 {
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, StandardCharsets.UTF_8.encode("ok"), callback);
+                    response.write(true, ReadableBuffer.wrap(StandardCharsets.UTF_8.encode("ok")), callback);
                 }
                 else
                 {
@@ -257,7 +258,7 @@ public class RedirectCacheTest extends AbstractHttpClientServerTest
                     // 301 converts POST to GET.
                     assertEquals("GET", request.getMethod());
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, StandardCharsets.UTF_8.encode("ok"), callback);
+                    response.write(true, ReadableBuffer.wrap(StandardCharsets.UTF_8.encode("ok")), callback);
                 }
                 else
                 {
@@ -318,7 +319,7 @@ public class RedirectCacheTest extends AbstractHttpClientServerTest
                 {
                     assertEquals("127.0.0.1", host);
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, StandardCharsets.UTF_8.encode("ok"), callback);
+                    response.write(true, ReadableBuffer.wrap(StandardCharsets.UTF_8.encode("ok")), callback);
                 }
                 else
                 {
@@ -421,7 +422,7 @@ public class RedirectCacheTest extends AbstractHttpClientServerTest
                 else if ("/new".equals(path))
                 {
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, StandardCharsets.UTF_8.encode("ok"), callback);
+                    response.write(true, ReadableBuffer.wrap(StandardCharsets.UTF_8.encode("ok")), callback);
                 }
                 else
                 {
@@ -477,7 +478,7 @@ public class RedirectCacheTest extends AbstractHttpClientServerTest
                 else if ("/new".equals(path))
                 {
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, StandardCharsets.UTF_8.encode("ok"), callback);
+                    response.write(true, ReadableBuffer.wrap(StandardCharsets.UTF_8.encode("ok")), callback);
                 }
                 else
                 {

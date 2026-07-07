@@ -18,6 +18,7 @@ import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.internal.ContentSourceRange;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,9 +55,9 @@ public class ContentSourceRangeTest
         AsyncContent asyncContent = new AsyncContent();
         Content.Source source = new ContentSourceRange(asyncContent, 0, -1);
 
-        asyncContent.write(false, BufferUtil.toBuffer("A"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("B"), Callback.NOOP);
-        asyncContent.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("A"), Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("B"), Callback.NOOP);
+        asyncContent.write(true, ReadableBuffer.EMPTY, Callback.NOOP);
 
         Content.Chunk c1 = source.read();
         assertThat(c1.getByteBuffer(), equalTo(BufferUtil.toBuffer("A")));
@@ -80,10 +81,10 @@ public class ContentSourceRangeTest
         AsyncContent asyncContent = new AsyncContent();
         Content.Source source = new ContentSourceRange(asyncContent, 5, -1);
 
-        asyncContent.write(false, BufferUtil.toBuffer("12"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("345"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("XYZ"), Callback.NOOP);
-        asyncContent.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("12"), Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("345"), Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("XYZ"), Callback.NOOP);
+        asyncContent.write(true, ReadableBuffer.EMPTY, Callback.NOOP);
 
         Content.Chunk c1 = source.read();
         assertThat(c1.getByteBuffer(), equalTo(BufferUtil.toBuffer("XYZ")));
@@ -102,7 +103,7 @@ public class ContentSourceRangeTest
         AsyncContent asyncContent = new AsyncContent();
         Content.Source source = new ContentSourceRange(asyncContent, 3, 2);
 
-        asyncContent.write(true, BufferUtil.toBuffer("abcdef"), Callback.NOOP);
+        asyncContent.write(true, BufferUtil.toReadableBuffer("abcdef"), Callback.NOOP);
 
         Content.Chunk c1 = source.read();
         assertTrue(c1.isLast());
@@ -116,9 +117,9 @@ public class ContentSourceRangeTest
         AsyncContent asyncContent = new AsyncContent();
         Content.Source source = new ContentSourceRange(asyncContent, 2, 8);
 
-        asyncContent.write(false, BufferUtil.toBuffer("AAAA"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("BBBB"), Callback.NOOP);
-        asyncContent.write(true, BufferUtil.toBuffer("CCCC"), Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("AAAA"), Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("BBBB"), Callback.NOOP);
+        asyncContent.write(true, BufferUtil.toReadableBuffer("CCCC"), Callback.NOOP);
 
         Content.Chunk c1 = source.read();
         assertThat(c1.getByteBuffer(), equalTo(BufferUtil.toBuffer("AA")));
@@ -142,9 +143,9 @@ public class ContentSourceRangeTest
         AsyncContent asyncContent = new AsyncContent();
         Content.Source source = new ContentSourceRange(asyncContent, 0, 0);
 
-        asyncContent.write(false, BufferUtil.toBuffer("foo"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("bar"), Callback.NOOP);
-        asyncContent.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("foo"), Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("bar"), Callback.NOOP);
+        asyncContent.write(true, ReadableBuffer.EMPTY, Callback.NOOP);
 
         Content.Chunk c1 = source.read();
         assertTrue(c1.isLast());
@@ -158,9 +159,9 @@ public class ContentSourceRangeTest
         AsyncContent asyncContent = new AsyncContent();
         Content.Source source = new ContentSourceRange(asyncContent, 200, -1);
 
-        asyncContent.write(false, BufferUtil.toBuffer("hello"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("world"), Callback.NOOP);
-        asyncContent.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("hello"), Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("world"), Callback.NOOP);
+        asyncContent.write(true, ReadableBuffer.EMPTY, Callback.NOOP);
 
         Content.Chunk c1 = source.read();
         assertTrue(c1.isLast());
@@ -174,8 +175,8 @@ public class ContentSourceRangeTest
         AsyncContent asyncContent = new AsyncContent();
         Content.Source source = new ContentSourceRange(asyncContent, 5, 5);
 
-        asyncContent.write(false, BufferUtil.toBuffer("hello"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("world"), Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("hello"), Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("world"), Callback.NOOP);
 
         Content.Chunk c1 = source.read();
         assertFalse(c1.isLast());
@@ -197,8 +198,8 @@ public class ContentSourceRangeTest
         AsyncContent asyncContent = new AsyncContent();
         Content.Source source = new ContentSourceRange(asyncContent, 20, 5);
 
-        asyncContent.write(false, BufferUtil.toBuffer("hello"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("world"), Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("hello"), Callback.NOOP);
+        asyncContent.write(false, BufferUtil.toReadableBuffer("world"), Callback.NOOP);
         asyncContent.fail(new RuntimeException("test exception"));
 
         Content.Chunk c1 = source.read();

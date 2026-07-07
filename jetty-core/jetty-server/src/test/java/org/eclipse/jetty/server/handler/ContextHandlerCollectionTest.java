@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +28,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -448,7 +448,7 @@ public class ContextHandlerCollectionTest
         {
             this.handled = true;
             response.getHeaders().put("X-IsHandled-Name", name);
-            ByteBuffer nameBuffer = BufferUtil.toBuffer(name, StandardCharsets.UTF_8);
+            ReadableBuffer nameBuffer = BufferUtil.toReadableBuffer(name, StandardCharsets.UTF_8);
             response.write(true, nameBuffer, callback);
             return true;
         }

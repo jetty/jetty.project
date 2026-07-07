@@ -407,7 +407,7 @@ public class ThreadLimitHandlerTest
                     {
                         try (Blocker.Callback blocking = Blocker.callback())
                         {
-                            response.write(false, BufferUtil.toBuffer("x".repeat(1024)), blocking);
+                            response.write(false, BufferUtil.toReadableBuffer("x".repeat(1024)), blocking);
                             blocking.block();
                         }
                     }

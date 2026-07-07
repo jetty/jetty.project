@@ -16,7 +16,7 @@ package org.eclipse.jetty.io;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.buffer.WritableBuffer;
 
-public interface WritableBufferPool
+public interface WritableBufferPool extends org.eclipse.jetty.util.buffer.WritableBufferPool
 {
     WritableBufferPool NON_POOLING = WritableBuffer::allocate;
 
@@ -30,35 +30,8 @@ public interface WritableBufferPool
         };
     }
 
-    WritableBuffer acquire(int size, boolean direct);
-
-    class Sized implements WritableBufferPool
+    static Sized wrap(ByteBufferPool.Sized sizedByteBufferPool)
     {
-        private final int size;
-        private final boolean direct;
-        private final WritableBufferPool delegate;
-
-        public Sized(int size, boolean direct, WritableBufferPool delegate)
-        {
-            this.size = size;
-            this.direct = direct;
-            this.delegate = delegate;
-        }
-
-        public int getSize()
-        {
-            return size;
-        }
-
-        public WritableBuffer acquire()
-        {
-            return delegate.acquire(size, direct);
-        }
-
-        @Override
-        public WritableBuffer acquire(int size, boolean direct)
-        {
-            return delegate.acquire(size, direct);
-        }
+        return new Sized(sizedByteBufferPool.getSize(), sizedByteBufferPool.isDirect(), WritableBufferPool.wrap(sizedByteBufferPool.getWrapped()));
     }
 }

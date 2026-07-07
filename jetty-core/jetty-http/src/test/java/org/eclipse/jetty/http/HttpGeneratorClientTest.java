@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -51,7 +52,7 @@ public class HttpGeneratorClientTest
     @Test
     public void testGETRequestNoContent() throws Exception
     {
-        ByteBuffer header = BufferUtil.allocate(2048);
+        WritableBuffer header = WritableBuffer.allocate(2048, false);
         HttpGenerator gen = new HttpGenerator();
 
         HttpGenerator.Result
@@ -63,7 +64,7 @@ public class HttpGeneratorClientTest
         fields.add("Host", "something");
         fields.add("User-Agent", "test");
         RequestInfo info = new RequestInfo("GET", "/index.html", fields);
-        assertTrue(!gen.isChunking());
+        assertFalse(gen.isChunking());
 
         result = gen.generateRequest(info, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -72,14 +73,13 @@ public class HttpGeneratorClientTest
         result = gen.generateRequest(info, header, null, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        assertTrue(!gen.isChunking());
-        String out = BufferUtil.toString(header);
-        BufferUtil.clear(header);
+        assertFalse(gen.isChunking());
+        String out = BufferUtil.toString(header.toReadable());
 
         result = gen.generateResponse(null, false, null, null, null, false);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-        assertTrue(!gen.isChunking());
+        assertFalse(gen.isChunking());
 
         assertEquals(0, gen.getContentPrepared());
         assertThat(out, Matchers.containsString("GET /index.html HTTP/1.1"));
@@ -89,7 +89,7 @@ public class HttpGeneratorClientTest
     @Test
     public void testEmptyHeaders() throws Exception
     {
-        ByteBuffer header = BufferUtil.allocate(2048);
+        WritableBuffer header = WritableBuffer.allocate(2048, false);
         HttpGenerator gen = new HttpGenerator();
 
         HttpGenerator.Result
@@ -115,8 +115,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         assertFalse(gen.isChunking());
-        String out = BufferUtil.toString(header);
-        BufferUtil.clear(header);
+        String out = BufferUtil.toString(header.toReadable());
 
         result = gen.generateResponse(null, false, null, null, null, false);
         assertEquals(HttpGenerator.Result.DONE, result);
@@ -143,17 +142,16 @@ public class HttpGeneratorClientTest
         HttpGenerator.Result result = gen.generateRequest(info, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
 
-        ByteBuffer header = BufferUtil.allocate(16);
+        WritableBuffer header = WritableBuffer.allocate(16, false);
         result = gen.generateRequest(info, header, null, null, true);
         assertEquals(HttpGenerator.Result.HEADER_OVERFLOW, result);
 
-        header = BufferUtil.allocate(2048);
+        header = WritableBuffer.allocate(2048, false);
         result = gen.generateRequest(info, header, null, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         assertFalse(gen.isChunking());
-        String out = BufferUtil.toString(header);
-        BufferUtil.clear(header);
+        String out = BufferUtil.toString(header.toReadable());
 
         result = gen.generateResponse(null, false, null, null, null, false);
         assertEquals(HttpGenerator.Result.SHUTDOWN_OUT, result);
@@ -169,7 +167,7 @@ public class HttpGeneratorClientTest
     @Test
     public void testPOSTRequestNoContent() throws Exception
     {
-        ByteBuffer header = BufferUtil.allocate(2048);
+        WritableBuffer header = WritableBuffer.allocate(2048, false);
         HttpGenerator gen = new HttpGenerator();
 
         HttpGenerator.Result
@@ -181,7 +179,7 @@ public class HttpGeneratorClientTest
         fields.add("Host", "something");
         fields.add("User-Agent", "test");
         RequestInfo info = new RequestInfo("POST", "/index.html", fields);
-        assertTrue(!gen.isChunking());
+        assertFalse(gen.isChunking());
 
         result = gen.generateRequest(info, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -190,14 +188,13 @@ public class HttpGeneratorClientTest
         result = gen.generateRequest(info, header, null, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        assertTrue(!gen.isChunking());
-        String out = BufferUtil.toString(header);
-        BufferUtil.clear(header);
+        assertFalse(gen.isChunking());
+        String out = BufferUtil.toString(header.toReadable());
 
         result = gen.generateResponse(null, false, null, null, null, false);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-        assertTrue(!gen.isChunking());
+        assertFalse(gen.isChunking());
 
         assertEquals(0, gen.getContentPrepared());
         assertThat(out, Matchers.containsString("POST /index.html HTTP/1.1"));
@@ -208,8 +205,8 @@ public class HttpGeneratorClientTest
     public void testRequestWithContent() throws Exception
     {
         String out;
-        ByteBuffer header = BufferUtil.allocate(4096);
-        ByteBuffer content0 = BufferUtil.toBuffer("Hello World. The quick brown fox jumped over the lazy dog.");
+        WritableBuffer header = WritableBuffer.allocate(4096, false);
+        ReadableBuffer content0 = BufferUtil.toReadableBuffer("Hello World. The quick brown fox jumped over the lazy dog.");
         HttpGenerator gen = new HttpGenerator();
 
         HttpGenerator.Result
@@ -229,16 +226,14 @@ public class HttpGeneratorClientTest
         result = gen.generateRequest(info, header, null, content0, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        assertTrue(!gen.isChunking());
-        out = BufferUtil.toString(header);
-        BufferUtil.clear(header);
+        assertFalse(gen.isChunking());
+        out = BufferUtil.toString(header.toReadable());
         out += BufferUtil.toString(content0);
-        BufferUtil.clear(content0);
 
         result = gen.generateResponse(null, false, null, null, null, false);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-        assertTrue(!gen.isChunking());
+        assertFalse(gen.isChunking());
 
         assertThat(out, Matchers.containsString("POST /index.html HTTP/1.1"));
         assertThat(out, Matchers.containsString("Host: something"));
@@ -252,10 +247,10 @@ public class HttpGeneratorClientTest
     public void testRequestWithChunkedContent() throws Exception
     {
         String out;
-        ByteBuffer header = BufferUtil.allocate(4096);
-        ByteBuffer chunk = BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
-        ByteBuffer content0 = BufferUtil.toBuffer("Hello World. ");
-        ByteBuffer content1 = BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog.");
+        WritableBuffer header = WritableBuffer.allocate(4096, false);
+        WritableBuffer chunk = WritableBuffer.allocate(HttpGenerator.CHUNK_SIZE, false);
+        ReadableBuffer content0 = BufferUtil.toReadableBuffer("Hello World. ");
+        ReadableBuffer content1 = BufferUtil.toReadableBuffer("The quick brown fox jumped over the lazy dog.");
         HttpGenerator gen = new HttpGenerator();
 
         HttpGenerator.Result
@@ -276,10 +271,12 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
         assertTrue(gen.isChunking());
-        out = BufferUtil.toString(header);
-        BufferUtil.clear(header);
+        {
+            ReadableBuffer rb = header.toReadable();
+            out = BufferUtil.toString(rb);
+            rb.toWritable();
+        }
         out += BufferUtil.toString(content0);
-        BufferUtil.clear(content0);
 
         result = gen.generateRequest(null, header, null, content1, false);
         assertEquals(HttpGenerator.Result.NEED_CHUNK, result);
@@ -289,10 +286,12 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
         assertTrue(gen.isChunking());
-        out += BufferUtil.toString(chunk);
-        BufferUtil.clear(chunk);
+        {
+            ReadableBuffer rb = chunk.toReadable();
+            out += BufferUtil.toString(rb);
+            rb.toWritable();
+        }
         out += BufferUtil.toString(content1);
-        BufferUtil.clear(content1);
 
         result = gen.generateResponse(null, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
@@ -302,9 +301,12 @@ public class HttpGeneratorClientTest
         result = gen.generateResponse(null, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        out += BufferUtil.toString(chunk);
-        BufferUtil.clear(chunk);
-        assertTrue(!gen.isChunking());
+        {
+            ReadableBuffer rb = chunk.toReadable();
+            out += BufferUtil.toString(rb);
+            rb.toWritable();
+        }
+        assertFalse(gen.isChunking());
 
         result = gen.generateResponse(null, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.DONE, result);
@@ -324,10 +326,10 @@ public class HttpGeneratorClientTest
     public void testRequestWithKnownContent() throws Exception
     {
         String out;
-        ByteBuffer header = BufferUtil.allocate(4096);
-        ByteBuffer chunk = BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
-        ByteBuffer content0 = BufferUtil.toBuffer("Hello World. ");
-        ByteBuffer content1 = BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog.");
+        WritableBuffer header = WritableBuffer.allocate(4096, false);
+        WritableBuffer chunk = WritableBuffer.allocate(HttpGenerator.CHUNK_SIZE, false);
+        ReadableBuffer content0 = BufferUtil.toReadableBuffer("Hello World. ");
+        ReadableBuffer content1 = BufferUtil.toReadableBuffer("The quick brown fox jumped over the lazy dog.");
         HttpGenerator gen = new HttpGenerator();
 
         HttpGenerator.Result
@@ -347,29 +349,25 @@ public class HttpGeneratorClientTest
         result = gen.generateRequest(info, header, null, content0, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
-        assertTrue(!gen.isChunking());
-        out = BufferUtil.toString(header);
-        BufferUtil.clear(header);
+        assertFalse(gen.isChunking());
+        out = BufferUtil.toString(header.toReadable());
         out += BufferUtil.toString(content0);
-        BufferUtil.clear(content0);
 
         result = gen.generateRequest(null, null, null, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
-        assertTrue(!gen.isChunking());
+        assertFalse(gen.isChunking());
         out += BufferUtil.toString(content1);
-        BufferUtil.clear(content1);
 
         result = gen.generateResponse(null, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        assertTrue(!gen.isChunking());
+        assertFalse(gen.isChunking());
 
         result = gen.generateResponse(null, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-        out += BufferUtil.toString(chunk);
-        BufferUtil.clear(chunk);
+        out += BufferUtil.toString(chunk.toReadable());
 
         assertThat(out, Matchers.containsString("POST /index.html HTTP/1.1"));
         assertThat(out, Matchers.containsString("Host: something"));
