@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -206,7 +205,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                 {
                     int contentLength = (int)request.getHeaders().getLongField("X-Download");
                     if (contentLength > 0)
-                        response.write(true, ByteBuffer.wrap(new byte[contentLength]), callback);
+                        response.write(true, ReadableBuffer.wrap(new byte[contentLength]), callback);
                     else
                         callback.succeeded();
                 }

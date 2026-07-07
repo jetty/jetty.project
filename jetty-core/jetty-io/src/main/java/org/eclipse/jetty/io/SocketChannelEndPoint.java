@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
@@ -31,6 +32,7 @@ import org.slf4j.LoggerFactory;
 public class SocketChannelEndPoint extends SelectableChannelEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(SocketChannelEndPoint.class);
+    private final Target target = new Target();
 
     public SocketChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
@@ -105,20 +107,7 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         long flushed;
         try
         {
-            flushed = buffer.writeTo(new ReadableBuffer.GatheringTarget()
-            {
-                @Override
-                public void write(ByteBuffer[] inputs) throws IOException
-                {
-                    getChannel().write(inputs);
-                }
-
-                @Override
-                public void write(ByteBuffer input) throws IOException
-                {
-                    getChannel().write(input);
-                }
-            });
+            flushed = buffer.writeTo(target);
             if (LOG.isDebugEnabled())
                 LOG.debug("flushed {} {}", flushed, this);
         }
@@ -131,5 +120,26 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
             notIdle();
 
         return buffer.remaining() == 0L;
+    }
+
+    private class Target implements ReadableBuffer.GatheringTarget, ReadableBuffer.TransferringTarget
+    {
+        @Override
+        public long write(FileChannel input, long position, long count) throws IOException
+        {
+            return input.transferTo(position, count, getChannel());
+        }
+
+        @Override
+        public void write(ByteBuffer[] inputs) throws IOException
+        {
+            getChannel().write(inputs);
+        }
+
+        @Override
+        public void write(ByteBuffer input) throws IOException
+        {
+            getChannel().write(input);
+        }
     }
 }

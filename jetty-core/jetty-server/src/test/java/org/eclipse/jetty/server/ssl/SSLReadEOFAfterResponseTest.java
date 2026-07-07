@@ -31,8 +31,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -106,7 +106,7 @@ public class SSLReadEOFAfterResponseTest
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, bytes.length);
                 try (Blocker.Callback blocker = Blocker.callback())
                 {
-                    response.write(true, BufferUtil.toBuffer(bytes), blocker);
+                    response.write(true, ReadableBuffer.wrap(bytes), blocker);
                     blocker.block();
                 }
 

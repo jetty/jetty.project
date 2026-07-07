@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -172,7 +171,7 @@ public class StreamCloseTest extends AbstractTest
         assertFalse(((HTTP2Stream)stream).isLocallyClosed());
 
         CountDownLatch clientDataLatch = new CountDownLatch(1);
-        stream.data(ReadableBuffer.wrap(ByteBuffer.wrap(new byte[512])), true, new Callback()
+        stream.data(ReadableBuffer.wrap(new byte[512]), true, new Callback()
         {
             @Override
             public void succeeded()

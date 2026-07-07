@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -42,6 +41,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -245,7 +245,7 @@ public class ThreadStarvationTest
                 Fields fields = FormFields.getFields(request);
                 StringBuilder builder = new StringBuilder();
                 fields.forEach(field -> builder.append(field.getName()).append('=').append(field.getValue()).append('\n'));
-                response.write(true, BufferUtil.toBuffer(builder.toString()), callback);
+                response.write(true, BufferUtil.toReadableBuffer(builder.toString()), callback);
                 return true;
             }
         });
@@ -328,7 +328,7 @@ public class ThreadStarvationTest
                 StringBuilder builder = new StringBuilder();
                 parts.forEach(part -> builder.append(part.getName()).append('=').append(part.getContentAsString(StandardCharsets.UTF_8)).append('\n'));
                 parts.close();
-                response.write(true, BufferUtil.toBuffer(builder.toString()), callback);
+                response.write(true, BufferUtil.toReadableBuffer(builder.toString()), callback);
                 return true;
             }
         });
@@ -414,7 +414,7 @@ public class ThreadStarvationTest
         {
             response.setStatus(200);
             String string = Content.Source.asString(request);
-            response.write(true, ByteBuffer.wrap(("Read Input " + string.length() + "\r\n").getBytes()), callback);
+            response.write(true, ReadableBuffer.wrap(("Read Input " + string.length() + "\r\n").getBytes()), callback);
             return true;
         }
     }

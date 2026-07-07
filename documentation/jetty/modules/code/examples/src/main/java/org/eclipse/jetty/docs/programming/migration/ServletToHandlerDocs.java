@@ -44,6 +44,7 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -608,7 +609,7 @@ public class ServletToHandlerDocs
 
             // Explicit first write that writes the response status code, headers and content.
             // When this write completes, the Handler callback is completed.
-            response.write(true, content, callback);
+            response.write(true, ReadableBuffer.wrap(content), callback);
 
             return true;
         }
@@ -639,7 +640,7 @@ public class ServletToHandlerDocs
                 {
                     // Now explicitly write the content as the last write.
                     // When this write completes, the Handler callback is completed.
-                    response.write(true, content, callback);
+                    response.write(true, ReadableBuffer.wrap(content), callback);
                 }
                 else
                 {
@@ -706,7 +707,7 @@ public class ServletToHandlerDocs
             // The trailers have not been written yet; they will be written with the last write.
             ByteBuffer content = UTF_8.encode("Hello World");
             Callback.Completable completable = new Callback.Completable();
-            response.write(false, content, completable);
+            response.write(false, ReadableBuffer.wrap(content), completable);
 
             completable.whenComplete((ignored, failure) ->
             {

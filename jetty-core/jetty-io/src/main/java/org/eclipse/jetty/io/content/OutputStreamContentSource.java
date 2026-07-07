@@ -16,11 +16,11 @@ package org.eclipse.jetty.io.content;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 /**
  * <p>A {@link Content.Source} that provides content asynchronously through an {@link OutputStream}.</p>
@@ -86,7 +86,7 @@ public class OutputStreamContentSource implements Content.Source, Closeable
             try
             {
                 FutureCallback callback = new FutureCallback();
-                async.write(false, ByteBuffer.wrap(b, off, len), callback);
+                async.write(false, ReadableBuffer.wrap(b, off, len), callback);
                 callback.get();
             }
             catch (Throwable x)

@@ -29,6 +29,7 @@ import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.Sha1Sum;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -49,8 +51,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -115,7 +120,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse), method.equals(HttpMethod.HEAD.asString()));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -124,15 +129,18 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         assertThat("Response[ETag]", response.get("ETag"), startsWith("W/"));
         assertThat("Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP.getEtagSuffix()));
 
-        assertThat("Response[Content-Length]", response.get("Content-Length"), is(nullValue()));
+        assertThat("Response[Content-Length]", response.getLongField("Content-Length"), both(lessThan((long)fileSize)).and(greaterThan(0L)));
         // A HEAD request should have similar headers, but no body
-        if (!method.equals("HEAD"))
+        if (!method.equals(HttpMethod.HEAD.asString()))
         {
-            assertThat("Response[Content-Length]", response.get("Content-Length"), is(nullValue()));
             // Response Content checks
             UncompressedMetadata metadata = parseResponseContent(response);
             assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));
             assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
+        }
+        else
+        {
+            assertThat("Content", response.getContentBytes().length, is(0));
         }
     }
 
@@ -196,7 +204,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -259,7 +267,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -318,7 +326,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -379,7 +387,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -436,7 +444,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
 
@@ -501,7 +509,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -557,7 +565,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -613,7 +621,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -670,7 +678,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -728,7 +736,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -784,7 +792,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -842,7 +850,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
             ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
-            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -866,7 +874,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
             ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
-            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -922,7 +930,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -978,7 +986,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 

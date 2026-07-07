@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.server.internal;
 
 import java.io.EOFException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,7 +46,6 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.TunnelSupport;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
@@ -282,13 +280,13 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer byteBuffer, Callback callback)
     {
-        ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
+        ReadableBuffer content = byteBuffer != null ? byteBuffer : ReadableBuffer.EMPTY;
         if (response != null)
-            sendHeaders(request, response, ReadableBuffer.wrap(content), last, callback);
+            sendHeaders(request, response, content, last, callback);
         else
-            sendContent(request, ReadableBuffer.wrap(content), last, callback);
+            sendContent(request, content, last, callback);
     }
 
     private void sendHeaders(MetaData.Request request, MetaData.Response response, ReadableBuffer content, boolean last, Callback callback)

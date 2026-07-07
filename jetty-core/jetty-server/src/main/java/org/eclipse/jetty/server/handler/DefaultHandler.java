@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +59,7 @@ public class DefaultHandler extends Handler.Abstract
 
     private final long _faviconModifiedMs = (System.currentTimeMillis() / 1000) * 1000L;
     private final HttpField _faviconModified = new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_faviconModifiedMs));
-    private ByteBuffer _favicon;
+    private ReadableBuffer _favicon;
     private boolean _serveFavIcon;
     private boolean _showContexts;
 
@@ -108,7 +108,7 @@ public class DefaultHandler extends Handler.Abstract
         }
         finally
         {
-            _favicon = BufferUtil.toBuffer(favbytes);
+            _favicon = ReadableBuffer.wrap(BufferUtil.toBuffer(favbytes));
         }
     }
 
@@ -120,7 +120,7 @@ public class DefaultHandler extends Handler.Abstract
         // little cheat for common request
         if (isServeFavIcon() && _favicon != null && HttpMethod.GET.is(method) && Request.getPathInContext(request).equals("/favicon.ico"))
         {
-            ByteBuffer content = BufferUtil.EMPTY_BUFFER;
+            ReadableBuffer content = ReadableBuffer.EMPTY;
             if (_faviconModifiedMs > 0 && request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE) == _faviconModifiedMs)
                 response.setStatus(HttpStatus.NOT_MODIFIED_304);
             else
@@ -219,7 +219,7 @@ public class DefaultHandler extends Handler.Abstract
             writer.append("<a href=\"https://jetty.org\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
             writer.append("</body>\n</html>\n");
             writer.flush();
-            ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());
+            ReadableBuffer content = ReadableBuffer.wrap(outputStream.toByteArray());
             response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.remaining());
             response.write(true, content, callback);
             return true;

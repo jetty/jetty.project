@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -149,10 +148,10 @@ public class RawHTTP2ProxyTest
         Random random = new Random();
         byte[] data1 = new byte[1024];
         random.nextBytes(data1);
-        ReadableBuffer buffer1 = ReadableBuffer.wrap(ByteBuffer.wrap(data1));
+        ReadableBuffer buffer1 = ReadableBuffer.wrap(data1);
         byte[] data2 = new byte[512];
         random.nextBytes(data2);
-        ReadableBuffer buffer2 = ReadableBuffer.wrap(ByteBuffer.wrap(data2));
+        ReadableBuffer buffer2 = ReadableBuffer.wrap(data2);
         Server server1 = startServer("server1", new ServerSessionListener()
         {
             @Override

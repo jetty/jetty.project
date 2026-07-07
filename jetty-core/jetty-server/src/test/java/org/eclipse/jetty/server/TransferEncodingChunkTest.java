@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -81,7 +81,7 @@ public class TransferEncodingChunkTest
                 }
 
                 // Send a content that is larger than the chunk max length.
-                response.write(true, ByteBuffer.wrap(encodedContent), callback);
+                response.write(true, ReadableBuffer.wrap(encodedContent), callback);
                 return true;
             }
         });
@@ -178,7 +178,7 @@ public class TransferEncodingChunkTest
                 // Setting the trailers implies using Transfer-Encoding: chunked.
                 HttpFields trailers = HttpFields.build().put("Force-Chunking", "Z");
                 response.setTrailersSupplier(() -> trailers);
-                response.write(true, ByteBuffer.wrap(encodedContent), callback);
+                response.write(true, ReadableBuffer.wrap(encodedContent), callback);
                 return true;
             }
         });

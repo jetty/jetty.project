@@ -220,7 +220,7 @@ public class ServletRequestListenerTest
             {
                 response.setStatus(500);
                 _events.add("errorHandler");
-                response.write(true, BufferUtil.toBuffer("error handled"), callback);
+                response.write(true, BufferUtil.toReadableBuffer("error handled"), callback);
                 return true;
             });
 

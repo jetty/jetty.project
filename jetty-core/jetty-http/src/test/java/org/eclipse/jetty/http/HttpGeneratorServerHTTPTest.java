@@ -13,12 +13,14 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -52,7 +54,7 @@ public class HttpGeneratorServerHTTPTest
         HttpParser parser = new HttpParser(handler);
         parser.setHeadResponse(run.result._head);
 
-        parser.parseNext(BufferUtil.toBuffer(response));
+        parser.parseNext(BufferUtil.toReadableBuffer(response));
 
         if (run.result._body != null)
             assertEquals(run.result._body, this._content, msg);
@@ -110,23 +112,30 @@ public class HttpGeneratorServerHTTPTest
             if (_other != null)
                 _fields.put("Other", _other);
 
-            ByteBuffer source = _body == null ? null : BufferUtil.toBuffer(_body);
-            ByteBuffer[] chunks = new ByteBuffer[nchunks];
-            ByteBuffer content = null;
+            ReadableBuffer source = _body == null ? null : BufferUtil.toReadableBuffer(_body);
+            List<ReadableBuffer> chunks = new ArrayList<>();
+            ReadableBuffer content = null;
             int c = 0;
             if (source != null)
             {
                 for (int i = 0; i < nchunks; i++)
                 {
-                    chunks[i] = source.duplicate();
-                    chunks[i].position(i * (source.capacity() / nchunks));
+                    long pos = i * (source.capacity() / nchunks);
+                    ReadableBuffer rb = source.slice();
+                    rb.position(pos);
                     if (i > 0)
-                        chunks[i - 1].limit(chunks[i].position());
+                    {
+                        ReadableBuffer chunk = chunks.get(i - 1);
+                        WritableBuffer wb = chunk.toWritable();
+                        wb.position(rb.position());
+                        wb.toReadable();
+                    }
+                    chunks.add(rb);
                 }
-                content = chunks[c++];
+                content = chunks.get(c++);
             }
-            ByteBuffer header = null;
-            ByteBuffer chunk = null;
+            WritableBuffer header = null;
+            WritableBuffer chunk = null;
             MetaData.Response info = null;
 
             loop:
@@ -134,10 +143,10 @@ public class HttpGeneratorServerHTTPTest
             {
                 // if we have unwritten content
                 if (source != null && content != null && content.remaining() == 0 && c < nchunks)
-                    content = chunks[c++];
+                    content = chunks.get(c++);
 
                 // Generate
-                boolean last = !BufferUtil.hasContent(content);
+                boolean last = content == null || content.remaining() == 0L;
 
                 HttpGenerator.Result result = gen.generateResponse(info, _head, header, chunk, content, last);
 
@@ -148,38 +157,42 @@ public class HttpGeneratorServerHTTPTest
                         continue;
 
                     case NEED_HEADER:
-                        header = BufferUtil.allocate(2048);
+                        header = WritableBuffer.allocate(2048, false);
                         continue;
 
                     case HEADER_OVERFLOW:
                         if (header.capacity() >= 8192)
                             throw new BadMessageException(500, "Header too large");
-                        header = BufferUtil.allocate(8192);
+                        header = WritableBuffer.allocate(8192, false);
                         continue;
 
                     case NEED_CHUNK:
-                        chunk = BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
+                        chunk = WritableBuffer.allocate(HttpGenerator.CHUNK_SIZE, false);
                         continue;
 
                     case NEED_CHUNK_TRAILER:
-                        chunk = BufferUtil.allocate(2048);
+                        chunk = WritableBuffer.allocate(2048, false);
                         continue;
 
                     case FLUSH:
-                        if (BufferUtil.hasContent(header))
+                        if (header != null && header.position() > 0)
                         {
-                            response += BufferUtil.toString(header);
-                            header.position(header.limit());
+                            ReadableBuffer rb = header.toReadable();
+                            response += BufferUtil.toString(rb);
+                            rb.position(rb.position() + rb.remaining());
+                            rb.toWritable();
                         }
-                        if (BufferUtil.hasContent(chunk))
+                        if (chunk != null && chunk.position() > 0)
                         {
-                            response += BufferUtil.toString(chunk);
-                            chunk.position(chunk.limit());
+                            ReadableBuffer rb = chunk.toReadable();
+                            response += BufferUtil.toString(rb);
+                            rb.position(rb.position() + rb.remaining());
+                            rb.toWritable();
                         }
-                        if (BufferUtil.hasContent(content))
+                        if (content != null && content.remaining() > 0)
                         {
                             response += BufferUtil.toString(content);
-                            content.position(content.limit());
+                            content.position(content.position() + content.remaining());
                         }
                         break;
 
@@ -211,12 +224,12 @@ public class HttpGeneratorServerHTTPTest
     private class Handler implements HttpParser.ResponseHandler
     {
         @Override
-        public boolean content(ByteBuffer ref)
+        public boolean content(ReadableBuffer ref)
         {
             if (_content == null)
                 _content = "";
             _content += BufferUtil.toString(ref);
-            ref.position(ref.limit());
+            ref.position(ref.position() + ref.remaining());
             return false;
         }
 

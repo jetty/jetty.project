@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.tests;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -181,7 +180,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 latch.countDown();
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, ReadableBuffer.wrap(content), callback);
                 return true;
             }
         });

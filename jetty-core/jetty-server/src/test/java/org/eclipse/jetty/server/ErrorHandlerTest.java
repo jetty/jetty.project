@@ -774,7 +774,7 @@ public class ErrorHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toBuffer("Context Error"), callback);
+                response.write(true, BufferUtil.toReadableBuffer("Context Error"), callback);
                 return true;
             }
         });
@@ -793,7 +793,7 @@ public class ErrorHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toBuffer("Server Error"), callback);
+                response.write(true, BufferUtil.toReadableBuffer("Server Error"), callback);
                 return true;
             }
         });
@@ -801,7 +801,7 @@ public class ErrorHandlerTest
         server.start();
 
         LocalConnector.LocalEndPoint connection = connector.connect();
-        connection.addInputAndExecute(BufferUtil.toBuffer(
+        connection.addInputAndExecute(BufferUtil.toReadableBuffer(
             "GET /foo/test HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "\r\n"));
@@ -810,7 +810,7 @@ public class ErrorHandlerTest
         assertThat(response, containsString("HTTP/1.1 444 444"));
         assertThat(response, containsString("Context Error"));
 
-        connection.addInputAndExecute(BufferUtil.toBuffer(
+        connection.addInputAndExecute(BufferUtil.toReadableBuffer(
             "GET /test HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "\r\n"));

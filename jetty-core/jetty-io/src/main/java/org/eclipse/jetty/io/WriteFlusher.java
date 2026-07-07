@@ -452,6 +452,12 @@ public abstract class WriteFlusher
      */
     protected boolean flush(SocketAddress address, ReadableBuffer buffer) throws IOException
     {
+        if (buffer.remaining() == 0L)
+        {
+            LOG.debug("Flushed=0 written=0 remaining=0 {}", this);
+            return true;
+        }
+
         boolean progress = true;
         while (progress && buffer.remaining() != 0L)
         {

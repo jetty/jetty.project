@@ -15,7 +15,6 @@ package org.eclipse.jetty.security.siwe;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -61,6 +60,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -512,7 +512,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
     {
         String nonce = createNonce(request.getSession(false));
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "application/json");
-        ByteBuffer content = BufferUtil.toBuffer("{ \"nonce\": \"" + nonce + "\" }");
+        ReadableBuffer content = BufferUtil.toReadableBuffer("{ \"nonce\": \"" + nonce + "\" }");
         response.write(true, content, callback);
         return AuthenticationState.CHALLENGE;
     }

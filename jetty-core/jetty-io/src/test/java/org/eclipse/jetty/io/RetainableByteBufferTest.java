@@ -650,7 +650,7 @@ public class RetainableByteBufferTest
         {
             Callback.Completable callback = new Callback.Completable();
             buffer.writeTo(endPoint, false, callback);
-            endPoint.write(true, BufferUtil.toBuffer(" OK!"), Callback.NOOP);
+            endPoint.write(true, BufferUtil.toReadableBuffer(" OK!"), Callback.NOOP);
             callback.get(5, TimeUnit.SECONDS);
         }
 

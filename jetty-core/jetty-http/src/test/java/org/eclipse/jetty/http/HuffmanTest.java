@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.stream.Stream;
 
@@ -69,7 +68,7 @@ public class HuffmanTest
         byte[] encoded = StringUtil.fromHexString(hex);
         HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
         huffmanDecoder.setLength(encoded.length);
-        String decoded = huffmanDecoder.decode(ReadableBuffer.wrap(ByteBuffer.wrap(encoded)));
+        String decoded = huffmanDecoder.decode(ReadableBuffer.wrap(encoded));
         assertEquals(expected, decoded, specSection);
     }
 
@@ -108,7 +107,7 @@ public class HuffmanTest
     @MethodSource("testDecode8859OnlyArguments")
     public void testDecode8859Only(String hexString, Character expected) throws Exception
     {
-        ReadableBuffer buffer = ReadableBuffer.wrap(ByteBuffer.wrap(StringUtil.fromHexString(hexString)));
+        ReadableBuffer buffer = ReadableBuffer.wrap(StringUtil.fromHexString(hexString));
 
         if (expected == null)
         {

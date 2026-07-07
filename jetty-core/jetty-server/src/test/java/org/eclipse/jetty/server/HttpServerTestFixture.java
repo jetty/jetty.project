@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.junit.jupiter.api.AfterEach;
@@ -191,7 +192,7 @@ public class HttpServerTestFixture
             response.setStatus(200);
             String reply = "Read " + offset + "\r\n";
             response.getHeaders().put(HttpHeader.CONTENT_LENGTH, reply.length());
-            response.write(true, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1), callback);
+            response.write(true, BufferUtil.toReadableBuffer(reply, StandardCharsets.ISO_8859_1), callback);
             return true;
         }
     }
@@ -244,7 +245,7 @@ public class HttpServerTestFixture
                 {
                     try (Blocker.Callback blocker = Blocker.callback())
                     {
-                        response.write(i == 0, bytes.slice(), blocker);
+                        response.write(i == 0, ReadableBuffer.wrap(bytes.slice()), blocker);
                         blocker.block();
                     }
                 }
@@ -257,7 +258,7 @@ public class HttpServerTestFixture
                 {
                     try (Blocker.Callback blocker = Blocker.callback())
                     {
-                        response.write(i == 0, bytes.slice(), blocker);
+                        response.write(i == 0, ReadableBuffer.wrap(bytes.slice()), blocker);
                         blocker.block();
                     }
                 }

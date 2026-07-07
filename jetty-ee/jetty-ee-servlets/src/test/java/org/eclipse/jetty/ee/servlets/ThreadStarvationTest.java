@@ -484,7 +484,7 @@ public class ThreadStarvationTest
 
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 13L);
-                response.write(true, BufferUtil.toBuffer("Hello World!\n"), callback);
+                response.write(true, BufferUtil.toReadableBuffer("Hello World!\n"), callback);
                 return true;
             }
         }
