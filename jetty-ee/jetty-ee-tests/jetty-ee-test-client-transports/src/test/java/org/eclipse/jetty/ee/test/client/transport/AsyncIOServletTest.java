@@ -75,6 +75,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -1574,7 +1575,7 @@ public class AsyncIOServletTest extends AbstractTest
                 response = new org.eclipse.jetty.server.Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    public void write(boolean last, ReadableBuffer byteBuffer, Callback callback)
                     {
                         if (last)
                             lastWriteCounter.incrementAndGet();

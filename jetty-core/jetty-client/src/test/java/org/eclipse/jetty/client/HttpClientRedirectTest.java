@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -488,12 +489,12 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                     response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/ok");
                     // Say that we send gzipped content, but actually don't.
                     response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
-                    response.write(true, ByteBuffer.wrap("redirect".getBytes(StandardCharsets.UTF_8)), callback);
+                    response.write(true, ReadableBuffer.wrap("redirect".getBytes(StandardCharsets.UTF_8)), callback);
                 }
                 else
                 {
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, ByteBuffer.wrap(bytes), callback);
+                    response.write(true, ReadableBuffer.wrap(bytes), callback);
                 }
                 return true;
             }

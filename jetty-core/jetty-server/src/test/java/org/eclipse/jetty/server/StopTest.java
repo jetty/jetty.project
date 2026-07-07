@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
@@ -325,7 +325,7 @@ public class StopTest
             assertThat(response, containsString("200 OK"));
             assertThat(response, Matchers.not(containsString("Connection: close")));
 
-            endp.addInputAndExecute(BufferUtil.toBuffer("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
+            endp.addInputAndExecute(BufferUtil.toReadableBuffer("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
 
             exchanger0.exchange(null);
 
@@ -410,7 +410,7 @@ public class StopTest
             assertThat(response, containsString("200 OK"));
             assertThat(response, Matchers.not(containsString("Connection: close")));
 
-            endp.addInputAndExecute(BufferUtil.toBuffer("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
+            endp.addInputAndExecute(BufferUtil.toReadableBuffer("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
             exchanger0.exchange(null);
 
             CountDownLatch latch = new CountDownLatch(1);
@@ -533,7 +533,7 @@ public class StopTest
                 {
                     throw new RuntimeException(e);
                 }
-                response.write(true, ByteBuffer.wrap("ab".getBytes()), callback);
+                response.write(true, ReadableBuffer.wrap("ab".getBytes()), callback);
             });
             return true;
         }

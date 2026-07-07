@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -75,7 +74,7 @@ public class ContentLengthTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -116,7 +115,7 @@ public class ContentLengthTest extends AbstractTest
                 resetLatch.countDown();
                 callback.succeeded();
             }
-        }).thenAccept(stream -> stream.data(ReadableBuffer.wrap(ByteBuffer.wrap(data)), true));
+        }).thenAccept(stream -> stream.data(ReadableBuffer.wrap(data), true));
 
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
@@ -137,7 +136,7 @@ public class ContentLengthTest extends AbstractTest
             {
                 // Write a single buffer, with a Content-Length
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });

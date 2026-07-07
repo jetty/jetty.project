@@ -41,8 +41,8 @@ import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.common.SessionContainer;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -716,7 +716,7 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(clientGracefulGoAwayLatch.await(5, TimeUnit.SECONDS));
 
         // Complete the stream.
-        clientStream.data(new DataFrame(BufferUtil.EMPTY_BUFFER, true), Promise.Invocable.noop());
+        clientStream.data(new DataFrame(ReadableBuffer.EMPTY, true), Promise.Invocable.noop());
 
         // Both client and server should send a non-graceful GOAWAY.
         assertTrue(serverGoAwayLatch.await(5, TimeUnit.SECONDS));
@@ -1365,7 +1365,7 @@ public class GoAwayTest extends AbstractClientServerTest
         assertThrows(TimeoutException.class, () -> shutdown.get(1, TimeUnit.SECONDS));
 
         // Complete the response.
-        serverStreamRef.get().data(new DataFrame(BufferUtil.EMPTY_BUFFER, true), Promise.Invocable.noop());
+        serverStreamRef.get().data(new DataFrame(ReadableBuffer.EMPTY, true), Promise.Invocable.noop());
 
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
         shutdown.get(5, TimeUnit.SECONDS);
@@ -1435,7 +1435,7 @@ public class GoAwayTest extends AbstractClientServerTest
         assertThrows(TimeoutException.class, () -> shutdown.get(1, TimeUnit.SECONDS));
 
         // Complete the response.
-        serverStreamRef.get().data(new DataFrame(BufferUtil.EMPTY_BUFFER, true), Promise.Invocable.noop());
+        serverStreamRef.get().data(new DataFrame(ReadableBuffer.EMPTY, true), Promise.Invocable.noop());
 
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
         shutdown.get(5, TimeUnit.SECONDS);

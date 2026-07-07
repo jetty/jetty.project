@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.http2.frames.Frame;
@@ -22,7 +21,7 @@ import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 public class PrefaceGenerator extends FrameGenerator
 {
-    private static final ReadableBuffer PREFACE = ReadableBuffer.wrap(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES));
+    private static final ReadableBuffer PREFACE = ReadableBuffer.wrap(PrefaceFrame.PREFACE_BYTES);
 
     public PrefaceGenerator()
     {

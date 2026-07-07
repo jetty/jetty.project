@@ -15,17 +15,17 @@ package org.eclipse.jetty.io.content;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 /**
  * <p>An {@link OutputStream} backed by a {@link Content.Sink}.
  * Any content written to this {@link OutputStream} is written
- * to the {@link Content.Sink#write(boolean, ByteBuffer, Callback)}
+ * to the {@link Content.Sink#write(boolean, ReadableBuffer, Callback)}
  * with a callback that blocks the caller until it is succeeded or
  * failed.</p>
  */
@@ -52,7 +52,7 @@ public class ContentSinkOutputStream extends OutputStream
     {
         try (Blocker.Callback callback = _blocking.callback())
         {
-            sink.write(false, ByteBuffer.wrap(b, off, len), callback);
+            sink.write(false, ReadableBuffer.wrap(b, off, len), callback);
             callback.block();
         }
         catch (Throwable x)

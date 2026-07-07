@@ -115,7 +115,7 @@ public class LargeHeaderTest
                         callback.failed(x);
                     }
                 };
-                response.write(true, BufferUtil.toBuffer(responseBody, UTF_8), topCallback);
+                response.write(true, BufferUtil.toReadableBuffer(responseBody, UTF_8), topCallback);
                 if (LOG.isDebugEnabled())
                     LOG.debug("X-Count: {} [handle-completed]", idCount);
                 return true;

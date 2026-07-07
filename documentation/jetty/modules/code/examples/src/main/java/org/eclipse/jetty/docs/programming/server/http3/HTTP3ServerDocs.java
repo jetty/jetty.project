@@ -38,6 +38,7 @@ import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import static java.lang.System.Logger.Level.INFO;
@@ -260,7 +261,7 @@ public class HTTP3ServerDocs
                         @Override
                         public void succeeded(Stream result)
                         {
-                            result.data(new DataFrame(resourceBytes, true), Promise.Invocable.noop());
+                            result.data(new DataFrame(ReadableBuffer.wrap(resourceBytes), true), Promise.Invocable.noop());
                         }
                     });
                 }

@@ -37,6 +37,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -325,7 +326,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         ByteBuffer byteBuffer = networkBuffer.getByteBuffer();
         while (true)
         {
-            boolean handle = parser.parseNext(byteBuffer);
+            boolean handle = parser.parseNext(ReadableBuffer.wrap(byteBuffer));
             if (LOG.isDebugEnabled())
                 LOG.debug("Parse state={} result={} {} {} on {}", state, handle, BufferUtil.toDetailString(byteBuffer), parser, this);
             if (!handle)
@@ -468,10 +469,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     @Override
-    public boolean content(ByteBuffer buffer)
+    public boolean content(ReadableBuffer buffer)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Parser generated content {} in {}", BufferUtil.toDetailString(buffer), this);
+            LOG.debug("Parser generated content {} in {}", buffer, this);
         HttpExchange exchange = getHttpExchange();
         unsolicited |= exchange == null;
         if (unsolicited)
@@ -482,8 +483,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (getHttpConnection().isFillInterested())
             throw new IllegalStateException("Fill interested while parsing for content");
 
-        // Retain the chunk because it is stored for later use.
-        networkBuffer.retain();
         chunk = Content.Chunk.asChunk(buffer, false, networkBuffer);
         state = State.CONTENT;
         return true;

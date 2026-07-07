@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -131,7 +132,7 @@ public class CharacterEncodingTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
         String contentType = response.get("Content-Type");
         assertThat(contentType, not(containsString("null")));
         assertThat("Response Code", response.getStatus(), is(200));
@@ -147,7 +148,7 @@ public class CharacterEncodingTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
@@ -163,7 +164,7 @@ public class CharacterEncodingTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));

@@ -16,7 +16,6 @@ package org.eclipse.jetty.test.client.transport;
 import java.io.InterruptedIOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -45,6 +44,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -136,7 +136,7 @@ public class HttpClientDemandTest extends AbstractTest
                     response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 2);
                     Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{'A'}));
                     contentLatch.await();
-                    response.write(true, ByteBuffer.wrap(new byte[]{'B'}), callback);
+                    response.write(true, ReadableBuffer.wrap(new byte[]{'B'}), callback);
                 }
                 catch (InterruptedException x)
                 {
@@ -191,7 +191,7 @@ public class HttpClientDemandTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length);
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, ReadableBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -282,7 +282,7 @@ public class HttpClientDemandTest extends AbstractTest
                     response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 2);
                     Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{'A'}));
                     serverContentLatch.await();
-                    response.write(true, ByteBuffer.wrap(new byte[]{'B'}), callback);
+                    response.write(true, ReadableBuffer.wrap(new byte[]{'B'}), callback);
                 }
                 catch (InterruptedException x)
                 {
@@ -369,7 +369,7 @@ public class HttpClientDemandTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, bytes.length);
-                response.write(true, ByteBuffer.wrap(bytes), callback);
+                response.write(true, ReadableBuffer.wrap(bytes), callback);
                 return true;
             }
         });
@@ -493,7 +493,7 @@ public class HttpClientDemandTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length);
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, ReadableBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -703,7 +703,7 @@ public class HttpClientDemandTest extends AbstractTest
                     boolean last = ++count == totalBytes;
                     if (count > totalBytes)
                         return Action.SUCCEEDED;
-                    response.write(last, ByteBuffer.wrap(new byte[1]), this);
+                    response.write(last, ReadableBuffer.wrap(new byte[1]), this);
                     return Action.SCHEDULED;
                 }
             };

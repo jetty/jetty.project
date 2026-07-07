@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+
 /**
  * An empty trie implementation that never contains anything and never accepts new entries.
  *
@@ -103,6 +105,12 @@ class EmptyTrie<V> extends AbstractTrie<V>
 
     @Override
     public V getBest(ByteBuffer b, int offset, int len)
+    {
+        return null;
+    }
+
+    @Override
+    public V getBest(ReadableBuffer b, long offset, long len)
     {
         return null;
     }

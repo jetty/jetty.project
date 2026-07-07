@@ -46,6 +46,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Attachable;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
@@ -544,7 +545,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                     state = State.CONTENT;
                     return true;
                 }
-                case STD_ERR -> LOG.info(buffer.asString(UTF_8));
+                case STD_ERR -> LOG.info(BufferUtil.toString(buffer, UTF_8));
                 default -> throw new IllegalArgumentException();
             }
             return false;

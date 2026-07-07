@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.HuffmanDecoder;
@@ -449,7 +447,7 @@ public class HpackContextTest
             Entry entry = ctx.get(i);
             assertTrue(entry.isStatic());
 
-            ReadableBuffer buffer = ReadableBuffer.wrap(ByteBuffer.wrap(entry.getStaticHuffmanValue()));
+            ReadableBuffer buffer = ReadableBuffer.wrap(entry.getStaticHuffmanValue());
             int huff = 0xff & buffer.get();
             assertTrue((0x80 & huff) == 0x80);
 

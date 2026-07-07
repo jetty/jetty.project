@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -22,10 +21,10 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
@@ -87,11 +86,11 @@ public class StatisticsHandler extends EventsHandler
     }
 
     @Override
-    protected void onResponseWriteComplete(Request request, boolean last, ByteBuffer content, Throwable failure)
+    protected void onResponseWriteComplete(Request request, boolean last, ReadableBuffer content, Throwable failure)
     {
         if (failure == null)
         {
-            int length = BufferUtil.length(content);
+            long length = content == null ? 0L : content.remaining();
             if (length > 0)
                 _bytesWritten.add(length);
         }

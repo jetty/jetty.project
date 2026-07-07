@@ -531,7 +531,7 @@ public class HttpInputIntegrationTest
             String flush = buffer.toString();
             buffer.setLength(0);
             flushed.append(flush);
-            local.addInputAndExecute(BufferUtil.toBuffer(flush));
+            local.addInputAndExecute(BufferUtil.toReadableBuffer(flush));
         }
     }
 

@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.nested;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -28,6 +27,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,10 +133,10 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
         }
 
         @Override
-        public void write(ByteBuffer content, boolean last, Callback callback)
+        public void write(ReadableBuffer content, boolean last, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} write last={} {}", this, last, BufferUtil.toDetailString(content));
+                LOG.debug("{} write last={} {}", this, last, content);
 
             // If we are not committed, must decide if we should aggregate or not.
             if (_aggregating == null)
@@ -154,7 +154,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
             try
             {
-                if (BufferUtil.hasContent(content))
+                if (content != null && content.remaining() > 0L)
                     aggregate(content);
             }
             catch (Throwable t)
@@ -170,7 +170,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                 callback.succeeded();
         }
 
-        private void aggregate(ByteBuffer content) throws IOException
+        private void aggregate(ReadableBuffer content) throws IOException
         {
             if (_fileOutputStream == null)
             {
@@ -187,7 +187,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             if (_fileOutputStream == null)
             {
                 // We have no content to write, signal next interceptor that we are finished.
-                getNextInterceptor().write(BufferUtil.EMPTY_BUFFER, true, callback);
+                getNextInterceptor().write(ReadableBuffer.EMPTY, true, callback);
                 return;
             }
 

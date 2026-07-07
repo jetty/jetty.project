@@ -18,7 +18,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Stream;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -110,7 +110,7 @@ public class CompactPathRuleTest extends AbstractRuleTest
                 try (ByteArrayOutputStream out = new ByteArrayOutputStream())
                 {
                     props.store(out, "HttpURI State");
-                    response.write(true, ByteBuffer.wrap(out.toByteArray()), callback);
+                    response.write(true, ReadableBuffer.wrap(out.toByteArray()), callback);
                 }
                 catch (IOException e)
                 {

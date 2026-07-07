@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -58,7 +58,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * In this way, {@code StateTrackingHandler} can wrap the callback passed
  * to inner {@code Handler}s and verify that it is eventually completed.</p>
  * <p>On the other hand, to troubleshoot custom {@code Handler} implementations
- * that perform wrapping of {@link Response#write(boolean, ByteBuffer, Callback)},
+ * that perform wrapping of {@link Response#write(boolean, ReadableBuffer, Callback)},
  * a {@code StateTrackingHandler} should be configured after the custom
  * {@code Handler} implementation.
  * This is because the {@code write(...)} call propagates outwards.
@@ -145,7 +145,7 @@ public class StateTrackingHandler extends Handler.Wrapper
     }
 
     /**
-     * @return the timeout in ms for the execution of a {@link Response#write(boolean, ByteBuffer, Callback)} call
+     * @return the timeout in ms for the execution of a {@link Response#write(boolean, ReadableBuffer, Callback)} call
      */
     @ManagedAttribute("The timeout in ms for the execution of a response write")
     public long getWriteTimeout()
@@ -159,7 +159,7 @@ public class StateTrackingHandler extends Handler.Wrapper
     }
 
     /**
-     * @return the timeout in ms for the execution of the response write callback passed to {@link Response#write(boolean, ByteBuffer, Callback)}
+     * @return the timeout in ms for the execution of the response write callback passed to {@link Response#write(boolean, ReadableBuffer, Callback)}
      */
     @ManagedAttribute("The timeout in ms for the execution of the response write callback")
     public long getWriteCallbackTimeout()
@@ -421,7 +421,7 @@ public class StateTrackingHandler extends Handler.Wrapper
         }
 
         /**
-         * <p>Invoked when the {@link Response#write(boolean, ByteBuffer, Callback)} call
+         * <p>Invoked when the {@link Response#write(boolean, ReadableBuffer, Callback)} call
          * blocks for longer than the timeout specified with {@link #getWriteTimeout()}.</p>
          * <p>This event is enabled only when {@link #getWriteTimeout()} is non-{@code null}.</p>
          * <p>Note: the thread info stack trace of the thread that is writing may not be
@@ -429,7 +429,7 @@ public class StateTrackingHandler extends Handler.Wrapper
          * info was taken.</p>
          *
          * @param request the current request
-         * @param writeThreadInfo the thread info of the thread that called {@link Response#write(boolean, ByteBuffer, Callback)}
+         * @param writeThreadInfo the thread info of the thread that called {@link Response#write(boolean, ReadableBuffer, Callback)}
          * @param writingThreadInfo the thread info of the thread tht is writing
          */
         default void onWriteBlocked(Request request, ThreadInfo writeThreadInfo, ThreadInfo writingThreadInfo)
@@ -437,7 +437,7 @@ public class StateTrackingHandler extends Handler.Wrapper
         }
 
         /**
-         * <p>Invoked when the write callback passed to {@link Response#write(boolean, ByteBuffer, Callback)}
+         * <p>Invoked when the write callback passed to {@link Response#write(boolean, ReadableBuffer, Callback)}
          * is not completed for longer than the timeout specified with {@link #getWriteTimeout()}.</p>
          * <p>This event is enabled only when {@link #getWriteTimeout()} is non-{@code null}.</p>
          * <p>Note that the write might have been fully performed, but since the callback is not
@@ -446,14 +446,14 @@ public class StateTrackingHandler extends Handler.Wrapper
          *
          * @param request the current request
          * @param writeFailure the write failure, or {@code null} if the write succeeded
-         * @param writeThreadInfo the thread info of the thread that called {@link Response#write(boolean, ByteBuffer, Callback)}
+         * @param writeThreadInfo the thread info of the thread that called {@link Response#write(boolean, ReadableBuffer, Callback)}
          */
         default void onWriteCallbackNotCompleted(Request request, Throwable writeFailure, ThreadInfo writeThreadInfo)
         {
         }
 
         /**
-         * <p>Invoked when the write callback passed to {@link Response#write(boolean, ByteBuffer, Callback)}
+         * <p>Invoked when the write callback passed to {@link Response#write(boolean, ReadableBuffer, Callback)}
          * blocks for longer than the timeout specified with {@link #getWriteCallbackTimeout()}.</p>
          * <p>This event is enabled only when {@link #getWriteCallbackTimeout()} is non-{@code null}.</p>
          * <p>Note: the thread info stack trace of the thread that is running the write callback may not be
@@ -461,7 +461,7 @@ public class StateTrackingHandler extends Handler.Wrapper
          *
          * @param request the current request
          * @param writeFailure the write failure, or {@code null} if the write succeeded
-         * @param writeThreadInfo the thread info of the thread that called {@link Response#write(boolean, ByteBuffer, Callback)}
+         * @param writeThreadInfo the thread info of the thread that called {@link Response#write(boolean, ReadableBuffer, Callback)}
          * @param callbackThreadInfo the thread info of the thread invoking the write callback
          */
         default void onWriteCallbackBlocked(Request request, Throwable writeFailure, ThreadInfo writeThreadInfo, ThreadInfo callbackThreadInfo)
@@ -790,7 +790,7 @@ public class StateTrackingHandler extends Handler.Wrapper
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, ReadableBuffer byteBuffer, Callback callback)
         {
             WriteCallback writeCallback = new WriteCallback(callback);
             stateInfo.writeCallbacks.offer(writeCallback);

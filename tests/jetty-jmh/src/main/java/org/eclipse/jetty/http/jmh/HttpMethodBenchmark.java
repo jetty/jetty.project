@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http.jmh;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -41,9 +41,9 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Measurement(iterations = 5, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 public class HttpMethodBenchmark
 {
-    private static final ByteBuffer GET = BufferUtil.toBuffer("GET / HTTP/1.1\r\n\r\n");
-    private static final ByteBuffer POST = BufferUtil.toBuffer("POST / HTTP/1.1\r\n\r\n");
-    private static final ByteBuffer MOVE = BufferUtil.toBuffer("MOVE / HTTP/1.1\r\n\r\n");
+    private static final ReadableBuffer GET = BufferUtil.toReadableBuffer("GET / HTTP/1.1\r\n\r\n");
+    private static final ReadableBuffer POST = BufferUtil.toReadableBuffer("POST / HTTP/1.1\r\n\r\n");
+    private static final ReadableBuffer MOVE = BufferUtil.toReadableBuffer("MOVE / HTTP/1.1\r\n\r\n");
     private static final Map<String, HttpMethod> MAP = new HashMap<>();
 
     static

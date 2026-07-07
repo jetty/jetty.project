@@ -109,6 +109,12 @@ public class TLSHandshakeFailureTest extends AbstractTest
                                     action.accept(sslEngine);
                                 return super.wrap(sslEngine, input, output);
                             }
+
+                            @Override
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                            {
+                                return wrap(sslEngine, new ByteBuffer[]{input}, output);
+                            }
                         };
                     }
                 };

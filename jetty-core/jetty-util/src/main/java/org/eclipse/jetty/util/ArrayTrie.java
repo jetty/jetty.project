@@ -20,6 +20,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+
 /**
  * <p>A Trie String lookup data structure using a fixed size array.</p>
  * <p>This implementation is always case insensitive and is optimal for
@@ -388,7 +390,13 @@ class ArrayTrie<V> extends AbstractTrie<V>
     public V getBest(ByteBuffer b, int offset, int len)
     {
         if (b.hasArray())
-            return getBest(0, b.array(), b.arrayOffset() + b.position() + offset, len);
+            return getBest(0, b.array(), b.arrayOffset() + b.position() + offset, Math.toIntExact(len));
+        return getBest(0, ReadableBuffer.wrap(b), offset, len);
+    }
+
+    @Override
+    public V getBest(ReadableBuffer b, long offset, long len)
+    {
         return getBest(0, b, offset, len);
     }
 
@@ -451,12 +459,13 @@ class ArrayTrie<V> extends AbstractTrie<V>
         return node == null ? null : node._value;
     }
 
-    private V getBest(int row, ByteBuffer b, int offset, int len)
+    private V getBest(int row, ReadableBuffer b, long offset, long len)
     {
-        int pos = b.position() + offset;
+        long pos = b.position() + offset;
         for (int i = 0; i < len; i++)
         {
-            if (pos >= b.limit())
+            long limit = b.position() + b.remaining();
+            if (pos >= limit)
                 return null;
 
             byte c = b.get(pos++);

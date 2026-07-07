@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -177,7 +176,7 @@ public class FrameFloodTest
 
         if (preamble != null)
         {
-            ReadableBuffer buffer = ReadableBuffer.wrap(ByteBuffer.wrap(preamble));
+            ReadableBuffer buffer = ReadableBuffer.wrap(preamble);
             while (buffer.remaining() > 0L)
             {
                 parser.parse(buffer);
@@ -187,7 +186,7 @@ public class FrameFloodTest
         int count = 0;
         while (failed.get() == 0)
         {
-            ReadableBuffer buffer = ReadableBuffer.wrap(ByteBuffer.wrap(bytes));
+            ReadableBuffer buffer = ReadableBuffer.wrap(bytes);
             while (buffer.remaining() > 0L)
             {
                 parser.parse(buffer);

@@ -113,8 +113,9 @@ public class HpackPerfTest
                         _unencodedSize += e.getKey().length() + e.getValue().length();
                     }
 
+                    buffer.position(0);
                     encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, fields));
-                    _encodedSize += buffer.remaining();
+                    _encodedSize += buffer.position();
                 }
             }
         }

@@ -183,13 +183,13 @@ public class SizeLimitHandlerServletTest
 
         try (Blocker.Callback callback = Blocker.callback())
         {
-            asyncRequestContent.write(false, BufferUtil.toBuffer(content), callback);
+            asyncRequestContent.write(false, BufferUtil.toReadableBuffer(content), callback);
             asyncRequestContent.flush();
             callback.block();
         }
         try (Blocker.Callback callback = Blocker.callback())
         {
-            asyncRequestContent.write(true, BufferUtil.toBuffer(content), callback);
+            asyncRequestContent.write(true, BufferUtil.toReadableBuffer(content), callback);
             asyncRequestContent.flush();
             callback.block();
         }

@@ -95,6 +95,7 @@ public class HpackEncoderTest
         {
             ReadableBuffer rb = wb.toReadable();
             assertThat(rb.remaining(), Matchers.greaterThan(0L));
+            rb.toWritable();
         }
 
         // max dynamic table size reached
@@ -274,16 +275,15 @@ public class HpackEncoderTest
         {
             ReadableBuffer rb = buffer.toReadable();
             assertThat(rb.remaining(), Matchers.greaterThan(0L));
-            rb.toWritable();
 
             // check first field is static index name and dynamic index body
-            assertThat((rb.get(buffer0.remaining()) & 0xFF) >> 6, equalTo(1));
+            assertThat((rb.get(buffer0.toReadable().remaining()) & 0xFF) >> 6, equalTo(1));
 
             // check first field is static index name and literal body
-            assertThat((rb.get(buffer1.remaining()) & 0xFF) >> 4, equalTo(0));
+            assertThat((rb.get(buffer1.toReadable().remaining()) & 0xFF) >> 4, equalTo(0));
 
             // check first field is static index name and dynamic index body
-            assertThat((rb.get(buffer2.remaining()) & 0xFF) >> 6, equalTo(1));
+            assertThat((rb.get(buffer2.toReadable().remaining()) & 0xFF) >> 6, equalTo(1));
         }
 
         // Only first and third fields are put in the table

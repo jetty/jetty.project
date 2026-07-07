@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -141,12 +142,12 @@ public class HandlerClientServerTest extends AbstractClientServerTest
 
         byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
-        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> stream.data(new DataFrame(ByteBuffer.wrap(bytes, 0, bytes.length / 2), false), new Promise.Invocable.NonBlocking<>()
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> stream.data(new DataFrame(ReadableBuffer.wrap(bytes, 0, bytes.length / 2), false), new Promise.Invocable.NonBlocking<>()
         {
             @Override
             public void succeeded(Stream result)
             {
-                result.data(new DataFrame(ByteBuffer.wrap(bytes, bytes.length / 2, bytes.length / 2), true), p);
+                result.data(new DataFrame(ReadableBuffer.wrap(bytes, bytes.length / 2, bytes.length / 2), true), p);
             }
         }));
 

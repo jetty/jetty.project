@@ -193,7 +193,7 @@ public class NetworkTrafficListenerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, UTF_8.encode(responseContent), callback);
+                response.write(true, ReadableBuffer.wrap(UTF_8.encode(responseContent)), callback);
                 return true;
             }
         });

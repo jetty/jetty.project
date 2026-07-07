@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -412,7 +412,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, ReadableBuffer byteBuffer, Callback callback)
         {
             if (!_writeCallback.compareAndSet(null, Objects.requireNonNull(callback)))
                 throw new WritePendingException();

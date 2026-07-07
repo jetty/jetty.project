@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -148,11 +149,9 @@ public class HttpFieldsTest
             .add("name1", "value:B")
             .add("name2", "");
 
-        ByteBuffer buffer = BufferUtil.allocate(1024);
-        BufferUtil.flipToFill(buffer);
+        WritableBuffer buffer = WritableBuffer.allocate(1024, false);
         HttpGenerator.putTo(header, buffer);
-        BufferUtil.flipToFlush(buffer, 0);
-        String result = BufferUtil.toString(buffer);
+        String result = BufferUtil.toString(buffer.toReadable());
 
         assertThat(result, Matchers.containsString("name0: value0"));
         assertThat(result, Matchers.containsString("name1: value:A"));
@@ -424,11 +423,9 @@ public class HttpFieldsTest
         header.put("name\r\n1", "value1");
         header.put("name:2", "value:\r\n2");
 
-        ByteBuffer buffer = BufferUtil.allocate(1024);
-        BufferUtil.flipToFill(buffer);
+        WritableBuffer buffer = WritableBuffer.allocate(1024, false);
         HttpGenerator.putTo(header, buffer);
-        BufferUtil.flipToFlush(buffer, 0);
-        String out = BufferUtil.toString(buffer);
+        String out = BufferUtil.toString(buffer.toReadable());
         assertThat(out, containsString("name0: value  0"));
         assertThat(out, containsString("name..1: value1"));
         assertThat(out, containsString("name.2: value:  2"));
@@ -442,11 +439,9 @@ public class HttpFieldsTest
         header.put("tRansfer-EncOding", "CHUNKED");
         header.put("CONTENT-ENCODING", "gZIP");
 
-        ByteBuffer buffer = BufferUtil.allocate(1024);
-        BufferUtil.flipToFill(buffer);
+        WritableBuffer buffer = WritableBuffer.allocate(1024, false);
         HttpGenerator.putTo(header, buffer);
-        BufferUtil.flipToFlush(buffer, 0);
-        String out = BufferUtil.toString(buffer).toLowerCase(Locale.ENGLISH);
+        String out = BufferUtil.toString(buffer.toReadable()).toLowerCase(Locale.ENGLISH);
 
         assertThat(out, Matchers.containsString((HttpHeader.CONNECTION + ": " + HttpHeaderValue.KEEP_ALIVE).toLowerCase(Locale.ENGLISH)));
         assertThat(out, Matchers.containsString((HttpHeader.TRANSFER_ENCODING + ": " + HttpHeaderValue.CHUNKED).toLowerCase(Locale.ENGLISH)));

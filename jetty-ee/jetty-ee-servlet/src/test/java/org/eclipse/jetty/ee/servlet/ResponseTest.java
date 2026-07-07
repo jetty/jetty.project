@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -106,7 +107,7 @@ public class ResponseTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = _connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Type"), is("text/plain; charset=US-ASCII"));
@@ -143,7 +144,7 @@ public class ResponseTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = _connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat(response.getStatus(), is(410));
         assertThat(response.get("Content-Type"), equalToIgnoringCase("text/html;charset=iso-8859-1"));
@@ -199,7 +200,7 @@ public class ResponseTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = _connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
 
@@ -312,7 +313,7 @@ public class ResponseTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = _connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat(response.getStatus(), is(code == 0 ? HttpStatus.FOUND_302 : code));
 
@@ -466,7 +467,7 @@ public class ResponseTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = _connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Type"), is("text/plain; charset=US-ASCII"));
