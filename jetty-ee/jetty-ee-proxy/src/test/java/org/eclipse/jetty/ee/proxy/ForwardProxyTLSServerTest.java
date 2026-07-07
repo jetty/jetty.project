@@ -17,7 +17,6 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.Principal;
@@ -63,6 +62,7 @@ import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -544,7 +544,7 @@ public class ForwardProxyTLSServerTest
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                     response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
-                    response.write(true, ByteBuffer.allocate(4096), callback);
+                    response.write(true, ReadableBuffer.allocate(4096, false), callback);
                     return true;
                 }
                 return super.handle(request, response, callback);
@@ -567,7 +567,7 @@ public class ForwardProxyTLSServerTest
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                     response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
-                    response.write(true, ByteBuffer.allocate(1024), callback);
+                    response.write(true, ReadableBuffer.allocate(1024, false), callback);
                     return true;
                 }
                 return super.handle(request, response, callback);

@@ -37,6 +37,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -140,7 +141,7 @@ public class ResponseTest
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, ReadableBuffer byteBuffer, Callback callback)
         {
 
         }
@@ -374,7 +375,7 @@ public class ResponseTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat(response.getStatus(), is(code == 0 ? HttpStatus.FOUND_302 : code));
 

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -29,6 +28,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -215,7 +215,7 @@ public class StatisticsHandlerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 // Do not explicitly set status to 200.
-                response.write(true, ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)), callback);
+                response.write(true, ReadableBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)), callback);
                 return true;
             }
         });

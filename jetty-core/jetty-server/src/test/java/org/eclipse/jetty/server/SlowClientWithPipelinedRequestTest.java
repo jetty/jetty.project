@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,6 +24,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -93,7 +93,7 @@ public class SlowClientWithPipelinedRequestTest
                     // Since the test is via localhost, we need a really big buffer to stall the write
                     byte[] bytes = new byte[contentLength];
                     Arrays.fill(bytes, (byte)'9');
-                    ByteBuffer buffer = ByteBuffer.wrap(bytes);
+                    ReadableBuffer buffer = ReadableBuffer.wrap(bytes);
                     // Do a non blocking write
                     response.write(true, buffer, callback);
                 }

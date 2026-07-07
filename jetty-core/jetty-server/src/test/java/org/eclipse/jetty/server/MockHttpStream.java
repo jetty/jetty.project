@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 public class MockHttpStream implements HttpStream
 {
@@ -160,7 +162,7 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
     {
         if (response != null)
         {
@@ -180,7 +182,16 @@ public class MockHttpStream implements HttpStream
         }
 
         if (content != null)
-            _accumulator.append(content);
+        {
+            try
+            {
+                content.writeTo(_accumulator::append);
+            }
+            catch (IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
+        }
 
         if (last)
         {

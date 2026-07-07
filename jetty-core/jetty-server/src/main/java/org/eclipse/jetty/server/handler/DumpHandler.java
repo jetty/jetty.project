@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -219,7 +220,7 @@ public class DumpHandler extends Handler.Abstract
 
             try (Blocker.Callback blocker = _blocker.callback())
             {
-                response.write(false, BufferUtil.toBuffer(buf.toByteArray()), blocker);
+                response.write(false, ReadableBuffer.wrap(BufferUtil.toBuffer(buf.toByteArray())), blocker);
                 blocker.block();
             }
             response.getHeaders().add("After-Flush", "These headers should not be seen in the response!!!");
@@ -231,7 +232,7 @@ public class DumpHandler extends Handler.Abstract
 
             try (Blocker.Callback blocker = _blocker.callback())
             {
-                response.write(true, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)), blocker);
+                response.write(true, ReadableBuffer.wrap(BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1))), blocker);
                 blocker.block();
             }
 

@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -479,10 +479,10 @@ public class FileBufferedResponseHandlerTest
         HttpTester.Response response = new HttpTester.Response()
         {
             @Override
-            public boolean content(ByteBuffer ref)
+            public boolean content(ReadableBuffer ref)
             {
                 // Verify the content is what was sent.
-                while (ref.hasRemaining())
+                while (ref.remaining() > 0L)
                 {
                     byte byteFromBuffer = ref.get();
                     long totalReceived = received.getAndIncrement();
@@ -541,7 +541,7 @@ public class FileBufferedResponseHandlerTest
                 httpOutput.setInterceptor(new HttpOutput.Interceptor()
                 {
                     @Override
-                    public void write(ByteBuffer content, boolean last, Callback callback)
+                    public void write(ReadableBuffer content, boolean last, Callback callback)
                     {
                         callback.failed(new Throwable("intentionally throwing from interceptor"));
                     }

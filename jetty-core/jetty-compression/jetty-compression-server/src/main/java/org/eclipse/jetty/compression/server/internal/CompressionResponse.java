@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.compression.server.internal;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.compression.Compression;
@@ -27,8 +26,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +93,7 @@ public class CompressionResponse extends Response.Wrapper
     }
 
     @Override
-    public void write(boolean last, ByteBuffer content, Callback callback)
+    public void write(boolean last, ReadableBuffer content, Callback callback)
     {
         HttpFields.Mutable headers = getHeaders();
 
@@ -155,7 +154,7 @@ public class CompressionResponse extends Response.Wrapper
                 }
 
                 // If there is nothing to write, don't compress.
-                if (last && BufferUtil.isEmpty(content))
+                if (last && (content == null || content.remaining() == 0L))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("no compression, nothing to write {}", this);
@@ -166,7 +165,7 @@ public class CompressionResponse extends Response.Wrapper
 
                 long contentLength = headers.getLongField(HttpHeader.CONTENT_LENGTH);
                 if (contentLength < 0 && last)
-                    contentLength = BufferUtil.length(content);
+                    contentLength = content.remaining();
                 if (contentLength >= 0 && contentLength < compression.getMinCompressSize())
                 {
                     if (LOG.isDebugEnabled())

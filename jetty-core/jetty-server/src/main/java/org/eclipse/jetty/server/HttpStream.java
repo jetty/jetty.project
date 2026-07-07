@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
@@ -22,6 +20,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConstantThrowable;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 /**
  * A HttpStream is an abstraction that together with {@link MetaData.Request}, represents the
@@ -80,16 +79,16 @@ public interface HttpStream extends Callback
      * @param content A buffer of content to send or null if no content.
      * @param callback The callback to invoke when the send is completed successfully or in failure.
      */
-    void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback);
+    void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback);
 
     /**
-     * Cancel any {@link #send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)} call in progress.
+     * Cancel any {@link #send(MetaData.Request, MetaData.Response, boolean, ReadableBuffer, Callback)} call in progress.
      *
      * @param cause The cause of the cancellation
      * @param appCallback The callback to ultimately {@link Callback#failed(Throwable) fail} after the cancellation
      * @return A {@link Runnable} that will be {@link Runnable#run() run} to complete the
      *         cancellation and will, in turn, ultimately fail both the passed {@link Callback} and any {@link Callback}
-     *         that was passed to the {@link #send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)}
+     *         that was passed to the {@link #send(MetaData.Request, MetaData.Response, boolean, ReadableBuffer, Callback)}
      *         method.
      */
     Runnable cancelSend(Throwable cause, Callback appCallback);
@@ -197,7 +196,7 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+        public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
         {
             getWrapped().send(request, response, last, content, callback);
         }

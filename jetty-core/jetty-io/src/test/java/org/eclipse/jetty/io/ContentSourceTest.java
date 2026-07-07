@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -113,8 +114,8 @@ public class ContentSourceTest
         AsyncContent asyncSource = new AsyncContent();
         try (asyncSource)
         {
-            asyncSource.write(false, UTF_8.encode("one"), Callback.NOOP);
-            asyncSource.write(false, UTF_8.encode("two"), Callback.NOOP);
+            asyncSource.write(false, ReadableBuffer.wrap(UTF_8.encode("one")), Callback.NOOP);
+            asyncSource.write(false, ReadableBuffer.wrap(UTF_8.encode("two")), Callback.NOOP);
         }
 
         ByteBufferContentSource byteBufferSource = new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"));

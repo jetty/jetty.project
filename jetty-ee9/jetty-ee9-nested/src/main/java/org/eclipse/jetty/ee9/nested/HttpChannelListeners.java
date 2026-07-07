@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 
 import org.eclipse.jetty.server.AbstractConnector;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +77,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
                     onDispatchFailure = combine(onDispatchFailure, listener::onDispatchFailure);
                 if (!listener.getClass().getMethod("onAfterDispatch", Request.class).isDefault())
                     onAfterDispatch = combine(onAfterDispatch, listener::onAfterDispatch);
-                if (!listener.getClass().getMethod("onRequestContent", Request.class, ByteBuffer.class).isDefault())
+                if (!listener.getClass().getMethod("onRequestContent", Request.class, ReadableBuffer.class).isDefault())
                     onRequestContent = combine(onRequestContent, listener::onRequestContent);
                 if (!listener.getClass().getMethod("onRequestContentEnd", Request.class).isDefault())
                     onRequestContentEnd = combine(onRequestContentEnd, listener::onRequestContentEnd);
@@ -91,7 +91,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
                     onResponseBegin = combine(onResponseBegin, listener::onResponseBegin);
                 if (!listener.getClass().getMethod("onResponseCommit", Request.class).isDefault())
                     onResponseCommit = combine(onResponseCommit, listener::onResponseCommit);
-                if (!listener.getClass().getMethod("onResponseContent", Request.class, ByteBuffer.class).isDefault())
+                if (!listener.getClass().getMethod("onResponseContent", Request.class, ReadableBuffer.class).isDefault())
                     onResponseContent = combine(onResponseContent, listener::onResponseContent);
                 if (!listener.getClass().getMethod("onResponseEnd", Request.class).isDefault())
                     onResponseEnd = combine(onResponseEnd, listener::onResponseEnd);
@@ -148,7 +148,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
     }
 
     @Override
-    public void onRequestContent(Request request, ByteBuffer content)
+    public void onRequestContent(Request request, ReadableBuffer content)
     {
         onRequestContent.onContent(request, content);
     }
@@ -190,7 +190,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
     }
 
     @Override
-    public void onResponseContent(Request request, ByteBuffer content)
+    public void onResponseContent(Request request, ReadableBuffer content)
     {
         onResponseContent.onContent(request, content);
     }
@@ -233,7 +233,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
 
     private interface NotifyContent
     {
-        void onContent(Request request, ByteBuffer content);
+        void onContent(Request request, ReadableBuffer content);
 
         NotifyContent NOOP = (request, content) ->
         {

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.fcgi.proxy;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -159,7 +159,7 @@ public class FastCGIProxyHandlerTest
                 assertNotEquals(proxyContext.getContextPath(), request.getContext().getContextPath());
                 assertEquals(path, Request.getPathInContext(request));
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -249,7 +249,7 @@ public class FastCGIProxyHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, ReadableBuffer.wrap(content), callback);
                 return true;
             }
         });

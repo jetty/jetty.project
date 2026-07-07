@@ -191,7 +191,7 @@ public class PrefaceTest extends AbstractTest
                 int read = socket.getInputStream().read(buffer);
                 if (read < 0)
                     break;
-                parser.parse(ReadableBuffer.wrap(ByteBuffer.wrap(buffer, 0, read)));
+                parser.parse(ReadableBuffer.wrap(buffer, 0, read));
                 if (closed.get())
                     break;
             }

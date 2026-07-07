@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -47,7 +48,7 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().add(HttpHeader.CONTENT_ENCODING, "UPPERCASE");
-                response.write(true, ByteBuffer.wrap("**THE ANSWER IS FORTY TWO**".getBytes(US_ASCII)), callback);
+                response.write(true, ReadableBuffer.wrap("**THE ANSWER IS FORTY TWO**".getBytes(US_ASCII)), callback);
                 return true;
             }
         });
@@ -103,7 +104,7 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().add(HttpHeader.CONTENT_ENCODING, "UPPERCASE");
-                response.write(true, ByteBuffer.wrap("THE ANSWER IS FORTY TWO".getBytes(US_ASCII)), callback);
+                response.write(true, ReadableBuffer.wrap("THE ANSWER IS FORTY TWO".getBytes(US_ASCII)), callback);
                 return true;
             }
         });

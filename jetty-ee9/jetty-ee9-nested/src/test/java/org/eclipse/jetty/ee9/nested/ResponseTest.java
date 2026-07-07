@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.ee9.nested;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -77,6 +77,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
@@ -1861,16 +1862,16 @@ public class ResponseTest
 
             try (Socket socket = new Socket("localhost", ((NetworkConnector)server.getConnectors()[0]).getLocalPort()))
             {
-                socket.setSoTimeout(500000);
+                socket.setSoTimeout(5000);
                 socket.getOutputStream().write("HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes());
                 socket.getOutputStream().write("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes());
                 socket.getOutputStream().flush();
 
-                LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 String line = reader.readLine();
                 assertThat(line, startsWith("HTTP/1.1 200 OK"));
                 // look for blank line
-                while (line != null && line.length() > 0)
+                while (line != null && !line.isEmpty())
                 {
                     line = reader.readLine();
                 }
@@ -2461,10 +2462,14 @@ public class ResponseTest
         }
 
         @Override
-        public void write(boolean last, ByteBuffer content, Callback callback)
+        public void write(boolean last, ReadableBuffer content, Callback callback)
         {
             if (content != null)
-                BufferUtil.append(_content, content);
+            {
+                int pos = BufferUtil.flipToFill(_content);
+                BufferUtil.put(content, _content);
+                BufferUtil.flipToFlush(_content, pos);
+            }
             _committed = true;
             _last |= last;
             callback.succeeded();

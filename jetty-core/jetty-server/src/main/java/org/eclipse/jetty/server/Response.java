@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,7 +116,7 @@ public interface Response extends Content.Sink
     /**
      * <p>Returns whether the last write has been initiated on the response.</p>
      *
-     * @return {@code true} if {@code last==true} has been passed to {@link #write(boolean, ByteBuffer, Callback)}.
+     * @return {@code true} if {@code last==true} has been passed to {@link #write(boolean, ReadableBuffer, Callback)}.
      */
     boolean hasLastWrite();
 
@@ -162,11 +163,11 @@ public interface Response extends Content.Sink
      * of a future call to this method.</p>
      *
      * @param last whether the ByteBuffer is the last to write
-     * @param byteBuffer the ByteBuffer to write
+     * @param buffer the ReadableBuffer to write
      * @param callback the callback to notify when the write operation is complete
      */
     @Override
-    void write(boolean last, ByteBuffer byteBuffer, Callback callback);
+    void write(boolean last, ReadableBuffer buffer, Callback callback);
 
     /**
      * <p>Returns a chunk processor suitable to be passed to the
@@ -393,7 +394,7 @@ public interface Response extends Content.Sink
 
             response.getHeaders().put(HttpHeader.LOCATION, location);
             response.setStatus(code);
-            response.write(true, content, callback);
+            response.write(true, ReadableBuffer.wrap(content), callback);
         }
         catch (Throwable failure)
         {
@@ -836,7 +837,7 @@ public interface Response extends Content.Sink
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, ReadableBuffer byteBuffer, Callback callback)
         {
             getWrapped().write(last, byteBuffer, callback);
         }

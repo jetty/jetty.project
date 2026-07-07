@@ -13,15 +13,15 @@
 
 package org.eclipse.jetty.http3.frames;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 public class DataFrame extends Frame
 {
-    private final ByteBuffer data;
+    private final ReadableBuffer data;
     private final boolean last;
-    private final int length;
+    private final long length;
 
-    public DataFrame(ByteBuffer data, boolean last)
+    public DataFrame(ReadableBuffer data, boolean last)
     {
         super(FrameType.DATA);
         this.data = data;
@@ -29,7 +29,7 @@ public class DataFrame extends Frame
         this.length = data.remaining();
     }
 
-    public ByteBuffer getByteBuffer()
+    public ReadableBuffer getByteBuffer()
     {
         return data;
     }

@@ -98,7 +98,7 @@ public class SlowClientsTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toBuffer(contentLength), callback);
+                response.write(true, BufferUtil.toReadableBuffer("" + contentLength), callback);
                 return true;
             }
         });

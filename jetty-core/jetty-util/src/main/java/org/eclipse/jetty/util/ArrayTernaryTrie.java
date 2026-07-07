@@ -20,6 +20,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+
 /**
  * <p>A Ternary Trie String lookup data structure.</p>
  * <p>
@@ -312,6 +314,12 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
     {
         if (b.hasArray())
             return getBest(0, b.array(), b.arrayOffset() + b.position() + offset, len);
+        return getBest(0, ReadableBuffer.wrap(b), offset, len);
+    }
+
+    @Override
+    public V getBest(ReadableBuffer b, long offset, long len)
+    {
         return getBest(0, b, offset, len);
     }
 
@@ -364,15 +372,15 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
         return _value[node];
     }
 
-    private V getBest(int t, ByteBuffer b, int offset, int len)
+    private V getBest(int t, ReadableBuffer b, long offset, long len)
     {
         int node = t;
-        int o = offset + b.position();
+        long o = offset + b.position();
 
         loop:
         for (int i = 0; i < len; i++)
         {
-            if (o + i >= b.limit())
+            if (o + i >= b.position() + b.remaining())
                 return null;
 
             byte c = (byte)(b.get(o + i) & 0x7f);

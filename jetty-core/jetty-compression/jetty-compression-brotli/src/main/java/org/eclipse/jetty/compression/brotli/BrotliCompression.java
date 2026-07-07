@@ -16,7 +16,6 @@ package org.eclipse.jetty.compression.brotli;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteOrder;
 import java.util.List;
 import java.util.Objects;
 
@@ -34,7 +33,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 
 /**
  * Brotli Compression.
@@ -62,10 +61,12 @@ public class BrotliCompression extends Compression
     }
 
     @Override
-    public RetainableByteBuffer.Mutable acquireByteBuffer(int length)
+    public WritableBuffer acquireBuffer(int length)
     {
-        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, true);
-        buffer.getByteBuffer().order(getByteOrder());
+        WritableBuffer buffer = getBufferPool().acquire(length, true);
+        // Per https://datatracker.ietf.org/doc/html/rfc7932#section-1.5
+        // Brotli is LITTLE_ENDIAN
+        buffer.byteOrder(true);
         return buffer;
     }
 
@@ -150,12 +151,5 @@ public class BrotliCompression extends Compression
     {
         BrotliEncoderConfig brotliEncoderConfig = (BrotliEncoderConfig)config;
         this.defaultEncoderConfig = Objects.requireNonNull(brotliEncoderConfig);
-    }
-
-    private ByteOrder getByteOrder()
-    {
-        // Per https://datatracker.ietf.org/doc/html/rfc7932#section-1.5
-        // Brotli is LITTLE_ENDIAN
-        return ByteOrder.LITTLE_ENDIAN;
     }
 }

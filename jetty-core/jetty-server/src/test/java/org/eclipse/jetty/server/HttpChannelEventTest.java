@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
@@ -99,7 +100,7 @@ public class HttpChannelEventTest
         assertTrue(listenerLatch.await(5, TimeUnit.SECONDS));
         assertTrue(applicationLatch.await(5, TimeUnit.SECONDS));
 
-        HttpTester.Response response = HttpTester.parseResponse(buffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(buffer));
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 

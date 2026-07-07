@@ -17,6 +17,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +65,7 @@ public class ContentCopier extends IteratingNestedCallback
             return Action.SCHEDULED;
         }
 
-        sink.write(chunk.isLast(), chunk.getByteBuffer(), this);
+        sink.write(chunk.isLast(), ReadableBuffer.wrap(chunk.getByteBuffer()), this);
         return Action.SCHEDULED;
     }
 

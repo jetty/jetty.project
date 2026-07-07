@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 /**
  * Testing utility for performing RAW HTTP request/response.
@@ -117,7 +118,7 @@ public class HttpTesting
         ByteBuffer buffer = BufferUtil.toBuffer(string);
         while (BufferUtil.hasContent(buffer))
         {
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
+            HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(buffer));
             if (response == null)
                 break;
             list.add(response);
@@ -208,7 +209,7 @@ public class HttpTesting
         ByteBuffer buffer = BufferUtil.toBuffer(r);
         while (BufferUtil.hasContent(buffer))
         {
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
+            HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(buffer));
             if (response == null)
                 break;
             list.add(response);

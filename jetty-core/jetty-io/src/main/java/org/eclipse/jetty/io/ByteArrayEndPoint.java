@@ -239,22 +239,17 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     public void addInput(String s)
     {
-        addInput(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
+        addInput(BufferUtil.toReadableBuffer(s, StandardCharsets.UTF_8));
     }
 
     public void addInput(String s, Charset charset)
     {
-        addInput(BufferUtil.toBuffer(s, charset));
+        addInput(BufferUtil.toReadableBuffer(s, charset));
     }
 
     public void addInputAndExecute(String s)
     {
-        addInputAndExecute(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
-    }
-
-    public void addInputAndExecute(ByteBuffer in)
-    {
-        addInputAndExecute(in == null ? null : ReadableBuffer.wrap(in));
+        addInputAndExecute(BufferUtil.toReadableBuffer(s, StandardCharsets.UTF_8));
     }
 
     public void addInputAndExecute(ReadableBuffer in)

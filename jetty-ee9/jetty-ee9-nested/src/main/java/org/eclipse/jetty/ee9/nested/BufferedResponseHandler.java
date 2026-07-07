@@ -14,8 +14,8 @@
 package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -227,10 +228,10 @@ public class BufferedResponseHandler extends HandlerWrapper
         }
 
         @Override
-        public void write(ByteBuffer content, boolean last, Callback callback)
+        public void write(ReadableBuffer content, boolean last, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} write last={} {}", this, last, BufferUtil.toDetailString(content));
+                LOG.debug("{} write last={} {}", this, last, content);
 
             // If we are not committed, have to decide if we should aggregate or not.
             if (_aggregating == null)
@@ -246,16 +247,21 @@ public class BufferedResponseHandler extends HandlerWrapper
             if (last)
             {
                 // Add the current content to the buffer list without a copy.
-                if (BufferUtil.length(content) > 0)
+                if (content != null && content.remaining() > 0L)
                 {
                     if (_aggregate == null)
                     {
                         getNextInterceptor().write(content, true, callback);
                         return;
                     }
-                    RetainableByteBuffer retainable = RetainableByteBuffer.wrap(content, () -> {});
-                    _aggregate.append(retainable);
-                    retainable.release();
+                    try
+                    {
+                        content.writeTo(_aggregate::append);
+                    }
+                    catch (IOException e)
+                    {
+                        throw new UncheckedIOException(e);
+                    }
                 }
 
                 if (LOG.isDebugEnabled())
@@ -267,12 +273,24 @@ public class BufferedResponseHandler extends HandlerWrapper
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} aggregating", this);
 
-                while (BufferUtil.hasContent(content))
+                while (content != null && content.remaining() > 0L)
                 {
                     if (_aggregate == null)
-                        _aggregate = new RetainableByteBuffer.DynamicCapacity(_channel.getByteBufferPool(), false, -1, Math.max(_channel.getHttpConfiguration().getOutputBufferSize(), BufferUtil.length(content)));
+                    {
+                        int max = Math.max(_channel.getHttpConfiguration().getOutputBufferSize(), content.remaining() >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int)content.remaining());
+                        _aggregate = new RetainableByteBuffer.DynamicCapacity(_channel.getByteBufferPool(), false, -1, max);
+                    }
 
-                    if (!_aggregate.append(content))
+                    try
+                    {
+                        content.writeTo(_aggregate::append);
+                    }
+                    catch (IOException e)
+                    {
+                        throw new UncheckedIOException(e);
+                    }
+
+                    if (content.remaining() > 0L)
                     {
                         _aggregate.release();
                         _aggregate = null;
@@ -287,7 +305,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         private void commit(Callback callback)
         {
             if (_aggregate == null)
-                getNextInterceptor().write(BufferUtil.EMPTY_BUFFER, true, callback);
+                getNextInterceptor().write(ReadableBuffer.EMPTY, true, callback);
             else
                 _aggregate.writeTo(getNextInterceptor(), true, Callback.from(this::completed, callback));
         }

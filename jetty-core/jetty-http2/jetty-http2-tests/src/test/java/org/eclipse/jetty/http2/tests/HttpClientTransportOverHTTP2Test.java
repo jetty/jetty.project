@@ -283,13 +283,13 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                Callback.Completable.with(c -> response.write(false, ByteBuffer.allocate(1), c))
+                Callback.Completable.with(c -> response.write(false, ReadableBuffer.allocate(1, false), c))
                     .whenComplete((r, x) ->
                     {
                         if (x != null)
                             callback.failed(x);
                         else
-                            response.write(true, ByteBuffer.allocate(2), callback);
+                            response.write(true, ReadableBuffer.allocate(2, false), callback);
                     });
                 return true;
             }
@@ -719,7 +719,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                     {
                         int read = input.read(bytes);
                         assertThat(read, greaterThanOrEqualTo(0));
-                        parser.parse(ReadableBuffer.wrap(ByteBuffer.wrap(bytes, 0, read)));
+                        parser.parse(ReadableBuffer.wrap(bytes, 0, read));
                     }
                     catch (SocketTimeoutException x)
                     {
@@ -758,7 +758,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 MetaData.Response response = new MetaData.Response(HttpStatus.NO_CONTENT_204, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
                 stream.headers(responseFrame)
-                    .thenAccept(s -> s.data(ReadableBuffer.wrap(ByteBuffer.wrap(bytes)), true));
+                    .thenAccept(s -> s.data(ReadableBuffer.wrap(bytes), true));
                 return null;
             }
         });
@@ -790,7 +790,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
                 byte[] bytes = "hello".getBytes(StandardCharsets.US_ASCII);
                 stream.headers(responseFrame)
-                    .thenAccept(s -> s.data(ReadableBuffer.wrap(ByteBuffer.wrap(bytes)), true));
+                    .thenAccept(s -> s.data(ReadableBuffer.wrap(bytes), true));
                 return null;
             }
         });
@@ -820,7 +820,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
                 stream.headers(responseFrame)
-                    .thenAccept(s -> s.data(ReadableBuffer.wrap(ByteBuffer.wrap(new byte[bytes])), true));
+                    .thenAccept(s -> s.data(ReadableBuffer.wrap(new byte[bytes]), true));
                 return null;
             }
         });
@@ -853,7 +853,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 // Flush the response headers.
                 try (Blocker.Callback cb = Blocker.callback())
                 {
-                    response.write(false, BufferUtil.EMPTY_BUFFER, cb);
+                    response.write(false, ReadableBuffer.EMPTY, cb);
                     cb.block(5, TimeUnit.SECONDS);
                 }
 
@@ -924,7 +924,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
         for (int i = 0; i < 16; ++i)
         {
-            content.write(false, ByteBuffer.allocate(512), Callback.NOOP);
+            content.write(false, ReadableBuffer.allocate(512, false), Callback.NOOP);
             Thread.sleep(10);
         }
         content.close();
@@ -946,7 +946,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 // Do not read the request content,
                 // the server will send a response
                 // with content then reset the stream.
-                ByteBuffer content = ByteBuffer.allocate(length);
+                ReadableBuffer content = ReadableBuffer.allocate(length, false);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.remaining());
                 response.write(true, content, callback);
                 return true;

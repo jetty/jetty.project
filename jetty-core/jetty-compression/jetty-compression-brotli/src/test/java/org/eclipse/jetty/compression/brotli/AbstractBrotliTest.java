@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -30,21 +31,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class AbstractBrotliTest
 {
-    protected ArrayByteBufferPool.Tracking pool;
+    protected ArrayByteBufferPool.Tracking trackingPool;
     protected ByteBufferPool.Sized sizedPool;
     protected BrotliCompression brotli;
 
     @BeforeEach
     public void initPool()
     {
-        pool = new ArrayByteBufferPool.Tracking();
-        sizedPool = new ByteBufferPool.Sized(pool, true, 4096);
+        trackingPool = new ArrayByteBufferPool.Tracking();
+        sizedPool = new ByteBufferPool.Sized(trackingPool, true, 4096);
     }
 
     protected void startBrotli() throws Exception
     {
         brotli = new BrotliCompression();
-        brotli.setByteBufferPool(pool);
+        brotli.setBufferPool(WritableBufferPool.wrap(trackingPool));
         brotli.start();
     }
 
@@ -52,7 +53,7 @@ public abstract class AbstractBrotliTest
     public void tearDown()
     {
         LifeCycle.stop(brotli);
-        assertEquals(0, pool.getLeaks().size(), () -> "LEAKS: " + pool.dumpLeaks());
+        assertEquals(0, trackingPool.getLeaks().size(), () -> "LEAKS: " + trackingPool.dumpLeaks());
     }
 
     public static List<String> textResources()

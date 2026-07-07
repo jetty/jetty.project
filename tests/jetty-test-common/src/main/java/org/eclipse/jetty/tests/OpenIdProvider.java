@@ -257,7 +257,7 @@ public class OpenIdProvider extends ContainerLifeCycle
                 </form>
                 """, AUTH_PATH, redirectUri, state);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html");
-            response.write(true, BufferUtil.toBuffer(responseContent), callback);
+            response.write(true, BufferUtil.toReadableBuffer(responseContent), callback);
         }
         else
         {
@@ -351,7 +351,7 @@ public class OpenIdProvider extends ContainerLifeCycle
                 "\"error_description\": \"bad request description\"," +
                 "\"error_uri\":\"https://example.com/description\"" +
                 "}";
-            response.write(true, BufferUtil.toBuffer(responseContent), callback);
+            response.write(true, BufferUtil.toReadableBuffer(responseContent), callback);
             return;
         }
 
@@ -363,7 +363,7 @@ public class OpenIdProvider extends ContainerLifeCycle
                 "\"error\": \"invalid_grant\"," +
                 "\"error_description\": \"bad auth code\"," +
                 "}";
-            response.write(true, BufferUtil.toBuffer(responseContent), callback);
+            response.write(true, BufferUtil.toReadableBuffer(responseContent), callback);
             return;
         }
 
@@ -377,7 +377,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             "}";
 
         loggedInUsers.increment();
-        response.write(true, BufferUtil.toBuffer(responseContent), callback);
+        response.write(true, BufferUtil.toReadableBuffer(responseContent), callback);
     }
 
     protected void doEndSessionEndpoint(Request request, Response response, Callback callback) throws Exception
@@ -394,7 +394,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         if (logoutRedirect == null)
         {
             response.setStatus(HttpStatus.OK_200);
-            response.write(true, BufferUtil.toBuffer("logout success on end_session_endpoint"), callback);
+            response.write(true, BufferUtil.toReadableBuffer("logout success on end_session_endpoint"), callback);
             return;
         }
 
@@ -411,7 +411,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             "\"end_session_endpoint\": \"" + provider + END_SESSION_PATH + "\"," +
             "}";
 
-        response.write(true, BufferUtil.toBuffer(discoveryDocument), callback);
+        response.write(true, BufferUtil.toReadableBuffer(discoveryDocument), callback);
     }
 
     public static class User

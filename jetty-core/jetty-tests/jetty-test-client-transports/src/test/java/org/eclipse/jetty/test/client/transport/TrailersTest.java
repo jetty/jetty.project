@@ -15,7 +15,6 @@ package org.eclipse.jetty.test.client.transport;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -33,6 +32,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -71,7 +71,7 @@ public class TrailersTest extends AbstractTest
                 response.setTrailersSupplier(() -> responseTrailers);
 
                 // Write the content first, then the trailers.
-                response.write(false, ByteBuffer.allocate(1024 * 1024), new Callback.Nested(callback)
+                response.write(false, ReadableBuffer.allocate(1024 * 1024, false), new Callback.Nested(callback)
                 {
                     @Override
                     public void succeeded()
