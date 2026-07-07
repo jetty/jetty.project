@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FormRequestContent;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.ee.servlet.ServletChannel;
 import org.eclipse.jetty.ee.test.servlets.AlwaysUnsupportedServlet;
 import org.eclipse.jetty.ee.webapp.WebAppContext;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -97,12 +99,8 @@ public class ErrorHandlingViaJspTest
         Path webxml = webinfDir.resolve("web.xml");
 
         Files.writeString(webxml, """
-            <web-app
-              xmlns="https://jakarta.ee/xml/ns/jakartaee"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
-              metadata-complete="false"
-              version="5.0">
+            <web-app %s
+              metadata-complete="false">
               <display-name>Sample WebApp</display-name>
             
               <servlet>
@@ -120,7 +118,7 @@ public class ErrorHandlingViaJspTest
                 <location>/error.jsp</location>
               </error-page>
             </web-app>
-            """.formatted(AlwaysUnsupportedServlet.class.getName()), StandardCharsets.UTF_8);
+            """.formatted(ServletApiVersion.V5_0.getWebXmlAttributes(), AlwaysUnsupportedServlet.class.getName()), UTF_8);
 
         Files.writeString(webappDir.resolve("error.jsp"), """
             <%@ page language="java" contentType="text/html; charset=utf-8"

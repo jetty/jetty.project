@@ -69,6 +69,7 @@ import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
+import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.ee.servlet.ServletContextResponse.EncodingFrom;
 import org.eclipse.jetty.ee.servlet.ServletContextResponse.OutputType;
 import org.eclipse.jetty.ee.servlet.security.ConstraintAware;
@@ -133,12 +134,7 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
 public class ServletContextHandler extends ContextHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
-    public static final Environment ENVIRONMENT = Environment.ensure(EnterpriseEditionVersion.getEnterpriseEditionVersion().name(), ServletContextHandler.class);
-    /**
-     * @deprecated Use {@link ServletContextHandler#ENVIRONMENT} instead.
-     */
-    @Deprecated(since = "12.0.9", forRemoval = true)
-    public static final Environment __environment = ENVIRONMENT;
+
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
         {
             ServletContextListener.class,
@@ -232,6 +228,8 @@ public class ServletContextHandler extends ContextHandler
     private final Set<EventListener> _durableListeners = new HashSet<>();
 
     protected final DecoratedObjectFactory _objFactory;
+    protected final EnterpriseEditionVersion _enterpriseVersion;
+    protected final Environment _environment;
 //    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
@@ -278,6 +276,11 @@ public class ServletContextHandler extends ContextHandler
 
     public ServletContextHandler(String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
     {
+        _enterpriseVersion = EnterpriseEditionVersion.getEnterpriseEditionVersion();
+        if (_enterpriseVersion == null)
+            throw new RuntimeException("Unable to discover EnterpriseEditionVersion");
+        _environment = Environment.ensure(_enterpriseVersion.environmentName(), ServletContextHandler.class);
+
         _servletContext = newServletContextApi();
 
         if (contextPath != null)
@@ -1723,6 +1726,26 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
+     * Get the Environment for this Context.
+     *
+     * @return the environment;
+     */
+    public Environment getEnvironment()
+    {
+        return _environment;
+    }
+
+    /**
+     * Get the Environment Name for this Context.
+     *
+     * @return the environment name;
+     */
+    public String getEnvironmentName()
+    {
+        return _environment.getName();
+    }
+
+    /**
      * The DecoratedObjectFactory for use by IoC containers (weld / spring / etc)
      *
      * @return The DecoratedObjectFactory
@@ -2124,16 +2147,17 @@ public class ServletContextHandler extends ContextHandler
 
     public class ServletContextApi implements jakarta.servlet.ServletContext
     {
-        public static final int SERVLET_MAJOR_VERSION = 6;
-        public static final int SERVLET_MINOR_VERSION = 1;
-
-        private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
-        private int _effectiveMinorVersion = SERVLET_MINOR_VERSION;
+        private final ServletApiVersion _servletApiVersion;
+        private int _effectiveMajorVersion;
+        private int _effectiveMinorVersion;
         protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
 
         public ServletContextApi()
         {
+            _servletApiVersion = ServletApiVersion.getServletApiVersion();
+            _effectiveMajorVersion = _servletApiVersion.getMajorVersion();
+            _effectiveMinorVersion = _servletApiVersion.getMinorVersion();
         }
 
         @Override
@@ -2145,13 +2169,13 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public int getMajorVersion()
         {
-            return SERVLET_MAJOR_VERSION;
+            return _servletApiVersion.getMajorVersion();
         }
 
         @Override
         public int getMinorVersion()
         {
-            return SERVLET_MINOR_VERSION;
+            return _servletApiVersion.getMinorVersion();
         }
 
         @Override

@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -37,14 +38,11 @@ public class WebDescriptorTest
         Path xml = workDir.getEmptyPathDir().resolve("test.xml");
         Files.writeString(xml, """
             <?xml version="1.0" encoding="UTF-8"?>
-            <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
-                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                     metadata-complete="false"
-                     xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd"
-                     version="6.1">
+            <web-app %s
+                     metadata-complete="false">
               <display-name>Empty WebApp Descriptor</display-name>
             </web-app>
-            """, StandardCharsets.UTF_8);
+            """.formatted(ServletApiVersion.V6_1.getWebXmlAttributes()), StandardCharsets.UTF_8);
 
         WebDescriptor webDescriptor = new WebDescriptor(ResourceFactory.root().newResource(xml));
         XmlParser xmlParser = new XmlParser(true);

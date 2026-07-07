@@ -14,13 +14,13 @@
 package org.eclipse.jetty.ee.websocket.tests;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.ee.webapp.WebAppContext;
-import org.eclipse.jetty.ee.webapp.WebDescriptor;
 import org.eclipse.jetty.ee.websocket.server.config.JettyWebSocketConfiguration;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -66,13 +67,14 @@ public class JettyWebSocketWebApp extends WebAppContext
 
     public void createWebXml() throws IOException
     {
-        String emptyWebXml = WebDescriptor.WEB_APP_ELEMENT + "</web-app>";
+        String emptyWebXml =
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <web-app %s>
+            </web-app>
+            """.formatted(ServletApiVersion.getServletApiVersion().getWebXmlAttributes());
 
-        Path webXml = webInf.resolve("web.xml");
-        try (FileWriter writer = new FileWriter(webXml.toFile()))
-        {
-            writer.write(emptyWebXml);
-        }
+        Files.writeString(webInf.resolve("web.xml"), emptyWebXml, UTF_8);
     }
 
     public void copyWebXml(Path webXml) throws IOException

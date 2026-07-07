@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jetty.ee.common.ServletApiVersion;
 import org.eclipse.jetty.ee.common.WebAppClassLoader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -86,12 +87,10 @@ public class MetaInfConfigurationTest
 
         String web25 = """
             <?xml version="1.0" encoding="ISO-8859-1"?>
-            <web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-               xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
-               version="2.5">
+            <web-app %s>
               <display-name>Test 2.5 WebApp</display-name>
             </web-app>
-            """;
+            """.formatted(ServletApiVersion.V2_5.getWebXmlAttributes());
 
         Files.writeString(webxml, web25, StandardCharsets.UTF_8);
         Path libDir = webinf.resolve("lib");
@@ -197,12 +196,10 @@ public class MetaInfConfigurationTest
 
         String web25 = """
             <?xml version="1.0" encoding="ISO-8859-1"?>
-            <web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-               xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
-               version="2.5">
+            <web-app %s>
               <display-name>Test 2.5 WebApp</display-name>
             </web-app>
-            """;
+            """.formatted(ServletApiVersion.V2_5.getWebXmlAttributes());
 
         Files.writeString(webxml, web25, StandardCharsets.UTF_8);
         Path libDir = webinf.resolve("lib");
@@ -314,13 +311,11 @@ public class MetaInfConfigurationTest
 
         String web30 = """
             <?xml version="1.0" encoding="ISO-8859-1"?>
-            <web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                 xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
-                 metadata-complete="false"
-                 version="3.0">
+            <web-app %s
+                 metadata-complete="false">
               <display-name>Test 3.0 WebApp</display-name>
             </web-app>
-            """;
+            """.formatted(ServletApiVersion.V3_0.getWebXmlAttributes());
 
         Files.writeString(webxml, web30, StandardCharsets.UTF_8);
         Path libDir = webinf.resolve("lib");
@@ -432,13 +427,11 @@ public class MetaInfConfigurationTest
 
         String web31 = """
             <?xml version="1.0" encoding="ISO-8859-1"?>
-            <web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                 xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
-                 metadata-complete="true"
-                 version="3.1">
+            <web-app %s
+                 metadata-complete="true">
               <display-name>Test 3.1 WebApp</display-name>
             </web-app>
-            """;
+            """.formatted(ServletApiVersion.V3_1.getWebXmlAttributes());
 
         Files.writeString(webxml, web31, StandardCharsets.UTF_8);
         Path libDir = webinf.resolve("lib");

@@ -573,7 +573,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
     public Session.API newSessionAPIWrapper(ManagedSession session)
     {
-        if (ServletApiVersion.getServletApiVersion().ordinal() >= ServletApiVersion.v6_1.ordinal())
+        if (ServletApiVersion.getServletApiVersion().ordinal() >= ServletApiVersion.V6_1.ordinal())
             return Servlet61SessionApi.wrapSession(session);
         return ServletSessionApi.wrapSession(session);
     }

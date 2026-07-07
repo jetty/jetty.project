@@ -102,8 +102,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private static final String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
 
-    private final ClassMatcher _protectedClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(ServletContextHandler.ENVIRONMENT));
-    private final ClassMatcher _hiddenClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(ServletContextHandler.ENVIRONMENT));
+    private final ClassMatcher _protectedClasses;
+    private final ClassMatcher _hiddenClasses;
 
     private Configurations _configurations;
     private String _defaultsDescriptor = WEB_DEFAULTS_XML;
@@ -191,6 +191,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // always pass parent as null and then set below, so that any resulting setServer call
         // is done after this instance is constructed.
         super(contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, options);
+
+        _protectedClasses = new ClassMatcher(WebAppClassLoading.getProtectedClasses(getEnvironment()));
+        _hiddenClasses = new ClassMatcher(WebAppClassLoading.getHiddenClasses(getEnvironment()));
+
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
         setProtectedTargets(__dftProtectedTargets);
     }
@@ -495,7 +499,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     protected void doStart() throws Exception
     {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(ServletContextHandler.ENVIRONMENT.getClassLoader());
+        Thread.currentThread().setContextClassLoader(getEnvironment().getClassLoader());
         try
         {
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
@@ -886,7 +890,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         name = String.format("%s@%x", name, hashCode());
 
         dumpObjects(out, indent,
-            Dumpable.named("environment", ServletContextHandler.ENVIRONMENT.getName()),
+            Dumpable.named("environment", getEnvironmentName()),
             new ClassLoaderDump(getClassLoader()),
             new DumpableCollection("Protected classes " + name, protectedClasses),
             new DumpableCollection("Hidden classes " + name, hiddenClasses),
