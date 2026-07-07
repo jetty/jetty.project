@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.internal;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ReadOnlyBufferException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -213,29 +214,6 @@ public class FixedSizeBufferTest
     }
 
     @Test
-    public void testReadableBufferDrain()
-    {
-        ReadableBuffer rb = ReadableBuffer.wrap(ByteBuffer.allocate(20)
-            .putInt(1)
-            .putInt(2)
-            .putInt(3)
-            .flip());
-
-        assertEquals(12, rb.remaining());
-        assertEquals(1, rb.getInt());
-        assertEquals(2, rb.getInt());
-        assertEquals(4, rb.remaining());
-
-        rb.drain();
-        assertEquals(0, rb.position());
-        assertEquals(0, rb.remaining());
-
-        WritableBuffer wb = rb.toWritable();
-        assertEquals(0, wb.position());
-        assertEquals(20, wb.remaining());
-    }
-
-    @Test
     public void testReadableBufferWrapReadOnly()
     {
         ReadableBuffer rb = ReadableBuffer.wrap(ByteBuffer.allocate(10)
@@ -249,7 +227,7 @@ public class FixedSizeBufferTest
         assertEquals(2, rb.getInt());
         assertEquals(0L, rb.remaining());
 
-        assertThrows(IllegalStateException.class, rb::toWritable);
+        assertThrows(ReadOnlyBufferException.class, rb::toWritable);
     }
 
     @Test
@@ -461,10 +439,10 @@ public class FixedSizeBufferTest
     @Test
     public void testEmpty()
     {
-        assertThrows(IllegalStateException.class, ReadableBuffer.EMPTY::toWritable);
+        assertThrows(ReadOnlyBufferException.class, ReadableBuffer.EMPTY::toWritable);
         assertThrows(BufferUnderflowException.class, ReadableBuffer.EMPTY::get);
 
-        assertThrows(IllegalStateException.class, WritableBuffer.EMPTY::toReadable);
+        assertThrows(UnsupportedOperationException.class, WritableBuffer.EMPTY::toReadable);
         assertThrows(BufferOverflowException.class, () -> WritableBuffer.EMPTY.put((byte)1));
     }
 }

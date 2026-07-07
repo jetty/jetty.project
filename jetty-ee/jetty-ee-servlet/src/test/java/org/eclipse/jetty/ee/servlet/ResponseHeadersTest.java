@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -114,7 +115,7 @@ public class ResponseHeadersTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), is("OK"));
 
@@ -157,7 +158,7 @@ public class ResponseHeadersTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(101));
@@ -206,7 +207,7 @@ public class ResponseHeadersTest
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
         // System.err.println(BufferUtil.toUTF8String(responseBuffer));
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
@@ -248,7 +249,7 @@ public class ResponseHeadersTest
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
         // System.err.println(BufferUtil.toUTF8String(responseBuffer));
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
@@ -294,7 +295,7 @@ public class ResponseHeadersTest
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
         // System.err.println(BufferUtil.toUTF8String(responseBuffer));
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
@@ -337,7 +338,7 @@ public class ResponseHeadersTest
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
         // System.err.println(BufferUtil.toUTF8String(responseBuffer));
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
@@ -382,7 +383,7 @@ public class ResponseHeadersTest
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
         // System.err.println(BufferUtil.toUTF8String(responseBuffer));
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
@@ -444,7 +445,7 @@ public class ResponseHeadersTest
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
         // System.err.println(BufferUtil.toUTF8String(responseBuffer));
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
@@ -494,7 +495,7 @@ public class ResponseHeadersTest
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
         // System.err.println(BufferUtil.toUTF8String(responseBuffer));
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
@@ -544,7 +545,7 @@ public class ResponseHeadersTest
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
         // System.err.println(BufferUtil.toUTF8String(responseBuffer));
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
@@ -582,7 +583,7 @@ public class ResponseHeadersTest
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
         // System.err.println(BufferUtil.toUTF8String(responseBuffer));
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         // Now test for properly formatted HTTP Response Headers.
         assertThat("Response Code", response.getStatus(), is(200));
@@ -622,7 +623,7 @@ public class ResponseHeadersTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat("Response Code", response.getStatus(), is(200));
         assertThat(response.getContent(), equalTo("Hello\nWorld\n".replace("\n", System.lineSeparator())));
@@ -658,7 +659,7 @@ public class ResponseHeadersTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat("Response Code", response.getStatus(), is(200));
         assertThat("Content Type", response.getField("Content-Type").getValue(), containsString("text/html;charset=ISO-8859-7"));
@@ -708,7 +709,7 @@ public class ResponseHeadersTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat("Content Type", response.getField("Content-Type").getValue(), containsString("text/html;charset=iso-8859-1"));
         assertThat(response.getContent(), containsString("ALL OK"));
@@ -743,7 +744,7 @@ public class ResponseHeadersTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat("Response Code", response.getStatus(), is(200));
         assertThat("Content Type", response.getField("Content-Type").getValue(), containsString("text/xml;charset=Shift_Jis"));
@@ -780,7 +781,7 @@ public class ResponseHeadersTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat("Response Code", response.getStatus(), is(200));
         assertThat("Content Type", response.getField("Content-Type"), nullValue());
@@ -835,7 +836,7 @@ public class ResponseHeadersTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat("Response Code", response.getStatus(), is(200));
         assertThat("Content Type", response.getField("Content-Type").getValue(), is("text/json"));
@@ -881,7 +882,7 @@ public class ResponseHeadersTest
         request.setHeader("Host", "test");
 
         ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getField("Test").getValue(), is("Before"));

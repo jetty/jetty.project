@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -640,7 +641,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                     {
                         // write accumulated buffers
                         RetainableByteBuffer buffer = bufferAccumulator.toRetainableByteBuffer();
-                        response.write(true, buffer.getByteBuffer(), Callback.from(buffer::release, callback));
+                        response.write(true, ReadableBuffer.wrap(buffer.getByteBuffer()), Callback.from(buffer::release, callback));
                         return;
                     }
                 }

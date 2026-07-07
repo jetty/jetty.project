@@ -322,7 +322,7 @@ public class SSLSelectChannelConnectorLoadTest
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer input = Content.Source.asByteBuffer(request);
-            response.write(true, BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()), callback);
+            response.write(true, BufferUtil.toReadableBuffer(String.valueOf(input.remaining())), callback);
             return true;
         }
     }

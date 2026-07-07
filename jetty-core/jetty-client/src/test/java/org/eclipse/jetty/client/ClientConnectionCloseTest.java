@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -54,7 +55,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
                 Content.Source.consumeAll(request);
 
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
 
                 try
                 {

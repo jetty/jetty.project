@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.security.internal;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -28,6 +27,7 @@ import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,7 +171,7 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
         }
 
         @Override
-        public void write(boolean last, ByteBuffer content, Callback callback)
+        public void write(boolean last, ReadableBuffer content, Callback callback)
         {
             callback.succeeded();
         }

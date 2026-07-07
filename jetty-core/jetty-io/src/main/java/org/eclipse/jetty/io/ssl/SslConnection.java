@@ -65,16 +65,16 @@ import org.slf4j.LoggerFactory;
  * The design of this class is based on a clear separation between the passive methods, which do not block nor schedule any
  * asynchronous callbacks, and active methods that do schedule asynchronous callbacks.
  * <p>
- * The passive methods are {@link SslEndPoint#fill(ByteBuffer)} and {@link SslEndPoint#flush(ByteBuffer...)}. They make best
- * effort attempts to progress the connection using only calls to the encrypted {@link EndPoint#fill(ByteBuffer)} and {@link EndPoint#flush(ByteBuffer...)}
+ * The passive methods are {@link SslEndPoint#fill(WritableBuffer)} and {@link SslEndPoint#flush(ReadableBuffer)}. They make best
+ * effort attempts to progress the connection using only calls to the encrypted {@link EndPoint#fill(WritableBuffer)} and {@link EndPoint#flush(ReadableBuffer)}
  * methods.  They will never block nor schedule any readInterest or write callbacks.   If a fill/flush cannot progress either because
  * of network congestion or waiting for an SSL handshake message, then the fill/flush will simply return with zero bytes filled/flushed.
  * Specifically, if a flush cannot proceed because it needs to receive a handshake message, then the flush will attempt to fill bytes from the
  * encrypted endpoint, but if insufficient bytes are read it will NOT call {@link EndPoint#fillInterested(Callback)}.
  * <p>
  * It is only the active methods : {@link SslEndPoint#fillInterested(Callback)} and
- * {@link SslEndPoint#write(Callback, ByteBuffer...)} that may schedule callbacks by calling the encrypted
- * {@link EndPoint#fillInterested(Callback)} and {@link EndPoint#write(Callback, ByteBuffer...)}
+ * {@link SslEndPoint#write(ReadableBuffer, Callback)} that may schedule callbacks by calling the encrypted
+ * {@link EndPoint#fillInterested(Callback)} and {@link EndPoint#write(ReadableBuffer, Callback)}
  * methods.  For normal data handling, the decrypted fillInterest method will result in an encrypted fillInterest and a decrypted
  * write will result in an encrypted write. However, due to SSL handshaking requirements, it is also possible for a decrypted fill
  * to call the encrypted write and for the decrypted flush to call the encrypted fillInterested methods.
@@ -443,6 +443,11 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     }
 
     protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+    {
+        return sslEngine.wrap(input, output);
+    }
+
+    protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
     {
         return sslEngine.wrap(input, output);
     }
@@ -877,7 +882,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 if (decryptedInputIsUserProvidedBuffer)
                                 {
                                     ReadableBuffer rb = writableAppIn.toReadable();
-                                    decryptedInput = rb.slice();
+                                    decryptedInput = rb.remaining() > 0L ? rb.slice() : ReadableBuffer.EMPTY;
                                     rb.toWritable();
                                 }
                                 else
@@ -887,7 +892,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             }
                             catch (Throwable x)
                             {
-                                writableAppIn.release();
+                                if (!decryptedInputIsUserProvidedBuffer)
+                                    writableAppIn.release();
                                 throw x;
                             }
                         }
@@ -1294,17 +1300,17 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                         @Override
                                         public void write(ByteBuffer[] inputs) throws IOException
                                         {
-                                            SSLEngineResult wrapResult1 = wrap(_sslEngine, inputs, output);
-                                            wrapResultArray[0] = wrapResult1;
+                                            if (wrapResultArray[0] != null)
+                                                return;
+                                            wrapResultArray[0] = wrap(_sslEngine, inputs, output);
                                         }
 
                                         @Override
                                         public void write(ByteBuffer input) throws IOException
                                         {
                                             if (wrapResultArray[0] != null)
-                                                throw new IllegalStateException("Multi-buffer output does not support gather writes while it must. Existing wrap result: " + wrapResultArray[0]);
-                                            SSLEngineResult wrapResult1 = wrap(_sslEngine, new ByteBuffer[]{input}, output);
-                                            wrapResultArray[0] = wrapResult1;
+                                                return;
+                                            wrapResultArray[0] = wrap(_sslEngine, input, output);
                                         }
                                     });
                                     return wrapResultArray[0].getStatus() == Status.CLOSED;

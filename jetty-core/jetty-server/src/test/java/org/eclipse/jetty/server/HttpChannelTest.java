@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -129,7 +130,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
             {
                 sendCB.set(callback);
                 super.send(request, response, last, content, NOOP);
@@ -357,7 +358,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
             {
                 sendCB.set(callback);
                 super.send(request, response, last, content, NOOP);
@@ -553,7 +554,7 @@ public class HttpChannelTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toBuffer("12345"), callback);
+                response.write(true, BufferUtil.toReadableBuffer("12345"), callback);
                 return true;
             }
         };
@@ -591,7 +592,7 @@ public class HttpChannelTest
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 try (StacklessLogging ignore = new StacklessLogging(Response.class))
                 {
-                    response.write(true, BufferUtil.toBuffer("12345"), Callback.from(callback, writeFailureRef::set));
+                    response.write(true, BufferUtil.toReadableBuffer("12345"), Callback.from(callback, writeFailureRef::set));
                 }
                 return true;
             }
@@ -636,13 +637,13 @@ public class HttpChannelTest
 
                 try (Blocker.Callback cb = Blocker.callback())
                 {
-                    response.write(false, BufferUtil.toBuffer("0"), cb);
+                    response.write(false, BufferUtil.toReadableBuffer("0"), cb);
                     cb.block();
                 }
 
                 try (StacklessLogging ignore = new StacklessLogging(Response.class))
                 {
-                    response.write(true, BufferUtil.toBuffer("12345"), Callback.from(callback, writeFailureRef::set));
+                    response.write(true, BufferUtil.toReadableBuffer("12345"), Callback.from(callback, writeFailureRef::set));
                 }
                 return true;
             }
@@ -687,7 +688,7 @@ public class HttpChannelTest
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false,
-                    BufferUtil.toBuffer("12345"), Callback.from(() ->
+                    BufferUtil.toReadableBuffer("12345"), Callback.from(() ->
                         response.write(true, null, callback)));
                 return true;
             }
@@ -720,7 +721,7 @@ public class HttpChannelTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(true, BufferUtil.toBuffer("1234567890"), callback);
+                response.write(true, BufferUtil.toReadableBuffer("1234567890"), callback);
                 return true;
             }
         };
@@ -760,9 +761,9 @@ public class HttpChannelTest
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
                 try (StacklessLogging ignore = new StacklessLogging(Response.class))
                 {
-                    response.write(false, BufferUtil.toBuffer("1234"),
+                    response.write(false, BufferUtil.toReadableBuffer("1234"),
                         Callback.from(() ->
-                            response.write(true, BufferUtil.toBuffer("567890"),
+                            response.write(true, BufferUtil.toReadableBuffer("567890"),
                                 callback)));
                 }
                 return true;
@@ -837,7 +838,7 @@ public class HttpChannelTest
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
+                response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toReadableBuffer("12345"), callback)));
                 return true;
             }
         };
@@ -880,7 +881,7 @@ public class HttpChannelTest
                 response.getHeaders().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
+                response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toReadableBuffer("12345"), callback)));
                 return true;
             }
         };
@@ -978,7 +979,7 @@ public class HttpChannelTest
             }
 
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
             {
                 sendCB.set(callback);
                 super.send(request, response, last, content, NOOP);
@@ -1018,13 +1019,13 @@ public class HttpChannelTest
                 }
 
                 @Override
-                public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+                public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
                 {
                     history.add(String.format("send %d l=%b %d %s",
                         response == null ? 0 : response.getStatus(),
                         last,
-                        BufferUtil.length(content),
-                        BufferUtil.toDetailString(content)));
+                        content.remaining(),
+                        content));
                     super.send(request, response, last, content, callback);
                 }
 
@@ -1182,7 +1183,7 @@ public class HttpChannelTest
                 if (latch.await(30, TimeUnit.SECONDS))
                 {
                     response.setStatus(200);
-                    response.write(true, BufferUtil.toBuffer("contentSize=" + contentSize.longValue()), callback);
+                    response.write(true, BufferUtil.toReadableBuffer("contentSize=" + contentSize.longValue()), callback);
                 }
                 else
                 {
@@ -1414,7 +1415,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
             {
                 committing.countDown();
                 super.send(request, response, last, content, callback);
@@ -1541,7 +1542,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
             {
                 sendCallback.set(callback);
                 super.send(request, response, last, content, NOOP);

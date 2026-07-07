@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -726,7 +726,7 @@ public class ErrorHandlerTest
             public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(404);
-                response.write(true, ByteBuffer.wrap("Server Error".getBytes()), callback);
+                response.write(true, ReadableBuffer.wrap("Server Error".getBytes()), callback);
                 return true;
             }
         });
@@ -734,7 +734,7 @@ public class ErrorHandlerTest
         server.start();
 
         LocalConnector.LocalEndPoint connection = connector.connect();
-        connection.addInputAndExecute(BufferUtil.toBuffer(
+        connection.addInputAndExecute(BufferUtil.toReadableBuffer(
             "GET /foo/test HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "\r\n"));
@@ -743,7 +743,7 @@ public class ErrorHandlerTest
         assertThat(response, containsString("HTTP/1.1 444 444"));
         assertThat(response, containsString("Context Error"));
 
-        connection.addInputAndExecute(BufferUtil.toBuffer(
+        connection.addInputAndExecute(BufferUtil.toReadableBuffer(
             "GET /test HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "\r\n"));

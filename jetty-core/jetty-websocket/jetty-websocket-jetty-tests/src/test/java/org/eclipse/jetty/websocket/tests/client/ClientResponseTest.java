@@ -84,7 +84,7 @@ public class ClientResponseTest
         {
             resp.setStatus(HttpStatus.IM_A_TEAPOT_418);
             resp.getHeaders().put("specialHeader", "value123");
-            resp.write(true, BufferUtil.toBuffer("failed by test"), cb);
+            resp.write(true, BufferUtil.toReadableBuffer("failed by test"), cb);
             return null;
         });
 

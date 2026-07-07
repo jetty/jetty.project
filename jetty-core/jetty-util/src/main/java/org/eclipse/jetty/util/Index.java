@@ -20,6 +20,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+
 /**
  * An immutable String lookup data structure.
  * @param <V> the entry type
@@ -104,6 +106,17 @@ public interface Index<V>
     V getBest(ByteBuffer b, int offset, int len);
 
     /**
+     * Get the best match from key in a buffer.
+     * The key is assumed to by ISO_8859_1 characters.
+     *
+     * @param b The buffer
+     * @param offset The offset within the buffer of the key
+     * @param len the length of the key
+     * @return The value or null if not found
+     */
+    V getBest(ReadableBuffer b, long offset, long len);
+
+    /**
      * Get the best match from key in a byte buffer.
      * The key is assumed to by ISO_8859_1 characters.
      *
@@ -111,6 +124,18 @@ public interface Index<V>
      * @return The value or null if not found
      */
     default V getBest(ByteBuffer b)
+    {
+        return getBest(b, 0, b.remaining());
+    }
+
+    /**
+     * Get the best match from key in a buffer.
+     * The key is assumed to by ISO_8859_1 characters.
+     *
+     * @param b The buffer
+     * @return The value or null if not found
+     */
+    default V getBest(ReadableBuffer b)
     {
         return getBest(b, 0, b.remaining());
     }

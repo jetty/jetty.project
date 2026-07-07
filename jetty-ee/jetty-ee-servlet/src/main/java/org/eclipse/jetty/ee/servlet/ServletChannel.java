@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -751,7 +752,7 @@ public class ServletChannel
             _state.completing();
             // _state::completed may invoke async listeners, but assume non-blocking.
             Callback callback = Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed);
-            getServletContextResponse().write(true, getServletContextResponse().getHttpOutput().getByteBuffer(), callback);
+            getServletContextResponse().write(true, ReadableBuffer.wrap(getServletContextResponse().getHttpOutput().getByteBuffer()), callback);
         }
         catch (Throwable x)
         {

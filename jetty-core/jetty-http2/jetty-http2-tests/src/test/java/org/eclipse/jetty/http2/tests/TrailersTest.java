@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -340,7 +339,7 @@ public class TrailersTest extends AbstractTest
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(requestFrame, promise, null);
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ReadableBuffer data = ReadableBuffer.wrap(ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello")));
+        ReadableBuffer data = ReadableBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
         CountDownLatch failureLatch = new CountDownLatch(1);
         stream.data(data, false)
             .thenAccept(s ->
@@ -396,7 +395,7 @@ public class TrailersTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ReadableBuffer data = ReadableBuffer.wrap(ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello")));
+        ReadableBuffer data = ReadableBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
         stream.data(data, false)
             .thenAccept(s ->
             {

@@ -74,12 +74,12 @@ public class SignInWithEthereumTest
                 {
                     response.setStatus(HttpStatus.FORBIDDEN_403);
                     String error = Request.getParameters(request).get(EthereumAuthenticator.ERROR_PARAMETER).getValue();
-                    response.write(true, BufferUtil.toBuffer(error), callback);
+                    response.write(true, BufferUtil.toReadableBuffer(error), callback);
                     return true;
                 }
                 if ("/login".equals(pathInContext))
                 {
-                    response.write(true, BufferUtil.toBuffer("Please Login"), callback);
+                    response.write(true, BufferUtil.toReadableBuffer("Please Login"), callback);
                     return true;
                 }
                 else if ("/logout".equals(pathInContext))
@@ -90,7 +90,7 @@ public class SignInWithEthereumTest
                 }
 
                 AuthenticationState authState = Objects.requireNonNull(AuthenticationState.getAuthenticationState(request));
-                response.write(true, BufferUtil.toBuffer("UserPrincipal: " + authState.getUserPrincipal()), callback);
+                response.write(true, BufferUtil.toReadableBuffer("UserPrincipal: " + authState.getUserPrincipal()), callback);
                 return true;
             }
         };

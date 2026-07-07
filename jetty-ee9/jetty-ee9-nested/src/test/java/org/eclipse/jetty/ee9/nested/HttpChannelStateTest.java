@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -127,7 +127,7 @@ public class HttpChannelStateTest
                     response = new org.eclipse.jetty.server.Response.Wrapper(request, response)
                     {
                         @Override
-                        public void write(boolean last, ByteBuffer byteBuffer, Callback writeCallback)
+                        public void write(boolean last, ReadableBuffer byteBuffer, Callback writeCallback)
                         {
                             if (!last)
                             {
@@ -200,7 +200,7 @@ public class HttpChannelStateTest
                 response = new org.eclipse.jetty.server.Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback writeCallback)
+                    public void write(boolean last, ReadableBuffer byteBuffer, Callback writeCallback)
                     {
                         if (!last)
                         {

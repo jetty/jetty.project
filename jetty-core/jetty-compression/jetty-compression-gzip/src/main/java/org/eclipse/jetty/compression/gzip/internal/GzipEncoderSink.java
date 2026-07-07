@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.compression.gzip.internal;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
@@ -23,11 +23,9 @@ import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.compression.gzip.GzipCompression;
 import org.eclipse.jetty.compression.gzip.GzipEncoderConfig;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.compression.CompressionPool;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,8 +78,7 @@ public class GzipEncoderSink extends EncoderSink
     private final GzipCompression compression;
     private final CompressionPool<Deflater>.Entry deflaterEntry;
     private final Deflater deflater;
-    private final RetainableByteBuffer inputBuffer;
-    private final ByteBuffer input;
+    private final ReadableBuffer inputBuffer;
     private final int bufferSize;
     private final int flushMode;
     private final CRC32 crc = new CRC32();
@@ -95,42 +92,63 @@ public class GzipEncoderSink extends EncoderSink
         this.deflaterEntry = compression.getDeflaterPool().acquire();
         this.deflater = deflaterEntry.get();
         this.bufferSize = config.getBufferSize();
-        this.inputBuffer = compression.acquireByteBuffer(bufferSize);
-        this.input = this.inputBuffer.getByteBuffer();
-        this.input.position(this.input.limit()); // set to totally consume at first
+        this.inputBuffer = compression.acquireBuffer(bufferSize).toReadable();
         this.deflater.reset();
-        this.deflater.setInput(input);
+        try
+        {
+            inputBuffer.writeTo(this.deflater::setInput);
+        }
+        catch (IOException e)
+        {
+            inputBuffer.release();
+            throw new UncheckedIOException(e);
+        }
         this.deflater.setStrategy(config.getStrategy());
         this.deflater.setLevel(config.getCompressionLevel());
         this.flushMode = config.isSyncFlush() ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH;
         this.crc.reset();
     }
 
-    protected void addInput(ByteBuffer content)
+    protected void addInput(ReadableBuffer content)
     {
-        int pos = BufferUtil.flipToFill(input);
-        int space = Math.min(input.remaining(), content.remaining());
-        ByteBuffer slice = content.slice();
-        slice.limit(space);
-        // Update CRC based on what can be consumed right now.
-        // Any leftover content will be consumed on a later call.
-        crc.update(slice.slice());
-        input.put(slice);
-        BufferUtil.flipToFlush(input, pos);
-        // consume the bytes on content
-        content.position(content.position() + space);
+        WritableBuffer wb = inputBuffer.toWritable();
+        try
+        {
+            long space = Math.min(wb.remaining(), content.remaining());
+            ReadableBuffer slice = content.slice(content.position(), space);
+            // Update CRC based on what can be consumed right now.
+            // Any leftover content will be consumed on a later call.
+            slice.writeTo(buffer ->
+            {
+                int position = buffer.position();
+                crc.update(buffer);
+                buffer.position(position);
+            });
+            wb.put(slice);
+            slice.release();
+            // consume the bytes on content
+            content.position(content.position() + space);
+        }
+        catch (IOException e)
+        {
+            throw new UncheckedIOException(e);
+        }
+        finally
+        {
+            wb.toReadable();
+        }
     }
 
     @Override
-    protected WriteRecord encode(boolean last, ByteBuffer content)
+    protected WriteRecord encode(boolean last, ReadableBuffer content)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("encode() state={}, last={}, content={}", state, last, BufferUtil.toDetailString(content));
+            LOG.debug("encode() state={}, last={}, content={}", state, last, content);
 
         if (released)
             throw new IllegalStateException("Already released");
 
-        RetainableByteBuffer output = null;
+        WritableBuffer output = null;
         try
         {
             while (true)
@@ -140,18 +158,18 @@ public class GzipEncoderSink extends EncoderSink
                     case HEADERS ->
                     {
                         state.compareAndSet(State.HEADERS, State.BODY);
-                        return new WriteRecord(false, ByteBuffer.wrap(GZIP_HEADER), Callback.NOOP);
+                        return new WriteRecord(false, ReadableBuffer.wrap(GZIP_HEADER));
                     }
                     case BODY ->
                     {
                         // Processing input
-                        if (BufferUtil.hasContent(content))
+                        if (content != null && content.remaining() > 0L)
                         {
                             if (output == null)
-                                output = compression.acquireByteBuffer(bufferSize);
-                            if (encode(content, output.getByteBuffer()))
+                                output = compression.acquireBuffer(bufferSize);
+                            if (encode(content, output))
                             {
-                                WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(Invocable.InvocationType.NON_BLOCKING, output::release));
+                                WriteRecord writeRecord = new WriteRecord(false, output.toReadable());
                                 output = null;
                                 return writeRecord;
                             }
@@ -173,12 +191,12 @@ public class GzipEncoderSink extends EncoderSink
                     {
                         // flush anything left out of the deflater
                         if (output == null)
-                            output = compression.acquireByteBuffer(bufferSize);
-                        if (!flush(output.getByteBuffer()))
+                            output = compression.acquireBuffer(bufferSize);
+                        if (!flush(output))
                             state.compareAndSet(State.FLUSHING, State.TRAILERS);
-                        if (output.hasRemaining())
+                        if (output.position() > 0L)
                         {
-                            WriteRecord writeRecord = new WriteRecord(false, output.getByteBuffer(), Callback.from(Invocable.InvocationType.NON_BLOCKING, output::release));
+                            WriteRecord writeRecord = new WriteRecord(false, output.toReadable());
                             output = null;
                             return writeRecord;
                         }
@@ -186,10 +204,10 @@ public class GzipEncoderSink extends EncoderSink
                     case TRAILERS ->
                     {
                         if (output == null)
-                            output = compression.acquireByteBuffer(16);
-                        trailers(output.getByteBuffer());
+                            output = compression.acquireBuffer(16);
+                        trailers(output);
                         state.compareAndSet(State.TRAILERS, State.FINISHED);
-                        WriteRecord writeRecord = new WriteRecord(true, output.getByteBuffer(), Callback.from(Invocable.InvocationType.NON_BLOCKING, output::release));
+                        WriteRecord writeRecord = new WriteRecord(true, output.toReadable());
                         output = null;
                         return writeRecord;
                     }
@@ -221,55 +239,68 @@ public class GzipEncoderSink extends EncoderSink
      * Encode the content, put output into output buffer.
      *
      * @param content the input (uncompressed) content.
-     * @param output the output (compressed).
+     * @param outputBuffer the output (compressed).
      * @return true if output was produced, false otherwise
      */
-    private boolean encode(ByteBuffer content, ByteBuffer output)
+    private boolean encode(ReadableBuffer content, WritableBuffer outputBuffer)
     {
-        if (content.hasRemaining())
+        if (content != null && content.remaining() > 0L)
             addInput(content);
 
-        BufferUtil.clearToFill(output);
-        int len = deflater.deflate(output, flushMode);
-        BufferUtil.flipToFlush(output, 0);
-        return (len > 0);
+        try
+        {
+            long len = outputBuffer.readFrom(output ->
+            {
+                deflater.deflate(output, flushMode);
+                return false;
+            });
+            return (len > 0L);
+        }
+        catch (IOException e)
+        {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /**
      * Flush the Gzip internals.
      *
-     * @param output the output buffer to write to.
+     * @param outputBuffer the output buffer to write to.
      * @return true if flush produced output, false to indicate no output produced.
      */
-    private boolean flush(ByteBuffer output)
+    private boolean flush(WritableBuffer outputBuffer)
     {
-        int pos = output.position();
-        BufferUtil.flipToFill(output);
         while (!deflater.finished())
         {
-            int len = deflater.deflate(output, flushMode);
-            if (len > 0)
+            try
             {
-                BufferUtil.flipToFlush(output, pos);
-                return true;
+                long len = outputBuffer.readFrom(output ->
+                {
+                    deflater.deflate(output, flushMode);
+                    return false;
+                });
+                if (len > 0L)
+                    return true;
+            }
+            catch (IOException e)
+            {
+                throw new UncheckedIOException(e);
             }
         }
-        BufferUtil.flipToFlush(output, pos);
         return false;
     }
 
-    private void trailers(ByteBuffer output)
+    private void trailers(WritableBuffer outputBuffer)
     {
         // GZIP Trailers requires LITTLE_ENDIAN ByteBuffer.order
-        assert output.order() == ByteOrder.LITTLE_ENDIAN;
+        // TODO restore endianness check?
+//        assert output.order() == ByteOrder.LITTLE_ENDIAN;
 
         // need to write trailers
-        output.clear();
-        output.putInt((int)crc.getValue()); // CRC-32 of uncompressed data
+        outputBuffer.putInt((int)crc.getValue()); // CRC-32 of uncompressed data
         // Per javadoc, the .getBytesRead() is preferred as it is a return value of `long`.
         // The gzip trailer is fixed at a value of `int`, so we use the non-preferred .getTotalIn()
         // instead.  Also, if a gzip compressed is larger than Integer.MAX_VALUE then this trailer is broken anyway.
-        output.putInt(deflater.getTotalIn()); // // Number of uncompressed bytes
-        output.flip();
+        outputBuffer.putInt(deflater.getTotalIn()); // // Number of uncompressed bytes
     }
 }

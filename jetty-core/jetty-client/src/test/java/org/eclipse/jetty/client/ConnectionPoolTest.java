@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,6 +43,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
@@ -159,7 +159,7 @@ public class ConnectionPoolTest
                             response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
                             try (Blocker.Callback callback = _blocking.callback())
                             {
-                                response.write(true, ByteBuffer.allocate((int)contentLength), callback);
+                                response.write(true, ReadableBuffer.allocate((int)contentLength, false), callback);
                                 callback.block();
                             }
                         }
@@ -188,7 +188,7 @@ public class ConnectionPoolTest
                             {
                                 try (Blocker.Callback callback = _blocking.callback())
                                 {
-                                    response.write(chunk.isLast(), chunk.getByteBuffer(), callback);
+                                    response.write(chunk.isLast(), ReadableBuffer.wrap(chunk.getByteBuffer()), callback);
                                     callback.block();
                                 }
                             }

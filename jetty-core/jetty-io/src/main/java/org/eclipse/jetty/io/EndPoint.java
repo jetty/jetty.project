@@ -385,13 +385,6 @@ public interface EndPoint extends Closeable, Content.Sink
         }
     }
 
-    @Override
-    @Deprecated
-    default void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-    {
-        write(last, ReadableBuffer.wrap(byteBuffer), callback);
-    }
-
     /**
      * Cancel any current {@link #write(Callback, ByteBuffer...)} operation
      * in progress. Calling this method will cause future calls to {@link #write(Callback, ByteBuffer...)}

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee.servlet;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -107,7 +107,7 @@ public class ServletChannelStateTest
                     response = new Response.Wrapper(request, response)
                     {
                         @Override
-                        public void write(boolean last, ByteBuffer byteBuffer, Callback writeCallback)
+                        public void write(boolean last, ReadableBuffer byteBuffer, Callback writeCallback)
                         {
                             if (!last)
                             {
@@ -183,7 +183,7 @@ public class ServletChannelStateTest
                 response = new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback writeCallback)
+                    public void write(boolean last, ReadableBuffer byteBuffer, Callback writeCallback)
                     {
                         if (!last)
                         {

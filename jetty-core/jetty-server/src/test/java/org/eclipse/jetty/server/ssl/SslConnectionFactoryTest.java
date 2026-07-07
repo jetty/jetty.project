@@ -96,7 +96,7 @@ public class SslConnectionFactoryTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.write(true, BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + Request.getServerName(request)), callback);
+                response.write(true, BufferUtil.toReadableBuffer("url=" + request.getHttpURI() + "\nhost=" + Request.getServerName(request)), callback);
                 return true;
             }
         });
