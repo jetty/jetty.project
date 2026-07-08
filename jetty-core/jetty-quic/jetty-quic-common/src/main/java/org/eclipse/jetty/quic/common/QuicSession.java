@@ -404,7 +404,7 @@ public abstract class QuicSession extends AbstractSession
                 new HandshakePacket(quicVersion, getDestinationConnectionId(), getSourceConnectionId(), packetNumbers.nextPacketNumber(encryptionLevel), frames);
             case ONE_RTT ->
                 new OneRTTPacket(packetNumbers.nextPacketNumber(encryptionLevel), getDestinationConnectionId(), false, false, frames);
-            case ZERO_RTT -> throw new IllegalStateException();
+            case ZERO_RTT -> throw new UnsupportedOperationException();
         };
         if (LOG.isDebugEnabled())
             LOG.debug("produced {} on {}", packet, this);
@@ -536,7 +536,7 @@ public abstract class QuicSession extends AbstractSession
             {
                 AtomicLong streamIds = StreamId.isBidirectional(streamId) ? biStreamIds : uniStreamIds;
                 if (streamId > streamIds.get())
-                    throw new QuicException(ErrorCode.STREAM_STATE_ERROR, "invalid_stream_id");
+                    throw new QuicException(ErrorCode.STREAM_STATE_ERROR, "invalid_stream_id", frame.type());
                 else
                     return null;
             }
@@ -552,7 +552,7 @@ public abstract class QuicSession extends AbstractSession
 
             long max = bidirectional ? getBidirectionalRemoteStreamMaxCount() : getUnidirectionalRemoteStreamMaxCount();
             if (max > 0 && count >= max)
-                throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "remote_stream_count_exceeded");
+                throw new QuicException(ErrorCode.STREAM_LIMIT_ERROR, "remote_stream_count_exceeded", frame.type());
 
             remoteStreamCount.incrementAndGet();
             stream = new QuicStream(this, streamId, false);
@@ -639,7 +639,7 @@ public abstract class QuicSession extends AbstractSession
     {
         if (maxStreams > StreamId.MAX_PROGRESSIVE)
         {
-            callback.failed(new QuicException(ErrorCode.STREAM_STATE_ERROR, "invalid_max_streams"));
+            callback.failed(new QuicException(ErrorCode.STREAM_STATE_ERROR, "invalid_max_streams", bidirectional ? 0x12 : 0x13));
             return;
         }
 
@@ -662,7 +662,7 @@ public abstract class QuicSession extends AbstractSession
     {
         if (maxData > VarLenInt.MAX_VALUE)
         {
-            callback.failed(new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_max_data"));
+            callback.failed(new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_max_data", 0x10));
             return;
         }
         if (updateRecvMaxOffset(maxData))
@@ -683,7 +683,7 @@ public abstract class QuicSession extends AbstractSession
         long max = frame.maxData();
         if (max > VarLenInt.MAX_VALUE)
         {
-            callback.failed(new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_stream_max_data"));
+            callback.failed(new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_stream_max_data", frame.type()));
             return;
         }
         if (stream.updateRecvMaxOffset(max))
@@ -817,7 +817,7 @@ public abstract class QuicSession extends AbstractSession
             .forEach(t -> offerTask(t, false));
 
         ConnectionCloseFrame frame = closeFrame.get();
-        flusher.sendFrames(encryptionLevel, List.of(frame), Callback.from(callback, () -> disconnectComplete(frame)));
+        flusher.sendClose(encryptionLevel, frame, Callback.from(callback, () -> disconnectComplete(frame)));
     }
 
     private void disconnectComplete(ConnectionCloseFrame frame)
@@ -1065,7 +1065,7 @@ public abstract class QuicSession extends AbstractSession
         }
         catch (Throwable x)
         {
-            fail(x);
+            fail(x, false);
             return List.of();
         }
     }
@@ -1189,7 +1189,7 @@ public abstract class QuicSession extends AbstractSession
             case AckFrame ackFrame ->
             {
                 EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
-                if (ackFrame.largestAcknowledged() <= getPacketTracker().getLargestAcknowledged(encryptionLevel))
+                if (ackFrame.largestAcknowledged() <= getPacketNumbers().largestAcknowledged(encryptionLevel))
                     checkRateControl(frame);
                 processAckFrame(encryptionLevel, ackFrame);
             }
@@ -1473,7 +1473,7 @@ public abstract class QuicSession extends AbstractSession
         }
         catch (Throwable x)
         {
-            fail(x);
+            fail(x, false);
         }
     }
 
@@ -1565,7 +1565,7 @@ public abstract class QuicSession extends AbstractSession
     private void acknowledge(Packet packet)
     {
         if (packet instanceof Packet.WithFrames p && p.requiresAcknowledgement())
-            flusher.sendAcknowledgment(p, Callback.NOOP/*TODO*/);
+            flusher.sendAcknowledgment(p, Callback.NOOP);
     }
 
     /// Implicitly acknowledge the given packet number, as if an [AckFrame]
@@ -1764,7 +1764,7 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    public void fail(Throwable x)
+    public void fail(Throwable x, boolean dispatch)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failure on {}", this, x);
@@ -1801,7 +1801,7 @@ public abstract class QuicSession extends AbstractSession
                 }
             }
             disconnect(errorCode, x.getMessage(), causeFrameType, x, Callback.NOOP);
-        }), false);
+        }), dispatch);
     }
 
     public void dispose()

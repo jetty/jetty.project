@@ -14,12 +14,16 @@
 package org.eclipse.jetty.quic.common.packets;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketNumberSpace;
+import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.util.Atomics;
 
 /// Generates, encodes, and decodes packet numbers.
@@ -67,8 +71,6 @@ public class PacketNumbers
     /// @return a new packet number for the given encryption level
     public long nextPacketNumber(EncryptionLevel encryptionLevel)
     {
-        // TODO: skip packet numbers from time to time, to detect
-        //  "optimistic ack" attacks.
         return spaces.get(PacketNumberSpace.from(encryptionLevel)).nextPacketNumber();
     }
 
@@ -95,11 +97,27 @@ public class PacketNumbers
         return spaces.get(PacketNumberSpace.from(encryptionLevel)).decode(encoded);
     }
 
+    public long largestAcknowledged(EncryptionLevel encryptionLevel)
+    {
+        return spaces.get(PacketNumberSpace.from(encryptionLevel)).largestAcknowledged();
+    }
+
+    public long skipPacketNumber(EncryptionLevel encryptionLevel)
+    {
+        return spaces.get(PacketNumberSpace.from(encryptionLevel)).skipPacketNumber();
+    }
+
+    public List<Long> skippedPacketNumbers(EncryptionLevel encryptionLevel)
+    {
+        return spaces.get(PacketNumberSpace.from(encryptionLevel)).skippedPacketNumbers();
+    }
+
     private static class Space
     {
-        private final AtomicLong ids = new AtomicLong();
+        private final AtomicLong largestSent = new AtomicLong();
         private final AtomicLong largestReceived = new AtomicLong();
         private final AtomicLong largestAcknowledged = new AtomicLong();
+        private final ConcurrentSkipListSet<Long> skipped = new ConcurrentSkipListSet<>();
 
         private void onPacketReceived(Packet.WithFrames packet)
         {
@@ -108,12 +126,21 @@ public class PacketNumbers
 
         private void onAckFrameReceived(AckFrame frame)
         {
-            Atomics.updateMax(largestAcknowledged, frame.largestAcknowledged());
+            long largest = frame.largestAcknowledged();
+            if (largest >= largestSent.get())
+                throw new QuicException(ErrorCode.PROTOCOL_VIOLATION_ERROR, "invalid_ack_frame", frame.type());
+            for (Long ackNumber : frame.allAcknowledged())
+            {
+                if (skipped.contains(ackNumber))
+                    throw new QuicException(ErrorCode.PROTOCOL_VIOLATION_ERROR, "invalid_ack_frame", frame.type());
+            }
+            if (Atomics.updateMax(largestAcknowledged, largest))
+                skipped.headSet(largest, true).clear();
         }
 
         private long nextPacketNumber()
         {
-            return ids.getAndIncrement();
+            return largestSent.getAndIncrement();
         }
 
         private EncodedPacketNumber encode(long packetNumber)
@@ -145,6 +172,23 @@ public class PacketNumbers
             if (candidate > (expected + halfWindow) && candidate >= window)
                 return candidate - window;
             return candidate;
+        }
+
+        private long largestAcknowledged()
+        {
+            return largestAcknowledged.get();
+        }
+
+        private long skipPacketNumber()
+        {
+            long packetNumber = nextPacketNumber();
+            skipped.add(packetNumber);
+            return packetNumber;
+        }
+
+        private List<Long> skippedPacketNumbers()
+        {
+            return List.copyOf(skipped);
         }
     }
 }

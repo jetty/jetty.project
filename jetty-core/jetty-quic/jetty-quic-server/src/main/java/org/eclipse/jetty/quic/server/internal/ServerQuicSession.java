@@ -158,7 +158,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         }
         catch (Throwable x)
         {
-            fail(x);
+            fail(x, false);
             return List.of();
         }
     }
@@ -260,16 +260,16 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
             byte[] token = getQuicConfiguration().getTokenFactory().newToken(getRemoteSocketAddress());
             frames.add(new NewTokenFrame(token));
             // TODO: send also NewConnectionIdFrames.
-            frames(frames, Callback.from(() -> {}, this::fail));
+            frames(frames, Callback.from(() -> {}, x -> fail(x, false)));
         }
         catch (Throwable x)
         {
-            fail(x);
+            fail(x, false);
         }
     }
 
     private void handshakeFailure(Throwable failure)
     {
-        fail(failure);
+        fail(failure, false);
     }
 }

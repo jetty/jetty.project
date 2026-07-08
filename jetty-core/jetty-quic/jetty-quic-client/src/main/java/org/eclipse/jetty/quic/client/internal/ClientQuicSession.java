@@ -226,7 +226,7 @@ public class ClientQuicSession extends QuicSession
     private void handshakeComplete(HandshakeData data, Throwable failure)
     {
         if (failure != null)
-            fail(failure);
+            fail(failure, false);
     }
 
     @Override
@@ -292,7 +292,7 @@ public class ClientQuicSession extends QuicSession
         }
         catch (Throwable x)
         {
-            fail(x);
+            fail(x, false);
             return List.of();
         }
     }
@@ -414,10 +414,10 @@ public class ClientQuicSession extends QuicSession
     }
 
     @Override
-    public void fail(Throwable x)
+    public void fail(Throwable x, boolean dispatch)
     {
         connectTask.cancel();
-        super.fail(x);
+        super.fail(x, dispatch);
         sessionPromise(context).failed(x);
     }
 }

@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
@@ -186,6 +187,22 @@ public class QuicFlusher extends IteratingCallback
             iterate();
     }
 
+    public void sendClose(EncryptionLevel encryptionLevel, ConnectionCloseFrame frame, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sending {} close on {}", encryptionLevel, this);
+
+        boolean flush = switch (encryptionLevel)
+        {
+            case INITIAL -> initialFlusher.sendClose(frame, callback);
+            case HANDSHAKE -> handshakeFlusher.sendClose(frame, callback);
+            case ONE_RTT -> oneRTTFlusher.sendClose(frame, callback);
+            default -> throw new UnsupportedOperationException();
+        };
+        if (flush)
+            iterate();
+    }
+
     /// Processes the [MaxDataFrame] to update the session send max data.
     ///
     /// @param frame the [MaxDataFrame] with the session send max data update
@@ -321,9 +338,17 @@ public class QuicFlusher extends IteratingCallback
             entries = new ArrayList<>(ackEntries);
             ackEntries.clear();
         }
-        for (AckEntry entry : entries)
+
+        try
         {
-            getQuicSession().getPacketTracker().processAckFrameReceived(session, entry.encryptionLevel(), entry.frame());
+            for (AckEntry entry : entries)
+            {
+                getQuicSession().getPacketTracker().processAckFrameReceived(session, entry.encryptionLevel(), entry.frame());
+            }
+        }
+        catch (Throwable x)
+        {
+            getQuicSession().fail(x, true);
         }
     }
 

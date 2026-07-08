@@ -131,11 +131,11 @@ public class CongestionTest extends AbstractTest
                     }
 
                     @Override
-                    public long getCongestionWindow()
+                    public long getAvailableWindow()
                     {
                         if (congested.get() == 0)
                             return 0;
-                        return super.getCongestionWindow();
+                        return super.getAvailableWindow();
                     }
                 };
             }

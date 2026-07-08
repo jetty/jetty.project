@@ -21,6 +21,7 @@ import java.util.ListIterator;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
+import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.PingFrame;
@@ -29,7 +30,6 @@ import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStream;
 import org.eclipse.jetty.quic.common.frames.FramesGenerator;
 import org.eclipse.jetty.quic.common.frames.GeneratedFrame;
-import org.eclipse.jetty.quic.common.internal.packets.PacketsGenerator;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
@@ -128,6 +128,18 @@ class CryptoFlusher implements Callback
         }
     }
 
+    boolean sendClose(ConnectionCloseFrame frame, Callback callback)
+    {
+        try (var _ = lock())
+        {
+            FramesEntry entry = new FramesEntry(null, List.of(frame), callback, false);
+            boolean result = entries.add(entry);
+            if (LOG.isDebugEnabled())
+                LOG.debug("offered={} {} on {}", result, entry, this);
+            return result;
+        }
+    }
+
     boolean process() throws Exception
     {
         boolean probeMode = drain(processing, ccProcessing);
@@ -184,13 +196,13 @@ class CryptoFlusher implements Callback
 
     boolean process(List<FramesEntry> processing, List<FramesEntry> ccProcessing, boolean probeMode) throws Exception
     {
-        long congestionWindow = getQuicSession().getCongestionController().getCongestionWindow();
+        long availableWindow = getQuicSession().getCongestionController().getAvailableWindow();
         if (LOG.isDebugEnabled())
-            LOG.debug("congestion window {} bytes on {}", congestionWindow, this);
-        return process(processing, ccProcessing, probeMode, congestionWindow);
+            LOG.debug("available window {} bytes on {}", availableWindow, this);
+        return process(processing, ccProcessing, probeMode, availableWindow);
     }
 
-    boolean process(List<FramesEntry> processing, List<FramesEntry> ccProcessing, boolean probeMode, long congestionWindow) throws Exception
+    boolean process(List<FramesEntry> processing, List<FramesEntry> ccProcessing, boolean probeMode, long availableWindow) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("processing {}+{} entries on {}", processing.size(), ccProcessing.size(), this);
@@ -211,7 +223,7 @@ class CryptoFlusher implements Callback
         // RFC-9002[7.5]: probe packets must not be limited by the congestion window.
         if (!probeMode)
         {
-            long ccMaxFrameBytes = congestionWindow;
+            long ccMaxFrameBytes = availableWindow;
             ccMaxFrameBytes -= session.estimatePacketHeaderLength(encryptionLevel);
             ccMaxFrameBytes -= session.getTLSEngine().getCipherSuite().tagLength();
             ccMaxFrameBytes -= framesAccumulator.size();
@@ -233,25 +245,28 @@ class CryptoFlusher implements Callback
         // RFC-9001[5.4.2]: minimally pad the payload.
         // Packet protection requires 16 bytes of sample,
         // offset by 4 bytes from the packet number,
-        // so there must be at least 4 bytes of payload.
+        // so there must be at least 3 bytes of payload
+        // if the packet number is just 1 byte, which is
+        // the common case. Pad with 4 bytes for simplicity.
         if (framesAccumulator.size() < 4)
             framesAccumulator.putInt(0);
-
-        RetainableByteBuffer.Mutable packetAccumulator = flusher.getEncryptedBuffer();
-        PacketsGenerator packetGenerator = flusher.getPacketsGenerator();
-        EndPoint endPoint = session.getEndPoint();
 
         List<Frame> frames = writing.size() == 1
             ? writing.getFirst().frames()
             : writing.stream().flatMap(entry -> entry.frames().stream()).toList();
         Packet packet = session.newPacket(encryptionLevel, frames);
-        packetGenerator.generate(packetAccumulator, packet, framesAccumulator);
+
+        RetainableByteBuffer.Mutable packetAccumulator = flusher.getEncryptedBuffer();
+        flusher.getPacketsGenerator().generate(packetAccumulator, packet, framesAccumulator);
         boolean dataStalled = processing.isEmpty() || session.getSendWindow() == 0;
         session.getPacketTracker().processPacketSent(session, packet, packetAccumulator.size(), dataStalled);
         bytesWritten = packetAccumulator.size();
+
+        EndPoint endPoint = session.getEndPoint();
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} {} to {} on {}", packet, packetAccumulator, endPoint, this);
         endPoint.write(flusher, session.getRemoteSocketAddress(), packetAccumulator.getByteBuffer());
+
         return true;
     }
 
