@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests</artifactId>
-    <version>12.1.11-SNAPSHOT</version>
+    <version>12.1.12-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-test-session-common</artifactId>
   <packaging>jar</packaging>
@@ -75,8 +75,14 @@
       <artifactId>hibernate-search-mapper-orm</artifactId>
       <scope>compile</scope>
       <exclusions>
+        <!-- this comes from the active Jetty Environment -->
         <exclusion>
           <groupId>jakarta.activation</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <!-- this comes from the active Jetty Environment -->
+        <exclusion>
+          <groupId>jakarta.xml.bind</groupId>
           <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
