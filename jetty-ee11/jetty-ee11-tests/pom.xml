@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee11</groupId>
     <artifactId>jetty-ee11</artifactId>
-    <version>12.1.11-SNAPSHOT</version>
+    <version>12.1.12-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>jetty-ee11-tests</artifactId>
