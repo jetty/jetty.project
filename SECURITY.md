@@ -8,10 +8,15 @@ All [active versions](https://jetty.org/download.html) of Jetty are supported fo
 ## Reporting a Vulnerability
 
 Do not open a public issue to report a security vulnerability.  
-Please send a message to <security@jetty.org>, and we will create a private issue in which the issue can be triaged and handled.
+Be aware of the [Eclipse Foundation rules on security vulnerability reporting](https://github.com/orgs/eclipse-csi/discussions/16).
+
+Our preferred way to handle security vulnerability reports is in a GitHub Security Advisory, please use the private ["Report a Vulnerability"](https://github.com/jetty/jetty.project/security/advisories) button mechanism in our GitHub project.  
+If you do not have a GitHub account, use the [security@jetty.org](mailto:security@jetty.org) email address to report your vulnerability, and we will create a private security advisory in which the report can be triaged and handled.  
 We are flexible in how we work with reporters of vulnerabilities; however, we reserve the right to act in the interests of the Jetty project in all circumstances.
 
-AI-generated security reports must be human-verified and possibly contain a real code proof-of-concept.
+## AI Reports
+
+AI-generated security reports must be human-verified and possibly contain a real code proof-of-concept.  
 Failing to do so, also known as [AI slop](https://en.wikipedia.org/wiki/AI_slop), may result in banning the reporter from the Jetty project.
 
 ## Handling a Vulnerability
