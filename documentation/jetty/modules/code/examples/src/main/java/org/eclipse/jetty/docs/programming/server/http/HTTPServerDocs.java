@@ -69,8 +69,8 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.proxy.ProxyHandler;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
 import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
@@ -257,9 +257,8 @@ public class HTTPServerDocs
         sslContextFactory.setKeyStorePassword("secret");
 
         // Create a QuicServerConnector instance.
-        Path pemWorkDir = Path.of("/path/to/pem/dir");
-        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(pemWorkDir));
-        QuicheServerConnector connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, new HTTP3ServerConnectionFactory());
+        QuicServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
+        QuicServerConnector connector = new QuicServerConnector(server, sslContextFactory, serverQuicConfig, new HTTP3ServerConnectionFactory());
 
         // The port to listen to.
         connector.setPort(8080);
@@ -349,9 +348,8 @@ public class HTTPServerDocs
         server.addConnector(plainConnector);
 
         // Third, create the connector for HTTP/3.
-        Path pemWorkDir = Path.of("/path/to/pem/dir");
-        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(pemWorkDir));
-        QuicheServerConnector http3Connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, new HTTP3ServerConnectionFactory());
+        QuicServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
+        QuicServerConnector http3Connector = new QuicServerConnector(server, sslContextFactory, serverQuicConfig, new HTTP3ServerConnectionFactory());
         server.addConnector(http3Connector);
 
         // Set up a listener so that when the secure connector starts,
@@ -605,9 +603,8 @@ public class HTTPServerDocs
 
         // Create and configure the HTTP/3 connector.
         // It is mandatory to configure the PEM directory.
-        Path pemWorkDir = Path.of("/path/to/pem/dir");
-        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(pemWorkDir));
-        QuicheServerConnector connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, new HTTP3ServerConnectionFactory());
+        QuicServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
+        QuicServerConnector connector = new QuicServerConnector(server, sslContextFactory, serverQuicConfig, new HTTP3ServerConnectionFactory());
         connector.setPort(843);
 
         server.addConnector(connector);

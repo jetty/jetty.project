@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.test.client.transport;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -26,16 +24,16 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Transport;
-import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicClient;
+import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicTransport;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.MemoryConnector;
 import org.eclipse.jetty.server.MemoryTransport;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -144,29 +142,26 @@ public class HTTP1TransportTest extends AbstractTransportTest
 
     @Test
     @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
-    public void testQuicheTransport(WorkDir workDir) throws Exception
+    public void testQuicTransport() throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
         sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslServer.setKeyStorePassword("storepwd");
 
-        Path pemServerDir = workDir.getEmptyPathDir().resolve("server");
-        Files.createDirectories(pemServerDir);
-
-        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(pemServerDir);
-        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, serverQuicConfig, new HttpConnectionFactory());
+        QuicServerQuicConfiguration serverQuicConfig = new QuicServerQuicConfiguration();
+        QuicServerConnector connector = new QuicServerConnector(server, sslServer, serverQuicConfig, new HttpConnectionFactory());
         server.addConnector(connector);
         server.setHandler(new EmptyServerHandler());
 
         SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
         httpClient.setSslContextFactory(sslClient);
-        QuicheClientQuicConfiguration clientQuicConfig = new QuicheClientQuicConfiguration();
+        QuicClientQuicConfiguration clientQuicConfig = new QuicClientQuicConfiguration();
         httpClient.addBean(clientQuicConfig);
 
         server.start();
 
         ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
-            .transport(new QuicheTransport(clientQuicConfig))
+            .transport(new QuicTransport(new QuicClient(clientQuicConfig)))
             .scheme(HttpScheme.HTTPS.asString())
             .timeout(5, TimeUnit.SECONDS)
             .send();

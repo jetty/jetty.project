@@ -41,38 +41,33 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicClient;
+import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicTransport;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-@ExtendWith(WorkDirExtension.class)
 public class AbstractClientServerTest
 {
     public static List<TransportType> transports()
     {
         return List.of(TransportType.values());
     }
-
-    public WorkDir workDir;
 
     @RegisterExtension
     public final BeforeTestExecutionCallback printMethodName = context ->
@@ -117,10 +112,10 @@ public class AbstractClientServerTest
 
         connector = switch (transportType)
         {
-            case H3_QUICHE ->
+            case H3_QUIC ->
             {
-                QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
-                yield new QuicheServerConnector(server, serverSslContextFactory, serverQuicConfig, serverConnectionFactory);
+                QuicServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
+                yield new QuicServerConnector(server, serverSslContextFactory, serverQuicConfig, serverConnectionFactory);
             }
         };
         server.addConnector(connector);
@@ -147,14 +142,14 @@ public class AbstractClientServerTest
 
         ClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(switch (transportType)
         {
-            case H3_QUICHE -> new QuicheClientQuicConfiguration();
+            case H3_QUIC -> new QuicClientQuicConfiguration();
         });
 
         http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
 
         transport = switch (transportType)
         {
-            case H3_QUICHE -> new QuicheTransport((QuicheClientQuicConfiguration)http3Client.getClientQuicConfiguration());
+            case H3_QUIC -> new QuicTransport(new QuicClient((QuicClientQuicConfiguration)http3Client.getClientQuicConfiguration()));
         };
 
         HttpClientTransport httpClientTransport = dynamic
@@ -211,6 +206,6 @@ public class AbstractClientServerTest
 
     public enum TransportType
     {
-        H3_QUICHE
+        H3_QUIC
     }
 }

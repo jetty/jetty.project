@@ -38,22 +38,20 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicClient;
+import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicTransport;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -64,13 +62,11 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-@ExtendWith(WorkDirExtension.class)
 public class Http3AsyncIOServletTest
 {
-    public WorkDir workDir;
     private final HttpConfiguration httpConfig = new HttpConfiguration();
     private Server server;
-    private QuicheServerConnector connector;
+    private QuicServerConnector connector;
     private HTTP3Client client;
 
     private void start(HttpServlet httpServlet) throws Exception
@@ -79,15 +75,15 @@ public class Http3AsyncIOServletTest
         SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
         serverSslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
         serverSslContextFactory.setKeyStorePassword("storepwd");
-        QuicheServerQuicConfiguration serverQuicConfiguration = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
-        connector = new QuicheServerConnector(server, serverSslContextFactory, serverQuicConfiguration, new HTTP3ServerConnectionFactory(httpConfig));
+        QuicServerQuicConfiguration serverQuicConfiguration = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
+        connector = new QuicServerConnector(server, serverSslContextFactory, serverQuicConfiguration, new HTTP3ServerConnectionFactory(httpConfig));
         server.addConnector(connector);
         ServletContextHandler servletContextHandler = new ServletContextHandler("/");
         servletContextHandler.addServlet(new ServletHolder(httpServlet), "/*");
         server.setHandler(servletContextHandler);
         server.start();
 
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         client = new HTTP3Client(clientQuicConfig);
         client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));
         client.start();
@@ -143,7 +139,7 @@ public class Http3AsyncIOServletTest
         });
 
         InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
-        Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(new QuicheTransport((QuicheClientQuicConfiguration)client.getClientQuicConfiguration()), address, new Client.Listener() {}, p));
+        Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(new QuicTransport(new QuicClient((QuicClientQuicConfiguration)client.getClientQuicConfiguration())), address, new Client.Listener() {}, p));
         MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_3, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, false);
         Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, null, p));
@@ -171,8 +167,8 @@ public class Http3AsyncIOServletTest
     {
         // See the equivalent test in Http2AsyncIOServletTest for HTTP/2.
         // For HTTP/3 we do not have a "reset" event that we can relay to applications,
-        // because HTTP/3 does not have a "reset" frame; QUIC has RESET_STREAM, but we
-        // do not have an event from Quiche to reliably report it to applications.
+        // because HTTP/3 does not have a "reset" frame; QUIC has RESET_STREAM.
+        // TODO
         assumeTrue(false);
     }
 }

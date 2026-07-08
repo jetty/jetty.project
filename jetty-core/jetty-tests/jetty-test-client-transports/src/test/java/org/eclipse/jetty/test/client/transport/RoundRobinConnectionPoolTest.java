@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.RoundRobinConnectionPool;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -224,8 +224,8 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
                 return true;
             }
         });
-        if (transportType == TransportType.H3_QUICHE)
-            ((QuicheServerConnector)connector).getServerQuicConfiguration().setBidirectionalMaxStreams(maxUsage);
+        if (transportType == TransportType.H3_QUIC)
+            ((QuicServerConnector)connector).getServerQuicConfiguration().setBidirectionalMaxStreams(maxUsage);
         client.getHttpClientTransport().setConnectionPoolFactory(destination ->
         {
             RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, maxMultiplex);
@@ -249,7 +249,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest
         assertEquals(count, remotePorts.size());
 
         // UDP does not have TIME_WAIT so ports may be reused by different connections.
-        if (transportType == TransportType.H3_QUICHE)
+        if (transportType == TransportType.H3_QUIC)
             return;
 
         // Maps {remote_port -> number_of_times_port_was_used}.

@@ -11,18 +11,6 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.quiche.jna;
+= Migrating from Jetty 12.1.x to Jetty 13.0.x
 
-import com.sun.jna.IntegerType;
-
-public class uint8_t extends IntegerType
-{
-    public uint8_t()
-    {
-        this((byte)0);
-    }
-    public uint8_t(byte v)
-    {
-        super(1, v, true);
-    }
-}
+TODO

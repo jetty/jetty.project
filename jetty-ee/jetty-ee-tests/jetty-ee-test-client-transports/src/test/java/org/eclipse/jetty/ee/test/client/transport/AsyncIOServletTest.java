@@ -72,6 +72,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -1557,7 +1558,8 @@ public class AsyncIOServletTest extends AbstractTest
     public void testResourceServletLastWrite(TransportType transportType) throws Exception
     {
         prepareServer(transportType, new ResourceServlet());
-        Path docRoot = workDir.getPathFile("docroot");
+        Path workDir = MavenPaths.targetTestDir(AsyncIOServletTest.class, "testResourceServletLastWrite", "testResourceServletLastWrite");
+        Path docRoot = workDir.resolve("docroot");
         FS.ensureDirExists(docRoot);
         Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
         servletContextHandler.setBaseResourceAsPath(docRoot);

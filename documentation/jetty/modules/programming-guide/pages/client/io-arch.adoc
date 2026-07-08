@@ -44,7 +44,7 @@ The only partial exception is the <<memory,memory transport>>, which is not base
 
 The client-side abstraction for the low-level transport is `org.eclipse.jetty.io.Transport`.
 
-`Transport` represents how high-level protocols can be transported; there is `Transport.TCP_IP` that represents communication over TCP, but also `Transport.TCPUnix` for Unix-Domain sockets, `QuicheTransport` for QUIC and `MemoryTransport` for memory.
+`Transport` represents how high-level protocols can be transported; there is `Transport.TCP_IP` that represents communication over TCP, but also `Transport.TCPUnix` for Unix-Domain sockets, `QuicTransport` for QUIC and `MemoryTransport` for memory.
 
 Applications can specify the `Transport` to use for each request as described in xref:client/http.adoc#api-transport[this section].
 

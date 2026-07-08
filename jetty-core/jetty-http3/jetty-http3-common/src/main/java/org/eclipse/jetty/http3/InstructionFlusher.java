@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 // TODO: see QPACK spec "Avoiding Flow Control Deadlocks"
 //  We would need to check the flow control window before writing.
 //  However, if we do, then we need a mechanism to wakeup again this flusher
-//  when Quiche tells us that the stream is writable again (right now we only do completeWrite()).
+//  when QUIC tells us that the stream is writable again (right now we only do completeWrite()).
 public class InstructionFlusher extends IteratingCallback
 {
     private static final Logger LOG = LoggerFactory.getLogger(InstructionFlusher.class);

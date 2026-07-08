@@ -15,7 +15,6 @@ package org.eclipse.jetty.docs.programming.server.http3;
 
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.RejectedExecutionException;
@@ -34,8 +33,8 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -59,7 +58,7 @@ public class HTTP3ServerDocs
         // The listener for session events.
         Session.Server.Listener sessionListener = new Session.Server.Listener() {};
 
-        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(Path.of("/path/to/pem/dir")));
+        QuicServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
         // Configure the max number of requests per QUIC connection.
         serverQuicConfig.setBidirectionalMaxStreams(1024 * 1024);
 
@@ -67,8 +66,8 @@ public class HTTP3ServerDocs
         RawHTTP3ServerConnectionFactory http3 = new RawHTTP3ServerConnectionFactory(sessionListener);
         http3.getHTTP3Configuration().setStreamIdleTimeout(15000);
 
-        // Create and configure the QuicheServerConnector.
-        QuicheServerConnector connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, http3);
+        // Create and configure the QuicServerConnector.
+        QuicServerConnector connector = new QuicServerConnector(server, sslContextFactory, serverQuicConfig, http3);
 
         // Add the Connector to the Server.
         server.addConnector(connector);

@@ -36,8 +36,9 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.quic.client.QuicClient;
+import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Promise;
 
@@ -50,7 +51,7 @@ public class HTTP3ClientDocs
     {
         // tag::start[]
         // Create a QUIC configuration suitable for HTTP/3.
-        ClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        ClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         // Instantiate HTTP3Client.
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
 
@@ -64,7 +65,7 @@ public class HTTP3ClientDocs
 
     public void stop() throws Exception
     {
-        ClientQuicConfiguration quicConfiguration = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        ClientQuicConfiguration quicConfiguration = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(quicConfiguration);
         http3Client.start();
         // tag::stop[]
@@ -75,7 +76,7 @@ public class HTTP3ClientDocs
 
     public void connect() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         // tag::connect[]
@@ -84,7 +85,7 @@ public class HTTP3ClientDocs
 
         // Connect to the server, the Promise will be
         // notified when the connection is succeeded (or failed).
-        http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, new Promise.Invocable.NonBlocking<>()
+        http3Client.connect(new QuicTransport(new QuicClient(clientQuicConfig)), serverAddress, new Session.Client.Listener() {}, new Promise.Invocable.NonBlocking<>()
         {
             @Override
             public void succeeded(Session.Client result)
@@ -103,13 +104,13 @@ public class HTTP3ClientDocs
 
     public void configure() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
 
         // tag::configure[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener()
+        http3Client.connect(new QuicTransport(new QuicClient(clientQuicConfig)), serverAddress, new Session.Client.Listener()
         {
             @Override
             public Map<Long, Long> onPreface(Session session)
@@ -126,12 +127,12 @@ public class HTTP3ClientDocs
 
     public void newStream() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         // tag::newStream[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, p));
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicTransport(new QuicClient(clientQuicConfig)), serverAddress, new Session.Client.Listener() {}, p));
 
         // Configure the request headers.
         HttpFields requestHeaders = HttpFields.build()
@@ -151,12 +152,12 @@ public class HTTP3ClientDocs
 
     public void newStreamWithData() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         // tag::newStreamWithData[]
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, p));
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicTransport(new QuicClient(clientQuicConfig)), serverAddress, new Session.Client.Listener() {}, p));
 
         // Configure the request headers.
         HttpFields requestHeaders = HttpFields.build()
@@ -196,11 +197,11 @@ public class HTTP3ClientDocs
 
     public void responseListener() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, p));
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicTransport(new QuicClient(clientQuicConfig)), serverAddress, new Session.Client.Listener() {}, p));
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {jetty-version}");
@@ -261,11 +262,11 @@ public class HTTP3ClientDocs
 
     public void terminate() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8444);
-        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, p));
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicTransport(new QuicClient(clientQuicConfig)), serverAddress, new Session.Client.Listener() {}, p));
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {jetty-version}");
@@ -290,11 +291,11 @@ public class HTTP3ClientDocs
 
     public void close() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
-        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, p));
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicTransport(new QuicClient(clientQuicConfig)), serverAddress, new Session.Client.Listener() {}, p));
 
         // tag::close[]
         session.goAway(false, Promise.Invocable.noop());
@@ -303,11 +304,11 @@ public class HTTP3ClientDocs
 
     public void retryStream() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
         http3Client.start();
         SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
-        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicheTransport(clientQuicConfig), serverAddress, new Session.Client.Listener() {}, p));
+        Session.Client session = Blocker.blockWithPromise(p -> http3Client.connect(new QuicTransport(new QuicClient(clientQuicConfig)), serverAddress, new Session.Client.Listener() {}, p));
 
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_3, HttpFields.EMPTY);
         HeadersFrame headersFrame = new HeadersFrame(request, true);

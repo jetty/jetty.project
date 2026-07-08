@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee.test;
 
 import java.net.InetSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -40,16 +39,15 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicClient;
+import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicTransport;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -57,8 +55,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -66,19 +62,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(WorkDirExtension.class)
 public class HTTP3RequestTest
 {
-    public WorkDir workDir;
     private Path pemDir;
     private Server server;
-    private QuicheServerConnector connector;
-
-    @BeforeEach
-    public void prepare()
-    {
-        pemDir = workDir.getEmptyPathDir();
-    }
+    private QuicServerConnector connector;
 
     @AfterEach
     public void dispose()
@@ -93,9 +81,8 @@ public class HTTP3RequestTest
         SslContextFactory.Server ssl = new SslContextFactory.Server();
         ssl.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
         ssl.setKeyStorePassword("storepwd");
-        Path serverPemDirectory = Files.createDirectories(pemDir.resolve("server"));
-        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(serverPemDirectory));
-        connector = new QuicheServerConnector(server, ssl, serverQuicConfig, new HTTP3ServerConnectionFactory());
+        QuicServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
+        connector = new QuicServerConnector(server, ssl, serverQuicConfig, new HTTP3ServerConnectionFactory());
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler();
@@ -130,13 +117,13 @@ public class HTTP3RequestTest
             }
         });
 
-        QuicheClientQuicConfiguration clientQuicConfiguration = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfiguration = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         try (HTTP3Client http3Client = new HTTP3Client(clientQuicConfiguration))
         {
             http3Client.start();
 
             InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
-            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(new QuicheTransport(clientQuicConfiguration), new SslContextFactory.Client(true), address, new Session.Client.Listener() {}, p));
+            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> http3Client.connect(new QuicTransport(new QuicClient(clientQuicConfiguration)), new SslContextFactory.Client(true), address, new Session.Client.Listener() {}, p));
 
             // Craft a request with a bad URI, it will not hit the Servlet.
             MetaData.Request metaData = new MetaData.Request(

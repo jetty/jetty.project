@@ -43,8 +43,9 @@ import org.eclipse.jetty.http3.client.transport.internal.HttpChannelOverHTTP3;
 import org.eclipse.jetty.http3.client.transport.internal.HttpConnectionOverHTTP3;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.quic.client.QuicClient;
+import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -171,14 +172,14 @@ public class HttpChannelAssociationTest extends AbstractTest
                     }
                 };
             }
-            case H3_QUICHE:
+            case H3_QUIC:
             {
                 ClientConnector clientConnector = new ClientConnector();
                 clientConnector.setSelectors(1);
                 clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+                QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
                 HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
-                yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig))
+                yield new HttpClientTransportOverHTTP3(http3Client, new QuicTransport(new QuicClient(clientQuicConfig)))
                 {
                     @Override
                     protected org.eclipse.jetty.client.Connection newConnection(Destination destination, HTTP3SessionClient session)

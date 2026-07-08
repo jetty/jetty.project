@@ -45,7 +45,7 @@ public class ThreadStarvationTest extends AbstractTest
     {
         // Leave only 1 thread available to handle requests.
         // 1 acceptor (0 for H3), 1 selector, 1 available.
-        int maxThreads = transportType == TransportType.H3_QUICHE ? 2 : 3;
+        int maxThreads = transportType == TransportType.H3_QUIC ? 2 : 3;
         AtomicReference<Thread> handlerThreadRef = new AtomicReference<>();
         prepareServer(transportType, new Handler.Abstract()
         {
@@ -144,7 +144,7 @@ public class ThreadStarvationTest extends AbstractTest
         });
         // Leave only 1 thread available to handle requests.
         // 1 acceptor (0 for H3), 1 selector, 1 available.
-        int maxThreads = transportType == TransportType.H3_QUICHE ? 2 : 3;
+        int maxThreads = transportType == TransportType.H3_QUIC ? 2 : 3;
         QueuedThreadPool serverThreads = (QueuedThreadPool)server.getThreadPool();
         serverThreads.setReservedThreads(0);
         serverThreads.setDetailedDump(true);

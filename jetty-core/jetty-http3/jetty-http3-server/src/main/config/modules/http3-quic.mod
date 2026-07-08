@@ -1,17 +1,16 @@
 [description]
-Enables experimental support for the HTTP/3 protocol using the Quiche library.
+Enables experimental support for the HTTP/3 protocol.
 
 [tags]
 connector
 http3
 http
 quic
-quiche
 experimental
 
 [depends]
 http2
-quic-quiche-server
+quic-server
 work
 
 [provides]
@@ -23,7 +22,7 @@ lib/http3/jetty-http3-qpack-${jetty.version}.jar
 lib/http3/jetty-http3-server-${jetty.version}.jar
 
 [xml]
-etc/jetty-http3-quiche.xml
+etc/jetty-http3-quic.xml
 
 [ini-template]
 # tag::documentation[]

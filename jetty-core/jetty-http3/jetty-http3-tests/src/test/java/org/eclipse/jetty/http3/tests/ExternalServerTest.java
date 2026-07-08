@@ -32,8 +32,9 @@ import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.quic.client.QuicClient;
+import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Promise;
@@ -55,14 +56,14 @@ public class ExternalServerTest
     @Tag("external")
     public void testExternalServerWithHttpClient() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client client = new HTTP3Client(clientQuicConfig);
-        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP3(client, new QuicheTransport(clientQuicConfig))))
+        try (HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP3(client, new QuicTransport(new QuicClient(clientQuicConfig)))))
         {
             httpClient.start();
             URI uri = URI.create("https://maven-central-eu.storage-download.googleapis.com/maven2/org/apache/maven/maven-parent/38/maven-parent-38.pom");
             ContentResponse response = httpClient.newRequest(uri)
-                .transport(new QuicheTransport(clientQuicConfig))
+                .transport(new QuicTransport(new QuicClient(clientQuicConfig)))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
             assertThat(response.getContentAsString(), containsString("<artifactId>maven-parent</artifactId>"));
@@ -73,7 +74,7 @@ public class ExternalServerTest
     @Tag("external")
     public void testExternalServerWithHTTP3Client() throws Exception
     {
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         try (HTTP3Client client = new HTTP3Client(clientQuicConfig))
         {
             client.start();
@@ -85,7 +86,7 @@ public class ExternalServerTest
 //            HostPort hostPort = new HostPort("quic.tech:8443");
 //            HostPort hostPort = new HostPort("h2o.examp1e.net:443");
 //            HostPort hostPort = new HostPort("test.privateoctopus.com:4433");
-            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(new QuicheTransport(clientQuicConfig), new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {}, p));
+            Session.Client session = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> client.connect(new QuicTransport(new QuicClient(clientQuicConfig)), new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {}, p));
 
             CountDownLatch requestLatch = new CountDownLatch(1);
             HttpURI uri = HttpURI.from(String.format("https://%s/", hostPort));

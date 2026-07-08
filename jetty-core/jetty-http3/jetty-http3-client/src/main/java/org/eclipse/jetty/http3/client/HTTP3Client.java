@@ -37,107 +37,90 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * <p>HTTP3Client provides an asynchronous, non-blocking implementation to send
- * HTTP/3 frames to a server.</p>
- * <p>Typical usage:</p>
- * <pre> {@code
- * // Client-side QUIC configuration to configure QUIC properties.
- * QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
- *
- * // Create the HTTP3Client instance.
- * HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
- *
- * // To configure HTTP/3 properties.
- * HTTP3Configuration h3Config = http3Client.getHTTP3Configuration();
- *
- * http3Client.start();
- *
- * // HTTP3Client request/response usage.
- *
- * // Connect to host.
- * String host = "jetty.org";
- * int port = 443;
- * Session.Client session = Blocker.blockWithPromise(p -> http3Client
- *     .connect(new QuicheTransport(clientQuicConfig), new InetSocketAddress(host, port), new Session.Client.Listener() {}, p));
- *
- * // Prepare the HTTP request headers.
- * HttpFields.Mutable requestFields = HttpFields.build();
- * requestFields.put("User-Agent", http3Client.getClass().getName() + "/" + Jetty.VERSION);
- *
- * // Prepare the HTTP request object.
- * MetaData.Request request = new MetaData.Request("PUT", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_3, requestFields);
- *
- * // Create the HTTP/3 HEADERS frame representing the HTTP request.
- * HeadersFrame headersFrame = new HeadersFrame(request, false);
- *
- * // Send the HEADERS frame to create a request stream.
- * Stream.Client stream = Blocker.blockWithPromise(p -> session.newRequest(headersFrame, new Stream.Client.Listener()
- * {
- *     @Override
- *     public void onResponse(Stream.Client stream, HeadersFrame frame)
- *     {
- *         // Inspect the response status and headers.
- *         MetaData.Response response = (MetaData.Response)frame.getMetaData();
- *
- *         // Demand for response content.
- *         stream.demand();
- *     }
- *
- *     @Override
- *     public void onDataAvailable(Stream.Client stream)
- *     {
- *         Content.Chunk chunk = stream.read();
- *         if (chunk == null)
- *         {
- *             stream.demand();
- *             return;
- *         }
- *         // Process the response content chunk.
- *         process(chunk);
- *         // Release the chunk.
- *         chunk.release();
- *         // Demand for more response content.
- *         if (!chunk.isLast())
- *             stream.demand();
- *     }
- * }, p));
- *
- * // Use the Stream.Client object to send request content, if any, using a DATA frame.
- * ByteBuffer requestChunk1 = UTF_8.encode("hello");
- * stream.data(new DataFrame(requestChunk1, false), new Promise.Invocable.NonBlocking()
- * {
- *     @Override
- *     public void succeeded(Stream s)
- *     {
- *         // Subsequent sends must wait for previous sends to complete.
- *         ByteBuffer requestChunk2 = UTF_8.encode("world");
- *         return s.data(new DataFrame(requestChunk2, true), Promise.Invocable.noop());
- *     }
- * });
- * }</pre>
- *
- * <p>IMPLEMENTATION NOTES.</p>
- * <p>Each call to {@link #connect(Transport, SocketAddress, Session.Client.Listener, Promise.Invocable)}
- * creates a new {@link DatagramChannelEndPoint} with the correspondent QUIC
- * {@link Connection}.</p>
- * <p>Each QUIC connection manages one QUIC {@link org.eclipse.jetty.quic.api.Session}
- * with the corresponding {@link ClientHTTP3Session}.</p>
- * <p>Each {@link ClientHTTP3Session} manages the mandatory QPACK encoder, QPACK decoder
- * and control unidirectional streams, plus zero or more request/response bidirectional
- * streams.</p>
- * <pre>{@code
- * GENERIC, TCP-LIKE, SETUP FOR HTTP/1.1 AND HTTP/2
- * HTTP3Client - dgramEP - QUIC Connection - QUIC Session - ClientProtocolSession - TCPLikeStream
- *
- * SPECIFIC SETUP FOR HTTP/3
- *                                                                             ,- [Control|Decoder|Encoder]Stream
- * HTTP3Client - dgramEP - QUIC Connection - QUIC Session - ClientHTTP3Session -* HTTP3Streams
- * }</pre>
- *
- * <p>HTTP/3+QUIC support is experimental and not suited for production use.
- * APIs may change incompatibly between releases.</p>
- */
+/// `HTTP3Client` provides an asynchronous, non-blocking implementation to send
+/// HTTP/3 frames to a server.
+///
+/// Typical usage:
+///
+/// ```java
+/// // Client-side QUIC configuration to configure QUIC properties.
+/// QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
+/// // Create the HTTP3Client instance.
+/// HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
+/// // To configure HTTP/3 properties.
+/// HTTP3Configuration h3Config = http3Client.getHTTP3Configuration();
+/// http3Client.start();
+/// // HTTP3Client request/response usage.
+/// // Connect to host.
+/// String host = "jetty.org";
+/// int port = 443;
+/// Session.Client session = Blocker.blockWithPromise(p -> http3Client
+///     .connect(new QuicheTransport(clientQuicConfig), new InetSocketAddress(host, port), new Session.Client.Listener() {}, p));
+/// // Prepare the HTTP request headers.
+/// HttpFields.Mutable requestFields = HttpFields.build();
+/// requestFields.put("User-Agent", http3Client.getClass().getName() + "/" + Jetty.VERSION);
+/// // Prepare the HTTP request object.
+/// MetaData.Request request = new MetaData.Request("PUT", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_3, requestFields);
+/// // Create the HTTP/3 HEADERS frame representing the HTTP request.
+/// HeadersFrame headersFrame = new HeadersFrame(request, false);
+/// // Send the HEADERS frame to create a request stream.
+/// Stream.Client stream = Blocker.blockWithPromise(p -> session.newRequest(headersFrame, new Stream.Client.Listener()
+/// {
+///     @Override
+///     public void onResponse(Stream.Client stream, HeadersFrame frame)
+///     {
+///         // Inspect the response status and headers.
+///         MetaData.Response response = (MetaData.Response)frame.getMetaData();
+///         // Demand for response content.
+///         stream.demand();
+///     }
+///
+///     @Override
+///     public void onDataAvailable(Stream.Client stream)
+///     {
+///         Content.Chunk chunk = stream.read();
+///         if (chunk == null)
+///         {
+///             stream.demand();
+///             return;
+///         }
+///         // Process the response content chunk.
+///         process(chunk);
+///         // Release the chunk.
+///         chunk.release();
+///         // Demand for more response content.
+///         if (!chunk.isLast())
+///             stream.demand();
+///     }
+/// }, p));
+/// // Use the Stream.Client object to send request content, if any, using a DATA frame.
+/// ByteBuffer requestChunk1 = UTF_8.encode("hello");
+/// stream.data(new DataFrame(requestChunk1, false), new Promise.Invocable.NonBlocking()
+/// {
+///     @Override
+///     public void succeeded(Stream s)
+///     {
+///         // Subsequent sends must wait for previous sends to complete.
+///         ByteBuffer requestChunk2 = UTF_8.encode("world");
+///         return s.data(new DataFrame(requestChunk2, true), Promise.Invocable.noop());
+///     }
+/// });
+/// ```
+///
+/// IMPLEMENTATION NOTES.
+///
+/// Each call to [#connect(Transport, SocketAddress, Session.Client.Listener, Promise.Invocable)]
+/// creates a new [DatagramChannelEndPoint] with the correspondent QUIC [Connection].
+///
+/// Each QUIC connection manages one QUIC [Session]
+/// with the corresponding [ClientHTTP3Session].
+///
+/// Each [ClientHTTP3Session] manages the mandatory QPACK encoder, QPACK decoder
+/// and control unidirectional streams, plus zero or more request/response bidirectional
+/// streams.
+///
+/// HTTP/3+QUIC support is experimental and not suited for production use.
+/// APIs may change incompatibly between releases.
 public class HTTP3Client extends ContainerLifeCycle implements AutoCloseable
 {
     public static final String CONTEXT_KEY = HTTP3Client.class.getName();

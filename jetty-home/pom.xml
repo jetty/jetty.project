@@ -442,11 +442,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-quiche-jna</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-quiche-server</artifactId>
+      <artifactId>jetty-quic-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain.setuid</groupId>
@@ -769,8 +765,8 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.quic,org.eclipse.jetty.quiche</includeGroupIds>
-              <includeArtifactIds>jetty-quic-api,jetty-quic-common,jetty-quic-server,jetty-quic-util,jetty-quic-quiche-common,jetty-quic-quiche-server,jetty-quic-quiche-jna,jetty-quic-quiche-foreign,jetty-quiche-native</includeArtifactIds>
+              <includeGroupIds>org.eclipse.jetty.quic</includeGroupIds>
+              <includeArtifactIds>jetty-quic-api,jetty-quic-common,jetty-quic-server,jetty-quic-util</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/quic</outputDirectory>
             </configuration>
@@ -960,19 +956,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>enable-foreign</id>
-      <activation>
-        <jdk>[22,)</jdk>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.eclipse.jetty.quic</groupId>
-          <artifactId>jetty-quic-quiche-foreign</artifactId>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
 </project>

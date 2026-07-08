@@ -4,13 +4,13 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addConnector">
     <Arg>
-      <New id="quicheConnector" class="org.eclipse.jetty.quic.quiche.server.QuicheServerConnector">
+      <New id="quicConnector" class="org.eclipse.jetty.quic.server.QuicServerConnector">
         <Arg><Ref refid="Server" /></Arg>
         <Arg><Ref refid="sslContextFactory" /></Arg>
         <Arg>
           <Call class="org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration" name="configure">
             <Arg>
-              <New id="quicConfiguration" class="org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration" />
+              <New id="quicConfiguration" class="org.eclipse.jetty.quic.server.QuicServerQuicConfiguration" />
             </Arg>
           </Call>
         </Arg>

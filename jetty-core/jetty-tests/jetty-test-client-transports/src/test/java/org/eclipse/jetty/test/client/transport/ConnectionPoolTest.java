@@ -23,7 +23,7 @@ import org.eclipse.jetty.fcgi.server.internal.ServerFCGIConnection;
 import org.eclipse.jetty.http2.server.internal.HTTP2ServerConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.quic.quiche.server.internal.ServerQuicheConnection;
+import org.eclipse.jetty.quic.server.internal.ServerQuicConnection;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -62,7 +62,7 @@ public class ConnectionPoolTest extends AbstractTest
             {
                 case HTTP, HTTPS -> assertThat(serverConnections.filter(HttpConnection.class).size(), is(maxConnectionsPerDestination));
                 case H2C, H2 -> assertThat(serverConnections.filter(HTTP2ServerConnection.class).size(), is(maxConnectionsPerDestination));
-                case H3_QUICHE -> assertThat(serverConnections.filter(ServerQuicheConnection.class).size(), is(1));
+                case H3_QUIC -> assertThat(serverConnections.filter(ServerQuicConnection.class).size(), is(1));
                 case FCGI -> assertThat(serverConnections.filter(ServerFCGIConnection.class).size(), is(maxConnectionsPerDestination));
             }
         });
@@ -70,7 +70,7 @@ public class ConnectionPoolTest extends AbstractTest
         // Verify that TLS was performed.
         List<Connection> sslConnections = switch (transportType)
         {
-            case HTTP, H2C, FCGI, H3_QUICHE -> null;
+            case HTTP, H2C, FCGI, H3_QUIC -> null;
             case HTTPS, H2 -> serverConnections.filter(SslConnection.class);
         };
         if (sslConnections != null)

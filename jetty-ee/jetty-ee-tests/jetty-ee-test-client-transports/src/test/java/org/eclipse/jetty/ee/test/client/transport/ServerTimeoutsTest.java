@@ -62,7 +62,7 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires(TransportType transportType) throws Exception
     {
-        assumeTrue(transportType != TransportType.H3_QUICHE && transportType != TransportType.H2C && transportType != TransportType.H2); // TODO Fix
+        assumeTrue(transportType != TransportType.H3_QUIC && transportType != TransportType.H2C && transportType != TransportType.H2); // TODO Fix
         testBlockingReadWithDelayedFirstContentIdleTimeoutFires(transportType, false);
     }
 
@@ -70,7 +70,7 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires(TransportType transportType) throws Exception
     {
-        assumeTrue(transportType != TransportType.H3_QUICHE && transportType != TransportType.H2C && transportType != TransportType.H2); // TODO Fix
+        assumeTrue(transportType != TransportType.H3_QUIC && transportType != TransportType.H2C && transportType != TransportType.H2); // TODO Fix
         testBlockingReadWithDelayedFirstContentIdleTimeoutFires(transportType, true);
     }
 
@@ -246,7 +246,7 @@ public class ServerTimeoutsTest extends AbstractTest
     public void testAsyncWriteIdleTimeoutFires(TransportType transportType) throws Exception
     {
         // TODO fix for h3
-        assumeTrue(transportType != TransportType.H3_QUICHE);
+        assumeTrue(transportType != TransportType.H3_QUIC);
         CountDownLatch handlerLatch = new CountDownLatch(1);
         start(transportType, new HttpServlet()
         {
@@ -372,7 +372,7 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingReadWithMinimumDataRateAboveLimit(TransportType transportType) throws Exception
     {
-        assumeTrue(transportType != TransportType.H3_QUICHE && transportType != TransportType.H2C && transportType != TransportType.H2); // TODO Fix
+        assumeTrue(transportType != TransportType.H3_QUIC && transportType != TransportType.H2C && transportType != TransportType.H2); // TODO Fix
 
         int bytesPerSecond = 20;
         httpConfig.setMinRequestDataRate(bytesPerSecond);

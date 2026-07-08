@@ -280,7 +280,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-quiche-client</artifactId>
+      <artifactId>jetty-quic-client</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

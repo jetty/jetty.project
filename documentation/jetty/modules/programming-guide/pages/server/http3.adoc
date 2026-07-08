@@ -17,27 +17,7 @@ In the vast majority of cases, server applications should use the generic, high-
 
 The low-level HTTP/3 server library has been designed for those applications that need low-level access to HTTP/3 features such as _sessions_, _streams_ and _frames_, and this is quite a rare use case.
 
-Support for the QUIC protocol underlying HTTP/3 is provided by default via Jetty classes that wrap the link:https://github.com/cloudflare/quiche[Quiche] native library.
-
-[NOTE]
-====
-Since Java 22, the JVM emits a warning message when Java code tries to access code in native libraries.
-For example with Java 25:
-
-----
-WARNING: A restricted method in java.lang.foreign.AddressLayout has been called
-WARNING: java.lang.foreign.AddressLayout::withTargetLayout has been called by org.eclipse.jetty.quic.quiche.foreign.NativeHelper in an unnamed module (file:/home/simon/opensource/jetty/12.1.x/jetty-core/jetty-quic/jetty-quic-quiche/jetty-quic-quiche-foreign/target/classes/)
-WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
-WARNING: Restricted methods will be blocked in a future release unless native access is enabled
-----
-
-To avoid the warning, you can start the JVM as suggested by the warning message above, by adding `--enable-native-access=ALL-UNNAMED` on the command line.
-This grants any code in the class-path access to any native library.
-
-If you are running in JPMS mode, you can explicitly grant access just to the JPMS module(s) that require it.
-To grant Jetty access to the Quiche native library, use `--enable-native-access=org.eclipse.jetty.quic.quiche.foreign`.
-This grants only to the Jetty JPMS module `org.eclipse.jetty.quic.quiche.foreign` in the module-path access to any native library.
-====
+Support for the QUIC protocol underlying HTTP/3 is provided by the xref:server/quic.adoc[Jetty QUIC implementation].
 
 See also the correspondent xref:client/http3.adoc[HTTP/3 client library].
 

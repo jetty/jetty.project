@@ -85,8 +85,9 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
-import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
+import org.eclipse.jetty.quic.client.QuicClient;
+import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicTransport;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.MemoryConnector;
 import org.eclipse.jetty.server.MemoryTransport;
@@ -925,11 +926,11 @@ public class HTTPClientDocs
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(new SslContextFactory.Client());
         // The HTTP3Client powers the HTTP/3 transport.
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
 
         // Create and configure the HTTP/3 transport.
-        QuicheTransport transport = new QuicheTransport(clientQuicConfig);
+        QuicTransport transport = new QuicTransport(new QuicClient(clientQuicConfig));
         HttpClientTransportOverHTTP3 httpClientTransport = new HttpClientTransportOverHTTP3(http3Client, transport);
 
         HttpClient client = new HttpClient(httpClientTransport);
@@ -986,9 +987,9 @@ public class HTTPClientDocs
         HTTP2Client http2Client = new HTTP2Client(connector);
         ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
 
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, connector);
-        QuicheTransport transport = new QuicheTransport(clientQuicConfig);
+        QuicTransport transport = new QuicTransport(new QuicClient(clientQuicConfig));
         ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, transport);
 
         // The order of the protocols indicates the client's preference.
@@ -1013,9 +1014,9 @@ public class HTTPClientDocs
         HTTP2Client http2Client = new HTTP2Client(connector);
         ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
 
-        QuicheClientQuicConfiguration quicConfiguration = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
-        HTTP3Client http3Client = new HTTP3Client(quicConfiguration, connector);
-        QuicheTransport transport = new QuicheTransport(quicConfiguration);
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, connector);
+        QuicTransport transport = new QuicTransport(new QuicClient(clientQuicConfig));
         ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, transport);
         // tag::dynamicExplicitVersion[]
         HttpClient client = new HttpClient(new HttpClientTransportDynamic(connector, http1, http2, http3));
@@ -1061,9 +1062,9 @@ public class HTTPClientDocs
         HTTP2Client http2Client = new HTTP2Client(connector);
         ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
 
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, connector);
-        QuicheTransport transport = new QuicheTransport(clientQuicConfig);
+        QuicTransport transport = new QuicTransport(new QuicClient(clientQuicConfig));
         ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, transport);
         // tag::dynamicPreferH3[]
         // Client prefers HTTP/3.
@@ -1089,9 +1090,9 @@ public class HTTPClientDocs
         HTTP2Client http2Client = new HTTP2Client(connector);
         ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
 
-        QuicheClientQuicConfiguration quicConfiguration = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
-        HTTP3Client http3Client = new HTTP3Client(quicConfiguration, connector);
-        QuicheTransport transport = new QuicheTransport(quicConfiguration);
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
+        HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, connector);
+        QuicTransport transport = new QuicTransport(new QuicClient(clientQuicConfig));
         ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, transport);
         // tag::dynamicPreferH2[]
         // Client prefers HTTP/2.
@@ -1244,9 +1245,9 @@ public class HTTPClientDocs
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
 
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
         HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
-        QuicheTransport transport = new QuicheTransport(clientQuicConfig);
+        QuicTransport transport = new QuicTransport(new QuicClient(clientQuicConfig));
         ClientConnectionFactoryOverHTTP3.HTTP3 http3 = new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client, transport);
 
         // tag::mixedTransports[]

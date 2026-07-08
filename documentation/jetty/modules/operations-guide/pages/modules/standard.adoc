@@ -437,12 +437,12 @@ The same attack may be performed with `PRIORITY` frames, empty `DATA` frames, `P
 
 The `http3` module enables support for the HTTP/3 protocol.
 
-Support for the QUIC protocol underlying HTTP/3 is provided by default via the `http3-quiche` module that uses the link:https://github.com/cloudflare/quiche[Quiche] native library.
+Support for the QUIC protocol underlying HTTP/3 is provided by default via the `http3-quic` module.
 
-The `http3-quiche` module properties are:
+The `http3-quic` module properties are:
 
 ----
-include::{jetty-home}/modules/http3-quiche.mod[tags=documentation]
+include::{jetty-home}/modules/http3-quic.mod[tags=documentation]
 ----
 
 [[http-config]]

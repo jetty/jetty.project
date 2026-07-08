@@ -49,10 +49,11 @@ import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicClient;
+import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicTransport;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
@@ -65,8 +66,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -76,7 +75,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.awaitility.Awaitility.await;
@@ -84,11 +82,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@ExtendWith(WorkDirExtension.class)
 public class AbstractTest
 {
-    public WorkDir workDir;
-
     @RegisterExtension
     public final BeforeTestExecutionCallback printMethodName = context ->
         System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
@@ -105,7 +100,7 @@ public class AbstractTest
     {
         EnumSet<TransportType> transportTypes = EnumSet.allOf(TransportType.class);
         if (System.getProperty("os.name").startsWith("Windows"))
-            transportTypes.remove(TransportType.H3_QUICHE);
+            transportTypes.remove(TransportType.H3_QUIC);
         return transportTypes;
     }
 
@@ -119,7 +114,7 @@ public class AbstractTest
     public static Collection<TransportType> transportsTCP()
     {
         Collection<TransportType> transportTypes = transports();
-        transportTypes.remove(TransportType.H3_QUICHE);
+        transportTypes.remove(TransportType.H3_QUIC);
         return transportTypes;
     }
 
@@ -329,9 +324,9 @@ public class AbstractTest
             case H2:
             case FCGI:
                 yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transportType));
-            case H3_QUICHE:
-                QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
-                yield new QuicheServerConnector(server, sslContextFactoryServer, serverQuicConfig, newServerConnectionFactory(transportType));
+            case H3_QUIC:
+                QuicServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
+                yield new QuicServerConnector(server, sslContextFactoryServer, serverQuicConfig, newServerConnectionFactory(transportType));
         };
     }
 
@@ -361,7 +356,7 @@ public class AbstractTest
                 SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactoryServer, alpn.getProtocol());
                 yield List.of(ssl, alpn, h2);
             }
-            case H3_QUICHE ->
+            case H3_QUIC ->
             {
                 httpConfig.addCustomizer(new SecureRequestCustomizer());
                 httpConfig.addCustomizer(new HostHeaderCustomizer());
@@ -387,11 +382,11 @@ public class AbstractTest
                 HTTP2Client http2Client = new HTTP2Client(clientConnector);
                 yield new HttpClientTransportOverHTTP2(http2Client);
             }
-            case H3_QUICHE ->
+            case H3_QUIC ->
             {
-                QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
+                QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
                 HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
-                yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig));
+                yield new HttpClientTransportOverHTTP3(http3Client, new QuicTransport(new QuicClient(clientQuicConfig)));
             }
             case FCGI -> new HttpClientTransportOverFCGI(clientConnector, "");
         };
@@ -442,14 +437,14 @@ public class AbstractTest
 
     public enum TransportType
     {
-        HTTP, HTTPS, H2C, H2, H3_QUICHE, FCGI;
+        HTTP, HTTPS, H2C, H2, H3_QUIC, FCGI;
 
         public boolean isSecure()
         {
             return switch (this)
             {
                 case HTTP, H2C, FCGI -> false;
-                case HTTPS, H2, H3_QUICHE -> true;
+                case HTTPS, H2, H3_QUIC -> true;
             };
         }
 
@@ -458,7 +453,7 @@ public class AbstractTest
             return switch (this)
             {
                 case HTTP, HTTPS, FCGI -> false;
-                case H2C, H2, H3_QUICHE -> true;
+                case H2C, H2, H3_QUIC -> true;
             };
         }
     }

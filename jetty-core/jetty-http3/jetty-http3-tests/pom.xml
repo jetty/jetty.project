@@ -67,35 +67,14 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-quiche-client</artifactId>
+      <artifactId>jetty-quic-client</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-quiche-server</artifactId>
+      <artifactId>jetty-quic-server</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>enable-foreign</id>
-      <activation>
-        <jdk>[22,)</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <argLine>@{argLine}
-                ${jetty.surefire.argLine}
-                --enable-native-access=org.eclipse.jetty.quic.quiche.foreign</argLine>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
 </project>

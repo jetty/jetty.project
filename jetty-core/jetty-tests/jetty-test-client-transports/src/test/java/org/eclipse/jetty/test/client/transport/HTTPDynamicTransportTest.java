@@ -14,7 +14,6 @@
 package org.eclipse.jetty.test.client.transport;
 
 import java.net.UnixDomainSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -47,11 +46,12 @@ import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Transport;
-import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
-import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerConnectionFactory;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicClient;
+import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
+import org.eclipse.jetty.quic.client.QuicTransport;
+import org.eclipse.jetty.quic.server.QuicServerConnectionFactory;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
@@ -64,7 +64,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -87,20 +86,17 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 public class HTTPDynamicTransportTest extends AbstractTransportTest
 {
     private SslContextFactory.Server sslServer;
-    private Path pemServerDir;
     private ClientConnector clientConnector;
     private HTTP2Client http2Client;
-    private QuicheTransport transport;
+    private QuicTransport transport;
     private HTTP3Client http3Client;
 
     @BeforeEach
-    public void prepare(WorkDir workDir) throws Exception
+    public void prepare() throws Exception
     {
         sslServer = new SslContextFactory.Server();
         sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslServer.setKeyStorePassword("storepwd");
-        pemServerDir = workDir.getEmptyPathDir().resolve("server");
-        Files.createDirectories(pemServerDir);
 
         clientConnector = new ClientConnector();
         QueuedThreadPool clientThreads = new QueuedThreadPool();
@@ -110,8 +106,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
 
         http2Client = new HTTP2Client(clientConnector);
 
-        QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration());
-        transport = new QuicheTransport(clientQuicConfig);
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicClientQuicConfiguration());
+        transport = new QuicTransport(new QuicClient(clientQuicConfig));
         http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
     }
 
@@ -125,9 +121,9 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
         tcp.setPort(port);
         server.addConnector(tcp);
 
-        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(pemServerDir));
+        QuicServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
         ConnectionFactory h3 = new HTTP3ServerConnectionFactory();
-        QuicheServerConnector quic = new QuicheServerConnector(server, sslServer, serverQuicConfig, h3);
+        QuicServerConnector quic = new QuicServerConnector(server, sslServer, serverQuicConfig, h3);
         quic.setPort(port);
         server.addConnector(quic);
 
@@ -170,9 +166,9 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
         tcp.setPort(port);
         server.addConnector(tcp);
 
-        QuicheServerQuicConfiguration quicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(pemServerDir));
+        QuicServerQuicConfiguration quicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
         ConnectionFactory h3 = new HTTP3ServerConnectionFactory();
-        QuicheServerConnector quic = new QuicheServerConnector(server, sslServer, quicConfig, h3);
+        QuicServerConnector quic = new QuicServerConnector(server, sslServer, quicConfig, h3);
         quic.setPort(port);
         server.addConnector(quic);
 
@@ -234,9 +230,9 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
         tcpSecure.setPort(securePort);
         server.addConnector(tcpSecure);
 
-        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(pemServerDir));
+        QuicServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
         ConnectionFactory h3 = new HTTP3ServerConnectionFactory();
-        QuicheServerConnector quic = new QuicheServerConnector(server, sslServer, serverQuicConfig, h3);
+        QuicServerConnector quic = new QuicServerConnector(server, sslServer, serverQuicConfig, h3);
         quic.setPort(securePort);
         server.addConnector(quic);
 
@@ -292,9 +288,9 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
         tcpSecure.setPort(securePort);
         server.addConnector(tcpSecure);
 
-        QuicheServerQuicConfiguration quicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(pemServerDir));
+        QuicServerQuicConfiguration quicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
         ConnectionFactory h3 = new HTTP3ServerConnectionFactory();
-        QuicheServerConnector quic = new QuicheServerConnector(server, sslServer, quicConfig, h3);
+        QuicServerConnector quic = new QuicServerConnector(server, sslServer, quicConfig, h3);
         quic.setPort(securePort);
         server.addConnector(quic);
 
@@ -466,16 +462,15 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
 
     @Test
     @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
-    public void testHighLevelH2COverQUIC(WorkDir workDir) throws Exception
+    public void testHighLevelH2COverQUIC() throws Exception
     {
         SslContextFactory.Server sslServer = new SslContextFactory.Server();
         sslServer.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
         sslServer.setKeyStorePassword("storepwd");
 
         ConnectionFactory h2c = new HTTP2CServerConnectionFactory(new HttpConfiguration());
-        QuicheServerQuicConfiguration serverQuicConfig = new QuicheServerQuicConfiguration(pemServerDir);
-        QuicheServerConnector connector = new QuicheServerConnector(server, sslServer, serverQuicConfig, h2c);
-        connector.getServerQuicConfiguration().setPemWorkDirectory(workDir.getEmptyPathDir());
+        QuicServerQuicConfiguration serverQuicConfig = new QuicServerQuicConfiguration();
+        QuicServerConnector connector = new QuicServerConnector(server, sslServer, serverQuicConfig, h2c);
         server.addConnector(connector);
 
         server.setHandler(new EmptyServerHandler());
@@ -504,8 +499,8 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
         sslServer.setKeyStorePassword("storepwd");
 
         HttpConnectionFactory h1 = new HttpConnectionFactory();
-        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(pemServerDir));
-        QuicheServerConnectionFactory quic = new QuicheServerConnectionFactory(sslServer, serverQuicConfig);
+        QuicServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
+        QuicServerConnectionFactory quic = new QuicServerConnectionFactory(sslServer, serverQuicConfig);
         HTTP3ServerConnectionFactory h3 = new HTTP3ServerConnectionFactory();
 
         MemoryConnector connector = new MemoryConnector(server, quic, h1, h3);
@@ -518,7 +513,7 @@ public class HTTPDynamicTransportTest extends AbstractTransportTest
 
         server.start();
 
-        Transport transport = new QuicheTransport(new MemoryTransport(connector), (QuicheClientQuicConfiguration)http3Client.getClientQuicConfiguration());
+        Transport transport = new QuicTransport(new MemoryTransport(connector), new QuicClient((QuicClientQuicConfiguration)http3Client.getClientQuicConfiguration()));
 
         ContentResponse response = httpClient.newRequest("https://localhost/")
             .transport(transport)

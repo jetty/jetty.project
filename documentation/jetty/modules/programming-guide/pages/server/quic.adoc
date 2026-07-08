@@ -11,30 +11,6 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.quiche.jna;
+= QUIC Server Library
 
-import com.sun.jna.IntegerType;
-
-public class bool extends IntegerType
-{
-    public bool()
-    {
-        this(false);
-    }
-
-    public bool(boolean v)
-    {
-        // In Rust, the size of bool is 1 byte, see https://github.com/rust-lang/rust/pull/46176#issuecomment-359593446
-        super(1, v ? 1 : 0, true);
-    }
-
-    public boolean isTrue()
-    {
-        return this.byteValue() != 0;
-    }
-
-    public boolean isFalse()
-    {
-        return !isTrue();
-    }
-}
+TODO
