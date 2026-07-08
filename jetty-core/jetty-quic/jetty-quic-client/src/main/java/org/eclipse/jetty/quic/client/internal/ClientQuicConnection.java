@@ -113,7 +113,7 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     @Override
     public void failed(Throwable x)
     {
-        session.fail(x);
+        session.fail(x, false);
     }
 
     @Override

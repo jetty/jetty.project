@@ -29,18 +29,21 @@ public class PacketNumbersTest
         PacketNumbers serverPacketNumbers = new PacketNumbers();
         PacketNumbers clientPacketNumbers = new PacketNumbers();
 
+        EncryptionLevel encryptionLevel = EncryptionLevel.ONE_RTT;
+
         // Server sends packets 0-299 and the client receives them.
         // The client ACKs server packets, so the server's largest
         // acknowledged packet number stays close to the next packet number.
         // But the client sends very few packets (just the initial request),
         // so the client's largest acknowledged stays close to 0.
-        for (long serverPacketNumber = 0; serverPacketNumber < 300; ++serverPacketNumber)
+        for (long l = 0; l < 300; ++l)
         {
+            long serverPacketNumber = serverPacketNumbers.nextPacketNumber(encryptionLevel);
             // Server encodes the packet number.
-            EncodedPacketNumber encoded = serverPacketNumbers.encode(EncryptionLevel.ONE_RTT, serverPacketNumber);
+            EncodedPacketNumber encoded = serverPacketNumbers.encode(encryptionLevel, serverPacketNumber);
 
             // Client decodes the packet number.
-            long decoded = clientPacketNumbers.decode(EncryptionLevel.ONE_RTT, encoded);
+            long decoded = clientPacketNumbers.decode(encryptionLevel, encoded);
             // Simulate the client successfully receiving the packet.
             OneRTTPacket receivedPacket = new OneRTTPacket(decoded, new byte[0], false, false, List.of());
             clientPacketNumbers.onPacketReceived(receivedPacket);
@@ -49,7 +52,7 @@ public class PacketNumbersTest
 
             // Simulate the client ACKing server packets.
             AckFrame ackFrame = new AckFrame(serverPacketNumber, 0, 0, List.of());
-            serverPacketNumbers.onAckFrameReceived(EncryptionLevel.ONE_RTT, ackFrame);
+            serverPacketNumbers.onAckFrameReceived(encryptionLevel, ackFrame);
 
             // Here we should simulate the server ACKing client packets.
             // But for this test we do not ACK for simplicity, so that

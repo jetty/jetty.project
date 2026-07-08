@@ -18,6 +18,7 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.quic.api.frames.AckFrame;
@@ -154,12 +155,6 @@ public class PacketTracker
         return rttData;
     }
 
-    long getLargestAcknowledged(EncryptionLevel encryptionLevel)
-    {
-        PacketEntry largest = trackers.get(PacketNumberSpace.from(encryptionLevel)).largestAckedEntry;
-        return largest == null ? 0 : largest.packet().packetNumber();
-    }
-
     /// First entry point: when a packet is sent.
     public void processPacketSent(QuicSession session, Packet packet, long length, boolean dataStalled)
     {
@@ -198,15 +193,14 @@ public class PacketTracker
         Tracker tracker = trackers.get(space);
 
         List<Packet.WithFrames> ackedPackets = new ArrayList<>();
-        tracker.acknowledgePackets(session, frame, ackedPackets);
+        boolean newlyAcked = tracker.acknowledgePackets(session, frame, ackedPackets);
 
         if (ackedPackets.isEmpty())
             return;
 
         // RFC-9002[5.1]: calculate RTT only if the largestAckedEntry is newly acknowledged.
-        if (tracker.newlyAcked)
+        if (newlyAcked)
             rttData = estimateRTTData(encryptionLevel, frame, tracker.largestAckedEntry);
-        tracker.newlyAcked = false;
 
         // RFC-9002[6.2.1]: the PTO backoff is not reset for InitialPackets.
         if (ackedPackets.stream().anyMatch(p -> EncryptionLevel.from(p) != EncryptionLevel.INITIAL))
@@ -355,7 +349,7 @@ public class PacketTracker
         private Scheduler.Task probeTimeoutTask;
         private Scheduler.Task lossTimeoutTask;
         private PacketEntry largestAckedEntry;
-        private boolean newlyAcked;
+        private long bytesUntilSkip = Long.MIN_VALUE;
 
         private Tracker(PacketNumberSpace packetNumberSpace)
         {
@@ -377,6 +371,22 @@ public class PacketTracker
                 if (stream != null)
                     stream.onStreamFrameSent(frame);
             }
+
+            // RFC-9000[21.4]: skip packet numbers to detect optimistic acks.
+            if (bytesUntilSkip <= 0)
+            {
+                if (session != null && bytesUntilSkip != Long.MIN_VALUE)
+                {
+                    long skipped = session.getPacketNumbers().skipPacketNumber(EncryptionLevel.from(entry.packet));
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("skipped packet number #{} on {}", skipped, this);
+                }
+                // RNG produces a number that is, in average, half the given bound.
+                // Use twice the cwnd to skip 1 packet number per cwnd; add 1 to avoid zero.
+                long congestionWindow = getCongestionController().getCongestionWindow();
+                bytesUntilSkip = ThreadLocalRandom.current().nextLong(2 * congestionWindow) + 1;
+            }
+            bytesUntilSkip -= entry.length();
         }
 
         private PacketEntry remove(long packetNumber)
@@ -384,22 +394,21 @@ public class PacketTracker
             return entries.remove(packetNumber);
         }
 
-        private long acknowledgePackets(QuicSession session, AckFrame ackFrame, List<Packet.WithFrames> output)
+        private boolean acknowledgePackets(QuicSession session, AckFrame ackFrame, List<Packet.WithFrames> output)
         {
-            long[] acknowledged = ackFrame.allAcknowledged();
-            long ackedLength = 0;
-            for (int i = 0; i < acknowledged.length; i++)
+            boolean newlyAcked = false;
+            List<Long> allAcknowledged = ackFrame.allAcknowledged();
+            for (int i = 0; i < allAcknowledged.size(); ++i)
             {
-                long packetNumber = acknowledged[i];
+                Long packetNumber = allAcknowledged.get(i);
                 PacketEntry entry = remove(packetNumber);
-                if (i == 0 && entry != null && entry.largerThan(largestAckedEntry))
-                {
-                    largestAckedEntry = entry;
-                    newlyAcked = true;
-                }
                 if (entry != null)
                 {
-                    ackedLength += entry.length();
+                    if (i == 0 && entry.largerThan(largestAckedEntry))
+                    {
+                        largestAckedEntry = entry;
+                        newlyAcked = true;
+                    }
 
                     // Process and then close the packet.
                     try (Packet.WithFrames packet = entry.packet())
@@ -421,8 +430,8 @@ public class PacketTracker
                 }
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("acked {} packet(s) length={} {}{} on {}", output.size(), ackedLength, packetNumberSpace, output.stream().mapToLong(Packet.WithFrames::packetNumber).toArray(), this);
-            return ackedLength;
+                LOG.debug("acked {} packet(s) {}{} on {}", output.size(), packetNumberSpace, output.stream().mapToLong(Packet.WithFrames::packetNumber).toArray(), this);
+            return newlyAcked;
         }
 
         private List<Packet.WithFrames> detectLostPackets(QuicSession session, RTTData rttData)

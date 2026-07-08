@@ -38,9 +38,9 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     private long bidirectionalMaxStreams;
     private long unidirectionalMaxStreams;
     // A value that does not exceed the usual MTU of 1500 and allows for encapsulation (VPN).
-    private int udpPayloadSize = 1344;
+    private int udpPayloadLength = 1344;
     // RFC-9000[18.2].
-    private long udpPayloadMaxSize = 65527;
+    private long udpPayloadMaxLength = 65527;
     // RFC-9000[18.2].
     private long ackDelayExponent = 3;
     // RFC-9000[18.2].
@@ -182,26 +182,26 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
 
     public int getUDPPayloadLength()
     {
-        return udpPayloadSize;
+        return udpPayloadLength;
     }
 
-    public void setUDPPayloadSize(int udpPayloadSize)
+    public void setUDPPayloadLength(int udpPayloadLength)
     {
-        if (udpPayloadSize < 1200)
-            throw new IllegalArgumentException("invalid UDPPayloadSize: " + udpPayloadSize);
-        this.udpPayloadSize = udpPayloadSize;
+        if (udpPayloadLength < 1200)
+            throw new IllegalArgumentException("invalid UDP payload length: " + udpPayloadLength);
+        this.udpPayloadLength = udpPayloadLength;
     }
 
-    public long getUDPPayloadMaxSize()
+    public long getUDPPayloadMaxLength()
     {
-        return udpPayloadMaxSize;
+        return udpPayloadMaxLength;
     }
 
-    public void setUDPPayloadMaxSize(long udpPayloadMaxSize)
+    public void setUDPPayloadMaxLength(long udpPayloadMaxLength)
     {
-        if (udpPayloadMaxSize < 1200)
-            throw new IllegalArgumentException("invalid UDPPayloadMaxSize: " + udpPayloadMaxSize);
-        this.udpPayloadMaxSize = udpPayloadMaxSize;
+        if (udpPayloadMaxLength < 1200)
+            throw new IllegalArgumentException("invalid UDPPayloadMaxSize: " + udpPayloadMaxLength);
+        this.udpPayloadMaxLength = udpPayloadMaxLength;
     }
 
     public long getAcknowledgmentDelayExponent()

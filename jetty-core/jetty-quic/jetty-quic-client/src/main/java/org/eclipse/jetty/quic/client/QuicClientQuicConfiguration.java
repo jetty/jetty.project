@@ -112,7 +112,7 @@ public class QuicClientQuicConfiguration extends ClientQuicConfiguration
     public void configure(TransportParameters transportParameters)
     {
         super.configure(transportParameters);
-        transportParameters.put(TransportParameters.Ids.MAX_UDP_PAYLOAD_SIZE, getUDPPayloadMaxSize());
+        transportParameters.put(TransportParameters.Ids.MAX_UDP_PAYLOAD_SIZE, getUDPPayloadMaxLength());
         transportParameters.put(TransportParameters.Ids.ACK_DELAY_EXPONENT, getAcknowledgmentDelayExponent());
         transportParameters.put(TransportParameters.Ids.MAX_ACK_DELAY, getAcknowledgmentMaxDelay());
         if (!isEnableConnectionMigration())

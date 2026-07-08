@@ -21,6 +21,7 @@ import java.util.function.Function;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -32,11 +33,13 @@ import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
+import org.eclipse.jetty.quic.util.QuicException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FrameGeneratorParserTest
 {
@@ -66,6 +69,88 @@ public class FrameGeneratorParserTest
         }
 
         throw new AssertionError();
+    }
+
+    @Test
+    public void testAckFrame()
+    {
+        AckFrame frame = new AckFrame(110, 0, 10, List.of(new AckFrame.AckRange(6, 2), new AckFrame.AckRange(13, 5)));
+        List<AckFrame> list = generateParse(frame);
+        list.forEach(result ->
+        {
+            assertEqual(AckFrame::type, frame, result);
+            assertEqual(AckFrame::largestAcknowledged, frame, result);
+            assertEqual(AckFrame::firstRangeLength, frame, result);
+            assertEquals(frame.ackRanges(), result.ackRanges());
+        });
+    }
+
+    @Test
+    public void testAckFrameWithInvalidFirstRangeLength()
+    {
+        int largest = 110;
+        AckFrame frame = new AckFrame(largest, 0, largest * 2, List.of());
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
+        generator.generateFrame(accumulator, frame, Integer.MAX_VALUE);
+        assertThrows(QuicException.class, () -> parser.parse(accumulator));
+    }
+
+    @Test
+    public void testAckFrameWithInvalidRangeGap()
+    {
+        int largest = 110;
+        AckFrame frame = new AckFrame(largest, 0, 10, List.of(new AckFrame.AckRange(largest * 2, 1)));
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
+        generator.generateFrame(accumulator, frame, Integer.MAX_VALUE);
+        assertThrows(QuicException.class, () -> parser.parse(accumulator));
+    }
+
+    @Test
+    public void testAckFrameWithInvalidRangeLength()
+    {
+        int largest = 110;
+        AckFrame frame = new AckFrame(largest, 0, 10, List.of(new AckFrame.AckRange(1, largest * 2)));
+        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
+        generator.generateFrame(accumulator, frame, Integer.MAX_VALUE);
+        assertThrows(QuicException.class, () -> parser.parse(accumulator));
+    }
+
+    @Test
+    public void testAckFrameRanges()
+    {
+        AckFrame frame = new AckFrame(
+            110, 0, 10, List.of(
+                new AckFrame.AckRange(6, 2),
+                new AckFrame.AckRange(13, 5)
+            )
+        );
+        List<Long> expected = List.of(
+            110L, 109L, 108L, 107L, 106L, 105L, 104L, 103L, 102L, 101L, 100L,
+            92L, 91L, 90L,
+            75L, 74L, 73L, 72L, 71L, 70L
+        );
+        assertEquals(expected, frame.allAcknowledged());
+    }
+
+    @Test
+    public void testAckFrameWithWeirdRanges()
+    {
+        AckFrame frame = new AckFrame(
+            110, 0, 2, List.of(
+                new AckFrame.AckRange(0, 3),
+                new AckFrame.AckRange(1, 0),
+                new AckFrame.AckRange(0, 0),
+                new AckFrame.AckRange(1, 1)
+            )
+        );
+        List<Long> expected = List.of(
+            110L, 109L, 108L,
+            106L, 105L, 104L, 103L,
+            100L,
+            98L,
+            95L, 94L
+        );
+        assertEquals(expected, frame.allAcknowledged());
     }
 
     @Test

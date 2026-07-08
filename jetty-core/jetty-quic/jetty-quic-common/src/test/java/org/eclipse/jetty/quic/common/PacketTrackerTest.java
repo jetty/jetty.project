@@ -118,7 +118,7 @@ public class PacketTrackerTest
     }
 
     @Test
-    public void testSendTwoPacketsReceiveAck2LTOFires() throws Exception
+    public void testSendTwoPacketsReceiveAckTwoLTOFires() throws Exception
     {
         TestScheduler scheduler = new TestScheduler();
         TestCongestionController cc = new TestCongestionController();
@@ -212,7 +212,7 @@ public class PacketTrackerTest
     }
 
     @Test
-    public void sendManyPacketsReceiveAckLastLTOFires() throws Exception
+    public void sendManyPacketsReceiveOnlyAckLastLTOFires() throws Exception
     {
         TestScheduler scheduler = new TestScheduler();
         TestCongestionController cc = new TestCongestionController();
@@ -228,7 +228,6 @@ public class PacketTrackerTest
         long packetNumberEnd = packetNumberBegin + packetTracker.getPacketReorderingThreshold();
         for (long packetNumber = packetNumberBegin; packetNumber <= packetNumberEnd; ++packetNumber)
         {
-            // Send packet.
             Packet.WithFrames packet = new OneRTTPacket(packetNumber, new byte[0], false, false, List.of(PingFrame.INSTANCE));
             packetTracker.processPacketSent(null, packet, 512 + packetNumber, false);
         }
@@ -334,9 +333,15 @@ public class PacketTrackerTest
         }
 
         @Override
-        public long getCongestionWindow()
+        public long getAvailableWindow()
         {
             return 0;
+        }
+
+        @Override
+        public long getCongestionWindow()
+        {
+            return 10 * 1024;
         }
 
         @Override

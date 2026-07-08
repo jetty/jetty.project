@@ -788,7 +788,7 @@ public class QuicStream extends AbstractStream
             }
             catch (Throwable x)
             {
-                session.fail(x);
+                session.fail(x, false);
             }
         }
 

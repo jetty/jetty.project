@@ -48,8 +48,25 @@ public interface CongestionController
     /// Method invoked when there are no packets to send.
     void onIdle();
 
-    /// The congestion window is the number of bytes that
+    /// The available window is the number of bytes that
     /// can be sent without waiting for acknowledgments.
+    ///
+    /// The value returned from this method is:
+    ///
+    /// ```
+    /// avail = cwnd - in_flight
+    /// ```
+    ///
+    /// @return the available window in bytes
+    long getAvailableWindow();
+
+    /// The congestion window is the maximum number of bytes
+    /// that can be sent without waiting for acknowledgments.
+    ///
+    /// The value returned from this method fluctuates depending
+    /// on the algorithm used in the implementation; typically
+    /// increases as packets are acknowledged, and decreases
+    /// when packets are lost.
     ///
     /// @return the congestion window in bytes
     long getCongestionWindow();

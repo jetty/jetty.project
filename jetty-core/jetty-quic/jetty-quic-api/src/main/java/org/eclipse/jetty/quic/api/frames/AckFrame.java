@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /// The ACK frame defined in
@@ -65,6 +66,7 @@ public final class AckFrame extends Frame.Abstract
     private final long encodedAckDelay;
     private final long firstRangeLength;
     private final List<AckRange> ranges;
+    private final List<Long> allAcknowledged;
 
     public AckFrame(long largestAcknowledged, long encodedAckDelay, long firstRangeLength, List<AckRange> ranges)
     {
@@ -73,6 +75,7 @@ public final class AckFrame extends Frame.Abstract
         this.encodedAckDelay = encodedAckDelay;
         this.firstRangeLength = firstRangeLength;
         this.ranges = ranges;
+        this.allAcknowledged = allAcknowledged(this);
     }
 
     public long largestAcknowledged()
@@ -104,34 +107,33 @@ public final class AckFrame extends Frame.Abstract
     /// 92, 91, 90,
     /// 75, 74, 73, 72, 71, 70]
     /// ```
-    public long[] allAcknowledged()
+    public List<Long> allAcknowledged()
     {
-        long length = firstRangeLength() + 1;
-        for (AckRange ackRange : ackRanges())
+        return allAcknowledged;
+    }
+
+    private static List<Long> allAcknowledged(AckFrame frame)
+    {
+        List<Long> result = new ArrayList<>();
+        long firstInRange = frame.largestAcknowledged();
+        long lastInRange = firstInRange - frame.firstRangeLength();
+        collect(result, firstInRange, lastInRange);
+        for (AckRange ackRange : frame.ackRanges())
         {
-            length += ackRange.length() + 1;
+            firstInRange = (lastInRange - 1) - (ackRange.gap() + 1);
+            lastInRange = firstInRange - ackRange.length();
+            collect(result, firstInRange, lastInRange);
         }
-
-        long[] result = new long[Math.toIntExact(length)];
-
-        int offset = 0;
-        long acknowledged = largestAcknowledged();
-
-        for (long l = 0; l <= firstRangeLength(); ++l)
-        {
-            result[offset++] = acknowledged--;
-        }
-
-        for (AckRange ackRange : ackRanges())
-        {
-            acknowledged -= (ackRange.gap() + 1);
-            for (long l = 0; l <= ackRange.length(); ++l)
-            {
-                result[offset++] = acknowledged--;
-            }
-        }
-
         return result;
+    }
+
+    private static void collect(List<Long> result, long firstInRange, long lastInRange)
+    {
+        while (firstInRange >= lastInRange)
+        {
+            result.add(firstInRange);
+            --firstInRange;
+        }
     }
 
     @Override

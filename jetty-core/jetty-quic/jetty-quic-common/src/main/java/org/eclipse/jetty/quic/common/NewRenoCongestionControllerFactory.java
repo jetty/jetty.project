@@ -204,9 +204,15 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         }
 
         @Override
-        public long getCongestionWindow()
+        public long getAvailableWindow()
         {
             return Math.max(0L, maxInFlight - inFlight);
+        }
+
+        @Override
+        public long getCongestionWindow()
+        {
+            return maxInFlight;
         }
 
         @Override
@@ -229,7 +235,10 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         @Override
         public String toString()
         {
-            return "%s@%x[%s,cwnd/flight/max=%d/%d/%d]".formatted(TypeUtil.toShortName(getClass()), hashCode(), state, getCongestionWindow(), inFlight, maxInFlight);
+            return "%s@%x[%s,flight/avail/max=%d/%d/%d]".formatted(
+                TypeUtil.toShortName(getClass()), hashCode(), state,
+                inFlight, getAvailableWindow(), getCongestionWindow()
+            );
         }
 
         private enum State
