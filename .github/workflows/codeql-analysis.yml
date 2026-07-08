@@ -35,7 +35,7 @@ jobs:
 
       # Install and setup JDK 11
       - name: Setup JDK 11
-        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
         if: ${{
           startsWith(github.ref, 'refs/heads/jetty-10.') ||
           startsWith(github.ref, 'refs/heads/jetty-11.') ||
@@ -48,7 +48,7 @@ jobs:
 
       # Install and setup JDK 17
       - name: Setup JDK 17
-        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5
         if: ${{
           startsWith(github.ref, 'refs/heads/jetty-12.') ||
           startsWith(github.base_ref, 'jetty-12.')
