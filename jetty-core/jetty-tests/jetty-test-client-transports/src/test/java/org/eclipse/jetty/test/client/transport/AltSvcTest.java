@@ -29,8 +29,8 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
-import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.QuicServerQuicConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -40,14 +40,11 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -55,12 +52,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@ExtendWith(WorkDirExtension.class)
 // Isolated because the default Locale is changed.
 @Isolated
 public class AltSvcTest
 {
-    public WorkDir workDir;
     private Server server;
     private HttpClient client;
 
@@ -100,9 +95,9 @@ public class AltSvcTest
         server.addConnector(h2Connector);
 
         // HTTP/3 connector on a different port
-        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
+        QuicServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
         HTTP3ServerConnectionFactory h3Factory = new HTTP3ServerConnectionFactory(httpConfigH3);
-        QuicheServerConnector h3Connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, h3Factory);
+        QuicServerConnector h3Connector = new QuicServerConnector(server, sslContextFactory, serverQuicConfig, h3Factory);
         h3Connector.setPort(0);
         server.addConnector(h3Connector);
 
@@ -185,9 +180,9 @@ public class AltSvcTest
         server.addConnector(h2Connector);
 
         // HTTP/3 connector on a different port
-        QuicheServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicheServerQuicConfiguration(workDir.getEmptyPathDir()));
+        QuicServerQuicConfiguration serverQuicConfig = HTTP3ServerQuicConfiguration.configure(new QuicServerQuicConfiguration());
         HTTP3ServerConnectionFactory h3Factory = new HTTP3ServerConnectionFactory(httpConfigH3);
-        QuicheServerConnector h3Connector = new QuicheServerConnector(server, sslContextFactory, serverQuicConfig, h3Factory);
+        QuicServerConnector h3Connector = new QuicServerConnector(server, sslContextFactory, serverQuicConfig, h3Factory);
         h3Connector.setPort(0);
         server.addConnector(h3Connector);
 

@@ -213,11 +213,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-quiche-foreign</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-quiche-server</artifactId>
+      <artifactId>jetty-quic-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain.setuid</groupId>

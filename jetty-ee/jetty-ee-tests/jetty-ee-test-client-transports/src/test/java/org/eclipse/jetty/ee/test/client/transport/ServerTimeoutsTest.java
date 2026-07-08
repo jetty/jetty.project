@@ -63,7 +63,7 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires(TransportType transportType) throws Exception
     {
-        assumeTrue(transportType != TransportType.H3_QUICHE && transportType != TransportType.H2C && transportType != TransportType.H2); // TODO Fix
+        assumeTrue(transportType != TransportType.H3_QUIC && transportType != TransportType.H2C && transportType != TransportType.H2); // TODO Fix
         testBlockingReadWithDelayedFirstContentIdleTimeoutFires(transportType, false);
     }
 
@@ -71,7 +71,7 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires(TransportType transportType) throws Exception
     {
-        assumeTrue(transportType != TransportType.H3_QUICHE && transportType != TransportType.H2C && transportType != TransportType.H2); // TODO Fix
+        assumeTrue(transportType != TransportType.H3_QUIC && transportType != TransportType.H2C && transportType != TransportType.H2); // TODO Fix
         testBlockingReadWithDelayedFirstContentIdleTimeoutFires(transportType, true);
     }
 

@@ -17,6 +17,8 @@ In the vast majority of cases, server applications should use the generic, high-
 
 The low-level HTTP/3 server library has been designed for those applications that need low-level access to HTTP/3 features such as _sessions_, _streams_ and _frames_, and this is quite a rare use case.
 
+Support for the QUIC protocol underlying HTTP/3 is provided by the xref:server/quic.adoc[Jetty QUIC implementation].
+
 See also the correspondent xref:client/http3.adoc[HTTP/3 client library].
 
 [[intro]]

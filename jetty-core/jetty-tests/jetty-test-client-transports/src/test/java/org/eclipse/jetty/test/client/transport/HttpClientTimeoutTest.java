@@ -460,7 +460,7 @@ public class HttpClientTimeoutTest extends AbstractTest
     {
         // This test relies on limiting *concurrent* requests per connection,
         // but with QUIC it is only possible to control the *total* streams.
-        Assumptions.assumeFalse(transportType == TransportType.H3_QUICHE);
+        Assumptions.assumeFalse(transportType == TransportType.H3_QUIC);
 
         CountDownLatch serverLatch = new CountDownLatch(1);
         start(transportType, new Handler.Abstract()

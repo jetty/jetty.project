@@ -135,7 +135,7 @@ public class HttpClientLoadTest extends AbstractTest
         ThreadLocalRandom random = ThreadLocalRandom.current();
         // Choose a random destination
         String host;
-        if (transportType == TransportType.H3_QUICHE)
+        if (transportType == TransportType.H3_QUIC)
             host = "localhost";
         else
             host = random.nextBoolean() ? "localhost" : "127.0.0.1";
