@@ -75,12 +75,12 @@
       <artifactId>hibernate-search-mapper-orm</artifactId>
       <scope>compile</scope>
       <exclusions>
-        <!-- this comes from the active Jetty Environment -->
+        <!-- comes from Jetty Environment runtime classloader -->
         <exclusion>
           <groupId>jakarta.activation</groupId>
           <artifactId>*</artifactId>
         </exclusion>
-        <!-- this comes from the active Jetty Environment -->
+        <!-- comes from Jetty Environment runtime classloader -->
         <exclusion>
           <groupId>jakarta.xml.bind</groupId>
           <artifactId>*</artifactId>
