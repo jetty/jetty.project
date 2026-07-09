@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReverseProxyTest extends AbstractProxyTest
 {
-    public static Stream<Arguments> httpVersionsAndThreadPools()
+    public static Stream<Arguments> httpVersionsAndProxySendServerHeaders()
     {
         return Stream.of(
             Arguments.of(HttpVersion.HTTP_1_1, false),
@@ -59,25 +59,9 @@ public class ReverseProxyTest extends AbstractProxyTest
         );
     }
 
-    public static Stream<Arguments> httpVersionsThreadPoolsAndHeaders()
-    {
-        return Stream.of(
-            // Without server headers on proxy
-            Arguments.of(HttpVersion.HTTP_1_1, false, false),
-            Arguments.of(HttpVersion.HTTP_1_1, true, false),
-            Arguments.of(HttpVersion.HTTP_2, false, false),
-            Arguments.of(HttpVersion.HTTP_2, true, false),
-            // With server headers enabled on both backend and proxy
-            Arguments.of(HttpVersion.HTTP_1_1, false, true),
-            Arguments.of(HttpVersion.HTTP_1_1, true, true),
-            Arguments.of(HttpVersion.HTTP_2, false, true),
-            Arguments.of(HttpVersion.HTTP_2, true, true)
-        );
-    }
-
     @ParameterizedTest
-    @MethodSource("httpVersionsThreadPoolsAndHeaders")
-    public void testSimple(HttpVersion httpVersion, boolean useServerThreadPool, boolean sendServerHeaders) throws Exception
+    @MethodSource("httpVersionsAndProxySendServerHeaders")
+    public void testSimple(HttpVersion httpVersion, boolean proxySendServerHeaders) throws Exception
     {
         String clientContent = "hello";
         String serverContent = "world";
@@ -97,8 +81,8 @@ public class ReverseProxyTest extends AbstractProxyTest
             }
         });
 
-        proxyHttpConfig.setSendServerVersion(sendServerHeaders);
-        proxyHttpConfig.setSendDateHeader(sendServerHeaders);
+        proxyHttpConfig.setSendServerVersion(proxySendServerHeaders);
+        proxyHttpConfig.setSendDateHeader(proxySendServerHeaders);
 
         ProxyHandler.Reverse proxyHandler = new ProxyHandler.Reverse(clientToProxyRequest ->
             HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
@@ -112,12 +96,11 @@ public class ReverseProxyTest extends AbstractProxyTest
             @Override
             protected org.eclipse.jetty.client.Request newProxyToServerRequest(Request clientToProxyRequest, HttpURI newHttpURI)
             {
-                // Use the client to proxy protocol also from the proxy to server.
+                // Use the client-to-proxy protocol also for proxy-to-server communication.
                 return super.newProxyToServerRequest(clientToProxyRequest, newHttpURI)
                     .version(httpVersion);
             }
         };
-        proxyHandler.setUseServerThreadPool(useServerThreadPool);
         startProxy(proxyHandler);
 
         startClient();
@@ -127,12 +110,12 @@ public class ReverseProxyTest extends AbstractProxyTest
             .body(new StringRequestContent(clientContent))
             .timeout(5, TimeUnit.SECONDS)
             .send();
+
+        assertEquals(200, response.getStatus());
         assertEquals(serverContent, response.getContentAsString());
 
-        assertTrue(response.getHeaders().getValuesList("Server").size() <= 1,
-            "Should have at most one Server header");
-        assertTrue(response.getHeaders().getValuesList("Date").size() <= 1,
-            "Should have at most one Date header");
+        assertEquals(1, response.getHeaders().getValuesList("Server").size());
+        assertEquals(1, response.getHeaders().getValuesList("Date").size());
     }
 
     @ParameterizedTest
