@@ -89,6 +89,7 @@ public abstract class ProxyHandler extends Handler.Abstract
         HttpHeader.TRAILER,
         HttpHeader.UPGRADE
     );
+
     private HttpClient httpClient;
     private String proxyToServerHost;
     private String viaHost;
@@ -361,7 +362,7 @@ public abstract class ProxyHandler extends Handler.Abstract
             String[] values = value.split(",");
             for (String name : values)
             {
-                name = name.trim().toLowerCase(Locale.ENGLISH);
+                name = name.trim().toLowerCase(Locale.ROOT);
                 if (hopHeaders == null)
                     hopHeaders = new HashSet<>();
                 hopHeaders.add(name);
