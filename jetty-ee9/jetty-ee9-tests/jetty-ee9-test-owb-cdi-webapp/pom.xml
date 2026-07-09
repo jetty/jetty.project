@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9-tests</artifactId>
-    <version>12.1.11-SNAPSHOT</version>
+    <version>12.1.12-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-test-owb-cdi-webapp</artifactId>
   <packaging>war</packaging>
@@ -13,7 +13,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.cdi.owb</bundle-symbolic-name>
-    <openwebbeans.version>2.0.27</openwebbeans.version>
+    <openwebbeans.version>2.0.28</openwebbeans.version>
   </properties>
 
   <dependencies>

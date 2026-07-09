@@ -19,12 +19,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -65,6 +63,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -94,9 +93,6 @@ public class ConstraintTest
     private HttpConfiguration _config;
     private SessionHandler _sessionHandler;
     private ServletContextHandler _servletContextHandler;
-    private Constraint.Builder _forbidConstraint;
-    private Constraint.Builder _relaxConstraint;
-    private Constraint.Builder _noAuthConstraint;
 
     @BeforeEach
     public void setupServer()
@@ -113,17 +109,7 @@ public class ConstraintTest
         _sessionHandler = _servletContextHandler.getSessionHandler();
         _servletContextHandler.setHandler(_sessionHandler);
 
-        TestLoginService loginService = new TestLoginService(TEST_REALM);
-        loginService.putUser("user0", new Password("password"), new String[]{});
-        loginService.putUser("user", new Password("password"), new String[]{"user"});
-        loginService.putUser("user2", new Password("password"), new String[]{"user"});
-        loginService.putUser("admin", new Password("password"), new String[]{"user", "administrator"});
-        loginService.putUser("user3", new Password("password"), new String[]{"foo"});
-        loginService.putUser("user4", new Password("password"), new String[]{"A", "B", "C", "D"});
-        _server.addBean(loginService);
-
         _security = (ConstraintSecurityHandler)_servletContextHandler.getSecurityHandler();
-        _security.setConstraintMappings(getConstraintMappings(), getKnownRoles());
         _sessionHandler.setHandler(_security);
 
         ServletHandler servletHandler = _servletContextHandler.getServletHandler();
@@ -139,85 +125,16 @@ public class ConstraintTest
         _server.stop();
     }
 
-    public Set<String> getKnownRoles()
+    private TestLoginService newTestLoginService()
     {
-        Set<String> knownRoles = new HashSet<>();
-        knownRoles.add("user");
-        knownRoles.add("administrator");
-
-        return knownRoles;
-    }
-
-    private List<ConstraintMapping> getConstraintMappings()
-    {
-        _forbidConstraint = new Constraint.Builder();
-        _forbidConstraint.authorization(Constraint.Authorization.FORBIDDEN);
-        _forbidConstraint.name("forbid");
-        ConstraintMapping mapping0 = new ConstraintMapping();
-        mapping0.setPathSpec("/forbid/*");
-        mapping0.setConstraint(_forbidConstraint.build());
-
-        Constraint.Builder authAnyRoleConstraint = new Constraint.Builder();
-        authAnyRoleConstraint.authorization(Constraint.Authorization.KNOWN_ROLE);
-        authAnyRoleConstraint.name("auth");
-        ConstraintMapping mapping1 = new ConstraintMapping();
-        mapping1.setPathSpec("/auth/*");
-        mapping1.setConstraint(authAnyRoleConstraint.build());
-
-        Constraint.Builder authAdminConstraint = new Constraint.Builder();
-        authAdminConstraint.name("admin");
-        authAdminConstraint.roles("administrator");
-        ConstraintMapping mapping2 = new ConstraintMapping();
-        mapping2.setPathSpec("/admin/*");
-        mapping2.setConstraint(authAdminConstraint.build());
-        mapping2.setMethod("GET");
-        ConstraintMapping mapping2o = new ConstraintMapping();
-        mapping2o.setPathSpec("/admin/*");
-        mapping2o.setConstraint(_forbidConstraint.build());
-        mapping2o.setMethodOmissions(new String[]{"GET"});
-
-        _relaxConstraint = new Constraint.Builder();
-        _relaxConstraint.authorization(Constraint.Authorization.ALLOWED);
-        _relaxConstraint.name("relax");
-        ConstraintMapping mapping3 = new ConstraintMapping();
-        mapping3.setPathSpec("/admin/relax/*");
-        mapping3.setConstraint(_relaxConstraint.build());
-
-        Constraint.Builder loginPageConstraint = new Constraint.Builder();
-        loginPageConstraint.name("loginpage");
-        loginPageConstraint.roles("administrator");
-        ConstraintMapping mapping4 = new ConstraintMapping();
-        mapping4.setPathSpec("/testLoginPage");
-        mapping4.setConstraint(loginPageConstraint.build());
-
-        _noAuthConstraint = new Constraint.Builder();
-        _noAuthConstraint.authorization(Constraint.Authorization.ALLOWED);
-        _noAuthConstraint.name("allow forbidden");
-        ConstraintMapping mapping5 = new ConstraintMapping();
-        mapping5.setPathSpec("/forbid/post");
-        mapping5.setConstraint(_noAuthConstraint.build());
-        mapping5.setMethod("POST");
-        ConstraintMapping mapping5o = new ConstraintMapping();
-        mapping5o.setPathSpec("/forbid/post");
-        mapping5o.setConstraint(_forbidConstraint.build());
-        mapping5o.setMethodOmissions(new String[]{"POST"});
-
-        Constraint.Builder confidentialDataConstraint = new Constraint.Builder();
-        confidentialDataConstraint.authorization(Constraint.Authorization.ALLOWED);
-        confidentialDataConstraint.name("data constraint");
-        confidentialDataConstraint.transport(Constraint.Transport.SECURE);
-        ConstraintMapping mapping6 = new ConstraintMapping();
-        mapping6.setPathSpec("/data/*");
-        mapping6.setConstraint(confidentialDataConstraint.build());
-
-        Constraint.Builder anyUserAuthConstraint = new Constraint.Builder();
-        anyUserAuthConstraint.authorization(Constraint.Authorization.ANY_USER);
-        anyUserAuthConstraint.name("** constraint");
-        ConstraintMapping mapping7 = new ConstraintMapping();
-        mapping7.setPathSpec("/starstar/*");
-        mapping7.setConstraint(anyUserAuthConstraint.build());
-
-        return Arrays.asList(mapping0, mapping1, mapping2, mapping2o, mapping3, mapping4, mapping5, mapping5o, mapping6, mapping7);
+        TestLoginService loginService = new TestLoginService(TEST_REALM);
+        loginService.putUser("user0", new Password("password"), new String[]{});
+        loginService.putUser("user", new Password("password"), new String[]{"user"});
+        loginService.putUser("user2", new Password("password"), new String[]{"user"});
+        loginService.putUser("admin", new Password("password"), new String[]{"user", "administrator"});
+        loginService.putUser("user3", new Password("password"), new String[]{"foo"});
+        loginService.putUser("user4", new Password("password"), new String[]{"A", "B", "C", "D"});
+        return loginService;
     }
 
     @Test
@@ -280,6 +197,7 @@ public class ConstraintTest
         //test combining forbidden with relax
         List<ConstraintMapping> combinableConstraints = Arrays.asList(forbidMapping, relaxMapping);
         _security.setConstraintMappings(combinableConstraints);
+        _server.addBean(newTestLoginService());
         _server.start();
         String response;
         response = _connector.getResponse(requestString);
@@ -382,6 +300,90 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
+    private List<ConstraintMapping> getDurableConstraintMappings()
+    {
+        List<ConstraintMapping> durableMappings = new ArrayList<>();
+
+        Constraint.Builder forbidConstraint = new Constraint.Builder();
+        forbidConstraint.authorization(Constraint.Authorization.FORBIDDEN);
+        forbidConstraint.name("forbid");
+        ConstraintMapping mappingForbid = new ConstraintMapping();
+        mappingForbid.setPathSpec("/forbid/*");
+        mappingForbid.setConstraint(forbidConstraint.build());
+        durableMappings.add(mappingForbid);
+
+        Constraint.Builder authAnyRoleConstraint = new Constraint.Builder();
+        authAnyRoleConstraint.authorization(Constraint.Authorization.KNOWN_ROLE);
+        authAnyRoleConstraint.name("auth");
+        ConstraintMapping mappingAuth = new ConstraintMapping();
+        mappingAuth.setPathSpec("/auth/*");
+        mappingAuth.setConstraint(authAnyRoleConstraint.build());
+        durableMappings.add(mappingAuth);
+
+        Constraint.Builder authAdminConstraint = new Constraint.Builder();
+        authAdminConstraint.name("admin");
+        authAdminConstraint.roles("administrator");
+        ConstraintMapping mappingAdmin = new ConstraintMapping();
+        mappingAdmin.setPathSpec("/admin/*");
+        mappingAdmin.setConstraint(authAdminConstraint.build());
+        mappingAdmin.setMethod("GET");
+        ConstraintMapping mappingAdminOmission = new ConstraintMapping();
+        mappingAdminOmission.setPathSpec("/admin/*");
+        mappingAdminOmission.setConstraint(forbidConstraint.build());
+        mappingAdminOmission.setMethodOmissions(new String[]{"GET"});
+        durableMappings.add(mappingAdmin);
+        durableMappings.add(mappingAdminOmission);
+
+        Constraint.Builder relaxConstraint = new Constraint.Builder();
+        relaxConstraint.authorization(Constraint.Authorization.ALLOWED);
+        relaxConstraint.name("relax");
+        ConstraintMapping mappingAdminRelax = new ConstraintMapping();
+        mappingAdminRelax.setPathSpec("/admin/relax/*");
+        mappingAdminRelax.setConstraint(relaxConstraint.build());
+        durableMappings.add(mappingAdminRelax);
+
+        Constraint.Builder loginPageConstraint = new Constraint.Builder();
+        loginPageConstraint.name("loginpage");
+        loginPageConstraint.roles("administrator");
+        ConstraintMapping mappingTestLoginPage = new ConstraintMapping();
+        mappingTestLoginPage.setPathSpec("/testLoginPage");
+        mappingTestLoginPage.setConstraint(loginPageConstraint.build());
+        durableMappings.add(mappingTestLoginPage);
+
+        Constraint.Builder noAuthConstraint = new Constraint.Builder();
+        noAuthConstraint.authorization(Constraint.Authorization.ALLOWED);
+        noAuthConstraint.name("allow forbidden");
+        ConstraintMapping mappingAllowForbiddenPost = new ConstraintMapping();
+        mappingAllowForbiddenPost.setPathSpec("/forbid/post");
+        mappingAllowForbiddenPost.setConstraint(noAuthConstraint.build());
+        mappingAllowForbiddenPost.setMethod("POST");
+        ConstraintMapping mappingAllowForbiddenPostOmission = new ConstraintMapping();
+        mappingAllowForbiddenPostOmission.setPathSpec("/forbid/post");
+        mappingAllowForbiddenPostOmission.setConstraint(forbidConstraint.build());
+        mappingAllowForbiddenPostOmission.setMethodOmissions(new String[]{"POST"});
+        durableMappings.add(mappingAllowForbiddenPost);
+        durableMappings.add(mappingAllowForbiddenPostOmission);
+
+        Constraint.Builder confidentialDataConstraint = new Constraint.Builder();
+        confidentialDataConstraint.authorization(Constraint.Authorization.ALLOWED);
+        confidentialDataConstraint.name("data constraint");
+        confidentialDataConstraint.transport(Constraint.Transport.SECURE);
+        ConstraintMapping mappingData = new ConstraintMapping();
+        mappingData.setPathSpec("/data/*");
+        mappingData.setConstraint(confidentialDataConstraint.build());
+        durableMappings.add(mappingData);
+
+        Constraint.Builder anyUserAuthConstraint = new Constraint.Builder();
+        anyUserAuthConstraint.authorization(Constraint.Authorization.ANY_USER);
+        anyUserAuthConstraint.name("** constraint");
+        ConstraintMapping mappingStarStar = new ConstraintMapping();
+        mappingStarStar.setPathSpec("/starstar/*");
+        mappingStarStar.setConstraint(anyUserAuthConstraint.build());
+        durableMappings.add(mappingStarStar);
+
+        return durableMappings;
+    }
+
     /**
      * Test that constraint mappings added before the context starts are
      * retained, but those that are added after the context starts are not.
@@ -389,25 +391,27 @@ public class ConstraintTest
     @Test
     public void testDurableConstraints() throws Exception
     {
+        _security.setConstraintMappings(getDurableConstraintMappings(), Set.of("user", "administrator"));
+
         List<ConstraintMapping> mappings =  _security.getConstraintMappings();
-        assertThat("before start", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        assertThat("before start", getDurableConstraintMappings().size(), Matchers.equalTo(mappings.size()));
         
         _server.start();
         
         mappings =  _security.getConstraintMappings();
-        assertThat("after start", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        assertThat("after start", getDurableConstraintMappings().size(), Matchers.equalTo(mappings.size()));
         
         _server.stop();
         
         //After a stop, just the durable mappings are left
         mappings = _security.getConstraintMappings();
-        assertThat("after stop", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        assertThat("after stop", getDurableConstraintMappings().size(), Matchers.equalTo(mappings.size()));
         
         _server.start();
         
         //Verify the constraints are just the durables
         mappings = _security.getConstraintMappings();
-        assertThat("after restart", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        assertThat("after restart", getDurableConstraintMappings().size(), Matchers.equalTo(mappings.size()));
         
         //Add a non-durable constraint
         ConstraintMapping mapping = new ConstraintMapping();
@@ -420,14 +424,14 @@ public class ConstraintTest
         _security.addConstraintMapping(mapping);
         
         mappings = _security.getConstraintMappings();
-        assertThat("after addition", getConstraintMappings().size() + 1, Matchers.equalTo(mappings.size()));
+        assertThat("after addition", getDurableConstraintMappings().size() + 1, Matchers.equalTo(mappings.size()));
         
         _server.stop();
         _server.start();
         
         //After a stop, only the durable mappings remain
         mappings = _security.getConstraintMappings();
-        assertThat("after addition", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        assertThat("after addition", getDurableConstraintMappings().size(), Matchers.equalTo(mappings.size()));
         
         //test that setConstraintMappings replaces all existing mappings whether durable or not
         
@@ -444,9 +448,9 @@ public class ConstraintTest
         _server.stop();
         _server.start();
         assertThat("no change after start", 1, Matchers.equalTo(mappings.size()));
-        _security.setConstraintMappings(getConstraintMappings());
+        _security.setConstraintMappings(getDurableConstraintMappings());
         mappings = _security.getConstraintMappings();
-        assertThat("durables lost", getConstraintMappings().size(), Matchers.equalTo(mappings.size()));
+        assertThat("durables lost", getDurableConstraintMappings().size(), Matchers.equalTo(mappings.size()));
         _server.stop();
         mappings = _security.getConstraintMappings();
         assertThat("no mappings", 0, Matchers.equalTo(mappings.size()));
@@ -614,8 +618,9 @@ public class ConstraintTest
         mapping1.setPathSpec("/starstar/*");
         mapping1.setConstraint(constraint1.build());
 
-        _security.setConstraintMappings(Collections.singletonList(mapping1));
+        _security.setConstraintMappings(List.of(mapping1));
         _security.setAuthenticator(new BasicAuthenticator());
+        _server.addBean(newTestLoginService());
         _server.start();
 
         Set<String> uncoveredPaths = _security.getPathsWithUncoveredHttpMethods();
@@ -866,46 +871,82 @@ public class ConstraintTest
     @MethodSource("basicScenarios")
     public void testBasic(Scenario scenario) throws Exception
     {
-        List<ConstraintMapping> list = new ArrayList<>(getConstraintMappings());
+        List<ConstraintMapping> list = new ArrayList<>();
+
+        Constraint.Builder forbidConstraint = new Constraint.Builder();
+        forbidConstraint.authorization(Constraint.Authorization.FORBIDDEN);
+        forbidConstraint.name("forbid");
+        ConstraintMapping mappingForbid = new ConstraintMapping();
+        mappingForbid.setPathSpec("/forbid/*");
+        mappingForbid.setConstraint(forbidConstraint.build());
+        list.add(mappingForbid);
+
+        Constraint.Builder authAnyRoleConstraint = new Constraint.Builder();
+        authAnyRoleConstraint.authorization(Constraint.Authorization.KNOWN_ROLE);
+        authAnyRoleConstraint.name("auth");
+        ConstraintMapping mappingAuth = new ConstraintMapping();
+        mappingAuth.setPathSpec("/auth/*");
+        mappingAuth.setConstraint(authAnyRoleConstraint.build());
+        list.add(mappingAuth);
+
+        Constraint.Builder authAdminConstraint = new Constraint.Builder();
+        authAdminConstraint.name("admin");
+        authAdminConstraint.roles("administrator");
+        ConstraintMapping mappingAdmin = new ConstraintMapping();
+        mappingAdmin.setPathSpec("/admin/*");
+        mappingAdmin.setConstraint(authAdminConstraint.build());
+        mappingAdmin.setMethod("GET");
+        ConstraintMapping mappingAdminOmission = new ConstraintMapping();
+        mappingAdminOmission.setPathSpec("/admin/*");
+        mappingAdminOmission.setConstraint(forbidConstraint.build());
+        mappingAdminOmission.setMethodOmissions(new String[]{"GET"});
+        list.add(mappingAdmin);
+        list.add(mappingAdminOmission);
+
+        Constraint.Builder relaxConstraint = new Constraint.Builder();
+        relaxConstraint.authorization(Constraint.Authorization.ALLOWED);
+        relaxConstraint.name("relax");
+        ConstraintMapping mappingAdminRelax = new ConstraintMapping();
+        mappingAdminRelax.setPathSpec("/admin/relax/*");
+        mappingAdminRelax.setConstraint(relaxConstraint.build());
+        list.add(mappingAdminRelax);
 
         Constraint.Builder constraint6 = new Constraint.Builder();
         constraint6.authorization(Constraint.Authorization.SPECIFIC_ROLE);
         constraint6.name("omit HEAD and GET");
         constraint6.roles("user");
-        ConstraintMapping mapping6 = new ConstraintMapping();
-        mapping6.setPathSpec("/omit/*");
-        mapping6.setConstraint(constraint6.build());
-        mapping6.setMethodOmissions(new String[]{
+        ConstraintMapping mappingOmitMethodOmission = new ConstraintMapping();
+        mappingOmitMethodOmission.setPathSpec("/omit/*");
+        mappingOmitMethodOmission.setConstraint(constraint6.build());
+        mappingOmitMethodOmission.setMethodOmissions(new String[]{
             "GET", "HEAD"
         }); //requests for every method except GET and HEAD must be in role "user"
-        list.add(mapping6);
+        list.add(mappingOmitMethodOmission);
 
         Constraint.Builder constraint7 = new Constraint.Builder();
         constraint7.authorization(Constraint.Authorization.SPECIFIC_ROLE);
         constraint7.name("non-omitted GET");
         constraint7.roles("administrator");
-        ConstraintMapping mapping7 = new ConstraintMapping();
-        mapping7.setPathSpec("/omit/*");
-        mapping7.setConstraint(constraint7.build());
-        mapping7.setMethod("GET"); //requests for GET must be in role "admin"
-        list.add(mapping7);
+        ConstraintMapping mappingOmitGet = new ConstraintMapping();
+        mappingOmitGet.setPathSpec("/omit/*");
+        mappingOmitGet.setConstraint(constraint7.build());
+        mappingOmitGet.setMethod("GET"); //requests for GET must be in role "admin"
+        list.add(mappingOmitGet);
 
         Constraint.Builder constraint8 = new Constraint.Builder();
         constraint8.authorization(Constraint.Authorization.SPECIFIC_ROLE);
         constraint8.name("non specific");
         constraint8.roles("foo");
-        ConstraintMapping mapping8 = new ConstraintMapping();
-        mapping8.setPathSpec("/omit/*");
-        mapping8.setConstraint(constraint8.build()); //requests for all methods must be in role "foo"
-        list.add(mapping8);
+        ConstraintMapping mappingOmit = new ConstraintMapping();
+        mappingOmit.setPathSpec("/omit/*");
+        mappingOmit.setConstraint(constraint8.build()); //requests for all methods must be in role "foo"
+        list.add(mappingOmit);
 
-        Set<String> knownRoles = new HashSet<>();
-        knownRoles.add("user");
-        knownRoles.add("administrator");
-        knownRoles.add("foo");
+        Set<String> knownRoles = Set.of("user", "administrator", "foo");
 
         _security.setConstraintMappings(list, knownRoles);
 
+        _server.addBean(newTestLoginService());
         _security.setAuthenticator(new BasicAuthenticator());
         try
         {
@@ -944,9 +985,31 @@ public class ConstraintTest
     @Test
     public void testDigest() throws Exception
     {
+        List<ConstraintMapping> constraintMappings = new ArrayList<>();
+
+        Constraint.Builder forbidConstraint = new Constraint.Builder();
+        forbidConstraint.authorization(Constraint.Authorization.FORBIDDEN);
+        forbidConstraint.name("forbid");
+        ConstraintMapping mappingForbid = new ConstraintMapping();
+        mappingForbid.setPathSpec("/forbid/*");
+        mappingForbid.setConstraint(forbidConstraint.build());
+        constraintMappings.add(mappingForbid);
+
+        Constraint.Builder authAnyRoleConstraint = new Constraint.Builder();
+        authAnyRoleConstraint.authorization(Constraint.Authorization.KNOWN_ROLE);
+        authAnyRoleConstraint.name("auth");
+        ConstraintMapping mappingAuth = new ConstraintMapping();
+        mappingAuth.setPathSpec("/auth/*");
+        mappingAuth.setConstraint(authAnyRoleConstraint.build());
+        constraintMappings.add(mappingAuth);
+
+        Set<String> knownRoles = Set.of("user", "administrator");
+        _security.setConstraintMappings(constraintMappings, knownRoles);
+
         DigestAuthenticator authenticator = new DigestAuthenticator();
         authenticator.setMaxNonceCount(5);
         _security.setAuthenticator(authenticator);
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response;
@@ -1026,10 +1089,80 @@ public class ConstraintTest
         assertThat(response, containsString("stale=true"));
     }
 
+    private void setupTestFormConstraintMappings()
+    {
+        Constraint.Builder loginPageConstraint = new Constraint.Builder();
+        loginPageConstraint.name("loginpage");
+        loginPageConstraint.roles("administrator");
+        ConstraintMapping mappingTestLoginPage = new ConstraintMapping();
+        mappingTestLoginPage.setPathSpec("/testLoginPage");
+        mappingTestLoginPage.setConstraint(loginPageConstraint.build());
+
+        Constraint.Builder forbidConstraint = new Constraint.Builder();
+        forbidConstraint.authorization(Constraint.Authorization.FORBIDDEN);
+        forbidConstraint.name("forbid");
+        ConstraintMapping mappingForbid = new ConstraintMapping();
+        mappingForbid.setPathSpec("/forbid/*");
+        mappingForbid.setConstraint(forbidConstraint.build());
+
+        Constraint.Builder authAnyRoleConstraint = new Constraint.Builder();
+        authAnyRoleConstraint.authorization(Constraint.Authorization.KNOWN_ROLE);
+        authAnyRoleConstraint.name("auth");
+        ConstraintMapping mappingAuth = new ConstraintMapping();
+        mappingAuth.setPathSpec("/auth/*");
+        mappingAuth.setConstraint(authAnyRoleConstraint.build());
+
+        Constraint.Builder authAdminConstraint = new Constraint.Builder();
+        authAdminConstraint.name("admin");
+        authAdminConstraint.roles("administrator");
+        ConstraintMapping mappingAdmin = new ConstraintMapping();
+        mappingAdmin.setPathSpec("/admin/*");
+        mappingAdmin.setConstraint(authAdminConstraint.build());
+        mappingAdmin.setMethod("GET");
+        ConstraintMapping mappingAdminOmission = new ConstraintMapping();
+        mappingAdminOmission.setPathSpec("/admin/*");
+        mappingAdminOmission.setConstraint(forbidConstraint.build());
+        mappingAdminOmission.setMethodOmissions(new String[]{"GET"});
+
+        Constraint.Builder noAuthConstraint = new Constraint.Builder();
+        noAuthConstraint.authorization(Constraint.Authorization.ALLOWED);
+        noAuthConstraint.name("allow forbidden");
+        ConstraintMapping mappingAllowForbidPost = new ConstraintMapping();
+        mappingAllowForbidPost.setPathSpec("/forbid/post");
+        mappingAllowForbidPost.setConstraint(noAuthConstraint.build());
+        mappingAllowForbidPost.setMethod("POST");
+        ConstraintMapping mappingAllowForbidPostOmission = new ConstraintMapping();
+        mappingAllowForbidPostOmission.setPathSpec("/forbid/post");
+        mappingAllowForbidPostOmission.setConstraint(forbidConstraint.build());
+        mappingAllowForbidPostOmission.setMethodOmissions(new String[]{"POST"});
+
+        Constraint.Builder anyUserAuthConstraint = new Constraint.Builder();
+        anyUserAuthConstraint.authorization(Constraint.Authorization.ANY_USER);
+        anyUserAuthConstraint.name("** constraint");
+        ConstraintMapping mappingStarStar = new ConstraintMapping();
+        mappingStarStar.setPathSpec("/starstar/*");
+        mappingStarStar.setConstraint(anyUserAuthConstraint.build());
+
+        List<ConstraintMapping> mappings = List.of(
+            mappingTestLoginPage,
+            mappingForbid,
+            mappingAuth,
+            mappingAdmin,
+            mappingAdminOmission,
+            mappingAllowForbidPost,
+            mappingAllowForbidPostOmission,
+            mappingStarStar);
+        Set<String> knownRoles = Set.of("user", "administrator");
+        _security.setConstraintMappings(mappings, knownRoles);
+    }
+
     @Test
     public void testFormDispatch() throws Exception
     {
+        setupTestFormConstraintMappings();
+
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", true));
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response;
@@ -1082,7 +1215,10 @@ public class ConstraintTest
     @Test
     public void testFormRedirect() throws Exception
     {
+        setupTestFormConstraintMappings();
+
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response;
@@ -1161,6 +1297,17 @@ public class ConstraintTest
     {
         final int UNAUTH_SECONDS = 1200;
 
+        Constraint.Builder authAnyRoleConstraint = new Constraint.Builder();
+        authAnyRoleConstraint.authorization(Constraint.Authorization.KNOWN_ROLE);
+        authAnyRoleConstraint.name("auth");
+        ConstraintMapping mapping1 = new ConstraintMapping();
+        mapping1.setPathSpec("/auth/*");
+        mapping1.setConstraint(authAnyRoleConstraint.build());
+
+        Set<String> knownRoles = Set.of("user", "administrator", "foo");
+        _security.setConstraintMappings(List.of(mapping1), knownRoles);
+
+        _server.addBean(newTestLoginService());
         // Use a FormAuthenticator as an example of session authentication
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
 
@@ -1232,7 +1379,10 @@ public class ConstraintTest
     @Test
     public void testFormPostRedirect() throws Exception
     {
+        setupTestFormConstraintMappings();
+
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response;
@@ -1304,7 +1454,10 @@ public class ConstraintTest
     @Test
     public void testNonFormPostRedirectHttp10() throws Exception
     {
+        setupTestFormConstraintMappings();
+
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response = _connector.getResponse("""
@@ -1337,7 +1490,10 @@ public class ConstraintTest
     @Test
     public void testNonFormPostRedirectHttp11() throws Exception
     {
+        setupTestFormConstraintMappings();
+
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response = _connector.getResponse("""
@@ -1368,7 +1524,10 @@ public class ConstraintTest
     @Test
     public void testFormNoCookies() throws Exception
     {
+        setupTestFormConstraintMappings();
+
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response;
@@ -1432,8 +1591,11 @@ public class ConstraintTest
         // loginlogout - perform successful login then logout, next request should not be logged in
         // loginlogoutlogin - perform successful login then logout then login successfully again, next request should be logged in
 
+        setupTestFormConstraintMappings();
+
         _servletContextHandler.getServletHandler().getServlet("test").setServlet(new ProgrammaticLoginServlet());
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response;
@@ -1597,7 +1759,51 @@ public class ConstraintTest
     @Test
     public void testStrictBasic() throws Exception
     {
+        List<ConstraintMapping> constraintMappings = new ArrayList<>();
+
+        Constraint.Builder authAnyRoleConstraint = new Constraint.Builder();
+        authAnyRoleConstraint.authorization(Constraint.Authorization.KNOWN_ROLE);
+        authAnyRoleConstraint.name("auth");
+        ConstraintMapping mappingAuthAnyRole = new ConstraintMapping();
+        mappingAuthAnyRole.setPathSpec("/auth/*");
+        mappingAuthAnyRole.setConstraint(authAnyRoleConstraint.build());
+        constraintMappings.add(mappingAuthAnyRole);
+
+        Constraint.Builder forbidConstraint = new Constraint.Builder();
+        forbidConstraint.authorization(Constraint.Authorization.FORBIDDEN);
+        forbidConstraint.name("forbid");
+        ConstraintMapping mappingForbid = new ConstraintMapping();
+        mappingForbid.setPathSpec("/forbid/*");
+        mappingForbid.setConstraint(forbidConstraint.build());
+        constraintMappings.add(mappingForbid);
+
+        Constraint.Builder authAdminConstraint = new Constraint.Builder();
+        authAdminConstraint.name("admin");
+        authAdminConstraint.roles("administrator");
+        ConstraintMapping mappingAuthAdmin = new ConstraintMapping();
+        mappingAuthAdmin.setPathSpec("/admin/*");
+        mappingAuthAdmin.setConstraint(authAdminConstraint.build());
+        mappingAuthAdmin.setMethod("GET");
+        ConstraintMapping mappingAuthAdminOmission = new ConstraintMapping();
+        mappingAuthAdminOmission.setPathSpec("/admin/*");
+        mappingAuthAdminOmission.setConstraint(forbidConstraint.build());
+        mappingAuthAdminOmission.setMethodOmissions(new String[]{"GET"});
+        constraintMappings.add(mappingAuthAdmin);
+        constraintMappings.add(mappingAuthAdminOmission);
+
+        Constraint.Builder relaxConstraint = new Constraint.Builder();
+        relaxConstraint.authorization(Constraint.Authorization.ALLOWED);
+        relaxConstraint.name("relax");
+        ConstraintMapping mappingAdminRelax = new ConstraintMapping();
+        mappingAdminRelax.setPathSpec("/admin/relax/*");
+        mappingAdminRelax.setConstraint(relaxConstraint.build());
+        constraintMappings.add(mappingAdminRelax);
+
+        Set<String> knownRoles = Set.of("user", "administrator");
+        _security.setConstraintMappings(constraintMappings, knownRoles);
+
         _security.setAuthenticator(new BasicAuthenticator());
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response;
@@ -1658,7 +1864,10 @@ public class ConstraintTest
     public void testStrictFormDispatch()
         throws Exception
     {
+        setupTestFormConstraintMappings();
+
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", true));
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response;
@@ -1769,7 +1978,10 @@ public class ConstraintTest
     @Test
     public void testStrictFormRedirect() throws Exception
     {
+        setupTestFormConstraintMappings();
+
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response;
@@ -1900,7 +2112,19 @@ public class ConstraintTest
     @Test
     public void testDataRedirection() throws Exception
     {
+        Constraint.Builder confidentialDataConstraint = new Constraint.Builder();
+        confidentialDataConstraint.authorization(Constraint.Authorization.ALLOWED);
+        confidentialDataConstraint.name("data constraint");
+        confidentialDataConstraint.transport(Constraint.Transport.SECURE);
+        ConstraintMapping mapping6 = new ConstraintMapping();
+        mapping6.setPathSpec("/data/*");
+        mapping6.setConstraint(confidentialDataConstraint.build());
+
+        Set<String> knownRoles = Set.of("user", "administrator");
+        _security.setConstraintMappings(List.of(mapping6), knownRoles);
+
         _security.setAuthenticator(new BasicAuthenticator());
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String rawResponse;
@@ -1947,6 +2171,7 @@ public class ConstraintTest
         _security.setAuthenticator(new BasicAuthenticator());
         ServletHolder holder = _servletContextHandler.getServletHandler().getServlet("test");
         holder.setUserRoleLink("untranslated", "user");
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String rawResponse = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
@@ -1961,6 +2186,7 @@ public class ConstraintTest
     public void testDeferredBasic() throws Exception
     {
         _security.setAuthenticator(new BasicAuthenticator());
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response;
@@ -1988,7 +2214,30 @@ public class ConstraintTest
     @Test
     public void testRelaxedMethod() throws Exception
     {
+        Constraint.Builder forbidConstraint = new Constraint.Builder();
+        forbidConstraint.authorization(Constraint.Authorization.FORBIDDEN);
+        forbidConstraint.name("forbid");
+        ConstraintMapping mappingForbid = new ConstraintMapping();
+        mappingForbid.setPathSpec("/forbid/*");
+        mappingForbid.setConstraint(forbidConstraint.build());
+        _security.addConstraintMapping(mappingForbid);
+
+        Constraint.Builder noAuthConstraint = new Constraint.Builder();
+        noAuthConstraint.authorization(Constraint.Authorization.ALLOWED);
+        noAuthConstraint.name("allow forbidden");
+        ConstraintMapping mappingAllowForbidPost = new ConstraintMapping();
+        mappingAllowForbidPost.setPathSpec("/forbid/post");
+        mappingAllowForbidPost.setConstraint(noAuthConstraint.build());
+        mappingAllowForbidPost.setMethod("POST");
+        ConstraintMapping mappingAllowForbidPostOmission = new ConstraintMapping();
+        mappingAllowForbidPostOmission.setPathSpec("/forbid/post");
+        mappingAllowForbidPostOmission.setConstraint(forbidConstraint.build());
+        mappingAllowForbidPostOmission.setMethodOmissions(new String[]{"POST"});
+        _security.addConstraintMapping(mappingAllowForbidPost);
+        _security.addConstraintMapping(mappingAllowForbidPostOmission);
+
         _security.setAuthenticator(new BasicAuthenticator());
+        _server.addBean(newTestLoginService());
         _server.start();
 
         String response;
@@ -2006,13 +2255,23 @@ public class ConstraintTest
     @Test
     public void testUncoveredMethod() throws Exception
     {
-        ConstraintMapping specificMethod = new ConstraintMapping();
-        specificMethod.setMethod("GET");
-        specificMethod.setPathSpec("/specific/method");
-        specificMethod.setConstraint(_forbidConstraint.build());
-        _security.addConstraintMapping(specificMethod);
+        Constraint.Builder forbidConstraint = new Constraint.Builder();
+        forbidConstraint.authorization(Constraint.Authorization.FORBIDDEN);
+        forbidConstraint.name("forbid");
+        ConstraintMapping mappingForbid = new ConstraintMapping();
+        mappingForbid.setPathSpec("/forbid/*");
+        mappingForbid.setConstraint(forbidConstraint.build());
+        _security.addConstraintMapping(mappingForbid);
+
+        ConstraintMapping mappingSpecificMethod = new ConstraintMapping();
+        mappingSpecificMethod.setMethod("GET");
+        mappingSpecificMethod.setPathSpec("/specific/method");
+        mappingSpecificMethod.setConstraint(forbidConstraint.build());
+        _security.addConstraintMapping(mappingSpecificMethod);
+
         _security.setAuthenticator(new BasicAuthenticator());
-        Logger.getAnonymousLogger().info("Uncovered method for /specific/method is expected");
+        LoggerFactory.getLogger(ConstraintTest.class).info("Uncovered method for /specific/method is expected");
+        _server.addBean(newTestLoginService());
         _server.start();
 
         assertThat(_security.getPathsWithUncoveredHttpMethods(), contains("/specific/method"));
@@ -2028,31 +2287,64 @@ public class ConstraintTest
     @Test
     public void testForbidTraceAndOptions() throws Exception
     {
+        Constraint.Builder forbidConstraint = new Constraint.Builder();
+        forbidConstraint.authorization(Constraint.Authorization.FORBIDDEN);
+        forbidConstraint.name("forbid");
+        ConstraintMapping mappingForbid = new ConstraintMapping();
+        mappingForbid.setPathSpec("/forbid/*");
+        mappingForbid.setConstraint(forbidConstraint.build());
+        _security.addConstraintMapping(mappingForbid);
+
+        Constraint.Builder relaxConstraint = new Constraint.Builder();
+        relaxConstraint.authorization(Constraint.Authorization.ALLOWED);
+        relaxConstraint.name("relax");
+        ConstraintMapping mappingAdminRelax = new ConstraintMapping();
+        mappingAdminRelax.setPathSpec("/admin/relax/*");
+        mappingAdminRelax.setConstraint(relaxConstraint.build());
+        _security.addConstraintMapping(mappingAdminRelax);
+
+        Constraint.Builder noAuthConstraint = new Constraint.Builder();
+        noAuthConstraint.authorization(Constraint.Authorization.ALLOWED);
+        noAuthConstraint.name("allow forbidden");
+        ConstraintMapping mappingAllowForbidPost = new ConstraintMapping();
+        mappingAllowForbidPost.setPathSpec("/forbid/post");
+        mappingAllowForbidPost.setConstraint(noAuthConstraint.build());
+        mappingAllowForbidPost.setMethod("POST");
+        ConstraintMapping mappingAllowForbidPostOmission = new ConstraintMapping();
+        mappingAllowForbidPostOmission.setPathSpec("/forbid/post");
+        mappingAllowForbidPostOmission.setConstraint(forbidConstraint.build());
+        mappingAllowForbidPostOmission.setMethodOmissions(new String[]{"POST"});
+        _security.addConstraintMapping(mappingAllowForbidPost);
+        _security.addConstraintMapping(mappingAllowForbidPostOmission);
+
         ConstraintMapping forbidTrace = new ConstraintMapping();
         forbidTrace.setMethod("TRACE");
         forbidTrace.setPathSpec("/");
-        forbidTrace.setConstraint(_forbidConstraint.build());
+        forbidTrace.setConstraint(forbidConstraint.build());
         ConstraintMapping allowOmitTrace = new ConstraintMapping();
         allowOmitTrace.setMethodOmissions(new String[] {"TRACE"});
         allowOmitTrace.setPathSpec("/");
-        allowOmitTrace.setConstraint(_relaxConstraint.build());
+        allowOmitTrace.setConstraint(relaxConstraint.build());
 
         ConstraintMapping forbidOptions = new ConstraintMapping();
         forbidOptions.setMethod("OPTIONS");
         forbidOptions.setPathSpec("/");
-        forbidOptions.setConstraint(_forbidConstraint.build());
+        forbidOptions.setConstraint(forbidConstraint.build());
         ConstraintMapping allowOmitOptions = new ConstraintMapping();
         allowOmitOptions.setMethodOmissions(new String[] {"OPTIONS"});
         allowOmitOptions.setPathSpec("/");
-        allowOmitOptions.setConstraint(_relaxConstraint.build());
+        allowOmitOptions.setConstraint(relaxConstraint.build());
 
         ConstraintMapping someConstraint = new ConstraintMapping();
         someConstraint.setPathSpec("/some/constaint/*");
-        someConstraint.setConstraint(_noAuthConstraint.build());
+        someConstraint.setConstraint(noAuthConstraint.build());
 
+        // Intentionally using older setConstraintMappings(ConstraintMapping[]) to maintain test coverage.
+        // Do not convert to List<ConstraintMapping> here.
         _security.setConstraintMappings(new ConstraintMapping[] {forbidTrace, allowOmitTrace, forbidOptions, allowOmitOptions, someConstraint});
 
         _security.setAuthenticator(new BasicAuthenticator());
+        _server.addBean(newTestLoginService());
         _server.start();
 
         assertThat(_security.getPathsWithUncoveredHttpMethods(), Matchers.empty());
@@ -2079,16 +2371,41 @@ public class ConstraintTest
     {
         _security.setAuthenticator(new BasicAuthenticator());
 
+        Constraint.Builder authAnyRoleConstraint = new Constraint.Builder();
+        authAnyRoleConstraint.authorization(Constraint.Authorization.KNOWN_ROLE);
+        authAnyRoleConstraint.name("auth");
+        ConstraintMapping mappingAuth = new ConstraintMapping();
+        mappingAuth.setPathSpec("/auth/*");
+        mappingAuth.setConstraint(authAnyRoleConstraint.build());
+        _security.addConstraintMapping(mappingAuth);
+
+        Constraint.Builder forbidConstraint = new Constraint.Builder();
+        forbidConstraint.authorization(Constraint.Authorization.FORBIDDEN);
+        forbidConstraint.name("forbid");
+        ConstraintMapping mappingForbid = new ConstraintMapping();
+        mappingForbid.setPathSpec("/forbid/*");
+        mappingForbid.setConstraint(forbidConstraint.build());
+        _security.addConstraintMapping(mappingForbid);
+
         ConstraintMapping forbidDefault = new ConstraintMapping();
         forbidDefault.setPathSpec("/");
-        forbidDefault.setConstraint(_forbidConstraint.build());
+        forbidDefault.setConstraint(forbidConstraint.build());
         _security.addConstraintMapping(forbidDefault);
+
+        Constraint.Builder relaxConstraint = new Constraint.Builder();
+        relaxConstraint.authorization(Constraint.Authorization.ALLOWED);
+        relaxConstraint.name("relax");
+        ConstraintMapping mappingAdminRelax = new ConstraintMapping();
+        mappingAdminRelax.setPathSpec("/admin/relax/*");
+        mappingAdminRelax.setConstraint(relaxConstraint.build());
+        _security.addConstraintMapping(mappingAdminRelax);
 
         ConstraintMapping allowRoot = new ConstraintMapping();
         allowRoot.setPathSpec("");
-        allowRoot.setConstraint(_relaxConstraint.build());
+        allowRoot.setConstraint(relaxConstraint.build());
         _security.addConstraintMapping(allowRoot);
 
+        _server.addBean(newTestLoginService());
         _server.start();
         String response;
 
