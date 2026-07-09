@@ -285,8 +285,8 @@ public class TestOSGiUtil
             }
         }
 
-        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("mortbay-apache-el").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("mortbay-apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee9").artifactId("jetty-ee9-apache-jsp").versionAsInProject().start());
         String jstlGroupId = System.getProperty("jstl.groupId", "jakarta.servlet.jsp.jstl");
         String jstlArtifactId = System.getProperty("jstl.artifactId", "jakarta.servlet.jsp.jstl-api");
