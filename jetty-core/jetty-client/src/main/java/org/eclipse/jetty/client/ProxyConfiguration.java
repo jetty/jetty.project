@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.HostPortPredicate;
 import org.eclipse.jetty.util.HostPortSet;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -140,16 +141,8 @@ public class ProxyConfiguration
         }
 
         /**
-         * <p>Returns the set of origins that must be proxied.</p>
-         * <p>The set supports patterns including:</p>
-         * <ul>
-         * <li>Exact hostname match: {@code example.com}</li>
-         * <li>Hostname wildcard prefix: {@code *.example.com}</li>
-         * <li>Hostname wildcard suffix: {@code internal.*}</li>
-         * <li>CIDR notation: {@code 192.168.0.0/16}</li>
-         * <li>IP range: {@code 10.0.0.1-10.0.0.10}</li>
-         * <li>Port specification: {@code example.com:8080}</li>
-         * </ul>
+         * <p>Returns the set of origins that must be proxied. The set accepts the
+         * patterns documented by {@link HostPortPredicate}.</p>
          *
          * @return the set of origins that must be proxied
          * @see #matches(Origin)
@@ -161,16 +154,8 @@ public class ProxyConfiguration
         }
 
         /**
-         * <p>Returns the set of origins that must not be proxied.</p>
-         * <p>The set supports patterns including:</p>
-         * <ul>
-         * <li>Exact hostname match: {@code example.com}</li>
-         * <li>Hostname wildcard prefix: {@code *.example.com}</li>
-         * <li>Hostname wildcard suffix: {@code internal.*}</li>
-         * <li>CIDR notation: {@code 192.168.0.0/16}</li>
-         * <li>IP range: {@code 10.0.0.1-10.0.0.10}</li>
-         * <li>Port specification: {@code example.com:8080}</li>
-         * </ul>
+         * <p>Returns the set of origins that must not be proxied. The set accepts the
+         * patterns documented by {@link HostPortPredicate}.</p>
          *
          * @return the set of origins that must not be proxied
          * @see #matches(Origin)

@@ -21,12 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HostPortPatternTest
+public class HostPortPredicateTest
 {
     @Test
     public void testExactHostnameMatch()
     {
-        HostPortPattern pattern = HostPortPattern.from("example.com");
+        HostPortPredicate pattern = HostPortPredicate.from("example.com");
 
         assertTrue(pattern.test(new HostPort("example.com", 80)));
         assertTrue(pattern.test(new HostPort("example.com", 443)));
@@ -41,7 +41,7 @@ public class HostPortPatternTest
     @Test
     public void testExactHostnameWithPort()
     {
-        HostPortPattern pattern = HostPortPattern.from("example.com:8080");
+        HostPortPredicate pattern = HostPortPredicate.from("example.com:8080");
 
         assertTrue(pattern.test(new HostPort("example.com", 8080)));
         assertTrue(pattern.test(new HostPort("EXAMPLE.COM", 8080)));
@@ -54,7 +54,7 @@ public class HostPortPatternTest
     @Test
     public void testWildcardPrefixPattern()
     {
-        HostPortPattern pattern = HostPortPattern.from("*.example.com");
+        HostPortPredicate pattern = HostPortPredicate.from("*.example.com");
 
         assertTrue(pattern.test(new HostPort("www.example.com", 80)));
         assertTrue(pattern.test(new HostPort("api.example.com", 443)));
@@ -71,7 +71,7 @@ public class HostPortPatternTest
     @Test
     public void testWildcardPrefixWithPort()
     {
-        HostPortPattern pattern = HostPortPattern.from("*.example.com:8080");
+        HostPortPredicate pattern = HostPortPredicate.from("*.example.com:8080");
 
         assertTrue(pattern.test(new HostPort("www.example.com", 8080)));
         assertTrue(pattern.test(new HostPort("api.example.com", 8080)));
@@ -84,7 +84,7 @@ public class HostPortPatternTest
     @Test
     public void testWildcardSuffixPattern()
     {
-        HostPortPattern pattern = HostPortPattern.from("internal.*");
+        HostPortPredicate pattern = HostPortPredicate.from("internal.*");
 
         assertTrue(pattern.test(new HostPort("internal.corp", 80)));
         assertTrue(pattern.test(new HostPort("internal.local", 443)));
@@ -100,7 +100,7 @@ public class HostPortPatternTest
     @Test
     public void testWildcardSuffixWithPort()
     {
-        HostPortPattern pattern = HostPortPattern.from("internal.*:9000");
+        HostPortPredicate pattern = HostPortPredicate.from("internal.*:9000");
 
         assertTrue(pattern.test(new HostPort("internal.corp", 9000)));
         assertTrue(pattern.test(new HostPort("internal.local", 9000)));
@@ -113,7 +113,7 @@ public class HostPortPatternTest
     @Test
     public void testMatchAllPattern()
     {
-        HostPortPattern pattern = HostPortPattern.from("*");
+        HostPortPredicate pattern = HostPortPredicate.from("*");
 
         assertTrue(pattern.test(new HostPort("example.com", 80)));
         assertTrue(pattern.test(new HostPort("localhost", 8080)));
@@ -123,7 +123,7 @@ public class HostPortPatternTest
     @Test
     public void testMatchAllWithPort()
     {
-        HostPortPattern pattern = HostPortPattern.from("*:8080");
+        HostPortPredicate pattern = HostPortPredicate.from("*:8080");
 
         assertTrue(pattern.test(new HostPort("example.com", 8080)));
         assertTrue(pattern.test(new HostPort("localhost", 8080)));
@@ -136,7 +136,7 @@ public class HostPortPatternTest
     @Test
     public void testIpAddressExact()
     {
-        HostPortPattern pattern = HostPortPattern.from("192.168.1.100");
+        HostPortPredicate pattern = HostPortPredicate.from("192.168.1.100");
 
         assertTrue(pattern.test(new HostPort("192.168.1.100", 80)));
         assertTrue(pattern.test(new HostPort("192.168.1.100", 8080)));
@@ -148,7 +148,7 @@ public class HostPortPatternTest
     @Test
     public void testIpAddressWithPort()
     {
-        HostPortPattern pattern = HostPortPattern.from("192.168.1.100:8080");
+        HostPortPredicate pattern = HostPortPredicate.from("192.168.1.100:8080");
 
         assertTrue(pattern.test(new HostPort("192.168.1.100", 8080)));
 
@@ -159,7 +159,7 @@ public class HostPortPatternTest
     @Test
     public void testCidrPattern()
     {
-        HostPortPattern pattern = HostPortPattern.from("192.168.0.0/16");
+        HostPortPredicate pattern = HostPortPredicate.from("192.168.0.0/16");
 
         assertTrue(pattern.test(new HostPort("192.168.0.1", 80)));
         assertTrue(pattern.test(new HostPort("192.168.255.255", 8080)));
@@ -172,7 +172,7 @@ public class HostPortPatternTest
     @Test
     public void testCidrWithPort()
     {
-        HostPortPattern pattern = HostPortPattern.from("10.0.0.0/8:8080");
+        HostPortPredicate pattern = HostPortPredicate.from("10.0.0.0/8:8080");
 
         assertTrue(pattern.test(new HostPort("10.0.0.1", 8080)));
         assertTrue(pattern.test(new HostPort("10.255.255.255", 8080)));
@@ -184,7 +184,7 @@ public class HostPortPatternTest
     @Test
     public void testIpRange()
     {
-        HostPortPattern pattern = HostPortPattern.from("10.0.0.1-10.0.0.10");
+        HostPortPredicate pattern = HostPortPredicate.from("10.0.0.1-10.0.0.10");
 
         assertTrue(pattern.test(new HostPort("10.0.0.1", 80)));
         assertTrue(pattern.test(new HostPort("10.0.0.5", 80)));
@@ -197,44 +197,44 @@ public class HostPortPatternTest
     @Test
     public void testNullHostPort()
     {
-        HostPortPattern pattern = HostPortPattern.from("example.com");
+        HostPortPredicate pattern = HostPortPredicate.from("example.com");
         assertFalse(pattern.test(null));
     }
 
     @Test
     public void testBadPatternEmpty()
     {
-        IllegalArgumentException cause = assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from(""));
+        IllegalArgumentException cause = assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from(""));
         assertThat(cause.getMessage(), containsString("empty"));
     }
 
     @Test
     public void testBadPatternInvalidPort()
     {
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("example.com:abc"));
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("example.com:-1"));
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("example.com:99999"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("example.com:abc"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("example.com:-1"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("example.com:99999"));
     }
 
     @Test
     public void testBadPatternMalformedIpv6()
     {
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("[::1"));
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("[::1]abc"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("[::1"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("[::1]abc"));
     }
 
     @Test
     public void testNullPattern()
     {
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from(null));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from(null));
     }
 
     @Test
     public void testEqualsAndHashCode()
     {
-        HostPortPattern pattern1 = HostPortPattern.from("*.example.com");
-        HostPortPattern pattern2 = HostPortPattern.from("*.example.com");
-        HostPortPattern pattern3 = HostPortPattern.from("*.other.com");
+        HostPortPredicate pattern1 = HostPortPredicate.from("*.example.com");
+        HostPortPredicate pattern2 = HostPortPredicate.from("*.example.com");
+        HostPortPredicate pattern3 = HostPortPredicate.from("*.other.com");
 
         assertTrue(pattern1.equals(pattern2));
         assertTrue(pattern1.hashCode() == pattern2.hashCode());
@@ -244,14 +244,14 @@ public class HostPortPatternTest
     @Test
     public void testToString()
     {
-        HostPortPattern pattern = HostPortPattern.from("*.example.com:8080");
+        HostPortPredicate pattern = HostPortPredicate.from("*.example.com:8080");
         assertTrue(pattern.toString().equals("*.example.com:8080"));
     }
 
     @Test
     public void testLocalhostPatterns()
     {
-        HostPortPattern pattern = HostPortPattern.from("localhost");
+        HostPortPredicate pattern = HostPortPredicate.from("localhost");
 
         assertTrue(pattern.test(new HostPort("localhost", 80)));
         assertTrue(pattern.test(new HostPort("localhost", 8080)));
@@ -263,7 +263,7 @@ public class HostPortPatternTest
     @Test
     public void testIpv6Pattern()
     {
-        HostPortPattern pattern = HostPortPattern.from("[::1]");
+        HostPortPredicate pattern = HostPortPredicate.from("[::1]");
 
         assertTrue(pattern.test(new HostPort("[::1]", 80)));
         assertTrue(pattern.test(new HostPort("[::1]", 8080)));
@@ -272,7 +272,7 @@ public class HostPortPatternTest
     @Test
     public void testIpv6WithPort()
     {
-        HostPortPattern pattern = HostPortPattern.from("[::1]:8080");
+        HostPortPredicate pattern = HostPortPredicate.from("[::1]:8080");
 
         assertTrue(pattern.test(new HostPort("[::1]", 8080)));
 
@@ -282,32 +282,32 @@ public class HostPortPatternTest
     @Test
     public void testRejectPatternWithUserinfo()
     {
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("user@example.com"));
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("user:pass@example.com"));
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("user@*.example.com"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("user@example.com"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("user:pass@example.com"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("user@*.example.com"));
     }
 
     @Test
     public void testRejectPatternWithPath()
     {
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("example.com/admin"));
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("*.example.com/path"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("example.com/admin"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("*.example.com/path"));
     }
 
     @Test
     public void testRejectMiddleWildcard()
     {
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("foo.*.bar.com"));
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("*foo.example.com"));
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("foo*.example.com"));
-        assertThrows(IllegalArgumentException.class, () -> HostPortPattern.from("example.*com"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("foo.*.bar.com"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("*foo.example.com"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("foo*.example.com"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("example.*com"));
     }
 
     @Test
     public void testNoPortMatchesAnyPort()
     {
         // Pattern without port should match any port
-        HostPortPattern pattern = HostPortPattern.from("example.com");
+        HostPortPredicate pattern = HostPortPredicate.from("example.com");
 
         assertTrue(pattern.test(new HostPort("example.com", 80)));
         assertTrue(pattern.test(new HostPort("example.com", 443)));
@@ -320,7 +320,7 @@ public class HostPortPatternTest
     public void testSpecificPortMatchesOnlyThatPort()
     {
         // Pattern with port should match only that specific port
-        HostPortPattern pattern = HostPortPattern.from("example.com:8080");
+        HostPortPredicate pattern = HostPortPredicate.from("example.com:8080");
 
         assertTrue(pattern.test(new HostPort("example.com", 8080)));
 

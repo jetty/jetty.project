@@ -21,24 +21,23 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * A set of HostPort patterns.
- * <p>This is a {@link Set} of String patterns that are used to match
- * a {@link Predicate} over {@link HostPort} for containment semantics.
- * The patterns that may be set are defined in {@link HostPortPattern}.
- * </p>
+ * A set of host:port patterns.
+ * <p>This {@link Set} stores pattern strings and acts as a {@link Predicate}
+ * over {@link HostPort}.</p>
+ * <p>The supported patterns are defined by {@link HostPortPredicate}.</p>
  * <p>This class is designed to work with {@link IncludeExcludeSet}</p>
  *
  * @see IncludeExcludeSet
- * @see HostPortPattern
+ * @see HostPortPredicate
  */
 public class HostPortSet extends AbstractSet<String> implements Set<String>, Predicate<HostPort>
 {
-    private final Map<String, HostPortPattern> _patterns = new HashMap<>();
+    private final Map<String, HostPortPredicate> _patterns = new HashMap<>();
 
     @Override
     public boolean add(String pattern)
     {
-        return _patterns.put(pattern, HostPortPattern.from(pattern)) == null;
+        return _patterns.put(pattern, HostPortPredicate.from(pattern)) == null;
     }
 
     @Override
@@ -64,7 +63,7 @@ public class HostPortSet extends AbstractSet<String> implements Set<String>, Pre
     {
         if (hostPort == null)
             return false;
-        for (HostPortPattern pattern : _patterns.values())
+        for (HostPortPredicate pattern : _patterns.values())
         {
             if (pattern.test(hostPort))
                 return true;
