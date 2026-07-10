@@ -150,9 +150,13 @@ public abstract class HostPortPredicate implements Predicate<HostPort>
                 InetAddressPattern inetPattern = InetAddressPattern.from(hostPattern);
                 return new InetAddressHostPortPattern(pattern, inetPattern, port);
             }
-            catch (IllegalArgumentException ignored)
+            catch (IllegalArgumentException e)
             {
-                // Not a valid IP pattern, fall through to exact hostname
+                // A slash denotes CIDR syntax, so do not treat an invalid CIDR as a hostname.
+                if (hostPattern.contains("/"))
+                    throw e;
+
+                // An invalid range-like pattern may still be a hostname.
             }
         }
 
