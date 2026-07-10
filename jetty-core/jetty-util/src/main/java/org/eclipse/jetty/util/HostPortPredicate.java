@@ -19,9 +19,9 @@ import java.util.Locale;
 import java.util.function.Predicate;
 
 /**
- * A pattern for matching host:port combinations.
- * To create a pattern use the {@link HostPortPattern#from(String)} method,
- * which will create a pattern given a string conforming to one of the following formats:
+ * A predicate that matches host:port combinations.
+ * Use {@link #from(String)} to create a predicate from a pattern string that conforms to one
+ * of the following formats:
  *
  * <dl>
  * <dt>Exact hostname</dt>
@@ -57,19 +57,19 @@ import java.util.function.Predicate;
  * @see InetAddressPattern
  * @see IncludeExcludeSet
  */
-public abstract class HostPortPattern implements Predicate<HostPort>
+public abstract class HostPortPredicate implements Predicate<HostPort>
 {
     protected final String _pattern;
     protected final int _port;
 
     /**
-     * Create a HostPortPattern from a string pattern.
+     * Creates a predicate from a host:port pattern.
      *
      * @param pattern the pattern string
-     * @return a HostPortPattern instance appropriate for the pattern
+     * @return a predicate appropriate for the pattern
      * @throws IllegalArgumentException if the pattern is invalid
      */
-    public static HostPortPattern from(String pattern)
+    public static HostPortPredicate from(String pattern)
     {
         if (pattern == null || pattern.isEmpty())
             throw new IllegalArgumentException("Pattern cannot be null or empty");
@@ -226,7 +226,7 @@ public abstract class HostPortPattern implements Predicate<HostPort>
         }
     }
 
-    protected HostPortPattern(String pattern, int port)
+    protected HostPortPredicate(String pattern, int port)
     {
         _pattern = pattern;
         _port = port;
@@ -261,7 +261,7 @@ public abstract class HostPortPattern implements Predicate<HostPort>
     @Override
     public boolean equals(Object obj)
     {
-        return obj instanceof HostPortPattern other && _pattern.equals(other._pattern);
+        return obj instanceof HostPortPredicate other && _pattern.equals(other._pattern);
     }
 
     @Override
@@ -273,7 +273,7 @@ public abstract class HostPortPattern implements Predicate<HostPort>
     /**
      * Pattern that matches an exact hostname (case-insensitive).
      */
-    static class ExactHostPattern extends HostPortPattern
+    static class ExactHostPattern extends HostPortPredicate
     {
         private final String _host;
 
@@ -295,7 +295,7 @@ public abstract class HostPortPattern implements Predicate<HostPort>
     /**
      * Pattern that matches hostnames with a wildcard prefix (*.example.com).
      */
-    static class WildcardPrefixPattern extends HostPortPattern
+    static class WildcardPrefixPattern extends HostPortPredicate
     {
         private final String _suffix;
 
@@ -324,7 +324,7 @@ public abstract class HostPortPattern implements Predicate<HostPort>
     /**
      * Pattern that matches hostnames with a wildcard suffix (internal.*).
      */
-    static class WildcardSuffixPattern extends HostPortPattern
+    static class WildcardSuffixPattern extends HostPortPredicate
     {
         private final String _prefix;
 
@@ -353,7 +353,7 @@ public abstract class HostPortPattern implements Predicate<HostPort>
     /**
      * Pattern that matches all hosts.
      */
-    static class MatchAllPattern extends HostPortPattern
+    static class MatchAllPattern extends HostPortPredicate
     {
         MatchAllPattern(String pattern, int port)
         {
@@ -372,7 +372,7 @@ public abstract class HostPortPattern implements Predicate<HostPort>
     /**
      * Pattern that wraps an InetAddressPattern for IP-based matching.
      */
-    static class InetAddressHostPortPattern extends HostPortPattern
+    static class InetAddressHostPortPattern extends HostPortPredicate
     {
         private final InetAddressPattern _inetPattern;
 
