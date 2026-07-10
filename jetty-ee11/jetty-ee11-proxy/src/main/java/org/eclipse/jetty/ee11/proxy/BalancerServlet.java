@@ -214,7 +214,8 @@ public class BalancerServlet extends ProxyServlet
     @Override
     protected HttpField filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, HttpField httpField)
     {
-        if (_proxyPassReverse && REVERSE_PROXY_HEADERS.contains(httpField.getName()))
+        String headerName = httpField.getName();
+        if (_proxyPassReverse && REVERSE_PROXY_HEADERS.contains(headerName))
         {
             URI locationURI = URI.create(httpField.getValue()).normalize();
             if (locationURI.isAbsolute() && isBackendLocation(locationURI))
@@ -229,7 +230,7 @@ public class BalancerServlet extends ProxyServlet
                 component = locationURI.getRawFragment();
                 if (component != null)
                     newURI.append('#').append(component);
-                return httpField.withValue(URI.create(newURI.toString()).normalize().toString());
+                return new HttpField(headerName, URI.create(newURI.toString()).normalize().toString());
             }
         }
         return httpField;
