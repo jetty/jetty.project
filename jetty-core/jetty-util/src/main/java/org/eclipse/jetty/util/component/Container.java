@@ -20,7 +20,12 @@ import java.util.EventListener;
 import java.util.List;
 
 /**
- * A Container
+ * A Container.
+ * <p>
+ * Unless explicitly documented by an implementation, {@link Container} implementations are not thread-safe
+ * for concurrent mutation and traversal of the containment tree. Applications that access or modify
+ * containers from multiple threads must provide external synchronization.
+ * </p>
  */
 public interface Container
 {
