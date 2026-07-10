@@ -17,7 +17,7 @@
     <!-- too many duplicates with osgi jars... -->
     <duplicate-finder.skip>true</duplicate-finder.skip>
     <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi</ee9.module>
-    <el.artifactId>apache-el</el.artifactId>
+    <el.artifactId>mortbay-apache-el</el.artifactId>
     <el.groupId>org.mortbay.jasper</el.groupId>
     <enterprise.artifactId>jakarta.enterprise.cdi-api</enterprise.artifactId>
     <enterprise.groupId>jakarta.enterprise</enterprise.groupId>
@@ -90,11 +90,11 @@
     </dependency>
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
-      <artifactId>apache-el</artifactId>
+      <artifactId>mortbay-apache-el</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
-      <artifactId>apache-jsp</artifactId>
+      <artifactId>mortbay-apache-jsp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.tinybundles</groupId>

@@ -16,6 +16,6 @@ ee9.jsp.impl.version?=@jsp.impl.version@
 
 [lib]
 lib/ee9-apache-jsp/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
-lib/ee9-apache-jsp/org.mortbay.jasper.apache-el-${ee9.jsp.impl.version}.jar
-lib/ee9-apache-jsp/org.mortbay.jasper.apache-jsp-${ee9.jsp.impl.version}.jar
+lib/ee9-apache-jsp/org.mortbay.jasper.mortbay-apache-el-${ee9.jsp.impl.version}.jar
+lib/ee9-apache-jsp/org.mortbay.jasper.mortbay-apache-jsp-${ee9.jsp.impl.version}.jar
 lib/jetty-ee9-apache-jsp-${jetty.version}.jar

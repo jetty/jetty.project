@@ -16,6 +16,6 @@ ee8.jsp.impl.version?=@jsp.impl.version@
 
 [lib]
 lib/ee8-apache-jsp/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
-lib/ee8-apache-jsp/org.mortbay.jasper.apache-el-${ee8.jsp.impl.version}.jar
-lib/ee8-apache-jsp/org.mortbay.jasper.apache-jsp-${ee8.jsp.impl.version}.jar
+lib/ee8-apache-jsp/org.mortbay.jasper.mortbay-apache-el-${ee8.jsp.impl.version}.jar
+lib/ee8-apache-jsp/org.mortbay.jasper.mortbay-apache-jsp-${ee8.jsp.impl.version}.jar
 lib/jetty-ee8-apache-jsp-${jetty.version}.jar

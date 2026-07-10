@@ -20,7 +20,7 @@ ee10.jsp.impl.version?=@jsp.impl.version@
 lib/ee10-apache-jsp/jakarta.el.jakarta.el-api-${ee10.jakarta.el.api.version}.jar
 lib/ee10-apache-jsp/jakarta.servlet.jsp.jakarta.servlet.jsp-api-${ee10.jakarta.servlet.jsp.api.version}.jar
 lib/ee10-apache-jsp/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
-lib/ee10-apache-jsp/org.mortbay.jasper.apache-el-${ee10.jsp.impl.version}.jar
-lib/ee10-apache-jsp/org.mortbay.jasper.apache-jsp-${ee10.jsp.impl.version}.jar
+lib/ee10-apache-jsp/org.mortbay.jasper.mortbay-apache-el-${ee10.jsp.impl.version}.jar
+lib/ee10-apache-jsp/org.mortbay.jasper.mortbay-apache-jsp-${ee10.jsp.impl.version}.jar
 lib/jetty-ee10-apache-jsp-${jetty.version}.jar
 

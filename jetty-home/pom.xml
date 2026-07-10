@@ -575,7 +575,7 @@
                     <exclude>jakarta.authentication:jakarta.authentication-api</exclude>
                     <exclude>jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api</exclude>
                     <exclude>org.glassfish.web:jakarta.servlet.jsp.jstl</exclude>
-                    <exclude>org.mortbay.jasper:apache-jsp</exclude>
+                    <exclude>org.mortbay.jasper:mortbay-apache-jsp</exclude>
                     <exclude>jakarta.transaction:jakarta.transaction-api</exclude>
                     <exclude>jakarta.interceptor:jakarta.interceptor-api</exclude>
                     <exclude>jakarta.enterprise:jakarta.enterprise.cdi-api</exclude>

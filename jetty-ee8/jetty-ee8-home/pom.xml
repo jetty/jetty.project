@@ -314,7 +314,7 @@
             <configuration>
               <prependGroupId>true</prependGroupId>
               <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
+              <includeArtifactIds>mortbay-apache-jsp,mortbay-apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee8-apache-jsp</outputDirectory>
             </configuration>
@@ -328,7 +328,7 @@
             <configuration>
               <prependGroupId>true</prependGroupId>
               <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>apache-jsp,apache-el,ecj</includeArtifactIds>
+              <includeArtifactIds>mortbay-apache-jsp,mortbay-apache-el,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee8-apache-jsp</outputDirectory>

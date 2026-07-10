@@ -70,7 +70,7 @@
     <!-- FIXME we need a separate property for this one -->
     <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
 
-    <jsp.impl.version>10.0.27</jsp.impl.version>
+    <jsp.impl.version>10.0.27.2</jsp.impl.version>
 
     <sonar.skip>true</sonar.skip>
     <weld.version>4.0.3.Final</weld.version>
@@ -450,13 +450,13 @@
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
-        <artifactId>apache-el</artifactId>
+        <artifactId>mortbay-apache-el</artifactId>
         <version>${jsp.impl.version}</version>
       </dependency>
       <!-- Jakarta EE 9 Dependencies -->
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
-        <artifactId>apache-jsp</artifactId>
+        <artifactId>mortbay-apache-jsp</artifactId>
         <version>${jsp.impl.version}</version>
       </dependency>
     </dependencies>
@@ -651,7 +651,7 @@
                         <!-- for ee9, we need to stay on 10.0.x of mortbay apache-jsp impl
                              ee10 starts with version 10.1.x -->
                         <groupId>org.mortbay.jasper</groupId>
-                        <artifactId>apache-jsp</artifactId>
+                        <artifactId>mortbay-apache-jsp</artifactId>
                         <ignoreVersions>
                           <ignoreVersion>
                             <type>regex</type>
@@ -663,7 +663,7 @@
                         <!-- for ee9, we need to stay on 10.0.x of mortbay apache-el impl
                              ee10 starts with version 10.1.x -->
                         <groupId>org.mortbay.jasper</groupId>
-                        <artifactId>apache-el</artifactId>
+                        <artifactId>mortbay-apache-el</artifactId>
                         <ignoreVersions>
                           <ignoreVersion>
                             <type>regex</type>
@@ -934,7 +934,7 @@
                         <!-- for ee9, we need to stay on 10.0.x of mortbay apache-jsp impl
                              ee10 starts with version 10.1.x -->
                         <groupId>org.mortbay.jasper</groupId>
-                        <artifactId>apache-jsp</artifactId>
+                        <artifactId>mortbay-apache-jsp</artifactId>
                         <ignoreVersions>
                           <ignoreVersion>
                             <type>regex</type>
@@ -946,7 +946,7 @@
                         <!-- for ee9, we need to stay on 10.0.x of mortbay apache-el impl
                              ee10 starts with version 10.1.x -->
                         <groupId>org.mortbay.jasper</groupId>
-                        <artifactId>apache-el</artifactId>
+                        <artifactId>mortbay-apache-el</artifactId>
                         <ignoreVersions>
                           <ignoreVersion>
                             <type>regex</type>

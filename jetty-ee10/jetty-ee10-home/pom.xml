@@ -319,7 +319,7 @@
             <configuration>
               <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp,jakarta.el,org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp-api,jakarta.el-api,apache-el,apache-jsp,ecj</includeArtifactIds>
+              <includeArtifactIds>jakarta.servlet.jsp-api,jakarta.el-api,mortbay-apache-el,mortbay-apache-jsp,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee10-apache-jsp</outputDirectory>
             </configuration>
@@ -333,7 +333,7 @@
             <configuration>
               <prependGroupId>true</prependGroupId>
               <includeGroupIds>jakarta.servlet.jsp,jakart.el,org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>jakart.servlet.jsp-api,jakarta.el-api,apache-el,apache-jsp,ecj</includeArtifactIds>
+              <includeArtifactIds>jakart.servlet.jsp-api,jakarta.el-api,mortbay-apache-el,mortbay-apache-jsp,ecj</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee10-apache-jsp</outputDirectory>
