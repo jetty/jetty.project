@@ -292,6 +292,8 @@ public class HostPortPredicateTest
     {
         assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("example.com/admin"));
         assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("*.example.com/path"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("1.2.3.4/not-a-cidr"));
+        assertThrows(IllegalArgumentException.class, () -> HostPortPredicate.from("1.2.3.4/33"));
     }
 
     @Test
