@@ -22,7 +22,12 @@ public final class RetryPacket extends LongHeaderPacket
 
     public RetryPacket(QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId, byte[] token, byte[] integrity)
     {
-        super(PacketType.RETRY, quicVersion, destinationConnectionId, sourceConnectionId);
+        this(-1, quicVersion, destinationConnectionId, sourceConnectionId, token, integrity);
+    }
+
+    public RetryPacket(long length, QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId, byte[] token, byte[] integrity)
+    {
+        super(length, PacketType.RETRY, quicVersion, destinationConnectionId, sourceConnectionId);
         this.token = token;
         this.integrity = integrity;
     }
@@ -39,6 +44,6 @@ public final class RetryPacket extends LongHeaderPacket
 
     public RetryPacket withIntegrity(byte[] integrity)
     {
-        return new RetryPacket(quicVersion(), destinationConnectionId(), sourceConnectionId(), token(), integrity);
+        return new RetryPacket(length(), quicVersion(), destinationConnectionId(), sourceConnectionId(), token(), integrity);
     }
 }

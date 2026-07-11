@@ -25,7 +25,7 @@ public final class ZeroRTTPacket extends LongHeaderPacket implements Packet.With
 
     public ZeroRTTPacket(QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId, long packetNumber, List<Frame> frames)
     {
-        super(PacketType.ZERO_RTT, quicVersion, destinationConnectionId, sourceConnectionId);
+        super(-1, PacketType.ZERO_RTT, quicVersion, destinationConnectionId, sourceConnectionId);
         this.packetNumber = packetNumber;
         this.frames = frames;
     }

@@ -60,6 +60,11 @@ public class DefaultTokenStore implements TokenStore
             LOG.debug("stored token {} for {} on {}", StringUtil.toHexString(token), key, this);
     }
 
+    public int size()
+    {
+        return allTokens.size();
+    }
+
     private String toKey(SocketAddress serverSocketAddress)
     {
         if (serverSocketAddress instanceof InetSocketAddress serverInet)

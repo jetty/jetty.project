@@ -23,7 +23,7 @@ public final class VersionNegotiationPacket extends LongHeaderPacket
 
     public VersionNegotiationPacket(byte[] destinationConnectionId, byte[] sourceConnectionId, List<QuicVersion> supportedVersions)
     {
-        super(PacketType.VERSION_NEGOTIATION, null, destinationConnectionId, sourceConnectionId);
+        super(-1, PacketType.VERSION_NEGOTIATION, null, destinationConnectionId, sourceConnectionId);
         this.supportedVersions = supportedVersions;
     }
 

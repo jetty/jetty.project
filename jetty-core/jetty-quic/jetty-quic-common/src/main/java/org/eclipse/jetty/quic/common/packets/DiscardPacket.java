@@ -16,6 +16,12 @@ package org.eclipse.jetty.quic.common.packets;
 final class DiscardPacket implements Packet
 {
     @Override
+    public long length()
+    {
+        return 0;
+    }
+
+    @Override
     public byte[] destinationConnectionId()
     {
         return new byte[0];

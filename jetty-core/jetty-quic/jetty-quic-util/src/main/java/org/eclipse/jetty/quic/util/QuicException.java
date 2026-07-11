@@ -82,6 +82,6 @@ public class QuicException extends RuntimeException
     @Override
     public String toString()
     {
-        return "%s@%x[%s,%s,frame=0x%x]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getErrorCode(), getMessage(), getFrameType());
+        return "%s@%x[%s,%s,frame=0x%02X]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getErrorCode(), getMessage(), getFrameType());
     }
 }

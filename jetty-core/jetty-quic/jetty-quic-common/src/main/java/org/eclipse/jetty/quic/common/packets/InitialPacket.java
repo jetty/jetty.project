@@ -26,7 +26,12 @@ public final class InitialPacket extends LongHeaderPacket implements Packet.With
 
     public InitialPacket(QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId, byte[] token, long packetNumber, List<Frame> frames)
     {
-        super(PacketType.INITIAL, quicVersion, destinationConnectionId, sourceConnectionId);
+        this(-1, quicVersion, destinationConnectionId, sourceConnectionId, token, packetNumber, frames);
+    }
+
+    public InitialPacket(long length, QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId, byte[] token, long packetNumber, List<Frame> frames)
+    {
+        super(length, PacketType.INITIAL, quicVersion, destinationConnectionId, sourceConnectionId);
         this.token = token;
         this.packetNumber = packetNumber;
         this.frames = frames;

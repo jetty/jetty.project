@@ -52,7 +52,9 @@ public class InitialPacketParser implements PacketParser
         if (LOG.isDebugEnabled())
             LOG.debug("parsing InitialPacket {}", BufferUtil.toDetailString(buffer.getByteBuffer()));
 
+        long remaining = buffer.size();
         PacketBuffers packetBuffers = decrypter.decryptLongHeaderPacket(EncryptionLevel.INITIAL, buffer);
+        long packetLength = remaining - buffer.size();
 
         if (LOG.isDebugEnabled())
             LOG.debug("decrypted InitialPacket {}", packetBuffers);
@@ -111,7 +113,7 @@ public class InitialPacketParser implements PacketParser
         List<Frame> frames = framesParser.consume(payload);
         payload.release();
 
-        InitialPacket packet = new InitialPacket(quicVersion, dstConnectionId, srcConnectionId, token, packetNumber, frames);
+        InitialPacket packet = new InitialPacket(packetLength, quicVersion, dstConnectionId, srcConnectionId, token, packetNumber, frames);
 
         if (LOG.isDebugEnabled())
             LOG.debug("parsed {}", packet);

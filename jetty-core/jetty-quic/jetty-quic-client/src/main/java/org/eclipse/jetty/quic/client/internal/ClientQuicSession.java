@@ -174,16 +174,6 @@ public class ClientQuicSession extends QuicSession
         if (protocols != null && !protocols.isEmpty())
             tlsConfiguration.setApplicationProtocols(protocols);
 
-        TransportParameters transportParameters = new TransportParameters();
-        getQuicConfiguration().configure(transportParameters);
-        tlsConfiguration.setTransportParameters(transportParameters);
-        long idleTimeout = getIdleTimeout();
-        if (idleTimeout > 0)
-            transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, idleTimeout);
-        transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, getSourceConnectionId());
-        notifyPrepare(transportParameters);
-        configure(transportParameters, true);
-
         byte[] dstConnectionId = getTLSEngine().newRandomBytes(12);
         tlsConfiguration.setInputKeyMaterial(dstConnectionId);
         // Store the original destination connection id,
@@ -210,6 +200,18 @@ public class ClientQuicSession extends QuicSession
         // be notified when the TLS handshake is complete.
         getTLSEngine().addHandshakeListener(this::handshakeComplete);
 
+        notifyCreate();
+
+        TransportParameters transportParameters = new TransportParameters();
+        getQuicConfiguration().configure(transportParameters);
+        tlsConfiguration.setTransportParameters(transportParameters);
+        long idleTimeout = getIdleTimeout();
+        if (idleTimeout > 0)
+            transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, idleTimeout);
+        transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, getSourceConnectionId());
+        notifyPrepare(transportParameters);
+        configure(transportParameters, true);
+
         ClientConnector connector = (ClientConnector)context.get(ClientConnector.CONTEXT_KEY);
         connectTask = getScheduler().schedule(() -> connectTimeout(serverSocketAddress, callback), connector.getConnectTimeout().toMillis(), TimeUnit.MILLISECONDS);
 
@@ -233,6 +235,12 @@ public class ClientQuicSession extends QuicSession
     public int getUDPPayloadLength()
     {
         return getQuicConfiguration().getUDPPayloadLength();
+    }
+
+    @Override
+    public boolean isRemoteAddressValidated()
+    {
+        return true;
     }
 
     @Override

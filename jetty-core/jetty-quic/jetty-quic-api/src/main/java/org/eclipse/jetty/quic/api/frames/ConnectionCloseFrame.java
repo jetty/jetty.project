@@ -75,7 +75,7 @@ public final class ConnectionCloseFrame extends Frame.Abstract
     {
         boolean appError = type() == 0x1D;
         if (appError)
-            return "%s[appError=0x%x,reason=%s]".formatted(super.toString(), errorCode(), reason());
-        return "%s[quicError=0x%x,reason=%s,causeFrame=0x%x]".formatted(super.toString(), errorCode(), reason(), causeFrameType());
+            return "%s[appError=0x%03X,reason=%s]".formatted(super.toString(), errorCode(), reason());
+        return "%s[quicError=0x%03X,reason=%s,causeFrame=0x%02X]".formatted(super.toString(), errorCode(), reason(), causeFrameType());
     }
 }

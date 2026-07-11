@@ -211,6 +211,20 @@ class CryptoFlusher implements Callback
 
         // Determine the bytes available to generate frames.
         long maxFrameBytes = session.getUDPPayloadLength();
+
+        if (!session.isRemoteAddressValidated())
+        {
+            // RFC-9000[8.1]: if the remote address is not validated, cannot send
+            // more than 3 times the received bytes to limit amplification attacks.
+            long max = 3 * session.getBytesReceived();
+            long available = max - session.getBytesSent();
+            if (LOG.isDebugEnabled())
+                LOG.debug("amplification avail/max {}/{} bytes on {}", available, max, this);
+            if (available <= 0)
+                return false;
+            maxFrameBytes = Math.min(maxFrameBytes, available);
+        }
+
         maxFrameBytes -= session.estimatePacketHeaderLength(encryptionLevel);
         maxFrameBytes -= session.getTLSEngine().getCipherSuite().tagLength();
 

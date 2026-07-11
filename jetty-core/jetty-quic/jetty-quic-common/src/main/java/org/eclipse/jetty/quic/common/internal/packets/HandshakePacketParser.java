@@ -52,7 +52,9 @@ public class HandshakePacketParser implements PacketParser
         if (LOG.isDebugEnabled())
             LOG.debug("parsing HandshakePacket {}", BufferUtil.toDetailString(buffer.getByteBuffer()));
 
+        long remaining = buffer.size();
         PacketBuffers packetBuffers = decrypter.decryptLongHeaderPacket(EncryptionLevel.HANDSHAKE, buffer);
+        long packetLength = remaining - buffer.size();
 
         if (LOG.isDebugEnabled())
             LOG.debug("decrypted HandshakePacket {}", packetBuffers);
@@ -107,7 +109,7 @@ public class HandshakePacketParser implements PacketParser
         List<Frame> frames = framesParser.consume(payload);
         payload.release();
 
-        HandshakePacket packet = new HandshakePacket(quicVersion, dstConnectionId, srcConnectionId, packetNumber, frames);
+        HandshakePacket packet = new HandshakePacket(packetLength, quicVersion, dstConnectionId, srcConnectionId, packetNumber, frames);
 
         if (LOG.isDebugEnabled())
             LOG.debug("parsed {}", packet);
