@@ -21,6 +21,7 @@ import org.eclipse.jetty.util.TypeUtil;
 
 public final class OneRTTPacket extends ShortHeaderPacket implements Packet.WithFrames
 {
+    private final long length;
     private final long packetNumber;
     private final byte[] dstConnectionId;
     private final boolean spin;
@@ -29,11 +30,23 @@ public final class OneRTTPacket extends ShortHeaderPacket implements Packet.With
 
     public OneRTTPacket(long packetNumber, byte[] dstConnectionId, boolean spin, boolean keyPhase, List<Frame> frames)
     {
+        this(-1, packetNumber, dstConnectionId, spin, keyPhase, frames);
+    }
+
+    public OneRTTPacket(long length, long packetNumber, byte[] dstConnectionId, boolean spin, boolean keyPhase, List<Frame> frames)
+    {
+        this.length = length;
         this.packetNumber = packetNumber;
         this.dstConnectionId = dstConnectionId;
         this.spin = spin;
         this.keyPhase = keyPhase;
         this.frames = frames;
+    }
+
+    @Override
+    public long length()
+    {
+        return length;
     }
 
     @Override

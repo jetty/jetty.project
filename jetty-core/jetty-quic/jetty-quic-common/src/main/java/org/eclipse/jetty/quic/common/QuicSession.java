@@ -101,6 +101,8 @@ public abstract class QuicSession extends AbstractSession
     private final RetryPacketGenerator retryPacketGenerator = new RetryPacketGenerator();
     private final Map<EncryptionLevel, FrameStream> cryptoStreams = new HashMap<>();
     private final Map<Long, QuicStream> streams = new HashMap<>();
+    private final AtomicLong recvBytes = new AtomicLong();
+    private final AtomicLong sentBytes = new AtomicLong();
     private final AtomicLong biStreamIds = new AtomicLong();
     private final AtomicLong uniStreamIds = new AtomicLong();
     private final AtomicLong biLocalStreamCount = new AtomicLong();
@@ -351,6 +353,8 @@ public abstract class QuicSession extends AbstractSession
 
     public abstract int getUDPPayloadLength();
 
+    public abstract boolean isRemoteAddressValidated();
+
     private boolean isOpen()
     {
         try (var _ = lock.lock())
@@ -372,6 +376,7 @@ public abstract class QuicSession extends AbstractSession
 
     public void bytesWritten(long bytesWritten)
     {
+        sentBytes.addAndGet(bytesWritten);
         connection.bytesWritten(bytesWritten);
     }
 
@@ -437,6 +442,16 @@ public abstract class QuicSession extends AbstractSession
     public String getId()
     {
         return "";
+    }
+
+    public long getBytesReceived()
+    {
+        return recvBytes.get();
+    }
+
+    public long getBytesSent()
+    {
+        return sentBytes.get();
     }
 
     @Override
@@ -957,6 +972,8 @@ public abstract class QuicSession extends AbstractSession
 
         if (process)
         {
+            recvBytes.addAndGet(packet.length());
+
             packetNumbers.onPacketReceived(packet);
 
             // Minimally process first packets to set

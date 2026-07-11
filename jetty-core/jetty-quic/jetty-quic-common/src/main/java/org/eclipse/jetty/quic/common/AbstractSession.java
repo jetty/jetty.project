@@ -106,6 +106,19 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
             disconnect(appError, reason, new ClosedChannelException(), callback)));
     }
 
+    public void notifyCreate()
+    {
+        try
+        {
+            listener.onCreated(this);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
+        }
+    }
+
     protected void notifyOpen()
     {
         notifyOpen(listener);
@@ -119,7 +132,8 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         }
         catch (Throwable x)
         {
-            LOG.info("failure notifying listener {}", listener, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
         }
     }
 
@@ -300,7 +314,8 @@ public abstract class AbstractSession extends ContainerLifeCycle implements Sess
         }
         catch (Throwable x)
         {
-            LOG.info("failure notifying listener {}", listener, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("failure while notifying listener {}", listener, x);
         }
     }
 

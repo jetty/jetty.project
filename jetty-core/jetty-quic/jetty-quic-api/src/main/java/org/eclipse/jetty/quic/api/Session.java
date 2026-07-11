@@ -126,9 +126,14 @@ public interface Session
     /// @see Session
     interface Listener extends EventListener
     {
-        /// Callback method invoked to customize the local QUIC transport parameters.
+        /// Callback method invoked when the session is created.
         ///
-        /// This event may not be emitted for all QUIC implementations.
+        /// @param session the QUIC session
+        default void onCreated(Session session)
+        {
+        }
+
+        /// Callback method invoked to customize the local QUIC transport parameters.
         ///
         /// @param session the QUIC session
         /// @param transportParameters the local [TransportParameters] to modify
@@ -138,8 +143,6 @@ public interface Session
 
         /// Callback method invoked when the remote QUIC transport parameters are received.
         ///
-        /// This event may not be emitted for all QUIC implementations.
-        ///
         /// @param session the QUIC session
         /// @param parameters the QUIC transport parameters received from the remote peer
         default void onTransportParameters(Session session, TransportParameters parameters)
@@ -147,6 +150,9 @@ public interface Session
         }
 
         /// Callback method invoked when a new session is opened.
+        ///
+        /// A session is opened when the TLS handshake is _confirmed_,
+        /// as defined in RFC-9001 #4.1.2.
         ///
         /// @param session the QUIC session
         default void onOpen(Session session)

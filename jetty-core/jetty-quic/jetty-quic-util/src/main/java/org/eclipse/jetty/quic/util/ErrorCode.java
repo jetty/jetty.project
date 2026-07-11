@@ -79,7 +79,7 @@ public final class ErrorCode
     @Override
     public String toString()
     {
-        return "%s[0x%x]".formatted(getClass().getSimpleName(), code);
+        return "%s[0x%03X]".formatted(getClass().getSimpleName(), code);
     }
 
     public static ErrorCode from(long code)

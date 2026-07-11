@@ -285,6 +285,8 @@ public class ServerQuicConnection extends QuicConnection
             // TODO
 //            parameters.put(TransportParameters.Ids.PREFERRED_ADDRESS, null);
 
+            session.notifyCreate();
+
             if (LOG.isDebugEnabled())
                 LOG.debug("created new {} on {}", session, this);
         }

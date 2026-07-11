@@ -19,17 +19,25 @@ import org.eclipse.jetty.util.TypeUtil;
 
 public sealed class LongHeaderPacket implements Packet permits HandshakePacket, InitialPacket, RetryPacket, VersionNegotiationPacket, ZeroRTTPacket
 {
+    private final long length;
     private final PacketType packetType;
     private final QuicVersion quicVersion;
     private final byte[] destinationConnectionId;
     private final byte[] sourceConnectionId;
 
-    public LongHeaderPacket(PacketType packetType, QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId)
+    public LongHeaderPacket(long length, PacketType packetType, QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId)
     {
+        this.length = length;
         this.packetType = packetType;
         this.quicVersion = quicVersion;
         this.destinationConnectionId = destinationConnectionId;
         this.sourceConnectionId = sourceConnectionId;
+    }
+
+    @Override
+    public long length()
+    {
+        return length;
     }
 
     public PacketType packetType()

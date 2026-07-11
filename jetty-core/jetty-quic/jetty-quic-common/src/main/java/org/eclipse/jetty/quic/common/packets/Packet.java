@@ -20,18 +20,27 @@ import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.PaddingFrame;
 
+/// A QUIC packet.
 public sealed interface Packet extends AutoCloseable permits DiscardPacket, LongHeaderPacket, Packet.WithFrames, ShortHeaderPacket
 {
     Packet DISCARD = new DiscardPacket();
 
+    /// @return whether the packet has the long header form
     static boolean isLongHeader(byte form)
     {
         // RFC 9000, 17.2: long header packets have msb == 1.
         return (form & 0b10000000) == 0b10000000;
     }
 
+    /// @return the packet length in bytes, or -1 if the length is unknown
+    long length();
+
+    /// @return the packet destination connection id
     byte[] destinationConnectionId();
 
+    /// Closes this packet, signaling that it won't be used anymore.
+    ///
+    /// If the packet holds resources, they can be disposed when this method is called.
     @Override
     default void close()
     {

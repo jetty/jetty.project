@@ -30,6 +30,7 @@ import org.eclipse.jetty.quic.common.FlowController;
 import org.eclipse.jetty.quic.common.PacketTracker;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.StreamsController;
+import org.eclipse.jetty.quic.common.packets.HandshakePacket;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
@@ -60,6 +61,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 
     private long expireNanoTime = Long.MAX_VALUE;
     private boolean retryPacketSent;
+    private volatile boolean remoteAddressValidated;
 
     public ServerQuicSession(Connector connector, QuicServerQuicConfiguration configuration, ServerQuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, ServerTLSEngine tlsEngine, RateControl rateControl, FlowController flowController, StreamsController streamsController, Session.Listener listener)
     {
@@ -153,6 +155,8 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
                         yield super.processPacket(packet);
                     yield List.of();
                 }
+                case HandshakePacket handshakePacket ->
+                    processHandshakePacket(handshakePacket);
                 default -> super.processPacket(packet);
             };
         }
@@ -206,8 +210,23 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
                 LOG.debug("token {} in {} on {}", valid ? "valid" : "invalid", packet, this);
             if (!valid)
                 throw new QuicException(ErrorCode.INVALID_TOKEN_ERROR, "invalid_token");
+
+            if (retryPacketSent)
+                remoteAddressValidated = true;
         }
         return true;
+    }
+
+    private List<Invocable.Task> processHandshakePacket(HandshakePacket packet)
+    {
+        remoteAddressValidated = true;
+        return super.processPacket(packet);
+    }
+
+    @Override
+    public boolean isRemoteAddressValidated()
+    {
+        return remoteAddressValidated;
     }
 
     @Override

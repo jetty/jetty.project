@@ -56,7 +56,9 @@ public class OneRTTPacketParser implements PacketParser
         if (LOG.isDebugEnabled())
             LOG.debug("parsing OneRTTPacket {}", BufferUtil.toDetailString(buffer.getByteBuffer()));
 
+        long remaining = buffer.size();
         PacketBuffers packetBuffers = decrypter.decryptShortHeaderPacket(dstConnectionId, buffer);
+        long packetLength = remaining - buffer.size();
 
         if (LOG.isDebugEnabled())
             LOG.debug("decrypted OneRTTPacket {}", packetBuffers);
@@ -102,7 +104,7 @@ public class OneRTTPacketParser implements PacketParser
         List<Frame> frames = framesParser.consume(payload);
         payload.release();
 
-        OneRTTPacket packet = new OneRTTPacket(packetNumber, dcid, spin, keyPhase, frames);
+        OneRTTPacket packet = new OneRTTPacket(packetLength, packetNumber, dcid, spin, keyPhase, frames);
 
         if (LOG.isDebugEnabled())
             LOG.debug("parsed {}", packet);

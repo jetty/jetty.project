@@ -34,6 +34,7 @@ public class RetryPacketParser implements PacketParser
             LOG.debug("parsing RetryPacket {}", BufferUtil.toDetailString(buffer.getByteBuffer()));
 
         ByteBuffer byteBuffer = buffer.getByteBuffer();
+        long packetLength = byteBuffer.remaining();
 
         // Skip the form byte.
         byteBuffer.get();
@@ -60,7 +61,7 @@ public class RetryPacketParser implements PacketParser
 
         assert byteBuffer.remaining() == 0;
 
-        RetryPacket packet = new RetryPacket(quicVersion, dstConnectionId, srcConnectionId, token, integrity);
+        RetryPacket packet = new RetryPacket(packetLength, quicVersion, dstConnectionId, srcConnectionId, token, integrity);
 
         if (LOG.isDebugEnabled())
             LOG.debug("parsed {}", packet);

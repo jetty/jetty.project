@@ -25,7 +25,12 @@ public final class HandshakePacket extends LongHeaderPacket implements Packet.Wi
 
     public HandshakePacket(QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId, long packetNumber, List<Frame> frames)
     {
-        super(PacketType.HANDSHAKE, quicVersion, destinationConnectionId, sourceConnectionId);
+        this(-1, quicVersion, destinationConnectionId, sourceConnectionId, packetNumber, frames);
+    }
+
+    public HandshakePacket(long length, QuicVersion quicVersion, byte[] destinationConnectionId, byte[] sourceConnectionId, long packetNumber, List<Frame> frames)
+    {
+        super(length, PacketType.HANDSHAKE, quicVersion, destinationConnectionId, sourceConnectionId);
         this.packetNumber = packetNumber;
         this.frames = frames;
     }
