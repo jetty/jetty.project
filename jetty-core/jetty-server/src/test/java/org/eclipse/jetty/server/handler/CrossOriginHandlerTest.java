@@ -393,7 +393,7 @@ public class CrossOriginHandlerTest
             OPTIONS / HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
-            Access-Control-Request-Headers: X-Foo-Bar\r
+            Access-Control-Request-Headers: X-Foo-Bar, X-Baz\r
             Access-Control-Request-Method: GET\r
             Origin: http://localhost\r
             \r
@@ -403,8 +403,8 @@ public class CrossOriginHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertFalse(response.contains(ApplicationHandler.APPLICATION_HEADER));
         assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN));
-        assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS));
-        assertTrue(response.contains(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS));
+        assertThat(response.get(HttpHeader.ACCESS_CONTROL_ALLOW_CREDENTIALS), is("true"));
+        assertThat(response.get(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS), is("X-Foo-Bar, X-Baz"));
     }
 
     @Test

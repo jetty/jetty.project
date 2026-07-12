@@ -76,6 +76,7 @@ public class CrossOriginHandler extends Handler.Wrapper
     private final Set<Pattern> allowedOriginPatterns = new LinkedHashSet<>();
     private boolean anyTimingOriginAllowed;
     private final Set<Pattern> allowedTimingOriginPatterns = new LinkedHashSet<>();
+    private boolean anyHeadersAllowed;
     private PreEncodedHttpField accessControlAllowMethodsField;
     private PreEncodedHttpField accessControlAllowHeadersField;
     private PreEncodedHttpField accessControlExposeHeadersField;
@@ -122,7 +123,8 @@ public class CrossOriginHandler extends Handler.Wrapper
      * Browsers are responsible to check whether the headers of the cross-origin
      * request are allowed, and if they are not produce an error.</p>
      * <p>The headers can be either the character {@code *} to indicate any
-     * header, or actual header names.</p>
+     * header (in which case the requested headers are reflected in the preflight
+     * response), or actual header names.</p>
      *
      * @param headers the set of allowed headers in a cross-origin request
      */
@@ -314,8 +316,10 @@ public class CrossOriginHandler extends Handler.Wrapper
     {
         resolveAllowedOrigins();
         resolveAllowedTimingOrigins();
+        resolveAllowedHeaders();
         accessControlAllowMethodsField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS, String.join(",", getAllowedMethods()));
-        accessControlAllowHeadersField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS, String.join(",", getAllowedHeaders()));
+        if (!anyHeadersAllowed)
+            accessControlAllowHeadersField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS, String.join(",", getAllowedHeaders()));
         accessControlExposeHeadersField = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS, String.join(",", getExposedHeaders()));
         accessControlMaxAge = new PreEncodedHttpField(HttpHeader.ACCESS_CONTROL_MAX_AGE, getPreflightMaxAge().toSeconds());
 
@@ -349,7 +353,7 @@ public class CrossOriginHandler extends Handler.Wrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("preflight cross-origin request {}", request);
-                handlePreflightResponse(origins, response);
+                handlePreflightResponse(request, origins, response);
                 if (!isDeliverPreflightRequests())
                 {
                     if (LOG.isDebugEnabled())
@@ -457,7 +461,7 @@ public class CrossOriginHandler extends Handler.Wrapper
         return request.getHeaders().contains(HttpHeader.SEC_WEBSOCKET_VERSION);
     }
 
-    private void handlePreflightResponse(String origins, Response response)
+    private void handlePreflightResponse(Request request, String origins, Response response)
     {
         HttpFields.Mutable headers = response.getHeaders();
         headers.put(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN, origins);
@@ -466,9 +470,18 @@ public class CrossOriginHandler extends Handler.Wrapper
         Set<String> allowedMethods = getAllowedMethods();
         if (!allowedMethods.isEmpty())
             headers.put(accessControlAllowMethodsField);
-        Set<String> allowedHeaders = getAllowedHeaders();
-        if (!allowedHeaders.isEmpty())
-            headers.put(accessControlAllowHeadersField);
+        if (anyHeadersAllowed)
+        {
+            String requestedHeaders = request.getHeaders().get(HttpHeader.ACCESS_CONTROL_REQUEST_HEADERS);
+            if (requestedHeaders != null && !requestedHeaders.isBlank())
+                headers.put(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS, requestedHeaders);
+        }
+        else
+        {
+            Set<String> allowedHeaders = getAllowedHeaders();
+            if (!allowedHeaders.isEmpty())
+                headers.put(accessControlAllowHeadersField);
+        }
         long seconds = getPreflightMaxAge().toSeconds();
         if (seconds > 0)
             headers.put(accessControlMaxAge);
@@ -518,6 +531,18 @@ public class CrossOriginHandler extends Handler.Wrapper
             }
 
             allowedTimingOriginPatterns.add(Pattern.compile(allowedTimingOrigin, Pattern.CASE_INSENSITIVE));
+        }
+    }
+
+    private void resolveAllowedHeaders()
+    {
+        for (String allowedHeader : getAllowedHeaders())
+        {
+            if ("*".equals(allowedHeader.trim()))
+            {
+                anyHeadersAllowed = true;
+                return;
+            }
         }
     }
 
