@@ -151,6 +151,10 @@
       <artifactId>jetty-memcached-sessions</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.opentelemetry</groupId>
+      <artifactId>jetty-opentelemetry-server</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
       <artifactId>jetty-quic-quiche-client</artifactId>
     </dependency>

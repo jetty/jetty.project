@@ -1766,6 +1766,112 @@ Reverse proxies can be set up to communicate with the backend using a protocol d
 For example, it is possible to set up a reverse proxy that accepts on the frontend both HTTP/1.1 and HTTP/2 over network, both plain-text and secure, and communicates with the backend using FastCGI over Unix-Domain sockets.
 This allows you to use WordPress to serve your website through Jetty: see xref:operations-guide:protocols/index.adoc#fcgi[this section] for more information.
 
+[[handler-use-opentelemetry]]
+==== OpenTelemetry Handler
+
+The `OpenTelemetryHandler` integrates the Jetty server with the OpenTelemetry API to provide distributed tracing (spans) and observability metrics for incoming HTTP requests.
+
+The Maven artifact coordinates are:
+
+[,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.opentelemetry</groupId>
+  <artifactId>jetty-opentelemetry-server</artifactId>
+  <version>{jetty-version}</version>
+</dependency>
+----
+
+This handler follows the OpenTelemetry semantic conventions for HTTP servers, capturing request methods, URI details, client information, and server information.
+
+The `OpenTelemetryHandler` is a `Wrapper` handler that intercepts the request/response lifecycle. It:
+
+* Starts a new server span for every request.
+* Extracts context from incoming request headers for distributed tracing.
+* Records metrics for request duration, request body size, and response body size.
+* Captures errors in spans when exceptions occur or when the server returns a `5xx` status code.
+
+The handler can be configured to map OpenTelemetry attributes to exported names and to specify which metrics should be recorded.
+
+The handler can be instantiated using the default global OpenTelemetry instance or a custom `OpenTelemetry` instance:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/OpenTelemetryDocs.java[tags=createHandler]
+----
+
+===== Attributes
+
+You can customize the attributes that are included in spans and metrics by mapping OpenTelemetry attribute keys to exported names.
+
+[options="header"]
+|===
+| OpenTelemetry Attribute Name | Exported Name
+| `client.address` | (e.g., `client_ip`)
+| `enduser.id` | (e.g., `user_id`)
+| `http.request.method` | (e.g., `method`)
+| `http.response.status_code` | (e.g., `status`)
+| `http.response.body.size` | (e.g., `resp_size`)
+| `network.protocol.name` | (e.g., `proto_name`)
+| `network.protocol.version` | (e.g., `proto_ver`)
+| `server.address` | (e.g., `srv_addr`)
+| `server.port` | (e.g., `srv_port`)
+| `url.full` | (e.g., `full_url`)
+| `url.query` | (e.g., `query_params`)
+| `url.scheme` | (e.g., `scheme`)
+| `user_agent.original` | (e.g., `ua`)
+| `error.type` | (e.g., `error_type`)
+|===
+Use the following methods to register these attributes.
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/OpenTelemetryDocs.java[tags=addAttribute]
+----
+
+===== Metrics
+
+The handler can record several standard HTTP metrics. Only metrics explicitly added via `addMetric()` will be exported.
+
+[options="header"]
+|===
+| OpenTelemetry Metric Name | Description
+| `http.server.request.duration` | The time taken to process the request (Histogram, unit: seconds).
+| `http.server.request.body.size` | The size of the request body in bytes (Histogram, unit: bytes).
+| `http.server.response.body.size` | The size of the response body in bytes (Histogram, unit: bytes).
+|===
+Use the following methods to register which metrics to export.
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/OpenTelemetryDocs.java[tags=addMetric]
+----
+
+===== Tracing (Spans)
+
+The `OpenTelemetryHandler` creates a server span for each request.
+
+The span name is derived as follows:
+
+* By default, the span name is the HTTP method (e.g., `GET`).
+* If the `PathMappingsHandler` is used earlier in the handler chain, the span name will include the `PathSpec` declaration (e.g., `GET /api/users/*`).
+
+The span status is set to `Error` in the following cases:
+
+* An exception is thrown during request processing.
+* The server returns an HTTP status code in the `5xx` range.
+
+===== Context Propagation
+
+The handler automatically extracts distributed tracing context from the incoming request headers using the configured `TextMapPropagator`.
+
+===== Example Usage
+
+The following example shows how to configure the `OpenTelemetryHandler` to export specific attributes and metrics:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/OpenTelemetryDocs.java[tags=exampleUsage]
+----
+
 [[handler-use-servlet]]
 === Servlet API Handlers
 
