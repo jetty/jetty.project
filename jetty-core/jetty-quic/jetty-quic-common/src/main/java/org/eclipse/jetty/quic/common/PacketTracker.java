@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
 /// both of this class and of the [CongestionController] implementation.
 ///
 /// This class maintains the round trip time (RTT), calculated as specified in
-/// RFC-9002\[5].
+/// RFC-9002 #5.
 ///
 /// Packet loss is detected by:
 /// * Packet number: an acknowledgment for packet `N` is received, but not
@@ -90,10 +90,10 @@ public class PacketTracker
         trackers.put(PacketNumberSpace.INITIAL, new Tracker(PacketNumberSpace.INITIAL));
         trackers.put(PacketNumberSpace.HANDSHAKE, new Tracker(PacketNumberSpace.HANDSHAKE));
         trackers.put(PacketNumberSpace.APPLICATION, new Tracker(PacketNumberSpace.APPLICATION));
-        // RFC-9002[6.1.1]: recommended initial values.
+        // RFC-9002 #6.1.1: recommended initial values.
         packetReorderingThreshold = 3;
         timeReorderingFactor = 9F / 8;
-        // RFC-9002[A.4]: initialization of RTT data.
+        // RFC-9002 #A.4: initialization of RTT data.
         long smoothedRTT = TimeUnit.MILLISECONDS.toNanos(333);
         rttData = new RTTData(0, 0, smoothedRTT, smoothedRTT / 2);
     }
@@ -158,7 +158,7 @@ public class PacketTracker
     /// First entry point: when a packet is sent.
     public void processPacketSent(QuicSession session, Packet packet, long length, boolean dataStalled)
     {
-        // RFC-9002[A.5].
+        // RFC-9002 #A.5.
 
         // Packets without frames are not acknowledged, don't track them.
         if (!(packet instanceof Packet.WithFrames withFrames))
@@ -198,11 +198,11 @@ public class PacketTracker
         if (ackedPackets.isEmpty())
             return;
 
-        // RFC-9002[5.1]: calculate RTT only if the largestAckedEntry is newly acknowledged.
+        // RFC-9002 #5.1: calculate RTT only if the largestAckedEntry is newly acknowledged.
         if (newlyAcked)
             rttData = estimateRTTData(encryptionLevel, frame, tracker.largestAckedEntry);
 
-        // RFC-9002[6.2.1]: the PTO backoff is not reset for InitialPackets.
+        // RFC-9002 #6.2.1: the PTO backoff is not reset for InitialPackets.
         if (ackedPackets.stream().anyMatch(p -> EncryptionLevel.from(p) != EncryptionLevel.INITIAL))
             probeTimeoutBackoff = 0;
         tracker.cancelProbeTimeout();
@@ -272,11 +272,11 @@ public class PacketTracker
         }
         else
         {
-            // RFC-9002[5.2]: minRTT must be initially set to the initial RTT,
+            // RFC-9002 #5.2: minRTT must be initially set to the initial RTT,
             // and then updated with the lesser of minRTT and latestRTT.
             long minimumRTT = Math.min(rttData.minimumRTT(), latestRTT);
 
-            // RFC-9002[5.3]: rules for ackDelay.
+            // RFC-9002 #5.3: rules for ackDelay.
             long ackDelayNanos = 0;
             if (encryptionLevel == EncryptionLevel.ONE_RTT)
             {
@@ -284,12 +284,12 @@ public class PacketTracker
                 ackDelayNanos = Math.min(TimeUnit.MICROSECONDS.toNanos(ackDelayMicros), TimeUnit.MILLISECONDS.toNanos(getAcknowledgmentMaxDelay()));
             }
 
-            // RFC-9002[5.3]: calculate smoothedRTT and variationRTT.
+            // RFC-9002 #5.3: calculate smoothedRTT and variationRTT.
             long adjustedRTT = latestRTT;
             if (latestRTT >= minimumRTT + ackDelayNanos)
                 adjustedRTT = latestRTT - ackDelayNanos;
-            // RFC-6298[2.3]: variation is calculated with the old smoothedRTT.
-            // Note that RFC-9002[5.3] pseudocode calculates the variation
+            // RFC-6298 #2.3: variation is calculated with the old smoothedRTT.
+            // Note that RFC-9002 #5.3 pseudocode calculates the variation
             // with the new smoothedRTT, but it is likely to be a mistake.
             long variation = Math.abs(rttData.smoothedRTT() - adjustedRTT);
             long smoothedRTT = (7 * rttData.smoothedRTT() + adjustedRTT) / 8;
@@ -310,12 +310,12 @@ public class PacketTracker
 
     private long calculateProbeTimeout(PacketEntry packetEntry, RTTData rttData)
     {
-        // RFC-9002[6.2.1].
+        // RFC-9002 #6.2.1.
         long pto = rttData.smoothedRTT() + 4 * rttData.variationRTT();
         if (PacketNumberSpace.from(EncryptionLevel.from(packetEntry.packet())) == PacketNumberSpace.APPLICATION)
             pto += TimeUnit.MILLISECONDS.toNanos(getAcknowledgmentMaxDelay());
 
-        // RFC-9002[A.8].
+        // RFC-9002 #A.8.
         return pto * (1L << getProbeTimeoutBackoff());
     }
 
@@ -372,7 +372,7 @@ public class PacketTracker
                     stream.onStreamFrameSent(frame);
             }
 
-            // RFC-9000[21.4]: skip packet numbers to detect optimistic acks.
+            // RFC-9000 #21.4: skip packet numbers to detect optimistic acks.
             if (bytesUntilSkip <= 0)
             {
                 if (session != null && bytesUntilSkip != Long.MIN_VALUE)
@@ -436,7 +436,7 @@ public class PacketTracker
 
         private List<Packet.WithFrames> detectLostPackets(QuicSession session, RTTData rttData)
         {
-            // RFC-9002[A.10].
+            // RFC-9002 #A.10.
 
             // This method is called after receiving an ack,
             // or from the task scheduled in this method, so
@@ -545,7 +545,7 @@ public class PacketTracker
 
         private void tryScheduleProbeTimeout(QuicSession session, PacketEntry packetEntry, long timeoutNanos)
         {
-            // RFC-9002[6.2.1]: do not set the PTO if LTO is present.
+            // RFC-9002 #6.2.1: do not set the PTO if LTO is present.
             if (lossTimeoutTask != null)
                 return;
 

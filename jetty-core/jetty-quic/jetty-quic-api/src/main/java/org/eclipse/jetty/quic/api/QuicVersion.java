@@ -22,7 +22,7 @@ public enum QuicVersion
     /// QUIC V2, defined by [RFC 9369](https://datatracker.ietf.org/doc/html/rfc9369).
     V2(0x6B3343CF),
 
-    /// Reserved QUIC versions, [RFC-9000 section 15](https://datatracker.ietf.org/doc/html/rfc9000#versions).
+    /// Reserved QUIC versions, [RFC-9000 #15](https://datatracker.ietf.org/doc/html/rfc9000#versions).
     ///
     /// All the reserved versions matching the pattern `0x?A?A?A?A` are
     /// collapsed into this constant, whose [code][#code()] is `0x0A0A0A0A`.

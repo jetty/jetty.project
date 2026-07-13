@@ -91,7 +91,7 @@ public class PacketProtector implements Encrypter, Decrypter
         try
         {
             CipherSuite cipherSuite = CipherSuite.TLS_AES_128_GCM_SHA256;
-            // RFC-9001[5.2]: initial keys may be regenerated in case of Retry packets.
+            // RFC-9001 #5.2: initial keys may be regenerated in case of Retry packets.
             KeyManager keyManager = keyManagers.computeIfAbsent(EncryptionLevel.INITIAL, k -> new KeyManager(k, cipherSuite));
 
             // RFC 9001, 5.2: initial secrets use SHA256.
@@ -137,7 +137,7 @@ public class PacketProtector implements Encrypter, Decrypter
             if (keyManagers.put(EncryptionLevel.HANDSHAKE, keyManager) != null)
                 throw new IllegalStateException("KeyManager already exists at encryption level " + EncryptionLevel.HANDSHAKE);
 
-            // RFC-8446[7.1].
+            // RFC-8446 #7.1.
             int hashLength = cipherSuite.hashLength();
             KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
 
@@ -234,7 +234,7 @@ public class PacketProtector implements Encrypter, Decrypter
 
     public SecretKey createResumptionMasterSecret(CipherSuite cipherSuite) throws Exception
     {
-        // RFC-8446[7.1].
+        // RFC-8446 #7.1.
         int hashLength = cipherSuite.hashLength();
         KDF kdf = KDF.getInstance("HKDF-SHA" + (hashLength * 8));
         byte[] tlsHash = transcriptHash.getHash();
@@ -252,7 +252,7 @@ public class PacketProtector implements Encrypter, Decrypter
 
     public void discardKeys(EncryptionLevel encryptionLevel)
     {
-        // RFC-9001[4.9].
+        // RFC-9001 #4.9.
         KeyManager removed = keyManagers.remove(encryptionLevel);
         if (removed == null)
             return;
@@ -391,13 +391,13 @@ public class PacketProtector implements Encrypter, Decrypter
             {
                 case TLS_AES_128_GCM_SHA256_CODE, TLS_AES_256_GCM_SHA384_CODE ->
                 {
-                    // RFC-9001[5.4.3].
+                    // RFC-9001 #5.4.3.
                     cipher.init(Cipher.ENCRYPT_MODE, secretKey);
                     yield cipher.doFinal(sample);
                 }
                 case TLS_CHACHA20_POLY1305_SHA256_CODE ->
                 {
-                    // RFC-9001[5.4.4].
+                    // RFC-9001 #5.4.4.
                     int blockCounter = ByteBuffer.wrap(sample, 0, 4).order(ByteOrder.LITTLE_ENDIAN).getInt();
                     byte[] nonce = Arrays.copyOfRange(sample, 4, sample.length);
                     cipher.init(Cipher.ENCRYPT_MODE, secretKey, new ChaCha20ParameterSpec(nonce, blockCounter));
@@ -527,7 +527,7 @@ public class PacketProtector implements Encrypter, Decrypter
                 ByteBuffer byteBuffer = encrypted.getByteBuffer();
 
                 // To remove header protection, we need a sample of the payload.
-                // RFC-9001[5.4.2]: compute the offset of the sample.
+                // RFC-9001 #5.4.2: compute the offset of the sample.
                 int position = byteBuffer.position();
 
                 // Skip form byte and destination connection ID bytes.

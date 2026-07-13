@@ -64,7 +64,7 @@ public sealed interface Packet extends AutoCloseable permits DiscardPacket, Long
         /// @return whether this packet requires acknowledgment
         default boolean requiresAcknowledgement()
         {
-            // RFC-9000[1.2,13.2.1]
+            // RFC-9000 #1.2 and #13.2.1.
             for (Frame frame : frames())
             {
                 switch (frame)

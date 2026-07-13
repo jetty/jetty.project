@@ -102,7 +102,7 @@ public class SessionIdleTimeoutTest extends AbstractTest
         Session clientSession = promise.get(5, SECONDS);
         ((QuicSession)clientSession).setKeepAliveEnabled(false);
 
-        // RFC-9000[10.1] says the connection should be silently closed,
+        // RFC-9000 #10.1 says the connection should be silently closed,
         // but we actually send a CLOSE_CONNECTION to the remote peer,
         // so that it can detect earlier that the connection is broken.
         assertTrue(clientDisconnectLatch.await(2 * idleTimeout, MILLISECONDS));
@@ -173,7 +173,7 @@ public class SessionIdleTimeoutTest extends AbstractTest
         // so that only the server idle times out.
         ((QuicSession)clientSession).setIdleTimeout(0);
 
-        // RFC-9000[10.1] says the connection should be silently closed,
+        // RFC-9000 #10.1 says the connection should be silently closed,
         // but we actually send a CLOSE_CONNECTION to the remote peer,
         // so that it can detect earlier that the connection is broken.
         assertTrue(serverDisconnectLatch.await(2 * idleTimeout, MILLISECONDS));

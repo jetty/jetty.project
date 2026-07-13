@@ -102,7 +102,7 @@ public class StreamFrameParser implements FrameParser
                 }
                 case DATA ->
                 {
-                    // RFC-9000[19.8]: if no length, the frame data extends to the packet payload.
+                    // RFC-9000 #19.8: if no length, the frame data extends to the packet payload.
                     if (dataLength < 0)
                         dataLength = buffer.remaining();
 

@@ -23,7 +23,7 @@ import org.eclipse.jetty.quic.api.frames.NewTokenFrame;
 /// this token store to retrieve a token that was previously
 /// sent by a server via either a [NewTokenFrame].
 ///
-/// Refer to RFC-9000[8, 17.2.5].
+/// Refer to RFC-9000 #8 and #17.2.5.
 public interface TokenStore
 {
     /// @param clientSocketAddress the client socket address.

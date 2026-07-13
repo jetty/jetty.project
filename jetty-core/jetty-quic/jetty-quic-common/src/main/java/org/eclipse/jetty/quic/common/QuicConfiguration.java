@@ -39,14 +39,14 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     private long unidirectionalMaxStreams;
     // A value that does not exceed the usual MTU of 1500 and allows for encapsulation (VPN).
     private int udpPayloadLength = 1344;
-    // RFC-9000[18.2].
+    // RFC-9000 #18.2.
     private long udpPayloadMaxLength = 65527;
-    // RFC-9000[18.2].
+    // RFC-9000 #18.2.
     private long ackDelayExponent = 3;
-    // RFC-9000[18.2].
+    // RFC-9000 #18.2.
     private long ackMaxDelay = 25;
     private boolean enableConnectionMigration;
-    // RFC-9000[18.2].
+    // RFC-9000 #18.2.
     private long connectionIdMaxCount = 2;
 
     /// @return the supported QUIC versions

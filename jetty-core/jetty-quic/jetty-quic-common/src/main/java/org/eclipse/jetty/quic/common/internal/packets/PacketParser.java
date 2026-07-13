@@ -19,9 +19,4 @@ import org.eclipse.jetty.quic.common.packets.Packet;
 public interface PacketParser
 {
     Packet parse(RetainableByteBuffer buffer) throws Exception;
-
-    interface Listener
-    {
-        void onPacket(Packet packet);
-    }
 }

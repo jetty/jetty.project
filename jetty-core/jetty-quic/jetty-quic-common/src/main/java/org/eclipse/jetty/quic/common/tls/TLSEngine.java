@@ -295,7 +295,7 @@ public abstract class TLSEngine
 
     private byte[] createCertificateVerifyContent(boolean client) throws Exception
     {
-        // RFC-8446[4.4.3].
+        // RFC-8446 #4.4.3.
         String context = client ? "TLS 1.3, client CertificateVerify" : "TLS 1.3, server CertificateVerify";
         byte[] contextBytes = context.getBytes(StandardCharsets.US_ASCII);
         byte[] transcriptHash = getPacketProtector().getTranscriptHash().getHash();
@@ -312,7 +312,7 @@ public abstract class TLSEngine
 
     protected FinishedMessage createFinishedMessage(CipherSuite cipherSuite) throws Exception
     {
-        // RFC-8446[4.4.4].
+        // RFC-8446 #4.4.4.
         int hashLength = cipherSuite.hashLength();
         int shaLength = hashLength * 8;
         KDF kdf = KDF.getInstance("HKDF-SHA" + shaLength);
@@ -327,7 +327,7 @@ public abstract class TLSEngine
 
     protected boolean verifyFinishedMessage(CipherSuite cipherSuite, FinishedMessage finished) throws Exception
     {
-        // RFC-8446[4.4.4].
+        // RFC-8446 #4.4.4.
         byte[] verifyData = finished.verifyData();
         int hashLength = cipherSuite.hashLength();
         if (verifyData.length != hashLength)
@@ -422,7 +422,7 @@ public abstract class TLSEngine
         offset += originalDestinationConnectionId.length;
         byteBuffer.get(pseudoPacket, offset, capacity - offset);
 
-        // RFC-9001[5.8]: compute the integrity.
+        // RFC-9001 #5.8: compute the integrity.
         KDF kdf = KDF.getInstance("HKDF-SHA256");
         byte[] retryIntegritySecret = QuicCrypto.retryIntegritySecret(quicVersion);
         // Derive the key and the nonce from the secret.

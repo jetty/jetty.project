@@ -58,7 +58,7 @@ public abstract sealed class FrameStream
             default -> finalOffset;
         };
 
-        // RFC-9000[4.5]: cannot change the final size.
+        // RFC-9000 #4.5: cannot change the final size.
         if (finalOffset >= 0)
         {
             if (finalOffset != finalSize)
