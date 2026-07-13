@@ -16,9 +16,11 @@ package org.eclipse.jetty.ee.proxy;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -511,7 +513,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         for (Enumeration<String> headerNames = clientRequest.getHeaderNames(); headerNames.hasMoreElements(); )
         {
             String headerName = headerNames.nextElement();
-            String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
+            String lowerHeaderName = headerName.toLowerCase(Locale.ROOT);
 
             if (HttpHeader.HOST.is(headerName) && !_preserveHost)
                 continue;
@@ -522,17 +524,13 @@ public abstract class AbstractProxyServlet extends HttpServlet
             if (headersToRemove != null && headersToRemove.contains(lowerHeaderName))
                 continue;
 
-            for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements(); )
-            {
-                String headerValue = headerValues.nextElement();
-                if (headerValue != null)
-                    newHeaders.add(headerName, headerValue);
-            }
+            List<String> values = Collections.list(clientRequest.getHeaders(headerName));
+            newHeaders.put(headerName, values);
         }
 
         // Force the Host header if configured
         if (_hostHeader != null)
-            newHeaders.add(HttpHeader.HOST, _hostHeader);
+            newHeaders.put(HttpHeader.HOST, _hostHeader);
 
         proxyRequest.headers(headers -> headers.clear().add(newHeaders));
     }
@@ -549,7 +547,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
             String[] values = value.split(",");
             for (String name : values)
             {
-                name = name.trim().toLowerCase(Locale.ENGLISH);
+                name = name.trim().toLowerCase(Locale.ROOT);
                 if (hopHeaders == null)
                     hopHeaders = new HashSet<>();
                 hopHeaders.add(name);
@@ -700,15 +698,15 @@ public abstract class AbstractProxyServlet extends HttpServlet
         for (HttpField field : serverResponse.getHeaders())
         {
             String headerName = field.getName();
-            String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
+            String lowerHeaderName = headerName.toLowerCase(Locale.ROOT);
             if (HOP_HEADERS.contains(lowerHeaderName))
                 continue;
 
-            String newHeaderValue = filterServerResponseHeader(clientRequest, serverResponse, headerName, field.getValue());
-            if (newHeaderValue == null)
+            HttpField newHttpField = filterServerResponseHeader(clientRequest, serverResponse, field);
+            if (newHttpField == null)
                 continue;
 
-            proxyResponse.addHeader(headerName, newHeaderValue);
+            proxyResponse.setHeader(headerName, String.join(", ", newHttpField.getValueList()));
         }
 
         if (_log.isDebugEnabled())
@@ -736,6 +734,15 @@ public abstract class AbstractProxyServlet extends HttpServlet
         }
     }
 
+    protected HttpField filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, HttpField field)
+    {
+        return field.withValue(filterServerResponseHeader(clientRequest, serverResponse, field.getName(), field.getValue()));
+    }
+
+    /**
+     * @deprecated use {@link #filterServerResponseHeader(HttpServletRequest, Response, HttpField)} instead
+     */
+    @Deprecated(since = "12.1.12", forRemoval = true)
     protected String filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
     {
         return headerValue;

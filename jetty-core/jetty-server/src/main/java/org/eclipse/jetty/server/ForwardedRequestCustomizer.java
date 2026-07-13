@@ -533,7 +533,11 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
 
             if (port == MutableHostPort.UNSET) // is unset by headers
             {
-                port = builder.getPort();
+                // The headers replaced the authority without specifying a port,
+                // so the port is implied by the scheme. Do not fall back to the
+                // port of the incoming request, as it refers to the local
+                // connector, not to the authority seen by the client.
+                port = MutableHostPort.IMPLIED;
             }
 
             // Don't change port if port == IMPLIED.
