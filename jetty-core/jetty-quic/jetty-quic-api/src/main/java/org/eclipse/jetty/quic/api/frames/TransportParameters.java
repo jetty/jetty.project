@@ -197,7 +197,7 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         }
 
         /// Returns whether a transport parameter ID is a _grease_ one, as defined by
-        /// [RFC 9000, section 18.1](https://datatracker.ietf.org/doc/html/rfc9000#name-reserved-transport-paramete).
+        /// [RFC 9000 #18.1](https://datatracker.ietf.org/doc/html/rfc9000#name-reserved-transport-paramete).
         ///
         /// @param id the transport parameter ID to test
         /// @return whether the given transport parameter ID is a grease one

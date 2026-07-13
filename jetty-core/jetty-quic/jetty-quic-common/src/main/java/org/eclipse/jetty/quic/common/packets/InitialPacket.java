@@ -20,6 +20,8 @@ import org.eclipse.jetty.quic.api.frames.Frame;
 
 public final class InitialPacket extends LongHeaderPacket implements Packet.WithFrames
 {
+    public static final int MIN_LENGTH = 1200;
+
     private final byte[] token;
     private final long packetNumber;
     private final List<Frame> frames;

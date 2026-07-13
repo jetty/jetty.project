@@ -185,7 +185,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
                 byte[] origDstConnectionId = packet.destinationConnectionId();
                 setOriginalDestinationConnectionId(origDstConnectionId);
 
-                // RFC-9001[5.2]: initial secrets must be regenerated with the scid.
+                // RFC-9001 #5.2: initial secrets must be regenerated with the scid.
                 getTLSEngine().getPacketProtector().generateInitialKeys(getQuicVersion(), getSourceConnectionId());
 
                 token = getQuicConfiguration().getTokenFactory().newRetryToken(getRemoteSocketAddress(), origDstConnectionId);
@@ -272,7 +272,7 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     {
         try
         {
-            // RFC-9001[4.9.2]: handshake keys must be discarded when the TLS handshake is confirmed.
+            // RFC-9001 #4.9.2: handshake keys must be discarded when the TLS handshake is confirmed.
             discardEncryptionLevel(EncryptionLevel.HANDSHAKE);
             setEncryptionLevel(EncryptionLevel.ONE_RTT);
 

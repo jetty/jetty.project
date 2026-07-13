@@ -321,7 +321,7 @@ public class ClientQuicSession extends QuicSession
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} in {} on {}", frame, packet, this);
 
-        // RFC-9001[4.9.2]: handshake keys must be discarded when the TLS handshake is confirmed.
+        // RFC-9001 #4.9.2: handshake keys must be discarded when the TLS handshake is confirmed.
         discardEncryptionLevel(EncryptionLevel.HANDSHAKE);
         setEncryptionLevel(EncryptionLevel.ONE_RTT);
 
@@ -373,7 +373,7 @@ public class ClientQuicSession extends QuicSession
 
     private void processRetryPacket(RetryPacket packet) throws Exception
     {
-        // RFC-9000[17.2.5.1]: discard retry packets that
+        // RFC-9000 #17.2.5.1: discard retry packets that
         // have the same dcid as the first initial packet.
         if (!Arrays.equals(getDestinationConnectionId(), packet.sourceConnectionId()))
         {
@@ -382,7 +382,7 @@ public class ClientQuicSession extends QuicSession
             return;
         }
 
-        // RFC-9000[17.2.5.2]: only one retry packet can be processed.
+        // RFC-9000 #17.2.5.2: only one retry packet can be processed.
         if (retryPacketProcessed)
         {
             if (LOG.isDebugEnabled())
@@ -398,14 +398,14 @@ public class ClientQuicSession extends QuicSession
             LOG.debug("{} {} on {}", verified ? "processing verified" : "discarding non-verified", packet, this);
         if (!verified)
         {
-            // RFC-9000[17.2.5.2]: discard retry packets that do not verify.
+            // RFC-9000 #17.2.5.2: discard retry packets that do not verify.
             return;
         }
 
         retryPacketProcessed = true;
         retryToken = packet.token();
 
-        // RFC-9001[5.2]: initial secrets must be regenerated with the new scid.
+        // RFC-9001 #5.2: initial secrets must be regenerated with the new scid.
         getTLSEngine().getPacketProtector().generateInitialKeys(getQuicVersion(), packet.sourceConnectionId());
 
         // The RetryPacket implicitly acknowledges the first InitialPacket.

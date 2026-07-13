@@ -63,7 +63,7 @@ public interface ZeroRTTStore
 
         public int obfuscatedTicketAge()
         {
-            // RFC-8446[4.2.11.1]: cast to int is equivalent to mod 2^32.
+            // RFC-8446 #4.2.11.1: cast to int is equivalent to mod 2^32.
             return (int)(NanoTime.millisSince(nanoTime) + newSessionTicket().ageAdd());
         }
 

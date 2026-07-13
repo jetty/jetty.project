@@ -424,7 +424,7 @@ public class QuicStream extends AbstractStream
     private void processStopSendingFrame(StopSendingFrame frame)
     {
         notifyStopSendingFrame(frame);
-        // RFC-9000[3.5]: receiving a STOP_SENDING requires sending a RESET_STREAM.
+        // RFC-9000 #3.5: receiving a STOP_SENDING requires sending a RESET_STREAM.
         reset(frame.applicationErrorCode(), Callback.NOOP);
     }
 

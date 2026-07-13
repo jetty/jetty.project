@@ -83,8 +83,8 @@ public sealed class LongHeaderPacket implements Packet permits HandshakePacket, 
 
         public int type(QuicVersion quicVersion)
         {
-            // RFC-9000[17.2].
-            // RFC-9369[3.2].
+            // RFC-9000 #17.2.
+            // RFC-9369 #3.2.
             return switch (this)
             {
                 case INITIAL -> switch (quicVersion)

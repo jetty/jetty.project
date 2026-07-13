@@ -231,8 +231,8 @@ class StreamFlusher extends CryptoFlusher
     ///
     /// The [AckFrame] is sent immediately when these conditions apply:
     ///
-    /// * RFC-9000\[13.2.2]: there are at least two packets to acknowledge.
-    /// * RFC-9000\[13.2.1]: there is a gap in the packet numbering of received
+    /// * RFC-9000 #13.2.2: there are at least two packets to acknowledge.
+    /// * RFC-9000 #13.2.1: there is a gap in the packet numbering of received
     /// packets (packet loss) or the received packet is out-of-order.
     ///
     /// Otherwise, the [AckFrame] send is delayed and scheduled to be sent either after
@@ -252,12 +252,12 @@ class StreamFlusher extends CryptoFlusher
                 long packetNumber = packet.packetNumber();
                 if (packetNumber - largestPacketNumber > 1 || packetNumber < largestPacketNumber)
                 {
-                    // RFC-9000[13.2.1]: ack immediately to help loss detection at the sender.
+                    // RFC-9000 #13.2.1: ack immediately to help loss detection at the sender.
                     drain = true;
                 }
                 else if (!packetNumbers.isEmpty())
                 {
-                    // RFC-9000[13.2.2]: ack immediately when two packets have been received.
+                    // RFC-9000 #13.2.2: ack immediately when two packets have been received.
                     drain = true;
                 }
                 else if (ackDelayTask == null)

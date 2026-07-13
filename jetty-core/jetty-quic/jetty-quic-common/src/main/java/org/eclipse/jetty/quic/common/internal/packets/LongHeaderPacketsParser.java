@@ -53,7 +53,7 @@ public class LongHeaderPacketsParser
                 return parseVersionNegotiationPacket(buffer);
 
             QuicVersion quicVersion = QuicVersion.from(version);
-            // RFC-9000[6.3]: packets with reserved versions are discarded.
+            // RFC-9000 #6.3: packets with reserved versions are discarded.
             if (quicVersion.reserved())
                 return Packet.DISCARD;
 

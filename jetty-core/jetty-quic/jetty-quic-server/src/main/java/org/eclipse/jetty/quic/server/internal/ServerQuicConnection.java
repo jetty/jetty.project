@@ -235,7 +235,7 @@ public class ServerQuicConnection extends QuicConnection
             // Create the session.
             session = newSession();
 
-            // RFC-9000[17.2.1]: version negotiation.
+            // RFC-9000 #17.2.1: version negotiation.
             int quicVersionCode = byteBuffer.getInt(position + 1);
             QuicVersion quicVersion = QuicVersion.from(quicVersionCode);
             List<QuicVersion> quicVersions = getServerQuicConfiguration().getQuicVersions();
@@ -243,7 +243,7 @@ public class ServerQuicConnection extends QuicConnection
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("unsupported quic version 0x{} on {}", Integer.toHexString(quicVersionCode), this);
-                // RFC-9000[17.2.1]: echo scid and dcid.
+                // RFC-9000 #17.2.1: echo scid and dcid.
                 byte[] dcid = dstConnectionId.bytes();
                 int offset = position + 1 + 4 + 1 + dcid.length;
                 int scidLength = byteBuffer.get(offset) & 0xFF;
@@ -278,7 +278,7 @@ public class ServerQuicConnection extends QuicConnection
             tlsConfiguration.setTransportParameters(parameters);
             tlsConfiguration.setApplicationProtocols(connector.getProtocols());
 
-            // RFC-9000[18.2].
+            // RFC-9000 #18.2.
             if (idleTimeout > 0)
                 parameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, idleTimeout);
             parameters.put(TransportParameters.Ids.ORIGINAL_DESTINATION_CONNECTION_ID, dstConnectionId.bytes());

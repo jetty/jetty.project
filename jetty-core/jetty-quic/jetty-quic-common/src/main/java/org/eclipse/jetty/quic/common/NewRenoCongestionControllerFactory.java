@@ -31,7 +31,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
 
     public NewRenoCongestionControllerFactory()
     {
-        // RFC-9000[14.1]: the smallest UDP payload length is 1200 bytes.
+        // RFC-9000 #14.1: the smallest UDP payload length is 1200 bytes.
         this(1200, TimeUnit.MILLISECONDS.toNanos(25));
     }
 
@@ -67,11 +67,11 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         public NewRenoCongestionController(NewRenoCongestionControllerFactory factory)
         {
             this.factory = factory;
-            // RFC-9002[7.2]: minimum window.
+            // RFC-9002 #7.2: minimum window.
             this.minInFlight = 2L * factory.udpPayloadMaxLength;
-            // RFC-9002[7.2]: initial window.
+            // RFC-9002 #7.2: initial window.
             long initialWindow = Math.min(10L * factory.udpPayloadMaxLength, Math.max(2L * factory.udpPayloadMaxLength, 14720));
-            // RFC-9002[B.3]: initialization.
+            // RFC-9002 #B.3: initialization.
             this.maxInFlight = initialWindow;
             this.slowStart = Long.MAX_VALUE;
         }
@@ -82,7 +82,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
             long sendNanoTime = NanoTime.now();
             packets.put(packet.packetNumber(), new Entry(length, dataStalled, sendNanoTime));
 
-            // RFC-9002[B.4].
+            // RFC-9002 #B.4.
             inFlight += length;
             rtt = rttData.smoothedRTT();
             latestSendNanoTime = sendNanoTime;
@@ -111,7 +111,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
                             maxInFlight += entry.length();
                         if (maxInFlight >= slowStart)
                         {
-                            // RFC-9002[B.5]: exit slow start.
+                            // RFC-9002 #B.5: exit slow start.
                             state = State.CONGESTION_AVOIDANCE;
                             if (LOG.isDebugEnabled())
                                 LOG.debug("exiting slow start on {}", this);
@@ -124,7 +124,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
                     }
                     case CONGESTION_RECOVERY ->
                     {
-                        // RFC-9002[7.3.2]: exit congestion recovery when a packet
+                        // RFC-9002 #7.3.2: exit congestion recovery when a packet
                         // sent during the congestion recovery period is acknowledged.
                         if (NanoTime.isBefore(congestionRecoveryNanoTime, entry.sendNanoTime()))
                         {
@@ -220,7 +220,7 @@ public class NewRenoCongestionControllerFactory implements CongestionController.
         {
             if (rtt == 0)
                 return 0;
-            // RFC-9002[7.7]: pace a little faster using N=1.25=(5/4).
+            // RFC-9002 #7.7: pace a little faster using N=1.25=(5/4).
             long delay = (latestSendBytes * rtt * 4) / (maxInFlight * 5);
             long elapsed = NanoTime.since(latestSendNanoTime);
             return Math.max(0, delay - elapsed);

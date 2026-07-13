@@ -162,8 +162,8 @@ public class ClientTLSEngine extends TLSEngine
                     int hashLength = cipherSuite.hashLength();
                     PreSharedKeyIdentity truncated = new PreSharedKeyIdentity(zeroRTTEntry.newSessionTicket().ticket(), zeroRTTEntry.obfuscatedTicketAge(), new byte[hashLength]);
 
-                    // RFC-8446[4.2.11]: the pre-shared key extension must be the last.
-                    // RFC-8446[4.2.11.2]: truncate the extension to compute the binders.
+                    // RFC-8446 #4.2.11: the pre-shared key extension must be the last.
+                    // RFC-8446 #4.2.11.2: truncate the extension to compute the binders.
                     extensions.add(new ClientPreSharedKeyExtension(List.of(truncated), false));
 
                     ClientHelloMessage truncatedClientHello = new ClientHelloMessage(newRandomBytes(32), cipherSuites, extensions);
@@ -295,11 +295,11 @@ public class ClientTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("{} handshake on {}", resuming ? "resuming" : "new", this);
 
-        // RFC-8446[4.1.3]: SupportedVersionsExtension must be present.
+        // RFC-8446 #4.1.3: SupportedVersionsExtension must be present.
         if (serverVersions.isEmpty())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing_supported_versions_extension");
 
-        // RFC-8446[4.2.1]: negotiate TLS version.
+        // RFC-8446 #4.2.1: negotiate TLS version.
         List<TLSVersion> clientVersions = clientHello.extensions().stream()
             .filter(e -> e instanceof SupportedVersionsExtension)
             .map(SupportedVersionsExtension.class::cast)
@@ -315,7 +315,7 @@ public class ClientTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated TLS version {} on {}", tlsVersion, this);
 
-        // RFC-8446[4.1.3]: the client must have offered the CipherSuite.
+        // RFC-8446 #4.1.3: the client must have offered the CipherSuite.
         CipherSuite cipherSuite = message.cipherSuite();
         clientHello.cipherSuites().stream()
             .filter(cipherSuite::equals)
@@ -326,12 +326,12 @@ public class ClientTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("negotiated CipherSuite {} on {}", cipherSuite, this);
 
-        // RFC-8446[4.1.3]: Either KeyShareExtension or PreSharedKeyExtension or both must be present.
+        // RFC-8446 #4.1.3: Either KeyShareExtension or PreSharedKeyExtension or both must be present.
         // In this implementation, always require the KeyShareExtension to support forward secrecy.
         if (keyShares.isEmpty())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "missing_key_shares");
 
-        // RFC-8446[4.2.11]: negotiated cipher and PSK cipher
+        // RFC-8446 #4.2.11: negotiated cipher and PSK cipher
         // may be different, but must have the same hash length.
         if (resuming && zeroRTTEntry.handshakeData().cipherSuite().hashLength() != cipherSuite.hashLength())
             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "cipher_suite_hash_mismatch");
@@ -452,11 +452,11 @@ public class ClientTLSEngine extends TLSEngine
             .map(CertificateMessage.Entry::certificate)
             .toList();
 
-        // RFC-8446[4.4.2.4]: the server cannot send an empty certificate message.
+        // RFC-8446 #4.4.2.4: the server cannot send an empty certificate message.
         if (certificateChain.isEmpty())
             throw new TLSException(TLSException.Alert.DECODE_ERROR, "missing_certificate");
 
-        // RFC-8446[4.4.2.4]: MD5 and SHA1 are forbidden.
+        // RFC-8446 #4.4.2.4: MD5 and SHA1 are forbidden.
         for (X509Certificate x509 : certificateChain)
         {
             String certificateSignatureAlgorithm = x509.getSigAlgName();
@@ -464,7 +464,7 @@ public class ClientTLSEngine extends TLSEngine
                 throw new TLSException(TLSException.Alert.BAD_CERTIFICATE, "forbidden_certificate_signature_algorithm");
         }
 
-        // RFC-2818[3]: verify server identity.
+        // RFC-2818 #3: verify server identity.
         SslContextFactory sslContextFactory = tlsConfiguration.getSslContextFactory();
         verifyCertificateChain(sslContextFactory, certificateChain);
         String endpointIdentificationAlgorithm = sslContextFactory.getEndpointIdentificationAlgorithm();
@@ -527,7 +527,7 @@ public class ClientTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("handshake completed on {}", this);
 
-        // RFC-9001[4.1.1]: handshake is complete when the Finished message
+        // RFC-9001 #4.1.1: handshake is complete when the Finished message
         // is sent, and the peer's Finished message has been verified.
         Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, this::handshakeSuccessful, this::handshakeFailed);
         notifyOutgoingMessages(EncryptionLevel.HANDSHAKE, messages, callback);
@@ -577,7 +577,7 @@ public class ClientTLSEngine extends TLSEngine
 
         List<Message> messages = new ArrayList<>();
 
-        // RFC-8446[4.4.2]: if no match, send an empty Certificate message.
+        // RFC-8446 #4.4.2: if no match, send an empty Certificate message.
         List<CertificateMessage.Entry> entries = match == null ? List.of() : match.certificates().stream()
             .map(c -> new CertificateMessage.Entry(c, List.of()))
             .toList();
@@ -612,7 +612,7 @@ public class ClientTLSEngine extends TLSEngine
 
     public boolean verifyRetryIntegrity(RetainableByteBuffer.Mutable retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
     {
-        // RFC-9001[5.8]: build a retry pseudo-packet.
+        // RFC-9001 #5.8: build a retry pseudo-packet.
         // The buffer contains up to the integrity bytes (16 bytes).
         byte[] expected = createRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, true);
         byte[] integrity = new byte[16];

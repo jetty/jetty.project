@@ -269,7 +269,7 @@ public abstract class QuicSession extends AbstractSession
     public void setSourceConnectionId(byte[] srcConnectionId)
     {
         this.srcConnectionId = srcConnectionId;
-        // RFC-9000[17.3]: received packets' dcid bytes are the local scid.
+        // RFC-9000 #17.3: received packets' dcid bytes are the local scid.
         parser.setDestinationConnectionId(srcConnectionId);
     }
 
@@ -334,11 +334,11 @@ public abstract class QuicSession extends AbstractSession
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout expired on {}", this);
 
-        // RFC-9000[10]: QUIC idle timeouts are fatal and cannot be ignored,
+        // RFC-9000 #10: QUIC idle timeouts are fatal and cannot be ignored,
         // so we use the keep-alive mechanism to avoid that they fire, and
         // idle timeouts are initiated by upper layer protocols.
 
-        // RFC-9000[10.1]: the idle timeout should close the
+        // RFC-9000 #10.1: the idle timeout should close the
         // connection silently, but we send a ConnectionCloseFrame
         // to inform the other peer that the connection is broken.
 
@@ -795,7 +795,7 @@ public abstract class QuicSession extends AbstractSession
                 {
                     closeState = CloseState.CLOSING;
 
-                    // RFC-9000[10.2]: closing and draining states
+                    // RFC-9000 #10.2: closing and draining states
                     // should persist for 3 times the current PTO.
                     RTTData rttData = getPacketTracker().getRTTData();
                     long pto = rttData.smoothedRTT() + 4 * rttData.variationRTT();
@@ -810,7 +810,7 @@ public abstract class QuicSession extends AbstractSession
                 }
                 case DRAINING, CLOSED ->
                 {
-                    // RFC-9002[10.2.2]: an endpoint in the
+                    // RFC-9002 #10.2.2: an endpoint in the
                     // draining state must not send any packets.
                     yield false;
                 }
@@ -972,10 +972,6 @@ public abstract class QuicSession extends AbstractSession
 
         if (process)
         {
-            recvBytes.addAndGet(packet.length());
-
-            packetNumbers.onPacketReceived(packet);
-
             // Minimally process first packets to set
             // the dcid be used by acknowledgments.
             switch (packet)
@@ -1001,6 +997,9 @@ public abstract class QuicSession extends AbstractSession
                 //   well within the idle timeout; in case of no ack, the connection is broken.
                 notIdle();
 
+                recvBytes.addAndGet(packet.length());
+                packetNumbers.onPacketReceived(packet);
+
                 List<Invocable.Task> tasks = processPacket(packet);
                 for (Invocable.Task task : tasks)
                 {
@@ -1009,7 +1008,7 @@ public abstract class QuicSession extends AbstractSession
             }
             else
             {
-                // RFC-9000[7.2]: the packet must be discarded
+                // RFC-9000 #7.2: the packet must be discarded
                 // if the packet dcid does not match.
                 if (LOG.isDebugEnabled())
                     LOG.debug("packet {} does not match connection id on {}", packet, this);
@@ -1026,7 +1025,7 @@ public abstract class QuicSession extends AbstractSession
                 }
             }
 
-            // RFC-9000[10.2.1]: send a ConnectionCloseFrame in
+            // RFC-9000 #10.2.1: send a ConnectionCloseFrame in
             // response to any packet received in CLOSING state.
             // Use a power-of-2 backoff to avoid sending too many
             // frames in reply to those sent by the remote peer.
@@ -1162,7 +1161,7 @@ public abstract class QuicSession extends AbstractSession
             {
                 case ResetStreamFrame resetStreamFrame ->
                 {
-                    // RFC-9000[19.4]: local unidirectional stream receiving a reset produces a connection error.
+                    // RFC-9000 #19.4: local unidirectional stream receiving a reset produces a connection error.
                     if (stream.isLocal() && !stream.isBidirectional())
                         throw new QuicException(ErrorCode.STREAM_STATE_ERROR, "local_unidirectional_stream_reset", frame.type());
                     yield resetStreamFrame.finalSize();
@@ -1304,7 +1303,7 @@ public abstract class QuicSession extends AbstractSession
 
         notifyConnectionClose(frame);
 
-        // RFC-9000[10.2]: in the draining state we must not send
+        // RFC-9000 #10.2: in the draining state we must not send
         // any frames, so just perform the after-complete actions.
         disconnectComplete(frame);
     }
@@ -1319,7 +1318,7 @@ public abstract class QuicSession extends AbstractSession
                 {
                     closeState = CloseState.DRAINING;
 
-                    // RFC-9000[10.2]: closing and draining states
+                    // RFC-9000 #10.2: closing and draining states
                     // should persist for 3 times the current PTO.
                     RTTData rttData = getPacketTracker().getRTTData();
                     long pto = rttData.smoothedRTT() + 4 * rttData.variationRTT();
@@ -1527,7 +1526,7 @@ public abstract class QuicSession extends AbstractSession
             }
             else
             {
-                // RFC-9000[10.1]: the idle timeout is the minimum of the two advertised values.
+                // RFC-9000 #10.1: the idle timeout is the minimum of the two advertised values.
                 if (idleTimeout > 0)
                 {
                     long localIdleTimeout = getIdleTimeout();
@@ -1770,7 +1769,7 @@ public abstract class QuicSession extends AbstractSession
                     case StreamMaxDataFrame streamMaxDataFrame ->
                     {
                         // TODO: see MAX_DATA, with the additional check that the stream must not be remotely closed,
-                        //  see RFC-9000[13.3]
+                        //  see RFC-9000 #13.3
                     }
                     case StreamsBlockedFrame streamsBlockedFrame ->
                     {
@@ -1802,7 +1801,7 @@ public abstract class QuicSession extends AbstractSession
             {
                 case TLSException tls ->
                 {
-                    // RFC-9000[20.1]: convert TLS alerts into CRYPTO_ERRORs.
+                    // RFC-9000 #20.1: convert TLS alerts into CRYPTO_ERRORs.
                     errorCode = ErrorCode.CRYPTO_ERROR.code() + tls.getAlert().code();
                     causeFrameType = 0x06;
                 }

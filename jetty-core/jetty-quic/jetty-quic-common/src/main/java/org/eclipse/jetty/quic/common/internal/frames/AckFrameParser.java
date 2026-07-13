@@ -41,7 +41,7 @@ public class AckFrameParser implements FrameParser
         long firstRangeLength = VarLenInt.decodeLong(byteBuffer);
         long firstInRange = largestAcknowledged;
         long lastInRange = firstInRange - firstRangeLength;
-        // RFC-9000[19.3.1]: packet numbers cannot be negative.
+        // RFC-9000 #19.3.1: packet numbers cannot be negative.
         if (lastInRange < 0)
             throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_ack_frame", type);
         // Each range is at least 2 bytes.

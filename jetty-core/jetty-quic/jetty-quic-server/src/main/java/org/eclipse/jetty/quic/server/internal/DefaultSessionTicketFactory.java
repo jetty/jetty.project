@@ -105,7 +105,7 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
 
     public void setSessionTicketLifetime(Duration sessionTicketLifetime)
     {
-        // RFC-8446[4.6.1]
+        // RFC-8446 #4.6.1
         if (sessionTicketLifetime.minus(Duration.ofDays(7)).isPositive())
             throw new IllegalArgumentException("invalid sessionTicketLifetime: " + sessionTicketLifetime);
         this.sessionTicketLifetime = sessionTicketLifetime;

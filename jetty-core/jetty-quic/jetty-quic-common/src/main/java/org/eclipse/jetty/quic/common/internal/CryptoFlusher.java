@@ -88,7 +88,7 @@ class CryptoFlusher implements Callback
 
     void sendAcknowledgment(Packet.WithFrames packet, Callback callback)
     {
-        // RFC-9000[13.2.1]: initial and handshake packets must be acknowledged immediately.
+        // RFC-9000 #13.2.1: initial and handshake packets must be acknowledged immediately.
         boolean flush;
         try (var _ = lock())
         {
@@ -214,7 +214,7 @@ class CryptoFlusher implements Callback
 
         if (!session.isRemoteAddressValidated())
         {
-            // RFC-9000[8.1]: if the remote address is not validated, cannot send
+            // RFC-9000 #8.1: if the remote address is not validated, cannot send
             // more than 3 times the received bytes to limit amplification attacks.
             long max = 3 * session.getBytesReceived();
             long available = max - session.getBytesSent();
@@ -234,7 +234,7 @@ class CryptoFlusher implements Callback
         // and PING probes, which are not limited by the congestion window.
         maxFrameBytes = generateEntries(framesAccumulator, processing, maxFrameBytes);
 
-        // RFC-9002[7.5]: probe packets must not be limited by the congestion window.
+        // RFC-9002 #7.5: probe packets must not be limited by the congestion window.
         if (!probeMode)
         {
             long ccMaxFrameBytes = availableWindow;
@@ -256,7 +256,7 @@ class CryptoFlusher implements Callback
             return false;
         }
 
-        // RFC-9001[5.4.2]: minimally pad the payload.
+        // RFC-9001 #5.4.2: minimally pad the payload.
         // Packet protection requires 16 bytes of sample,
         // offset by 4 bytes from the packet number,
         // so there must be at least 3 bytes of payload

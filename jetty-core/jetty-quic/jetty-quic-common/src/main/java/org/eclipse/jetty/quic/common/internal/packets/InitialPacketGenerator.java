@@ -37,7 +37,7 @@ public class InitialPacketGenerator implements PacketGenerator
     {
         this.packetNumbers = packetNumbers;
         this.encrypter = encrypter;
-        // RFC-9000[14.1]: UDP payload must be at least 1200 bytes.
+        // RFC-9000 #14.1: UDP payload must be at least 1200 bytes.
         // The minimum InitialPacket header length is 11, considering
         // empty connection IDs and empty token; the AEAD tag is 16,
         // so 1200 - 11 - 16 = 1173 bytes.

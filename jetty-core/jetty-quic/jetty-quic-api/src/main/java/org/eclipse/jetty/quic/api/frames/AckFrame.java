@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /// The ACK frame defined in
-/// [RFC 9000, 19.3](https://datatracker.ietf.org/doc/html/rfc9000#name-ack-frames).
+/// [RFC 9000 #19.3](https://datatracker.ietf.org/doc/html/rfc9000#name-ack-frames).
 ///
 /// No support for ECN (Explicit Congestion Notification), since Java cannot
 /// retrieve this information from the UDP datagram.
@@ -42,7 +42,7 @@ import java.util.List;
 /// * Acknowledged packets are 70-75; it's 6 packets, but encoded as length=5.
 public final class AckFrame extends Frame.Abstract
 {
-    /// Encodes the acknowledgment delay as specified in RFC-9000\[19.3].
+    /// Encodes the acknowledgment delay as specified in RFC-9000 #19.3.
     ///
     /// @param ackDelay the acknowledgment delay in microseconds
     /// @param ackDelayExponent the local acknowledgment delay exponent
@@ -52,7 +52,7 @@ public final class AckFrame extends Frame.Abstract
         return ackDelay / (1L << ackDelayExponent);
     }
 
-    /// Decodes the acknowledgment delay as specified in RFC-9000\[19.3].
+    /// Decodes the acknowledgment delay as specified in RFC-9000 #19.3.
     ///
     /// @param encodedAckDelay the encoded acknowledgment delay
     /// @param ackDelayExponent the remote acknowledgment delay exponent

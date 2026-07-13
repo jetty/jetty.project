@@ -172,8 +172,8 @@ public class ServerTLSEngine extends TLSEngine
                 if (LOG.isDebugEnabled())
                     LOG.debug("attempting resumption with {} on {}", sessionTicket, this);
 
-                // RFC-8446[4.2.11]: the pre-shared key extension must be the last.
-                // RFC-8446[4.2.11.2]: truncate the extension to verify the binder.
+                // RFC-8446 #4.2.11: the pre-shared key extension must be the last.
+                // RFC-8446 #4.2.11.2: truncate the extension to verify the binder.
                 List<Extension> truncatedExtensions = new ArrayList<>(clientExtensions);
                 ClientPreSharedKeyExtension pske = (ClientPreSharedKeyExtension)truncatedExtensions.removeLast();
                 List<PreSharedKeyIdentity> truncatedIdentities = new ArrayList<>();
@@ -198,7 +198,7 @@ public class ServerTLSEngine extends TLSEngine
             }
         }
 
-        // RFC-8446[4.1.2,4.2.1]: SupportedVersionsExtension must be present.
+        // RFC-8446 #4.1.2 and #4.2.1: SupportedVersionsExtension must be present.
         if (clientVersions.isEmpty())
             throw new TLSException(TLSException.Alert.MISSING_EXTENSION, "missing_supported_versions_extension");
         if (!clientVersions.contains(TLSVersion.TLS_1_3))
@@ -342,7 +342,7 @@ public class ServerTLSEngine extends TLSEngine
             clientAuthentication = sslContextFactory.getWantClientAuth() || sslContextFactory.getNeedClientAuth();
             if (clientAuthentication)
             {
-                // RFC-8446[4.3.2]: signature algorithms extension is mandatory.
+                // RFC-8446 #4.3.2: signature algorithms extension is mandatory.
                 List<Extension> crExtensions = List.of(new SignatureAlgorithmsExtension(serverSignatureAlgorithms));
                 CertificateRequestMessage certificateRequestMessage = new CertificateRequestMessage(BufferUtil.EMPTY_BYTES, crExtensions);
                 handshakeMessages.add(certificateRequestMessage);
@@ -456,7 +456,7 @@ public class ServerTLSEngine extends TLSEngine
 
         if (!certificateChain.isEmpty())
         {
-            // RFC-8446[4.4.2.4]: MD5 and SHA1 are forbidden.
+            // RFC-8446 #4.4.2.4: MD5 and SHA1 are forbidden.
             for (X509Certificate x509 : certificateChain)
             {
                 String certificateSignatureAlgorithm = x509.getSigAlgName();
@@ -525,7 +525,7 @@ public class ServerTLSEngine extends TLSEngine
         if (LOG.isDebugEnabled())
             LOG.debug("handshake completed on {}", this);
 
-        // RFC-9001[4.1.1]: handshake is complete when the Finished message
+        // RFC-9001 #4.1.1: handshake is complete when the Finished message
         // is sent, and the peer's Finished message has been verified.
         HandshakeData handshakeData = new HandshakeData(tlsConfiguration.getQuicVersion(), getTLSVersion(), getServerName(), cipherSuite, getApplicationProtocol(), getTransportParameters());
         notifyHandshakeCompleted(handshakeData, null);
@@ -548,7 +548,7 @@ public class ServerTLSEngine extends TLSEngine
 
     public byte[] createRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
     {
-        // RFC-9001[5.8]: build a retry pseudo-packet.
+        // RFC-9001 #5.8: build a retry pseudo-packet.
         // The buffer contains up to the token bytes but no integrity bytes.
         return createRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, false);
     }
