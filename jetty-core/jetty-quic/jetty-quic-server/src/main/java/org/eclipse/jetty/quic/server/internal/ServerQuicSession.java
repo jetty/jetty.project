@@ -169,6 +169,10 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 
     private boolean processInitialPacket(InitialPacket packet) throws Exception
     {
+        // RFC-9000 #14.1: servers must not accept small initial packets.
+        if (packet.length() < InitialPacket.MIN_LENGTH)
+            throw new QuicException(ErrorCode.PROTOCOL_VIOLATION_ERROR, "invalid_initial_packet");
+
         if (packet.frames().getFirst() instanceof CryptoFrame)
         {
             byte[] token = packet.token();
