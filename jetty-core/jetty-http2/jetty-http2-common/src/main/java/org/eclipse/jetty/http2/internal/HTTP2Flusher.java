@@ -35,6 +35,7 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -384,7 +385,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
-            terminated = x;
+            terminated = ExceptionUtil.combine(terminated, x);
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("%s, entries processed/pending/queued=%d/%d/%d",
                     closed != null ? "Closing" : "Failing",
@@ -416,7 +417,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
-            terminated = x;
+            terminated = ExceptionUtil.combine(terminated, x);
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("%s, entries processed/pending/queued=%d/%d/%d",
                     closed != null ? "Closing" : "Failing",
@@ -443,7 +444,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
-            terminated = cause;
+            terminated = ExceptionUtil.combine(terminated, cause);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} {}", closed != null ? "Terminated" : "Terminating", this);
         }
