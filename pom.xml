@@ -178,7 +178,7 @@
     <bouncycastle.version>1.84</bouncycastle.version>
     <brotli4j.version>1.23.0</brotli4j.version>
     <build-helper.maven.plugin.version>3.6.1</build-helper.maven.plugin.version>
-    <build-support.version>1.6-SNAPSHOT</build-support.version>
+    <build-support.version>1.6</build-support.version>
     <buildnumber.maven.plugin.version>3.3.0</buildnumber.maven.plugin.version>
     <built-by>${user.name}</built-by>
     <checkstyle.version>10.26.1</checkstyle.version>
