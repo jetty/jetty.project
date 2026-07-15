@@ -20,14 +20,19 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipException;
 
+import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -39,14 +44,18 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class HttpClientGZIPTest extends AbstractHttpClientServerTest
@@ -398,6 +407,96 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             // After the content has been decoded, the length is known again.
             assertEquals(content.length, response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH));
         }
+    }
+
+    public static Stream<Arguments> garbageGzipScenarios() throws IOException
+    {
+        List<Arguments> scenarios = new ArrayList<>();
+        for (Scenario base : List.of(new NormalScenario(), new SslScenario()))
+        {
+            // All zeros
+            byte[] allZero = new byte[1024];
+            Arrays.fill(allZero, (byte)0x00);
+            scenarios.add(Arguments.of("All Zeros", base, allZero, "Invalid gzip bytes"));
+
+            // Good Header, bad everything else.
+            byte[] badGzip = new byte[1024];
+            Arrays.fill(badGzip, (byte)0xAA);
+            badGzip[0] = (byte)0x1f; // Valid Gzip Header
+            badGzip[1] = (byte)0x8b; // Valid Gzip Header
+            scenarios.add(Arguments.of("Good Gzip Header - Bad Body", base, badGzip, "Invalid gzip compression method"));
+
+            // Good Compression, bad flags
+            byte[] badFlags = compressWithJDK("Hello World".getBytes(US_ASCII));
+            badFlags[3] = 0x04; // set FEXTRA
+            badFlags[10] = 0x00; // XLEN (low)
+            badFlags[11] = 0x00; // XLEN (hi)
+            scenarios.add(Arguments.of("Bad Flags - Good Body", base, badGzip, "Invalid gzip compression method"));
+        }
+        return scenarios.stream();
+    }
+
+    @ParameterizedTest(name = "{0}, {1}")
+    @MethodSource("garbageGzipScenarios")
+    public void testGarbageGzipResponse(String description, Scenario scenario, byte[] responseBuf, String expectedThrownMessage) throws Exception
+    {
+        start(scenario, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+            {
+                // Pretend to be sending text
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + StandardCharsets.US_ASCII.name());
+                response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
+                response.write(true, ByteBuffer.wrap(responseBuf), callback);
+                return true;
+            }
+        });
+
+        ExecutionException ee = assertThrows(ExecutionException.class, () ->
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .timeout(20, TimeUnit.SECONDS)
+                .send();
+        });
+
+        ZipException zipException = findZipException(ee);
+        if (zipException == null)
+            fail("Failed to find expected " + ZipException.class.getName() + " cause", ee);
+        if (expectedThrownMessage != null)
+            assertEquals(expectedThrownMessage, zipException.getMessage());
+
+        assertEquals(1, client.getDestinations().size(), "there should be only 1 destination");
+
+        HttpDestination httpDestination = (HttpDestination)client.getDestinations().get(0);
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)httpDestination.getConnectionPool();
+        assertEquals(0, connectionPool.getConnectionCount(), "The bad response should not go back to connection pool");
+    }
+
+    private static byte[] compressWithJDK(byte[] input) throws IOException
+    {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+             GZIPOutputStream gzip = new GZIPOutputStream(out))
+        {
+            gzip.write(input);
+            gzip.close(); // trigger gzip finish + trailer write
+            return out.toByteArray();
+        }
+    }
+
+    private ZipException findZipException(ExecutionException ee)
+    {
+        Throwable cause = ee.getCause();
+        while (cause != null)
+        {
+            if (cause instanceof ZipException zipException)
+            {
+                return zipException;
+            }
+            cause = cause.getCause();
+        }
+        return null;
     }
 
     private static void sleep(long ms) throws IOException
