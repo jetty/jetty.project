@@ -26,6 +26,7 @@ import java.util.EventListener;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -2417,15 +2418,17 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             if (LOG.isDebugEnabled())
                 LOG.debug("Terminating {}", HTTP2Session.this);
 
+            Throwable cause;
             CompletableFuture<Void> completable;
             try (AutoLock ignored = lock.lock())
             {
+                cause = failure;
                 completable = shutdownCallback;
             }
             if (completable != null)
                 completable.complete(null);
 
-            HTTP2Session.this.terminate(failure);
+            HTTP2Session.this.terminate(Objects.requireNonNullElseGet(cause, ClosedChannelException::new));
             notifyClose(HTTP2Session.this, frame, callback);
             notifyLifeCycleClose();
         }
