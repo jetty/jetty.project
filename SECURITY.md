@@ -5,6 +5,10 @@
 All [active versions](https://jetty.org/download.html) of Jetty are supported for security issues. 
 [End-of-life (EOL) versions](https://jetty.org/download.html) of Jetty may be supported for serious security issues or on a [commercial support basis](https://jetty.org/support.html).
 
+## Experimental Features
+
+Some features of Jetty are considered experimental. Any security issue found in an experimental feature is not considered a security issue but rather a bug. Feel free to report those bugs to the [Jetty issue tracker](https://github.com/eclipse/jetty.project/issues).
+
 ## Reporting a Vulnerability
 
 Do not open a public issue to report a security vulnerability.  
