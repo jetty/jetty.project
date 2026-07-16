@@ -23,6 +23,7 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +92,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -157,6 +159,70 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             assertEquals(httpClient.getMaxResponseHeadersSize(), http2Client.getMaxResponseHeadersSize());
         }
         assertTrue(http2Client.isStopped());
+    }
+
+    @Test
+    public void testConnectionCloseDoesNotAbortExchangeWithCompletedResponse() throws Exception
+    {
+        // White-box reproduction of jetty#15368. The race is: the response has been fully received
+        // by the client transport (isResponseComplete() == true), but the exchange has not yet
+        // terminated (the application has not consumed the body), so the channel is still "active".
+        // If the connection is closed in this window (e.g. a GOAWAY at the end of a server graceful
+        // shutdown), the connection must NOT abort the exchange, otherwise the already-received
+        // response is discarded with a ClosedChannelException.
+        //
+        // To hit this window deterministically, we capture the HttpConnectionOverHTTP2 instance, let
+        // a small response be fully received (but not consumed), then invoke connection.close()
+        // directly and assert the response body can still be read.
+        byte[] payload = new byte[1024];
+        Arrays.fill(payload, (byte)'x');
+
+        HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(new HttpConfiguration());
+        h2c.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        h2c.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        prepareServer(h2c);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                response.setStatus(HttpStatus.OK_200);
+                response.write(true, ByteBuffer.wrap(payload), callback);
+                return true;
+            }
+        });
+        server.start();
+
+        AtomicReference<HttpConnectionOverHTTP2> connectionRef = new AtomicReference<>();
+        prepareClient();
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)
+        {
+            @Override
+            protected Connection newConnection(Destination destination, Session session, HTTP2Connection connection)
+            {
+                HttpConnectionOverHTTP2 c = new HttpConnectionOverHTTP2(destination, session, connection);
+                connectionRef.set(c);
+                return c;
+            }
+        });
+        httpClient.start();
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        httpClient.newRequest("localhost", connector.getLocalPort()).send(listener);
+
+        // The response (headers + all data + end-of-stream) is received here, but we do not consume
+        // the body yet, so the exchange stays active on its channel.
+        Response response = listener.get(5, TimeUnit.SECONDS);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // Close the connection while the completed-but-unconsumed exchange is still active.
+        HttpConnectionOverHTTP2 connection = connectionRef.get();
+        assertNotNull(connection);
+        connection.close();
+
+        // The already-received response must still be deliverable.
+        byte[] body = IO.readBytes(listener.getInputStream());
+        assertEquals(payload.length, body.length);
     }
 
     @Test

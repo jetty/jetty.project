@@ -369,10 +369,14 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
             activeChannels.clear();
         }
         Throwable failure = failureSupplier.get();
-        for (HttpChannel channel : channels)
+        for (HttpChannelOverHTTP2 channel : channels)
         {
             HttpExchange exchange = channel.getHttpExchange();
-            if (exchange != null)
+            // Do not abort an exchange whose response has already been fully received (the last DATA
+            // frame, end-of-stream, has arrived) but not yet consumed by the application. Closing the
+            // connection (e.g. a GOAWAY at the end of a server graceful shutdown) must not discard a
+            // response that the client already holds.
+            if (exchange != null && !channel.isLastDataReceived())
                 exchange.getRequest().abort(failure);
         }
         return false;
