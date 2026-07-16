@@ -213,6 +213,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
+        // TODO: look into fixing for unix/win (maybe use of Properties syntax)
         params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "forward", "ctx"));
         assertThat(content, containsString("REQUEST_URI=/verify/pinfo"));
@@ -254,6 +255,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
+        // TODO: look into fixing for unix/win (maybe use of Properties syntax)
         params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include", "ctx"));
     }
@@ -298,6 +300,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
+        // TODO: look into fixing for unix/win (maybe use of Properties syntax)
         params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "forward"));
         assertThat(content, containsString("REQUEST_URI=/foreign/verify/pinfo"));
@@ -348,6 +351,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
+        // TODO: look into fixing for unix/win (maybe use of Properties syntax)
         params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "forward"));
         assertThat(content, containsString("REQUEST_URI=/foreign/verify/%25%20test/pinfo"));
@@ -389,6 +393,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
+        // TODO: look into fixing for unix/win (maybe use of Properties syntax)
         params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
     }
@@ -434,6 +439,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
+        // TODO: look into fixing for unix/win (maybe use of Properties syntax)
         params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
         //verify that the content was consumed
@@ -482,6 +488,7 @@ public class CrossContextDispatcherTest
         String params = extractLine(contentLines, "PARAMS=");
         assertNotNull(params);
         params = params.substring(params.indexOf("=") + 1);
+        // TODO: look into fixing for unix/win (maybe use of Properties syntax)
         params = params.substring(1, params.length() - System.lineSeparator().length()); //dump leading, trailing [ ]
         assertThat(Arrays.asList(StringUtil.csvSplit(params)), containsInAnyOrder("a", "include"));
     }
@@ -561,6 +568,7 @@ public class CrossContextDispatcherTest
         assertThat(response.get("X-Filter-RequestURL"), is(expectedRequestURL));
 
         String content = response.getContent();
+        // TODO: look into fixing for unix/win (maybe use of Properties syntax)
         List<String> contentLines = List.of(content.split(System.lineSeparator()));
         assertThat(contentLines, hasItem("REQUEST_URL=" + expectedRequestURL));
     }
@@ -574,13 +582,15 @@ public class CrossContextDispatcherTest
 
         String form = "a=xxx";
         String rawResponse = _connector.getResponse(
-            "POST /context/dispatch/?forward=/reader HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: " + form.length() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                form);
+                """
+                POST /context/dispatch/?forward=/reader HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: application/x-www-form-urlencoded\r
+                Content-Length: %d\r
+                Connection: close\r
+                \r
+                %s
+                """.formatted(form.length(), form));
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("a="));
@@ -609,13 +619,15 @@ public class CrossContextDispatcherTest
 
         String form = "a=xxx";
         String rawResponse = _connector.getResponse(
-            "POST /context/dispatch/?forward=/reader&param=a HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Content-Length: " + form.length() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                form);
+                """
+                POST /context/dispatch/?forward=/reader&param=a HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: application/x-www-form-urlencoded\r
+                Content-Length: %d\r
+                Connection: close\r
+                \r
+                %s
+                """.formatted(form.length(), form));
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));

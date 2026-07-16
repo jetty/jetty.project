@@ -21,8 +21,7 @@ import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee.webapp.WebAppContext;
 
 /**
- * Attempt at collecting up all of the JSP specific configuration bits and pieces into a single place
- * for WebAppContext users to utilize.
+ * JSP specific configuration for WebAppContext users.
  */
 public class JspConfig
 {
@@ -30,7 +29,7 @@ public class JspConfig
     {
         context.setAttribute(ServletContext.TEMPDIR, scratchDir);
         context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-            ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*/wasp-[^/]*\\.jar|.*jakarta.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard.*\\.jar");
+            ".*/jakarta.servlet-api-[^/]*\\.jar$|.*/wasp-[^/]*\\.jar|.*jakarta.servlet.jsp.jstl-[^/]*\\.jar");
         context.setWar(baseUri.toASCIIString());
         context.setBaseResourceAsPath(Path.of(baseUri));
     }

@@ -110,8 +110,8 @@ public class DispatcherTest
     @Test
     public void testForwardToWelcome() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("ForwardServlet", ForwardServlet.class, "/ForwardServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("DefaultServlet", DefaultServlet.class, "/");
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(DefaultServlet.class, "/");
         _server.start();
 
         String responses = _connector.getResponse("""
@@ -127,8 +127,8 @@ public class DispatcherTest
     @Test
     public void testForward() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("ForwardServlet", ForwardServlet.class, "/ForwardServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("AssertForwardServlet", AssertForwardServlet.class, "/AssertForwardServlet/*");
+        _contextHandler.addServlet(new ServletHolder("ForwardServlet", ForwardServlet.class), "/ForwardServlet/*");
+        _contextHandler.addServlet(AssertForwardServlet.class, "/AssertForwardServlet/*");
 
         String rawResponse = _connector.getResponse("""
             GET /context/ForwardServlet?do=assertforward&do=more&test=1 HTTP/1.1\r
@@ -178,8 +178,8 @@ public class DispatcherTest
     @Test
     public void testForwardThenForward() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("ForwardServlet", ForwardServlet.class, "/ForwardServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("AlwaysForwardServlet", AlwaysForwardServlet.class, "/AlwaysForwardServlet/*");
+        _contextHandler.addServlet(new ServletHolder("ForwardServlet", ForwardServlet.class), "/ForwardServlet/*");
+        _contextHandler.addServlet(AlwaysForwardServlet.class, "/AlwaysForwardServlet/*");
         ServletHolder holder = _contextHandler.getServletHandler().newServletHolder(Source.EMBEDDED);
         holder.setHeldClass(ForwardEchoURIServlet.class);
         holder.setName("ForwardEchoURIServlet"); //use easy-to-test name
@@ -219,8 +219,8 @@ public class DispatcherTest
     @Test
     public void testForwardNonUTF8() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("ForwardNonUTF8Servlet", ForwardNonUTF8Servlet.class, "/ForwardServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("AssertNonUTF8ForwardServlet", AssertNonUTF8ForwardServlet.class, "/AssertForwardServlet/*");
+        _contextHandler.addServlet(new ServletHolder("ForwardNonUTF8Servlet", ForwardNonUTF8Servlet.class), "/ForwardServlet/*");
+        _contextHandler.addServlet(AssertNonUTF8ForwardServlet.class, "/AssertForwardServlet/*");
 
         String rawResponse = _connector.getResponse("""
             GET /context/ForwardServlet?do=assertforward&foreign=%d2%e5%ec%ef%e5%f0%e0%f2%f3%f0%e0&test=1 HTTP/1.1\r
@@ -242,8 +242,8 @@ public class DispatcherTest
     @Test
     public void testForwardWithParam() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("ForwardServlet", ForwardServlet.class, "/ForwardServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("EchoURIServlet", EchoURIServlet.class, "/EchoURI/*");
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(EchoURIServlet.class, "/EchoURI/*");
 
         String responses = _connector.getResponse("""
             GET /context/ForwardServlet;ignore=true?do=req.echo&uri=EchoURI%2Fx%2520x%3Ba=1%3Fb=2 HTTP/1.1\r
@@ -273,7 +273,7 @@ public class DispatcherTest
         holder.setHeldClass(NamedForwardServlet.class);
         holder.setName("NamedForwardServlet"); //use easy-to-test name
         _contextHandler.addServlet(holder, "/forward/*");
-        String echo = _contextHandler.getServletHandler().addServletWithMapping("ForwardEchoURIServlet", ForwardEchoURIServlet.class, "/echo/*").getName();
+        String echo = _contextHandler.addServlet(ForwardEchoURIServlet.class, "/echo/*").getName();
 
         String rawResponse = _connector.getResponse(("""
             GET /context/forward/info;param=value?name=@ECHO@ HTTP/1.1\r
@@ -308,8 +308,8 @@ public class DispatcherTest
     @Test
     public void testNamedInclude() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("NamedIncludeServlet", NamedIncludeServlet.class, "/include/*");
-        String echo = _contextHandler.getServletHandler().addServletWithMapping("IncludeEchoURIServlet", IncludeEchoURIServlet.class, "/echo/*").getName();
+        _contextHandler.addServlet(NamedIncludeServlet.class, "/include/*");
+        String echo = _contextHandler.addServlet(IncludeEchoURIServlet.class, "/echo/*").getName();
 
         String responses = _connector.getResponse("""
             GET /context/include/info;param=value?name=@ECHO@ HTTP/1.1\r
@@ -345,8 +345,8 @@ public class DispatcherTest
         try (StacklessLogging ignored = new StacklessLogging(ServletChannel.class))
         {
             LOG.info("Expect Not valid UTF8 warnings...");
-            _contextHandler.getServletHandler().addServletWithMapping("AlwaysForwardServlet", AlwaysForwardServlet.class, "/forward/*");
-            _contextHandler.getServletHandler().addServletWithMapping("EchoServlet", EchoServlet.class, "/echo/*");
+            _contextHandler.addServlet(AlwaysForwardServlet.class, "/forward/*");
+            _contextHandler.addServlet(EchoServlet.class, "/echo/*");
 
             String rawResponse;
 
@@ -406,8 +406,8 @@ public class DispatcherTest
     @Test
     public void testInclude() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("IncludeServlet", IncludeServlet.class, "/IncludeServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("AssertIncludeServlet", AssertIncludeServlet.class, "/AssertIncludeServlet/*");
+        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("AssertIncludeServlet", AssertIncludeServlet.class), "/AssertIncludeServlet/*");
 
         //test include, along with special extension to include that allows headers to
         //be set during an include
@@ -437,10 +437,10 @@ public class DispatcherTest
     {
         _server.stop();
         _contextHandler.setWelcomeFiles(new String[] {"index.x"});
-        _contextHandler.getServletHandler().addServletWithMapping("DispatchServletServlet", DispatchServletServlet.class, "/dispatch/*");
-        ServletHolder defaultHolder = _contextHandler.getServletHandler().addServletWithMapping("DefaultServlet", DefaultServlet.class, "/");
+        _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        ServletHolder defaultHolder = _contextHandler.addServlet(DefaultServlet.class, "/");
         defaultHolder.setInitParameter("welcomeServlets", "true");
-        _contextHandler.getServletHandler().addServletWithMapping("RogerThatServlet", RogerThatServlet.class, "*.x");
+        _contextHandler.addServlet(RogerThatServlet.class, "*.x");
         _server.start();
 
         String rawResponse = _connector.getResponse("""
@@ -536,8 +536,8 @@ public class DispatcherTest
     @Test
     public void testIncludeWriterOutputStream() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("IncludeServlet", IncludeServlet.class, "/IncludeServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("AssertIncludeServlet", AssertIncludeServlet.class, "/AssertIncludeServlet/*");
+        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("AssertIncludeServlet", AssertIncludeServlet.class), "/AssertIncludeServlet/*");
 
         //test include, along with special extension to include that allows headers to
         //be set during an include
@@ -565,7 +565,7 @@ public class DispatcherTest
     @Test
     public void testIncludeStatic() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("IncludeServlet", IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
         _contextHandler.addServlet(new ServletHolder("default", DefaultServlet.class), "/");
         _server.start();
 
@@ -619,8 +619,8 @@ public class DispatcherTest
     @Test
     public void testForwardStatic() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("ForwardServlet", ForwardServlet.class, "/ForwardServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("DefaultServlet", DefaultServlet.class, "/");
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(DefaultServlet.class, "/");
         _server.start();
 
         String responses = _connector.getResponse("""
@@ -650,8 +650,8 @@ public class DispatcherTest
     @Test
     public void testForwardSendError() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("ForwardServlet", ForwardServlet.class, "/forward/*");
-        _contextHandler.getServletHandler().addServletWithMapping("SendErrorServlet", SendErrorServlet.class, "/senderr/*");
+        _contextHandler.addServlet(ForwardServlet.class, "/forward/*");
+        _contextHandler.addServlet(SendErrorServlet.class, "/senderr/*");
 
         String forwarded = _connector.getResponse("""
             GET /context/forward?do=ctx.echo&uri=/senderr HTTP/1.1\r
@@ -667,8 +667,8 @@ public class DispatcherTest
     @Test
     public void testForwardExForwardEx() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("RelativeDispatch2Servlet", RelativeDispatch2Servlet.class, "/RelDispatchServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("ThrowServlet", ThrowServlet.class, "/include/throw/*");
+        _contextHandler.addServlet(RelativeDispatch2Servlet.class, "/RelDispatchServlet/*");
+        _contextHandler.addServlet(ThrowServlet.class, "/include/throw/*");
 
         String rawResponse = _connector.getResponse("""
             GET /context/RelDispatchServlet?path=include/throw HTTP/1.1\r
@@ -693,8 +693,8 @@ public class DispatcherTest
     @Test
     public void testIncludeExIncludeEx() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("RelativeDispatch2Servlet", RelativeDispatch2Servlet.class, "/RelDispatchServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("ThrowServlet", ThrowServlet.class, "/include/throw/*");
+        _contextHandler.addServlet(RelativeDispatch2Servlet.class, "/RelDispatchServlet/*");
+        _contextHandler.addServlet(ThrowServlet.class, "/include/throw/*");
 
         String rawResponse = _connector.getResponse("""
             GET /context/RelDispatchServlet?include=true&path=include/throw HTTP/1.1\r
@@ -723,9 +723,9 @@ public class DispatcherTest
     @Test
     public void testForwardThenInclude() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("ForwardServlet", ForwardServlet.class, "/ForwardServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("IncludeServlet", IncludeServlet.class, "/IncludeServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("AssertForwardIncludeServlet", AssertForwardIncludeServlet.class, "/AssertForwardIncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("ForwardServlet", ForwardServlet.class), "/ForwardServlet/*");
+        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("AssertForwardIncludeServlet", AssertForwardIncludeServlet.class), "/AssertForwardIncludeServlet/*");
 
         String rawResponse = _connector.getResponse("""
             GET /context/ForwardServlet/forwardpath?do=include HTTP/1.1\r
@@ -749,9 +749,9 @@ public class DispatcherTest
     @Test
     public void testIncludeThenForward() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("IncludeServlet", IncludeServlet.class, "/IncludeServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("ForwardServlet", ForwardServlet.class, "/ForwardServlet/*");
-        _contextHandler.getServletHandler().addServletWithMapping("AssertIncludeForwardServlet", AssertIncludeForwardServlet.class, "/AssertIncludeForwardServlet/*");
+        _contextHandler.addServlet(new ServletHolder("IncludeServlet", IncludeServlet.class), "/IncludeServlet/*");
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(AssertIncludeForwardServlet.class, "/AssertIncludeForwardServlet/*");
 
         String rawResponse = _connector.getResponse("""
             GET /context/IncludeServlet/includepath?do=forward HTTP/1.1\r
@@ -774,8 +774,8 @@ public class DispatcherTest
     @Test
     public void testServletForward() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("DispatchServletServlet", DispatchServletServlet.class, "/dispatch/*");
-        _contextHandler.getServletHandler().addServletWithMapping("RogerThatServlet", RogerThatServlet.class, "/roger/*");
+        _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        _contextHandler.addServlet(RogerThatServlet.class, "/roger/*");
 
         String rawResponse = _connector.getResponse("""
             GET /context/dispatch/test?forward=/roger/that HTTP/1.1\r
@@ -797,8 +797,8 @@ public class DispatcherTest
     @Test
     public void testServletForwardDotDot() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("DispatchServletServlet", DispatchServletServlet.class, "/dispatch/*");
-        _contextHandler.getServletHandler().addServletWithMapping("RogerThatServlet", RogerThatServlet.class, "/roger/that");
+        _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        _contextHandler.addServlet(RogerThatServlet.class, "/roger/that");
 
         String rawRequest = """
             GET /context/dispatch/test?forward=/%2e%2e/roger/that HTTP/1.1\r
@@ -815,8 +815,8 @@ public class DispatcherTest
     @Test
     public void testServletForwardEncodedDotDot() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("DispatchServletServlet", DispatchServletServlet.class, "/dispatch/*");
-        _contextHandler.getServletHandler().addServletWithMapping("RogerThatServlet", RogerThatServlet.class, "/roger/that");
+        _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        _contextHandler.addServlet(RogerThatServlet.class, "/roger/that");
 
         String rawRequest = """
             GET /context/dispatch/test?forward=/%252e%252e/roger/that HTTP/1.1\r
@@ -833,8 +833,8 @@ public class DispatcherTest
     @Test
     public void testServletInclude() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("DispatchServletServlet", DispatchServletServlet.class, "/dispatch/*");
-        _contextHandler.getServletHandler().addServletWithMapping("RogerThatServlet", RogerThatServlet.class, "/roger/*");
+        _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        _contextHandler.addServlet(RogerThatServlet.class, "/roger/*");
 
         String rawResponse = _connector.getResponse("""
             GET /context/dispatch/test?include=/roger/that HTTP/1.0\r
@@ -855,9 +855,9 @@ public class DispatcherTest
     @Test
     public void testForwardFilterToRogerServlet() throws Exception
     {
-        _contextHandler.getServletHandler().addServletWithMapping("RogerThatServlet", RogerThatServlet.class, "/*");
-        _contextHandler.getServletHandler().addServletWithMapping("ReserveEchoServlet", ReserveEchoServlet.class, "/recho/*");
-        _contextHandler.getServletHandler().addServletWithMapping("EchoServlet", EchoServlet.class, "/echo/*");
+        _contextHandler.addServlet(RogerThatServlet.class, "/*");
+        _contextHandler.addServlet(ReserveEchoServlet.class, "/recho/*");
+        _contextHandler.addServlet(EchoServlet.class, "/echo/*");
         _contextHandler.addFilter(ForwardFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Response response;

@@ -69,6 +69,9 @@ public class ServletResponseHttpWrapper extends ServletResponseWrapper implement
     {
     }
 
+    /**
+     * @since EE11 / Servlet 6.1
+     */
     @Override
     public void sendRedirect(String location, int sc, boolean clearBuffer) throws IOException
     {

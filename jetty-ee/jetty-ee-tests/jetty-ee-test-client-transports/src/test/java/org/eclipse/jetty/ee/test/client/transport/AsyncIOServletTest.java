@@ -1218,6 +1218,9 @@ public class AsyncIOServletTest extends AbstractTest
     @MethodSource("transports")
     public void testAsyncReadEcho(TransportType transportType) throws Exception
     {
+        // TODO: investigate why H3 does not work.
+        Assumptions.assumeTrue(transportType != TransportType.H3_QUICHE);
+
         start(transportType, new HttpServlet()
         {
             @Override

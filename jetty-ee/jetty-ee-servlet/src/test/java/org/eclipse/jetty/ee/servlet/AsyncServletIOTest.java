@@ -385,7 +385,7 @@ public class AsyncServletIOTest
             {
                 line = in.readLine();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("header-line:  {}", line);
+                    LOG.debug("header-line: {}", line);
                 if (line.length() == 0)
                     break;
             }

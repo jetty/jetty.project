@@ -23,7 +23,10 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.URIUtil;
 
-@Deprecated(since = "12.1.0")
+/**
+ * @deprecated by the Servlet 6.1.0 API itself. Recommendation is using 103 early hints instead.
+ */
+@Deprecated(since = "Servlet 6.1.0", forRemoval = false)
 class PushBuilderImpl implements PushBuilder
 {
     private final ServletContextRequest _request;

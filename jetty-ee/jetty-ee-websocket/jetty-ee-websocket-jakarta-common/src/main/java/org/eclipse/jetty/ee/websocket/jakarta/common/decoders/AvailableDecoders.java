@@ -138,6 +138,8 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>, Closeable
             throw new InvalidWebSocketException(err);
         }
 
+        // WebSocket TCK behavior: Do not validate sanity of the decoders here.
+
         registeredDecoders.add(new RegisteredDecoder(decoder, interfaceClass, objectType, config, components));
     }
 

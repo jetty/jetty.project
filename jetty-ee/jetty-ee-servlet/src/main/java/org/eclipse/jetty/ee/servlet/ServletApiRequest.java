@@ -60,6 +60,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
+import org.eclipse.jetty.ee.common.EnterpriseEditionVersion;
 import org.eclipse.jetty.ee.servlet.ServletContextHandler.ServletRequestInfo;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
@@ -260,6 +261,7 @@ public class ServletApiRequest implements HttpServletRequest
     /**
      * @deprecated use {@link #getAuthenticationState()} instead.
      */
+    // TODO: remove in 13.0.x?
     @Deprecated(since = "12.1.7", forRemoval = true)
     public AuthenticationState getAuthentication()
     {
@@ -856,8 +858,13 @@ public class ServletApiRequest implements HttpServletRequest
                 if (httpCookie == null)
                     continue;
 
-                // This should be httpCookie.isExpired(), but Servlet 6.1 requires to check for Max-Age as well.
-                if (httpCookie.isExpired() || (httpCookie.getMaxAge() < 0))
+                boolean isExpired = httpCookie.isExpired();
+                if (EnterpriseEditionVersion.getEnterpriseEditionVersion().version() >= EnterpriseEditionVersion.EE11.version())
+                {
+                    // This should be httpCookie.isExpired(), but Servlet 6.1 requires to check for Max-Age as well.
+                    isExpired = isExpired || (httpCookie.getMaxAge() < 0);
+                }
+                if (isExpired)
                 {
                     for (Iterator<Object> i = cookies.iterator(); i.hasNext();)
                     {
@@ -943,7 +950,6 @@ public class ServletApiRequest implements HttpServletRequest
         if (_async != null)
         {
             Set<String> names = new HashSet<>(Set.of(
-
                 AsyncContext.ASYNC_REQUEST_URI,
                 AsyncContext.ASYNC_CONTEXT_PATH,
                 AsyncContext.ASYNC_SERVLET_PATH,

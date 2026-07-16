@@ -150,6 +150,79 @@ public class ResponseTest
         assertThat(response.getContent(), containsString("The content is gone."));
     }
 
+    // Test cases for older HttpServletResponse.sendRedirect(String) API.
+    public static Stream<Arguments> redirectsOld()
+    {
+        List<Arguments> cases = new ArrayList<>();
+
+        // EE10 uses Servlet 6.0 which only has sendRedirect(String)
+        // Test with different locations and relative redirect settings
+        for (String location : new String[] {"somewhere/else", "/somewhere/else", "http://else/where"})
+        {
+            for (boolean relative : new boolean[] {true, false})
+            {
+                cases.add(Arguments.of(location, relative));
+            }
+        }
+        return cases.stream();
+    }
+
+    /**
+     * Test of the older HttpServletResponse.sendRedirect(String) API.
+     * @see #testRedirect(int, String, boolean, boolean, String) for newer Servlet APIs.
+     */
+    @ParameterizedTest
+    @MethodSource("redirectsOld")
+    public void testRedirectOld(String location, boolean relative) throws Exception
+    {
+        _httpConfiguration.setRelativeRedirectAllowed(relative);
+
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/ctx");
+        HttpServlet servlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.sendRedirect(location);
+            }
+        };
+
+        contextHandler.addServlet(servlet, "/servlet/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/ctx/servlet/test");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = _connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
+
+        String destination = location;
+        if (relative)
+        {
+            if (!location.startsWith("/") && !location.startsWith("http:/"))
+                destination = "/ctx/servlet/" + location;
+        }
+        else
+        {
+            if (location.startsWith("/"))
+                destination = "http://test" + location;
+            else if (!location.startsWith("http:/"))
+                destination = "http://test/ctx/servlet/" + location;
+        }
+
+        HttpField to = response.getField(HttpHeader.LOCATION);
+        assertThat(to, notNullValue());
+        assertThat(to.getValue(), is(destination));
+    }
+
+    // EE11+ (new APIs)
     public static Stream<Arguments> redirects()
     {
         List<Arguments> cases = new ArrayList<>();

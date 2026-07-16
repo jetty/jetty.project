@@ -33,6 +33,7 @@ public class CharacterDecoder extends AbstractDecoder implements Decoder.Text<Ch
     @Override
     public boolean willDecode(String s)
     {
+        // Behavior of WebSocket TCK (it will accept any positive length string, as long as it is not all whitespace)
         return !StringUtil.isEmpty(s);
     }
 }

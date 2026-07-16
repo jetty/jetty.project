@@ -102,7 +102,7 @@ public class SetCookieTest
                 resp.setContentType("text/plain");
                 resp.getWriter().printf("pathInfo: " + req.getPathInfo());
                 resp.getWriter().flush();
-                //Adding a cookie after the response is committed should be a no-op
+                // Adding a cookie after the response is committed should be a no-op
                 Cookie cookie = new Cookie("key", "foo");
 
                 resp.addCookie(cookie);

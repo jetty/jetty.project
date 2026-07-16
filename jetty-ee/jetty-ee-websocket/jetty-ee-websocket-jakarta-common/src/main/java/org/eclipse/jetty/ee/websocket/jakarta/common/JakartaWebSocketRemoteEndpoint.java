@@ -169,11 +169,12 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
 
             if (encoder instanceof Encoder.TextStream textStreamEncoder)
             {
-                MessageWriter writer = newMessageWriter();
-                writer.setCallback(callback);
-                textStreamEncoder.encode(data, writer);
-                writer.close();
-                return;
+                try (MessageWriter writer = newMessageWriter())
+                {
+                    writer.setCallback(callback);
+                    textStreamEncoder.encode(data, writer);
+                    return;
+                }
             }
 
             if (encoder instanceof Encoder.Binary binaryEncoder)
@@ -185,11 +186,12 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
 
             if (encoder instanceof Encoder.BinaryStream binaryStreamEncoder)
             {
-                MessageOutputStream out = newMessageOutputStream();
-                out.setCallback(callback);
-                binaryStreamEncoder.encode(data, out);
-                out.close();
-                return;
+                try (MessageOutputStream out = newMessageOutputStream())
+                {
+                    out.setCallback(callback);
+                    binaryStreamEncoder.encode(data, out);
+                    return;
+                }
             }
 
             throw new IllegalArgumentException("Unknown encoder type: " + encoder);
