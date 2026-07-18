@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.tests;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -76,7 +77,7 @@ public class ClientTLSEngineTest
         // TODO: parametrize on the version.
         configuration.setQuicVersion(QuicVersion.V1);
         configuration.setInputKeyMaterial(new byte[12]);
-        engine = new ClientTLSEngine(packetProtector);
+        engine = new ClientTLSEngine(new SecureRandom(), packetProtector);
 
         outMessages = new ArrayList<>();
         engine.addMessageListener(new TLSEngine.MessageListener()

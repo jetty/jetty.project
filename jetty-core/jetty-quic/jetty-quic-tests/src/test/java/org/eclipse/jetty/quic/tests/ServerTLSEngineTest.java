@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.tests;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -77,7 +78,7 @@ public class ServerTLSEngineTest
         serverTLSConfiguration.setTransportParameters(parameters);
         // TODO: parametrize on the version.
         serverTLSConfiguration.setQuicVersion(QuicVersion.V1);
-        engine = new ServerTLSEngine(packetProtector, serverTLSConfiguration);
+        engine = new ServerTLSEngine(new SecureRandom(), packetProtector, serverTLSConfiguration);
         engine.initialize();
 
         outMessages = new ArrayList<>();

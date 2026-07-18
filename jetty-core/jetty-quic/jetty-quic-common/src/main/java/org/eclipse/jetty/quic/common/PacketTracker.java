@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.quic.common;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.quic.api.frames.AckFrame;
@@ -74,6 +74,7 @@ public class PacketTracker
     private static final Logger LOG = LoggerFactory.getLogger(PacketTracker.class);
 
     private final EnumMap<PacketNumberSpace, Tracker> trackers = new EnumMap<>(PacketNumberSpace.class);
+    private final SecureRandom secureRandom;
     private final Scheduler scheduler;
     private final CongestionController congestionController;
     private long ackMaxDelay;
@@ -83,8 +84,9 @@ public class PacketTracker
     private long probeTimeoutBackoff;
     private RTTData rttData;
 
-    public PacketTracker(Scheduler scheduler, CongestionController congestionController)
+    public PacketTracker(SecureRandom secureRandom, Scheduler scheduler, CongestionController congestionController)
     {
+        this.secureRandom = secureRandom;
         this.scheduler = scheduler;
         this.congestionController = congestionController;
         trackers.put(PacketNumberSpace.INITIAL, new Tracker(PacketNumberSpace.INITIAL));
@@ -384,7 +386,7 @@ public class PacketTracker
                 // RNG produces a number that is, in average, half the given bound.
                 // Use twice the cwnd to skip 1 packet number per cwnd; add 1 to avoid zero.
                 long congestionWindow = getCongestionController().getCongestionWindow();
-                bytesUntilSkip = ThreadLocalRandom.current().nextLong(2 * congestionWindow) + 1;
+                bytesUntilSkip = secureRandom.nextLong(2 * congestionWindow) + 1;
             }
             bytesUntilSkip -= entry.length();
         }

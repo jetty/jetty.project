@@ -16,6 +16,7 @@ package org.eclipse.jetty.quic.client.internal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.SocketAddress;
+import java.security.SecureRandom;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -86,15 +87,16 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     @Override
     public void onOpen()
     {
+        SecureRandom random = new SecureRandom();
         CongestionController congestionController = quicConfiguration.getCongestionControllerFactory().newCongestionController();
-        PacketTracker packetTracker = new PacketTracker(getScheduler(), congestionController);
+        PacketTracker packetTracker = new PacketTracker(random, getScheduler(), congestionController);
         packetTracker.setAcknowledgmentMaxDelay(quicConfiguration.getAcknowledgmentMaxDelay());
         packetTracker.setAcknowledgmentDelayExponent(quicConfiguration.getAcknowledgmentDelayExponent());
         PacketNumbers packetNumbers = new PacketNumbers();
         ByteBufferPool byteBufferPool = getByteBufferPool();
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, false), new QuicMessagesGenerator(byteBufferPool, true));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
-        ClientTLSEngine tlsEngine = new ClientTLSEngine(protector);
+        ClientTLSEngine tlsEngine = new ClientTLSEngine(random, protector);
         RateControl rateControl = quicConfiguration.getRateControlFactory().newRateControl(getEndPoint());
         FlowController flowController = quicConfiguration.getFlowControllerFactory().newFlowController();
         StreamsController streamsController = quicConfiguration.getStreamsControllerFactory().newStreamsController();

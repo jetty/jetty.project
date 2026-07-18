@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.tests;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -86,7 +87,7 @@ public class TLSEngineTest
         serverTLSConfiguration.setTransportParameters(parameters);
         // TODO: parametrize on the version.
         serverTLSConfiguration.setQuicVersion(QuicVersion.V1);
-        serverEngine = new ServerTLSEngine(packetProtector, serverTLSConfiguration);
+        serverEngine = new ServerTLSEngine(new SecureRandom(), packetProtector, serverTLSConfiguration);
         serverEngine.initialize();
 
         serverOutMessages = new ArrayList<>();
@@ -119,7 +120,7 @@ public class TLSEngineTest
         clientTLSConfiguration.setServerName("localhost");
         clientTLSConfiguration.setTransportParameters(parameters);
         clientTLSConfiguration.setQuicVersion(QuicVersion.V1);
-        clientEngine = new ClientTLSEngine(packetProtector);
+        clientEngine = new ClientTLSEngine(new SecureRandom(), packetProtector);
 
         clientOutMessages = new ArrayList<>();
         clientEngine.addMessageListener(new TLSEngine.MessageListener()

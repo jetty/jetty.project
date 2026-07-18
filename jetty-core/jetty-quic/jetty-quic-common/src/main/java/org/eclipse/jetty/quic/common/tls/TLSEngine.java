@@ -79,7 +79,7 @@ public abstract class TLSEngine
 
     private final MessageNotifier messageNotifier = new MessageNotifier();
     private final List<HandshakeListener> handshakeListeners = new ArrayList<>();
-    private final SecureRandom random = new SecureRandom();
+    private final SecureRandom random;
     private final PacketProtector protector;
     private final MessagesGenerator tlsGenerator;
     private final MessagesParser tlsParser;
@@ -90,12 +90,18 @@ public abstract class TLSEngine
     private TransportParameters transportParameters;
     private CertificateMessage peerCertificate;
 
-    protected TLSEngine(PacketProtector protector, boolean client)
+    protected TLSEngine(SecureRandom random, PacketProtector protector, boolean client)
     {
+        this.random = random;
         this.protector = protector;
-        tlsGenerator = new QuicMessagesGenerator(protector.getByteBufferPool(), client);
-        tlsParser = new QuicMessagesParser(client);
-        cipherSuite = CipherSuite.TLS_AES_128_GCM_SHA256;
+        this.tlsGenerator = new QuicMessagesGenerator(protector.getByteBufferPool(), client);
+        this.tlsParser = new QuicMessagesParser(client);
+        this.cipherSuite = CipherSuite.TLS_AES_128_GCM_SHA256;
+    }
+
+    public SecureRandom getSecureRandom()
+    {
+        return random;
     }
 
     public PacketProtector getPacketProtector()
@@ -211,7 +217,7 @@ public abstract class TLSEngine
     public byte[] newRandomBytes(int length)
     {
         byte[] bytes = new byte[length];
-        random.nextBytes(bytes);
+        getSecureRandom().nextBytes(bytes);
         return bytes;
     }
 

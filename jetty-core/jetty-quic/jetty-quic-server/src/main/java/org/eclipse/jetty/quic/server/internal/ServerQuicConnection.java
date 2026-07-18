@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -299,8 +300,9 @@ public class ServerQuicConnection extends QuicConnection
 
     private ServerQuicSession newSession()
     {
+        SecureRandom random = new SecureRandom();
         CongestionController congestionController = quicConfiguration.getCongestionControllerFactory().newCongestionController();
-        PacketTracker packetTracker = new PacketTracker(getScheduler(), congestionController);
+        PacketTracker packetTracker = new PacketTracker(random, getScheduler(), congestionController);
         packetTracker.setAcknowledgmentMaxDelay(quicConfiguration.getAcknowledgmentMaxDelay());
         packetTracker.setAcknowledgmentDelayExponent(quicConfiguration.getAcknowledgmentDelayExponent());
         PacketNumbers packetNumbers = new PacketNumbers();
@@ -308,7 +310,7 @@ public class ServerQuicConnection extends QuicConnection
         TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, true), new QuicMessagesGenerator(byteBufferPool, false));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
         ServerTLSConfiguration tlsConfiguration = new ServerTLSConfiguration(getServerQuicConfiguration(), getSslContextFactory());
-        ServerTLSEngine tlsEngine = new ServerTLSEngine(protector, tlsConfiguration);
+        ServerTLSEngine tlsEngine = new ServerTLSEngine(random, protector, tlsConfiguration);
         RateControl rateControl = quicConfiguration.getRateControlFactory().newRateControl(getEndPoint());
         FlowController flowController = quicConfiguration.getFlowControllerFactory().newFlowController();
         StreamsController streamsController = quicConfiguration.getStreamsControllerFactory().newStreamsController();

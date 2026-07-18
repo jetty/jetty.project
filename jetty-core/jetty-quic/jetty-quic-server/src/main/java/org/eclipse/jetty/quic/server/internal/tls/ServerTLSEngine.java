@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.quic.server.internal.tls;
 
-import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,9 +78,9 @@ public class ServerTLSEngine extends TLSEngine
     private State state = State.NEED_CLIENT_HELLO;
     private SecretKey sharedSecret;
 
-    public ServerTLSEngine(PacketProtector packetProtector, ServerTLSConfiguration tlsConfiguration)
+    public ServerTLSEngine(SecureRandom random, PacketProtector packetProtector, ServerTLSConfiguration tlsConfiguration)
     {
-        super(packetProtector, false);
+        super(random, packetProtector, false);
         this.tlsConfiguration = tlsConfiguration;
     }
 
@@ -532,7 +532,7 @@ public class ServerTLSEngine extends TLSEngine
 
         QuicServerQuicConfiguration serverQuicConfiguration = getTLSConfiguration().getServerQuicConfiguration();
         int lifetime = (int)serverQuicConfiguration.getSessionTicketFactory().getSessionTicketLifetime().toMillis();
-        int ageAdd = ByteBuffer.wrap(newRandomBytes(4)).getInt();
+        int ageAdd = getSecureRandom().nextInt();
 
         SessionTicket.Configuration configuration = new SessionTicket.Configuration(lifetime, ageAdd, newRandomBytes(8));
         SessionTicket sessionTicket = new SessionTicket(configuration, handshakeData, resumptionMasterSecret);

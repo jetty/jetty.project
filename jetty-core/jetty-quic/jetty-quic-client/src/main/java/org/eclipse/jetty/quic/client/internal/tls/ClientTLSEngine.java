@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.client.internal.tls;
 
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,9 +81,9 @@ public class ClientTLSEngine extends TLSEngine
     private boolean resuming;
     private List<X509KeyStorePair> keyStorePairs;
 
-    public ClientTLSEngine(PacketProtector protector)
+    public ClientTLSEngine(SecureRandom random, PacketProtector protector)
     {
-        super(protector, true);
+        super(random, protector, true);
     }
 
     public void startHandshake(ClientTLSConfiguration configuration, Callback callback)

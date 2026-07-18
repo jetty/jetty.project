@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.common;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -267,7 +268,7 @@ public class PacketTrackerTest
     {
         private TestPacketTracker(Scheduler scheduler, CongestionController congestionController)
         {
-            super(scheduler, congestionController);
+            super(new SecureRandom(), scheduler, congestionController);
         }
 
         @Override
