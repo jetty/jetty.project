@@ -90,6 +90,18 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.ACK_DELAY_EXPONENT;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.ACTIVE_CONNECTION_ID_LIMIT;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.INITIAL_MAX_DATA;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.INITIAL_MAX_STREAMS_UNIDIRECTIONAL;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.MAX_ACK_DELAY;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.MAX_IDLE_TIMEOUT;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.MAX_UDP_PAYLOAD_SIZE;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 /// A logical connection with a remote peer.
@@ -509,15 +521,15 @@ public abstract class QuicSession extends AbstractSession
 
         // A local stream can only send up to what the remote stream wants to receive.
         Long maxSendData = stream.isBidirectional()
-            ? remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE)
-            : remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
+            ? remoteTransportParameters.get(INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE)
+            : remoteTransportParameters.get(INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
         if (maxSendData != null)
             stream.updateSendMaxOffset(maxSendData);
 
         // A local stream can only receive up to what the local stream wants to receive.
         Long maxRecvData = stream.isBidirectional()
-            ? localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
-            : localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
+            ? localTransportParameters.get(INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
+            : localTransportParameters.get(INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
         if (maxRecvData != null)
             stream.updateRecvMaxOffset(maxRecvData);
 
@@ -576,15 +588,15 @@ public abstract class QuicSession extends AbstractSession
 
         // A remote stream can only send up to what the local stream wants to receive.
         Long maxSendData = bidirectional
-            ? remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
-            : remoteTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
+            ? remoteTransportParameters.get(INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
+            : remoteTransportParameters.get(INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
         if (maxSendData != null)
             stream.updateSendMaxOffset(maxSendData);
 
         // A remote stream can only receive up to what the remote stream wants to receive.
         Long maxRecvData = stream.isBidirectional()
-            ? localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE)
-            : localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
+            ? localTransportParameters.get(INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE)
+            : localTransportParameters.get(INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
         if (maxRecvData != null)
             stream.updateRecvMaxOffset(maxRecvData);
 
@@ -652,7 +664,7 @@ public abstract class QuicSession extends AbstractSession
     @Override
     public void maxStreams(long maxStreams, boolean bidirectional, Callback callback)
     {
-        if (maxStreams > StreamId.MAX_PROGRESSIVE)
+        if (maxStreams > StreamId.MAX_COUNT)
         {
             callback.failed(new QuicException(ErrorCode.STREAM_STATE_ERROR, "invalid_max_streams", bidirectional ? 0x12 : 0x13));
             return;
@@ -874,8 +886,8 @@ public abstract class QuicSession extends AbstractSession
     long getMaxStreams(boolean bidirectional)
     {
         TransportParameters.Id<Long> param = bidirectional
-            ? TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL
-            : TransportParameters.Ids.INITIAL_MAX_STREAMS_UNIDIRECTIONAL;
+            ? INITIAL_MAX_STREAMS_BIDIRECTIONAL
+            : INITIAL_MAX_STREAMS_UNIDIRECTIONAL;
         Long maxStreams = localTransportParameters.get(param);
         return maxStreams == null ? 0 : maxStreams;
     }
@@ -1348,7 +1360,7 @@ public abstract class QuicSession extends AbstractSession
 
     long getMaxData()
     {
-        return localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_DATA);
+        return localTransportParameters.get(INITIAL_MAX_DATA);
     }
 
     long getMaxData(QuicStream stream)
@@ -1356,12 +1368,12 @@ public abstract class QuicSession extends AbstractSession
         if (stream.isBidirectional())
         {
             return stream.isLocal()
-                ? localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
-                : localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE);
+                ? localTransportParameters.get(INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_LOCAL)
+                : localTransportParameters.get(INITIAL_MAX_STREAM_DATA_BIDIRECTIONAL_REMOTE);
         }
         else
         {
-            return localTransportParameters.get(TransportParameters.Ids.INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
+            return localTransportParameters.get(INITIAL_MAX_STREAM_DATA_UNIDIRECTIONAL);
         }
     }
 
@@ -1497,27 +1509,56 @@ public abstract class QuicSession extends AbstractSession
 
     protected void processTransportParameters(TransportParameters transportParameters)
     {
-        // TODO: apply verifications to TransportParameters as per RFC.
-        // TODO: QuicTransports must be present and validated:
-        //  * No forbidden parameters are present
-        //  * No duplicates
-        //  * Values are within allowed ranges
-        //  Apply Quic transport params to the various components.
-
-        // TODO: other parameters.
-
         configure(transportParameters, false);
         notifyTransportParameters(transportParameters);
     }
 
     protected void configure(TransportParameters parameters, boolean local)
     {
+        if (!local)
+        {
+            // RFC-9000 #7.3: iscid must always be present.
+            byte[] iscid = parameters.get(INITIAL_SOURCE_CONNECTION_ID);
+            if (iscid == null || !Arrays.equals(iscid, getDestinationConnectionId()))
+                throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter_0x%02X".formatted(INITIAL_SOURCE_CONNECTION_ID.id()));
+
+            // RFC-9000 #18.2.
+            Long maxUDP = parameters.get(MAX_UDP_PAYLOAD_SIZE);
+            if (maxUDP != null && maxUDP < 1200)
+                throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter_0x%02X".formatted(MAX_UDP_PAYLOAD_SIZE.id()));
+
+            // RFC-9000 #18.2.
+            Long ackDelayExp = parameters.get(ACK_DELAY_EXPONENT);
+            if (ackDelayExp != null && ackDelayExp > 20)
+                throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter_0x%02X".formatted(ACK_DELAY_EXPONENT.id()));
+
+            // RFC-9000 #18.2.
+            Long maxAckDelay = parameters.get(MAX_ACK_DELAY);
+            if (maxAckDelay != null && maxAckDelay >= (1 << 14))
+                throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter_0x%02X".formatted(MAX_ACK_DELAY.id()));
+
+            // RFC-9000 #18.2.
+            Long activeIds = parameters.get(ACTIVE_CONNECTION_ID_LIMIT);
+            if (activeIds != null && activeIds < 2)
+                throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter_0x%02X".formatted(ACTIVE_CONNECTION_ID_LIMIT.id()));
+
+            // RFC-9000 #18.2.
+            Long biMaxStreams = parameters.get(INITIAL_MAX_STREAMS_BIDIRECTIONAL);
+            if (biMaxStreams != null && biMaxStreams > StreamId.MAX_COUNT)
+                throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter_0x%02X".formatted(INITIAL_MAX_STREAMS_BIDIRECTIONAL.id()));
+
+            // RFC-9000 #18.2.
+            Long uniMaxStreams = parameters.get(INITIAL_MAX_STREAMS_UNIDIRECTIONAL);
+            if (uniMaxStreams != null && uniMaxStreams > StreamId.MAX_COUNT)
+                throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter_0x%02X".formatted(INITIAL_MAX_STREAMS_UNIDIRECTIONAL.id()));
+        }
+
         if (local)
             localTransportParameters = parameters;
         else
             remoteTransportParameters = parameters;
 
-        Long idleTimeout = parameters.get(TransportParameters.Ids.MAX_IDLE_TIMEOUT);
+        Long idleTimeout = parameters.get(MAX_IDLE_TIMEOUT);
         if (idleTimeout != null)
         {
             if (local)
@@ -1538,7 +1579,7 @@ public abstract class QuicSession extends AbstractSession
             }
         }
 
-        Long maxData = parameters.get(TransportParameters.Ids.INITIAL_MAX_DATA);
+        Long maxData = parameters.get(INITIAL_MAX_DATA);
         if (maxData != null)
         {
             if (local)
@@ -1547,20 +1588,20 @@ public abstract class QuicSession extends AbstractSession
                 updateSendMaxOffset(maxData);
         }
 
-        Long ackMaxDelay = parameters.get(TransportParameters.Ids.MAX_ACK_DELAY);
+        Long ackMaxDelay = parameters.get(MAX_ACK_DELAY);
         if (ackMaxDelay != null)
         {
             if (!local)
                 packetTracker.setAcknowledgmentMaxDelay(ackMaxDelay);
         }
-        Long ackDelayExponent = parameters.get(TransportParameters.Ids.ACK_DELAY_EXPONENT);
+        Long ackDelayExponent = parameters.get(ACK_DELAY_EXPONENT);
         if (ackDelayExponent != null)
         {
             if (!local)
                 packetTracker.setAcknowledgmentDelayExponent(ackDelayExponent);
         }
 
-        Long uniMaxStreams = parameters.get(TransportParameters.Ids.INITIAL_MAX_STREAMS_UNIDIRECTIONAL);
+        Long uniMaxStreams = parameters.get(INITIAL_MAX_STREAMS_UNIDIRECTIONAL);
         if (uniMaxStreams != null)
         {
             if (local)
@@ -1568,7 +1609,7 @@ public abstract class QuicSession extends AbstractSession
             else
                 uniLocalStreamMaxCount.set(uniMaxStreams);
         }
-        Long biMaxStreams = parameters.get(TransportParameters.Ids.INITIAL_MAX_STREAMS_BIDIRECTIONAL);
+        Long biMaxStreams = parameters.get(INITIAL_MAX_STREAMS_BIDIRECTIONAL);
         if (biMaxStreams != null)
         {
             if (local)

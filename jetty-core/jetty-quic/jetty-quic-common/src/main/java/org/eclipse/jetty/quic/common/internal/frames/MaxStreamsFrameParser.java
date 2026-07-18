@@ -51,7 +51,7 @@ public class MaxStreamsFrameParser implements FrameParser
                 {
                     if (varLenInt.tryDecode(byteBuffer, v -> maxStreams = v))
                     {
-                        if (maxStreams > StreamId.MAX_PROGRESSIVE)
+                        if (maxStreams > StreamId.MAX_COUNT)
                             throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_max_streams_value", frameType);
                         return result();
                     }
