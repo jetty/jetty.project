@@ -941,7 +941,25 @@ public abstract class QuicSession extends AbstractSession
 
     public void process(SocketAddress remoteSocketAddress, RetainableByteBuffer buffer) throws Exception
     {
-        setRemoteSocketAddress(remoteSocketAddress);
+        SocketAddress existingRemote = getRemoteSocketAddress();
+        if (existingRemote == null)
+        {
+            setRemoteSocketAddress(remoteSocketAddress);
+        }
+        else if (!existingRemote.equals(remoteSocketAddress))
+        {
+            if (encryptionLevel == EncryptionLevel.ONE_RTT)
+            {
+                // TODO: perform path validation via PATH_CHALLENGE.
+            }
+            else
+            {
+                // RFC-9000 #21.2: remote address cannot change during handshake, discard.
+                buffer.skip(buffer.size());
+                return;
+            }
+        }
+
         while (buffer.hasRemaining())
         {
             try (Packet packet = parser.parse(buffer))
@@ -954,10 +972,7 @@ public abstract class QuicSession extends AbstractSession
                     // UDP datagrams should contain one or more full packets.
                     // If they don't, then it's the other peer sending badly
                     // encoded packets, so we just disconnect.
-                    buffer.skip(buffer.remaining());
-                    QuicException quicException = new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_packet");
-                    disconnect(quicException.getErrorCode().code(), quicException.getMessage(), 0x00, quicException, Callback.NOOP);
-                    return;
+                    throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_packet");
                 }
 
                 if (packet == Packet.DISCARD)
