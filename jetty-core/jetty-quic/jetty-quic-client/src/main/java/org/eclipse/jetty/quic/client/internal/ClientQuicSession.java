@@ -67,6 +67,11 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.MAX_IDLE_TIMEOUT;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.ORIGINAL_DESTINATION_CONNECTION_ID;
+import static org.eclipse.jetty.quic.api.frames.TransportParameters.Ids.RETRY_SOURCE_CONNECTION_ID;
+
 public class ClientQuicSession extends QuicSession
 {
     public static final ByteBuffer NO_EARLY_DATA = ByteBuffer.allocate(0);
@@ -75,8 +80,7 @@ public class ClientQuicSession extends QuicSession
     private final Map<String, Object> context;
     private SocketAddress serverSocketAddress;
     private Scheduler.Task connectTask;
-    private boolean retryPacketProcessed;
-    private byte[] retryToken;
+    private RetryPacket retryPacket;
 
     public ClientQuicSession(ClientConnector connector, QuicClientQuicConfiguration quicConfiguration, ClientQuicConnection connection, PacketTracker packetTracker, PacketNumbers packetNumbers, ClientTLSEngine clientTLSEngine, RateControl rateControl, FlowController flowController, StreamsController streamsController, Map<String, Object> context)
     {
@@ -207,8 +211,8 @@ public class ClientQuicSession extends QuicSession
         tlsConfiguration.setTransportParameters(transportParameters);
         long idleTimeout = getIdleTimeout();
         if (idleTimeout > 0)
-            transportParameters.put(TransportParameters.Ids.MAX_IDLE_TIMEOUT, idleTimeout);
-        transportParameters.put(TransportParameters.Ids.INITIAL_SOURCE_CONNECTION_ID, getSourceConnectionId());
+            transportParameters.put(MAX_IDLE_TIMEOUT, idleTimeout);
+        transportParameters.put(INITIAL_SOURCE_CONNECTION_ID, getSourceConnectionId());
         notifyPrepare(transportParameters);
         configure(transportParameters, true);
 
@@ -262,13 +266,11 @@ public class ClientQuicSession extends QuicSession
     protected InitialPacket newInitialPacket(List<Frame> frames)
     {
         byte[] token = null;
-
         if (frames.getFirst() instanceof CryptoFrame)
         {
-            if (retryToken != null)
+            if (retryPacket != null)
             {
-                token = retryToken;
-                retryToken = null;
+                token = retryPacket.token();
             }
             else
             {
@@ -276,7 +278,6 @@ public class ClientQuicSession extends QuicSession
                 token = quicClient.getTokenStore().retrieve(getLocalSocketAddress(), getRemoteSocketAddress());
             }
         }
-
         return new InitialPacket(getQuicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, getPacketNumbers().nextPacketNumber(EncryptionLevel.INITIAL), frames);
     }
 
@@ -351,6 +352,32 @@ public class ClientQuicSession extends QuicSession
         }
     }
 
+    @Override
+    protected void configure(TransportParameters parameters, boolean local)
+    {
+        if (!local)
+        {
+            // RFC-9000 #7.3: verify odcid.
+            byte[] odcid = parameters.get(ORIGINAL_DESTINATION_CONNECTION_ID);
+            if (odcid == null || !Arrays.equals(odcid, getOriginalDestinationConnectionId()))
+                throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter_0x%02X".formatted(ORIGINAL_DESTINATION_CONNECTION_ID.id()));
+
+            // RFC-9000 #7.3: verify rscid.
+            byte[] rscid = parameters.get(RETRY_SOURCE_CONNECTION_ID);
+            if (retryPacket == null)
+            {
+                if (rscid != null)
+                    throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter_0x%02X".formatted(RETRY_SOURCE_CONNECTION_ID.id()));
+            }
+            else
+            {
+                if (rscid == null || !Arrays.equals(rscid, retryPacket.sourceConnectionId()))
+                    throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter_0x%02X".formatted(RETRY_SOURCE_CONNECTION_ID.id()));
+            }
+        }
+        super.configure(parameters, local);
+    }
+
     private void processServerHello(ServerHelloMessage serverHello)
     {
         connectTask.cancel();
@@ -383,7 +410,7 @@ public class ClientQuicSession extends QuicSession
         }
 
         // RFC-9000 #17.2.5.2: only one retry packet can be processed.
-        if (retryPacketProcessed)
+        if (retryPacket != null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("discarding non-first {} on {}", packet, this);
@@ -402,8 +429,7 @@ public class ClientQuicSession extends QuicSession
             return;
         }
 
-        retryPacketProcessed = true;
-        retryToken = packet.token();
+        retryPacket = packet;
 
         // RFC-9001 #5.2: initial secrets must be regenerated with the new scid.
         getTLSEngine().getPacketProtector().generateInitialKeys(getQuicVersion(), packet.sourceConnectionId());

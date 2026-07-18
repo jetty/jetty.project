@@ -52,16 +52,15 @@ public class TransportParameters implements Iterable<Map.Entry<TransportParamete
         return (T)value;
     }
 
+    public boolean contains(Id<?> id)
+    {
+        return parameters.containsKey(id);
+    }
+
     @SuppressWarnings("unchecked")
     public <T> T put(Id<T> id, T value)
     {
         return (T)parameters.put(id, value);
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> T putIfAbsent(Id<T> id, T value)
-    {
-        return (T)parameters.putIfAbsent(id, value);
     }
 
     public void putGreaseParameter()

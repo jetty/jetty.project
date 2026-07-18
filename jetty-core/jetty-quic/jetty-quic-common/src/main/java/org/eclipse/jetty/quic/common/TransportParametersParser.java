@@ -133,6 +133,9 @@ public class TransportParametersParser
 
     private void store(TransportParameters.Id<?> parameterId, byte[] parameterValue)
     {
+        // RFC-9000 #7.4: treat duplicate parameters as connection error.
+        if (parameters.contains(parameterId))
+            throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "duplicate_transport_parameter");
         switch (parameterId)
         {
             case TransportParameters.LongId longId ->

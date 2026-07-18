@@ -248,6 +248,24 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         }
     }
 
+    @Override
+    protected void configure(TransportParameters parameters, boolean local)
+    {
+        if (!local)
+        {
+            // RFC-9000 #18.2: check parameters that must not be sent by clients.
+            List<TransportParameters.Id<?>> forbidden = List.of(
+                TransportParameters.Ids.ORIGINAL_DESTINATION_CONNECTION_ID,
+                TransportParameters.Ids.STATELESS_RESET_TOKEN,
+                TransportParameters.Ids.PREFERRED_ADDRESS,
+                TransportParameters.Ids.RETRY_SOURCE_CONNECTION_ID
+            );
+            if (forbidden.stream().anyMatch(parameters::contains))
+                throw new QuicException(ErrorCode.TRANSPORT_PARAMETER_ERROR, "invalid_transport_parameter");
+        }
+        super.configure(parameters, local);
+    }
+
     private void processClientHello(ClientHelloMessage clientHello)
     {
         TransportParameters transportParameters = clientHello.extensions().stream()
