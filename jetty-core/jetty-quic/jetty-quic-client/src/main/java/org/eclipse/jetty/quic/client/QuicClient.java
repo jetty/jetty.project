@@ -135,10 +135,10 @@ public class QuicClient extends ContainerLifeCycle implements AutoCloseable
 
     public void connect(SocketAddress address, ByteBuffer earlyData, Session.Listener listener, Promise<Session> promise)
     {
-        connect(new QuicTransport(this), clientConnector.getSslContextFactory(), address, earlyData, listener, null, promise);
+        connect(new QuicTransport(this), clientConnector.getSslContextFactory(), address, earlyData, listener, promise, null);
     }
 
-    public void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, ByteBuffer earlyData, Session.Listener listener, Map<String, Object> context, Promise<Session> promise)
+    public void connect(Transport transport, SslContextFactory.Client sslContextFactory, SocketAddress address, ByteBuffer earlyData, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         if (context == null)
             context = new ConcurrentHashMap<>();

@@ -15,9 +15,13 @@ package org.eclipse.jetty.quic.common;
 
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.Frame;
 
+/// The QUIC [Stream.Listener] that wraps a QUIC [Stream] with a [StreamEndPoint]
+/// so that upper layer protocols may install a [Connection] over the `StreamEndPoint`
+/// to read and parse the upper layer protocol.
 public abstract class ProtocolStreamListener implements Stream.Listener
 {
     protected abstract StreamEndPoint getStreamEndPoint();
@@ -28,11 +32,12 @@ public abstract class ProtocolStreamListener implements Stream.Listener
         getStreamEndPoint().fillable();
     }
 
-    public static class Client extends ProtocolStreamListener
+    /// The [ProtocolStreamListener] implementation that wraps a local [Stream].
+    public static class Local extends ProtocolStreamListener
     {
         private final Supplier<StreamEndPoint> endPoint;
 
-        public Client(Supplier<StreamEndPoint> endPoint)
+        public Local(Supplier<StreamEndPoint> endPoint)
         {
             this.endPoint = endPoint;
         }
@@ -44,12 +49,13 @@ public abstract class ProtocolStreamListener implements Stream.Listener
         }
     }
 
-    public static class Server extends ProtocolStreamListener
+    /// The [ProtocolStreamListener] implementation that wraps a remote [Stream].
+    public static class Remote extends ProtocolStreamListener
     {
         private final ProtocolSession protocolSession;
         private StreamEndPoint endPoint;
 
-        public Server(ProtocolSession protocolSession)
+        public Remote(ProtocolSession protocolSession)
         {
             this.protocolSession = protocolSession;
         }
@@ -64,7 +70,6 @@ public abstract class ProtocolStreamListener implements Stream.Listener
         public void onNewStream(Stream stream, Frame.WithStreamId frame)
         {
             endPoint = protocolSession.createStreamEndPoint(stream, protocolSession::openStreamEndPoint);
-            super.onNewStream(stream, frame);
         }
     }
 }
