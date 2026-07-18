@@ -145,6 +145,12 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     }
 
     @Override
+    protected boolean isRemoteSocketAddressUnknown()
+    {
+        return getRemoteSocketAddress() == null;
+    }
+
+    @Override
     protected List<Invocable.Task> processPacket(Packet packet)
     {
         try

@@ -154,6 +154,10 @@ public class ClientQuicSession extends QuicSession
     void connect(Callback callback)
     {
         serverSocketAddress = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
+        // At connect(), use the server SocketAddress specified by the client application
+        // as the remote SocketAddress. Upon receiving the first packet, the remote
+        // SocketAddress is replaced by the actual network remote SocketAddress used
+        // by the server to send the packet, which may not be serverSocketAddress.
         setRemoteSocketAddress(serverSocketAddress);
         if (LOG.isDebugEnabled())
             LOG.debug("connecting to {} on {}", serverSocketAddress, this);
@@ -275,10 +279,16 @@ public class ClientQuicSession extends QuicSession
             else
             {
                 QuicClient quicClient = (QuicClient)context.get(QuicClient.CONTEXT_KEY);
-                token = quicClient.getTokenStore().retrieve(getLocalSocketAddress(), getRemoteSocketAddress());
+                token = quicClient.getTokenStore().retrieve(getLocalSocketAddress(), serverSocketAddress);
             }
         }
         return new InitialPacket(getQuicVersion(), getDestinationConnectionId(), getSourceConnectionId(), token, getPacketNumbers().nextPacketNumber(EncryptionLevel.INITIAL), frames);
+    }
+
+    @Override
+    protected boolean isRemoteSocketAddressUnknown()
+    {
+        return getRemoteSocketAddress() == serverSocketAddress;
     }
 
     @Override

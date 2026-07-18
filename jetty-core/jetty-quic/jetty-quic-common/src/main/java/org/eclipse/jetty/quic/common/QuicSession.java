@@ -939,14 +939,15 @@ public abstract class QuicSession extends AbstractSession
         connection.offerTask(Invocable.wrap(task), dispatch);
     }
 
+    protected abstract boolean isRemoteSocketAddressUnknown();
+
     public void process(SocketAddress remoteSocketAddress, RetainableByteBuffer buffer) throws Exception
     {
-        SocketAddress existingRemote = getRemoteSocketAddress();
-        if (existingRemote == null)
+        if (isRemoteSocketAddressUnknown())
         {
             setRemoteSocketAddress(remoteSocketAddress);
         }
-        else if (!existingRemote.equals(remoteSocketAddress))
+        else if (!getRemoteSocketAddress().equals(remoteSocketAddress))
         {
             if (encryptionLevel == EncryptionLevel.ONE_RTT)
             {
@@ -954,7 +955,7 @@ public abstract class QuicSession extends AbstractSession
             }
             else
             {
-                // RFC-9000 #21.2: remote address cannot change during handshake, discard.
+                // RFC-9000 #21.2: the remote address cannot change during the handshake, discard.
                 buffer.skip(buffer.size());
                 return;
             }
