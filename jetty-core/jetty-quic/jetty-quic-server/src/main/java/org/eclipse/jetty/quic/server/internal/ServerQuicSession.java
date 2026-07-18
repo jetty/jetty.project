@@ -54,6 +54,8 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
+
 /// The server-specific implementation of [QuicSession].
 public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Expirable
 {
@@ -276,14 +278,15 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
             discardEncryptionLevel(EncryptionLevel.HANDSHAKE);
             setEncryptionLevel(EncryptionLevel.ONE_RTT);
 
-            notifyOpen();
+            emitOpen();
 
             List<Frame> frames = new ArrayList<>();
             frames.add(new HandshakeDoneFrame());
             byte[] token = getQuicConfiguration().getTokenFactory().newToken(getRemoteSocketAddress());
             frames.add(new NewTokenFrame(token));
-            // TODO: send also NewConnectionIdFrames.
-            frames(frames, Callback.from(() -> {}, x -> fail(x, false)));
+            // TODO: add NewConnectionIdFrames.
+
+            frames(frames, Callback.from(NON_BLOCKING, () -> {}, x -> fail(x, false)));
         }
         catch (Throwable x)
         {

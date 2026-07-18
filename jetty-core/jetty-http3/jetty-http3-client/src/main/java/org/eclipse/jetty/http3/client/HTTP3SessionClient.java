@@ -117,7 +117,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         var quicSession = protocolSession.getSession();
         long streamId = quicSession.newStreamId(true);
         AtomicReference<StreamEndPoint> endPointRef = new AtomicReference<>();
-        var quicStream = quicSession.newStream(streamId, new ProtocolStreamListener.Client(endPointRef::get));
+        var quicStream = quicSession.newStream(streamId, new ProtocolStreamListener.Local(endPointRef::get));
         StreamEndPoint endPoint = protocolSession.createStreamEndPoint(quicStream, protocolSession::openStreamEndPoint);
         endPointRef.set(endPoint);
 

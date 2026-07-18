@@ -105,7 +105,7 @@ public class QuicServerConnectionFactory extends AbstractQuicServerConnectionFac
         @Override
         public Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
         {
-            return new ProtocolStreamListener.Server(protocolSession.get());
+            return new ProtocolStreamListener.Remote(protocolSession.get());
         }
 
         @Override

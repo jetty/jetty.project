@@ -40,7 +40,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.QuicClient;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
 import org.eclipse.jetty.quic.client.QuicTransport;
@@ -140,16 +139,18 @@ public class AbstractClientServerTest
         clientConnector.setByteBufferPool(byteBufferPool);
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
 
-        ClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(switch (transportType)
+        QuicClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(switch (transportType)
         {
             case H3_QUIC -> new QuicClientQuicConfiguration();
         });
 
+        QuicClient quicClient = new QuicClient(clientQuicConfig, clientConnector);
         http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
+        http3Client.addManaged(quicClient);
 
         transport = switch (transportType)
         {
-            case H3_QUIC -> new QuicTransport(new QuicClient((QuicClientQuicConfiguration)http3Client.getClientQuicConfiguration()));
+            case H3_QUIC -> new QuicTransport(quicClient);
         };
 
         HttpClientTransport httpClientTransport = dynamic

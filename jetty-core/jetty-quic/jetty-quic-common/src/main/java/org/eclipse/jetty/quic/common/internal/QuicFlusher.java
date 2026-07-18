@@ -274,30 +274,23 @@ public class QuicFlusher extends IteratingCallback
 
         processScheduledTasks();
 
+        flusher = oneRTTFlusher;
         if (oneRTTFlusher.process())
-        {
-            flusher = oneRTTFlusher;
             return Action.SCHEDULED;
-        }
 
+        flusher = handshakeFlusher;
         if (handshakeFlusher.process())
-        {
-            flusher = handshakeFlusher;
             return Action.SCHEDULED;
-        }
 
+        flusher = initialFlusher;
         if (initialFlusher.process())
-        {
-            flusher = initialFlusher;
             return Action.SCHEDULED;
-        }
 
+        flusher = packetFlusher;
         if (packetFlusher.process())
-        {
-            flusher = packetFlusher;
             return Action.SCHEDULED;
-        }
 
+        flusher = null;
         if (LOG.isDebugEnabled())
             LOG.debug("no entries to flush on {}", this);
 
@@ -325,8 +318,7 @@ public class QuicFlusher extends IteratingCallback
     {
         encryptedBuffer.release();
         plaintextBuffer.release();
-        if (flusher != null)
-            flusher.failed(cause);
+        flusher.failed(cause);
         flusher = null;
     }
 

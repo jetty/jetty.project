@@ -227,7 +227,9 @@ public class ClientQuicSession extends QuicSession
 
     private void handshakeComplete(HandshakeData data, Throwable failure)
     {
-        if (failure != null)
+        if (failure == null)
+            emitOpen();
+        else
             fail(failure, false);
     }
 
@@ -324,8 +326,6 @@ public class ClientQuicSession extends QuicSession
         // RFC-9001 #4.9.2: handshake keys must be discarded when the TLS handshake is confirmed.
         discardEncryptionLevel(EncryptionLevel.HANDSHAKE);
         setEncryptionLevel(EncryptionLevel.ONE_RTT);
-
-        emitOpen();
 
         sessionPromise(context).succeeded(this);
     }

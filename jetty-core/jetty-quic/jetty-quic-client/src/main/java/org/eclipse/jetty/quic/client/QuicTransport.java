@@ -30,6 +30,7 @@ import org.eclipse.jetty.quic.client.internal.ClientQuicSession;
 import org.eclipse.jetty.quic.client.internal.QuicClientConnectionFactory;
 import org.eclipse.jetty.quic.common.AbstractSession;
 import org.eclipse.jetty.quic.common.ProtocolSession;
+import org.eclipse.jetty.quic.common.ProtocolStreamListener;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Callback;
@@ -83,7 +84,7 @@ public class QuicTransport extends Transport.Wrapper
             Promise<Connection> ioPromise = (Promise<Connection>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
             // Link the QUIC session promise to the IO connection promise in case of failures.
             Promise<Session> promise = Promise.from(_ -> {}, ioPromise::failed);
-            client.connect(this, clientTLS, socketAddress, null, listener, context, promise);
+            client.connect(this, clientTLS, socketAddress, null, listener, promise, context);
         }
     }
 
@@ -119,12 +120,7 @@ public class QuicTransport extends Transport.Wrapper
         @Override
         public Stream.Listener onNewStream(Session session, Frame.WithStreamId frame)
         {
-            // TODO: do server open streams towards the client?
-            //  Use ProtocolStreamListener.Client if so.
-            //  Or should be use ProtocolStreamListener.Server because it's a remote stream?
-            //  Also, the Stream is not available here, it is in Stream.Listener.onNewStream().
-            //  See what's happening for H3 in HTTP3SessionClient.newRequest().
-            throw new UnsupportedOperationException();
+            return new ProtocolStreamListener.Remote(protocolSession.get());
         }
 
         @Override

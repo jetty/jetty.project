@@ -56,7 +56,7 @@ public class ClientProtocolSession extends ProtocolSession
             // QUIC stream that plays the role of the TCP stream.
             long streamId = getSession().newStreamId(true);
             AtomicReference<StreamEndPoint> endPointRef = new AtomicReference<>();
-            Stream stream = getSession().newStream(streamId, new ProtocolStreamListener.Client(endPointRef::get));
+            Stream stream = getSession().newStream(streamId, new ProtocolStreamListener.Local(endPointRef::get));
             endPointRef.set(createStreamEndPoint(stream, this::openStreamEndPoint));
         }
         catch (Throwable x)
