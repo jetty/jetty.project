@@ -85,9 +85,8 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
 
     public Resource getBaseResource()
     {
-        if (_baseResource != null)
-            return _baseResource;
-        _baseResource = _resourceBaseSupplier.get();
+        if (_baseResource == null)
+            extractBaseResourceFromContext();
         return _baseResource;
     }
 
@@ -99,6 +98,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
 
         try
         {
+            _protected.clear();
             String[] protectedTargets = getProtectedTargets();
             if (protectedTargets != null)
                 _protected.addAll(Arrays.asList(protectedTargets));
@@ -107,6 +107,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         {
             LOG.warn("Base resource failure ({} is disabled): {}", TypeUtil.toShortName(this.getClass()), _baseResource, t);
             _baseResource = null;
+            _protected.clear();
         }
     }
 
@@ -139,7 +140,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
     @Override
     public boolean checkAlias(String pathInContext, Resource resource)
     {
-        if (!_initialized)
+        if (!_initialized || _baseResource == null)
             extractBaseResourceFromContext();
         if (_baseResource == null)
             return false;
