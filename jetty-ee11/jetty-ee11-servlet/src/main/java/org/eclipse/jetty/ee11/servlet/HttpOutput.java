@@ -198,13 +198,14 @@ public class HttpOutput extends ServletOutputStream
 
     private boolean isAllContentWritten(long written)
     {
-        if (_applicationContentLength >= 0)
-        {
-            if (written > _applicationContentLength)
-                throw new IllegalStateException("too much content written");
-            return written == _applicationContentLength;
-        }
-        return false;
+        return _applicationContentLength >= 0 && written >= _applicationContentLength;
+    }
+
+    private long remainingContentLength()
+    {
+        if (_applicationContentLength < 0)
+            return Long.MAX_VALUE;
+        return Math.max(0L, _applicationContentLength - _written);
     }
 
     /**
@@ -824,6 +825,14 @@ public class HttpOutput extends ServletOutputStream
         try (AutoLock ignored = _channelState.lock())
         {
             checkWritable();
+            long remaining = remainingContentLength();
+            if (len > remaining)
+            {
+                if (remaining == 0)
+                    throw new EofException("Closed");
+                len = (int)remaining;
+            }
+
             long written = _written + len;
             int space = maximizeAggregateSpace();
 
@@ -954,6 +963,7 @@ public class HttpOutput extends ServletOutputStream
     {
         // This write always bypasses aggregate buffer
         int len = BufferUtil.length(buffer);
+        ByteBuffer content = buffer;
         boolean flush;
         boolean last;
 
@@ -962,6 +972,17 @@ public class HttpOutput extends ServletOutputStream
         try (AutoLock ignored = _channelState.lock())
         {
             checkWritable();
+            long remaining = remainingContentLength();
+            if (len > remaining)
+            {
+                if (remaining == 0)
+                    throw new EofException("Closed");
+                len = (int)remaining;
+                content = buffer.slice();
+                content.limit(len);
+                buffer.position(buffer.position() + len);
+            }
+
             long written = _written + len;
 
             // Is this the last write due to content-length?
@@ -1002,7 +1023,7 @@ public class HttpOutput extends ServletOutputStream
 
         if (async)
         {
-            new AsyncWrite(buffer, last).iterate();
+            new AsyncWrite(content, last).iterate();
         }
         else
         {
@@ -1019,7 +1040,7 @@ public class HttpOutput extends ServletOutputStream
 
                 // write any remaining content in the buffer directly
                 if (len > 0)
-                    channelWrite(buffer, last);
+                    channelWrite(content, last);
                 else if (last && !complete)
                     channelWrite(BufferUtil.EMPTY_BUFFER, true);
 
@@ -1044,6 +1065,9 @@ public class HttpOutput extends ServletOutputStream
         try (AutoLock ignored = _channelState.lock())
         {
             checkWritable();
+            if (remainingContentLength() == 0)
+                throw new EofException("Closed");
+
             long written = _written + 1;
             int space = maximizeAggregateSpace();
 

@@ -810,6 +810,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             throw new EofException(_onError);
     }
 
+    private long remainingContentLength()
+    {
+        long contentLength = _channel.getResponse().getContentLength();
+        if (contentLength < 0)
+            return Long.MAX_VALUE;
+        return Math.max(0L, contentLength - _written);
+    }
+
     @Override
     public void write(byte[] b, int off, int len) throws IOException
     {
@@ -825,6 +833,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try (AutoLock l = _channelState.lock())
         {
             checkWritable();
+            long remaining = remainingContentLength();
+            if (len > remaining)
+            {
+                if (remaining == 0)
+                    throw new EofException("Closed");
+                len = (int)remaining;
+            }
+
             long written = _written + len;
             int space = maximizeAggregateSpace();
             last = _channel.getResponse().isAllContentWritten(written);
@@ -952,6 +968,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         // This write always bypasses aggregate buffer
         int len = BufferUtil.length(buffer);
+        ByteBuffer content = buffer;
         boolean flush;
         boolean last;
 
@@ -960,6 +977,17 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try (AutoLock l = _channelState.lock())
         {
             checkWritable();
+            long remaining = remainingContentLength();
+            if (len > remaining)
+            {
+                if (remaining == 0)
+                    throw new EofException("Closed");
+                len = (int)remaining;
+                content = buffer.slice();
+                content.limit(len);
+                buffer.position(buffer.position() + len);
+            }
+
             long written = _written + len;
             last = _channel.getResponse().isAllContentWritten(written);
             flush = last || len > 0 || (_aggregate != null && _aggregate.hasRemaining());
@@ -997,7 +1025,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (async)
         {
-            new AsyncWrite(buffer, last).iterate();
+            new AsyncWrite(content, last).iterate();
         }
         else
         {
@@ -1014,7 +1042,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
                 // write any remaining content in the buffer directly
                 if (len > 0)
-                    channelWrite(buffer, last);
+                    channelWrite(content, last);
                 else if (last && !complete)
                     channelWrite(BufferUtil.EMPTY_BUFFER, true);
 
@@ -1039,6 +1067,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try (AutoLock l = _channelState.lock())
         {
             checkWritable();
+            if (remainingContentLength() == 0)
+                throw new EofException("Closed");
+
             long written = _written + 1;
             int space = maximizeAggregateSpace();
             last = _channel.getResponse().isAllContentWritten(written);
