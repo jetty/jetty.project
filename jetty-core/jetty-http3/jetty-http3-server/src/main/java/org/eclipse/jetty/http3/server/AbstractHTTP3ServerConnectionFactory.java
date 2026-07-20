@@ -23,6 +23,7 @@ import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3StreamConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
@@ -103,7 +104,8 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
         StreamEndPoint streamEndPoint = (StreamEndPoint)endPoint;
         long streamId = streamEndPoint.getStream().getId();
         ServerHTTP3Session http3Session = (ServerHTTP3Session)streamEndPoint.getProtocolSession();
-        MessageParser parser = new MessageParser(http3Session.getSessionServer().getParserListener(), http3Session.getQpackDecoder(), streamId);
+        RateControl rateControl = getHTTP3Configuration().getRateControlFactory().newRateControl(endPoint);
+        MessageParser parser = new MessageParser(rateControl, http3Session.getSessionServer().getParserListener(), http3Session.getQpackDecoder(), streamId);
         ServerHTTP3StreamConnection connection = new ServerHTTP3StreamConnection(connector, getHttpConfiguration(), streamEndPoint, http3Session, parser);
         return configure(connection, connector, endPoint);
     }

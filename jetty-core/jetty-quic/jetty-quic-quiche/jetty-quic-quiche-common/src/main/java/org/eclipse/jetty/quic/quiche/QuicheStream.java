@@ -161,7 +161,7 @@ public class QuicheStream extends AbstractStream
             {
                 ByteBuffer slice = byteBuffer.slice();
                 byteBuffer.position(byteBuffer.limit());
-                // Retain because multiple chunks can be read from the same inputBuffer.
+                // Retain because the content has been sliced.
                 inputBuffer.retain();
                 Content.Chunk chunk = Content.Chunk.asChunk(slice, last, inputBuffer);
                 if (last)

@@ -19,6 +19,14 @@ The low-level HTTP/3 server library has been designed for those applications tha
 
 Support for the QUIC protocol underlying HTTP/3 is provided by default via Jetty classes that wrap the link:https://github.com/cloudflare/quiche[Quiche] native library.
 
+[WARNING]
+====
+HTTP/3 support is considered experimental, meaning that:
+
+* It is not suited for production use, for reasons such as bad performance, instability, incompleteness, etc.
+* The APIs can change in incompatible ways between micro releases, for example classes or methods may be removed or method signature may be changed incompatibly.
+====
+
 [NOTE]
 ====
 Since Java 22, the JVM emits a warning message when Java code tries to access code in native libraries.

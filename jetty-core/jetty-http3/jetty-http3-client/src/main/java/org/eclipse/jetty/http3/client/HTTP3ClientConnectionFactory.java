@@ -21,6 +21,7 @@ import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.slf4j.Logger;
@@ -50,7 +51,8 @@ public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, Pr
         StreamEndPoint streamEndPoint = (StreamEndPoint)endPoint;
         long streamId = streamEndPoint.getStream().getId();
         ClientHTTP3Session http3Session = (ClientHTTP3Session)streamEndPoint.getProtocolSession();
-        MessageParser parser = new MessageParser(http3Session.getSessionClient().getParserListener(), http3Session.getQpackDecoder(), streamId);
+        RateControl rateControl = http3Session.getHTTP3Configuration().getRateControlFactory().newRateControl(endPoint);
+        MessageParser parser = new MessageParser(rateControl, http3Session.getSessionClient().getParserListener(), http3Session.getQpackDecoder(), streamId);
         ClientHTTP3StreamConnection connection = new ClientHTTP3StreamConnection(streamEndPoint, http3Session, parser);
         return customize(connection, context);
     }
