@@ -498,6 +498,11 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
 
             return switch (field.getHeader())
             {
+                case CONTENT_LENGTH ->
+                {
+                    getHttpOutput().setApplicationContentLength(field.getLongValue());
+                    yield super.onAddField(field);
+                }
                 case CONTENT_TYPE -> setContentType(field);
                 default -> super.onAddField(field);
             };
@@ -509,25 +514,36 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             if (isCommitted())
                 return false;
 
-            if (field.getHeader() == HttpHeader.CONTENT_TYPE)
-            {
-                _contentType = null;
-                _mimeType = null;
-                if (!isWriting())
-                {
-                    _characterEncoding = switch (_encodingFrom)
-                    {
-                        case SET_CHARACTER_ENCODING, SET_LOCALE -> _characterEncoding;
-                        default ->
-                        {
-                            _encodingFrom = EncodingFrom.NOT_SET;
-                            yield null;
-                        }
-                    };
-                }
-            }
+            if (field.getHeader() == null)
+                return super.onRemoveField(field);
 
-            return true;
+            return switch (field.getHeader())
+            {
+                case CONTENT_LENGTH ->
+                {
+                    getHttpOutput().setApplicationContentLength(-1);
+                    yield super.onRemoveField(field);
+                }
+                case CONTENT_TYPE ->
+                {
+                    _contentType = null;
+                    _mimeType = null;
+                    if (!isWriting())
+                    {
+                        _characterEncoding = switch (_encodingFrom)
+                        {
+                            case SET_CHARACTER_ENCODING, SET_LOCALE -> _characterEncoding;
+                            default ->
+                            {
+                                _encodingFrom = EncodingFrom.NOT_SET;
+                                yield null;
+                            }
+                        };
+                    }
+                    yield super.onRemoveField(field);
+                }
+                default -> super.onRemoveField(field);
+            };
         }
 
         @Override
@@ -541,7 +557,16 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             if (newField.getHeader() == null)
                 return newField;
 
-            return newField.getHeader() == HttpHeader.CONTENT_TYPE ?  setContentType(newField) : newField;
+            return switch (oldField.getHeader())
+            {
+                case CONTENT_LENGTH ->
+                {
+                    getHttpOutput().setApplicationContentLength(oldField.getLongValue());
+                    yield super.onReplaceField(oldField, newField);
+                }
+                case CONTENT_TYPE -> setContentType(newField);
+                default -> super.onReplaceField(oldField, newField);
+            };
         }
 
         private HttpField setContentType(HttpField field)
