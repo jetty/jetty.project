@@ -34,7 +34,7 @@
   </Set>
   <Set name="redirectUriCompliance">
     <Call class="org.eclipse.jetty.http.UriCompliance" name="from">
-      <Arg><Property name="jetty.httpConfig.redirectUriCompliance" default="DEFAULT" /></Arg>
+      <Arg><Property name="jetty.httpConfig.redirectUriCompliance" default="DEFAULT_REDIRECT" /></Arg>
     </Call>
   </Set>
   <Set name="requestCookieCompliance">
