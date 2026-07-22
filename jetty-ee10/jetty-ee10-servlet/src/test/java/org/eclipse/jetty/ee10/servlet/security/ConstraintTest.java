@@ -65,12 +65,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
@@ -83,6 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConstraintTest
@@ -453,11 +458,17 @@ public class ConstraintTest
     }
     
     /**
-     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-1
-     * &#064;ServletSecurity
+     * <p>Equivalent of Jakarta Servlet Spec, sec 13.4.1.1, Example 13-1</p>
+     *
+     * <pre>{@code
+     *     @ServletSecurity
+     *     public class Example1 extends HttpServlet { }
+     * }</pre>
+     *
+     * @see <a href="https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.1#examples">Jakarta Servlet Spec 6.1, sec 13.4.1.1: Examples</a>
      */
     @Test
-    public void testSecurityElementExample131()
+    public void testSecurityElementExample13_1()
     {
         ServletSecurityElement element = new ServletSecurityElement();
         List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
@@ -465,11 +476,17 @@ public class ConstraintTest
     }
 
     /**
-     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-2
-     * &#064;ServletSecurity(@HttpConstraint(transportGuarantee = TransportGuarantee.CONFIDENTIAL))
+     * <p>Equivalent of Jakarta Servlet Spec, sec 13.4.1.1, Example 13-2</p>
+     *
+     * <pre>{@code
+     *     @ServletSecurity(@HttpConstraint(transportGuarantee = TransportGuarantee.CONFIDENTIAL))
+     *     public class Example2 extends HttpServlet { }
+     * }</pre>
+     *
+     * @see <a href="https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.1#examples">Jakarta Servlet Spec 6.1, sec 13.4.1.1: Examples</a>
      */
     @Test
-    public void testSecurityElementExample132()
+    public void testSecurityElementExample13_2()
     {
         HttpConstraintElement httpConstraintElement = new HttpConstraintElement(TransportGuarantee.CONFIDENTIAL);
         ServletSecurityElement element = new ServletSecurityElement(httpConstraintElement);
@@ -481,14 +498,17 @@ public class ConstraintTest
     }
 
     /**
-     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-3
+     * <p>Equivalent of Jakarta Servlet Spec, sec 13.4.1.1, Example 13-3</p>
      *
-     * <pre>
-     * &#064;ServletSecurity(@HttpConstraint(EmptyRoleSemantic.DENY))
-     * </pre>
+     * <pre>{@code
+     *     @ServletSecurity(@HttpConstraint(EmptyRoleSemantic.DENY))
+     *     public class Example3 extends HttpServlet { }
+     * }</pre>
+     *
+     * @see <a href="https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.1#examples">Jakarta Servlet Spec 6.1, sec 13.4.1.1: Examples</a>
      */
     @Test
-    public void testSecurityElementExample133()
+    public void testSecurityElementExample13_3()
     {
         HttpConstraintElement httpConstraintElement = new HttpConstraintElement(EmptyRoleSemantic.DENY);
         ServletSecurityElement element = new ServletSecurityElement(httpConstraintElement);
@@ -501,13 +521,17 @@ public class ConstraintTest
     }
 
     /**
-     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-4
-     * <pre>
-     * &#064;ServletSecurity(&#064;HttpConstraint(rolesAllowed = "R1"))
-     * </pre>
+     * <p>Equivalent of Jakarta Servlet Spec, sec 13.4.1.1, Example 13-4</p>
+     *
+     * <pre>{@code
+     *     @ServletSecurity(@HttpConstraint(rolesAllowed = "R1"))
+     *     public class Example4 extends HttpServlet { }
+     * }</pre>
+     *
+     * @see <a href="https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.1#examples">Jakarta Servlet Spec 6.1, sec 13.4.1.1: Examples</a>
      */
     @Test
-    public void testSecurityElementExample134()
+    public void testSecurityElementExample13_4()
     {
         HttpConstraintElement httpConstraintElement = new HttpConstraintElement(TransportGuarantee.NONE, "R1");
         ServletSecurityElement element = new ServletSecurityElement(httpConstraintElement);
@@ -522,16 +546,21 @@ public class ConstraintTest
     }
 
     /**
-     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-5
-     * <pre>
-     * &#064;ServletSecurity((httpMethodConstraints = {
-     * &#064;HttpMethodConstraint(value = "GET", rolesAllowed = "R1"),
-     * &#064;HttpMethodConstraint(value = "POST", rolesAllowed = "R1",
-     * transportGuarantee = TransportGuarantee.CONFIDENTIAL)})
-     * </pre>
+     * <p>Equivalent of Jakarta Servlet Spec, sec 13.4.1.1, Example 13-5</p>
+     *
+     * <pre>{@code
+     *     @ServletSecurity((httpMethodConstraints = {
+     *         @HttpMethodConstraint(value = "GET", rolesAllowed = "R1"),
+     *         @HttpMethodConstraint(value = "POST", rolesAllowed = "R1",
+     *                               transportGuarantee = TransportGuarantee.CONFIDENTIAL)
+     *     })
+     *     public class Example5 extends HttpServlet { }
+     * }</pre>
+     *
+     * @see <a href="https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.1#examples">Jakarta Servlet Spec 6.1, sec 13.4.1.1: Examples</a>
      */
     @Test
-    public void testSecurityElementExample135()
+    public void testSecurityElementExample13_5()
     {
         List<HttpMethodConstraintElement> methodElements = new ArrayList<>();
         methodElements.add(new HttpMethodConstraintElement("GET", new HttpConstraintElement(TransportGuarantee.NONE, "R1")));
@@ -551,13 +580,18 @@ public class ConstraintTest
     }
 
     /**
-     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-6
-     * <pre>
-     * &#064;ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"), httpMethodConstraints = @HttpMethodConstraint("GET"))
-     * </pre>
+     * <p>Equivalent of Jakarta Servlet Spec, sec 13.4.1.1, Example 13-6</p>
+     *
+     * <pre>{@code
+     *     @ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"),
+     *                      httpMethodConstraints = @HttpMethodConstraint("GET"))
+     *     public class Example6 extends HttpServlet { }
+     * }</pre>
+     *
+     * @see <a href="https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.1#examples">Jakarta Servlet Spec 6.1, sec 13.4.1.1: Examples</a>
      */
     @Test
-    public void testSecurityElementExample136()
+    public void testSecurityElementExample13_6()
     {
         List<HttpMethodConstraintElement> methodElements = new ArrayList<>();
         methodElements.add(new HttpMethodConstraintElement("GET"));
@@ -576,15 +610,19 @@ public class ConstraintTest
     }
 
     /**
-     * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-7
-     * <pre>
-     * &#064;ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"),
-     * httpMethodConstraints = @HttpMethodConstraint(value="TRACE",
-     * emptyRoleSemantic = EmptyRoleSemantic.DENY))
-     * </pre>
+     * <p>Equivalent of Jakarta Servlet Spec, sec 13.4.1.1, Example 13-7</p>
+     *
+     * <pre>{@code
+     *     @ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"),
+     *                      httpMethodConstraints = @HttpMethodConstraint(value="TRACE",
+     *                      emptyRoleSemantic = EmptyRoleSemantic.DENY))
+     *     public class Example7 extends HttpServlet { }
+     * }</pre>
+     *
+     * @see <a href="https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.1#examples">Jakarta Servlet Spec 6.1, sec 13.4.1.1: Examples</a>
      */
     @Test
-    public void testSecurityElementExample137()
+    public void testSecurityElementExample13_7()
     {
         List<HttpMethodConstraintElement> methodElements = new ArrayList<>();
         methodElements.add(new HttpMethodConstraintElement("TRACE", new HttpConstraintElement(EmptyRoleSemantic.DENY)));
@@ -606,7 +644,7 @@ public class ConstraintTest
     @Test
     public void testUncoveredHttpMethodDetection() throws Exception
     {
-        //Test no methods named
+        // Test no methods named
         Constraint.Builder constraint1 = new Constraint.Builder();
         constraint1.authorization(Constraint.Authorization.ANY_USER);
         constraint1.name("** constraint");
@@ -1669,8 +1707,6 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
-        // assertThat(response,containsString(" 302 Found"));
-        // assertThat(response,containsString("/ctx/testLoginPage"));
         assertThat(response, containsString("Cache-Control: no-cache"));
         assertThat(response, containsString("Expires"));
         assertThat(response, containsString("URI=/ctx/testLoginPage"));
@@ -1711,8 +1747,6 @@ public class ConstraintTest
 
         // log in again as user2
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
-//        assertThat(response,startsWith("HTTP/1.1 302 "));
-//        assertThat(response,containsString("testLoginPage"));
         session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
@@ -1739,8 +1773,6 @@ public class ConstraintTest
 
         // log in again as admin
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
-//        assertThat(response,startsWith("HTTP/1.1 302 "));
-//        assertThat(response,containsString("testLoginPage"));
         session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
@@ -1870,8 +1902,6 @@ public class ConstraintTest
 
         // log in again as admin
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
-//        assertThat(response,startsWith("HTTP/1.1 302 "));
-//        assertThat(response,containsString("testLoginPage"));
         session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
@@ -2072,6 +2102,363 @@ public class ConstraintTest
 
         response = _connector.getResponse("OPTIONS /ctx/some/constraint/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 403 "));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "*",
+        "  ",
+        "\t",
+        "bogus name"
+    })
+    public void testSetInvalidHttpMethod(String name)
+    {
+        ConstraintMapping mapping = new ConstraintMapping();
+        assertThrows(IllegalArgumentException.class, () -> mapping.setMethod(name));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "*",
+        "  ",
+        "\t",
+        "bogus name"
+    })
+    public void testSetInvalidHttpMethodOmission(String name)
+    {
+        ConstraintMapping mapping = new ConstraintMapping();
+        assertThrows(IllegalArgumentException.class, () -> mapping.setMethodOmissions(new String[]{name}));
+    }
+
+    @Test
+    public void testSetHttpMethodOmissionWithNullEntries()
+    {
+        ConstraintMapping mapping = new ConstraintMapping();
+        String[] names = new String[]{"GET", null, "POST"};
+        assertThrows(IllegalArgumentException.class, () -> mapping.setMethodOmissions(names));
+    }
+
+    public static Stream<Arguments> jakartaSpecCombinedConstraintExampleCases()
+    {
+        return Stream.of(
+            // Test the Table 13-4 "Security Constraint Table" url-pattern of "/*"
+            Arguments.of("PUT", "/foo", true, is(empty()), is(Constraint.Authorization.FORBIDDEN), is(not(Constraint.Transport.SECURE))),
+            Arguments.of("GET", "/foo", false, null, null, null),
+            Arguments.of("POST", "/foo", false, null, null, null),
+            // Test the Table 13-4 "Security Constraint Table" url-pattern of "/acme/wholesale/*"
+            Arguments.of("PUT", "/acme/wholesale/foo", true, contains("SALESCLERK"), is(Constraint.Authorization.SPECIFIC_ROLE), is(not(Constraint.Transport.SECURE))),
+            Arguments.of("GET", "/acme/wholesale/foo", true, containsInAnyOrder("CONTRACTOR", "SALESCLERK"), is(Constraint.Authorization.SPECIFIC_ROLE), is(not(Constraint.Transport.SECURE))),
+            Arguments.of("POST", "/acme/wholesale/foo", true, contains("CONTRACTOR"), is(Constraint.Authorization.SPECIFIC_ROLE), is(Constraint.Transport.SECURE)),
+            // Test the Table 13-4 "Security Constraint Table" url-pattern of "/acme/retail/*"
+            Arguments.of("PUT", "/acme/retail/foo", true, is(empty()), is(Constraint.Authorization.FORBIDDEN), is(not(Constraint.Transport.SECURE))),
+            Arguments.of("GET", "/acme/retail/foo", true, containsInAnyOrder("CONTRACTOR", "HOMEOWNER"), is(Constraint.Authorization.SPECIFIC_ROLE), is(not(Constraint.Transport.SECURE))),
+            Arguments.of("POST", "/acme/retail/foo", true, containsInAnyOrder("CONTRACTOR", "HOMEOWNER"), is(Constraint.Authorization.SPECIFIC_ROLE), is(not(Constraint.Transport.SECURE)))
+        );
+    }
+
+    /**
+     * Replication of Constraint combination from
+     * <a href="https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.1#combining-constraints">Jakarta Servlet Spec 13.8.1 : Combining Constraints</a>.
+     */
+    @ParameterizedTest
+    @MethodSource("jakartaSpecCombinedConstraintExampleCases")
+    public void testJakartaSpecCombinedConstraintsExamples(String httpMethod, String requestPath,
+                                                           boolean coveredByConstraint,
+                                                           org.hamcrest.Matcher<Set<String>> rolesMatcher,
+                                                           org.hamcrest.Matcher<Constraint.Authorization> authorizationMatcher,
+                                                           org.hamcrest.Matcher<Constraint.Transport> transportMatcher) throws Exception
+    {
+        List<ConstraintMapping> mappings = new ArrayList<>();
+
+        // Note: the path spec `/*` is known to produce the "has uncovered HTTP methods" warning, do not try to fix by changing these constraints.
+
+        /*
+        <security-constraint>
+          <web-resource-collection>
+            <web-resource-name>precluded methods</web-resource-name>
+            <url-pattern>/*</url-pattern>
+            <url-pattern>/acme/wholesale/*</url-pattern>
+            <url-pattern>/acme/retail/*</url-pattern>
+            <http-method-omission>GET</http-method-omission>
+            <http-method-omission>POST</http-method-omission>
+          </web-resource-collection>
+          <auth-constraint/>
+        </security-constraint>
+         */
+        for (String pathSpec: List.of("/*", "/acme/wholesale/*", "/acme/retail/*"))
+        {
+            ConstraintMapping mapping = new ConstraintMapping();
+            mapping.setPathSpec(pathSpec);
+            mapping.setMethodOmissions(new String[]{"GET", "POST"});
+            mapping.setConstraint(Constraint.FORBIDDEN);
+            mappings.add(mapping);
+        }
+
+        /*
+        <security-constraint>
+          <web-resource-collection>
+            <web-resource-name>wholesale</web-resource-name>
+            <url-pattern>/acme/wholesale/*</url-pattern>
+            <http-method>GET</http-method>
+            <http-method>PUT</http-method>
+          </web-resource-collection>
+          <auth-constraint>
+            <role-name>SALESCLERK</role-name>
+          </auth-constraint>
+        </security-constraint>
+         */
+        Constraint.Builder wholesaleConstraint = new Constraint.Builder();
+        wholesaleConstraint.name("salesclerk");
+        wholesaleConstraint.roles("SALESCLERK");
+        for (String wholesaleMethod: List.of("GET", "PUT"))
+        {
+            ConstraintMapping mapping = new ConstraintMapping();
+            mapping.setPathSpec("/acme/wholesale/*");
+            mapping.setMethod(wholesaleMethod);
+            mapping.setConstraint(wholesaleConstraint.build());
+            mappings.add(mapping);
+        }
+
+        /*
+        <security-constraint>
+          <web-resource-collection>
+            <web-resource-name>wholesale 2</web-resource-name>
+            <url-pattern>/acme/wholesale/*</url-pattern>
+            <http-method>GET</http-method>
+            <http-method>POST</http-method>
+          </web-resource-collection>
+          <auth-constraint>
+            <role-name>CONTRACTOR</role-name>
+          </auth-constraint>
+          <user-data-constraint>
+            <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+          </user-data-constraint>
+        </security-constraint>
+         */
+        Constraint.Builder wholesale2Constraint = new Constraint.Builder();
+        wholesale2Constraint.name("contractor");
+        wholesale2Constraint.roles("CONTRACTOR");
+        wholesale2Constraint.transport(Constraint.Transport.SECURE);
+        for (String wholesale2Method: List.of("GET", "POST"))
+        {
+            ConstraintMapping mapping = new ConstraintMapping();
+            mapping.setPathSpec("/acme/wholesale/*");
+            mapping.setMethod(wholesale2Method);
+            mapping.setConstraint(wholesale2Constraint.build());
+            mappings.add(mapping);
+        }
+
+        /*
+        <security-constraint>
+          <web-resource-collection>
+            <web-resource-name>retail</web-resource-name>
+            <url-pattern>/acme/retail/*</url-pattern>
+            <http-method>GET</http-method>
+            <http-method>POST</http-method>
+          </web-resource-collection>
+
+          <auth-constraint>
+            <role-name>CONTRACTOR</role-name>
+            <role-name>HOMEOWNER</role-name>
+          </auth-constraint>
+        </security-constraint>
+         */
+        Constraint.Builder retailConstraint = new Constraint.Builder();
+        retailConstraint.roles("CONTRACTOR", "HOMEOWNER");
+        for (String retailMethod: List.of("GET", "POST"))
+        {
+            ConstraintMapping mapping = new ConstraintMapping();
+            mapping.setPathSpec("/acme/retail/*");
+            mapping.setMethod(retailMethod);
+            mapping.setConstraint(retailConstraint.build());
+            mappings.add(mapping);
+        }
+
+        Set<String> knownRoles = Set.of("SALESCLERK", "CONTRACTOR", "HOMEOWNER");
+        _security.setConstraintMappings(mappings, knownRoles);
+        _server.start();
+
+        Constraint constraint = _security.getConstraint(requestPath, httpMethod);
+        if (!coveredByConstraint)
+            assertThat("%s %s constraint not covered".formatted(httpMethod, requestPath), constraint, nullValue());
+        else
+        {
+            assertThat("%s %s roles".formatted(httpMethod, requestPath), constraint.getRoles(), rolesMatcher);
+            assertThat("%s %s authorization".formatted(httpMethod, requestPath), constraint.getAuthorization(), authorizationMatcher);
+            assertThat("%s %s transport".formatted(httpMethod, requestPath), constraint.getTransport(), transportMatcher);
+        }
+    }
+
+    public static Stream<Arguments> singleForbiddenMethodOmissionCases()
+    {
+        return Stream.of(
+            // Try some RFC9110 standardized method declarations
+            Arguments.of("GET", "GET", "/test/foo", null),
+            Arguments.of("GET", "PUT", "/test/foo", is(Constraint.Authorization.FORBIDDEN)),
+            Arguments.of("GET", "POST", "/test/foo", is(Constraint.Authorization.FORBIDDEN)),
+            Arguments.of("GET", "DELETE", "/test/foo", is(Constraint.Authorization.FORBIDDEN)),
+            // Try some WebDav methods
+            Arguments.of("PATCH", "PATCH", "/test/foo", null),
+            Arguments.of("PATCH", "PROPPATCH", "/test/foo", is(Constraint.Authorization.FORBIDDEN)),
+            Arguments.of("PATCH", "ORDERPATCH", "/test/foo", is(Constraint.Authorization.FORBIDDEN)),
+            Arguments.of("PATCH", "PROPFIND", "/test/foo", is(Constraint.Authorization.FORBIDDEN)),
+            Arguments.of("PATCH", "MKCOL", "/test/foo", is(Constraint.Authorization.FORBIDDEN)),
+            Arguments.of("MKCOL", "MKCOL", "/test/foo", null),
+            Arguments.of("PROPPATCH", "PATCH", "/test/foo", is(Constraint.Authorization.FORBIDDEN)),
+            Arguments.of("PROPPATCH", "ORDERPATCH", "/test/foo", is(Constraint.Authorization.FORBIDDEN)),
+            Arguments.of("PROPFIND", "PROPFIND", "/test/foo", null),
+            // Try some non-standard method declarations
+            Arguments.of("CorpQuery", "CorpQuery", "/test/foo", null),
+            Arguments.of("CorpQuery", "GET", "/test/foo", is(Constraint.Authorization.FORBIDDEN)),
+            Arguments.of("CorpQuery", "POST", "/test/foo", is(Constraint.Authorization.FORBIDDEN))
+        );
+    }
+
+    /**
+     * Tests forbidden http-method-omission
+     */
+    @ParameterizedTest
+    @MethodSource("singleForbiddenMethodOmissionCases")
+    public void testSingleForbiddenMethodOmissionConstraint(String httpMethodOmission, String requestHttpMethod, String requestPath,
+                                     org.hamcrest.Matcher<Constraint.Authorization> authorizationMatcher) throws Exception
+    {
+        boolean coveredByConstraint = !httpMethodOmission.equalsIgnoreCase(requestHttpMethod);
+
+        ConstraintMapping forbiddenMapping = new ConstraintMapping();
+        forbiddenMapping.setPathSpec("/test/*");
+        forbiddenMapping.setMethodOmissions(new String[]{httpMethodOmission});
+        forbiddenMapping.setConstraint(Constraint.FORBIDDEN);
+        _security.setConstraintMappings(List.of(forbiddenMapping));
+        _server.start();
+
+        Constraint constraint = _security.getConstraint(requestPath, requestHttpMethod);
+        if (!coveredByConstraint)
+            assertThat("%s %s constraint not covered".formatted(requestHttpMethod, requestPath), constraint, nullValue());
+        else
+            assertThat("%s %s authorization".formatted(requestHttpMethod, requestPath), constraint.getAuthorization(), authorizationMatcher);
+    }
+
+    public static Stream<Arguments> singleAllowedMethodOmissionCases()
+    {
+        return Stream.of(
+            // Try some RFC9110 standardized method declarations
+            Arguments.of("GET", "GET", "/test/foo", null),
+            Arguments.of("GET", "PUT", "/test/foo", is(Constraint.Authorization.ALLOWED)),
+            Arguments.of("GET", "POST", "/test/foo", is(Constraint.Authorization.ALLOWED)),
+            Arguments.of("GET", "DELETE", "/test/foo", is(Constraint.Authorization.ALLOWED)),
+            // Try some WebDav methods
+            Arguments.of("PATCH", "PATCH", "/test/foo", null),
+            Arguments.of("PATCH", "PROPPATCH", "/test/foo", is(Constraint.Authorization.ALLOWED)),
+            Arguments.of("PATCH", "ORDERPATCH", "/test/foo", is(Constraint.Authorization.ALLOWED)),
+            Arguments.of("PATCH", "PROPFIND", "/test/foo", is(Constraint.Authorization.ALLOWED)),
+            Arguments.of("PATCH", "MKCOL", "/test/foo", is(Constraint.Authorization.ALLOWED)),
+            Arguments.of("MKCOL", "MKCOL", "/test/foo", null),
+            Arguments.of("PROPPATCH", "PATCH", "/test/foo", is(Constraint.Authorization.ALLOWED)),
+            Arguments.of("PROPPATCH", "ORDERPATCH", "/test/foo", is(Constraint.Authorization.ALLOWED)),
+            Arguments.of("PROPFIND", "PROPFIND", "/test/foo", null),
+            // Try some non-standard method declarations
+            Arguments.of("CorpQuery", "CorpQuery", "/test/foo", null),
+            Arguments.of("CorpQuery", "GET", "/test/foo", is(Constraint.Authorization.ALLOWED)),
+            Arguments.of("CorpQuery", "POST", "/test/foo", is(Constraint.Authorization.ALLOWED))
+        );
+    }
+
+    /**
+     * Tests allowed http-method-omission
+     */
+    @ParameterizedTest
+    @MethodSource("singleAllowedMethodOmissionCases")
+    public void testSingleAllowedMethodOmissionConstraint(String httpMethodOmission, String requestHttpMethod, String requestPath,
+                                                          org.hamcrest.Matcher<Constraint.Authorization> authorizationMatcher) throws Exception
+    {
+        boolean coveredByConstraint = !httpMethodOmission.equalsIgnoreCase(requestHttpMethod);
+
+        ConstraintMapping allowedMapping = new ConstraintMapping();
+        allowedMapping.setPathSpec("/test/*");
+        allowedMapping.setMethodOmissions(new String[]{httpMethodOmission});
+        allowedMapping.setConstraint(Constraint.ALLOWED);
+        _security.setConstraintMappings(List.of(allowedMapping));
+        _server.start();
+
+        Constraint constraint = _security.getConstraint(requestPath, requestHttpMethod);
+        if (!coveredByConstraint)
+            assertThat("%s %s constraint not covered".formatted(requestHttpMethod, requestPath), constraint, nullValue());
+        else
+            assertThat("%s %s authorization".formatted(requestHttpMethod, requestPath), constraint.getAuthorization(), authorizationMatcher);
+    }
+
+    public static Stream<Arguments> combinedAllowedForbiddenMethodOmissionConstraintsCases()
+    {
+        return Stream.of(
+            // Neither constraint covers GET
+            Arguments.of("GET", "/test/foo", false, null),
+            // The forbidden constraint wins
+            Arguments.of("PUT", "/test/foo", true, is(Constraint.Authorization.FORBIDDEN)),
+            Arguments.of("POST", "/test/foo", true, is(Constraint.Authorization.FORBIDDEN)),
+            Arguments.of("DELETE", "/test/foo", true, is(Constraint.Authorization.FORBIDDEN))
+        );
+    }
+
+    /**
+     * Test of two constraints that have the same path, same http-method-omission, no roles, but different auth-constraint settings.
+     */
+    @ParameterizedTest
+    @MethodSource("combinedAllowedForbiddenMethodOmissionConstraintsCases")
+    public void testCombinedAllowedForbiddenMethodOmissionConstraints(String httpMethod, String requestPath,
+                                                                      boolean coveredByConstraint,
+                                                                      org.hamcrest.Matcher<Constraint.Authorization> authorizationMatcher) throws Exception
+    {
+        // Note: these two constraints are known to produce the "has uncovered HTTP methods" warning, do not try to fix by changing these constraints.
+        ConstraintMapping forbiddenMapping = new ConstraintMapping();
+        forbiddenMapping.setPathSpec("/test/*");
+        forbiddenMapping.setMethodOmissions(new String[]{"GET"});
+        forbiddenMapping.setConstraint(Constraint.FORBIDDEN);
+
+        ConstraintMapping allowedMapping = new ConstraintMapping();
+        allowedMapping.setPathSpec("/test/*");
+        allowedMapping.setMethodOmissions(new String[]{"GET"});
+        allowedMapping.setConstraint(Constraint.ALLOWED);
+
+        // This is the reverse order from testCombinedForbiddenAllowedMethodOmissionConstraints
+        _security.setConstraintMappings(List.of(allowedMapping, forbiddenMapping));
+        _server.start();
+
+        Constraint constraint = _security.getConstraint(requestPath, httpMethod);
+        if (!coveredByConstraint)
+            assertThat("%s %s constraint not covered".formatted(httpMethod, requestPath), constraint, nullValue());
+        else
+            assertThat("%s %s authorization".formatted(httpMethod, requestPath), constraint.getAuthorization(), authorizationMatcher);
+    }
+
+    /**
+     * Test of two constraints that have the same path, same http-method-omission, no roles, but different auth-constraint settings.
+     */
+    @ParameterizedTest
+    @MethodSource("combinedAllowedForbiddenMethodOmissionConstraintsCases")
+    public void testCombinedForbiddenAllowedMethodOmissionConstraints(String httpMethod, String requestPath,
+                                                                      boolean coveredByConstraint,
+                                                                      org.hamcrest.Matcher<Constraint.Authorization> authorizationMatcher) throws Exception
+    {
+        // Note: these two constraints are known to produce the "has uncovered HTTP methods" warning, do not try to fix by changing these constraints.
+        ConstraintMapping forbiddenMapping = new ConstraintMapping();
+        forbiddenMapping.setPathSpec("/test/*");
+        forbiddenMapping.setMethodOmissions(new String[]{"GET"});
+        forbiddenMapping.setConstraint(Constraint.FORBIDDEN);
+
+        ConstraintMapping allowedMapping = new ConstraintMapping();
+        allowedMapping.setPathSpec("/test/*");
+        allowedMapping.setMethodOmissions(new String[]{"GET"});
+        allowedMapping.setConstraint(Constraint.ALLOWED);
+
+        // This is the reverse order from testCombinedAllowedForbiddenMethodOmissionConstraints
+        _security.setConstraintMappings(List.of(forbiddenMapping, allowedMapping));
+        _server.start();
+
+        Constraint constraint = _security.getConstraint(requestPath, httpMethod);
+        if (!coveredByConstraint)
+            assertThat("%s %s constraint not covered".formatted(httpMethod, requestPath), constraint, nullValue());
+        else
+            assertThat("%s %s authorization".formatted(httpMethod, requestPath), constraint.getAuthorization(), authorizationMatcher);
     }
 
     @Test
