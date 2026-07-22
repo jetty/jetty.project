@@ -557,11 +557,11 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             if (newField.getHeader() == null)
                 return newField;
 
-            return switch (oldField.getHeader())
+            return switch (newField.getHeader())
             {
                 case CONTENT_LENGTH ->
                 {
-                    getHttpOutput().setApplicationContentLength(oldField.getLongValue());
+                    getHttpOutput().setApplicationContentLength(newField.getLongValue());
                     yield super.onReplaceField(oldField, newField);
                 }
                 case CONTENT_TYPE -> setContentType(newField);
