@@ -379,11 +379,11 @@ public class HttpParser
 
     protected void checkViolation(Violation violation) throws HttpException.RuntimeException
     {
-        if (!checkViolation(violation, violation.getDescription()))
+        if (!checkAndReportViolation(violation, violation.getDescription()))
             throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, violation.getDescription());
     }
 
-    protected boolean checkViolation(Violation violation, String reason)
+    protected boolean checkAndReportViolation(Violation violation, String reason)
     {
         boolean allowed = _complianceMode.allows(violation);
         reportComplianceViolation(violation, reason, allowed);
@@ -393,13 +393,13 @@ public class HttpParser
     @Deprecated
     protected void reportComplianceViolation(Violation violation)
     {
-        checkViolation(violation, violation.getDescription());
+        checkAndReportViolation(violation, violation.getDescription());
     }
 
     @Deprecated
     protected void reportComplianceViolation(Violation violation, String reason)
     {
-        checkViolation(violation, reason);
+        checkAndReportViolation(violation, reason);
     }
 
     protected void reportComplianceViolation(Violation violation, String reason, boolean allowed)
@@ -803,7 +803,7 @@ public class HttpParser
                             }
                             else
                             {
-                                if (checkViolation(Violation.CASE_INSENSITIVE_METHOD, _methodString))
+                                if (checkAndReportViolation(Violation.CASE_INSENSITIVE_METHOD, _methodString))
                                 {
                                     method = HttpMethod.INSENSITIVE_CACHE.get(_methodString);
                                     if (method != null)
@@ -973,7 +973,7 @@ public class HttpParser
                         case EOL:
                         {
                             // HTTP/0.9
-                            if (checkViolation(Violation.HTTP_0_9, HTTP_0_9.getDescription()))
+                            if (checkAndReportViolation(Violation.HTTP_0_9, HTTP_0_9.getDescription()))
                             {
                                 _requestHandler.startRequest(_methodString, _uri.toCompleteString(), HttpVersion.HTTP_0_9);
                                 setState(State.CONTENT);
@@ -1557,7 +1557,7 @@ public class HttpParser
                         case SPACE:
                         case HTAB:
                             //Ignore trailing whitespaces?
-                            if (checkViolation(WHITESPACE_AFTER_FIELD_NAME, _headerString))
+                            if (checkAndReportViolation(WHITESPACE_AFTER_FIELD_NAME, _headerString))
                             {
                                 _headerString = takeString();
                                 _header = HttpHeader.CACHE.get(_headerString);
@@ -1581,7 +1581,7 @@ public class HttpParser
                             _valueString = "";
                             _length = -1;
 
-                            if (checkViolation(NO_COLON_AFTER_FIELD_NAME, _headerString))
+                            if (checkAndReportViolation(NO_COLON_AFTER_FIELD_NAME, _headerString))
                             {
                                 setState(FieldState.FIELD);
                                 break;
@@ -1612,7 +1612,7 @@ public class HttpParser
                             break;
 
                         case EOL:
-                            if (checkViolation(NO_COLON_AFTER_FIELD_NAME, _headerString))
+                            if (checkAndReportViolation(NO_COLON_AFTER_FIELD_NAME, _headerString))
                             {
                                 setState(FieldState.FIELD);
                                 break;
