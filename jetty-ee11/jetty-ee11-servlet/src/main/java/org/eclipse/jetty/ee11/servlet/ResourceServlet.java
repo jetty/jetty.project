@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee11.servlet;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -575,18 +574,9 @@ public class ResourceServlet extends HttpServlet
                 // otherwise we can use the core response directly.
                 boolean writingOrStreaming = servletContextResponse.isWritingOrStreaming();
                 boolean useServletResponse = !(httpServletResponse instanceof ServletApiResponse) || writingOrStreaming;
-                Response r = useServletResponse
+                Response coreResponse = useServletResponse
                     ? new ServletCoreResponse(coreRequest, httpServletResponse, included)
                     : servletChannel.getResponse();
-                // Ignore last writes done via the Core API as the ServletChannel will perform the last write upon completion.
-                Response coreResponse = new Response.Wrapper(coreRequest, r)
-                {
-                    @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-                    {
-                        super.write(false, byteBuffer, callback);
-                    }
-                };
 
                 // If the core response is already committed then do nothing more
                 if (coreResponse.isCommitted())
