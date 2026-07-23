@@ -288,6 +288,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             @Override
             public boolean isShutdownDone()
             {
+                // A connector that is no longer running has no remaining load to wait for.
+                if (!isRunning())
+                    return true;
+
                 if (!_endpoints.isEmpty())
                     return false;
 
@@ -385,6 +389,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         for (Acceptor a : getBeans(Acceptor.class))
             removeBean(a);
 
+        // Complete any pending shutdown() future now that the connector is stopped, before clearing it.
+        Shutdown shutdown = _shutdown;
+        if (shutdown != null)
+            shutdown.check();
         _shutdown = null;
 
         LOG.info("Stopped {}", this);

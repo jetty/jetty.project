@@ -18,6 +18,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -49,6 +50,65 @@ public class GracefulShutdownTest extends AbstractTest
         // Don't let the default shutdown idleTimeout
         // of just 1000 ms interfere with the test.
         connector.setShutdownIdleTimeout(15000);
+    }
+
+    // Issue #13602: connector.shutdown() then connector.stop() while an HTTP/2 client is connected must
+    // still complete the shutdown future rather than leave it uncompleted.
+    @Test
+    public void testConnectorShutdownThenStopCompletesFutureOnHTTP2() throws Exception
+    {
+        start(new org.eclipse.jetty.server.Handler.Abstract()
+        {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                response.setStatus(HttpStatus.OK_200);
+                callback.succeeded();
+                return true;
+            }
+        });
+        connector.setShutdownIdleTimeout(15000);
+
+        ContentResponse response = httpClient.newRequest("localhost", connector.getLocalPort())
+            .method(HttpMethod.GET)
+            .send();
+        assertTrue(response.getStatus() == HttpStatus.OK_200 || response.getStatus() == HttpStatus.NOT_FOUND_404);
+
+        CompletableFuture<Void> shutdownFuture = connector.shutdown();
+        Thread.sleep(1000);
+        connector.stop();
+
+        // Bounded so a never-completing future fails the test rather than blocking forever.
+        assertNull(shutdownFuture.get(10, TimeUnit.SECONDS));
+    }
+
+    // Issue #13602 with a stream still active during shutdown: connector.stop() must still complete the
+    // shutdown future even when the connection cannot be closed before stop().
+    @Test
+    public void testShutdownThenStopWithActiveStreamStillCompletes() throws Exception
+    {
+        CountDownLatch serverGotRequest = new CountDownLatch(1);
+        start(new org.eclipse.jetty.server.Handler.Abstract()
+        {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                // Never complete the callback, keeping the stream active across the shutdown.
+                serverGotRequest.countDown();
+                return true;
+            }
+        });
+        connector.setShutdownIdleTimeout(15000);
+
+        httpClient.newRequest("localhost", connector.getLocalPort()).method(HttpMethod.GET).send(result -> {});
+        assertTrue(serverGotRequest.await(5, TimeUnit.SECONDS));
+
+        CompletableFuture<Void> shutdownFuture = connector.shutdown();
+        Thread.sleep(1000);
+        connector.stop();
+
+        // Bounded so a never-completing future fails the test rather than blocking forever.
+        assertNull(shutdownFuture.get(10, TimeUnit.SECONDS));
     }
 
     @Test
