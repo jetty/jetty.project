@@ -1464,7 +1464,8 @@ public class HttpParser
                                     String n = cachedField.getName();
                                     String v = cachedField.getValue();
 
-                                    if (!Objects.equals(v, UNMATCHED_VALUE))
+                                    boolean unmatchedValue = Objects.equals(v, UNMATCHED_VALUE);
+                                    if (!unmatchedValue)
                                     {
                                         if (CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode))
                                         {
@@ -1496,7 +1497,7 @@ public class HttpParser
                                     int delta = n.length() + 1;
                                     int posAfterName = position + delta;
 
-                                    if (Objects.equals(v, UNMATCHED_VALUE) || (posAfterName + v.length()) >= buffer.limit())
+                                    if (unmatchedValue || (posAfterName + v.length()) >= buffer.limit())
                                     {
                                         // Header only
                                         setState(FieldState.VALUE);
