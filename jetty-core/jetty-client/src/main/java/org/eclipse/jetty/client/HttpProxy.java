@@ -253,7 +253,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                 connect.attribute(Connection.class.getName(), new ProxyConnection(proxyDestination, connection, promise));
                 connection.send(connect, new TunnelListener(connect));
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 HttpConversation conversation = ((HttpRequest)connect).getConversation();
                 EndPoint endPoint = (EndPoint)conversation.getAttribute(EndPoint.class.getName());

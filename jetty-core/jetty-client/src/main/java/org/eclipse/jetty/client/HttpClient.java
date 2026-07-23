@@ -502,7 +502,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     }
 
     /**
-     * Returns the destination, creating it if absent, the destination for the given request
+     * Returns the destination, creating it if absent, for the given request
      *
      * @param request the request
      * @return the destination for the request
@@ -533,7 +533,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     }
 
     /**
-     * Returns the destination, creating it if absent, the destination with the given origin.
+     * Returns the destination, creating it if absent, with the given origin.
      *
      * @param origin the origin that identifies the destination
      * @return the destination for the given origin
@@ -963,7 +963,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
      * <p>
      * When the max is reached and a new destination is added, IllegalStateException is thrown.
      *
-     * @param maxDestinations the max number of destubatuibs that this HttpClient manages
+     * @param maxDestinations the max number of destinations that this HttpClient manages
      */
     public void setMaxDestinations(int maxDestinations)
     {
