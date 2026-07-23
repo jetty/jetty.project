@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.SessionContainer;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -49,6 +51,63 @@ public class GracefulShutdownTest extends AbstractTest
         // Don't let the default shutdown idleTimeout
         // of just 1000 ms interfere with the test.
         connector.setShutdownIdleTimeout(15000);
+    }
+
+    // Issue #13569: connector.shutdown() (as opposed to Graceful.shutdown(connector)) must also
+    // gracefully close live HTTP/2 sessions by sending a GOAWAY, so that new streams are refused
+    // and the shutdown future completes as soon as active streams finish (not at the idle timeout).
+    @Test
+    public void testConnectorShutdownSendsGoAwayOnHTTP2() throws Exception
+    {
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                return null;
+            }
+        });
+
+        CountDownLatch clientRequestLatch = new CountDownLatch(1);
+        CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
+        Session clientSession = newClientSession(new Session.Listener()
+        {
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
+                clientGoAwayLatch.countDown();
+            }
+        });
+        MetaData.Request request = newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY);
+        clientSession.newStream(new HeadersFrame(request, null, true), new Stream.Listener()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                if (frame.isEndStream() && response.getStatus() == HttpStatus.OK_200)
+                    clientRequestLatch.countDown();
+            }
+        });
+        assertTrue(clientRequestLatch.await(5, TimeUnit.SECONDS));
+
+        // Wait until the server-side session is registered in the connector's SessionContainer before
+        // shutting down. The client receiving the response does not guarantee the server has finished
+        // SessionContainer.onOpened(); shutting down before that registration would find an empty
+        // container and send no GOAWAY (a setup race, not a fix regression).
+        SessionContainer sessionContainer = connector.getContainedBeans(SessionContainer.class).iterator().next();
+        await().atMost(5, TimeUnit.SECONDS).until(() -> sessionContainer.getSize() > 0);
+
+        // The reporter's path: connector.shutdown() directly (NOT Graceful.shutdown(connector)).
+        CompletableFuture<Void> completable = connector.shutdown();
+
+        // The live HTTP/2 session must receive a GOAWAY promptly (currently FAILS: connector.shutdown()
+        // only reduces idle timeouts and does not propagate graceful close to live connections).
+        assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS), "client did not receive GOAWAY after connector.shutdown()");
+        // And shutdown must complete quickly (not wait for the 15s shutdown idle timeout).
+        assertNull(completable.get(5, TimeUnit.SECONDS));
     }
 
     @Test

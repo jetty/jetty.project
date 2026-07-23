@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -354,6 +355,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         // Signal for the acceptors to stop
         CompletableFuture<Void> done = shutdown.shutdown();
         interruptAcceptors();
+
+        // Gracefully shut down the contained Graceful beans (e.g. the HTTP/2 SessionContainer) so live
+        // connections are closed at the protocol level (a GOAWAY for HTTP/2). Only contained gracefuls,
+        // as the connector is itself Graceful. Their futures are not awaited: completion below stays
+        // gated on acceptors and endpoints.
+        for (Graceful graceful : getContainedBeans(Graceful.class))
+            graceful.shutdown();
 
         // Reduce the idle timeout of existing connections
         if (getShutdownIdleTimeout() >= 0)
