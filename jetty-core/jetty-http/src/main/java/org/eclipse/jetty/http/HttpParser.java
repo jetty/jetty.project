@@ -1291,7 +1291,7 @@ public class HttpParser
                     _fieldCache.add(_field);
                 }
             }
-            if (LOG.isDebugEnabled())
+            if (debugEnabled)
                 LOG.debug("parsedHeader({}) header={}, headerString=[{}], valueString=[{}]", _field, _header, _headerString, _valueString);
             _handler.parsedHeader(_field != null ? _field : newHttpField(_header, _headerString, _valueString));
         }
