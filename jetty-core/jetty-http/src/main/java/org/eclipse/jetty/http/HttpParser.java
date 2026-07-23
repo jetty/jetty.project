@@ -269,9 +269,9 @@ public class HttpParser
     private int _headerBytes;
     private String _parsedHost;
     private boolean _headerComplete;
-    private volatile State _state = State.START;
-    private volatile FieldState _fieldState = FieldState.FIELD;
-    private volatile boolean _eof;
+    private State _state = State.START;
+    private FieldState _fieldState = FieldState.FIELD;
+    private boolean _eof;
     private HttpMethod _method;
     private String _methodString;
     private HttpVersion _version;
