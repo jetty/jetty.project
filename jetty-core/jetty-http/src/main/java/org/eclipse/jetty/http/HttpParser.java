@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -246,10 +245,6 @@ public class HttpParser
         EXT_VALUE_CLOSE_QUOTE,
     }
 
-    private static final EnumSet<State> __idleStates = EnumSet.of(State.START, State.END, State.CLOSE, State.CLOSED);
-    private static final EnumSet<State> __completeStates = EnumSet.of(State.END, State.CLOSE, State.CLOSED);
-    private static final EnumSet<State> __terminatedStates = EnumSet.of(State.CLOSE, State.CLOSED);
-
     private final boolean debugEnabled = LOG.isDebugEnabled(); // Cache debug to help branch prediction
     private final HttpHandler _handler;
     private final RequestHandler _requestHandler;
@@ -380,8 +375,7 @@ public class HttpParser
     protected void checkViolation(Violation violation) throws HttpException.RuntimeException
     {
         boolean allowed = violation.isAllowedBy(_complianceMode);
-        reportComplianceViolation(violation, violation.getDescription());
-
+        reportComplianceViolation(violation, violation.getDescription(), allowed);
         if (!allowed)
             throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, violation.getDescription());
     }
@@ -394,10 +388,13 @@ public class HttpParser
     protected void reportComplianceViolation(Violation violation, String reason)
     {
         if (_requestParser)
-        {
-            boolean allowed = _complianceMode.allows(violation);
+            reportComplianceViolation(violation, reason, _complianceMode.allows(violation));
+    }
+
+    protected void reportComplianceViolation(Violation violation, String reason, boolean allowed)
+    {
+        if (_requestParser)
             _requestHandler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, reason, allowed));
-        }
     }
 
     protected String caseInsensitiveHeader(String orig, String normative)
@@ -481,17 +478,18 @@ public class HttpParser
 
     public boolean isIdle()
     {
-        return __idleStates.contains(_state);
+        int ordinal = _state.ordinal();
+        return ordinal == State.START.ordinal() || ordinal >= State.END.ordinal();
     }
 
     public boolean isComplete()
     {
-        return __completeStates.contains(_state);
+        return _state.ordinal() >= State.END.ordinal();
     }
 
     public boolean isTerminated()
     {
-        return __terminatedStates.contains(_state);
+        return _state.ordinal() >= State.CLOSE.ordinal();
     }
 
     public boolean isState(State state)
@@ -1468,7 +1466,7 @@ public class HttpParser
                                             String en = BufferUtil.toString(buffer, buffer.position() - 1, n.length(), StandardCharsets.US_ASCII);
                                             if (!n.equals(en))
                                             {
-                                                reportComplianceViolation(CASE_SENSITIVE_FIELD_NAME, en);
+                                                reportComplianceViolation(CASE_SENSITIVE_FIELD_NAME, en, true);
                                                 n = en;
                                                 cachedField = newHttpField(cachedField.getHeader(), n, v);
                                             }
