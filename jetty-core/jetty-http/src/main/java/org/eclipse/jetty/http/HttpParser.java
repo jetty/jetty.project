@@ -374,21 +374,27 @@ public class HttpParser
 
     protected void checkViolation(Violation violation) throws HttpException.RuntimeException
     {
-        boolean allowed = violation.isAllowedBy(_complianceMode);
-        reportComplianceViolation(violation, violation.getDescription(), allowed);
-        if (!allowed)
+        if (!checkViolation(violation, violation.getDescription()))
             throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, violation.getDescription());
     }
 
-    protected void reportComplianceViolation(Violation violation)
+    protected boolean checkViolation(Violation violation, String reason)
     {
-        reportComplianceViolation(violation, violation.getDescription());
+        boolean allowed = _complianceMode.allows(violation);
+        reportComplianceViolation(violation, reason, allowed);
+        return allowed;
     }
 
+    @Deprecated
+    protected void reportComplianceViolation(Violation violation)
+    {
+        checkViolation(violation, violation.getDescription());
+    }
+
+    @Deprecated
     protected void reportComplianceViolation(Violation violation, String reason)
     {
-        if (_requestParser)
-            reportComplianceViolation(violation, reason, _complianceMode.allows(violation));
+        checkViolation(violation, reason);
     }
 
     protected void reportComplianceViolation(Violation violation, String reason, boolean allowed)
@@ -402,7 +408,7 @@ public class HttpParser
         if (CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode))
             return normative;
         if (!orig.equals(normative))
-            reportComplianceViolation(CASE_SENSITIVE_FIELD_NAME, orig);
+            reportComplianceViolation(CASE_SENSITIVE_FIELD_NAME, orig, false);
         return orig;
     }
 
@@ -793,8 +799,7 @@ public class HttpParser
                             }
                             else
                             {
-                                reportComplianceViolation(Violation.CASE_INSENSITIVE_METHOD, _methodString);
-                                if (_complianceMode.allows(Violation.CASE_INSENSITIVE_METHOD))
+                                if (checkViolation(Violation.CASE_INSENSITIVE_METHOD, _methodString))
                                 {
                                     method = HttpMethod.INSENSITIVE_CACHE.get(_methodString);
                                     if (method != null)
@@ -962,9 +967,9 @@ public class HttpParser
                             break;
 
                         case EOL:
+                        {
                             // HTTP/0.9
-                            reportComplianceViolation(HTTP_0_9, HTTP_0_9.getDescription());
-                            if (Violation.HTTP_0_9.isAllowedBy(_complianceMode))
+                            if (checkViolation(Violation.HTTP_0_9, HTTP_0_9.getDescription()))
                             {
                                 _requestHandler.startRequest(_methodString, _uri.toCompleteString(), HttpVersion.HTTP_0_9);
                                 setState(State.CONTENT);
@@ -977,6 +982,7 @@ public class HttpParser
                                 throw new HttpException.RuntimeException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "HTTP/0.9 not supported");
                             }
                             break;
+                        }
 
                         case ALPHA:
                         case DIGIT:
@@ -1546,11 +1552,10 @@ public class HttpParser
                     {
                         case SPACE:
                         case HTAB:
-                            //Ignore trailing whitespaces ?
-                            if (WHITESPACE_AFTER_FIELD_NAME.isAllowedBy(_complianceMode))
+                            //Ignore trailing whitespaces?
+                            if (checkViolation(WHITESPACE_AFTER_FIELD_NAME, _headerString))
                             {
                                 _headerString = takeString();
-                                reportComplianceViolation(WHITESPACE_AFTER_FIELD_NAME, "Space after " + _headerString);
                                 _header = HttpHeader.CACHE.get(_headerString);
                                 _length = -1;
                                 setState(FieldState.WS_AFTER_NAME);
@@ -1572,8 +1577,7 @@ public class HttpParser
                             _valueString = "";
                             _length = -1;
 
-                            reportComplianceViolation(NO_COLON_AFTER_FIELD_NAME, "Field " + _headerString);
-                            if (NO_COLON_AFTER_FIELD_NAME.isAllowedBy(_complianceMode))
+                            if (checkViolation(NO_COLON_AFTER_FIELD_NAME, _headerString))
                             {
                                 setState(FieldState.FIELD);
                                 break;
@@ -1604,9 +1608,8 @@ public class HttpParser
                             break;
 
                         case EOL:
-                            if (NO_COLON_AFTER_FIELD_NAME.isAllowedBy(_complianceMode))
+                            if (checkViolation(NO_COLON_AFTER_FIELD_NAME, _headerString))
                             {
-                                reportComplianceViolation(NO_COLON_AFTER_FIELD_NAME, "Field " + _headerString);
                                 setState(FieldState.FIELD);
                                 break;
                             }
