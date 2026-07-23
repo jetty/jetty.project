@@ -2529,8 +2529,12 @@ public class HttpParser
             }
             else if (!_cache.put(field))
             {
-                _cache.clear();
-                _cache.put(field);
+                // clear the cache only if the field is small and still cannot fit in the cache.
+                if ((field.getName().length() + field.getValue().length()) < _cache.size() / 4)
+                {
+                    _cache.clear();
+                    _cache.put(field);
+                }
             }
         }
 
@@ -2546,7 +2550,7 @@ public class HttpParser
                 _cache = Index.buildMutableVisibleAsciiAlphabet(_caseSensitive, _size);
                 for (HttpField f : _cacheableFields)
                 {
-                    if (!_cache.put(f))
+                    if (!_cache.put(f) && (f.getName().length() + f.getValue().length()) < _size / 4)
                         break;
                 }
                 _cacheableFields.clear();
