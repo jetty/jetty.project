@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.Connection;
@@ -210,6 +211,86 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         // The already-received response must still be deliverable.
         byte[] body = IO.readBytes(listener.getInputStream());
         assertArrayEquals(payload, body);
+
+        // Disposal still happens: sparing the abort must not leak the connection. Once the completed
+        // response has been consumed, the connection is released back to (and swept from) the pool.
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            List<Destination> destinations = httpClient.getDestinations();
+            if (destinations.isEmpty())
+                return true;
+            AbstractConnectionPool pool = (AbstractConnectionPool)destinations.get(0).getConnectionPool();
+            String dump = pool.dump();
+            return dump.lines().noneMatch(l -> l.matches(".*multiplex=[1-9]([0-9]+)?.*")) &&
+                dump.contains(",leaked=0,");
+        });
+    }
+
+    @Test
+    public void testConnectionFailureDoesNotAbortExchangeWithCompletedResponse() throws Exception
+    {
+        // Companion to the close() test above, exercising the other caller of
+        // ensureClosedOrAbortActiveChannels: HttpConnectionOverHTTP2.onFailure(), which aborts and then
+        // destroys the connection WITHOUT a trailing session.close(). A response fully received but not
+        // yet consumed must still be delivered, and the connection must still be disposed (no leak).
+        byte[] payload = new byte[1024];
+        Arrays.fill(payload, (byte)'x');
+
+        HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(new HttpConfiguration());
+        prepareServer(h2c);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                response.write(true, ByteBuffer.wrap(payload), callback);
+                return true;
+            }
+        });
+        server.start();
+
+        AtomicReference<HttpConnectionOverHTTP2> connectionRef = new AtomicReference<>();
+        prepareClient();
+        httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client)
+        {
+            @Override
+            protected Connection newConnection(Destination destination, Session session, HTTP2Connection connection)
+            {
+                HttpConnectionOverHTTP2 c = new HttpConnectionOverHTTP2(destination, session, connection);
+                connectionRef.set(c);
+                return c;
+            }
+        });
+        httpClient.start();
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        httpClient.newRequest("localhost", connector.getLocalPort()).send(listener);
+
+        Response response = listener.get(5, TimeUnit.SECONDS);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // Fail the session while the completed-but-unconsumed exchange is still active. This drives
+        // HttpConnectionOverHTTP2.onFailure() (via the session's failure notification) — the hard path
+        // that failStreams(stream -> true), then destroys the connection with no session.close().
+        HttpConnectionOverHTTP2 connection = connectionRef.get();
+        assertNotNull(connection);
+        ((HTTP2Session)connection.getSession()).onConnectionFailure(ErrorCode.INTERNAL_ERROR.code, "test_failure");
+
+        // The already-received response must still be deliverable, not discarded.
+        byte[] body = IO.readBytes(listener.getInputStream());
+        assertArrayEquals(payload, body);
+
+        // And the connection must still be disposed (no leak) even without session.close().
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            List<Destination> destinations = httpClient.getDestinations();
+            if (destinations.isEmpty())
+                return true;
+            AbstractConnectionPool pool = (AbstractConnectionPool)destinations.get(0).getConnectionPool();
+            String dump = pool.dump();
+            return dump.lines().noneMatch(l -> l.matches(".*multiplex=[1-9]([0-9]+)?.*")) &&
+                dump.contains(",leaked=0,");
+        });
     }
 
     @Test
