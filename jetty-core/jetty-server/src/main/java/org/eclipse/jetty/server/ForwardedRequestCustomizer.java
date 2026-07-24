@@ -192,11 +192,11 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
-     * Toggle specific forwarded header behavior.
+     * Toggles specific forwarded header behavior.
      *
      * @param rfc7239only {@code true} to only support the RFC7239 {@code Forwarded} header and to
      * not support any {@code X-Forwarded-} headers.<br/>
-     * {@code false} to only support the de-factor {@code X-Forwarded-} headers, not supporting the RFC7239 {@code Forwarded} headers.
+     * {@code false} to only support the de-facto {@code X-Forwarded-} headers, not supporting the RFC7239 {@code Forwarded} headers.
      */
     public void setForwardedOnly(boolean rfc7239only)
     {
