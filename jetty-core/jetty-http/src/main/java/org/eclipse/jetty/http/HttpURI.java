@@ -1550,6 +1550,7 @@ public interface HttpURI
                                 if (i == end)
                                 {
                                     pathMark = mark = i;
+                                    segment = mark + 1;
                                     state = State.PATH;
                                     break;
                                 }
@@ -1562,6 +1563,7 @@ public interface HttpURI
                                 else if (c == '/')
                                 {
                                     pathMark = mark = i;
+                                    segment = mark + 1;
                                     state = State.PATH;
                                 }
                                 else

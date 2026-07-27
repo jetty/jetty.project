@@ -192,17 +192,19 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
-     * @param rfc7239only Configure to only support the RFC7239 Forwarded header and to
-     * not support any {@code X-Forwarded-} headers.   This convenience method
-     * clears all the non RFC headers if passed true and sets them to
-     * the default values (if not already set) if passed false.
+     * Toggles specific forwarded header behavior.
+     *
+     * @param rfc7239only {@code true} to only support the RFC7239 {@code Forwarded} header and to
+     * not support any {@code X-Forwarded-} headers.<br/>
+     * {@code false} to only support the de-facto {@code X-Forwarded-} headers, not supporting the RFC7239 {@code Forwarded} headers.
      */
     public void setForwardedOnly(boolean rfc7239only)
     {
         if (rfc7239only)
         {
-            if (_forwardedHeader == null)
-                _forwardedHeader = HttpHeader.FORWARDED.toString();
+            // Enable RFC7239
+            _forwardedHeader = HttpHeader.FORWARDED.toString();
+            // Disable X-Forwarded-*
             _forwardedHostHeader = null;
             _forwardedServerHeader = null;
             _forwardedForHeader = null;
@@ -212,18 +214,15 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         }
         else
         {
-            if (_forwardedHostHeader == null)
-                _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
-            if (_forwardedServerHeader == null)
-                _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
-            if (_forwardedForHeader == null)
-                _forwardedForHeader = HttpHeader.X_FORWARDED_FOR.toString();
-            if (_forwardedPortHeader == null)
-                _forwardedPortHeader = HttpHeader.X_FORWARDED_PORT.toString();
-            if (_forwardedProtoHeader == null)
-                _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO.toString();
-            if (_forwardedHttpsHeader == null)
-                _forwardedHttpsHeader = "X-Proxied-Https";
+            // Disable RFC7239
+            _forwardedHeader = null;
+            // Enable X-Forwarded-*
+            _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
+            _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
+            _forwardedForHeader = HttpHeader.X_FORWARDED_FOR.toString();
+            _forwardedPortHeader = HttpHeader.X_FORWARDED_PORT.toString();
+            _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO.toString();
+            _forwardedHttpsHeader = "X-Proxied-Https";
         }
 
         updateHandles();
