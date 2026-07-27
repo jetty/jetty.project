@@ -483,7 +483,7 @@ public class ConnectHandler extends Handler.Wrapper
     public boolean validateDestination(String host, int port)
     {
         String hostPort = host + ":" + port;
-        boolean allowed = hosts.isIncludedAndNotExcluded(hostPort);
+        boolean allowed = hosts.test(hostPort);
         if (LOG.isDebugEnabled())
             LOG.debug("Host {} is {}", hostPort, allowed ? "allowed" : "denied");
         return allowed;
