@@ -62,6 +62,9 @@ public class HpackBenchmark
     private static final int BUFFER_CAPACITY = 8 * 1024;
 
     private MetaData.Request request;
+    private HpackEncoder steadyEncoder;
+    private HpackDecoder steadyDecoder;
+    private ByteBuffer steadyEncodedRequest;
     private MetaData.Response response;
     private ByteBuffer encodeBuffer;
     private ByteBuffer encodedRequest;
@@ -101,6 +104,21 @@ public class HpackBenchmark
         response = new MetaData.Response(200, null, HttpVersion.HTTP_2, responseFields);
 
         encodeBuffer = ByteBuffer.allocate(BUFFER_CAPACITY);
+
+        // Warm an encoder and decoder pair the way a long lived connection
+        // does, so that the dynamic table holds the request fields and they
+        // are encoded as indexes rather than literals. The decoder must see
+        // exactly the sequence the encoder produced for its table to match.
+        steadyEncoder = new HpackEncoder();
+        steadyDecoder = new HpackDecoder(BUFFER_CAPACITY, NanoTime::now);
+        for (int i = 0; i < 4; i++)
+        {
+            ByteBuffer warm = ByteBuffer.allocate(BUFFER_CAPACITY);
+            steadyEncoder.encode(warm, request);
+            warm.flip();
+            steadyEncodedRequest = warm;
+            steadyDecoder.decode(warm.slice());
+        }
         encodedRequest = encode(request);
         encodedResponse = encode(response);
 
@@ -131,6 +149,14 @@ public class HpackBenchmark
     }
 
     @Benchmark
+    public int encodeRequestSteadyState() throws Exception
+    {
+        encodeBuffer.clear();
+        steadyEncoder.encode(encodeBuffer, request);
+        return encodeBuffer.position();
+    }
+
+    @Benchmark
     public int encodeRequest() throws Exception
     {
         encodeBuffer.clear();
@@ -144,6 +170,12 @@ public class HpackBenchmark
         encodeBuffer.clear();
         new HpackEncoder().encode(encodeBuffer, response);
         return encodeBuffer.position();
+    }
+
+    @Benchmark
+    public MetaData decodeRequestSteadyState() throws Exception
+    {
+        return steadyDecoder.decode(steadyEncodedRequest.slice());
     }
 
     @Benchmark
