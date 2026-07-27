@@ -415,9 +415,16 @@ public class HpackContext
         final HttpField _field;
         int _slot; // The index within it's array
         /**
-         * The memoized outcome of validating {@link #_field}; see {@link #validation()}.
+         * The memoized outcome of validating {@link #_field} for decoding; see {@link #validation()}.
          */
         private int _validation;
+        /**
+         * The memoized outcome of validating {@link #_field} for encoding; see {@link #encodeValidation()}.
+         * <p>Kept apart from {@link #_validation} because the two apply different
+         * rules, and because an entry belongs to either an encoder's context or a
+         * decoder's, never both.</p>
+         */
+        private int _encodeValidation;
 
         Entry()
         {
@@ -472,6 +479,45 @@ public class HpackContext
         public boolean hasIllegalValue()
         {
             return (validation() & ILLEGAL_VALUE) != 0;
+        }
+
+        /**
+         * <p>As {@link #validation()}, but applying the rules an encoder uses:
+         * the name is matched in lowercase, and a pseudo header is rejected
+         * because the encoder writes those itself from the metadata.</p>
+         *
+         * @return the encoding validation bits for this entry's field
+         */
+        private int encodeValidation()
+        {
+            int validation = _encodeValidation;
+            if (validation == 0)
+            {
+                validation = VALIDATED;
+                String name = _field.getLowerCaseName();
+                if (!HttpTokens.isLegalH2H3FieldName(name) || name.charAt(0) == ':')
+                    validation |= ILLEGAL_NAME;
+                if (!HttpTokens.isLegalFieldValue(_field.getValue()))
+                    validation |= ILLEGAL_VALUE;
+                _encodeValidation = validation;
+            }
+            return validation;
+        }
+
+        /**
+         * @return whether this entry's field has a name an encoder must reject
+         */
+        public boolean hasIllegalNameForEncoding()
+        {
+            return (encodeValidation() & ILLEGAL_NAME) != 0;
+        }
+
+        /**
+         * @return whether this entry's field has a value an encoder must reject
+         */
+        public boolean hasIllegalValueForEncoding()
+        {
+            return (encodeValidation() & ILLEGAL_VALUE) != 0;
         }
 
         public int getSize()
