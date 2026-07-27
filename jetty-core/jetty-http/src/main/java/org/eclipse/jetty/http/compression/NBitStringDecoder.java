@@ -14,8 +14,8 @@
 package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.util.CharsetStringBuilder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 /**
  * <p>Used to decode string literals as described in RFC7541.</p>
@@ -29,9 +29,15 @@ import org.eclipse.jetty.util.CharsetStringBuilder;
  */
 public class NBitStringDecoder
 {
+    /**
+     * The initial capacity of the byte accumulator; it grows as needed, so that
+     * a large declared length does not allocate a large array up front.
+     */
+    private static final int INITIAL_CAPACITY = 512;
+
     private final NBitIntegerDecoder _integerDecoder;
     private final HuffmanDecoder _huffmanBuilder;
-    private final CharsetStringBuilder.Iso88591StringBuilder _builder;
+    private byte[] _bytes;
     private boolean _huffman;
     private int _count;
     private int _length;
@@ -50,7 +56,6 @@ public class NBitStringDecoder
     {
         _integerDecoder = new NBitIntegerDecoder();
         _huffmanBuilder = new HuffmanDecoder();
-        _builder = new CharsetStringBuilder.Iso88591StringBuilder();
     }
 
     /**
@@ -109,14 +114,20 @@ public class NBitStringDecoder
 
     private String stringDecode(ByteBuffer buffer)
     {
-        for (; _count < _length; _count++)
-        {
-            if (!buffer.hasRemaining())
-                return null;
-            _builder.append(buffer.get());
-        }
+        // An ISO-8859-1 String is byte for byte the encoded bytes, so accumulate
+        // the bytes in bulk and decode them in one go, rather than appending one
+        // character at a time.
+        int available = Math.min(_length - _count, buffer.remaining());
+        if (_bytes == null)
+            _bytes = new byte[Math.min(_length, INITIAL_CAPACITY)];
+        if (_count + available > _bytes.length)
+            _bytes = Arrays.copyOf(_bytes, Math.max(_count + available, Math.min(_length, _bytes.length * 2)));
+        buffer.get(_bytes, _count, available);
+        _count += available;
 
-        return _builder.build();
+        if (_count < _length)
+            return null;
+        return new String(_bytes, 0, _length, StandardCharsets.ISO_8859_1);
     }
 
     public void reset()
@@ -124,7 +135,7 @@ public class NBitStringDecoder
         _state = State.PARSING;
         _integerDecoder.reset();
         _huffmanBuilder.reset();
-        _builder.reset();
+        _bytes = null;
         _prefix = 0;
         _count = 0;
         _length = 0;
