@@ -123,7 +123,7 @@ public class DoSFilter implements Filter
     private static final Pattern IPv4_PATTERN = Pattern.compile(IPv4_GROUP + "\\." + IPv4_GROUP + "\\." + IPv4_GROUP + "\\." + IPv4_GROUP);
     private static final String IPv6_GROUP = "(\\p{XDigit}{1,4})";
     private static final Pattern IPv6_PATTERN = Pattern.compile(IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP);
-    private static final Pattern CIDR_PATTERN = Pattern.compile("([^/]+)/(\\d+)");
+    private static final Pattern CIDR_PATTERN = Pattern.compile("([^/]+)/(\\d+)", Pattern.CASE_INSENSITIVE);
 
     private static final String __TRACKER = "DoSFilter.Tracker";
     private static final String __THROTTLED = "DoSFilter.Throttled";
@@ -585,7 +585,7 @@ public class DoSFilter implements Filter
             }
             else
             {
-                if (address.equals(candidate))
+                if (address.equalsIgnoreCase(candidate))
                     return true;
             }
         }
