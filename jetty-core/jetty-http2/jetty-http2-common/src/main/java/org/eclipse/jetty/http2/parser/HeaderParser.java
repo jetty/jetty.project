@@ -72,6 +72,24 @@ public class HeaderParser
      */
     public boolean parse(ByteBuffer buffer)
     {
+        // Fast path: the whole 9 octets header is available, so read it
+        // with a single 8 octets read plus a single 1 octet read, rather
+        // than stepping the state machine once per octet.
+        if (state == State.LENGTH && cursor == 0 && buffer.remaining() >= Frame.HEADER_LENGTH)
+        {
+            int position = buffer.position();
+            // Octets 0..7: 3 octets of length, 1 of type, 1 of flags, 3 of the stream id.
+            long header = buffer.getLong(position);
+            length = (int)(header >>> 40) & Frame.MAX_MAX_SIZE;
+            type = (int)(header >>> 32) & 0xFF;
+            flags = (int)(header >>> 24) & 0xFF;
+            // Octet 8: the least significant octet of the stream id.
+            // The most significant bit MUST be ignored as per specification.
+            streamId = (((int)header << 8) | (buffer.get(position + 8) & 0xFF)) & 0x7F_FF_FF_FF;
+            buffer.position(position + Frame.HEADER_LENGTH);
+            return true;
+        }
+
         while (buffer.hasRemaining())
         {
             switch (state)
