@@ -448,7 +448,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
     public boolean validateDestination(String host, int port)
     {
         String hostPort = host + ":" + port;
-        boolean allowed = _hosts.isIncludedAndNotExcluded(hostPort);
+        boolean allowed = _hosts.test(hostPort);
         if (_log.isDebugEnabled())
             _log.debug("Host {} is {}", hostPort, allowed ? "allowed" : "denied");
         return allowed;
