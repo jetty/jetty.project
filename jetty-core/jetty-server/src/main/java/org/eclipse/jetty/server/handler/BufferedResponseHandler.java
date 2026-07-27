@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
@@ -67,7 +68,7 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
-    private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
+    private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>(AsciiLowerCaseSet.class);
 
     public BufferedResponseHandler()
     {
