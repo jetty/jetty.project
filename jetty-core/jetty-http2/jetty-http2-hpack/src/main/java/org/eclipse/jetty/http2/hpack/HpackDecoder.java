@@ -143,13 +143,14 @@ public class HpackDecoder
                         if (LOG.isDebugEnabled())
                             LOG.debug("decode Idx {}", entry);
 
-                        String name = field.getName();
-                        if (!HttpTokens.isLegalH2H3FieldName(name))
-                            _builder.streamException("Illegal header name %s", name);
+                        // The entry was validated when it was added to the dynamic
+                        // table, so replay that outcome rather than deriving it again
+                        // for every message that references this index.
+                        if (entry.hasIllegalName())
+                            _builder.streamException("Illegal header name %s", field.getName());
 
-                        String value = field.getValue();
-                        if (!HttpTokens.isLegalFieldValue(value))
-                            _builder.streamException("Illegal header value %s", value);
+                        if (entry.hasIllegalValue())
+                            _builder.streamException("Illegal header value %s", field.getValue());
 
                         // emit
                         emitted = true;
