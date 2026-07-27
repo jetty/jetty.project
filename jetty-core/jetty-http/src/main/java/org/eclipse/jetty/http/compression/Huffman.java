@@ -288,6 +288,13 @@ public class Huffman
     static final int[][] LCCODES = new int[CODES.length][];
     static final char EOS = 256;
 
+    // Huffman encode codes stored in flattened long arrays for good locality
+    // of reference, packed as (code << CODE_SHIFT) | bits.
+    static final int CODE_SHIFT = 5;
+    static final int BITS_MASK = (1 << CODE_SHIFT) - 1;
+    static final long[] PACKED_CODES;
+    static final long[] PACKED_LCCODES;
+
     // Huffman decode tree stored in a flattened char array for good
     // locality of reference.
     static final char[] tree;
@@ -302,6 +309,9 @@ public class Huffman
         {
             LCCODES[i] = LCCODES['a' + i - 'A'];
         }
+
+        PACKED_CODES = pack(CODES);
+        PACKED_LCCODES = pack(LCCODES);
 
         int r = 0;
         for (int[] ints : CODES)
@@ -348,5 +358,15 @@ public class Huffman
                 tree[i] = (char)terminal;
             }
         }
+    }
+
+    private static long[] pack(int[][] codes)
+    {
+        long[] packed = new long[codes.length];
+        for (int i = 0; i < codes.length; i++)
+        {
+            packed[i] = ((long)codes[i][0] << CODE_SHIFT) | codes[i][1];
+        }
+        return packed;
     }
 }
