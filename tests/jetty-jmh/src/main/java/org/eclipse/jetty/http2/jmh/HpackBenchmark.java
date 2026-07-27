@@ -195,6 +195,21 @@ public class HpackBenchmark
     }
 
     @Benchmark
+    public int huffmanOctetsNeeded()
+    {
+        int needed = 0;
+        for (String value : fieldValues)
+        {
+            needed += HuffmanEncoder.octetsNeeded(value);
+        }
+        for (String name : fieldNames)
+        {
+            needed += HuffmanEncoder.octetsNeededLowerCase(name);
+        }
+        return needed;
+    }
+
+    @Benchmark
     public boolean validateFields()
     {
         boolean legal = true;
