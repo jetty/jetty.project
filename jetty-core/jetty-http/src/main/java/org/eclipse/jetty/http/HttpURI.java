@@ -651,6 +651,33 @@ public interface HttpURI
 
         private static final boolean[] __pathCharacters;
 
+        /**
+         * <p>A 128 bit set, held as two longs, of the path characters that need
+         * attention while parsing: the delimiters that drive the state machine,
+         * plus the illegal and the suspicious characters.</p>
+         * <p>Every other character is ordinary, and parsing does nothing for it
+         * but move on. Testing the set is a shift and a mask of a value the JIT
+         * can hold in a register, which is cheaper than a switch on the
+         * character followed by a lookup in each of the two tables. Characters
+         * at or above 128 are never ordinary.</p>
+         */
+        private static final long __interestingPathCharacters0To63;
+        private static final long __interestingPathCharacters64To127;
+
+        /**
+         * @param c the character to test
+         * @return whether parsing the path can move over {@code c} without doing anything
+         */
+        private static boolean isOrdinaryPathCharacter(char c)
+        {
+            if (c >= 128)
+                return false;
+            // A long shift uses only the low 6 bits of the shift distance, so
+            // the same shift selects the right bit in either half.
+            long interesting = c < 64 ? __interestingPathCharacters0To63 : __interestingPathCharacters64To127;
+            return ((interesting >>> c) & 1L) == 0L;
+        }
+
         private static boolean isDigit(char c)
         {
             return (c >= '0') && (c <= '9');
@@ -735,6 +762,29 @@ public interface HttpURI
             __suspiciousPathCharacters[0x7F] = true;
             for (int i = 0; i <= 0x1F; i++)
                 __suspiciousPathCharacters[i] = true;
+
+            // Derive the set of characters that parsing a path must stop at, so
+            // that it cannot drift from the tables and the cases above.
+            long interesting0To63 = 0L;
+            long interesting64To127 = 0L;
+            for (int i = 0; i < 128; i++)
+            {
+                char c = (char)i;
+                boolean interesting =
+                    // The delimiters handled by the switch in the PATH state.
+                    c == ';' || c == '?' || c == '#' || c == '/' || c == '.' || c == '%' ||
+                    // The characters the default case of that switch reports.
+                    !__pathCharacters[i] || __suspiciousPathCharacters[i];
+                if (interesting)
+                {
+                    if (i < 64)
+                        interesting0To63 |= 1L << i;
+                    else
+                        interesting64To127 |= 1L << i;
+                }
+            }
+            __interestingPathCharacters0To63 = interesting0To63;
+            __interestingPathCharacters64To127 = interesting64To127;
         }
 
         private String _scheme;
@@ -1677,6 +1727,13 @@ public interface HttpURI
                                 }
                             }
                         }
+                        else if (isOrdinaryPathCharacter(c))
+                        {
+                            // Not a delimiter, legal, and not suspicious, so
+                            // there is nothing to do but move on. This is the
+                            // overwhelmingly common case, and taking it here
+                            // avoids the switch below and its table lookups.
+                        }
                         else
                         {
                             switch (c)
@@ -1857,6 +1914,10 @@ public interface HttpURI
             for (int i = start; i < end; i++)
             {
                 char c = uri.charAt(i);
+                // An ordinary character is legal and not suspicious, so it has
+                // nothing to report; only the rest need the tables consulted.
+                if (isOrdinaryPathCharacter(c))
+                    continue;
                 if (c >= __pathCharacters.length || !__pathCharacters[c])
                     addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
                 if (c < __suspiciousPathCharacters.length && __suspiciousPathCharacters[c])
