@@ -301,6 +301,17 @@ public class Huffman
     static final char[] rowsym;
     static final byte[] rowbits;
 
+    /**
+     * <p>A fast lookup of the symbols whose code is 8 bits or fewer, indexed by
+     * the next 8 bits of input read at the root of the tree, and holding the
+     * symbol and its code length packed as {@code (bits << 8) | symbol}.</p>
+     * <p>Walking the tree costs 3 loads per symbol, one from {@code tree} and
+     * one each from {@code rowbits} and {@code rowsym}; this costs 1, from a
+     * table small enough to stay in the innermost cache. A zero means the next
+     * 8 bits do not complete a code, so the tree must be walked instead.</p>
+     */
+    static final char[] FAST_ROOT = new char[256];
+
     // Build the Huffman lookup tree and LC TABLE
     static
     {
@@ -357,6 +368,21 @@ public class Huffman
             {
                 tree[i] = (char)terminal;
             }
+        }
+    }
+
+    static
+    {
+        // The root state is state 0, so its 256 entries are the start of the
+        // tree; an entry is a terminal node when it has a non zero bit count,
+        // and a terminal node reached directly from the root has a code no
+        // longer than the 8 bits used to reach it.
+        for (int i = 0; i < FAST_ROOT.length; i++)
+        {
+            char node = tree[i];
+            int bits = rowbits[node];
+            if (node != 0 && bits != 0 && rowsym[node] != EOS)
+                FAST_ROOT[i] = (char)((bits << 8) | rowsym[node]);
         }
     }
 
