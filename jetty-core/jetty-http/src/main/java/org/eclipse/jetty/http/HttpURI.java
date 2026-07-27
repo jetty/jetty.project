@@ -1237,7 +1237,12 @@ public interface HttpURI
          */
         public Mutable scheme(HttpScheme scheme)
         {
-            return scheme(scheme.asString());
+            // The known schemes are lowercase already, so skip normalizing them;
+            // this is on the path of every HTTP/2 request, whose :scheme pseudo
+            // header resolves to one of them.
+            _scheme = scheme.asString();
+            _uri = null;
+            return this;
         }
 
         /**
