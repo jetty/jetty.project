@@ -95,6 +95,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -656,8 +657,25 @@ public class ContextHandlerTest
         assertThat(stream.getResponse().getStatus(), equalTo(200));
     }
 
-    @Test
-    public void testVirtualHost() throws Exception
+    public static Stream<Arguments> virtualHostCases()
+    {
+        return Stream.of(
+            Arguments.of("/ctx", null, 404),
+            Arguments.of("http://localhost/ctx/", null, 404),
+            Arguments.of("http://nope.example.com/ctx/", null, 404),
+            Arguments.of("http://example.com/ctx/", null, 200),
+            Arguments.of("http://EXAMPLE.com/ctx/", null, 200),
+            Arguments.of("http://wild.org/ctx/", null, 404),
+            Arguments.of("http://match.wild.org/ctx/", null, 200),
+            Arguments.of("http://acme.com/ctx/", null, 404),
+            Arguments.of("http://ACME.com/ctx/", "special", 200),
+            Arguments.of("http://acme.com/ctx/", "special", 200)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("virtualHostCases")
+    public void testVirtualHost(String requestedTarget, String requestedConnectorName, int expectedStatus) throws Exception
     {
         HelloHandler helloHandler = new HelloHandler();
         _contextHandler.setHandler(helloHandler);
@@ -681,50 +699,15 @@ public class ContextHandlerTest
             }
         };
 
+        connectorName.set(requestedConnectorName);
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(connector);
         HttpChannel channel = new HttpChannelState(connectionMetaData);
         HttpFields fields = HttpFields.build().asImmutable();
 
         MockHttpStream stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("/ctx/"), HttpVersion.HTTP_1_0, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(404));
-
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(404));
-
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://nope.example.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(404));
-
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://example.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
-
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://wild.org/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(404));
-
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://match.wild.org/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
-
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://acme.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(404));
-
-        connectorName.set("special");
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://acme.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        channel.onRequest(new MetaData.Request("GET", HttpURI.from(requestedTarget), HttpVersion.HTTP_1_0, fields, 0)).run();
+        assertTrue(stream.isComplete(), "isComplete : " + requestedTarget);
+        assertEquals(expectedStatus, stream.getResponse().getStatus(), "status: " + requestedTarget);
     }
 
     @Test
