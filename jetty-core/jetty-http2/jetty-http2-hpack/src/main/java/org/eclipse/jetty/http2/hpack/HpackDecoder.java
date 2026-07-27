@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.http2.hpack;
 
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.function.LongSupplier;
 
 import org.eclipse.jetty.http.HttpField;
@@ -28,7 +30,6 @@ import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.internal.AuthorityHttpField;
 import org.eclipse.jetty.http2.hpack.internal.MetaDataBuilder;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -360,12 +361,20 @@ public class HpackDecoder
 
     public static String toISO88591String(ByteBuffer buffer, int length)
     {
-        CharsetStringBuilder.Iso88591StringBuilder builder = new CharsetStringBuilder.Iso88591StringBuilder();
-        for (int i = 0; i < length; ++i)
+        // An ISO-8859-1 String is byte for byte the encoded bytes, so build it
+        // from the bytes in bulk rather than appending one character at a time.
+        if (length > buffer.remaining())
+            throw new BufferUnderflowException();
+        if (buffer.hasArray())
         {
-            builder.append(buffer.get());
+            int position = buffer.position();
+            String string = new String(buffer.array(), buffer.arrayOffset() + position, length, StandardCharsets.ISO_8859_1);
+            buffer.position(position + length);
+            return string;
         }
-        return builder.build();
+        byte[] bytes = new byte[length];
+        buffer.get(bytes, 0, length);
+        return new String(bytes, StandardCharsets.ISO_8859_1);
     }
 
     @Override
