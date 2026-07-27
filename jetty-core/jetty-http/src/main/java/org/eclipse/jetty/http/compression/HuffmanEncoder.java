@@ -15,9 +15,11 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-import static org.eclipse.jetty.http.compression.Huffman.CODES;
+import static org.eclipse.jetty.http.compression.Huffman.BITS_MASK;
+import static org.eclipse.jetty.http.compression.Huffman.CODE_SHIFT;
 import static org.eclipse.jetty.http.compression.Huffman.EOS;
-import static org.eclipse.jetty.http.compression.Huffman.LCCODES;
+import static org.eclipse.jetty.http.compression.Huffman.PACKED_CODES;
+import static org.eclipse.jetty.http.compression.Huffman.PACKED_LCCODES;
 
 /**
  * <p>Used to encode strings Huffman encoding.</p>
@@ -37,7 +39,7 @@ public class HuffmanEncoder
      */
     public static int octetsNeeded(String s)
     {
-        return octetsNeeded(CODES, s);
+        return octetsNeeded(PACKED_CODES, s);
     }
 
     /**
@@ -50,7 +52,7 @@ public class HuffmanEncoder
         for (byte value : b)
         {
             int c = 0xFF & value;
-            needed += CODES[c][1];
+            needed += (int)(PACKED_CODES[c] & BITS_MASK);
         }
         return (needed + 7) / 8;
     }
@@ -61,7 +63,7 @@ public class HuffmanEncoder
      */
     public static void encode(ByteBuffer buffer, String s)
     {
-        encode(CODES, buffer, s);
+        encode(PACKED_CODES, buffer, s);
     }
 
     /**
@@ -70,7 +72,7 @@ public class HuffmanEncoder
      */
     public static int octetsNeededLowerCase(String s)
     {
-        return octetsNeeded(LCCODES, s);
+        return octetsNeeded(PACKED_LCCODES, s);
     }
 
     /**
@@ -79,10 +81,10 @@ public class HuffmanEncoder
      */
     public static void encodeLowerCase(ByteBuffer buffer, String s)
     {
-        encode(LCCODES, buffer, s);
+        encode(PACKED_LCCODES, buffer, s);
     }
 
-    private static int octetsNeeded(final int[][] table, String s)
+    private static int octetsNeeded(final long[] table, String s)
     {
         int needed = 0;
         int len = s.length();
@@ -91,7 +93,7 @@ public class HuffmanEncoder
             char c = s.charAt(i);
             if (isIllegalHuffmanChar(c))
                 return -1;
-            needed += table[c][1];
+            needed += (int)(table[c] & BITS_MASK);
         }
 
         return (needed + 7) / 8;
@@ -102,7 +104,7 @@ public class HuffmanEncoder
      * @param buffer The buffer to encode to
      * @param s The string to encode
      */
-    private static void encode(final int[][] table, ByteBuffer buffer, String s)
+    private static void encode(final long[] table, ByteBuffer buffer, String s)
     {
         long current = 0;
         int n = 0;
@@ -112,18 +114,27 @@ public class HuffmanEncoder
             char c = s.charAt(i);
             if (isIllegalHuffmanChar(c))
                  throw new IllegalArgumentException();
-            int code = table[c][0];
-            int bits = table[c][1];
+            long packed = table[c];
+            int bits = (int)(packed & BITS_MASK);
 
             current <<= bits;
-            current |= code;
+            current |= packed >>> CODE_SHIFT;
             n += bits;
 
-            while (n >= 8)
+            // Codes are at most 30 bits, so letting up to 31 bits accumulate
+            // keeps the accumulator within 64 bits, and lets 4 octets at a
+            // time be written with a single put rather than one put each.
+            if (n >= 32)
             {
-                n -= 8;
-                buffer.put((byte)(current >> n));
+                n -= 32;
+                buffer.putInt((int)(current >>> n));
             }
+        }
+
+        while (n >= 8)
+        {
+            n -= 8;
+            buffer.put((byte)(current >> n));
         }
 
         if (n > 0)
