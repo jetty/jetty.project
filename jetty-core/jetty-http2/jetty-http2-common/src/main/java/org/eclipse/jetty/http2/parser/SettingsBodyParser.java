@@ -112,6 +112,22 @@ public class SettingsBodyParser extends BodyParser
                 {
                     if (length < 6)
                         return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_settings_frame");
+                    if (buffer.remaining() >= 6)
+                    {
+                        // Fast path: the whole 6 octets setting is available,
+                        // so read the identifier and the value in one go and
+                        // stay in this state for the next setting.
+                        settingId = buffer.getShort() & 0xFF_FF;
+                        settingValue = buffer.getInt();
+                        length -= 6;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug(String.format("setting %d=%d", settingId, settingValue));
+                        if (!onSetting(buffer, settings, settingId, settingValue))
+                            return false;
+                        if (length == 0)
+                            return onSettings(buffer, settings);
+                        break;
+                    }
                     if (buffer.remaining() >= 2)
                     {
                         settingId = buffer.getShort() & 0xFF_FF;
