@@ -21,6 +21,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class HostPortTest
@@ -138,5 +139,26 @@ public class HostPortTest
         HostPort hostPort = HostPort.unsafe(rawAuthority);
         assertThat("(unsafe) Host for: " + rawAuthority, hostPort.getHost(), is(expectedHost));
         assertThat("(unsafe) Port for: " + rawAuthority, hostPort.getPort(), is(expectedPort));
+    }
+
+    public static Stream<Arguments> normalizeHostProvider()
+    {
+        return Stream.of(
+            Arguments.of("localhost", "localhost"),
+            Arguments.of("demo.example.org", "demo.example.org"),
+            Arguments.of("127.0.0.1", "127.0.0.1"),
+            Arguments.of("::1", "[::1]"),
+            Arguments.of("[::1]", "[::1]"),
+            Arguments.of("::FFFF:129.144.52.38", "[::FFFF:129.144.52.38]"),
+            Arguments.of("[::FFFF:129.144.52.38]", "[::FFFF:129.144.52.38]")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("normalizeHostProvider")
+    public void testNormalizeHost(String rawHost, String expectedHost)
+    {
+        String actualHost = HostPort.normalizeHost(rawHost);
+        assertEquals(expectedHost, actualHost);
     }
 }

@@ -271,6 +271,51 @@ public class TestSecurityAnnotationConversions
         compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 
+    @ServletSecurity(@HttpConstraint(value = EmptyRoleSemantic.DENY))
+    public static class EmptyDenyServlet extends HttpServlet
+    {
+    }
+
+    @Test
+    public void testWebXmlPathSpecAuthoritative()
+    {
+        // A ServletSecurity annotation that has HttpConstraint of EmptyRoleSemantic.DENY
+        WebAppContext wac = makeWebAppContext(EmptyDenyServlet.class.getCanonicalName(), "emptyDenyServlet", new String[]{
+            "/annotation/*", "/descriptor/*"
+        });
+
+        AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
+        ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
+        introspector.registerHandler(annotationHandler);
+
+        // Add another constraint, overriding the existing one on the same path spec
+        // This should be the Jakarta Servlet Spec 13.4.1 authoritative constraint.
+        Constraint descriptorConstraint = new Constraint.Builder()
+            .authorization(Constraint.Authorization.FORBIDDEN)
+            .build();
+        ConstraintMapping descriptorMapping = new ConstraintMapping();
+        descriptorMapping.setPathSpec("/descriptor/*");
+        descriptorMapping.setConstraint(descriptorConstraint);
+
+        ConstraintAware constraintSecurityHandler = (ConstraintAware)wac.getSecurityHandler();
+        constraintSecurityHandler.addConstraintMapping(descriptorMapping);
+
+        ConstraintMapping[] expectedMappings = new ConstraintMapping[2];
+        expectedMappings[0] = new ConstraintMapping();
+        expectedMappings[0].setConstraint(new Constraint.Builder()
+            .transport(Transport.INHERIT)
+            .authorization(Constraint.Authorization.FORBIDDEN).build());
+        expectedMappings[0].setPathSpec("/descriptor/*");
+        expectedMappings[1] = new ConstraintMapping();
+        expectedMappings[1].setConstraint(new Constraint.Builder()
+            .transport(Transport.ANY)
+            .authorization(Constraint.Authorization.FORBIDDEN).build());
+        expectedMappings[1].setPathSpec("/annotation/*");
+
+        introspector.introspect(new EmptyDenyServlet(), null);
+        compareResults(expectedMappings, constraintSecurityHandler.getConstraintMappings());
+    }
+
     private void compareResults(ConstraintMapping[] expectedMappings, List<ConstraintMapping> actualMappings)
     {
         assertNotNull(actualMappings);

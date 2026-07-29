@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -46,8 +45,10 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.TunnelSupport;
+import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
@@ -62,8 +63,7 @@ public class ConnectHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectHandler.class);
 
-    private final Set<String> whiteList = new HashSet<>();
-    private final Set<String> blackList = new HashSet<>();
+    private final IncludeExclude<String> hosts = new IncludeExclude<>(AsciiLowerCaseSet.class);
     private Executor executor;
     private Scheduler scheduler;
     private ByteBufferPool bufferPool;
@@ -439,14 +439,38 @@ public class ConnectHandler extends Handler.Wrapper
         endPoint.write(callback, buffer);
     }
 
-    public Set<String> getWhiteListHosts()
+    /**
+     * Get the {@link IncludeExclude} used for host whitelists and blacklists
+     *
+     * @return the {@link IncludeExclude} used for host matching
+     */
+    public IncludeExclude<String> getHostIncludeExclude()
     {
-        return whiteList;
+        return hosts;
     }
 
+    /**
+     * The set of whitelisted hosts.
+     *
+     * @return the set of whitelisted hosts.
+     * @deprecated use {@link #getHostIncludeExclude()} and its {@link IncludeExclude#include(Object)} method instead.
+     */
+    @Deprecated(since = "12.1.12", forRemoval = true)
+    public Set<String> getWhiteListHosts()
+    {
+        return hosts.getIncluded();
+    }
+
+    /**
+     * The set of blacklisted hosts.
+     *
+     * @return the set of blacklisted hosts.
+     * @deprecated use {@link #getHostIncludeExclude()} and its {@link IncludeExclude#exclude(Object)} method instead.
+     */
+    @Deprecated(since = "12.1.12", forRemoval = true)
     public Set<String> getBlackListHosts()
     {
-        return blackList;
+        return hosts.getExcluded();
     }
 
     /**
@@ -459,25 +483,10 @@ public class ConnectHandler extends Handler.Wrapper
     public boolean validateDestination(String host, int port)
     {
         String hostPort = host + ":" + port;
-        if (!whiteList.isEmpty())
-        {
-            if (!whiteList.contains(hostPort))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Host {}:{} not whitelisted", host, port);
-                return false;
-            }
-        }
-        if (!blackList.isEmpty())
-        {
-            if (blackList.contains(hostPort))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Host {}:{} blacklisted", host, port);
-                return false;
-            }
-        }
-        return true;
+        boolean allowed = hosts.test(hostPort);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Host {} is {}", hostPort, allowed ? "allowed" : "denied");
+        return allowed;
     }
 
     protected class ConnectManager extends SelectorManager
