@@ -77,10 +77,11 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     @Override
     protected WebSocketConnection createWebSocketConnection(Request baseRequest, WebSocketCoreSession coreSession)
     {
+        WebSocketComponents components = coreSession.getWebSocketComponents();
         ConnectionMetaData connectionMetaData = baseRequest.getConnectionMetaData();
         Connector connector = connectionMetaData.getConnector();
         EndPoint endPoint = connectionMetaData.getConnection().getEndPoint();
-        return newWebSocketConnection(endPoint, connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), coreSession);
+        return newWebSocketConnection(endPoint, components.getExecutor(), connector.getScheduler(), components.getByteBufferPool(), coreSession);
     }
 
     @Override
