@@ -451,12 +451,6 @@ public class ServletCoreRequest implements Request
         }
 
         @Override
-        public HttpFields asImmutable()
-        {
-            return this;
-        }
-
-        @Override
         public ListIterator<HttpField> listIterator(int index)
         {
             return Collections.unmodifiableList(_fields).listIterator(index);
