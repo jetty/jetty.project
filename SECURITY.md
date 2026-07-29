@@ -5,13 +5,24 @@
 All [active versions](https://jetty.org/download.html) of Jetty are supported for security issues. 
 [End-of-life (EOL) versions](https://jetty.org/download.html) of Jetty may be supported for serious security issues or on a [commercial support basis](https://jetty.org/support.html).
 
+## Experimental Features
+
+Jetty may ship experimental features, declared in the javadocs, or in the documentation, or via warning logs at Jetty startup.
+Security issues found in experimental features are not considered vulnerabilities, but rather just regular bugs.
+Feel free to report them to the [Jetty issue tracker](https://github.com/eclipse/jetty.project/issues).
+
 ## Reporting a Vulnerability
 
 Do not open a public issue to report a security vulnerability.  
-Please send a message to <security@jetty.org>, and we will create a private issue in which the issue can be triaged and handled.
+Be aware of the [Eclipse Foundation rules on security vulnerability reporting](https://github.com/orgs/eclipse-csi/discussions/16).
+
+Our preferred way to handle security vulnerability reports is in a GitHub Security Advisory, please use the private ["Report a Vulnerability"](https://github.com/jetty/jetty.project/security/advisories) button mechanism in our GitHub project.  
+If you do not have a GitHub account, use the [security@jetty.org](mailto:security@jetty.org) email address to report your vulnerability, and we will create a private security advisory in which the report can be triaged and handled.  
 We are flexible in how we work with reporters of vulnerabilities; however, we reserve the right to act in the interests of the Jetty project in all circumstances.
 
-AI-generated security reports must be human-verified and possibly contain a real code proof-of-concept.
+## AI Reports
+
+AI-generated security reports must be human-verified and possibly contain a real code proof-of-concept.  
 Failing to do so, also known as [AI slop](https://en.wikipedia.org/wiki/AI_slop), may result in banning the reporter from the Jetty project.
 
 ## Handling a Vulnerability

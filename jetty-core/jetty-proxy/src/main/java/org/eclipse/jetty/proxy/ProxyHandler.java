@@ -347,7 +347,7 @@ public abstract class ProxyHandler extends Handler.Abstract
             if (headersToRemove != null && headersToRemove.contains(clientToProxyRequestField.getLowerCaseName()))
                 continue;
 
-            proxyToServerRequest.headers(headers -> headers.add(clientToProxyRequestField));
+            proxyToServerRequest.headers(headers -> headers.put(clientToProxyRequestField));
         }
     }
 
@@ -362,7 +362,7 @@ public abstract class ProxyHandler extends Handler.Abstract
             String[] values = value.split(",");
             for (String name : values)
             {
-                name = name.trim().toLowerCase(Locale.ENGLISH);
+                name = name.trim().toLowerCase(Locale.ROOT);
                 if (hopHeaders == null)
                     hopHeaders = new HashSet<>();
                 hopHeaders.add(name);
@@ -689,7 +689,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                 HttpField newField = filterServerToProxyResponseField(serverToProxyResponseField);
                 if (newField == null)
                     continue;
-                proxyToClientResponse.getHeaders().add(newField);
+                proxyToClientResponse.getHeaders().put(newField);
             }
             if (LOG.isDebugEnabled())
             {

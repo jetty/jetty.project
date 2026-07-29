@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.compression</groupId>
     <artifactId>jetty-compression</artifactId>
-    <version>12.1.11-SNAPSHOT</version>
+    <version>12.1.12-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-compression-zstandard</artifactId>
   <packaging>jar</packaging>
@@ -14,7 +14,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.zstandard</bundle-symbolic-name>
-    <zstd-jni.version>1.5.7-8</zstd-jni.version>
+    <zstd-jni.version>1.5.7-11</zstd-jni.version>
   </properties>
 
   <dependencies>

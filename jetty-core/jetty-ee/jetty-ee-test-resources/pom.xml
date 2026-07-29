@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee</groupId>
     <artifactId>jetty-ee</artifactId>
-    <version>12.1.11-SNAPSHOT</version>
+    <version>12.1.12-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee-test-resources</artifactId>
   <name>Core :: EE :: Test Resources</name>
