@@ -190,22 +190,22 @@ public abstract class RFC2616BaseTest
         req2.append("Transfer-Encoding: chunked\n");
         req2.append("Content-Type: text/plain\n");
         req2.append("\n");
-        req2.append("2\n"); // 2 chars
-        req2.append("12\n");
-        req2.append("3\n"); // 3 chars
-        req2.append("345\n");
-        req2.append("0\n\n");
+        req2.append("2\r\n"); // 2 chars
+        req2.append("12\r\n");
+        req2.append("3\r\n"); // 3 chars
+        req2.append("345\r\n");
+        req2.append("0\r\n\r\n");
 
         req2.append("GET /echo/R2 HTTP/1.1\n");
         req2.append("Host: localhost\n");
         req2.append("Transfer-Encoding: chunked\n");
         req2.append("Content-Type: text/plain\n");
         req2.append("\n");
-        req2.append("4\n"); // 4 chars
-        req2.append("6789\n");
-        req2.append("5\n"); // 5 chars
-        req2.append("abcde\n");
-        req2.append("0\n\n"); // 0 chars
+        req2.append("4\r\n"); // 4 chars
+        req2.append("6789\r\n");
+        req2.append("5\r\n"); // 5 chars
+        req2.append("abcde\r\n");
+        req2.append("0\r\n\r\n"); // 0 chars
 
         req2.append("GET /echo/R3 HTTP/1.1\n");
         req2.append("Host: localhost\n");
@@ -243,22 +243,22 @@ public abstract class RFC2616BaseTest
         req3.append("Transfer-Encoding: chunked\n");
         req3.append("Content-Type: text/plain\n");
         req3.append("\n");
-        req3.append("3\n"); // 3 chars
-        req3.append("fgh\n");
-        req3.append("3\n"); // 3 chars
-        req3.append("Ijk\n");
-        req3.append("0\n\n"); // 0 chars
+        req3.append("3\r\n"); // 3 chars
+        req3.append("fgh\r\n");
+        req3.append("3\r\n"); // 3 chars
+        req3.append("Ijk\r\n");
+        req3.append("0\r\n\r\n"); // 0 chars
 
         req3.append("POST /echo/R2 HTTP/1.1\n");
         req3.append("Host: localhost\n");
         req3.append("Transfer-Encoding: chunked\n");
         req3.append("Content-Type: text/plain\n");
         req3.append("\n");
-        req3.append("4\n"); // 4 chars
-        req3.append("lmno\n");
-        req3.append("5\n"); // 5 chars
-        req3.append("Pqrst\n");
-        req3.append("0\n\n"); // 0 chars
+        req3.append("4\r\n"); // 4 chars
+        req3.append("lmno\r\n");
+        req3.append("5\r\n"); // 5 chars
+        req3.append("Pqrst\r\n");
+        req3.append("0\r\n\r\n"); // 0 chars
 
         req3.append("GET /echo/R3 HTTP/1.1\n");
         req3.append("Host: localhost\n");
@@ -297,11 +297,11 @@ public abstract class RFC2616BaseTest
         req4.append("Content-Type: text/plain\n");
         req4.append("Connection: keep-alive\n"); // keep-alive
         req4.append("\n");
-        req4.append("3\n"); // 3 chars
-        req4.append("123\n");
-        req4.append("3\n"); // 3 chars
-        req4.append("456\n");
-        req4.append("0\n\n"); // 0 chars
+        req4.append("3\r\n"); // 3 chars
+        req4.append("123\r\n");
+        req4.append("3\r\n"); // 3 chars
+        req4.append("456\r\n");
+        req4.append("0\r\n\r\n"); // 0 chars
 
         req4.append("GET /echo/R2 HTTP/1.1\n");
         req4.append("Host: localhost\n");

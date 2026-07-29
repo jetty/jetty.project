@@ -154,22 +154,22 @@ public class PartialRFC2616Test
                 "Transfer-Encoding: chunked\n" +
                 "Content-Type: text/plain\n" +
                 "\n" +
-                "2\n" +
-                "12\n" +
-                "3\n" +
-                "345\n" +
-                "0\n\n" +
+                "2\r\n" +
+                "12\r\n" +
+                "3\r\n" +
+                "345\r\n" +
+                "0\r\n\r\n" +
 
                 "GET /R2 HTTP/1.1\n" +
                 "Host: localhost\n" +
                 "Transfer-Encoding: chunked\n" +
                 "Content-Type: text/plain\n" +
                 "\n" +
-                "4\n" +
-                "6789\n" +
-                "5\n" +
-                "abcde\n" +
-                "0\n\n" +
+                "4\r\n" +
+                "6789\r\n" +
+                "5\r\n" +
+                "abcde\r\n" +
+                "0\r\n\r\n" +
 
                 "GET /R3 HTTP/1.1\n" +
                 "Host: localhost\n" +
@@ -199,22 +199,22 @@ public class PartialRFC2616Test
                 "Transfer-Encoding: chunked\n" +
                 "Content-Type: text/plain\n" +
                 "\n" +
-                "3\n" +
-                "fgh\n" +
-                "3\n" +
-                "Ijk\n" +
-                "0\n\n" +
+                "3\r\n" +
+                "fgh\r\n" +
+                "3\r\n" +
+                "Ijk\r\n" +
+                "0\r\n\r\n" +
 
                 "POST /R2 HTTP/1.1\n" +
                 "Host: localhost\n" +
                 "Transfer-Encoding: chunked\n" +
                 "Content-Type: text/plain\n" +
                 "\n" +
-                "4\n" +
-                "lmno\n" +
-                "5\n" +
-                "Pqrst\n" +
-                "0\n\n" +
+                "4\r\n" +
+                "lmno\r\n" +
+                "5\r\n" +
+                "Pqrst\r\n" +
+                "0\r\n\r\n" +
 
                 "GET /R3 HTTP/1.1\n" +
                 "Host: localhost\n" +
@@ -249,11 +249,11 @@ public class PartialRFC2616Test
                 "Content-Type: text/plain\n" +
                 "Connection: keep-alive\n" +
                 "\n" +
-                "3\n" +
-                "123\n" +
-                "3\n" +
-                "456\n" +
-                "0\n\n" +
+                "3\r\n" +
+                "123\r\n" +
+                "3\r\n" +
+                "456\r\n" +
+                "0\r\n\r\n" +
 
                 "GET /R2 HTTP/1.1\n" +
                 "Host: localhost\n" +
