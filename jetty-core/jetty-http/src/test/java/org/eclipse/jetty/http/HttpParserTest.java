@@ -42,6 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -88,6 +89,11 @@ public class HttpParserTest
         return List.of(HttpMethod.values())
             .stream()
             .map(Arguments::of);
+    }
+
+    public static HttpCompliance getHttpCompliance(String eoln)
+    {
+        return "\n".equals(eoln) ? HttpCompliance.RFC7230_LEGACY : HttpCompliance.RFC7230;
     }
 
     @ParameterizedTest
@@ -1214,7 +1220,7 @@ public class HttpParserTest
             "0" + eoln +
             eoln);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, getHttpCompliance(eoln));
         parseAll(parser, buffer);
 
         assertEquals("GET", _methodOrVersion);
@@ -1302,7 +1308,7 @@ public class HttpParserTest
                 "Trailer: value" + eoln +
                 eoln);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, getHttpCompliance(eoln));
         parseAll(parser, buffer);
 
         assertEquals("GET", _methodOrVersion);
@@ -1338,7 +1344,7 @@ public class HttpParserTest
                 "Foo: bar" + eoln +
                 eoln);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, getHttpCompliance(eoln));
         parseAll(parser, buffer);
 
         assertEquals("GET", _methodOrVersion);
@@ -1376,7 +1382,7 @@ public class HttpParserTest
                 "0" + eoln +
                 "Trailer: value");
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, getHttpCompliance(eoln));
         parseAll(parser, buffer);
         parser.atEOF();
         parser.parseNext(BufferUtil.EMPTY_BUFFER);
@@ -1408,7 +1414,7 @@ public class HttpParserTest
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + eoln +
                 "0" + eoln);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, getHttpCompliance(eoln));
         parseAll(parser, buffer);
         parser.atEOF();
         parser.parseNext(BufferUtil.EMPTY_BUFFER);
@@ -1471,7 +1477,7 @@ public class HttpParserTest
                 "a;ext" + eoln +
                 "0123456789" + eoln);
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, getHttpCompliance(eoln));
         parser.atEOF();
         parseAll(parser, buffer);
 
@@ -1518,7 +1524,7 @@ public class HttpParserTest
                 "0123456789" + eoln);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, getHttpCompliance(eoln));
         parser.parseNext(buffer);
         assertEquals("GET", _methodOrVersion);
         assertEquals("/mp", _uriOrStatus);
@@ -1584,7 +1590,7 @@ public class HttpParserTest
             "0123456789" + eoln);
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, getHttpCompliance(eoln));
         parser.parseNext(buffer0);
         parser.atEOF();
         parser.parseNext(buffer1);
@@ -2302,7 +2308,7 @@ public class HttpParserTest
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
 
-        assertThat(_complianceViolation, contains(TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
+        assertThat(_complianceViolation, hasItem(TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
     }
 
     @ParameterizedTest
@@ -2332,7 +2338,7 @@ public class HttpParserTest
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
 
-        assertThat(_complianceViolation, contains(TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
+        assertThat(_complianceViolation, hasItem(TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
     }
 
     @ParameterizedTest
@@ -2857,7 +2863,7 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, -1, getHttpCompliance(eoln));
 
         ByteBuffer buffer = BufferUtil.toBuffer(
             "HTTP/1.1 200 OK" + eoln +
@@ -2921,7 +2927,7 @@ public class HttpParserTest
                 return true;
             }
         };
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, -1, getHttpCompliance(eoln));
 
         ByteBuffer buffer = BufferUtil.toBuffer(
             "HTTP/1.1 200 OK" + eoln +

@@ -174,10 +174,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 Transfer-Encoding: chunked
                 Connection: close
                 
-                0a
-                0123456789
-                0
-                
+                0a\r
+                0123456789\r
+                0\r
+                \r
                 """;
             os.write(request.getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
@@ -440,11 +440,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 Host: localhost
                 Transfer-Encoding: chunked
                 
-                0a
-                1234567890
-                xx
-                
-                
+                0a\r
+                1234567890\r
+                xx\r
+                \r
+                \r
                 """;
             os.write(request.getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
@@ -970,7 +970,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             Thread.sleep(10);
             os.write((
                 "a\r\n" +
-                    "123456890\r\n"
+                    "1234567890\r\n"
             ).getBytes());
             os.flush();
 

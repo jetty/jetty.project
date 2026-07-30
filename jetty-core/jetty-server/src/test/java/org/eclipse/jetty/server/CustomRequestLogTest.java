@@ -797,9 +797,9 @@ public class CustomRequestLogTest
             Host: localhost
             Transfer-Encoding: chunked
             
-            0
-            trailerName: 42
-            
+            0\r
+            trailerName: 42\r
+            \r
             """);
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String log = _logs.poll(5, TimeUnit.SECONDS);

@@ -1749,23 +1749,23 @@ public class ProxyServletTest
                 if (chunked)
                 {
                     request = """
-                        POST http://$A/ HTTP/1.1
-                        Host: $A
-                        Expect: 100-Continue
-                        Transfer-Encoding: chunked
-                        
-                        0
-                        
+                        POST http://$A/ HTTP/1.1\r
+                        Host: $A\r
+                        Expect: 100-Continue\r
+                        Transfer-Encoding: chunked\r
+                        \r
+                        0\r
+                        \r
                         """;
                 }
                 else
                 {
                     request = """
-                        POST http://$A/ HTTP/1.1
-                        Host: $A
-                        Expect: 100-Continue
-                        Content-Length: 0
-                        
+                        POST http://$A/ HTTP/1.1\r
+                        Host: $A\r
+                        Expect: 100-Continue\r
+                        Content-Length: 0\r
+                        \r
                         """;
                 }
                 request = request.replace("$A", authority);

@@ -125,7 +125,12 @@ public final class HttpCompliance implements ComplianceViolation.Mode
          * must reject a request if the target URI has an authority that is different than a provided Host header.
          * A deployment may include this violation to allow different values on the target URI and the Host header on a received request.
          */
-        MISMATCHED_AUTHORITY("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Mismatched Authority");
+        MISMATCHED_AUTHORITY("https://www.rfc-editor.org/rfc/rfc7230#section-5.4", "Mismatched Authority"),
+
+        /**
+         * Allow LF termination of chunk headers and chunks
+         */
+        LF_CHUNK_TERMINATION("https://www.rfc-editor.org/info/rfc7230/#section-4.1", "LF line terminator in chunk");
 
         private final String url;
         private final String description;
@@ -192,6 +197,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
      * colons after field names; {@code Transfer-Encoding} with {@code Content-Length} fields; and multiple {@code Content-Length} values.
      */
     public static final HttpCompliance RFC2616_LEGACY = RFC2616.with("RFC2616_LEGACY",
+        Violation.LF_CHUNK_TERMINATION,
         Violation.CASE_INSENSITIVE_METHOD,
         Violation.NO_COLON_AFTER_FIELD_NAME,
         Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH,
@@ -200,7 +206,9 @@ public final class HttpCompliance implements ComplianceViolation.Mode
     /**
      * A legacy HttpCompliance mode that supports {@link #RFC7230}, but with case-insensitive methods allowed.
      */
-    public static final HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY", Violation.CASE_INSENSITIVE_METHOD);
+    public static final HttpCompliance RFC7230_LEGACY = RFC7230.with("RFC7230_LEGACY",
+        Violation.LF_CHUNK_TERMINATION,
+        Violation.CASE_INSENSITIVE_METHOD);
 
     private static final List<HttpCompliance> KNOWN_MODES = Arrays.asList(RFC7230, RFC2616, LEGACY, RFC2616_LEGACY, RFC7230_LEGACY);
     private static final AtomicInteger __custom = new AtomicInteger();
