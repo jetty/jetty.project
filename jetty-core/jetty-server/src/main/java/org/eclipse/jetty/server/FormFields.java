@@ -47,7 +47,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     public static final int MAX_FIELDS_DEFAULT = 1000;
     public static final int MAX_LENGTH_DEFAULT = 200000;
 
-    private static final CompletableFuture<Fields> EMPTY = CompletableFuture.completedFuture(Fields.EMPTY);
+    private static final CompletableFuture<Fields> EMPTY = completedFuture(Fields.EMPTY); // Refatorada
 
     public static Charset getFormEncodedCharset(Request request)
     {

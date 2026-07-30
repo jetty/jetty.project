@@ -225,7 +225,7 @@ public interface Response extends Content.Sink
     static <T extends Response> T asInContext(Response response, Class<T> type)
     {
         //the context whose boundary should not be crossed
-        Context context = response == null ? null : (response.getRequest() == null ? null : response.getRequest().getContext());
+        Context context = response == null ? null : response.getRequest() == null ? null : response.getRequest().getContext(); // Refatorado
 
         if (context == null)
             return Response.as(response, type);

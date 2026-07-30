@@ -860,7 +860,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
 
         public boolean isSecure()
         {
-            return (_secure != null && _secure);
+            return _secure != null && _secure; // Refatorado
         }
 
         public boolean hasFor()

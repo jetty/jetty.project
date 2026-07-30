@@ -769,7 +769,7 @@ public interface Request extends Attributes, Content.Source
         if (request.getHttpURI().equals(uri))
             return request;
 
-        ServeAs serveAs = Request.as(request, ServeAs.class);
+        ServeAs serveAs = as(request, ServeAs.class); // Refatorada
         if (serveAs != null)
             return serveAs.wrap(request, uri);
         return new Request.Wrapper(request)

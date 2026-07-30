@@ -205,15 +205,12 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
             int rate = _rate.record();
             if (LOG.isDebugEnabled())
                 LOG.debug("onAccepting rate {}/{} for {} {}", rate, _acceptRateLimit, _rate, channel);
-            if (rate > _acceptRateLimit)
+            
+            if (rate > _acceptRateLimit && !_limiting) // Refatorado
             {
-                if (!_limiting)
-                {
-                    _limiting = true;
-
-                    LOG.warn("AcceptLimit rate exceeded {}>{} on {}", rate, _acceptRateLimit, _connectors);
-                    limit();
-                }
+                _limiting = true;
+                LOG.warn("AcceptLimit rate EXCEEDED {}>{} on {}", rate, _acceptRateLimit, _connectors);
+                limit();
             }
         }
     }
