@@ -1542,7 +1542,7 @@ public class HttpParserTest
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
                 "0" + scenario.eolChunk +
                 "Trailer: value" + scenario.eolChunk +
-                scenario.eol);
+                scenario.eolChunk);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -1586,9 +1586,9 @@ public class HttpParserTest
                 "1a" + scenario.eolChunk +
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
                 "0" + scenario.eolChunk +
-                "Trailer: value" + scenario.eol +
-                "Foo: bar" + scenario.eol +
-                scenario.eol);
+                "Trailer: value" + scenario.eolChunk +
+                "Foo: bar" + scenario.eolChunk +
+                scenario.eolChunk);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -1802,7 +1802,7 @@ public class HttpParserTest
                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
                 "0" + scenario.eolChunk +
 
-                scenario.eol +
+                scenario.eolChunk +
 
                 "POST /foo HTTP/1.0" + scenario.eol +
                 "Connection: Keep-Alive" + scenario.eol +
@@ -1879,7 +1879,7 @@ public class HttpParserTest
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
             "0" + scenario.eolChunk +
 
-            scenario.eol +
+            scenario.eolChunk +
 
             "POST /foo HTTP/1.0" + scenario.eol +
             "Connection: Keep-Alive" + scenario.eol +
@@ -2714,7 +2714,7 @@ public class HttpParserTest
                 "1" + scenario.eolChunk +
                 "X" + scenario.eolChunk +
                 "0" + scenario.eolChunk +
-                scenario.eol);
+                scenario.eolChunk);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance.with("test", TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
@@ -2756,10 +2756,7 @@ public class HttpParserTest
             expectedEvents.add("HttpCompliance.LF_CHUNK_TERMINATION (allowed)");
             expectedEvents.add("HttpCompliance.LF_CHUNK_TERMINATION (allowed)");
             expectedEvents.add("HttpCompliance.LF_CHUNK_TERMINATION (allowed)");
-        }
-        if (scenario.eol.equals("\n"))
-        {
-            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
+            expectedEvents.add("HttpCompliance.LF_CHUNK_TERMINATION (allowed)");
         }
 
         assertComplianceViolationEvents(expectedEvents);
@@ -2778,7 +2775,7 @@ public class HttpParserTest
                 "1" + scenario.eolChunk +
                 "X" + scenario.eolChunk +
                 "0" + scenario.eolChunk +
-                scenario.eol);
+                scenario.eolChunk);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance.with("test", TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
@@ -2812,14 +2809,9 @@ public class HttpParserTest
         expectedEvents.add("HttpCompliance.TRANSFER_ENCODING_WITH_CONTENT_LENGTH (allowed)");
         if (scenario.eolChunk.equals("\n"))
         {
-            // add 3 for chunk eol
-            for (int i = 0; i < 3; i++)
+            // add 4 for chunk eol
+            for (int i = 0; i < 4; i++)
                 expectedEvents.add("HttpCompliance.LF_CHUNK_TERMINATION (allowed)");
-        }
-        if (scenario.eol.equals("\n")) // handle LF specific scenarios
-        {
-            // add one for the end of headers delim (before body)
-            expectedEvents.add("HttpCompliance.LF_HEADER_TERMINATION (allowed)");
         }
 
         assertComplianceViolationEvents(expectedEvents);
@@ -3452,7 +3444,7 @@ public class HttpParserTest
                 "Transfer-Encoding: chunked" + scenario.eol +
                 scenario.eol +
                 "0" + scenario.eolChunk +
-                scenario.eol);
+                scenario.eolChunk);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3533,7 +3525,7 @@ public class HttpParserTest
                 "Transfer-Encoding: chunked" + scenario.eol +
                 scenario.eol +
                 "0" + scenario.eolChunk +
-                scenario.eol);
+                scenario.eolChunk);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
