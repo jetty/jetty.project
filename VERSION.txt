@@ -1,3 +1,5 @@
+jetty-12.1.13-SNAPSHOT
+
 12.1.12 - 31 July 2026
  + 577 Question: AbstractProxyServlet onServerResponseHeaders addHeader rather than setHeader
  + 13970 ForwardedRequestCustomizer uses connection port instead of proto default when host lacks port (@zenios)
