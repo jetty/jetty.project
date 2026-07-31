@@ -1,3 +1,7 @@
+12.0.38 - 30 July 2026
+ + 15428 Backport of #15307.
+ + 15501 cleanups to WebSocket RFC6455Handshaker and Parser (12.0)
+ + 15503 Remove LF_CHUNK_TERMINATION from non-legacy HttpCompliance modes (12.0)
 
 12.0.37 - 27 June 2026
  + 15226 Jetty 12.0.28 server becomes inaccessible with thousands of qtp threads blocked in HttpChannelState.onIdleTimeout ReentrantLock
