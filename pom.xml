@@ -278,7 +278,7 @@
     <maven.version>3.9.9</maven.version>
     <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
-    <mongodb.version>5.8.0</mongodb.version>
+    <mongodb.version>5.9.1</mongodb.version>
     <netty.version>4.2.16.Final</netty.version>
     <njord.version>0.9.9</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
