@@ -1,4 +1,5 @@
 jetty-12.1.12-SNAPSHOT
+ + 15096 CrossOriginHandler not returning valid headers when all headers are allowed
 
 12.1.11 - 02 July 2026
  + 15156 Injecting authentication headers using request filters?
