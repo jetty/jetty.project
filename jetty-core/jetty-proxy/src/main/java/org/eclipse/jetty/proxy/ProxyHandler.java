@@ -347,7 +347,7 @@ public abstract class ProxyHandler extends Handler.Abstract
             if (headersToRemove != null && headersToRemove.contains(clientToProxyRequestField.getLowerCaseName()))
                 continue;
 
-            proxyToServerRequest.headers(headers -> headers.put(clientToProxyRequestField));
+            proxyToServerRequest.headers(headers -> headers.add(clientToProxyRequestField));
         }
     }
 
@@ -682,6 +682,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                     serverToProxyResponse,
                     serverToProxyResponse.getHeaders());
             }
+            Set<String> seenResponseHeaders = new HashSet<>();
             for (HttpField serverToProxyResponseField : serverToProxyResponse.getHeaders())
             {
                 if (HOP_HEADERS.contains(serverToProxyResponseField.getHeader()))
@@ -689,7 +690,12 @@ public abstract class ProxyHandler extends Handler.Abstract
                 HttpField newField = filterServerToProxyResponseField(serverToProxyResponseField);
                 if (newField == null)
                     continue;
-                proxyToClientResponse.getHeaders().put(newField);
+                // Replace any container-generated header (e.g. Server, Date) on the first
+                // occurrence, then add to preserve genuinely repeated response headers.
+                if (seenResponseHeaders.add(newField.getLowerCaseName()))
+                    proxyToClientResponse.getHeaders().put(newField);
+                else
+                    proxyToClientResponse.getHeaders().add(newField);
             }
             if (LOG.isDebugEnabled())
             {
