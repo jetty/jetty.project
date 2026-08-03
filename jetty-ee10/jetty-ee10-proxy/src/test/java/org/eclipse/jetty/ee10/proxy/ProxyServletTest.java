@@ -77,6 +77,7 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -1842,5 +1843,41 @@ public class ProxyServletTest
             .send();
 
         assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("impls")
+    public void testMultiLineHeadersArePreserved(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    {
+        // Repeated request and response headers must be forwarded as distinct values,
+        // not folded into a single value nor reduced to the last value (see #577 and #13691).
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            {
+                // Echo the raw X-Request values so the client can verify they were forwarded distinctly.
+                List<String> requestValues = Collections.list(req.getHeaders("X-Request"));
+                resp.setHeader("X-Request-Echo", String.join("|", requestValues));
+                resp.addHeader("X-Response", "resp1");
+                resp.addHeader("X-Response", "resp2");
+            }
+        });
+        startProxy(proxyServletClass);
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+            .headers(headers -> headers.add("X-Request", "req1").add("X-Request", "req2"))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        assertEquals("req1|req2", response.getHeaders().get("X-Request-Echo"));
+
+        List<String> responseValues = response.getHeaders().stream()
+            .filter(field -> field.getName().equalsIgnoreCase("X-Response"))
+            .map(HttpField::getValue)
+            .toList();
+        assertEquals(List.of("resp1", "resp2"), responseValues);
     }
 }

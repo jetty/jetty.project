@@ -16,11 +16,9 @@ package org.eclipse.jetty.ee11.proxy;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -529,8 +527,12 @@ public abstract class AbstractProxyServlet extends HttpServlet
             if (headersToRemove != null && headersToRemove.contains(lowerHeaderName))
                 continue;
 
-            List<String> values = Collections.list(clientRequest.getHeaders(headerName));
-            newHeaders.put(headerName, values);
+            for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements(); )
+            {
+                String headerValue = headerValues.nextElement();
+                if (headerValue != null)
+                    newHeaders.add(headerName, headerValue);
+            }
         }
 
         // Force the Host header if configured
@@ -700,6 +702,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected void onServerResponseHeaders(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
     {
+        Set<String> seenResponseHeaders = new HashSet<>();
         for (HttpField field : serverResponse.getHeaders())
         {
             String headerName = field.getName();
@@ -711,7 +714,13 @@ public abstract class AbstractProxyServlet extends HttpServlet
             if (newHttpField == null)
                 continue;
 
-            proxyResponse.setHeader(headerName, String.join(", ", newHttpField.getValueList()));
+            String newHeaderValue = String.join(", ", newHttpField.getValueList());
+            // Replace any container-generated header (e.g. Server, Date) on the first
+            // occurrence, then add to preserve genuinely repeated response headers.
+            if (seenResponseHeaders.add(lowerHeaderName))
+                proxyResponse.setHeader(headerName, newHeaderValue);
+            else
+                proxyResponse.addHeader(headerName, newHeaderValue);
         }
 
         if (_log.isDebugEnabled())
