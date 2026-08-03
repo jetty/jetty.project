@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.alpn.bouncycastle.server;
 
-import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Security;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -36,6 +34,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -113,9 +112,8 @@ public class BouncyCastleClientALPNTest
 
     private void configureSslContextFactory(SslContextFactory sslContextFactory)
     {
-        Path path = Paths.get("src", "test", "resources");
-        File keys = path.resolve("keystore.p12").toFile();
-        sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
+        Path ksPath = MavenPaths.findTestResourceFile("keystore.p12");
+        sslContextFactory.setKeyStorePath(ksPath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setProvider(BouncyCastleJsseProvider.PROVIDER_NAME);
     }
