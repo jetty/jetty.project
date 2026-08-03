@@ -1848,7 +1848,7 @@ public class ProxyServletTest
 
     @ParameterizedTest
     @MethodSource("impls")
-    public void testMultiValuedHeadersArePreserved(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    public void testMultiLineHeadersArePreserved(Class<? extends ProxyServlet> proxyServletClass) throws Exception
     {
         // Repeated request and response headers must be forwarded as distinct values,
         // not folded into a single value nor reduced to the last value (see #577 and #13691).

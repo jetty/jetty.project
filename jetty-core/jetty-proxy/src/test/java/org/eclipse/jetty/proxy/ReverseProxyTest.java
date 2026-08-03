@@ -122,7 +122,7 @@ public class ReverseProxyTest extends AbstractProxyTest
 
     @ParameterizedTest
     @MethodSource("httpVersions")
-    public void testMultiValuedHeadersArePreserved(HttpVersion httpVersion) throws Exception
+    public void testMultiLineHeadersArePreserved(HttpVersion httpVersion) throws Exception
     {
         // Repeated request/response headers must be forwarded as distinct values,
         // while proxy-owned headers (Server, Date) must not be duplicated.
