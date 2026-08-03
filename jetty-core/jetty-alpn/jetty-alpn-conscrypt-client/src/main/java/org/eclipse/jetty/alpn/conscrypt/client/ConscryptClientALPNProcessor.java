@@ -86,7 +86,10 @@ public class ConscryptClientALPNProcessor implements ALPNProcessor.Client
                 String protocol = Conscrypt.getApplicationProtocol(sslEngine);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Selected {} for {}", protocol, alpnConnection);
-                alpnConnection.selected(protocol);
+                if (protocol != null && !protocol.isEmpty())
+                    alpnConnection.selected(protocol);
+                else
+                    alpnConnection.selected(null);
             }
             catch (Throwable e)
             {
