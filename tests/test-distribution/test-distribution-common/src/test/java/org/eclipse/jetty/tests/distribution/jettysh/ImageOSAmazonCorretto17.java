@@ -15,10 +15,10 @@ package org.eclipse.jetty.tests.distribution.jettysh;
 
 /**
  * An OS Image of linux specific for running on Amazon AWS.
- * This is based on Amazon Linux 2 (which is based on Alpine 3).
+ * This is based on Amazon Linux 2023.
  * Amazon Corretto JDK 17 is installed.
  * This image does NOT come with start-stop-daemon installed.
- * Instead of apt, it uses yum (the redhat package manager)
+ * Instead of apt, it uses dnf (the redhat package manager)
  */
 public class ImageOSAmazonCorretto17 extends ImageOS
 {
@@ -27,7 +27,7 @@ public class ImageOSAmazonCorretto17 extends ImageOS
         super("amazoncorretto-jdk17-jetty12",
             builder ->
                 builder
-                    .from("amazoncorretto:17")
+                    .from("amazoncorretto:17-al2023")
                     // Notes: amazoncorretto now uses dnf, not yum
                     .run("dnf update -y ; " +
                         // Notes:
