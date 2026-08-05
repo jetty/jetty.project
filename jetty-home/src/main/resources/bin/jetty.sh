@@ -490,7 +490,7 @@ fi
 ##################################################
 if [ -z "$JAVA" ]
 then
-  JAVA=$(which java)
+  JAVA=$(type -p java)
 fi
 
 if [ -z "$JAVA" ]
