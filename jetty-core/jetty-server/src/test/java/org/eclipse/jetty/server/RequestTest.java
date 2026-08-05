@@ -37,7 +37,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -134,7 +134,7 @@ public class RequestTest
                 Connection: close\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.getContent(), containsString("httpURI.path=/fo%6f%20bar"));
         assertThat(response.getContent(), containsString("pathInContext=/foo%20bar"));
@@ -149,7 +149,7 @@ public class RequestTest
                 Connection: close\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
@@ -212,7 +212,7 @@ public class RequestTest
                 Connection: close\r
                 \r
                 """.formatted(uri);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertThat(response.getStatus(), is(status));
         if (content != null)
         {
@@ -261,7 +261,7 @@ public class RequestTest
                 Connection: close\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.getContent(), is("pathInContext=\"/zed%2Fbar\""));
     }
@@ -276,7 +276,7 @@ public class RequestTest
                 \r
                 """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String responseBody = response.getContent();
         assertThat(responseBody, containsString("httpURI=http://myhost:9999/"));
@@ -293,7 +293,7 @@ public class RequestTest
                 Connection: close\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
@@ -315,7 +315,7 @@ public class RequestTest
 
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-                response.write(true, ReadableBuffer.wrap(buf), Callback.NOOP);
+                response.write(true, RetainableByteBuffer.wrap(buf), Callback.NOOP);
                 return true;
             }
         });
@@ -326,7 +326,7 @@ public class RequestTest
                 Host: local\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.getLongField(HttpHeader.CONTENT_LENGTH), greaterThan(0L));
         String responseBody = response.getContent();
@@ -357,10 +357,10 @@ public class RequestTest
                 int half = bufferSize / 2;
                 ByteBuffer halfBuf = bbuf.slice();
                 halfBuf.limit(half);
-                response.write(false, ReadableBuffer.wrap(halfBuf), Callback.from(() ->
+                response.write(false, RetainableByteBuffer.wrap(halfBuf), Callback.from(() ->
                 {
                     bbuf.position(half);
-                    response.write(true, ReadableBuffer.wrap(bbuf), callback);
+                    response.write(true, RetainableByteBuffer.wrap(bbuf), callback);
                 }));
                 return true;
             }
@@ -372,7 +372,7 @@ public class RequestTest
                 Host: local\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertNull(response.getField(HttpHeader.CONTENT_LENGTH));
         assertThat(response.get(HttpHeader.TRANSFER_ENCODING), containsString("chunked"));
@@ -405,7 +405,7 @@ public class RequestTest
                     for (HttpCookie c : coreCookies)
                         buff.writeBytes(("Core Cookie: " + c.getName() + "=" + c.getValue() + "\n").getBytes());
                 }
-                response.write(true, ReadableBuffer.wrap(buff.toByteArray()), callback);
+                response.write(true, RetainableByteBuffer.wrap(buff.toByteArray()), callback);
                 return true;
             }
         });
@@ -418,15 +418,15 @@ public class RequestTest
         String request2 = "GET /ctx HTTP/1.1\r\nHost: localhost\r\nCookie: " + sessionId2 + "\r\n\r\n";
         String request3 = "GET /ctx HTTP/1.1\r\nHost: localhost\r\nCookie: " + sessionId3 + "\r\n\r\n";
         
-        try (LocalEndPoint lep = connector.connect())
+        try (LocalEndPoint lep = connector.connectToServer())
         {
-            lep.addInput(request1);
+            lep.writeRequestString(request1);
             HttpTester.Response response = HttpTester.parseResponse(lep.getResponse());
             checkCookieResult(sessionId1, new String[]{sessionId2, sessionId3}, response.getContent());
-            lep.addInput(request2);
+            lep.writeRequestString(request2);
             response = HttpTester.parseResponse(lep.getResponse());
             checkCookieResult(sessionId2, new String[]{sessionId1, sessionId3}, response.getContent());
-            lep.addInput(request3);
+            lep.writeRequestString(request3);
             response = HttpTester.parseResponse(lep.getResponse());
             checkCookieResult(sessionId3, new String[]{sessionId1, sessionId2}, response.getContent());
         }
@@ -450,7 +450,7 @@ public class RequestTest
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 byte[] buf = new byte[4096];
                 Arrays.fill(buf, (byte)'x');
-                response.write(true, ReadableBuffer.wrap(buf), callback);
+                response.write(true, RetainableByteBuffer.wrap(buf), callback);
                 return true;
             }
         });
@@ -463,7 +463,7 @@ public class RequestTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 
@@ -485,7 +485,7 @@ public class RequestTest
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 byte[] buf = new byte[4096];
                 Arrays.fill(buf, (byte)'x');
-                response.write(true, ReadableBuffer.wrap(buf), callback);
+                response.write(true, RetainableByteBuffer.wrap(buf), callback);
                 return true;
             }
         });
@@ -499,8 +499,9 @@ public class RequestTest
                 """;
 
         LocalConnector.LocalEndPoint localEndPoint = connector.executeRequest(rawRequest);
-        ByteBuffer rawResponse = localEndPoint.waitForResponse(true, 2, TimeUnit.SECONDS);
-        HttpTester.Response response = HttpTester.parseHeadResponse(ReadableBuffer.wrap(rawResponse));
+        RetainableByteBuffer rawResponse = localEndPoint.awaitResponseBuffer(true, 2, TimeUnit.SECONDS);
+        assertNotNull(rawResponse);
+        HttpTester.Response response = HttpTester.parseHeadResponse(rawResponse);
         assertNotNull(response);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
@@ -523,7 +524,7 @@ public class RequestTest
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 byte[] buf = new byte[4096];
                 Arrays.fill(buf, (byte)'x');
-                response.write(true, ReadableBuffer.wrap(buf), callback);
+                response.write(true, RetainableByteBuffer.wrap(buf), callback);
                 return true;
             }
         });
@@ -537,7 +538,7 @@ public class RequestTest
                 
                 """;
 
-        HttpTester.Response response = HttpTester.parseHeadResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseHeadResponse(connector.getResponseAsString(rawRequest));
         assertNotNull(response);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
@@ -579,7 +580,7 @@ public class RequestTest
                 
                 """.formatted(acceptLanguage);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
         assertNotNull(response);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("locales=" + expectedLocales));
@@ -759,7 +760,7 @@ public class RequestTest
             }
         });
         server.start();
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("GET /foo?a=1 HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("GET /foo?a=1 HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), is(200));
     }
 
@@ -1012,7 +1013,6 @@ public class RequestTest
                 }
                 else
                 {
-                    System.err.println(Request.extractQueryParameters(request));
                     RuntimeException e = assertThrows(RuntimeException.class, () -> Request.extractQueryParameters(request));
                     callback.failed(e);
                 }
@@ -1028,7 +1028,7 @@ public class RequestTest
             "Connection: close\n" +
             "\n", inputQuery);
 
-        String rawResponse = connector.getResponse(rawRequest);
+        String rawResponse = connector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(rawResponse, response.getStatus(), is(expectedStatus));
     }
@@ -1095,7 +1095,7 @@ public class RequestTest
         String request = "GET /test/fo" + suspect + "bar HTTP/1.0\r\n" +
             "Host: whatever\r\n" +
             "\r\n";
-        String response = connector.getResponse(request);
+        String response = connector.getResponseAsString(request);
 
         if (decoded.length() == 3 && Character.isDigit(decoded.charAt(0)))
             assertThat(response, startsWith("HTTP/1.1 " + decoded + " "));

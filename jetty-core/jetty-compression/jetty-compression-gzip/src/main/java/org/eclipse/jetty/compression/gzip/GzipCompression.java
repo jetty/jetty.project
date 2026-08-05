@@ -16,6 +16,7 @@ package org.eclipse.jetty.compression.gzip;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteOrder;
 import java.util.List;
 
 import org.eclipse.jetty.compression.Compression;
@@ -31,7 +32,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 
@@ -55,11 +56,11 @@ public class GzipCompression extends Compression
     }
 
     @Override
-    public WritableBuffer acquireBuffer(int length)
+    public RetainableByteBuffer.Mutable acquireBuffer(int length)
     {
-        WritableBuffer buffer = getBufferPool().acquire(length, true);
+        RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(length, true);
         // Per RFC-1952, GZIP is LITTLE_ENDIAN
-        buffer.byteOrder(true);
+        buffer.byteOrder(ByteOrder.LITTLE_ENDIAN);
         return buffer;
     }
 

@@ -30,7 +30,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -199,7 +198,7 @@ public class AllowSymLinkAliasCheckerTest
 
         assertTimeoutPreemptively(ofSeconds(5), () ->
         {
-            String responseString = localConnector.getResponse(BufferUtil.toString(request.generate()));
+            String responseString = localConnector.getResponse(request.generate()).getString(StandardCharsets.UTF_8);
             assertThat("Response status code", responseString, startsWith("HTTP/1.1 " + expectedResponseStatus + " "));
             assertThat("Response Content-Type", responseString, containsString("\nContent-Type: " + expectedResponseContentType));
             assertThat("Response", responseString, containsString(expectedResponseContentContains));

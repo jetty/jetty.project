@@ -138,7 +138,7 @@ public class CrossContextDispatcherFilterTest
             Connection: close
             
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), containsString("Reached Service context"));
 
@@ -267,7 +267,7 @@ public class CrossContextDispatcherFilterTest
             Connection: close
             
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), containsString("Reached Service context"));
 

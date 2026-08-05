@@ -37,7 +37,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
@@ -182,7 +182,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         if (!download)
         {
             Stream stream = promise.get(5, TimeUnit.SECONDS);
-            stream.data(ReadableBuffer.allocate(contentLength, false), true, Callback.NOOP);
+            stream.data(RetainableByteBuffer.allocate(contentLength, false), true, Callback.NOOP);
         }
 
         boolean success = responseLatch.await(5, TimeUnit.SECONDS);
@@ -205,7 +205,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                 {
                     int contentLength = (int)request.getHeaders().getLongField("X-Download");
                     if (contentLength > 0)
-                        response.write(true, ReadableBuffer.wrap(new byte[contentLength]), callback);
+                        response.write(true, RetainableByteBuffer.wrap(new byte[contentLength]), callback);
                     else
                         callback.succeeded();
                 }

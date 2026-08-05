@@ -15,7 +15,7 @@ package org.eclipse.jetty.fcgi.parser;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>Parser for the BEGIN_REQUEST frame content.</p>
@@ -48,9 +48,9 @@ public class BeginRequestContentParser extends ContentParser
     }
 
     @Override
-    public Result parse(ReadableBuffer buffer)
+    public Result parse(RetainableByteBuffer buffer)
     {
-        while (buffer.remaining() > 0)
+        while (buffer.hasRemaining())
         {
             switch (state)
             {
@@ -71,7 +71,7 @@ public class BeginRequestContentParser extends ContentParser
                 }
                 case ROLE_BYTES:
                 {
-                    int halfShort = buffer.getAsInt();
+                    int halfShort = buffer.getByteAsInt();
                     role = (role << 8) + halfShort;
                     if (++cursor == 2)
                         state = State.FLAGS;
@@ -79,7 +79,7 @@ public class BeginRequestContentParser extends ContentParser
                 }
                 case FLAGS:
                 {
-                    flags = buffer.getAsInt();
+                    flags = buffer.getByteAsInt();
                     state = State.RESERVED;
                     break;
                 }
@@ -87,7 +87,7 @@ public class BeginRequestContentParser extends ContentParser
                 {
                     if (buffer.remaining() >= 5)
                     {
-                        buffer.position(buffer.position() + 5);
+                        buffer.readPosition(buffer.readPosition() + 5);
                         onStart();
                         reset();
                         return Result.COMPLETE;

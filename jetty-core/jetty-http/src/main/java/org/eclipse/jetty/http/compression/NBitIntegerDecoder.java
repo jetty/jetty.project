@@ -15,7 +15,7 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * Used to decode integers as described in RFC7541.
@@ -49,10 +49,10 @@ public class NBitIntegerDecoder
      */
     public int decodeInt(ByteBuffer buffer)
     {
-        return decodeInt(ReadableBuffer.wrap(buffer));
+        return decodeInt(RetainableByteBuffer.wrap(buffer));
     }
 
-    public int decodeInt(ReadableBuffer buffer)
+    public int decodeInt(RetainableByteBuffer buffer)
     {
         return Math.toIntExact(decodeLong(buffer));
     }
@@ -67,14 +67,14 @@ public class NBitIntegerDecoder
      */
     public long decodeLong(ByteBuffer buffer)
     {
-        return decodeLong(ReadableBuffer.wrap(buffer));
+        return decodeLong(RetainableByteBuffer.wrap(buffer));
     }
 
-    public long decodeLong(ReadableBuffer buffer)
+    public long decodeLong(RetainableByteBuffer buffer)
     {
         if (!_started)
         {
-            if (buffer.remaining() == 0)
+            if (!buffer.hasRemaining())
                 return -1;
 
             _started = true;
@@ -92,7 +92,7 @@ public class NBitIntegerDecoder
         while (true)
         {
             // If we have no more remaining we return -1 to indicate that more data is needed to continue parsing.
-            if (buffer.remaining() == 0)
+            if (!buffer.hasRemaining())
                 return -1;
 
             int b = buffer.get() & 0xFF;

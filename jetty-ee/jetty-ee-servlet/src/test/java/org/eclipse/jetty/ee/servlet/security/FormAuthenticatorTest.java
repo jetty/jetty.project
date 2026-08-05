@@ -94,7 +94,7 @@ public class FormAuthenticatorTest
     public void testLoginDispatch() throws Exception
     {
         configureServer(new FormAuthenticator("/login", null, true));
-        String response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("dispatcherType: REQUEST"));
         assertThat(response, containsString("contextPath: /ctx"));
@@ -106,7 +106,7 @@ public class FormAuthenticatorTest
     {
         // With dispatch enabled it does a AuthenticationState.serveAs to the error page with REQUEST dispatch type.
         configureServer(new FormAuthenticator("/login", "/error", true));
-        String response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("dispatcherType: REQUEST"));
         assertThat(response, containsString("contextPath: /ctx"));
         assertThat(response, containsString("servletPath: /error"));
@@ -114,14 +114,14 @@ public class FormAuthenticatorTest
 
         // With no dispatch it should do a redirect to the error page.
         configureServer(new FormAuthenticator("/login", "/error", false));
-        response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/error"));
         stopServer();
 
         // With no FormAuthenticator error page, it will do an error dispatch to the servlet error page for that code.
         configureServer(new FormAuthenticator("/login", null, true));
-        response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("dispatcherType: ERROR"));
         assertThat(response, containsString("contextPath: /ctx"));
         assertThat(response, containsString("servletPath: /servletErrorPage"));

@@ -40,7 +40,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -163,7 +163,7 @@ public class ReverseProxyTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.wrap(content), Callback.from(() ->
+                response.write(true, RetainableByteBuffer.wrap(content), Callback.from(() ->
                 {
                     callback.succeeded();
                     serverLatch.countDown();

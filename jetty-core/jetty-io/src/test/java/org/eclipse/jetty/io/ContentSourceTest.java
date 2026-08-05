@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -114,8 +114,8 @@ public class ContentSourceTest
         AsyncContent asyncSource = new AsyncContent();
         try (asyncSource)
         {
-            asyncSource.write(false, ReadableBuffer.wrap(UTF_8.encode("one")), Callback.NOOP);
-            asyncSource.write(false, ReadableBuffer.wrap(UTF_8.encode("two")), Callback.NOOP);
+            asyncSource.write(false, RetainableByteBuffer.wrap(UTF_8.encode("one")), Callback.NOOP);
+            asyncSource.write(false, RetainableByteBuffer.wrap(UTF_8.encode("two")), Callback.NOOP);
         }
 
         ByteBufferContentSource byteBufferSource = new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"));
@@ -928,10 +928,10 @@ public class ContentSourceTest
     {
         TestContentSource source = new TestContentSource();
 
-        FuturePromise<RetainableByteBuffer> promise = new FuturePromise<>()
+        FuturePromise<org.eclipse.jetty.io.RetainableByteBuffer> promise = new FuturePromise<>()
         {
             @Override
-            public void succeeded(RetainableByteBuffer result)
+            public void succeeded(org.eclipse.jetty.io.RetainableByteBuffer result)
             {
                 result.retain();
                 super.succeeded(result);
@@ -959,7 +959,7 @@ public class ContentSourceTest
         assertNull(todo);
         assertTrue(promise.isDone());
 
-        RetainableByteBuffer buffer = promise.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = promise.get();
         assertNotNull(buffer);
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), equalTo("hello cruel world"));
@@ -970,10 +970,10 @@ public class ContentSourceTest
     {
         TestContentSource source = new TestContentSource();
 
-        FuturePromise<RetainableByteBuffer> promise = new FuturePromise<>()
+        FuturePromise<org.eclipse.jetty.io.RetainableByteBuffer> promise = new FuturePromise<>()
         {
             @Override
-            public void succeeded(RetainableByteBuffer result)
+            public void succeeded(org.eclipse.jetty.io.RetainableByteBuffer result)
             {
                 result.retain();
                 super.succeeded(result);
@@ -1005,7 +1005,7 @@ public class ContentSourceTest
     {
         TestContentSource source = new TestContentSource();
 
-        CompletableFuture<RetainableByteBuffer> completableFuture = Content.Source.asRetainableByteBuffer(source, null, false, -1);
+        CompletableFuture<org.eclipse.jetty.io.RetainableByteBuffer> completableFuture = Content.Source.asRetainableByteBuffer(source, null, false, -1);
 
         Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter();
         counter.retain();
@@ -1027,7 +1027,7 @@ public class ContentSourceTest
         assertNull(todo);
         assertTrue(completableFuture.isDone());
 
-        RetainableByteBuffer buffer = completableFuture.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = completableFuture.get();
         assertNotNull(buffer);
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), equalTo("hello cruel world"));

@@ -104,7 +104,7 @@ public class PropertyFileLoginModuleTest
         assertThat(mgr, notNullValue());
 
         //test the PropertyFileLoginModule authentication and authorization
-        String response = _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
+        String response = _connector.getResponseAsString("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
             Base64.getEncoder().encodeToString("fred:pwd".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
 

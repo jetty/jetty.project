@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -64,8 +63,7 @@ public class ParserBadCloseStatusCodesTest
     {
         ParserCapture capture = new ParserCapture();
 
-        ByteBuffer raw = BufferUtil.allocate(256);
-        BufferUtil.clearToFill(raw);
+        RetainableByteBuffer.Mutable raw = RetainableByteBuffer.Mutable.allocate(256, false);
 
         // add close frame
         RawFrameBuilder.putOpFin(raw, OpCode.CLOSE, true);
@@ -73,7 +71,6 @@ public class ParserBadCloseStatusCodesTest
         raw.putShort((short)closeCode); // 2 bytes for closeCode
 
         // parse buffer
-        BufferUtil.flipToFlush(raw, 0);
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
             Exception e = assertThrows(ProtocolException.class, () -> capture.parse(raw));
@@ -87,8 +84,7 @@ public class ParserBadCloseStatusCodesTest
     {
         ParserCapture capture = new ParserCapture();
 
-        ByteBuffer raw = BufferUtil.allocate(256);
-        BufferUtil.clearToFill(raw);
+        RetainableByteBuffer.Mutable raw = RetainableByteBuffer.Mutable.allocate(256, false);
 
         // add close frame
         RawFrameBuilder.putOpFin(raw, OpCode.CLOSE, true);
@@ -97,7 +93,6 @@ public class ParserBadCloseStatusCodesTest
         raw.put("hello".getBytes(UTF_8));
 
         // parse buffer
-        BufferUtil.flipToFlush(raw, 0);
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
             Exception e = assertThrows(ProtocolException.class, () -> capture.parse(raw));

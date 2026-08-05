@@ -120,15 +120,15 @@ public class AuthenticateTest
         String response;
 
         // No credentials result in a 401 response.
-        response = _connector.getResponse("GET /ctx/ HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/ HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 401 Unauthorized"));
 
         // Incorrect credentials also result in a 401 response.
-        response = _connector.getResponse("GET /ctx/ HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "bad_password")));
+        response = _connector.getResponseAsString("GET /ctx/ HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "bad_password")));
         assertThat(response, containsString("HTTP/1.1 401 Unauthorized"));
 
         // If we have correct credentials we will be able to get a valid user principal.
-        response = _connector.getResponse("GET /ctx/ HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "password")));
+        response = _connector.getResponseAsString("GET /ctx/ HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "password")));
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("UserPrincipal: admin"));
     }
@@ -182,16 +182,16 @@ public class AuthenticateTest
         String response;
 
         // No credentials result in a 302 redirect to the login page.
-        response = _connector.getResponse("GET /ctx/ HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/ HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /login"));
 
         // Incorrect credentials also result in a 403 response.
-        response = _connector.getResponse("GET /ctx/?username=admin&password=wrong HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/?username=admin&password=wrong HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
 
         // If we have correct credentials we will be able to get a valid user principal.
-        response = _connector.getResponse("GET /ctx/?username=admin&password=password HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/?username=admin&password=password HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("UserPrincipal: admin"));
     }
@@ -271,7 +271,7 @@ public class AuthenticateTest
             }, "/");
         });
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("UserPrincipal: admin"));
     }
@@ -319,7 +319,7 @@ public class AuthenticateTest
             }, "/");
         });
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("UserPrincipal: admin"));
     }
@@ -368,7 +368,7 @@ public class AuthenticateTest
             }, "/");
         });
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("UserPrincipal: admin"));
     }
@@ -436,7 +436,7 @@ public class AuthenticateTest
             }, "/");
         });
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("GET /ctx/authenticate HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("UserPrincipal: admin"));
     }
@@ -455,17 +455,17 @@ public class AuthenticateTest
         String response;
 
         // No credentials results in null user principal.
-        response = _connector.getResponse("GET /ctx/getUserPrincipal HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/getUserPrincipal HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("UserPrincipal: null"));
 
         // Incorrect credentials also results in null user principal, but a 200 response.
-        response = _connector.getResponse("GET /ctx/getUserPrincipal HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "bad_password")));
+        response = _connector.getResponseAsString("GET /ctx/getUserPrincipal HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "bad_password")));
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("UserPrincipal: null"));
 
         // If we have correct credentials we will be able to get a valid user principal.
-        response = _connector.getResponse("GET /ctx/getUserPrincipal HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "password")));
+        response = _connector.getResponseAsString("GET /ctx/getUserPrincipal HTTP/1.0\r\nAuthorization: %s\r\n\r\n".formatted(BasicAuthenticator.authorization("admin", "password")));
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("UserPrincipal: admin"));
     }
@@ -526,16 +526,16 @@ public class AuthenticateTest
         String response;
 
         // No credentials result in a 302 redirect to the login page.
-        response = _connector.getResponse("GET /ctx/ HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/ HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("this is the login page"));
 
         // Incorrect credentials also result in a 403 response.
-        response = _connector.getResponse("GET /ctx/?username=admin&password=wrong HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/?username=admin&password=wrong HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
 
         // If we have correct credentials we will be able to get a valid user principal.
-        response = _connector.getResponse("GET /ctx/?username=admin&password=password HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/?username=admin&password=password HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("UserPrincipal: admin"));
     }
@@ -580,7 +580,7 @@ public class AuthenticateTest
         String response;
 
         // ISE should be thrown because the response was already committed before calling authenticate.
-        response = _connector.getResponse("GET /ctx/ HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/ HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("java.lang.IllegalStateException: Response committed"));
     }
@@ -622,7 +622,7 @@ public class AuthenticateTest
         String response;
 
         // ServletException is thrown if the authentication failed and the caller is responsible for handling the error.
-        response = _connector.getResponse("GET /ctx/ HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/ HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("jakarta.servlet.ServletException: Authentication failed"));
     }

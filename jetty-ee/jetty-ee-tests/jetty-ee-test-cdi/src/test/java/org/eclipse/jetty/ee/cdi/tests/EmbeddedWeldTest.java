@@ -158,7 +158,7 @@ public class EmbeddedWeldTest
         Server server = createServerWithServletContext(mode);
         server.start();
         LocalConnector connector = server.getBean(LocalConnector.class);
-        String response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
+        String response = connector.getResponseAsString("GET / HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Hello GreetingsServlet filtered by Weld BeanManager "));
         assertThat(response, containsString("Beans from Weld BeanManager "));
@@ -178,7 +178,7 @@ public class EmbeddedWeldTest
         Server server = createServerWithServletContext("CdiDecoratingListener+Listener");
         server.start();
         LocalConnector connector = server.getBean(LocalConnector.class);
-        String response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
+        String response = connector.getResponseAsString("GET / HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Hello GreetingsServlet filtered by Weld BeanManager "));
         assertThat(response, containsString("Beans from Weld BeanManager "));
@@ -213,7 +213,7 @@ public class EmbeddedWeldTest
         server.start();
 
         LocalConnector connector = server.getBean(LocalConnector.class);
-        String response = connector.getResponse("GET /greet HTTP/1.0\r\n\r\n");
+        String response = connector.getResponseAsString("GET /greet HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Hello GreetingsServlet filtered by Weld BeanManager "));
         assertThat(response, containsString("Beans from Weld BeanManager "));
@@ -249,7 +249,7 @@ public class EmbeddedWeldTest
         server.start();
 
         LocalConnector connector = server.getBean(LocalConnector.class);
-        String response = connector.getResponse("GET /greet HTTP/1.0\r\n\r\n");
+        String response = connector.getResponseAsString("GET /greet HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Hello GreetingsServlet filtered by Weld BeanManager "));
         assertThat(response, containsString("Beans from Weld BeanManager "));

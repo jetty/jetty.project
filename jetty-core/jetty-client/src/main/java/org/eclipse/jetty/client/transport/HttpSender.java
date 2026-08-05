@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -607,8 +608,7 @@ public abstract class HttpSender
                 }
 
                 boolean last = chunk.isLast();
-                chunk.release();
-                chunk = null;
+                chunk = Retainable.dispose(chunk);
 
                 if (proceed)
                 {
@@ -640,8 +640,7 @@ public abstract class HttpSender
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            if (chunk != null)
-                chunk.release();
+            Retainable.dispose(chunk);
             chunk = Content.Chunk.next(chunk);
         }
 

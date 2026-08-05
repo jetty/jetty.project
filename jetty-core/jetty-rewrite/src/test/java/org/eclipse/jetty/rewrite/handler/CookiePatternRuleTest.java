@@ -75,7 +75,7 @@ public class CookiePatternRuleTest extends AbstractRuleTest
             
             """;
 
-        String rawResponse = _connector.getResponse(rawRequest);
+        String rawResponse = _connector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         HttpField setCookieField = response.getField(HttpHeader.SET_COOKIE);
@@ -107,7 +107,7 @@ public class CookiePatternRuleTest extends AbstractRuleTest
             
             """;
 
-        String rawResponse = _connector.getResponse(rawRequest);
+        String rawResponse = _connector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat("response should not have Set-Cookie", response.getField(HttpHeader.SET_COOKIE), nullValue());
@@ -130,7 +130,7 @@ public class CookiePatternRuleTest extends AbstractRuleTest
             
             """;
 
-        String rawResponse = _connector.getResponse(rawRequest);
+        String rawResponse = _connector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         String responseContent = response.getContent();
@@ -164,7 +164,7 @@ public class CookiePatternRuleTest extends AbstractRuleTest
             
             """;
 
-        String rawResponse = _connector.getResponse(rawRequest);
+        String rawResponse = _connector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         String responseContent = response.getContent();

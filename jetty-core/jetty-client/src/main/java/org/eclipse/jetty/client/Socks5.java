@@ -14,15 +14,14 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,7 +155,7 @@ public class Socks5
 
         private static class UsernamePasswordAuthentication implements Authentication, Callback
         {
-            private final ByteBuffer byteBuffer = BufferUtil.allocate(2);
+            private final RetainableByteBuffer.Mutable networkBuffer = RetainableByteBuffer.Mutable.allocate(2, true);
             private final UsernamePasswordAuthenticationFactory factory;
             private EndPoint endPoint;
             private Callback callback;
@@ -174,14 +173,13 @@ public class Socks5
 
                 byte[] userNameBytes = factory.userName.getBytes(factory.charset);
                 byte[] passwordBytes = factory.password.getBytes(factory.charset);
-                ByteBuffer byteBuffer = ByteBuffer.allocate(3 + userNameBytes.length + passwordBytes.length)
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(3 + userNameBytes.length + passwordBytes.length, true)
                     .put(VERSION)
                     .put((byte)userNameBytes.length)
                     .put(userNameBytes)
                     .put((byte)passwordBytes.length)
-                    .put(passwordBytes)
-                    .flip();
-                endPoint.write(Callback.from(this::authenticationSent, this::failed), byteBuffer);
+                    .put(passwordBytes);
+                endPoint.write(buffer, Callback.from(this::authenticationSent, this::failed));
             }
 
             private void authenticationSent()
@@ -196,20 +194,20 @@ public class Socks5
             {
                 try
                 {
-                    int filled = endPoint.fill(byteBuffer);
+                    int filled = endPoint.fill(networkBuffer);
                     if (filled < 0)
                         throw new ClosedChannelException();
-                    if (byteBuffer.remaining() < 2)
+                    if (networkBuffer.remaining() < 2)
                     {
                         endPoint.fillInterested(this);
                         return;
                     }
                     if (LOG.isDebugEnabled())
                         LOG.debug("Received SOCKS5 username/password authentication response");
-                    byte version = byteBuffer.get();
+                    byte version = networkBuffer.get();
                     if (version != VERSION)
                         throw new IOException("Unsupported username/password authentication version: " + version);
-                    byte status = byteBuffer.get();
+                    byte status = networkBuffer.get();
                     if (status != 0)
                         throw new IOException("SOCK5 username/password authentication failure");
                     if (LOG.isDebugEnabled())

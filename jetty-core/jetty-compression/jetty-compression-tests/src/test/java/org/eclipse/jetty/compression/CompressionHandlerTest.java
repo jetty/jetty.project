@@ -55,7 +55,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -144,7 +144,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                response.write(true, ReadableBuffer.wrap(resourceBody), callback);
+                response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 return true;
             }
         });
@@ -228,7 +228,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                response.write(true, ReadableBuffer.wrap(resourceBody), callback);
+                response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 return true;
             }
         });
@@ -399,7 +399,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "font/woff2");
-                response.write(true, ReadableBuffer.wrap(resourceBody), callback);
+                response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 return true;
             }
         });
@@ -579,7 +579,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                response.write(true, ReadableBuffer.wrap(resourceBody), callback);
+                response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 return true;
             }
         });
@@ -662,11 +662,11 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                     {
                         response.setStatus(200);
                         response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                        response.write(true, ReadableBuffer.wrap(resourceBody), callback);
+                        response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                     }
                     case "PUT", "POST" ->
                     {
-                        ReadableBuffer requestContent = Content.Source.asReadableBuffer(request);
+                        RetainableByteBuffer requestContent = Content.Source.asReadableBuffer(request);
                         response.setStatus(200);
                         response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
                         response.getHeaders().put("X-Request-Content-Length", requestContent.remaining());
@@ -804,7 +804,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                response.write(true, ReadableBuffer.wrap(resourceBody), callback);
+                response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 return true;
             }
         });
@@ -918,7 +918,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(status);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                response.write(true, ReadableBuffer.wrap(resourceBody), callback);
+                response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 return true;
             }
         });
@@ -981,7 +981,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                 {
                     response.getHeaders().put(HttpHeader.ETAG, "W\"deadbeef\"");
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, ReadableBuffer.wrap(resourceBody), callback);
+                    response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 }
                 return true;
             }
@@ -1062,7 +1062,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                 {
                     response.getHeaders().put(HttpHeader.ETAG, "W\"deadbeef\"");
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, ReadableBuffer.wrap(resourceBody), callback);
+                    response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 }
                 return true;
             }
@@ -1130,7 +1130,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                     assertTrue(latch.await(5, TimeUnit.SECONDS), "Post-Flush Latch timed out");
                     writer.print("This line should be seen afterwards\n");
                     // trigger "last" write to allow Gzip to finish and write its trailers.
-                    response.write(true, ReadableBuffer.EMPTY, callback);
+                    response.write(true, RetainableByteBuffer.empty(), callback);
                 }
                 catch (InterruptedException e)
                 {
@@ -1172,7 +1172,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                 latch.countDown();
                 // collect the rest of the body
                 IO.copy(in, baos);
-                response = HttpTester.parseResponse(ReadableBuffer.wrap(baos.toByteArray()));
+                response = HttpTester.parseResponse(RetainableByteBuffer.wrap(baos.toByteArray()));
             }
 
             byte[] rawResponseBodyBytes = response.getContentBytes();

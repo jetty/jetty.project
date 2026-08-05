@@ -13,27 +13,27 @@
 
 package org.eclipse.jetty.http3;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class EncoderStreamConnection extends InstructionStreamConnection
 {
     private final QpackDecoder decoder;
 
-    public EncoderStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, QpackDecoder decoder, ParserListener listener)
+    public EncoderStreamConnection(EndPoint endPoint, Executor executor, WritableBufferPool bufferPool, QpackDecoder decoder, ParserListener listener)
     {
         super(endPoint, executor, bufferPool, listener);
         this.decoder = decoder;
     }
 
     @Override
-    protected void parseInstruction(ByteBuffer buffer) throws QpackException
+    protected void parseInstruction(RetainableByteBuffer buffer) throws QpackException
     {
         decoder.parseInstructions(buffer);
     }

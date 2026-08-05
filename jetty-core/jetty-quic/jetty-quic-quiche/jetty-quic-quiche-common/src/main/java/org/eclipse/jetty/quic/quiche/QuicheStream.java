@@ -22,15 +22,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.common.AbstractStream;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.util.ErrorCode;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -45,7 +44,7 @@ public class QuicheStream extends AbstractStream
     private final AtomicReference<Writer> writer = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final QuicheSession session;
-    private RetainableByteBuffer inputBuffer;
+    private RetainableByteBuffer.Mutable networkBuffer;
     private Content.Chunk chunk;
     private boolean dataDemand;
 
@@ -122,35 +121,30 @@ public class QuicheStream extends AbstractStream
     @Override
     public Content.Chunk read()
     {
-        RetainableByteBuffer inputBuffer;
+        RetainableByteBuffer.Mutable buffer;
         try (AutoLock ignored = lock.lock())
         {
             if (chunk != null)
                 return chunk;
-            inputBuffer = this.inputBuffer;
-            this.inputBuffer = null;
+            buffer = networkBuffer;
+            networkBuffer = null;
         }
-        inputBuffer = tryAcquireInputBuffer(inputBuffer);
+        buffer = tryAcquireInputBuffer(buffer);
 
         try
         {
-            ByteBuffer byteBuffer = inputBuffer.getByteBuffer();
-            int position = byteBuffer.position();
-            byteBuffer.limit(byteBuffer.capacity());
-
             boolean finished = session.isFinished(this);
             if (LOG.isDebugEnabled())
                 LOG.debug("finished={} on {}", finished, this);
             if (finished)
             {
                 updateCloseState(CloseState.REMOTELY_CLOSED);
-                tryReleaseInputBuffer(inputBuffer);
+                tryReleaseInputBuffer(buffer);
                 return Content.Chunk.EOF;
             }
 
             boolean[] outLast = new boolean[1];
-            int filled = session.read(this, byteBuffer, outLast);
-            BufferUtil.flipToFlush(byteBuffer, position);
+            long filled = session.read(this, buffer, outLast);
             boolean last = outLast[0];
             if (LOG.isDebugEnabled())
                 LOG.debug("read {} bytes last={} on {}", filled, last, this);
@@ -159,29 +153,27 @@ public class QuicheStream extends AbstractStream
 
             if (filled > 0)
             {
-                ByteBuffer slice = byteBuffer.slice();
-                byteBuffer.position(byteBuffer.limit());
-                // Retain because multiple chunks can be read from the same inputBuffer.
-                inputBuffer.retain();
-                Content.Chunk chunk = Content.Chunk.asChunk(slice, last, inputBuffer);
+                RetainableByteBuffer slice = buffer.sliceAndConsume(filled);
+                Content.Chunk chunk = Content.Chunk.asChunk(slice, last, buffer);
+                slice.release();
                 if (last)
-                    tryReleaseInputBuffer(inputBuffer);
+                    tryReleaseInputBuffer(buffer);
                 else
-                    tryStoreInputBuffer(inputBuffer);
+                    tryStoreInputBuffer(buffer);
                 return chunk;
             }
 
             if (filled == 0 && !last)
             {
                 // Keep the buffer around only if it is retained.
-                if (inputBuffer.isRetained())
-                    tryStoreInputBuffer(inputBuffer);
+                if (buffer.isRetained())
+                    tryStoreInputBuffer(buffer);
                 else
-                    tryReleaseInputBuffer(inputBuffer);
+                    tryReleaseInputBuffer(buffer);
                 return null;
             }
 
-            tryReleaseInputBuffer(inputBuffer);
+            tryReleaseInputBuffer(buffer);
             return Content.Chunk.EOF;
         }
         catch (Throwable x)
@@ -194,26 +186,25 @@ public class QuicheStream extends AbstractStream
             {
                 chunk = failure = Content.Chunk.from(x);
             }
-            tryReleaseInputBuffer(inputBuffer);
+            tryReleaseInputBuffer(buffer);
             updateCloseState(CloseState.REMOTELY_CLOSED);
             return failure;
         }
     }
 
-    private RetainableByteBuffer tryAcquireInputBuffer(RetainableByteBuffer buffer)
+    private RetainableByteBuffer.Mutable tryAcquireInputBuffer(RetainableByteBuffer.Mutable buffer)
     {
         QuicConfiguration quicConfiguration = session.getQuicConfiguration();
         if (buffer != null)
         {
             int minInputSpace = quicConfiguration.getMinInputBufferSpace();
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            if (minInputSpace < 0 || (byteBuffer.capacity() - byteBuffer.limit()) < minInputSpace)
+            if (minInputSpace < 0 || buffer.space() < minInputSpace)
             {
                 tryReleaseInputBuffer(buffer);
                 buffer = null;
             }
         }
-        RetainableByteBuffer candidate = buffer;
+        RetainableByteBuffer.Mutable candidate = buffer;
         if (candidate == null)
             candidate = getSession().getByteBufferPool().acquire(quicConfiguration.getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
         if (LOG.isDebugEnabled())
@@ -221,14 +212,14 @@ public class QuicheStream extends AbstractStream
         return candidate;
     }
 
-    private void tryStoreInputBuffer(RetainableByteBuffer buffer)
+    private void tryStoreInputBuffer(RetainableByteBuffer.Mutable buffer)
     {
         try (AutoLock ignored = lock.lock())
         {
-            assert inputBuffer == null;
+            assert networkBuffer == null;
             if (chunk == null)
             {
-                inputBuffer = buffer;
+                networkBuffer = buffer;
                 if (LOG.isDebugEnabled())
                     LOG.debug("stored {} on {}", buffer, this);
                 return;
@@ -440,8 +431,8 @@ public class QuicheStream extends AbstractStream
         try (AutoLock ignored = lock.lock())
         {
             chunk = Content.Chunk.from(failure);
-            buffer = inputBuffer;
-            inputBuffer = null;
+            buffer = networkBuffer;
+            networkBuffer = null;
         }
         tryReleaseInputBuffer(buffer);
 

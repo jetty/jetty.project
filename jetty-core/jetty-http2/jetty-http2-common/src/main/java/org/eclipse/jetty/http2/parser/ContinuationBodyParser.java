@@ -19,7 +19,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.ContinuationFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ContinuationBodyParser extends BodyParser
 {
@@ -36,7 +36,7 @@ public class ContinuationBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ReadableBuffer buffer)
+    protected void emptyBody(RetainableByteBuffer buffer)
     {
         if (hasFlag(Flags.END_HEADERS))
         {
@@ -51,9 +51,9 @@ public class ContinuationBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ReadableBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
-        while (buffer.remaining() > 0L)
+        while (buffer.hasRemaining())
         {
             switch (state)
             {
@@ -110,9 +110,9 @@ public class ContinuationBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onHeaders(ReadableBuffer buffer)
+    private boolean onHeaders(RetainableByteBuffer buffer)
     {
-        ReadableBuffer headerBlock = headerBlockFragments.complete();
+        RetainableByteBuffer headerBlock = headerBlockFragments.complete();
         // TODO: overflow?
         MetaData metaData = headerBlockParser.parse(headerBlock, Math.toIntExact(headerBlock.remaining()));
         headerBlock.release();

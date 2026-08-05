@@ -149,7 +149,7 @@ public class HttpInputTransientErrorTest
             }
         });
 
-        try (LocalConnector.LocalEndPoint localEndPoint = connector.connect())
+        try (LocalConnector.LocalEndPoint localEndPoint = connector.connectToServer())
         {
             String request = """
                 POST /ctx/post HTTP/1.1
@@ -157,9 +157,9 @@ public class HttpInputTransientErrorTest
                 Content-Length: 10
                             
                 """;
-            localEndPoint.addInput(request);
+            localEndPoint.writeRequestString(request);
             Thread.sleep((long)(IDLE_TIMEOUT * 1.5));
-            localEndPoint.addInput("1234567890");
+            localEndPoint.writeRequestString("1234567890");
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));
@@ -200,7 +200,7 @@ public class HttpInputTransientErrorTest
             }
         });
 
-        try (LocalConnector.LocalEndPoint localEndPoint = connector.connect())
+        try (LocalConnector.LocalEndPoint localEndPoint = connector.connectToServer())
         {
             String request = """
                 POST /ctx/post HTTP/1.1
@@ -208,9 +208,9 @@ public class HttpInputTransientErrorTest
                 Content-Length: 10
                             
                 """;
-            localEndPoint.addInput(request);
+            localEndPoint.writeRequestString(request);
             Thread.sleep((long)(IDLE_TIMEOUT * 1.5));
-            localEndPoint.addInput("1234567890");
+            localEndPoint.writeRequestString("1234567890");
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));

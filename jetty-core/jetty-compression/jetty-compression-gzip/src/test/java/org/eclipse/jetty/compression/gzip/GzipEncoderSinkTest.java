@@ -23,7 +23,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -92,12 +92,12 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
             Content.Sink encoderSink = gzip.newEncoderSink(writeLogger);
 
             Callback.Completable callback1 = new Callback.Completable();
-            encoderSink.write(true, ReadableBuffer.wrap("Hello World!".getBytes(UTF_8)), callback1);
+            encoderSink.write(true, RetainableByteBuffer.wrap("Hello World!".getBytes(UTF_8)), callback1);
             callback1.get();
             assertThat(new String(decompress(baos.toByteArray()), UTF_8), is("Hello World!"));
 
             Callback.Completable callback2 = new Callback.Completable();
-            encoderSink.write(true, ReadableBuffer.wrap("Hello again!".getBytes(UTF_8)), callback2);
+            encoderSink.write(true, RetainableByteBuffer.wrap("Hello again!".getBytes(UTF_8)), callback2);
             ExecutionException thrown = assertThrows(ExecutionException.class, callback2::get);
             assertInstanceOf(IllegalStateException.class, thrown.getCause());
         }
@@ -119,7 +119,7 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
             Callback.Completable callback;
 
             callback = new Callback.Completable();
-            encoderSink.write(true, ReadableBuffer.wrap("Hello World!".getBytes(UTF_8)), callback);
+            encoderSink.write(true, RetainableByteBuffer.wrap("Hello World!".getBytes(UTF_8)), callback);
             callback.get();
 
             compressed = baos.toByteArray();
@@ -152,15 +152,15 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
             Callback.Completable callback;
 
             callback = new Callback.Completable();
-            encoderSink.write(false, ReadableBuffer.wrap("Hello".getBytes(UTF_8)), callback);
+            encoderSink.write(false, RetainableByteBuffer.wrap("Hello", UTF_8), callback);
             callback.get();
 
             callback = new Callback.Completable();
-            encoderSink.write(false, ReadableBuffer.wrap(" World".getBytes(UTF_8)), callback);
+            encoderSink.write(false, RetainableByteBuffer.wrap(" World", UTF_8), callback);
             callback.get();
 
             callback = new Callback.Completable();
-            encoderSink.write(true, ReadableBuffer.wrap("!".getBytes(UTF_8)), callback);
+            encoderSink.write(true, RetainableByteBuffer.wrap("!", UTF_8), callback);
             callback.get();
 
             compressed = baos.toByteArray();
@@ -188,7 +188,7 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
         }
 
         @Override
-        public void write(boolean last, ReadableBuffer buffer, Callback callback)
+        public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(".write() last={}, byteBuffer={}, callback={}", last, buffer, callback);

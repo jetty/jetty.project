@@ -22,8 +22,7 @@ import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public abstract class FrameGenerator
 {
@@ -36,9 +35,9 @@ public abstract class FrameGenerator
         this.bufferPool = headerGenerator == null ? WritableBufferPool.NON_POOLING : headerGenerator.getBufferPool();
     }
 
-    public abstract int generate(List<ReadableBuffer> accumulator, Frame frame) throws HpackException;
+    public abstract int generate(List<RetainableByteBuffer> accumulator, Frame frame) throws HpackException;
 
-    protected WritableBuffer generateHeader(FrameType frameType, int length, int flags, int streamId)
+    protected RetainableByteBuffer.Mutable generateHeader(FrameType frameType, int length, int flags, int streamId)
     {
         return headerGenerator.generate(frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
     }
@@ -58,16 +57,16 @@ public abstract class FrameGenerator
         return headerGenerator.isUseDirectByteBuffers();
     }
 
-    protected ReadableBuffer encode(HpackEncoder encoder, MetaData metaData) throws HpackException
+    protected RetainableByteBuffer encode(HpackEncoder encoder, MetaData metaData) throws HpackException
     {
         int bufferSize = encoder.getMaxHeaderListSize();
         if (bufferSize <= 0)
             bufferSize = HpackContext.DEFAULT_MAX_HEADER_LIST_SIZE;
-        WritableBuffer hpacked = bufferPool.acquire(bufferSize, isUseDirectByteBuffers());
+        RetainableByteBuffer.Mutable hpacked = bufferPool.acquire(bufferSize, isUseDirectByteBuffers());
         try
         {
             encoder.encode(hpacked, metaData);
-            return hpacked.toReadable();
+            return hpacked;
         }
         catch (HpackException x)
         {

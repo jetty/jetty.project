@@ -14,30 +14,30 @@
 package org.eclipse.jetty.http2.frames;
 
 import org.eclipse.jetty.io.Retainable;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class DataFrame extends StreamFrame implements Retainable
 {
-    private final ReadableBuffer data;
+    private final RetainableByteBuffer data;
     private final boolean endStream;
     private final long length;
     private final int padding;
 
-    public DataFrame(ReadableBuffer data, boolean endStream)
+    public DataFrame(RetainableByteBuffer data, boolean endStream)
     {
         this(0, data, endStream);
     }
 
-    public DataFrame(int streamId, ReadableBuffer data, boolean endStream)
+    public DataFrame(int streamId, RetainableByteBuffer data, boolean endStream)
     {
         this(streamId, data, endStream, 0);
     }
 
-    public DataFrame(int streamId, ReadableBuffer data, boolean endStream, int padding)
+    public DataFrame(int streamId, RetainableByteBuffer data, boolean endStream, int padding)
     {
         super(FrameType.DATA, streamId);
-        this.data = data;
         data.retain();
+        this.data = data;
         this.endStream = endStream;
         this.length = data.remaining();
         this.padding = padding;
@@ -45,12 +45,12 @@ public class DataFrame extends StreamFrame implements Retainable
 
     public static DataFrame eof(int streamId)
     {
-        return new DataFrame(streamId, ReadableBuffer.EMPTY, true);
+        return new DataFrame(streamId, RetainableByteBuffer.empty(), true);
     }
 
-    public ReadableBuffer acquire()
+    public RetainableByteBuffer acquire()
     {
-        data.retain();
+        retain();
         return data;
     }
 

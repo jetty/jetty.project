@@ -15,7 +15,6 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -27,9 +26,9 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,26 +126,24 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
             if (matcher.matches())
             {
                 // SOCKS 4
-                ByteBuffer buffer = ByteBuffer.allocate(9);
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(9, true);
                 buffer.put((byte)4).put((byte)1).putShort(port);
                 for (int i = 1; i <= 4; ++i)
                 {
                     buffer.put((byte)Integer.parseInt(matcher.group(i)));
                 }
                 buffer.put((byte)0);
-                buffer.flip();
-                getEndPoint().write(this, buffer);
+                getEndPoint().write(buffer, this);
             }
             else
             {
                 // SOCKS 4A
                 byte[] hostBytes = host.getBytes(StandardCharsets.UTF_8);
-                ByteBuffer buffer = ByteBuffer.allocate(9 + hostBytes.length + 1);
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(9 + hostBytes.length + 1, true);
                 buffer.put((byte)4).put((byte)1).putShort(port);
                 buffer.put((byte)0).put((byte)0).put((byte)0).put((byte)1).put((byte)0);
                 buffer.put(hostBytes).put((byte)0);
-                buffer.flip();
-                getEndPoint().write(this, buffer);
+                getEndPoint().write(buffer, this);
             }
         }
 
@@ -183,9 +180,9 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
             {
                 while (true)
                 {
-                    // Avoid to read too much from the socket: ask
+                    // Avoid reading too much from the socket: ask
                     // the parser how much left there is to read.
-                    ByteBuffer buffer = BufferUtil.allocate(parser.expected());
+                    RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(parser.expected(), true);
                     int filled = getEndPoint().fill(buffer);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Read SOCKS4 connect response, {} bytes", filled);
@@ -246,7 +243,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
             private int cursor;
             private int response;
 
-            private boolean parse(ByteBuffer buffer) throws IOException
+            private boolean parse(RetainableByteBuffer buffer) throws IOException
             {
                 while (buffer.hasRemaining())
                 {

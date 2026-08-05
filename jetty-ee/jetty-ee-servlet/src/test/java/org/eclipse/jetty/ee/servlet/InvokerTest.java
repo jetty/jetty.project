@@ -76,7 +76,7 @@ public class InvokerTest
             "\r\n" +
             "Invoked TestServlet!";
 
-        String response = _connector.getResponse(request);
+        String response = _connector.getResponseAsString(request);
         assertEquals(expectedResponse, response);
     }
 

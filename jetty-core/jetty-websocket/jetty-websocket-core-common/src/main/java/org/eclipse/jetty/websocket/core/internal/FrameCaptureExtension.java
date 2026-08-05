@@ -15,17 +15,16 @@ package org.eclipse.jetty.websocket.core.internal;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -107,18 +106,15 @@ public class FrameCaptureExtension extends AbstractExtension
             return;
         }
 
-        RetainableByteBuffer buffer = getByteBufferPool().acquire(BUFSIZE, false);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(BUFSIZE, false);
         try
         {
             Frame f = Frame.copy(frame);
             f.setMask(null); // TODO is this needed?
-            generator.generateHeader(f, byteBuffer);
-            channel.write(byteBuffer);
+            generator.generateHeader(f, buffer);
+            buffer.writeTo(channel::write);
             if (frame.hasPayload())
-            {
                 channel.write(frame.getPayload().slice());
-            }
             if (LOG.isDebugEnabled())
                 LOG.debug("Saved {} frame #{}", (outgoing) ? "outgoing" : "incoming",
                     (outgoing) ? outgoingCount.incrementAndGet() : incomingCount.incrementAndGet());
@@ -148,7 +144,7 @@ public class FrameCaptureExtension extends AbstractExtension
             }
             else
             {
-                LOG.warn("Unable to configure {}: not a valid output directory", path.toAbsolutePath().toString());
+                LOG.warn("Unable to configure {}: not a valid output directory", path.toAbsolutePath());
             }
         }
 

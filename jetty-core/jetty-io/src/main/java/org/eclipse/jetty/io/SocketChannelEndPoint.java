@@ -20,8 +20,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +74,7 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
     }
 
     @Override
-    public int fill(WritableBuffer buffer) throws IOException
+    public int fill(RetainableByteBuffer.Mutable buffer) throws IOException
     {
         if (isInputShutdown())
             return -1;
@@ -83,7 +82,7 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         int filled;
         try
         {
-            filled = (int)buffer.readFrom(output -> getChannel().read(output) == -1);
+            filled = (int)buffer.readFrom(output -> getChannel().read(output));
             if (filled > 0)
                 notIdle();
             else if (filled == -1)
@@ -102,7 +101,7 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
     }
 
     @Override
-    public boolean flush(ReadableBuffer buffer) throws IOException
+    public boolean flush(RetainableByteBuffer buffer) throws IOException
     {
         long flushed;
         try
@@ -119,10 +118,10 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         if (flushed > 0)
             notIdle();
 
-        return buffer.remaining() == 0L;
+        return !buffer.hasRemaining();
     }
 
-    private class Target implements ReadableBuffer.GatheringTarget, ReadableBuffer.TransferringTarget
+    private class Target implements RetainableByteBuffer.GatheringTarget, RetainableByteBuffer.TransferringTarget
     {
         @Override
         public long write(FileChannel input, long position, long count) throws IOException
@@ -131,15 +130,15 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         }
 
         @Override
-        public void write(ByteBuffer[] inputs) throws IOException
+        public long write(ByteBuffer[] inputs) throws IOException
         {
-            getChannel().write(inputs);
+            return getChannel().write(inputs);
         }
 
         @Override
-        public void write(ByteBuffer input) throws IOException
+        public long write(ByteBuffer input) throws IOException
         {
-            getChannel().write(input);
+            return getChannel().write(input);
         }
     }
 }

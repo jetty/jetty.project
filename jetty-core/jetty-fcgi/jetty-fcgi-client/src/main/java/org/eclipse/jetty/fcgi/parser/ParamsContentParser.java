@@ -17,7 +17,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +73,7 @@ public class ParamsContentParser extends ContentParser
     }
 
     @Override
-    public Result parse(ReadableBuffer buffer)
+    public Result parse(RetainableByteBuffer buffer)
     {
         while (buffer.remaining() > 0 || state == State.PARAM)
         {
@@ -259,9 +259,9 @@ public class ParamsContentParser extends ContentParser
         }
     }
 
-    private boolean isLargeLength(ReadableBuffer buffer)
+    private boolean isLargeLength(RetainableByteBuffer buffer)
     {
-        return (buffer.get(buffer.position()) & 0x80) == 0x80;
+        return (buffer.get(buffer.readPosition()) & 0x80) == 0x80;
     }
 
     private void partialReset()

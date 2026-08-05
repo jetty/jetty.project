@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.http3.parser;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class CancelPushBodyParser extends BodyParser
 {
@@ -23,7 +23,7 @@ public class CancelPushBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer, boolean last)
+    public Result parse(RetainableByteBuffer buffer, boolean last)
     {
         throw new UnsupportedOperationException();
     }

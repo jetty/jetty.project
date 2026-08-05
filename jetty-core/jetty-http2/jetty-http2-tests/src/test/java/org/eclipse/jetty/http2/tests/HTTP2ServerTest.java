@@ -56,8 +56,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -85,13 +84,13 @@ public class HTTP2ServerTest extends AbstractServerTest
 
         // No preface bytes.
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
@@ -127,7 +126,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             }
         });
 
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -135,8 +134,8 @@ public class HTTP2ServerTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
@@ -180,12 +179,12 @@ public class HTTP2ServerTest extends AbstractServerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 latch.countDown();
-                response.write(true, ReadableBuffer.wrap(content), callback);
+                response.write(true, RetainableByteBuffer.wrap(content), callback);
                 return true;
             }
         });
 
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -193,8 +192,8 @@ public class HTTP2ServerTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
@@ -252,26 +251,23 @@ public class HTTP2ServerTest extends AbstractServerTest
             }
         });
 
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         int idx = accumulator.size();
         generator.control(accumulator, new PingFrame(new byte[8], false));
 
-        ReadableBuffer slice = accumulator.get(idx).slice();
-        WritableBuffer wb = slice.toWritable();
-        long oldPos = wb.position();
-        wb.position(0);
-        wb.put((byte)0x07);
-        wb.position(oldPos);
-        wb.toReadable();
+        RetainableByteBuffer slice = accumulator.get(idx).slice();
+        RetainableByteBuffer.Mutable wb = (RetainableByteBuffer.Mutable)slice;
+        // Modify the length of the ping frame by changing the length's msb.
+        wb.put(0, (byte)0x07);
         slice.release();
 
         CountDownLatch latch = new CountDownLatch(1);
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
@@ -305,30 +301,23 @@ public class HTTP2ServerTest extends AbstractServerTest
             }
         });
 
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         int idx = accumulator.size();
         generator.control(accumulator, new PingFrame(new byte[8], false));
 
-        // Modify the streamId of the frame to non zero.
-        ReadableBuffer slice = accumulator.get(idx).slice();
-        WritableBuffer wb = slice.toWritable();
-        long oldPos = wb.position();
-        wb.position(5);
-        wb.put((byte)0);
-        wb.put((byte)0);
-        wb.put((byte)0);
-        wb.put((byte)1);
-        wb.position(oldPos);
-        wb.toReadable();
+        RetainableByteBuffer slice = accumulator.get(idx).slice();
+        RetainableByteBuffer.Mutable wb = (RetainableByteBuffer.Mutable)slice;
+        // Modify the streamId of the ping frame to non-zero.
+        wb.putInt(5, 1);
         slice.release();
 
         CountDownLatch latch = new CountDownLatch(1);
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
@@ -376,7 +365,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
                     @Override
-                    public void write(ReadableBuffer buffer, Callback callback) throws IllegalStateException
+                    public void write(RetainableByteBuffer buffer, Callback callback) throws IllegalStateException
                     {
                         if (broken.get())
                             callback.failed(new IOException("explicitly_thrown_by_test"));
@@ -389,15 +378,15 @@ public class HTTP2ServerTest extends AbstractServerTest
         server.addConnector(connector2);
         server.start();
 
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
         try (Socket client = new Socket("localhost", connector2.getLocalPort()))
         {
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
@@ -428,7 +417,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 }
             });
 
-            List<ReadableBuffer> accumulator = new ArrayList<>();
+            List<RetainableByteBuffer> accumulator = new ArrayList<>();
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -436,8 +425,8 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             try (Socket client = new Socket("localhost", connector.getLocalPort()))
             {
-                ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-                accumulator.forEach(ReadableBuffer::release);
+                RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+                accumulator.forEach(RetainableByteBuffer::release);
                 rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
                 rb.release();
 
@@ -632,7 +621,7 @@ public class HTTP2ServerTest extends AbstractServerTest
     }
 */
 
-    private void testRequestWithContinuationFrames(PriorityFrame priorityFrame, Callable<List<ReadableBuffer>> frames) throws Exception
+    private void testRequestWithContinuationFrames(PriorityFrame priorityFrame, Callable<List<RetainableByteBuffer>> frames) throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
         startServer(new ServerSessionListener()
@@ -660,12 +649,12 @@ public class HTTP2ServerTest extends AbstractServerTest
         });
         generator = new Generator(bufferPool, 4);
 
-        List<ReadableBuffer> accumulator = frames.call();
+        List<RetainableByteBuffer> accumulator = frames.call();
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 

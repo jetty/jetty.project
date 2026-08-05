@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -159,7 +159,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         }
 
         @Override
-        public void write(ReadableBuffer buffer, Callback callback) throws IllegalStateException
+        public void write(RetainableByteBuffer buffer, Callback callback) throws IllegalStateException
         {
             PendingCallback delay = new PendingCallback(callback);
             super.write(buffer, delay);

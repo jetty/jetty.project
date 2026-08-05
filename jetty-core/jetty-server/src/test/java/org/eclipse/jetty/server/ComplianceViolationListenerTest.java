@@ -97,7 +97,7 @@ public class ComplianceViolationListenerTest
             \r
             """.formatted(rawPath);
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         List<String> expectedEvents = List.of(
@@ -143,7 +143,7 @@ public class ComplianceViolationListenerTest
             \r
             """.formatted(rawPath);
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         List<String> expectedEvents = new ArrayList<>();
@@ -194,7 +194,7 @@ public class ComplianceViolationListenerTest
 
         String expectedRequestURI = "http://local/path/to/resource";
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         List<String> expectedEvents = List.of(
@@ -244,7 +244,7 @@ public class ComplianceViolationListenerTest
 
         String expectedRequestURI = "http://local/path/to/bad/resource";
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         List<String> expectedEvents = List.of(
@@ -298,7 +298,7 @@ public class ComplianceViolationListenerTest
             \r
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         List<String> expectedEvents = new ArrayList<>();
@@ -345,7 +345,7 @@ public class ComplianceViolationListenerTest
             \r
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         List<String> expectedEvents = List.of(
@@ -390,7 +390,7 @@ public class ComplianceViolationListenerTest
             \r
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         List<String> expectedEvents = List.of(
@@ -439,7 +439,7 @@ public class ComplianceViolationListenerTest
             \r
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         List<String> expectedEvents = new ArrayList<>();

@@ -136,7 +136,7 @@ public class ComplianceTest
             \r
             """.formatted(rawQuery);
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
         String responseBody = response.getContent();

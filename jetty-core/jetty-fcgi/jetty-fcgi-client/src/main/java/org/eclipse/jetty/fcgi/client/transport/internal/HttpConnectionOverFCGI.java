@@ -50,8 +50,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +72,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private final ClientParser parser;
     private final HttpChannelOverFCGI channel;
     private final InvocationType invocationType;
-    private ReadableBuffer networkBuffer;
+    private RetainableByteBuffer.Mutable networkBuffer;
     private Object attachment;
     private State state = State.IDLE;
     private long idleTimeout;
@@ -160,7 +159,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         channel.receive();
     }
 
-    private WritableBuffer newNetworkBuffer()
+    private RetainableByteBuffer.Mutable newNetworkBuffer()
     {
         HttpClient client = destination.getHttpClient();
         return networkBufferPool.acquire(client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
@@ -216,16 +215,15 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         if (LOG.isDebugEnabled())
             LOG.debug("parseAndFill {}", networkBuffer);
 
-        ReadableBuffer readable = null;
-        WritableBuffer writable = null;
+        RetainableByteBuffer.Mutable buffer;
         if (networkBuffer != null)
         {
-            readable = networkBuffer;
+            buffer = networkBuffer;
             networkBuffer = null;
         }
         else
         {
-            writable = newNetworkBuffer();
+            buffer = newNetworkBuffer();
         }
 
         EndPoint endPoint = getEndPoint();
@@ -233,17 +231,17 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             while (true)
             {
-                if (writable != null)
+                if (!buffer.hasRemaining())
                 {
-                    int read = endPoint.fill(writable);
+                    int read = endPoint.fill(buffer);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Read {} bytes from {}", read, endPoint);
 
                     if (read <= 0)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Releasing {}", writable);
-                        writable.release();
+                            LOG.debug("Releasing {}", buffer);
+                        buffer.release();
 
                         if (read == 0)
                             return true;
@@ -251,31 +249,23 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                         shutdown();
                         return false;
                     }
-
-                    readable = writable.toReadable();
                 }
 
-                assert readable != null;
-
-                if (parse(readable))
+                if (parse(buffer))
                 {
-                    if (readable.remaining() == 0)
-                        readable.release();
+                    if (!buffer.hasRemaining())
+                        buffer.release();
                     else
-                        networkBuffer = readable;
+                        networkBuffer = buffer;
                     return false;
                 }
 
-                if (readable.isRetained())
+                if (buffer.isRetained())
                 {
-                    readable.release();
-                    writable = newNetworkBuffer();
+                    buffer.release();
+                    buffer = newNetworkBuffer();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Reacquired {}", writable);
-                }
-                else
-                {
-                    writable = readable.toWritable();
+                        LOG.debug("Reacquired {}", buffer);
                 }
             }
         }
@@ -283,18 +273,15 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to fill from endpoint {}", endPoint, x);
-            if (writable != null)
-                writable.release();
-            else
-                readable.release();
+            buffer.release();
             close(x);
             return false;
         }
     }
 
-    private boolean parse(ReadableBuffer buffer)
+    private boolean parse(RetainableByteBuffer buffer)
     {
-        while (buffer.remaining() > 0)
+        while (buffer.hasRemaining())
         {
             boolean result = parser.parse(buffer);
             if (result)
@@ -532,7 +519,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         }
 
         @Override
-        public boolean onContent(int request, FCGI.StreamType stream, ReadableBuffer buffer)
+        public boolean onContent(int request, FCGI.StreamType stream, RetainableByteBuffer buffer)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onContent r={},t={},b={}", request, stream, buffer);

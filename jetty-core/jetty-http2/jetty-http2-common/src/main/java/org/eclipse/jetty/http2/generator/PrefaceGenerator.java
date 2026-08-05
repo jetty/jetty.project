@@ -17,11 +17,11 @@ import java.util.List;
 
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class PrefaceGenerator extends FrameGenerator
 {
-    private static final ReadableBuffer PREFACE = ReadableBuffer.wrap(PrefaceFrame.PREFACE_BYTES);
+    private static final RetainableByteBuffer PREFACE = RetainableByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES);
 
     public PrefaceGenerator()
     {
@@ -29,9 +29,9 @@ public class PrefaceGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(List<ReadableBuffer> accumulator, Frame frame)
+    public int generate(List<RetainableByteBuffer> accumulator, Frame frame)
     {
-        ReadableBuffer slice = PREFACE.slice();
+        RetainableByteBuffer slice = PREFACE.slice();
         accumulator.add(slice);
         return PrefaceFrame.PREFACE_BYTES.length;
     }

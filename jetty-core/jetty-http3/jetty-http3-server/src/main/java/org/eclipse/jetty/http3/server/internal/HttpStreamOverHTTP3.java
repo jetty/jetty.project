@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3.server.internal;
 
 import java.io.EOFException;
-import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -31,7 +30,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.api.Stream;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
@@ -39,7 +37,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -233,13 +231,12 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer buffer, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer buffer, Callback callback)
     {
-        ReadableBuffer content = Objects.requireNonNullElse(buffer, ReadableBuffer.EMPTY);
         if (response != null)
-            sendHeaders(request, response, content, last, callback);
+            sendHeaders(request, response, buffer, last, callback);
         else
-            sendContent(request, responseMetaData, content, last, callback);
+            sendContent(request, responseMetaData, buffer, last, callback);
     }
 
     @Override
@@ -266,16 +263,16 @@ public class HttpStreamOverHTTP3 implements HttpStream
         });
     }
 
-    private void sendHeaders(MetaData.Request request, MetaData.Response response, ReadableBuffer content, boolean lastContent, Callback callback)
+    private void sendHeaders(MetaData.Request request, MetaData.Response response, RetainableByteBuffer content, boolean lastContent, Callback callback)
     {
         responseMetaData = response;
 
         HeadersFrame headersFrame;
-        DataFrame dataFrame = null;
+        boolean dataLast = lastContent;
         HeadersFrame trailersFrame = null;
 
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean hasContent = content.remaining() > 0L && !isHeadRequest;
+        boolean hasContent = content != null && content.hasRemaining() && !isHeadRequest;
         if (HttpStatus.isInterim(response.getStatus()))
         {
             // Must not commit interim responses.
@@ -291,7 +288,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             committed = true;
             if (lastContent)
             {
-                long realContentLength = content.remaining();
+                long realContentLength = content != null ? content.remaining() : 0;
                 long contentLength = response.getContentLength();
                 if (contentLength < 0)
                 {
@@ -315,19 +312,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 if (lastContent)
                 {
                     HttpFields trailers = retrieveTrailers();
-                    if (trailers == null)
+                    if (trailers != null)
                     {
-                        dataFrame = new DataFrame(content, true);
-                    }
-                    else
-                    {
-                        dataFrame = new DataFrame(content, false);
+                        dataLast = false;
                         trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
                     }
-                }
-                else
-                {
-                    dataFrame = new DataFrame(content, false);
                 }
             }
             else
@@ -367,17 +356,17 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 System.lineSeparator(), response.getHttpFields());
         }
 
-        DataFrame df = dataFrame;
+        boolean dl = dataLast;
         HeadersFrame tf = trailersFrame;
 
-        stream.respond(headersFrame, Promise.Invocable.from(callback.getInvocationType(), s ->
+        stream.respond(headersFrame, Promise.Invocable.from(callback.getInvocationType(), _ ->
         {
-            if (df != null)
+            if (content != null)
             {
                 if (tf != null)
-                    sendDataAndTrailer(df, lastContent, tf, callback);
+                    sendDataAndTrailer(content, tf, callback);
                 else
-                    sendData(df, lastContent, callback);
+                    sendData(content, dl, lastContent, callback);
             }
             else
             {
@@ -389,10 +378,12 @@ public class HttpStreamOverHTTP3 implements HttpStream
         }, callback::failed));
     }
 
-    private void sendContent(MetaData.Request request, MetaData.Response response, ReadableBuffer content, boolean lastContent, Callback callback)
+    private void sendContent(MetaData.Request request, MetaData.Response response, RetainableByteBuffer content, boolean lastContent, Callback callback)
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean hasContent = content.remaining() > 0L && !isHeadRequest;
+        if (lastContent && content == null)
+            content = RetainableByteBuffer.empty();
+        boolean hasContent = content != null && content.hasRemaining() && !isHeadRequest;
         if (hasContent || (lastContent && !isTunnel(request, response)))
         {
             if (lastContent)
@@ -400,28 +391,20 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 HttpFields trailers = retrieveTrailers();
                 if (trailers == null)
                 {
-                    DataFrame df = new DataFrame(content, true);
-                    sendData(df, true, callback);
+                    sendData(content, true, true, callback);
                 }
                 else
                 {
+                    HeadersFrame tf = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
                     if (hasContent)
-                    {
-                        DataFrame df = new DataFrame(content, false);
-                        HeadersFrame tf = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
-                        sendDataAndTrailer(df, true, tf, callback);
-                    }
+                        sendDataAndTrailer(content, tf, callback);
                     else
-                    {
-                        HeadersFrame tf = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
                         sendTrailer(tf, callback);
-                    }
                 }
             }
             else
             {
-                DataFrame df = new DataFrame(content, false);
-                sendData(df, false, callback);
+                sendData(content, false, false, callback);
             }
         }
         else
@@ -446,20 +429,20 @@ public class HttpStreamOverHTTP3 implements HttpStream
         return MetaData.isTunnel(request.getMethod(), response.getStatus());
     }
 
-    private void sendDataAndTrailer(DataFrame dataFrame, boolean lastContent, HeadersFrame trailersFrame, Callback callback)
+    private void sendDataAndTrailer(RetainableByteBuffer data, HeadersFrame trailersFrame, Callback callback)
     {
-        sendData(dataFrame, lastContent, Callback.from(callback.getInvocationType(), () -> sendTrailer(trailersFrame, callback), callback::failed));
+        sendData(data, false, true, Callback.from(callback.getInvocationType(), () -> sendTrailer(trailersFrame, callback), callback::failed));
     }
 
-    private void sendData(DataFrame dataFrame, boolean lastContent, Callback callback)
+    private void sendData(RetainableByteBuffer data, boolean dataLast, boolean lastContent, Callback callback)
     {
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP3 response #{}/{}: {} content bytes{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                dataFrame.getByteBuffer().remaining(), lastContent ? " (last chunk)" : "");
+                data.remaining(), lastContent ? " (last chunk)" : "");
         }
-        stream.data(dataFrame, Promise.Invocable.from(callback.getInvocationType(), s -> callback.succeeded(), callback::failed));
+        stream.data(data, dataLast, Promise.Invocable.from(callback.getInvocationType(), _ -> callback.succeeded(), callback::failed));
     }
 
     private void sendTrailer(HeadersFrame trailerFrame, Callback callback)
@@ -470,7 +453,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                 System.lineSeparator(), trailerFrame.getMetaData().getHttpFields());
         }
-        stream.trailer(trailerFrame, Promise.Invocable.from(callback.getInvocationType(), s -> callback.succeeded(), callback::failed));
+        stream.trailer(trailerFrame, Promise.Invocable.from(callback.getInvocationType(), _ -> callback.succeeded(), callback::failed));
     }
 
     @Override

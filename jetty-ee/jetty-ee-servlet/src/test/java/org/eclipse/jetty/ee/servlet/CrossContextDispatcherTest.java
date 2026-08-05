@@ -179,7 +179,7 @@ public class CrossContextDispatcherTest
         _rootContextHandler.addServlet(VerifyForwardServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/dispatch/?forward=/verify&ctx=/ HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -225,7 +225,7 @@ public class CrossContextDispatcherTest
         _rootContextHandler.addServlet(VerifyIncludeServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/dispatch/?include=/verify&ctx=/ HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -266,7 +266,7 @@ public class CrossContextDispatcherTest
         _targetServletContextHandler.addServlet(VerifyForwardServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/dispatch/?forward=/verify HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -317,7 +317,7 @@ public class CrossContextDispatcherTest
         _server.getContainedBeans(HttpConnectionFactory.class).forEach(f -> f.getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT.with("test", UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING)));
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/dispatch/?forward=/verify/%25%20test HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -363,7 +363,7 @@ public class CrossContextDispatcherTest
         _targetServletContextHandler.addServlet(VerifyIncludeServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/dispatch/?include=/verify HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -414,7 +414,7 @@ public class CrossContextDispatcherTest
             \r
             """;
         rawRequest += fullContent ? "0123456789" : "";
-        String rawResponse = _connector.getResponse(rawRequest);
+        String rawResponse = _connector.getResponseAsString(rawRequest);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String content = response.getContent();
@@ -458,7 +458,7 @@ public class CrossContextDispatcherTest
         _targetServletContextHandler.addServlet(VerifySimulatedEE8IncludeServlet.class, "/verify/*");
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/dispatch/?include=/verify HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -500,7 +500,7 @@ public class CrossContextDispatcherTest
         _contextHandler.addFilter(MultiPartReadingFilter.class, "/dispatch/*", EnumSet.of(DispatcherType.REQUEST));
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
-        String rawResponse = _connector.getResponse(MULTIPART_FORWARD_REQUEST);
+        String rawResponse = _connector.getResponseAsString(MULTIPART_FORWARD_REQUEST);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
         String content = response.getContent();
@@ -530,7 +530,7 @@ public class CrossContextDispatcherTest
         };
         _contextHandler.addServlet(new ServletHolder(dispatcher), "/dispatch/*");
 
-        String rawResponse = _connector.getResponse(MULTIPART_FORWARD_REQUEST);
+        String rawResponse = _connector.getResponseAsString(MULTIPART_FORWARD_REQUEST);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -561,7 +561,7 @@ public class CrossContextDispatcherTest
                 \r
                 """;
 
-        String rawResponse = _connector.getResponse(rawRequest);
+        String rawResponse = _connector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
         String expectedRequestURL = "http://localhost/foreign/verify/pinfo";
@@ -581,7 +581,7 @@ public class CrossContextDispatcherTest
         _contextHandler.addServlet(CrossContextDispatchServlet.class, "/dispatch/*");
 
         String form = "a=xxx";
-        String rawResponse = _connector.getResponse(
+        String rawResponse = _connector.getResponseAsString(
                 """
                 POST /context/dispatch/?forward=/reader HTTP/1.1\r
                 Host: localhost\r
@@ -618,7 +618,7 @@ public class CrossContextDispatcherTest
         _contextHandler.addServlet(new ServletHolder(dispatcher), "/dispatch/*");
 
         String form = "a=xxx";
-        String rawResponse = _connector.getResponse(
+        String rawResponse = _connector.getResponseAsString(
                 """
                 POST /context/dispatch/?forward=/reader&param=a HTTP/1.1\r
                 Host: localhost\r
@@ -639,7 +639,7 @@ public class CrossContextDispatcherTest
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/resourceServlet/content.txt?do=forward HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -657,7 +657,7 @@ public class CrossContextDispatcherTest
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/resourceServlet/content.txt?do=include&wrapped=true HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -675,7 +675,7 @@ public class CrossContextDispatcherTest
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/resourceServlet/content.txt?do=forward&wrapped=true HTTP/1.1
             Host: localhost\r
             Connection: close\r

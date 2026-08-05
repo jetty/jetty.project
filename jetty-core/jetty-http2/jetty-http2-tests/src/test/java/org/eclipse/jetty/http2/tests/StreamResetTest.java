@@ -77,7 +77,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPoolBudget;
 import org.hamcrest.Matchers;
@@ -179,7 +179,7 @@ public class StreamResetTest extends AbstractTest
                     {
                         Content.Chunk chunk = stream.read();
                         chunk.release();
-                        completable.thenCompose(s -> s.data(ReadableBuffer.allocate(16, false), true))
+                        completable.thenCompose(s -> s.data(RetainableByteBuffer.allocate(16, false), true))
                             .thenRun(serverDataLatch::countDown);
                     }
 
@@ -188,7 +188,7 @@ public class StreamResetTest extends AbstractTest
                     {
                         // Simulate that there is pending data to send.
                         HTTP2Stream stream = (HTTP2Stream)s;
-                        List<Frame> frames = List.of(new DataFrame(s.getId(), ReadableBuffer.allocate(16, false), true));
+                        List<Frame> frames = List.of(new DataFrame(s.getId(), RetainableByteBuffer.allocate(16, false), true));
                         stream.getSession().frames(stream, frames, new Callback()
                         {
                             @Override
@@ -253,7 +253,7 @@ public class StreamResetTest extends AbstractTest
         assertFalse(stream1DataLatch.await(1, TimeUnit.SECONDS));
 
         // The other stream should still be working.
-        stream2.data(ReadableBuffer.allocate(16, false), true, Callback.NOOP);
+        stream2.data(RetainableByteBuffer.allocate(16, false), true, Callback.NOOP);
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
         assertTrue(stream2DataLatch.await(5, TimeUnit.SECONDS));
     }
@@ -349,7 +349,7 @@ public class StreamResetTest extends AbstractTest
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 Charset charset = StandardCharsets.UTF_8;
-                ReadableBuffer data = ReadableBuffer.wrap(charset.encode("AFTER RESET"));
+                RetainableByteBuffer data = RetainableByteBuffer.wrap(charset.encode("AFTER RESET"));
 
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + charset.name());
@@ -444,7 +444,7 @@ public class StreamResetTest extends AbstractTest
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(request, null, false);
         Stream stream = client.newStream(frame, null).get(5, TimeUnit.SECONDS);
-        ReadableBuffer data = ReadableBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
+        RetainableByteBuffer data = RetainableByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
         stream.data(data, false, Callback.NOOP);
 
         // Wait for the server to receive all the data.
@@ -543,7 +543,7 @@ public class StreamResetTest extends AbstractTest
             });
             Stream stream = promise.get(5, TimeUnit.SECONDS);
             streams.add(stream);
-            ReadableBuffer data = ReadableBuffer.allocate(10, false);
+            RetainableByteBuffer data = RetainableByteBuffer.allocate(10, false);
             stream.data(data, false, Callback.NOOP);
 
             // Exit the loop when a request is queued.
@@ -558,7 +558,7 @@ public class StreamResetTest extends AbstractTest
         // This request will get no event from the server since it's reset by the client.
         client.newStream(frame, promise, null);
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ReadableBuffer data = ReadableBuffer.allocate(((HTTP2Session)client).updateSendWindow(0), false);
+        RetainableByteBuffer data = RetainableByteBuffer.allocate(((HTTP2Session)client).updateSendWindow(0), false);
         stream.data(data, false, new Callback()
         {
             @Override
@@ -579,7 +579,7 @@ public class StreamResetTest extends AbstractTest
             lock.notifyAll();
         }
         // Complete all streams.
-        streams.forEach(s -> s.data(ReadableBuffer.EMPTY, true, Callback.NOOP));
+        streams.forEach(s -> s.data(RetainableByteBuffer.empty(), true, Callback.NOOP));
 
         assertTrue(latch.get().await(5, TimeUnit.SECONDS));
     }
@@ -608,7 +608,7 @@ public class StreamResetTest extends AbstractTest
             FuturePromise<Stream> promise = new FuturePromise<>();
             client.newStream(frame, promise, null);
             Stream stream = promise.get(5, TimeUnit.SECONDS);
-            ReadableBuffer data = ReadableBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
+            RetainableByteBuffer data = RetainableByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
             CountDownLatch dataLatch = new CountDownLatch(1);
             stream.data(data, false, new Callback()
             {
@@ -741,7 +741,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.wrap(new byte[10 * windowSize]), Callback.from(callback::succeeded, x ->
+                response.write(true, RetainableByteBuffer.wrap(new byte[10 * windowSize]), Callback.from(callback::succeeded, x ->
                 {
                     writeLatch.countDown();
                     callback.succeeded();
@@ -804,7 +804,7 @@ public class StreamResetTest extends AbstractTest
         FuturePromise<Stream> promise = new FuturePromise<>();
         client.newStream(frame, promise, null);
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        stream.data(ReadableBuffer.allocate(1024, false), true, Callback.NOOP);
+        stream.data(RetainableByteBuffer.allocate(1024, false), true, Callback.NOOP);
 
         assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
 
@@ -860,7 +860,7 @@ public class StreamResetTest extends AbstractTest
         try (Socket socket = new Socket(host, port))
         {
             Generator generator = new Generator(bufferPool);
-            List<ReadableBuffer> accumulator = new ArrayList<>();
+            List<RetainableByteBuffer> accumulator = new ArrayList<>();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -875,8 +875,8 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
@@ -885,8 +885,8 @@ public class StreamResetTest extends AbstractTest
 
             accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
@@ -956,7 +956,7 @@ public class StreamResetTest extends AbstractTest
         try (Socket socket = new Socket(host, port))
         {
             Generator generator = new Generator(bufferPool);
-            List<ReadableBuffer> accumulator = new ArrayList<>();
+            List<RetainableByteBuffer> accumulator = new ArrayList<>();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -971,8 +971,8 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
@@ -981,8 +981,8 @@ public class StreamResetTest extends AbstractTest
 
             accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
@@ -1019,7 +1019,7 @@ public class StreamResetTest extends AbstractTest
             {
                 exchanger.exchange((SelectableChannelEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
                 // Large write, it blocks due to TCP congestion.
-                response.write(true, ReadableBuffer.wrap(new byte[128 * 1024 * 1024]), callback);
+                response.write(true, RetainableByteBuffer.wrap(new byte[128 * 1024 * 1024]), callback);
             }
 
             private void service2(Response response, Callback callback) throws Exception
@@ -1049,7 +1049,7 @@ public class StreamResetTest extends AbstractTest
         try (Socket socket = new Socket(host, port))
         {
             Generator generator = new Generator(bufferPool);
-            List<ReadableBuffer> accumulator = new ArrayList<>();
+            List<RetainableByteBuffer> accumulator = new ArrayList<>();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -1063,8 +1063,8 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(3, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             accumulator.clear();
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
@@ -1078,8 +1078,8 @@ public class StreamResetTest extends AbstractTest
             int streamId = 5;
             headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
-            rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
             assertTrue(requestLatch1.await(5, TimeUnit.SECONDS));
@@ -1087,8 +1087,8 @@ public class StreamResetTest extends AbstractTest
             // Now reset the second request, which has not started writing yet.
             accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
             // Wait to be sure that the server processed the reset.
@@ -1150,7 +1150,7 @@ public class StreamResetTest extends AbstractTest
         Stream stream = promise.get(5, TimeUnit.SECONDS);
         streamRef.set(stream);
         // Send enough bytes to trigger the server to send a window update.
-        ReadableBuffer content = ReadableBuffer.allocate((int)(window * ratio) + 1024, false);
+        RetainableByteBuffer content = RetainableByteBuffer.allocate((int)(window * ratio) + 1024, false);
         stream.data(content, false, Callback.NOOP);
 
         assertFalse(failureLatch.await(1, TimeUnit.SECONDS));
@@ -1191,7 +1191,7 @@ public class StreamResetTest extends AbstractTest
                 resetLatch.countDown();
             }
         }).get(5, TimeUnit.SECONDS);
-        stream.data(ReadableBuffer.allocate(1024, false), true);
+        stream.data(RetainableByteBuffer.allocate(1024, false), true);
 
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
 
@@ -1218,7 +1218,7 @@ public class StreamResetTest extends AbstractTest
         }).get(5, TimeUnit.SECONDS);
 
         // The HEADERS frame had endStream=true, send a DATA frame with endStream=true, expect RST_STREAM.
-        stream.data(ReadableBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE, false), true);
+        stream.data(RetainableByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE, false), true);
 
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
 
@@ -1242,8 +1242,8 @@ public class StreamResetTest extends AbstractTest
                         MetaData.Response response = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                         HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
                         stream.headers(responseFrame)
-                            .thenCompose(s -> s.data(ReadableBuffer.allocate(128, false), false))
-                            .thenCompose(s -> s.data(ReadableBuffer.allocate(64, false), true));
+                            .thenCompose(s -> s.data(RetainableByteBuffer.allocate(128, false), false))
+                            .thenCompose(s -> s.data(RetainableByteBuffer.allocate(64, false), true));
                     }
                     return null;
                 }
@@ -1297,8 +1297,8 @@ public class StreamResetTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                stream.data(ReadableBuffer.allocate(length1, false), false)
-                    .thenCompose(s -> s.data(ReadableBuffer.allocate(length2, false), true))
+                stream.data(RetainableByteBuffer.allocate(length1, false), false)
+                    .thenCompose(s -> s.data(RetainableByteBuffer.allocate(length2, false), true))
                     .thenAccept(s -> s.reset(new ResetFrame(s.getId(), ErrorCode.STREAM_CLOSED_ERROR.code)));
                 return null;
             }
@@ -1359,8 +1359,8 @@ public class StreamResetTest extends AbstractTest
                             return;
                         }
                         chunk.release();
-                        stream.data(ReadableBuffer.allocate(length1, false), false)
-                            .thenCompose(s -> s.data(ReadableBuffer.allocate(length2, false), true))
+                        stream.data(RetainableByteBuffer.allocate(length1, false), false)
+                            .thenCompose(s -> s.data(RetainableByteBuffer.allocate(length2, false), true))
                             .thenAccept(s -> s.reset(new ResetFrame(s.getId(), ErrorCode.STREAM_CLOSED_ERROR.code)));
                         stream.demand();
                     }
@@ -1388,7 +1388,7 @@ public class StreamResetTest extends AbstractTest
         }).get(5, TimeUnit.SECONDS);
 
         // Do not send the whole request body.
-        clientStream.data(ReadableBuffer.allocate(length1, false), false);
+        clientStream.data(RetainableByteBuffer.allocate(length1, false), false);
 
         // The reset is notified because the request content is not complete.
         assertTrue(clientResetLatch.await(5, TimeUnit.SECONDS));
@@ -1396,7 +1396,7 @@ public class StreamResetTest extends AbstractTest
         assertEquals(length1 + length2, ((HTTP2Stream)clientStream).getDataLength());
 
         // Finish to send the request content, it must not be sent.
-        CompletableFuture<Stream> cfData2 = clientStream.data(ReadableBuffer.allocate(length2, false), true);
+        CompletableFuture<Stream> cfData2 = clientStream.data(RetainableByteBuffer.allocate(length2, false), true);
         assertTrue(cfData2.isCompletedExceptionally());
 
         // Read and discard the data.

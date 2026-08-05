@@ -62,7 +62,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         // VirtualHost rule does not apply, host does not match.
         assertEquals("/rule/bar", response.get("X-Path"));
@@ -81,7 +81,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals("/cheese/fooRule", response.get("X-Path"));
     }
@@ -101,7 +101,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals("/rule/bar", response.get("X-Path"));
 
@@ -113,7 +113,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
                         
             """;
 
-        response = HttpTester.parseResponse(_connector.getResponse(request));
+        response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals("/rule/fooRule", response.get("X-Path"));
 
@@ -125,7 +125,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
                         
             """;
 
-        response = HttpTester.parseResponse(_connector.getResponse(request));
+        response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals("/cheese/fooRule", response.get("X-Path"));
     }
@@ -143,7 +143,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals("/cheese/fooRule", response.get("X-Path"));
     }
@@ -165,7 +165,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
                             
                 """;
 
-            HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+            HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertEquals("/cheese/fooRule", response.get("X-Path"));
         }
@@ -184,7 +184,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
                             
                 """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals("/cheese/bar", response.get("X-Path"));
 
@@ -196,7 +196,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
                             
                 """;
 
-        response = HttpTester.parseResponse(_connector.getResponse(request));
+        response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals("/cheese/fooRule", response.get("X-Path"));
     }
@@ -228,7 +228,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
                             
                 """.replace("$H", requestHost);
 
-            HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+            HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
             assertEquals(HttpStatus.OK_200, response.getStatus());
             if (succeed)
                 assertEquals("/cheese/fooRule", response.get("X-Path"));

@@ -56,7 +56,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -1267,7 +1267,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 long start = System.currentTimeMillis();
                 try (Blocker.Callback blocker = Blocker.callback())
                 {
-                    response.write(false, ReadableBuffer.wrap(buf), blocker);
+                    response.write(false, RetainableByteBuffer.wrap(buf), blocker);
                     blocker.block();
                 }
                 long end = System.currentTimeMillis();
@@ -1894,11 +1894,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Read the two pipelined responses until EOF
             ByteBuffer responses = ByteBuffer.wrap(IO.readBytes(client.getInputStream()));
 
-            HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responses));
+            HttpTester.Response response = HttpTester.parseResponse(RetainableByteBuffer.wrap(responses));
             assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), containsString("Read " + content.length));
 
-            response = HttpTester.parseResponse(ReadableBuffer.wrap(responses));
+            response = HttpTester.parseResponse(RetainableByteBuffer.wrap(responses));
             assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), containsString("Read " + content.length));
         }

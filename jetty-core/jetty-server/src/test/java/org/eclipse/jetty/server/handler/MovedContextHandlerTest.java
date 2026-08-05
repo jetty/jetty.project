@@ -60,7 +60,7 @@ public class MovedContextHandlerTest
         handler.setDiscardQuery(true);
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET /ctx/path?query HTTP/1.1
             Host: localhost
                         
@@ -82,7 +82,7 @@ public class MovedContextHandlerTest
         handler.setDiscardQuery(true);
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET /ctx/path?query HTTP/1.1
             Host: localhost
                         
@@ -104,7 +104,7 @@ public class MovedContextHandlerTest
         handler.setDiscardQuery(false);
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET /ctx/path?query HTTP/1.1
             Host: localhost
                         
@@ -126,7 +126,7 @@ public class MovedContextHandlerTest
         handler.setDiscardQuery(false);
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET /ctx/path?query HTTP/1.1
             Host: localhost
                         
@@ -148,7 +148,7 @@ public class MovedContextHandlerTest
         handler.setDiscardQuery(false);
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET /ctx/path?query HTTP/1.1
             Host: localhost
                         
@@ -168,7 +168,7 @@ public class MovedContextHandlerTest
         handler.setRedirectURI("/moved");
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET /ctx/path?query HTTP/1.1
             Host: localhost
                         
@@ -182,7 +182,7 @@ public class MovedContextHandlerTest
 
         handler.setCacheControl("max-age=5");
 
-        response = HttpTester.parseResponse(connector.getResponse("""
+        response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET /ctx/path?query HTTP/1.1
             Host: localhost
                         
@@ -206,7 +206,7 @@ public class MovedContextHandlerTest
         handler.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
         start(handler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET /ctx/path?query HTTP/1.1
             Host: localhost
                         

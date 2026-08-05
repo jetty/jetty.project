@@ -20,8 +20,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class SettingsGenerator extends FrameGenerator
 {
@@ -31,13 +30,13 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(List<ReadableBuffer> accumulator, Frame frame)
+    public int generate(List<RetainableByteBuffer> accumulator, Frame frame)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(accumulator, settingsFrame.getSettings(), settingsFrame.isReply());
     }
 
-    public int generateSettings(List<ReadableBuffer> accumulator, Map<Integer, Integer> settings, boolean reply)
+    public int generateSettings(List<RetainableByteBuffer> accumulator, Map<Integer, Integer> settings, boolean reply)
     {
         // Two bytes for the identifier, four bytes for the value.
         int entryLength = 2 + 4;
@@ -45,13 +44,13 @@ public class SettingsGenerator extends FrameGenerator
         if (length > getMaxFrameSize())
             throw new IllegalArgumentException("Invalid settings, too big");
 
-        WritableBuffer wb = generateHeader(FrameType.SETTINGS, length, reply ? Flags.ACK : Flags.NONE, 0);
+        RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.SETTINGS, length, reply ? Flags.ACK : Flags.NONE, 0);
         for (Map.Entry<Integer, Integer> entry : settings.entrySet())
         {
-            wb.putShort(entry.getKey().shortValue());
-            wb.putInt(entry.getValue());
+            buffer.putShort(entry.getKey().shortValue());
+            buffer.putInt(entry.getValue());
         }
-        accumulator.add(wb.toReadable());
+        accumulator.add(buffer);
 
         return Frame.HEADER_LENGTH + length;
     }

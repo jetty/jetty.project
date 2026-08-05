@@ -16,7 +16,7 @@ package org.eclipse.jetty.http.compression;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.CharsetStringBuilder;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>Used to decode string literals as described in RFC7541.</p>
@@ -77,17 +77,17 @@ public class NBitStringDecoder
      */
     public String decode(ByteBuffer buffer) throws EncodingException
     {
-        return decode(ReadableBuffer.wrap(buffer));
+        return decode(RetainableByteBuffer.wrap(buffer));
     }
 
-    public String decode(ReadableBuffer buffer) throws EncodingException
+    public String decode(RetainableByteBuffer buffer) throws EncodingException
     {
         while (true)
         {
             switch (_state)
             {
                 case PARSING:
-                    byte firstByte = buffer.get(buffer.position());
+                    byte firstByte = buffer.get(buffer.readPosition());
                     _huffman = ((0x80 >>> (8 - _prefix)) & firstByte) != 0;
                     _state = State.LENGTH;
                     _integerDecoder.setPrefix(_prefix - 1);
@@ -113,7 +113,7 @@ public class NBitStringDecoder
         }
     }
 
-    private String stringDecode(ReadableBuffer buffer)
+    private String stringDecode(RetainableByteBuffer buffer)
     {
         // An ISO-8859-1 String is byte for byte the encoded bytes, so accumulate
         // the bytes in bulk and decode them in one go, rather than appending one
@@ -121,6 +121,7 @@ public class NBitStringDecoder
         int available = Math.min(_length - _count, buffer.remaining());
         for (int i = 0; i < available; i++)
         {
+            // TODO: bulk copy.
             _builder.append(buffer.get());
         }
         _count += available;

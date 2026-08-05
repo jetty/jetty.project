@@ -180,6 +180,8 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
     public boolean upgrade(Map<String, Object> context)
     {
+        LOG.info("SIMON: upgrading");
+
         // In case of HTTP/1.1 upgrade to HTTP/2, the request is HTTP/1.1
         // (with upgrade) for a resource, and the response is HTTP/2.
 
@@ -204,12 +206,16 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
             return false;
         }
 
+        LOG.info("SIMON: creating stream #1");
+
         // Create the implicit stream#1 so that it can receive the HTTP/2 response.
         MetaData.Request metaData = new MetaData.Request(request.getMethod(), HttpURI.from(request.getURI()), HttpVersion.HTTP_2, request.getHeaders());
         // We do not support upgrade requests with content, so endStream=true.
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         Stream stream = ((HTTP2Session)session).newUpgradeStream(frame, http2Channel.getStreamListener(), failure ->
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Upgrade failed for {}", HttpConnectionOverHTTP2.this, failure);
             newExchange.requestComplete(failure);
             newExchange.terminateRequest();
             newExchange.responseComplete(failure);
@@ -228,8 +234,6 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         {
             http2Channel.disassociate(newExchange);
             destroyHttpChannel(http2Channel);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Upgrade failed for {}", HttpConnectionOverHTTP2.this);
             return false;
         }
     }

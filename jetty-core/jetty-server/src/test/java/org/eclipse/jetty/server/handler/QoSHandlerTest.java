@@ -580,7 +580,7 @@ public class QoSHandlerTest
         // Send 2 requests that should be failed immediately by QoSHandler.
         for (int i = 0; i < 2; i++)
         {
-            HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+            HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
                 GET /rejected/%d HTTP/1.1
                 Host: localhost
                 

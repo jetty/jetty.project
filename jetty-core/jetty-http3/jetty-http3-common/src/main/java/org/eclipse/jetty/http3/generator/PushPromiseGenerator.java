@@ -13,21 +13,22 @@
 
 package org.eclipse.jetty.http3.generator;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class PushPromiseGenerator extends FrameGenerator
 {
-    public PushPromiseGenerator(ByteBufferPool bufferPool)
+    public PushPromiseGenerator(WritableBufferPool bufferPool)
     {
         super(bufferPool);
     }
 
     @Override
-    public long generate(RetainableByteBuffer.Mutable accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(List<RetainableByteBuffer> accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         return 0;
     }

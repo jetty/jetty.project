@@ -74,7 +74,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -1560,7 +1560,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             return 0;
         }
 
-        public abstract boolean generate(List<ReadableBuffer> accumulator) throws HpackException;
+        public abstract boolean generate(List<RetainableByteBuffer> accumulator) throws HpackException;
 
         boolean hasHighPriority()
         {
@@ -1651,7 +1651,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
 
         @Override
-        public boolean generate(List<ReadableBuffer> accumulator) throws HpackException
+        public boolean generate(List<RetainableByteBuffer> accumulator) throws HpackException
         {
             frameBytes = generator.control(accumulator, frame);
             beforeSend();
@@ -1754,7 +1754,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
 
         @Override
-        public boolean generate(List<ReadableBuffer> accumulator)
+        public boolean generate(List<RetainableByteBuffer> accumulator)
         {
             long dataRemaining = getDataBytesRemaining();
 

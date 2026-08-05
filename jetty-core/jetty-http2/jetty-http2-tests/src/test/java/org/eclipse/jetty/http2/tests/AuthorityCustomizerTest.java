@@ -36,7 +36,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,7 +60,7 @@ public class AuthorityCustomizerTest extends AbstractServerTest
         });
         httpConfig.addCustomizer(new AuthorityCustomizer());
 
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), null, path, HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
@@ -68,8 +68,8 @@ public class AuthorityCustomizerTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 

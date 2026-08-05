@@ -25,7 +25,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -205,7 +205,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.wrap(new byte[1024]), callback);
+                response.write(true, RetainableByteBuffer.wrap(new byte[1024]), callback);
                 return true;
             }
         });

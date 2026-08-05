@@ -42,7 +42,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -116,11 +116,11 @@ public class PushedResourcesTest extends AbstractTest
                 String target = Request.getPathInContext(request);
                 if (target.equals(path1))
                 {
-                    response.write(true, ReadableBuffer.wrap(pushBytes1), callback);
+                    response.write(true, RetainableByteBuffer.wrap(pushBytes1), callback);
                 }
                 else if (target.equals(path2))
                 {
-                    response.write(true, ReadableBuffer.wrap(pushBytes2), callback);
+                    response.write(true, RetainableByteBuffer.wrap(pushBytes2), callback);
                 }
                 else
                 {
@@ -128,7 +128,7 @@ public class PushedResourcesTest extends AbstractTest
                     request.push(push1);
                     MetaData.Request push2 = new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(path2), HttpVersion.HTTP_2, HttpFields.EMPTY);
                     request.push(push2);
-                    response.write(true, ReadableBuffer.wrap(bytes), callback);
+                    response.write(true, RetainableByteBuffer.wrap(bytes), callback);
                 }
                 return true;
             }
@@ -185,7 +185,7 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else if (target.equals(newPath))
                 {
-                    response.write(true, ReadableBuffer.wrap(pushBytes), callback);
+                    response.write(true, RetainableByteBuffer.wrap(pushBytes), callback);
                 }
                 else
                 {
