@@ -43,7 +43,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -193,9 +193,9 @@ public class HTTP2ClientDocs
 
         // The request content, in two chunks.
         String content1 = "{\"greet\": \"hello world\"}";
-        ReadableBuffer buffer1 = ReadableBuffer.wrap(StandardCharsets.UTF_8.encode(content1));
+        RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(StandardCharsets.UTF_8.encode(content1));
         String content2 = "{\"user\": \"jetty\"}";
-        ReadableBuffer buffer2 = ReadableBuffer.wrap(StandardCharsets.UTF_8.encode(content2));
+        RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(StandardCharsets.UTF_8.encode(content2));
 
         // Send the first DATA frame on the stream, with endStream=false
         // to signal that there are more frames in this stream.

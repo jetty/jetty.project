@@ -92,7 +92,7 @@ public class RegexRuleTest extends AbstractRuleTest
                         
             """.replace("$U", uri);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(rule._applied);
     }
@@ -110,7 +110,7 @@ public class RegexRuleTest extends AbstractRuleTest
                         
             """.replace("$U", uri);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertFalse(rule._applied);
     }

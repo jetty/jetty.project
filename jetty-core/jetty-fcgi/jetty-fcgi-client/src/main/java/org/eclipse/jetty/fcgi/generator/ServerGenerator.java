@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.fcgi.generator;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -24,9 +23,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ServerGenerator extends Generator
 {
@@ -47,7 +44,7 @@ public class ServerGenerator extends Generator
         this.sendStatus200 = sendStatus200;
     }
 
-    public void generateResponseHeaders(List<ReadableBuffer> accumulator, int request, int code, String reason, HttpFields fields)
+    public void generateResponseHeaders(List<RetainableByteBuffer> accumulator, int request, int code, String reason, HttpFields fields)
     {
         request &= 0xFF_FF;
 
@@ -84,28 +81,28 @@ public class ServerGenerator extends Generator
         // End of headers
         length += EOL.length;
 
-        WritableBuffer buffer = getBufferPool().acquire(length, isUseDirectByteBuffers());
+        RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(length, isUseDirectByteBuffers());
         for (int i = 0; i < bytes.size(); i += 2)
         {
-            buffer.putBytes(bytes.get(i));
-            buffer.putBytes(COLON);
-            buffer.putBytes(bytes.get(i + 1));
-            buffer.putBytes(EOL);
+            buffer.put(bytes.get(i));
+            buffer.put(COLON);
+            buffer.put(bytes.get(i + 1));
+            buffer.put(EOL);
         }
-        buffer.putBytes(EOL);
+        buffer.put(EOL);
 
-        generateContent(accumulator, request, buffer.toReadable(), false, FCGI.FrameType.STDOUT);
+        generateContent(accumulator, request, buffer, false, FCGI.FrameType.STDOUT);
         buffer.release();
     }
 
-    public void generateResponseContent(List<ReadableBuffer> accumulator, int request, ReadableBuffer content, boolean lastContent, boolean aborted)
+    public void generateResponseContent(List<RetainableByteBuffer> accumulator, int request, RetainableByteBuffer content, boolean lastContent, boolean aborted)
     {
         if (aborted)
         {
             if (lastContent)
                 accumulator.add(generateEndRequest(request, true));
             else
-                accumulator.add(ReadableBuffer.EMPTY);
+                accumulator.add(RetainableByteBuffer.empty());
         }
         else
         {
@@ -115,14 +112,14 @@ public class ServerGenerator extends Generator
         }
     }
 
-    private ReadableBuffer generateEndRequest(int request, boolean aborted)
+    private RetainableByteBuffer generateEndRequest(int request, boolean aborted)
     {
         request &= 0xFF_FF;
-        WritableBuffer buffer = getBufferPool().acquire(16, isUseDirectByteBuffers());
+        RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(16, isUseDirectByteBuffers());
         buffer.putInt(0x01_03_00_00 + request);
         buffer.putInt(0x00_08_00_00);
         buffer.putInt(aborted ? 1 : 0);
         buffer.putInt(0);
-        return buffer.toReadable();
+        return buffer;
     }
 }

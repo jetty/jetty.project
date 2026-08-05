@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.quic.common.frames;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.common.internal.frames.ConnectionCloseParser;
@@ -30,6 +28,7 @@ import org.eclipse.jetty.quic.common.internal.frames.StreamsBlockedParser;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class FrameParser
 {
@@ -67,15 +66,15 @@ public class FrameParser
         connectionCloseParser.setReasonMaxLength(maxLength);
     }
 
-    public Frame parse(ByteBuffer byteBuffer)
+    public Frame parse(RetainableByteBuffer buffer)
     {
-        while (byteBuffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
             switch (state)
             {
                 case FRAME_TYPE ->
                 {
-                    frameType = byteBuffer.get(byteBuffer.position()) & 0xFF;
+                    frameType = buffer.getByteAsInt(buffer.readPosition());
                     state = State.FRAME_BODY;
                 }
                 case FRAME_BODY ->
@@ -83,9 +82,9 @@ public class FrameParser
                     Frame frame;
                     FrameType type = FrameType.from(frameType);
                     if (type != null)
-                        frame = parseFrame(byteBuffer, type, frameType);
+                        frame = parseFrame(buffer, type, frameType);
                     else
-                        frame = parseUnknownFrame(byteBuffer, frameType);
+                        frame = parseUnknownFrame(buffer, frameType);
                     if (frame == null)
                         return null;
                     if (!(frame instanceof StreamFrame streamFrame) || streamFrame.isEndData())
@@ -97,78 +96,78 @@ public class FrameParser
         return null;
     }
 
-    protected Frame parseFrame(ByteBuffer byteBuffer, FrameType frameType, int type)
+    protected Frame parseFrame(RetainableByteBuffer buffer, FrameType frameType, int type)
     {
         return switch (frameType)
         {
-            case PADDING -> new Frame(byteBuffer.get());
-            case RESET_STREAM -> parseResetStream(byteBuffer);
-            case STOP_SENDING -> parseStopSending(byteBuffer);
-            case STREAM -> parseStream(byteBuffer);
-            case MAX_DATA -> parseMaxData(byteBuffer);
-            case STREAM_MAX_DATA -> parseStreamMaxData(byteBuffer);
-            case MAX_STREAMS -> parseMaxStreams(byteBuffer);
-            case DATA_BLOCKED -> parseDataBlocked(byteBuffer);
-            case STREAM_DATA_BLOCKED -> parseStreamDataBlocked(byteBuffer);
-            case STREAMS_BLOCKED -> parseStreamsBlocked(byteBuffer);
-            case CONNECTION_CLOSE -> parseConnectionClose(byteBuffer);
+            case PADDING -> new Frame(buffer.get());
+            case RESET_STREAM -> parseResetStream(buffer);
+            case STOP_SENDING -> parseStopSending(buffer);
+            case STREAM -> parseStream(buffer);
+            case MAX_DATA -> parseMaxData(buffer);
+            case STREAM_MAX_DATA -> parseStreamMaxData(buffer);
+            case MAX_STREAMS -> parseMaxStreams(buffer);
+            case DATA_BLOCKED -> parseDataBlocked(buffer);
+            case STREAM_DATA_BLOCKED -> parseStreamDataBlocked(buffer);
+            case STREAMS_BLOCKED -> parseStreamsBlocked(buffer);
+            case CONNECTION_CLOSE -> parseConnectionClose(buffer);
             default -> throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "unsupported_quic_frame_type", type);
         };
     }
 
-    protected Frame parseUnknownFrame(ByteBuffer byteBuffer, int frameType)
+    protected Frame parseUnknownFrame(RetainableByteBuffer buffer, int frameType)
     {
         throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_quic_frame_type", frameType);
     }
 
-    protected Frame parseResetStream(ByteBuffer byteBuffer)
+    protected Frame parseResetStream(RetainableByteBuffer buffer)
     {
-        return resetStreamParser.parse(byteBuffer);
+        return resetStreamParser.parse(buffer);
     }
 
-    protected Frame parseStopSending(ByteBuffer byteBuffer)
+    protected Frame parseStopSending(RetainableByteBuffer buffer)
     {
-        return stopSendingParser.parse(byteBuffer);
+        return stopSendingParser.parse(buffer);
     }
 
-    protected Frame parseStream(ByteBuffer byteBuffer)
+    protected Frame parseStream(RetainableByteBuffer buffer)
     {
-        return streamParser.parse(byteBuffer);
+        return streamParser.parse(buffer);
     }
 
-    protected Frame parseMaxData(ByteBuffer byteBuffer)
+    protected Frame parseMaxData(RetainableByteBuffer buffer)
     {
-        return maxDataParser.parse(byteBuffer);
+        return maxDataParser.parse(buffer);
     }
 
-    protected Frame parseStreamMaxData(ByteBuffer byteBuffer)
+    protected Frame parseStreamMaxData(RetainableByteBuffer buffer)
     {
-        return streamMaxDataParser.parse(byteBuffer);
+        return streamMaxDataParser.parse(buffer);
     }
 
-    protected Frame parseMaxStreams(ByteBuffer byteBuffer)
+    protected Frame parseMaxStreams(RetainableByteBuffer buffer)
     {
-        return maxStreamsParser.parse(byteBuffer);
+        return maxStreamsParser.parse(buffer);
     }
 
-    protected Frame parseDataBlocked(ByteBuffer byteBuffer)
+    protected Frame parseDataBlocked(RetainableByteBuffer buffer)
     {
-        return dataBlockedParser.parse(byteBuffer);
+        return dataBlockedParser.parse(buffer);
     }
 
-    protected Frame parseStreamDataBlocked(ByteBuffer byteBuffer)
+    protected Frame parseStreamDataBlocked(RetainableByteBuffer buffer)
     {
-        return streamDataBlockedParser.parse(byteBuffer);
+        return streamDataBlockedParser.parse(buffer);
     }
 
-    protected Frame parseStreamsBlocked(ByteBuffer byteBuffer)
+    protected Frame parseStreamsBlocked(RetainableByteBuffer buffer)
     {
-        return streamsBlockedParser.parse(byteBuffer);
+        return streamsBlockedParser.parse(buffer);
     }
 
-    protected Frame parseConnectionClose(ByteBuffer byteBuffer)
+    protected Frame parseConnectionClose(RetainableByteBuffer buffer)
     {
-        return connectionCloseParser.parse(byteBuffer);
+        return connectionCloseParser.parse(buffer);
     }
 
     private enum State

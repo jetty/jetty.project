@@ -30,7 +30,7 @@ import org.eclipse.jetty.http2.hpack.internal.StaticTableHttpField;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -467,7 +467,7 @@ public class HpackContext
                     throw new IllegalStateException("bad value");
                 int lenLen = NBitIntegerEncoder.octetsNeeded(7, huffmanLen);
                 _huffmanValue = new byte[lenLen + huffmanLen];
-                WritableBuffer buffer = WritableBuffer.wrap(ByteBuffer.wrap(_huffmanValue));
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.wrap(ByteBuffer.wrap(_huffmanValue));
 
                 // Indicate Huffman
                 buffer.put((byte)0x80);

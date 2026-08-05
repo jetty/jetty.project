@@ -89,7 +89,7 @@ public class ServletWrapperTest
         req.append("Connection: close\r\n");
         req.append("\r\n");
 
-        String rawResponse = localConnector.getResponse(req.toString());
+        String rawResponse = localConnector.getResponseAsString(req.toString());
         HttpTester.Response resp = HttpTester.parseResponse(rawResponse);
         assertThat("Response.status", resp.getStatus(), is(200));
     }
@@ -110,7 +110,7 @@ public class ServletWrapperTest
         req.append("Connection: close\r\n");
         req.append("\r\n");
 
-        String rawResponse = localConnector.getResponse(req.toString());
+        String rawResponse = localConnector.getResponseAsString(req.toString());
         HttpTester.Response resp = HttpTester.parseResponse(rawResponse);
         assertThat("Response.status", resp.getStatus(), is(200));
         assertThat(resp.getContent(), is("Serviced!" + System.lineSeparator()));
@@ -131,7 +131,7 @@ public class ServletWrapperTest
         req.append("Connection: close\r\n");
         req.append("\r\n");
 
-        String rawResponse = localConnector.getResponse(req.toString());
+        String rawResponse = localConnector.getResponseAsString(req.toString());
         HttpTester.Response resp = HttpTester.parseResponse(rawResponse);
         assertThat("Response.status", resp.getStatus(), is(200));
         assertThat(resp.getContent(), is("ASYNC:testname=zero" + System.lineSeparator()));
@@ -152,7 +152,7 @@ public class ServletWrapperTest
         req.append("Connection: close\r\n");
         req.append("\r\n");
 
-        String rawResponse = localConnector.getResponse(req.toString());
+        String rawResponse = localConnector.getResponseAsString(req.toString());
         HttpTester.Response resp = HttpTester.parseResponse(rawResponse);
         assertThat("Response.status", resp.getStatus(), is(200));
         assertThat(resp.getContent(), is("TARGET:foo=bar" + System.lineSeparator()));

@@ -21,8 +21,8 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.generator.ControlGenerator;
 import org.eclipse.jetty.http3.parser.ControlParser;
 import org.eclipse.jetty.http3.parser.ParserListener;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,8 +46,8 @@ public class SettingsGenerateParseTest
     {
         SettingsFrame input = new SettingsFrame(settings);
 
-        ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1, 0, 0);
+        WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         new ControlGenerator(bufferPool, true).generate(accumulator, 0, input, null);
 
         List<SettingsFrame> frames = new ArrayList<>();
@@ -59,11 +59,12 @@ public class SettingsGenerateParseTest
                 frames.add(frame);
             }
         });
-        parser.parse(accumulator.getByteBuffer());
-        assertFalse(accumulator.hasRemaining());
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        parser.parse(buffer);
+        assertFalse(buffer.hasRemaining());
 
         assertEquals(1, frames.size());
-        SettingsFrame output = frames.get(0);
+        SettingsFrame output = frames.getFirst();
 
         assertEquals(input.getSettings(), output.getSettings());
     }

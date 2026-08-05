@@ -61,9 +61,9 @@ public class RegexServletTest
         _servletContextHandler.addServlet(new ServletHolder(new ServletContextHandlerTest.HelloServlet()), "^/[Hh]ello");
         _server.start();
 
-        assertThat(_connector.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"), containsString("Hello World"));
-        assertThat(_connector.getResponse("GET /ctx/Hello HTTP/1.0\r\n\r\n"), containsString("Hello World"));
-        assertThat(_connector.getResponse("GET /ctx/HELLO HTTP/1.0\r\n\r\n"), containsString(" 404"));
+        assertThat(_connector.getResponseAsString("GET /ctx/hello HTTP/1.0\r\n\r\n"), containsString("Hello World"));
+        assertThat(_connector.getResponseAsString("GET /ctx/Hello HTTP/1.0\r\n\r\n"), containsString("Hello World"));
+        assertThat(_connector.getResponseAsString("GET /ctx/HELLO HTTP/1.0\r\n\r\n"), containsString(" 404"));
     }
 
     @Test
@@ -72,7 +72,7 @@ public class RegexServletTest
         _servletContextHandler.addServlet(new ServletHolder(new TestServlet()), "^/test/.*$");
         _server.start();
 
-        String response = _connector.getResponse("GET /ctx/test/info HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /ctx/test/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("contextPath='/ctx'"));
         assertThat(response, containsString("servletPath='/test/info'"));
@@ -89,7 +89,7 @@ public class RegexServletTest
         _servletContextHandler.addServlet(new ServletHolder(new TestServlet()), "^/[Tt]est(/.*)?");
         _server.start();
 
-        String response = _connector.getResponse("GET /ctx/forward/ignore HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /ctx/forward/ignore HTTP/1.0\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("contextPath='/ctx'"));
         assertThat(response, containsString("servletPath='/Test'"));
@@ -106,7 +106,7 @@ public class RegexServletTest
         _servletContextHandler.addServlet(new ServletHolder(new TestServlet()), "^/[Tt]est(/.*)?");
         _server.start();
 
-        String response = _connector.getResponse("GET /ctx/include HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /ctx/include HTTP/1.0\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("contextPath='/ctx'"));
         assertThat(response, containsString("servletPath='/include'"));

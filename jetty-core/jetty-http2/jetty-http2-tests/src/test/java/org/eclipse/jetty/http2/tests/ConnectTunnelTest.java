@@ -32,7 +32,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,7 +65,7 @@ public class ConnectTunnelTest extends AbstractTest
                     public void onDataAvailable(Stream stream)
                     {
                         Content.Chunk chunk = stream.read();
-                        stream.data(ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), Callback.from(chunk::release));
+                        stream.data(RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), Callback.from(chunk::release));
                     }
                 };
             }
@@ -92,7 +92,7 @@ public class ConnectTunnelTest extends AbstractTest
             }
         });
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
-        ReadableBuffer data = ReadableBuffer.wrap(bytes);
+        RetainableByteBuffer data = RetainableByteBuffer.wrap(bytes);
         stream.data(data, true, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -122,7 +122,7 @@ public class ConnectTunnelTest extends AbstractTest
                     public void onDataAvailable(Stream stream)
                     {
                         Content.Chunk chunk = stream.read();
-                        stream.data(ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), Callback.from(chunk::release));
+                        stream.data(RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), Callback.from(chunk::release));
                     }
                 };
             }
@@ -149,7 +149,7 @@ public class ConnectTunnelTest extends AbstractTest
             }
         });
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
-        ReadableBuffer data = ReadableBuffer.wrap(bytes);
+        RetainableByteBuffer data = RetainableByteBuffer.wrap(bytes);
         stream.data(data, true, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));

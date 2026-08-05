@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,14 +20,14 @@ import java.util.Queue;
 
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.generator.ControlGenerator;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -40,19 +39,18 @@ public class ControlFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> queue = new ArrayDeque<>();
+    private final List<RetainableByteBuffer> accumulator = new ArrayList<>();
     private final StreamEndPoint endPoint;
     private final ControlGenerator generator;
-    private final RetainableByteBuffer.Mutable accumulator;
     private boolean initialized;
     private Throwable terminated;
     private List<Entry> entries;
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
 
-    public ControlFlusher(ByteBufferPool byteBufferPool, StreamEndPoint endPoint, boolean useDirectByteBuffers)
+    public ControlFlusher(WritableBufferPool byteBufferPool, StreamEndPoint endPoint, boolean useDirectByteBuffers)
     {
         this.endPoint = endPoint;
         this.generator = new ControlGenerator(byteBufferPool, useDirectByteBuffers);
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
     }
 
     public boolean offer(Frame frame, Callback callback)
@@ -90,9 +88,8 @@ public class ControlFlusher extends IteratingCallback
             {
                 initialized = true;
                 long streamType = StreamType.CONTROL_STREAM.type();
-                ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(streamType));
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(VarLenInt.length(streamType), true);
                 VarLenInt.encode(buffer, streamType);
-                buffer.flip();
                 accumulator.add(buffer);
             }
             generator.generate(accumulator, endPoint.getStream().getId(), entry.frame, null);
@@ -101,7 +98,10 @@ public class ControlFlusher extends IteratingCallback
 
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} bytes on {}", accumulator.size(), this);
-        accumulator.writeTo(endPoint, false, this);
+
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        endPoint.write(false, buffer, this);
+        buffer.release();
         return Action.SCHEDULED;
     }
 
@@ -113,6 +113,8 @@ public class ControlFlusher extends IteratingCallback
 
         entries.forEach(e -> e.callback.succeeded());
         entries.clear();
+
+        releaseAndClear();
 
         invocationType = InvocationType.NON_BLOCKING;
     }
@@ -134,15 +136,17 @@ public class ControlFlusher extends IteratingCallback
 
         allEntries.forEach(e -> e.callback.failed(failure));
 
+        releaseAndClear();
+
         // Cannot continue without the control stream, close the session.
         ConnectionCloseFrame frame = new ConnectionCloseFrame(HTTP3ErrorCode.INTERNAL_ERROR.code(), "control_stream_failure");
         endPoint.getProtocolSession().disconnect(frame, failure, Promise.Invocable.noop());
     }
 
-    @Override
-    protected void onCompleteFailure(Throwable cause)
+    private void releaseAndClear()
     {
-        accumulator.release();
+        accumulator.forEach(RetainableByteBuffer::release);
+        accumulator.clear();
     }
 
     @Override

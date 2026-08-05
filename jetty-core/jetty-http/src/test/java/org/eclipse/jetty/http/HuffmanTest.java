@@ -19,10 +19,8 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.HuffmanDecoder;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -35,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class HuffmanTest
 {
-    public static String decode(ReadableBuffer buffer, long length) throws EncodingException
+    public static String decode(RetainableByteBuffer buffer, long length) throws EncodingException
     {
         HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
         huffmanDecoder.setLength(length);
@@ -68,7 +66,7 @@ public class HuffmanTest
         byte[] encoded = StringUtil.fromHexString(hex);
         HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
         huffmanDecoder.setLength(encoded.length);
-        String decoded = huffmanDecoder.decode(ReadableBuffer.wrap(encoded));
+        String decoded = huffmanDecoder.decode(RetainableByteBuffer.wrap(encoded));
         assertEquals(expected, decoded, specSection);
     }
 
@@ -76,10 +74,9 @@ public class HuffmanTest
     @MethodSource("data")
     public void testEncode(String specSection, String hex, String expected)
     {
-        WritableBuffer buf = WritableBuffer.allocate(1024, false);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(1024, false);
         HuffmanEncoder.encode(buf, expected);
-        ReadableBuffer rb = buf.toReadable();
-        byte[] b = BufferUtil.toArray(rb);
+        byte[] b = buf.getArray();
         String encoded = StringUtil.toHexString(b).toLowerCase(Locale.ENGLISH);
         assertEquals(hex, encoded, specSection);
         assertEquals(hex.length() / 2, HuffmanEncoder.octetsNeeded(expected));
@@ -107,7 +104,7 @@ public class HuffmanTest
     @MethodSource("testDecode8859OnlyArguments")
     public void testDecode8859Only(String hexString, Character expected) throws Exception
     {
-        ReadableBuffer buffer = ReadableBuffer.wrap(StringUtil.fromHexString(hexString));
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(StringUtil.fromHexString(hexString));
 
         if (expected == null)
         {
@@ -152,19 +149,19 @@ public class HuffmanTest
 
         String expected = "value = '" + expectedValue + "'";
         assertThat(HuffmanEncoder.octetsNeeded(s), greaterThan(0));
-        ReadableBuffer buffer = encode(s);
+        RetainableByteBuffer buffer = encode(s);
         String decode = decode(buffer);
         assertThat(decode, equalTo(expected));
     }
 
-    private ReadableBuffer encode(String s)
+    private RetainableByteBuffer encode(String s)
     {
-        WritableBuffer buffer = WritableBuffer.allocate(32, false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(32, false);
         HuffmanEncoder.encode(buffer, s);
-        return buffer.toReadable();
+        return buffer;
     }
 
-    private String decode(ReadableBuffer buffer) throws Exception
+    private String decode(RetainableByteBuffer buffer) throws Exception
     {
         return decode(buffer, buffer.remaining());
     }

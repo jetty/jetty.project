@@ -13,26 +13,25 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.ByteArrayOutputStream2;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.MemoryEndPointPipe;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.Aggregator;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * A local connector, mostly for testing purposes.
@@ -43,34 +42,24 @@ import org.eclipse.jetty.util.thread.Scheduler;
  *      HttpTester.parseResponse(HttpTester.from(localConnector.getResponse(request.generate())));
  * </pre>
  */
-public class LocalConnector extends AbstractConnector
+public class LocalConnector extends MemoryConnector
 {
-    private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
-
-    public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, int acceptors, ConnectionFactory... factories)
-    {
-        super(server, executor, scheduler, bufferPool, Math.max(1, acceptors), factories);
-        setIdleTimeout(30000);
-    }
+    private static final Logger LOG = LoggerFactory.getLogger(LocalConnector.class);
 
     public LocalConnector(Server server)
     {
-        this(server, null, null, null, -1, new HttpConnectionFactory());
+        this(server, new HttpConnectionFactory());
     }
 
-    public LocalConnector(Server server, SslContextFactory.Server sslContextFactory)
+    public LocalConnector(Server server, HttpConnectionFactory factory)
     {
-        this(server, null, null, null, -1, AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
+        this(server, new ConnectionFactory[]{factory});
     }
 
-    public LocalConnector(Server server, ConnectionFactory connectionFactory)
+    // TODO: remove this.
+    public LocalConnector(Server server, ConnectionFactory... factories)
     {
-        this(server, null, null, null, -1, connectionFactory);
-    }
-
-    public LocalConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory.Server sslContextFactory)
-    {
-        this(server, null, null, null, -1, AbstractConnectionFactory.getFactories(sslContextFactory, connectionFactory));
+        super(server, null, null, null, factories);
     }
 
     @Override
@@ -79,106 +68,52 @@ public class LocalConnector extends AbstractConnector
         return this;
     }
 
+    public HttpConnectionFactory getHttpConnectionFactory()
+    {
+        return getBean(HttpConnectionFactory.class);
+    }
+
     /**
-     * Execute a request and return the EndPoint through which
-     * multiple responses can be received or more input provided.
+     * Executes a request and returns the [LocalEndPoint] through
+     * which the response can be received or more input provided.
      *
      * @param rawRequest the request
      * @return the local endpoint
      */
     public LocalEndPoint executeRequest(String rawRequest)
     {
-        return executeRequest(BufferUtil.toBuffer(rawRequest, StandardCharsets.UTF_8));
+        return executeRequest(RetainableByteBuffer.wrap(rawRequest, ISO_8859_1));
     }
 
-    private LocalEndPoint executeRequest(ByteBuffer rawRequest)
+    private LocalEndPoint executeRequest(RetainableByteBuffer rawRequest)
     {
         if (!isStarted())
             throw new IllegalStateException("!STARTED");
         if (isShutdown())
             throw new IllegalStateException("Shutdown");
-        LocalEndPoint endp = new LocalEndPoint();
-        endp.addInput(rawRequest);
-        _connects.add(endp);
-        return endp;
+        LocalEndPoint endPoint = connectToServer();
+        endPoint.write(rawRequest, Callback.NOOP);
+        return endPoint;
     }
 
-    public LocalEndPoint connect()
+    public LocalEndPoint connectToServer()
     {
-        LocalEndPoint endp = new LocalEndPoint();
-        _connects.add(endp);
-        return endp;
+        return new LocalEndPoint((MemoryEndPointPipe)connect());
     }
 
-    public LocalEndPoint connect(int maxSize)
+    public RetainableByteBuffer getResponse(RetainableByteBuffer requestsBuffer) throws Exception
     {
-        LocalEndPoint endp = new LocalEndPoint(maxSize);
-        _connects.add(endp);
-        return endp;
+        return getResponse(requestsBuffer, 10L, SECONDS);
     }
 
-    @Override
-    protected void accept(int acceptorID) throws InterruptedException
+    public RetainableByteBuffer getResponse(RetainableByteBuffer requestBuffer, long time, TimeUnit unit) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("accepting {}", acceptorID);
-        LocalEndPoint endPoint = _connects.take();
-
-        Connection connection = getDefaultConnectionFactory().newConnection(this, endPoint);
-        endPoint.setConnection(connection);
-
-        endPoint.onOpen();
-        onEndPointOpened(endPoint);
-
-        connection.onOpen();
-    }
-
-    /**
-     * Get a single response using a parser to search for the end of the message.
-     *
-     * @param requestsBuffer The request to send
-     * @return ByteBuffer containing response or null.
-     * @throws Exception If there is a problem
-     */
-    public ByteBuffer getResponse(ByteBuffer requestsBuffer) throws Exception
-    {
-        return getResponse(requestsBuffer, false, 10, TimeUnit.SECONDS);
-    }
-
-    /**
-     * Get a single response using a parser to search for the end of the message.
-     *
-     * @param requestBuffer The request to send
-     * @param time The time to wait
-     * @param unit The units of the wait
-     * @return ByteBuffer containing response or null.
-     * @throws Exception If there is a problem
-     */
-    public ByteBuffer getResponse(ByteBuffer requestBuffer, long time, TimeUnit unit) throws Exception
-    {
-        boolean head = BufferUtil.toString(requestBuffer).toLowerCase().startsWith("head ");
-        if (LOG.isDebugEnabled())
-            LOG.debug("requests {}", BufferUtil.toUTF8String(requestBuffer));
-        LocalEndPoint endp = executeRequest(requestBuffer);
-        return endp.waitForResponse(head, time, unit);
-    }
-
-    /**
-     * Get a single response using a parser to search for the end of the message.
-     *
-     * @param requestBuffer The request to send
-     * @param head True if the response is for a head request
-     * @param time The time to wait
-     * @param unit The units of the wait
-     * @return ByteBuffer containing response or null.
-     * @throws Exception If there is a problem
-     */
-    public ByteBuffer getResponse(ByteBuffer requestBuffer, boolean head, long time, TimeUnit unit) throws Exception
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("requests {}", BufferUtil.toUTF8String(requestBuffer));
-        LocalEndPoint endp = executeRequest(requestBuffer);
-        return endp.waitForResponse(head, time, unit);
+            LOG.debug("request {}", requestBuffer);
+        try (LocalEndPoint endPoint = executeRequest(requestBuffer))
+        {
+            return endPoint.awaitResponseBuffer(false, time, unit);
+        }
     }
 
     /**
@@ -188,9 +123,9 @@ public class LocalConnector extends AbstractConnector
      * @return ByteBuffer containing response or null.
      * @throws Exception If there is a problem
      */
-    public String getResponse(String rawRequest) throws Exception
+    public String getResponseAsString(String rawRequest) throws Exception
     {
-        return getResponse(rawRequest, false, 30, TimeUnit.SECONDS);
+        return getResponseAsString(rawRequest, 10, SECONDS);
     }
 
     /**
@@ -202,129 +137,57 @@ public class LocalConnector extends AbstractConnector
      * @return ByteBuffer containing response or null.
      * @throws Exception If there is a problem
      */
-    public String getResponse(String rawRequest, long time, TimeUnit unit) throws Exception
+    public String getResponseAsString(String rawRequest, long time, TimeUnit unit) throws Exception
     {
-        boolean head = rawRequest.toLowerCase().startsWith("head ");
-        ByteBuffer requestsBuffer = BufferUtil.toBuffer(rawRequest, StandardCharsets.ISO_8859_1);
         if (LOG.isDebugEnabled())
-            LOG.debug("request {}", BufferUtil.toUTF8String(requestsBuffer));
-        LocalEndPoint endp = executeRequest(requestsBuffer);
-
-        return BufferUtil.toString(endp.waitForResponse(head, time, unit), StandardCharsets.ISO_8859_1);
+            LOG.debug("request {}", rawRequest);
+        boolean head = rawRequest.toLowerCase(Locale.ROOT).startsWith("head ");
+        RetainableByteBuffer requestsBuffer = RetainableByteBuffer.wrap(rawRequest, ISO_8859_1);
+        try (LocalEndPoint endPoint = executeRequest(requestsBuffer))
+        {
+            RetainableByteBuffer response = endPoint.awaitResponseBuffer(head, time, unit);
+            if (response == null)
+                return null;
+            String result = response.getString(ISO_8859_1);
+            response.release();
+            return result;
+        }
     }
 
-    /**
-     * Get a single response using a parser to search for the end of the message.
-     *
-     * @param rawRequest The request to send
-     * @param head True if the response is for a head request
-     * @param time The time to wait
-     * @param unit The units of the wait
-     * @return ByteBuffer containing response or null.
-     * @throws Exception If there is a problem
-     */
-    public String getResponse(String rawRequest, boolean head, long time, TimeUnit unit) throws Exception
+    public class LocalEndPoint extends EndPoint.Wrapper
     {
-        ByteBuffer requestsBuffer = BufferUtil.toBuffer(rawRequest, StandardCharsets.ISO_8859_1);
-        if (LOG.isDebugEnabled())
-            LOG.debug("request {}", BufferUtil.toUTF8String(requestsBuffer));
-        LocalEndPoint endp = executeRequest(requestsBuffer);
+        private final MemoryEndPointPipe pipe;
+        private RetainableByteBuffer.Mutable _responseBuffer;
 
-        return BufferUtil.toString(endp.waitForResponse(head, time, unit), StandardCharsets.ISO_8859_1);
-    }
-
-    /**
-     * Local EndPoint
-     */
-    public class LocalEndPoint extends ByteArrayEndPoint
-    {
-        private final CountDownLatch _closed = new CountDownLatch(1);
-        private ByteBuffer _responseData;
-
-        public LocalEndPoint()
+        private LocalEndPoint(MemoryEndPointPipe pipe)
         {
-            this(-1);
+            super(pipe.getLocalEndPoint());
+            this.pipe = pipe;
         }
 
-        public LocalEndPoint(int maxSize)
+        public void setLocalEndPointMaxCapacity(int maxCapacity)
         {
-            super(LocalConnector.this.getScheduler(), LocalConnector.this.getIdleTimeout(), null, maxSize, maxSize <= 0);
+            pipe.setLocalEndPointMaxCapacity(maxCapacity);
         }
 
-        @Override
-        protected void execute(Runnable task)
+        public void setRemoteEndPointMaxCapacity(int maxCapacity)
         {
-            getExecutor().execute(task);
+            pipe.setRemoteEndPointMaxCapacity(maxCapacity);
         }
 
-        @Override
-        public void onClose(Throwable cause)
+        public EndPoint getRemoteEndPoint()
         {
-            Connection connection = getConnection();
-            if (connection != null)
-                connection.onClose(cause);
-            LocalConnector.this.onEndPointClosed(this);
-            super.onClose(cause);
-            _closed.countDown();
+            return pipe.getRemoteEndPoint();
         }
 
-        @Override
-        public void doShutdownOutput()
+        public void writeRequestBuffer(RetainableByteBuffer buffer)
         {
-            super.shutdownOutput();
-            close();
+            write(buffer, Callback.NOOP);
         }
 
-        public void waitUntilClosed()
+        public void writeRequestString(String string)
         {
-            while (isOpen())
-            {
-                try
-                {
-                    if (!_closed.await(10, TimeUnit.SECONDS))
-                        break;
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Close wait failed", e);
-                }
-            }
-        }
-
-        public void waitUntilClosedOrIdleFor(long idleFor, TimeUnit units)
-        {
-            Thread.yield();
-            int size = getOutput().remaining();
-            while (isOpen())
-            {
-                try
-                {
-                    if (!_closed.await(idleFor, units))
-                    {
-                        if (size == getOutput().remaining())
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("idle for {} {}", idleFor, units);
-                            return;
-                        }
-                        size = getOutput().remaining();
-                    }
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Close wait failed", e);
-                }
-            }
-        }
-
-        /**
-         * Remaining output ByteBuffer after calls to {@link #getResponse()} or {@link #waitForResponse(boolean, long, TimeUnit)}
-         *
-         * @return the remaining response data buffer
-         */
-        public ByteBuffer getResponseData()
-        {
-            return _responseData;
+            writeRequestBuffer(RetainableByteBuffer.wrap(string, ISO_8859_1));
         }
 
         /**
@@ -335,7 +198,7 @@ public class LocalConnector extends AbstractConnector
          */
         public String getResponse() throws Exception
         {
-            return getResponse(false, 30, TimeUnit.SECONDS);
+            return getResponse(false, 10, SECONDS);
         }
 
         /**
@@ -349,10 +212,8 @@ public class LocalConnector extends AbstractConnector
          */
         public String getResponse(boolean head, long time, TimeUnit unit) throws Exception
         {
-            ByteBuffer response = waitForResponse(head, time, unit);
-            if (response != null)
-                return BufferUtil.toString(response);
-            return null;
+            RetainableByteBuffer response = awaitResponseBuffer(head, time, unit);
+            return response == null ? null : response.getString(ISO_8859_1);
         }
 
         /**
@@ -364,28 +225,30 @@ public class LocalConnector extends AbstractConnector
          * @return Buffer containing full response or null for EOF;
          * @throws Exception if the response cannot be parsed
          */
-        public ByteBuffer waitForResponse(boolean head, long time, TimeUnit unit) throws Exception
-        {
-            return waitForResponse(head, time, unit, i -> {});
-        }
-
-        /**
-         * Wait for a response using a parser to detect the end of message
-         *
-         * @param head whether the request is a HEAD request
-         * @param time the maximum time to wait
-         * @param unit the time unit of the {@code timeout} argument
-         * @param statusConsumer a consumer to be called with the response's status code
-         * @return Buffer containing full response or null for EOF;
-         * @throws Exception if the response cannot be parsed
-         */
-        public ByteBuffer waitForResponse(boolean head, long time, TimeUnit unit, Consumer<Integer> statusConsumer) throws Exception
+        public RetainableByteBuffer awaitResponseBuffer(boolean head, long time, TimeUnit unit) throws Exception
         {
             HttpParser.ResponseHandler handler = new HttpParser.ResponseHandler()
             {
                 @Override
+                public void startResponse(HttpVersion version, int status, String reason)
+                {
+                }
+
+                @Override
                 public void parsedHeader(HttpField field)
                 {
+                }
+
+                @Override
+                public boolean headerComplete()
+                {
+                    return false;
+                }
+
+                @Override
+                public boolean content(RetainableByteBuffer item)
+                {
+                    return false;
                 }
 
                 @Override
@@ -401,89 +264,91 @@ public class LocalConnector extends AbstractConnector
                 }
 
                 @Override
-                public boolean headerComplete()
-                {
-                    return false;
-                }
-
-                @Override
                 public void earlyEOF()
                 {
-                }
-
-                @Override
-                public boolean content(ReadableBuffer item)
-                {
-                    return false;
-                }
-
-                @Override
-                public void startResponse(HttpVersion version, int status, String reason)
-                {
-                    statusConsumer.accept(status);
                 }
             };
 
             HttpParser parser = new HttpParser(handler);
             parser.setHeadResponse(head);
-            try (ByteArrayOutputStream2 bout = new ByteArrayOutputStream2())
+
+            try (Aggregator responseAggregator = new Aggregator(true, 1024))
             {
-                loop:
-                while (true)
+                boolean fill = true;
+                RetainableByteBuffer.Mutable responseBuffer;
+                if (_responseBuffer != null)
                 {
-                    // read a chunk of response
-                    ByteBuffer chunk;
-                    if (BufferUtil.hasContent(_responseData))
+                    responseBuffer = _responseBuffer;
+                    _responseBuffer = null;
+                    fill = false;
+                }
+                else
+                {
+                    responseBuffer = WritableBufferPool.wrap(getByteBufferPool()).acquire(1024, false);
+                }
+
+                try
+                {
+                    while (true)
                     {
-                        chunk = _responseData;
-                    }
-                    else
-                    {
-                        chunk = waitForOutput(time, unit);
-                        if (BufferUtil.isEmpty(chunk))
+                        long filled = fill ? fill(responseBuffer.compact()) : responseBuffer.remaining();
+                        fill = true;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("filled {} bytes on {}", filled, this);
+
+                        if (filled > 0)
                         {
-                            if (!isOpen() || isOutputShutdown() || isShutdown())
+                            while (responseBuffer.hasRemaining())
                             {
-                                parser.atEOF();
-                                parser.parseNext(ReadableBuffer.EMPTY);
-                                break;
+                                long start = responseBuffer.readPosition();
+                                boolean complete = parser.parseNext(responseBuffer);
+                                long consumed = responseBuffer.readPosition() - start;
+
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("parsed {} bytes, complete={}, on {}", consumed, complete, this);
+
+                                if (consumed > 0)
+                                    responseBuffer.mapSlice(start, consumed, responseAggregator::append);
+
+                                if (complete)
+                                {
+                                    // Save the buffer in case it contains multiple responses.
+                                    if (responseBuffer.hasRemaining())
+                                        _responseBuffer = responseBuffer;
+                                    else
+                                        responseBuffer.release();
+
+                                    RetainableByteBuffer result = responseAggregator.remaining() > 0 ? responseAggregator.take() : null;
+                                    return result;
+                                }
                             }
-                            else
+                        }
+                        else if (filled == 0)
+                        {
+                            try (Blocker.Callback callback = Blocker.callback())
                             {
+                                fillInterested(callback);
+                                callback.block(time, unit);
+                            }
+                            catch (TimeoutException x)
+                            {
+                                responseBuffer.release();
                                 return null;
                             }
                         }
-                    }
-
-                    // Parse the content of this chunk
-                    while (BufferUtil.hasContent(chunk))
-                    {
-                        int pos = chunk.position();
-                        boolean complete = parser.parseNext(ReadableBuffer.wrap(chunk));
-                        if (chunk.position() == pos)
+                        else
                         {
-                            // Nothing consumed
-                            if (BufferUtil.isEmpty(chunk))
-                                break;
-                            return null;
-                        }
-
-                        // Add all consumed bytes to the output stream
-                        bout.write(chunk.array(), chunk.arrayOffset() + pos, chunk.position() - pos);
-
-                        // If we are complete then break the outer loop
-                        if (complete)
-                        {
-                            if (BufferUtil.hasContent(chunk))
-                                _responseData = chunk;
-                            break loop;
+                            responseBuffer.release();
+                            RetainableByteBuffer result = responseAggregator.remaining() > 0 ? responseAggregator.take() : null;
+                            return result;
                         }
                     }
                 }
-
-                if (bout.getCount() == 0 && isOutputShutdown())
-                    return null;
-                return ByteBuffer.wrap(bout.getBuf(), 0, bout.getCount());
+                catch (Throwable x)
+                {
+                    responseBuffer.release();
+                    throw x;
+                }
             }
         }
     }

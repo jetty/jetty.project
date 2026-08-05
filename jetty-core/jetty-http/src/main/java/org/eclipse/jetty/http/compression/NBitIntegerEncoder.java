@@ -15,8 +15,7 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * Used to encode integers as described in RFC7541.
@@ -58,10 +57,10 @@ public class NBitIntegerEncoder
      */
     public static void encode(ByteBuffer buffer, int prefix, long value)
     {
-        encode(WritableBuffer.wrap(buffer), prefix, value);
+        encode(RetainableByteBuffer.Mutable.wrap(buffer), prefix, value);
     }
 
-    public static void encode(WritableBuffer buffer, int prefix, long value)
+    public static void encode(RetainableByteBuffer.Mutable buffer, int prefix, long value)
     {
         if (prefix <= 0 || prefix > 8)
             throw new IllegalArgumentException();
@@ -71,14 +70,14 @@ public class NBitIntegerEncoder
             buffer.put((byte)0x00);
 
         int bits = 0xFF >>> (8 - prefix);
-        long p = buffer.position() - 1;
+        long p = buffer.writePosition() - 1;
         if (value < bits)
         {
-            buffer.put(p, (byte)((getByteAt(buffer, p) & ~bits) | value));
+            buffer.put(p, (byte)((buffer.get(p) & ~bits) | value));
         }
         else
         {
-            buffer.put(p, (byte)(getByteAt(buffer, p) | bits));
+            buffer.put(p, (byte)(buffer.get(p) | bits));
             long length = value - bits;
             while (true)
             {
@@ -95,13 +94,5 @@ public class NBitIntegerEncoder
                 }
             }
         }
-    }
-
-    private static byte getByteAt(WritableBuffer buffer, long p)
-    {
-        ReadableBuffer rb = buffer.toReadable();
-        byte b = rb.get(p);
-        rb.toWritable();
-        return b;
     }
 }

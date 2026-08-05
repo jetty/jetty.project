@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
 import java.util.Arrays;
@@ -27,11 +26,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
@@ -56,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FrameFlusherTest
 {
-    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
+    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
     private Scheduler scheduler;
 
     @BeforeEach
@@ -234,7 +232,7 @@ public class FrameFlusherTest
         public Parser parser;
         public LinkedBlockingQueue<Frame> incomingFrames = new LinkedBlockingQueue<>();
 
-        public CapturingEndPoint(ByteBufferPool bufferPool)
+        public CapturingEndPoint(WritableBufferPool bufferPool)
         {
             parser = new Parser(bufferPool);
         }
@@ -246,17 +244,14 @@ public class FrameFlusherTest
         }
 
         @Override
-        public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
+        public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
         {
             Objects.requireNonNull(callback);
             try
             {
-                ByteBuffer b = BufferUtil.toBuffer(buffer, false);
-                Frame.Parsed frame = parser.parse(b);
+                Frame.Parsed frame = parser.parse(buffer);
                 if (frame != null)
-                {
                     incomingFrames.offer(frame);
-                }
                 callback.succeeded();
             }
             catch (WritePendingException e)
@@ -283,13 +278,13 @@ public class FrameFlusherTest
             blockTime = time;
         }
 
-        public BlockingEndpoint(ByteBufferPool bufferPool)
+        public BlockingEndpoint(WritableBufferPool bufferPool)
         {
             super(bufferPool);
         }
 
         @Override
-        public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
+        public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
         {
             try
             {

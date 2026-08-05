@@ -22,8 +22,7 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class PushPromiseGenerator extends FrameGenerator
 {
@@ -36,20 +35,20 @@ public class PushPromiseGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(List<ReadableBuffer> accumulator, Frame frame) throws HpackException
+    public int generate(List<RetainableByteBuffer> accumulator, Frame frame) throws HpackException
     {
         PushPromiseFrame pushPromiseFrame = (PushPromiseFrame)frame;
         return generatePushPromise(accumulator, pushPromiseFrame.getStreamId(), pushPromiseFrame.getPromisedStreamId(), pushPromiseFrame.getMetaData());
     }
 
-    public int generatePushPromise(List<ReadableBuffer> accumulator, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
+    public int generatePushPromise(List<RetainableByteBuffer> accumulator, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
         if (promisedStreamId < 0)
             throw new IllegalArgumentException("Invalid promised stream id: " + promisedStreamId);
 
-        ReadableBuffer hpack = encode(encoder, metaData);
+        RetainableByteBuffer hpack = encode(encoder, metaData);
         int hpackLength = Math.toIntExact(hpack.remaining());
 
         // No support for splitting in CONTINUATION frames,
@@ -60,9 +59,9 @@ public class PushPromiseGenerator extends FrameGenerator
         int length = hpackLength + promisedStreamIdLength;
         int flags = Flags.END_HEADERS;
 
-        WritableBuffer wb = generateHeader(FrameType.PUSH_PROMISE, length, flags, streamId);
-        wb.putInt(promisedStreamId);
-        accumulator.add(wb.toReadable());
+        RetainableByteBuffer.Mutable b = generateHeader(FrameType.PUSH_PROMISE, length, flags, streamId);
+        b.putInt(promisedStreamId);
+        accumulator.add(b);
         accumulator.add(hpack);
 
         return Frame.HEADER_LENGTH + length;

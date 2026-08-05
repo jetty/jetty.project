@@ -38,7 +38,7 @@ import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * A core response wrapper that carries the servlet related response state,
@@ -220,9 +220,9 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     }
 
     @Override
-    public void write(boolean last, ReadableBuffer content, Callback callback)
+    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
-        super.write(last, content, callback);
+        super.write(last, buffer, callback);
     }
 
     public void closeOutput() throws IOException

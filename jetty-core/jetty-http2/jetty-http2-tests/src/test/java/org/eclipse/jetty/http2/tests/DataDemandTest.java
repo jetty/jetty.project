@@ -38,7 +38,7 @@ import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -89,7 +89,7 @@ public class DataDemandTest extends AbstractTest
         {
             // Send a single frame larger than the default frame size,
             // so that it will be split on the server in multiple frames.
-            return s.data(ReadableBuffer.allocate(length, false), true);
+            return s.data(RetainableByteBuffer.allocate(length, false), true);
         });
 
         // The server onDataAvailable() should be invoked once because it does one explicit demand.
@@ -120,7 +120,7 @@ public class DataDemandTest extends AbstractTest
         assertEquals(length, serverReceived.get());
 
         // Send a large DATA frame to the client.
-        serverStream.data(ReadableBuffer.allocate(length, false), true);
+        serverStream.data(RetainableByteBuffer.allocate(length, false), true);
 
         // The client onDataAvailable() should be invoked once because it does one explicit demand.
         await().atMost(5, TimeUnit.SECONDS).until(() -> clientStreamRef.get() != null);
@@ -169,7 +169,7 @@ public class DataDemandTest extends AbstractTest
 
             private void sendData(Stream stream)
             {
-                stream.data(ReadableBuffer.allocate(1024 * 1024, false), true, Callback.NOOP);
+                stream.data(RetainableByteBuffer.allocate(1024 * 1024, false), true, Callback.NOOP);
             }
         });
 
@@ -225,7 +225,7 @@ public class DataDemandTest extends AbstractTest
 
             private void sendData(Stream stream)
             {
-                stream.data(ReadableBuffer.allocate(1024 * 1024, false), true, Callback.NOOP);
+                stream.data(RetainableByteBuffer.allocate(1024 * 1024, false), true, Callback.NOOP);
             }
         });
 
@@ -264,7 +264,7 @@ public class DataDemandTest extends AbstractTest
 
             private void sendData(Stream stream)
             {
-                stream.data(ReadableBuffer.allocate(1024 * 1024, false), true, Callback.NOOP);
+                stream.data(RetainableByteBuffer.allocate(1024 * 1024, false), true, Callback.NOOP);
             }
         });
 
@@ -352,16 +352,16 @@ public class DataDemandTest extends AbstractTest
         // which will test that it won't throw StackOverflowError.
         WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         Generator generator = new Generator(bufferPool);
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         for (int i = 512; i >= 0; --i)
-            generator.data(accumulator, new DataFrame(clientStream.getId(), ReadableBuffer.allocate(1, false), i == 0), 1);
+            generator.data(accumulator, new DataFrame(clientStream.getId(), RetainableByteBuffer.allocate(1, false), i == 0), 1);
 
         // Since this is a naked write, we need to wait that the
         // client finishes writing the SETTINGS reply to the server
         // during connection initialization, or we risk a WritePendingException.
         Thread.sleep(1000);
-        ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-        accumulator.forEach(ReadableBuffer::release);
+        RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+        accumulator.forEach(RetainableByteBuffer::release);
         ((HTTP2Session)clientStream.getSession()).getEndPoint().write(rb, Callback.NOOP);
         rb.release();
 

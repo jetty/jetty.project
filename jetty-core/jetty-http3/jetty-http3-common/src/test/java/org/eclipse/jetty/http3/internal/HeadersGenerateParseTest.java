@@ -28,9 +28,9 @@ import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,13 +47,13 @@ public class HeadersGenerateParseTest
             .put("Cookie", "c=d");
         HeadersFrame input = new HeadersFrame(new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, fields), true);
 
-        QpackEncoder encoder = new QpackEncoder(instructions -> {});
+        QpackEncoder encoder = new QpackEncoder(_ -> {});
         encoder.setMaxHeadersSize(4 * 1024);
-        ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1, 0, 0);
+        WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         new MessageGenerator(bufferPool, encoder, true).generate(accumulator, 0, input, null);
 
-        QpackDecoder decoder = new QpackDecoder(instructions -> {});
+        QpackDecoder decoder = new QpackDecoder(_ -> {});
         decoder.setMaxHeadersSize(4 * 1024);
         decoder.setBeginNanoTimeSupplier(NanoTime::now);
         List<HeadersFrame> frames = new ArrayList<>();
@@ -66,11 +66,12 @@ public class HeadersGenerateParseTest
             }
         }, decoder, 13);
         parser.init(UnaryOperator.identity());
-        parser.parse(accumulator.getByteBuffer(), false);
-        assertFalse(accumulator.hasRemaining());
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        parser.parse(buffer, false);
+        assertFalse(buffer.hasRemaining());
 
         assertEquals(1, frames.size());
-        HeadersFrame output = frames.get(0);
+        HeadersFrame output = frames.getFirst();
 
         MetaData.Request inputMetaData = (MetaData.Request)input.getMetaData();
         MetaData.Request outputMetaData = (MetaData.Request)output.getMetaData();

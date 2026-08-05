@@ -20,12 +20,12 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>An {@link OutputStream} backed by a {@link Content.Sink}.
  * Any content written to this {@link OutputStream} is written
- * to the {@link Content.Sink#write(boolean, ReadableBuffer, Callback)}
+ * to the {@link Content.Sink#write(boolean, RetainableByteBuffer, Callback)}
  * with a callback that blocks the caller until it is succeeded or
  * failed.</p>
  */
@@ -52,7 +52,7 @@ public class ContentSinkOutputStream extends OutputStream
     {
         try (Blocker.Callback callback = _blocking.callback())
         {
-            sink.write(false, ReadableBuffer.wrap(b, off, len), callback);
+            sink.write(false, RetainableByteBuffer.wrap(b, off, len), callback);
             callback.block();
         }
         catch (Throwable x)

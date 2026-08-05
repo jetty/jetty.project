@@ -15,7 +15,7 @@ package org.eclipse.jetty.http2.parser;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ResetBodyParser extends BodyParser
 {
@@ -36,9 +36,9 @@ public class ResetBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ReadableBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
-        while (buffer.remaining() > 0L)
+        while (buffer.hasRemaining())
         {
             switch (state)
             {
@@ -84,7 +84,7 @@ public class ResetBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onReset(ReadableBuffer buffer, int error)
+    private boolean onReset(RetainableByteBuffer buffer, int error)
     {
         ResetFrame frame = new ResetFrame(getStreamId(), error);
         if (!rateControlOnEvent(frame))

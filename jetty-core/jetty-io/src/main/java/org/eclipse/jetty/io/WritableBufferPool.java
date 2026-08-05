@@ -14,11 +14,10 @@
 package org.eclipse.jetty.io;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
 
 public interface WritableBufferPool extends org.eclipse.jetty.util.buffer.WritableBufferPool
 {
-    WritableBufferPool NON_POOLING = WritableBuffer::allocate;
+    WritableBufferPool NON_POOLING = org.eclipse.jetty.util.buffer.RetainableByteBuffer.Mutable::allocate;
 
     static WritableBufferPool wrap(ByteBufferPool byteBufferPool)
     {
@@ -26,7 +25,7 @@ public interface WritableBufferPool extends org.eclipse.jetty.util.buffer.Writab
         {
             RetainableByteBuffer.Mutable rbbm = byteBufferPool.acquire(size, direct);
             BufferUtil.flipToFill(rbbm.getByteBuffer());
-            return WritableBuffer.wrap(rbbm.getByteBuffer(), rbbm);
+            return org.eclipse.jetty.util.buffer.RetainableByteBuffer.Mutable.wrap(rbbm.getByteBuffer(), rbbm);
         };
     }
 

@@ -20,8 +20,7 @@ import java.nio.channels.WritePendingException;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class MockEndPoint implements EndPoint
 {
@@ -82,13 +81,13 @@ public class MockEndPoint implements EndPoint
     }
 
     @Override
-    public int fill(WritableBuffer buffer)
+    public int fill(RetainableByteBuffer.Mutable buffer)
     {
         throw new UnsupportedOperationException(NOT_SUPPORTED);
     }
 
     @Override
-    public boolean flush(ReadableBuffer buffer)
+    public boolean flush(RetainableByteBuffer buffer)
     {
         throw new UnsupportedOperationException(NOT_SUPPORTED);
     }
@@ -130,7 +129,7 @@ public class MockEndPoint implements EndPoint
     }
 
     @Override
-    public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
+    public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
     {
         throw new UnsupportedOperationException(NOT_SUPPORTED);
     }

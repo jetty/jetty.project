@@ -16,9 +16,9 @@ package org.eclipse.jetty.compression.zstandard;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.lang.ref.Cleaner;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
@@ -40,7 +40,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * Compression for Zstandard.
@@ -75,15 +75,15 @@ public class ZstandardCompression extends Compression
     }
 
     @Override
-    public WritableBuffer acquireBuffer(int length)
+    public RetainableByteBuffer.Mutable acquireBuffer(int length)
     {
         // Per zstd-jni, these MUST be direct ByteBuffer implementations.
-        WritableBuffer buffer = getBufferPool().acquire(length, true);
+        RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(length, true);
         // We rely on the ByteBufferPool.release(ByteBuffer) performing a ByteBuffer order reset to default (big-endian).
         // Typically, this is done with a BufferUtil.reset(ByteBuffer) call on.
         // https://datatracker.ietf.org/doc/html/rfc8478
         // Zstandard is LITTLE_ENDIAN
-        buffer.byteOrder(true);
+        buffer.byteOrder(ByteOrder.LITTLE_ENDIAN);
         return buffer;
     }
 
@@ -180,7 +180,7 @@ public class ZstandardCompression extends Compression
 
     private static class BufferPoolAdapter implements BufferPool
     {
-        private final IdentityHashMap<ByteBuffer, WritableBuffer> buffers = new IdentityHashMap<>();
+        private final IdentityHashMap<ByteBuffer, RetainableByteBuffer.Mutable> buffers = new IdentityHashMap<>();
         private final WritableBufferPool bufferPool;
         private final boolean direct;
 
@@ -193,21 +193,14 @@ public class ZstandardCompression extends Compression
         @Override
         public ByteBuffer get(int capacity)
         {
-            WritableBuffer wb = bufferPool.acquire(capacity, direct);
+            RetainableByteBuffer.Mutable wb = bufferPool.acquire(capacity, direct);
             // Hack to extract the ByteBuffer from the WritableBuffer. TODO: how to clean this up?
             ByteBuffer[] ba = new ByteBuffer[1];
-            try
+            wb.quietReadFrom(output ->
             {
-                wb.readFrom(output ->
-                {
-                    ba[0] = output;
-                    return false;
-                });
-            }
-            catch (IOException e)
-            {
-                throw new UncheckedIOException(e);
-            }
+                ba[0] = output;
+                return 0;
+            });
             ByteBuffer byteBuffer = ba[0];
             buffers.put(byteBuffer, wb);
             return byteBuffer;
@@ -216,7 +209,7 @@ public class ZstandardCompression extends Compression
         @Override
         public void release(ByteBuffer buffer)
         {
-            WritableBuffer removed = buffers.remove(buffer);
+            RetainableByteBuffer.Mutable removed = buffers.remove(buffer);
             if (removed != null)
                 removed.release();
         }

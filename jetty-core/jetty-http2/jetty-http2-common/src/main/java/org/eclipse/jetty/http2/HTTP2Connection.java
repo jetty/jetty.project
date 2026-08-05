@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
@@ -35,11 +34,9 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
@@ -111,11 +108,11 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     }
 
     @Override
-    public void onUpgradeTo(ByteBuffer buffer)
+    public void onUpgradeTo(RetainableByteBuffer.Mutable buffer)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 onUpgradeTo {} {}", this, BufferUtil.toDetailString(buffer));
-        producer.setInputBuffer(ReadableBuffer.wrap(buffer));
+            LOG.debug("HTTP2 onUpgradeTo {} {}", this, buffer);
+        producer.setInputBuffer(buffer);
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -163,20 +160,16 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         produce();
     }
 
-    private int fill(EndPoint endPoint, WritableBuffer buffer, boolean compact)
+    private int fill(EndPoint endPoint, RetainableByteBuffer.Mutable buffer, boolean compact)
     {
-        long padding = 0L;
         try
         {
             if (endPoint.isInputShutdown())
                 return -1;
 
-            if (!compact)
-            {
-                // Add padding content to avoid compaction
-                padding = buffer.position();
-                buffer.position(0);
-            }
+            if (compact)
+                buffer.compact();
+
             return endPoint.fill(buffer);
         }
         catch (IOException x)
@@ -184,11 +177,6 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             if (LOG.isDebugEnabled())
                 LOG.debug("Could not read from {}", endPoint, x);
             return -1;
-        }
-        finally
-        {
-            if (!compact && padding > 0)
-                buffer.position(padding);
         }
     }
 
@@ -337,20 +325,14 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         private final AutoLock lock = new AutoLock();
         private boolean shutdown;
         private boolean failed;
-        private ReadableBuffer inputBuffer;
+        private RetainableByteBuffer.Mutable networkBuffer;
 
-        private void setInputBuffer(ReadableBuffer buffer)
+        private void setInputBuffer(RetainableByteBuffer.Mutable buffer)
         {
             try (AutoLock ignore = lock.lock())
             {
-                WritableBuffer networkBuffer = lockedAcquireBuffer();
-                BufferUtil.put(buffer, networkBuffer);
-                if (buffer.remaining() > 0L)
-                {
-                    networkBuffer.release();
-                    throw new IllegalStateException("overflow");
-                }
-                inputBuffer = networkBuffer.toReadable();
+                buffer.retain();
+                networkBuffer = buffer;
             }
         }
 
@@ -367,31 +349,29 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                 return null;
 
             boolean interested = false;
-            ReadableBuffer networkBuffer;
+            RetainableByteBuffer.Mutable buffer;
             try (AutoLock ignore = lock.lock())
             {
-                if (inputBuffer != null)
+                if (networkBuffer != null)
                 {
-                    networkBuffer = inputBuffer;
-                    inputBuffer = null;
+                    buffer = networkBuffer;
+                    networkBuffer = null;
                 }
                 else
                 {
-                    networkBuffer = lockedAcquireBuffer().toReadable();
+                    buffer = lockedAcquireBuffer();
                 }
             }
             try
             {
-                boolean parse = networkBuffer.remaining() > 0L;
-
                 while (true)
                 {
                     boolean compact = true;
-                    if (parse)
+                    if (buffer.hasRemaining())
                     {
-                        while (networkBuffer.remaining() > 0L)
+                        while (buffer.hasRemaining())
                         {
-                            session.getParser().parse(networkBuffer);
+                            session.getParser().parse(buffer);
                             if (failed)
                                 return null;
                         }
@@ -404,37 +384,34 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
                     }
 
                     // If the application has retained the content chunks then we must not overwrite content.
-                    if (networkBuffer.isRetained())
+                    if (buffer.isRetained())
                     {
                         // If there is sufficient space available, we can top up the buffer rather than allocate a new one
-                        if (minBufferSpace > 0 && networkBuffer.remaining() >= minBufferSpace)
+                        if (minBufferSpace > 0 && buffer.space() >= minBufferSpace)
                         {
-                            // do not compact the buffer
+                            // Do not compact the buffer.
                             compact = false;
                         }
                         else
                         {
-                            // otherwise reacquire the buffer and fill into the new buffer.
+                            // Otherwise reacquire the buffer and fill into the new buffer.
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Released retained {}", networkBuffer);
-                            networkBuffer.release();
+                                LOG.debug("Released retained {}", buffer);
+                            buffer.release();
                             try (AutoLock ignore = lock.lock())
                             {
-                                networkBuffer = lockedAcquireBuffer().toReadable();
+                                buffer = lockedAcquireBuffer();
                             }
                         }
                     }
 
-                    WritableBuffer wb = networkBuffer.toWritable();
-                    int filled = fill(getEndPoint(), wb, compact);
-                    wb.toReadable();
+                    int filled = fill(getEndPoint(), buffer, compact);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Filled {} bytes compacted {} {} in {}", filled, compact, networkBuffer, HTTP2Connection.this);
+                        LOG.debug("Filled {} bytes compacted {} {} in {}", filled, compact, buffer, HTTP2Connection.this);
 
                     if (filled > 0)
                     {
                         bytesIn.addAndGet(filled);
-                        parse = true;
                     }
                     else if (filled == 0)
                     {
@@ -460,19 +437,19 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
             finally
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Released after process {}", networkBuffer);
-                networkBuffer.release();
+                    LOG.debug("Released after process {}", buffer);
+                buffer.release();
 
                 if (interested)
                     fillInterested(fillableCallback);
             }
         }
 
-        private WritableBuffer lockedAcquireBuffer()
+        private RetainableByteBuffer.Mutable lockedAcquireBuffer()
         {
             assert lock.isHeldByCurrentThread();
 
-            WritableBuffer buffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers());
+            RetainableByteBuffer.Mutable buffer = bufferPool.acquire(bufferSize, isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
                 LOG.debug("Acquired {} in {}", buffer, HTTP2Connection.this);
             return buffer;

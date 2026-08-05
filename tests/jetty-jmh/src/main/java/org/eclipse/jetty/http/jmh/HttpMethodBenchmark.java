@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -41,9 +41,9 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Measurement(iterations = 5, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 public class HttpMethodBenchmark
 {
-    private static final ReadableBuffer GET = BufferUtil.toReadableBuffer("GET / HTTP/1.1\r\n\r\n");
-    private static final ReadableBuffer POST = BufferUtil.toReadableBuffer("POST / HTTP/1.1\r\n\r\n");
-    private static final ReadableBuffer MOVE = BufferUtil.toReadableBuffer("MOVE / HTTP/1.1\r\n\r\n");
+    private static final RetainableByteBuffer GET = BufferUtil.toReadableBuffer("GET / HTTP/1.1\r\n\r\n");
+    private static final RetainableByteBuffer POST = BufferUtil.toReadableBuffer("POST / HTTP/1.1\r\n\r\n");
+    private static final RetainableByteBuffer MOVE = BufferUtil.toReadableBuffer("MOVE / HTTP/1.1\r\n\r\n");
     private static final Map<String, HttpMethod> MAP = new HashMap<>();
 
     static

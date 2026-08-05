@@ -14,25 +14,26 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class ByteArrayEndPointTest
 {
@@ -41,7 +42,7 @@ public class ByteArrayEndPointTest
     @BeforeEach
     public void before() throws Exception
     {
-        _scheduler = new TimerScheduler();
+        _scheduler = new ScheduledExecutorScheduler();
         _scheduler.start();
     }
 
@@ -52,198 +53,168 @@ public class ByteArrayEndPointTest
     }
 
     @Test
+    public void testClose() throws Exception
+    {
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
+
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
+        assertEquals(0, endPoint.fill(buffer));
+
+        endPoint.close();
+
+        IOException failure = assertThrows(IOException.class, () -> endPoint.fill(buffer));
+        assertThat(failure.getMessage(), containsString("CLOSED"));
+    }
+
+    @Test
     public void testFill() throws Exception
     {
-        ByteArrayEndPoint endp = new ByteArrayEndPoint();
-        endp.addInput("test input");
-
-        ByteBuffer buffer = BufferUtil.allocate(1024);
-
-        assertEquals(10, endp.fill(buffer));
-        assertEquals("test input", BufferUtil.toString(buffer));
-
-        assertEquals(0, endp.fill(buffer));
-
-        endp.addInput(" more");
-        assertEquals(5, endp.fill(buffer));
-        assertEquals("test input more", BufferUtil.toString(buffer));
-
-        assertEquals(0, endp.fill(buffer));
-
-        endp.addInput((ByteBuffer)null);
-
-        assertEquals(-1, endp.fill(buffer));
-
-        endp.close();
-
-        try
+        try (ByteArrayEndPoint endPoint = new ByteArrayEndPoint())
         {
-            endp.fill(buffer);
-            fail("Expected IOException");
-        }
-        catch (IOException e)
-        {
-            assertThat(e.getMessage(), containsString("CLOSED"));
-        }
+            endPoint.addInput("test input");
 
-        endp.reset();
-        endp.addInput("and more");
-        buffer = BufferUtil.allocate(4);
+            RetainableByteBuffer.Mutable buffer1 = RetainableByteBuffer.Mutable.allocate(1024, false);
 
-        assertEquals(4, endp.fill(buffer));
-        assertEquals("and ", BufferUtil.toString(buffer));
-        assertEquals(0, endp.fill(buffer));
-        BufferUtil.clear(buffer);
-        assertEquals(4, endp.fill(buffer));
-        assertEquals("more", BufferUtil.toString(buffer));
+            assertEquals(10, endPoint.fill(buffer1));
+            assertEquals("test input", BufferUtil.toString(buffer1));
+            assertEquals(0, endPoint.fill(buffer1));
+
+            endPoint.addInput(" more");
+            assertEquals(5, endPoint.fill(buffer1));
+            assertEquals("test input more", BufferUtil.toString(buffer1));
+            assertEquals(0, endPoint.fill(buffer1));
+
+            endPoint.addInput((RetainableByteBuffer)null);
+            assertEquals(-1, endPoint.fill(buffer1));
+
+            endPoint.reset();
+            endPoint.addInput("and more");
+
+            RetainableByteBuffer.Mutable buffer2 = RetainableByteBuffer.Mutable.allocate(4, false);
+
+            assertEquals(4, endPoint.fill(buffer2));
+            assertEquals("and ", buffer2.getString(UTF_8));
+            assertEquals(0, endPoint.fill(buffer2));
+            buffer2.compact();
+            assertEquals(4, endPoint.fill(buffer2));
+            assertEquals("more", buffer2.getString(UTF_8));
+        }
     }
 
     @Test
     public void testGrowingFlush() throws Exception
     {
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(null, 0, null, 15, true);
+        try (ByteArrayEndPoint endPoint = new ByteArrayEndPoint(null, 0, null, 15, true))
+        {
+            assertTrue(endPoint.flush(RetainableByteBuffer.wrap("some output", UTF_8)));
+            assertEquals("some output", endPoint.getOutputString(UTF_8));
 
-        assertEquals(true, endp.flush(BufferUtil.toBuffer("some output")));
-        assertEquals("some output", endp.getOutputString());
+            assertTrue(endPoint.flush(RetainableByteBuffer.wrap(" some more", UTF_8)));
+            assertEquals("some output some more", endPoint.getOutputString(UTF_8));
 
-        assertEquals(true, endp.flush(BufferUtil.toBuffer(" some more")));
-        assertEquals("some output some more", endp.getOutputString());
+            assertTrue(endPoint.flush(RetainableByteBuffer.Mutable.empty()));
+            assertEquals("some output some more", endPoint.getOutputString(UTF_8));
 
-        assertEquals(true, endp.flush());
-        assertEquals("some output some more", endp.getOutputString());
-
-        assertEquals(true, endp.flush(BufferUtil.EMPTY_BUFFER));
-        assertEquals("some output some more", endp.getOutputString());
-
-        assertEquals(true, endp.flush(BufferUtil.EMPTY_BUFFER, BufferUtil.toBuffer(" and"), BufferUtil.toBuffer(" more")));
-        assertEquals("some output some more and more", endp.getOutputString());
-        endp.close();
+            assertTrue(endPoint.flush(RetainableByteBuffer.wrap(RetainableByteBuffer.Mutable.empty(), RetainableByteBuffer.wrap(" and", UTF_8), RetainableByteBuffer.wrap(" more", UTF_8))));
+            assertEquals("some output some more and more", endPoint.getOutputString(UTF_8));
+        }
     }
 
     @Test
     public void testFlush() throws Exception
     {
-        ByteArrayEndPoint endp = new ByteArrayEndPoint((byte[])null, 10);
-
-        ByteBuffer data = BufferUtil.toBuffer("Some more data.");
-        assertFalse(endp.flush(data));
-        assertEquals("Some more ", endp.getOutputString());
-        assertEquals("data.", BufferUtil.toString(data));
-
-        assertEquals("Some more ", endp.takeOutputString());
-
-        assertTrue(endp.flush(data));
-        assertEquals("data.", BufferUtil.toString(endp.takeOutput()));
-        endp.close();
+        try (ByteArrayEndPoint endPoint = new ByteArrayEndPoint((byte[])null, 10))
+        {
+            RetainableByteBuffer data = RetainableByteBuffer.wrap("Some more data.", UTF_8);
+            assertFalse(endPoint.flush(data));
+            assertEquals("Some more ", endPoint.getOutputString(UTF_8));
+            assertEquals("data.", data.getString(data.readPosition(), UTF_8));
+            assertEquals("Some more ", endPoint.takeOutputString());
+            assertTrue(endPoint.flush(data));
+            assertEquals("data.", endPoint.takeOutputString());
+        }
     }
 
     @Test
     public void testReadable() throws Exception
     {
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
-        endp.addInput("test input");
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(_scheduler, 5000);
+        endPoint.addInput("test input");
 
-        ByteBuffer buffer = BufferUtil.allocate(1024);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
         FutureCallback fcb = new FutureCallback();
 
-        endp.fillInterested(fcb);
+        endPoint.fillInterested(fcb);
         fcb.get(100, TimeUnit.MILLISECONDS);
         assertTrue(fcb.isDone());
-        assertEquals(null, fcb.get());
-        assertEquals(10, endp.fill(buffer));
-        assertEquals("test input", BufferUtil.toString(buffer));
+        assertNull(fcb.get());
+        assertEquals(10, endPoint.fill(buffer));
+        assertEquals("test input", buffer.getString(buffer.readPosition(), UTF_8));
 
         fcb = new FutureCallback();
-        endp.fillInterested(fcb);
+        endPoint.fillInterested(fcb);
         Thread.sleep(100);
         assertFalse(fcb.isDone());
-        assertEquals(0, endp.fill(buffer));
+        assertEquals(0, endPoint.fill(buffer));
 
-        endp.addInput(" more");
-        fcb.get(1000, TimeUnit.MILLISECONDS);
+        endPoint.addInput(" more");
+        fcb.get(100, TimeUnit.MILLISECONDS);
         assertTrue(fcb.isDone());
-        assertEquals(null, fcb.get());
-        assertEquals(5, endp.fill(buffer));
-        assertEquals("test input more", BufferUtil.toString(buffer));
+        assertNull(fcb.get());
+        assertEquals(5, endPoint.fill(buffer));
+        assertEquals("test input more", buffer.getString(buffer.readPosition(), UTF_8));
 
         fcb = new FutureCallback();
-        endp.fillInterested(fcb);
+        endPoint.fillInterested(fcb);
         Thread.sleep(100);
         assertFalse(fcb.isDone());
-        assertEquals(0, endp.fill(buffer));
+        assertEquals(0, endPoint.fill(buffer));
 
-        endp.addInput((ByteBuffer)null);
+        endPoint.addInput((RetainableByteBuffer)null);
         assertTrue(fcb.isDone());
-        assertEquals(null, fcb.get());
-        assertEquals(-1, endp.fill(buffer));
+        assertNull(fcb.get());
+        assertEquals(-1, endPoint.fill(buffer));
 
         fcb = new FutureCallback();
-        endp.fillInterested(fcb);
-        fcb.get(1000, TimeUnit.MILLISECONDS);
+        endPoint.fillInterested(fcb);
+        fcb.get(100, TimeUnit.MILLISECONDS);
         assertTrue(fcb.isDone());
-        assertEquals(null, fcb.get());
-        assertEquals(-1, endp.fill(buffer));
+        assertNull(fcb.get());
+        assertEquals(-1, endPoint.fill(buffer));
 
-        endp.close();
+        endPoint.close();
 
-        fcb = new FutureCallback();
-        endp.fillInterested(fcb);
+        FutureCallback cb = new FutureCallback();
+        endPoint.fillInterested(cb);
 
-        try
-        {
-            fcb.get(1000, TimeUnit.MILLISECONDS);
-            fail("Expected ExecutionException");
-        }
-        catch (ExecutionException e)
-        {
-            assertThat(e.toString(), containsString("Closed"));
-        }
+        ExecutionException failure = assertThrows(ExecutionException.class, () -> cb.get(100, TimeUnit.MILLISECONDS));
+        assertThat(failure.toString(), containsString("Closed"));
     }
 
     @Test
     public void testWrite() throws Exception
     {
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000, (byte[])null, 10);
-
-        ByteBuffer data = BufferUtil.toBuffer("Data.");
-        ByteBuffer more = BufferUtil.toBuffer(" Some more.");
-
-        FutureCallback fcb = new FutureCallback();
-        endp.write(fcb, data);
-        assertTrue(fcb.isDone());
-        assertNull(fcb.get());
-        assertEquals("Data.", endp.getOutputString());
-
-        fcb = new FutureCallback();
-        endp.write(fcb, more);
-        assertFalse(fcb.isDone());
-
-        assertEquals("Data. Some", endp.getOutputString());
-        assertEquals("Data. Some", endp.takeOutputString());
-
-        assertTrue(fcb.isDone());
-        assertNull(fcb.get());
-        assertEquals(" more.", endp.getOutputString());
-        endp.close();
-    }
-
-    /**
-     * Simulate AbstractConnection.ReadCallback.failed()
-     */
-    public static class Closer extends FutureCallback
-    {
-        private EndPoint endp;
-
-        public Closer(EndPoint endp)
+        try (ByteArrayEndPoint endPoint = new ByteArrayEndPoint(_scheduler, 5000, (byte[])null, 10))
         {
-            this.endp = endp;
-        }
+            RetainableByteBuffer data = RetainableByteBuffer.wrap("Data.", UTF_8);
+            RetainableByteBuffer more = RetainableByteBuffer.wrap(" Some more.", UTF_8);
 
-        @Override
-        public void failed(Throwable cause)
-        {
-            endp.close();
-            super.failed(cause);
+            FutureCallback fcb = new FutureCallback();
+            endPoint.write(data, fcb);
+            assertTrue(fcb.isDone());
+            assertNull(fcb.get());
+            assertEquals("Data.", endPoint.getOutputString(UTF_8));
+
+            fcb = new FutureCallback();
+            endPoint.write(more, fcb);
+            assertFalse(fcb.isDone());
+
+            assertEquals("Data. Some", endPoint.getOutputString(UTF_8));
+            assertEquals("Data. Some", endPoint.takeOutputString());
+
+            assertTrue(fcb.isDone());
+            assertNull(fcb.get());
+            assertEquals(" more.", endPoint.getOutputString(UTF_8));
         }
     }
 
@@ -254,11 +225,13 @@ public class ByteArrayEndPointTest
         long halfIdleTimeout = idleTimeout / 2;
         long oneAndHalfIdleTimeout = idleTimeout + halfIdleTimeout;
 
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, idleTimeout, null, 5, false);
-        endp.addInput("test");
+        try (ByteArrayEndPoint endPoint = new ByteArrayEndPoint(_scheduler, idleTimeout, null, 5, false))
+        {
+            endPoint.addInput("test");
 
-        assertTrue(endp.isOpen());
-        Thread.sleep(oneAndHalfIdleTimeout);
-        assertFalse(endp.isOpen());
+            assertTrue(endPoint.isOpen());
+            Thread.sleep(oneAndHalfIdleTimeout);
+            assertFalse(endPoint.isOpen());
+        }
     }
 }

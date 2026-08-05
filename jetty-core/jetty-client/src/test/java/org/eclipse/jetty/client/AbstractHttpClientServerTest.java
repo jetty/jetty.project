@@ -61,8 +61,7 @@ public abstract class AbstractHttpClientServerTest
             serverThreads.setName("server");
             server = new Server(serverThreads, null, new ArrayByteBufferPool.Tracking());
         }
-        connector = new ServerConnector(server, scenario.newServerSslContextFactory());
-        connector.setPort(0);
+        connector = new ServerConnector(server, 1, 1, scenario.newServerSslContextFactory());
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();

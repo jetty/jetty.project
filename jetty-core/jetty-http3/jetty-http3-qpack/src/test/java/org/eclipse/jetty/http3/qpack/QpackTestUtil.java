@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -22,27 +22,34 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matcher;
 
 public class QpackTestUtil
 {
-    public static ByteBuffer toBuffer(Instruction... instructions)
+    public static RetainableByteBuffer toBuffer(Instruction instruction)
     {
-        ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
-        RetainableByteBuffer.DynamicCapacity accumulator = new RetainableByteBuffer.DynamicCapacity();
-        for (Instruction instruction : instructions)
-        {
-            instruction.encode(bufferPool, accumulator);
-        }
-        ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(accumulator.size()));
-        BufferUtil.clearToFill(combinedBuffer);
-        accumulator.putTo(combinedBuffer);
-        BufferUtil.flipToFlush(combinedBuffer, 0);
-        return combinedBuffer;
+        return toBuffer(List.of(instruction));
+    }
+
+    public static RetainableByteBuffer toBuffer(Instruction... instructions)
+    {
+        return toBuffer(List.of(instructions));
+    }
+
+    public static RetainableByteBuffer toBuffer(List<Instruction> instructions)
+    {
+        WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        instructions.forEach(i -> i.encode(bufferPool, accumulator));
+        if (accumulator.isEmpty())
+            return RetainableByteBuffer.empty();
+        if (accumulator.size() == 1)
+            return accumulator.getFirst();
+        return RetainableByteBuffer.wrap(accumulator);
     }
 
     public static Matcher<String> equalsHex(String expectedString)
@@ -51,27 +58,10 @@ public class QpackTestUtil
         return org.hamcrest.text.IsEqualIgnoringCase.equalToIgnoringCase(expectedString);
     }
 
-    public static ByteBuffer toBuffer(Instruction instruction)
-    {
-        return toBuffer(List.of(instruction));
-    }
-
-    public static ByteBuffer toBuffer(List<Instruction> instructions)
-    {
-        ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
-        RetainableByteBuffer.DynamicCapacity accumulator = new RetainableByteBuffer.DynamicCapacity();
-        instructions.forEach(i -> i.encode(bufferPool, accumulator));
-        ByteBuffer combinedBuffer = BufferUtil.allocate(Math.toIntExact(accumulator.size()), false);
-        BufferUtil.clearToFill(combinedBuffer);
-        accumulator.putTo(combinedBuffer);
-        BufferUtil.flipToFlush(combinedBuffer, 0);
-        return combinedBuffer;
-    }
-
-    public static ByteBuffer hexToBuffer(String hexString)
+    public static RetainableByteBuffer hexToBuffer(String hexString)
     {
         hexString = hexString.replaceAll("\\s+", "");
-        return ByteBuffer.wrap(StringUtil.fromHexString(hexString));
+        return RetainableByteBuffer.wrap(StringUtil.fromHexString(hexString));
     }
 
     public static String toHexString(Instruction instruction)
@@ -79,12 +69,10 @@ public class QpackTestUtil
         return BufferUtil.toHexString(toBuffer(List.of(instruction)));
     }
 
-    public static ByteBuffer encode(QpackEncoder encoder, long streamId, MetaData metaData) throws QpackException
+    public static RetainableByteBuffer encode(QpackEncoder encoder, long streamId, MetaData metaData) throws QpackException
     {
-        ByteBuffer buffer = BufferUtil.allocate(1024);
-        BufferUtil.clearToFill(buffer);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
         encoder.encode(buffer, streamId, metaData);
-        BufferUtil.flipToFlush(buffer, 0);
         return buffer;
     }
 

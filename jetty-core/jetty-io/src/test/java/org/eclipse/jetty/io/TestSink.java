@@ -17,16 +17,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class TestSink implements Content.Sink
 {
     private List<Content.Chunk> accumulatedChunks = new ArrayList<>();
 
     @Override
-    public void write(boolean last, ReadableBuffer byteBuffer, Callback callback)
+    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
-        accumulatedChunks.add(Content.Chunk.asChunk(byteBuffer, last, null));
+        accumulatedChunks.add(Content.Chunk.asChunk(buffer, last, null));
         callback.succeeded();
     }
 

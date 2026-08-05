@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * An immutable String lookup data structure.
@@ -114,7 +114,7 @@ public interface Index<V>
      * @param len the length of the key
      * @return The value or null if not found
      */
-    V getBest(ReadableBuffer b, long offset, long len);
+    V getBest(RetainableByteBuffer b, long offset, long len);
 
     /**
      * Get the best match from key in a byte buffer.
@@ -135,7 +135,7 @@ public interface Index<V>
      * @param b The buffer
      * @return The value or null if not found
      */
-    default V getBest(ReadableBuffer b)
+    default V getBest(RetainableByteBuffer b)
     {
         return getBest(b, 0, b.remaining());
     }

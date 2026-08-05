@@ -139,7 +139,7 @@ public class ChunkedRequestTest
             "\r\n";
 
         // This is not a compliance violation just bad quotes, so always a bad request.
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
         assertNull(_violationListener.poll());
     }
@@ -174,7 +174,7 @@ public class ChunkedRequestTest
                          "\r\n";
 
         // Bad chunk length is always an error no matter compliance mode.
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
         assertNull(_violationListener.poll());
     }
@@ -209,7 +209,7 @@ public class ChunkedRequestTest
                          "\r\n";
 
         // Bad chunk length is always an error no matter compliance mode.
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
         assertNull(_violationListener.poll());
     }
@@ -249,7 +249,7 @@ public class ChunkedRequestTest
             "0\r\n" +
             "\r\n";
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         if (expectError)
         {
             // This should be an 400 response due to invalid line terminator.
@@ -305,7 +305,7 @@ public class ChunkedRequestTest
             "0\r\n" +
             "\r\n";
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         if (expectError)
         {
             // This should be an 400 response due to invalid line terminator.
@@ -352,7 +352,7 @@ public class ChunkedRequestTest
                          "\r\n";
 
         // Invalid terminator causes chunk length to be wrong which always results in an error.
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
         assertNull(_violationListener.poll());
     }
@@ -422,7 +422,7 @@ public class ChunkedRequestTest
             "Host: localhost\r\n" +
             "\r\n";
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         if (expectError)
         {
             // This should be an 400 response due to invalid line terminator.
@@ -468,7 +468,7 @@ public class ChunkedRequestTest
                          "\r\n";
 
         // Always valid.
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertNull(_violationListener.poll());
     }
@@ -500,7 +500,7 @@ public class ChunkedRequestTest
                          "\r\n";
 
         // Always invalid and results in 400 response.
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
         assertNull(_violationListener.poll());
     }
@@ -537,7 +537,7 @@ public class ChunkedRequestTest
             "Host: localhost\r\n" +
             "\r\n";
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         if (expectError)
         {
             // This should be an 400 response due to invalid line terminator.
@@ -583,7 +583,7 @@ public class ChunkedRequestTest
                          "\r\n";
 
         // This is always invalid and results in 400 response.
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
         assertNull(_violationListener.poll());
     }

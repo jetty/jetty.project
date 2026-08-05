@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -414,7 +414,7 @@ public class ThreadStarvationTest
         {
             response.setStatus(200);
             String string = Content.Source.asString(request);
-            response.write(true, ReadableBuffer.wrap(("Read Input " + string.length() + "\r\n").getBytes()), callback);
+            response.write(true, RetainableByteBuffer.wrap(("Read Input " + string.length() + "\r\n").getBytes()), callback);
             return true;
         }
     }

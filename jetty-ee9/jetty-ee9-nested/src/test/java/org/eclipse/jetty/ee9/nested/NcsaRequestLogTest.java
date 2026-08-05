@@ -93,7 +93,7 @@ public class NcsaRequestLogTest
 
     private void makeRequest(String requestPath) throws Exception
     {
-        _connector.getResponse("GET " + requestPath + " HTTP/1.0\r\n\r\n");
+        _connector.getResponseAsString("GET " + requestPath + " HTTP/1.0\r\n\r\n");
     }
 
     @BeforeEach
@@ -121,7 +121,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET /foo HTTP/1.0\n\n");
+        _connector.getResponseAsString("GET /foo HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET /foo HTTP/1.0\" 404 "));
     }
@@ -133,15 +133,15 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET /foo?data=1 HTTP/1.0\nhost: host:80\n\n");
+        _connector.getResponseAsString("GET /foo?data=1 HTTP/1.0\nhost: host:80\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET /foo?data=1 HTTP/1.0\" 200 "));
 
-        _connector.getResponse("GET //bad/foo?data=1 HTTP/1.0\n\n");
+        _connector.getResponseAsString("GET //bad/foo?data=1 HTTP/1.0\n\n");
         log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET //bad/foo?data=1 HTTP/1.0\" 400 "));
 
-        _connector.getResponse("GET http://host:80/foo?data=1 HTTP/1.0\n\n");
+        _connector.getResponseAsString("GET http://host:80/foo?data=1 HTTP/1.0\n\n");
         log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET /foo?data=1 HTTP/1.0\" 200 "));
     }
@@ -153,7 +153,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("""
+        _connector.getResponseAsString("""
             GET /foo?name=value HTTP/1.0
             Host: servername
             
@@ -170,7 +170,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("""
+        _connector.getResponseAsString("""
             GET /foo?name=value HTTP/1.1
             Host: servername
             
@@ -187,7 +187,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("""
+        _connector.getResponseAsString("""
             GET http://hostname:8888/foo?name=value HTTP/1.1
             Host: hostname:8888
             
@@ -204,7 +204,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET /foo?name=value HTTP/1.0\n\n");
+        _connector.getResponseAsString("GET /foo?name=value HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET /foo?name=value"));
         assertThat(log, containsString(" 200 "));
@@ -217,7 +217,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET /foo?data=42 HTTP/1.0\n\n");
+        _connector.getResponseAsString("GET /foo?data=42 HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET /foo?"));
         assertThat(log, containsString(" 200 42 "));
@@ -230,7 +230,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET /foo?data=102400 HTTP/1.0\n\n");
+        _connector.getResponseAsString("GET /foo?data=102400 HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET /foo?"));
         assertThat(log, containsString(" 200 102400 "));
@@ -243,7 +243,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET /foo?status=206 HTTP/1.0\n\n");
+        _connector.getResponseAsString("GET /foo?status=206 HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET /foo?"));
         assertThat(log, containsString(" 206 0 "));
@@ -256,7 +256,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET /foo?status=206&data=42 HTTP/1.0\n\n");
+        _connector.getResponseAsString("GET /foo?status=206&data=42 HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET /foo?"));
         assertThat(log, containsString(" 206 42 "));
@@ -269,7 +269,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("XXXXXXXXXXXX\n\n");
+        _connector.getResponseAsString("XXXXXXXXXXXX\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("\"BAD /badMessage HTTP/1.0\""));
         assertThat(log, containsString(" 400 "));
@@ -282,7 +282,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("METHOD /f\00o HTTP/1.0\n\n");
+        _connector.getResponseAsString("METHOD /f\00o HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("\"BAD /badMessage HTTP/1.0\""));
         assertThat(log, containsString(" 400 "));
@@ -295,7 +295,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("METHOD /foo HTTP/9\n\n");
+        _connector.getResponseAsString("METHOD /foo HTTP/9\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("\"BAD /badMessage HTTP/1.0\""));
         assertThat(log, containsString(" 505 "));
@@ -311,7 +311,7 @@ public class NcsaRequestLogTest
         char[] chars = new char[10000];
         Arrays.fill(chars, 'o');
         String ooo = new String(chars);
-        _connector.getResponse("METHOD /f" + ooo + " HTTP/1.0\n\n");
+        _connector.getResponseAsString("METHOD /f" + ooo + " HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("\"BAD /badMessage HTTP/1.0\""));
         assertThat(log, containsString(" 414 "));
@@ -327,7 +327,7 @@ public class NcsaRequestLogTest
         char[] chars = new char[10000];
         Arrays.fill(chars, 'o');
         String ooo = new String(chars);
-        _connector.getResponse("METHOD /foo HTTP/1.0\name: f+" + ooo + "\n\n");
+        _connector.getResponseAsString("METHOD /foo HTTP/1.0\name: f+" + ooo + "\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("\"METHOD /foo HTTP/1.0\""));
         assertThat(log, containsString(" 431 "));
@@ -340,7 +340,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET /foo HTTP/1.1\n\n");
+        _connector.getResponseAsString("GET /foo HTTP/1.1\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET /foo "));
         assertThat(log, containsString(" 400 "));
@@ -353,7 +353,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET /foo HTTP/1.1\nHost: localhost\nReferer: http://other.site\n\n");
+        _connector.getResponseAsString("GET /foo HTTP/1.1\nHost: localhost\nReferer: http://other.site\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET /foo HTTP/1.1\" 404"));
         assertThat(log, containsString("\"http://other.site\""));
@@ -366,7 +366,7 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET /foo HTTP/1.1\nHost: localhost\nReferer: http://other.site\nUser-Agent: Mozilla/5.0 (test)\n\n");
+        _connector.getResponseAsString("GET /foo HTTP/1.1\nHost: localhost\nReferer: http://other.site\nUser-Agent: Mozilla/5.0 (test)\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET /foo HTTP/1.1\" 404"));
         assertThat(log, containsString("\"http://other.site\" \"Mozilla/5.0 (test)\""));

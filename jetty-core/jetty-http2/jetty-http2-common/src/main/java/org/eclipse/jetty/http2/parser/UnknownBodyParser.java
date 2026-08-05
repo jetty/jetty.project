@@ -15,7 +15,7 @@ package org.eclipse.jetty.http2.parser;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.UnknownFrame;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class UnknownBodyParser extends BodyParser
 {
@@ -27,7 +27,7 @@ public class UnknownBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ReadableBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
         long length = cursor == 0 ? getBodyLength() : cursor;
         cursor = consume(buffer, length);
@@ -37,17 +37,17 @@ public class UnknownBodyParser extends BodyParser
         return parsed;
     }
 
-    private long consume(ReadableBuffer buffer, long length)
+    private long consume(RetainableByteBuffer buffer, long length)
     {
         long remaining = buffer.remaining();
         if (remaining >= length)
         {
-            buffer.position(buffer.position() + length);
+            buffer.readPosition(buffer.readPosition() + length);
             return 0;
         }
         else
         {
-            buffer.position(buffer.position() + remaining);
+            buffer.readPosition(buffer.readPosition() + remaining);
             return length - remaining;
         }
     }

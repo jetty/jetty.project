@@ -28,7 +28,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -117,7 +117,7 @@ public class SSLCloseTest
             byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
 
             response.write(false,
-                ReadableBuffer.wrap(bytes), Callback.from(() -> response.write(true, ReadableBuffer.wrap(bytes), callback), callback::failed)
+                RetainableByteBuffer.wrap(bytes), Callback.from(() -> response.write(true, RetainableByteBuffer.wrap(bytes), callback), callback::failed)
             );
             return true;
         }

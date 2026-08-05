@@ -25,8 +25,7 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.WindowRateControl;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -83,11 +82,10 @@ public class FrameFloodTest
             }
         };
         HpackEncoder encoder = new HpackEncoder();
-        WritableBuffer wb = WritableBuffer.allocate(1024, false);
-        encoder.encode(wb, metadata);
-        ReadableBuffer rb = wb.toReadable();
-        byte[] payload = new byte[(int)rb.remaining()];
-        rb.get(payload);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
+        encoder.encode(buffer, metadata);
+        byte[] payload = new byte[(int)buffer.remaining()];
+        buffer.get(payload);
         testFrameFlood(null, frameFrom(payload.length, FrameType.HEADERS.getType(), Flags.END_HEADERS, 13, payload));
     }
 
@@ -176,8 +174,8 @@ public class FrameFloodTest
 
         if (preamble != null)
         {
-            ReadableBuffer buffer = ReadableBuffer.wrap(preamble);
-            while (buffer.remaining() > 0L)
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(preamble);
+            while (buffer.hasRemaining())
             {
                 parser.parse(buffer);
             }
@@ -186,8 +184,8 @@ public class FrameFloodTest
         int count = 0;
         while (failed.get() == 0)
         {
-            ReadableBuffer buffer = ReadableBuffer.wrap(bytes);
-            while (buffer.remaining() > 0L)
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(bytes);
+            while (buffer.hasRemaining())
             {
                 parser.parse(buffer);
             }

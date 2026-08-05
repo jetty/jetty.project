@@ -13,11 +13,8 @@
 
 package org.eclipse.jetty.http3.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http3.frames.DataFrame;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,13 +39,14 @@ public class DataBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ByteBuffer buffer, boolean last)
+    protected void emptyBody(RetainableByteBuffer buffer, boolean quicLast)
     {
-        onData(BufferUtil.EMPTY_BUFFER, last, false);
+        boolean last = quicLast && !buffer.hasRemaining();
+        onData(RetainableByteBuffer.empty(), last, false);
     }
 
     @Override
-    public Result parse(ByteBuffer buffer, boolean last)
+    public Result parse(RetainableByteBuffer buffer, boolean quicLast)
     {
         while (buffer.hasRemaining())
         {
@@ -62,10 +60,9 @@ public class DataBodyParser extends BodyParser
                 }
                 case DATA:
                 {
+                    // TODO: SIMON: release the slice
                     int size = (int)Math.min(buffer.remaining(), length);
-                    int position = buffer.position();
-                    ByteBuffer slice = buffer.slice(position, size);
-                    buffer.position(position + size);
+                    RetainableByteBuffer slice = buffer.sliceAndConsume(size);
 
                     length -= size;
                     if (length == 0)
@@ -76,7 +73,7 @@ public class DataBodyParser extends BodyParser
                         // to be parsed, then it's not the last frame.
                         // TODO: the sequence: DATA(last=true)+PUSH_PROMISE
                         //  would break the logic in the line below.
-                        boolean lastFrame = last && !buffer.hasRemaining();
+                        boolean lastFrame = quicLast && !buffer.hasRemaining();
                         onData(slice, lastFrame, false);
                         return Result.WHOLE_FRAME;
                     }
@@ -96,12 +93,13 @@ public class DataBodyParser extends BodyParser
         return Result.NO_FRAME;
     }
 
-    private void onData(ByteBuffer buffer, boolean last, boolean fragment)
+    private void onData(RetainableByteBuffer buffer, boolean last, boolean fragment)
     {
-        DataFrame frame = new DataFrame(ReadableBuffer.wrap(buffer), last);
+        DataFrame frame = new DataFrame(buffer, last);
         if (LOG.isDebugEnabled())
             LOG.debug("notifying fragment={} {}#{} left={}", fragment, frame, streamId, length);
         notifyData(frame);
+        frame.close();
     }
 
     private void notifyData(DataFrame frame)

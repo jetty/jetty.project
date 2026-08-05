@@ -16,8 +16,6 @@ package org.eclipse.jetty.rewrite.handler;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -29,8 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class RewriteHandlerMissingChildTest
 {
     private final Server _server = new Server();
-    private final LocalConnector _connector =
-            new LocalConnector(_server, new HttpConnectionFactory(new HttpConfiguration()));
+    private final LocalConnector _connector = new LocalConnector(_server);
     private final RewriteHandler _rewriteHandler = new RewriteHandler();
 
     @AfterEach
@@ -55,7 +52,7 @@ public class RewriteHandlerMissingChildTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
 
         assertEquals(500, response.getStatus(), "Expected HTTP 500 error from RewriteHandler");
         assertEquals("Server Error", response.getReason());

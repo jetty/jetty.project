@@ -20,8 +20,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.WritePendingException;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +59,7 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
     }
 
     @Override
-    public SocketAddress receive(WritableBuffer buffer) throws IOException
+    public SocketAddress receive(RetainableByteBuffer.Mutable buffer) throws IOException
     {
         if (isInputShutdown())
             return EOF;
@@ -68,8 +67,9 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
         SocketAddress[] peers = new SocketAddress[1];
         long filled = buffer.readFrom(output ->
         {
+            int remaining = output.remaining();
             peers[0] = getChannel().receive(output);
-            return false;
+            return remaining - output.remaining();
         });
         SocketAddress peer = peers[0];
         if (peer == null)
@@ -83,7 +83,7 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
     }
 
     @Override
-    public boolean send(SocketAddress address, ReadableBuffer buffer) throws IOException
+    public boolean send(SocketAddress address, RetainableByteBuffer buffer) throws IOException
     {
         long toSend = buffer.remaining();
         long flushed;
@@ -107,7 +107,7 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
     }
 
     @Override
-    public void write(ReadableBuffer buffer, SocketAddress address, Callback callback) throws WritePendingException
+    public void write(RetainableByteBuffer buffer, SocketAddress address, Callback callback) throws WritePendingException
     {
         getWriteFlusher().write(buffer, address, callback);
     }

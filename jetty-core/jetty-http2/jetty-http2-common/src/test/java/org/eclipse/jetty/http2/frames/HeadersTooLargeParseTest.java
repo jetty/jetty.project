@@ -29,7 +29,7 @@ import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,12 +79,12 @@ public class HeadersTooLargeParseTest
         });
 
         int streamId = 48;
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
         int len = generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
-        ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-        accumulator.forEach(ReadableBuffer::release);
+        RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+        accumulator.forEach(RetainableByteBuffer::release);
         parser.parse(rb);
         if (failure.get() == 0)
             fail();

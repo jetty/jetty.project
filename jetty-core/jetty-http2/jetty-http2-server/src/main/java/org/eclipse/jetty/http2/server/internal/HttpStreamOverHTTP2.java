@@ -49,7 +49,7 @@ import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -280,16 +280,16 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer byteBuffer, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer buffer, Callback callback)
     {
-        ReadableBuffer content = byteBuffer != null ? byteBuffer : ReadableBuffer.EMPTY;
+        RetainableByteBuffer content = buffer != null ? buffer : RetainableByteBuffer.Mutable.empty();
         if (response != null)
             sendHeaders(request, response, content, last, callback);
         else
             sendContent(request, content, last, callback);
     }
 
-    private void sendHeaders(MetaData.Request request, MetaData.Response response, ReadableBuffer content, boolean last, Callback callback)
+    private void sendHeaders(MetaData.Request request, MetaData.Response response, RetainableByteBuffer content, boolean last, Callback callback)
     {
         _responseMetaData = response;
 
@@ -298,7 +298,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         HeadersFrame trailersFrame = null;
 
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean hasContent = content.remaining() > 0L && !isHeadRequest;
+        boolean hasContent = content.hasRemaining() && !isHeadRequest;
         int streamId = _stream.getId();
         if (HttpStatus.isInterim(response.getStatus()))
         {
@@ -398,14 +398,14 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             dataFrame.release();
     }
 
-    private void sendContent(MetaData.Request request, ReadableBuffer content, boolean last, Callback callback)
+    private void sendContent(MetaData.Request request, RetainableByteBuffer content, boolean last, Callback callback)
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean hasContent = content.remaining() > 0L && !isHeadRequest;
+        boolean hasContent = content.hasRemaining() && !isHeadRequest;
         if (hasContent || (last && !isTunnel(request, _responseMetaData)))
         {
             if (!hasContent)
-                content = ReadableBuffer.EMPTY;
+                content = RetainableByteBuffer.empty();
             if (last)
             {
                 HttpFields trailers = retrieveTrailers();
@@ -537,7 +537,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
     }
 
-    private void sendDataFrame(ReadableBuffer content, boolean lastContent, boolean endStream, Callback callback)
+    private void sendDataFrame(RetainableByteBuffer content, boolean lastContent, boolean endStream, Callback callback)
     {
         if (LOG.isDebugEnabled())
         {

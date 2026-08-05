@@ -57,7 +57,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -337,12 +337,12 @@ public class ThreadStarvationTest
                 return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
                     @Override
-                    public boolean flush(ReadableBuffer buffer) throws IOException
+                    public boolean flush(RetainableByteBuffer buffer) throws IOException
                     {
-                        ReadableBuffer slice = buffer.slice(0, 100);
+                        RetainableByteBuffer slice = buffer.slice(0, 100);
                         super.flush(slice);
                         slice.release();
-                        buffer.position(slice.position());
+                        buffer.readPosition(slice.readPosition());
                         throw new IOException("TEST FAILURE");
                     }
                 };

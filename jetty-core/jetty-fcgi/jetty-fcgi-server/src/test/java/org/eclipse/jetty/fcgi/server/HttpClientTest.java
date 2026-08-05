@@ -53,7 +53,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
@@ -97,7 +97,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -127,7 +127,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 request.addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
                 {
                     @Override
-                    public void send(MetaData.Request req, MetaData.Response rsp, boolean last, ReadableBuffer content, Callback cbk)
+                    public void send(MetaData.Request req, MetaData.Response rsp, boolean last, RetainableByteBuffer content, Callback cbk)
                     {
                         HttpFields.Mutable rspHeaders = HttpFields.build(rsp.getHttpFields())
                             .remove(HttpHeader.CONTENT_LENGTH);
@@ -135,7 +135,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                         super.send(req, rsp, last, content, cbk);
                     }
                 });
-                response.write(true, ReadableBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -209,7 +209,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 // content mode for response content parsing,
                 // otherwise the RAW content mode is used.
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
-                response.write(true, ReadableBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -619,7 +619,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.wrap(new byte[length]), callback);
+                response.write(true, RetainableByteBuffer.wrap(new byte[length]), callback);
                 return true;
             }
         });
@@ -739,7 +739,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put("Connection", "close");
-                response.write(true, ReadableBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });

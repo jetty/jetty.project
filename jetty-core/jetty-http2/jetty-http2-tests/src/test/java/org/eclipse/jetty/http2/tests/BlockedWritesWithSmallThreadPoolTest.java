@@ -43,7 +43,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -227,7 +227,7 @@ public class BlockedWritesWithSmallThreadPoolTest
             {
                 serverEndPointRef.set((AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
                 // Large write that will TCP congest, but it is non-blocking.
-                response.write(true, ReadableBuffer.allocate(contentLength, false), callback);
+                response.write(true, RetainableByteBuffer.allocate(contentLength, false), callback);
                 return true;
             }
         });
@@ -395,7 +395,7 @@ public class BlockedWritesWithSmallThreadPoolTest
             }
         });
         Stream stream = streamPromise.get(5, SECONDS);
-        stream.data(ReadableBuffer.allocate(contentLength, false), true, Callback.NOOP);
+        stream.data(RetainableByteBuffer.allocate(contentLength, false), true, Callback.NOOP);
 
         await().atMost(5, SECONDS).until(() ->
         {
