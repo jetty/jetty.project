@@ -40,7 +40,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -332,13 +332,13 @@ public class SettingsTest extends AbstractTest
                 try
                 {
                     HTTP2Session session = (HTTP2Session)stream.getSession();
-                    List<ReadableBuffer> accumulator = new ArrayList<>();
+                    List<RetainableByteBuffer> accumulator = new ArrayList<>();
                     MetaData.Request push = newRequest("GET", "/push", HttpFields.EMPTY);
                     PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 2, push);
                     session.getGenerator().control(accumulator, pushFrame);
 
-                    ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-                    accumulator.forEach(ReadableBuffer::release);
+                    RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+                    accumulator.forEach(RetainableByteBuffer::release);
                     session.getEndPoint().write(rb, Callback.NOOP);
                     rb.release();
                     return null;

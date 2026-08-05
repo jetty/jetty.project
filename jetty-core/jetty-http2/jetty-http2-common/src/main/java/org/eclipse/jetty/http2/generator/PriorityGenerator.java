@@ -19,8 +19,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class PriorityGenerator extends FrameGenerator
 {
@@ -30,21 +29,21 @@ public class PriorityGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(List<ReadableBuffer> accumulator, Frame frame)
+    public int generate(List<RetainableByteBuffer> accumulator, Frame frame)
     {
         PriorityFrame priorityFrame = (PriorityFrame)frame;
         return generatePriority(accumulator, priorityFrame.getStreamId(), priorityFrame.getParentStreamId(), priorityFrame.getWeight(), priorityFrame.isExclusive());
     }
 
-    public int generatePriority(List<ReadableBuffer> accumulator, int streamId, int parentStreamId, int weight, boolean exclusive)
+    public int generatePriority(List<RetainableByteBuffer> accumulator, int streamId, int parentStreamId, int weight, boolean exclusive)
     {
-        WritableBuffer wb = generateHeader(FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
-        generatePriorityBody(wb, streamId, parentStreamId, weight, exclusive);
-        accumulator.add(wb.toReadable());
+        RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
+        generatePriorityBody(buffer, streamId, parentStreamId, weight, exclusive);
+        accumulator.add(buffer);
         return Frame.HEADER_LENGTH + PriorityFrame.PRIORITY_LENGTH;
     }
 
-    public void generatePriorityBody(WritableBuffer wb, int streamId, int parentStreamId, int weight, boolean exclusive)
+    public void generatePriorityBody(RetainableByteBuffer.Mutable wb, int streamId, int parentStreamId, int weight, boolean exclusive)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);

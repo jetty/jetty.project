@@ -43,7 +43,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -143,7 +143,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 byte[] bytes = buffer.toByteArray();
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, bytes.length);
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip,foo");
-                response.write(true, ReadableBuffer.wrap(bytes), callback);
+                response.write(true, RetainableByteBuffer.wrap(bytes), callback);
                 return true;
             }
         });
@@ -225,7 +225,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 byte[] content = Arrays.copyOf(gzipBytes, 2 * gzipBytes.length);
                 System.arraycopy(gzipBytes, 0, content, gzipBytes.length, gzipBytes.length);
 
-                response.write(true, ReadableBuffer.wrap(content), callback);
+                response.write(true, RetainableByteBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -449,7 +449,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
                 // Pretend to be sending text
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + StandardCharsets.US_ASCII.name());
                 response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
-                response.write(true, ByteBuffer.wrap(responseBuf), callback);
+                response.write(true, RetainableByteBuffer.wrap(responseBuf), callback);
                 return true;
             }
         });

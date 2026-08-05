@@ -24,7 +24,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,7 @@ public class Flusher
         return cancelSendException.join();
     }
 
-    public void flush(ReadableBuffer buffer, Callback callback)
+    public void flush(RetainableByteBuffer buffer, Callback callback)
     {
         offer(new Entry(buffer, callback));
         flushCallback.iterate();
@@ -93,7 +93,7 @@ public class Flusher
 
     public void shutdown()
     {
-        flush(ReadableBuffer.EMPTY, Callback.from(() ->
+        flush(RetainableByteBuffer.empty(), Callback.from(() ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Shutting down {}", endPoint);
@@ -241,7 +241,7 @@ public class Flusher
         }
     }
 
-    private record Entry(ReadableBuffer buffer, Callback callback)
+    private record Entry(RetainableByteBuffer buffer, Callback callback)
     {
     }
 }

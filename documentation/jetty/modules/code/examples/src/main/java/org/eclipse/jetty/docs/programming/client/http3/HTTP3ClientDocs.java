@@ -32,7 +32,6 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
@@ -40,7 +39,7 @@ import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -182,14 +181,14 @@ public class HTTP3ClientDocs
 
         // Send the first DATA frame on the stream, with last=false
         // to signal that there are more frames in this stream.
-        stream.data(new DataFrame(ReadableBuffer.wrap(buffer1), false), new Promise.Invocable.NonBlocking<>()
+        stream.data(RetainableByteBuffer.wrap(buffer1), false, new Promise.Invocable.NonBlocking<>()
         {
             @Override
             public void succeeded(Stream result)
             {
                 // Only when the first chunk has been sent we can send the second,
                 // with last=true to signal that there will be no more frames.
-                result.data(new DataFrame(ReadableBuffer.wrap(buffer2), true), Promise.Invocable.noop());
+                result.data(RetainableByteBuffer.wrap(buffer2), true, Promise.Invocable.noop());
             }
         });
         // end::newStreamWithData[]

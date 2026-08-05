@@ -42,7 +42,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
@@ -182,7 +182,7 @@ public class GracefulShutdownTest extends AbstractTest
                     clientRequestLatch.countDown();
             }
         }).get(5, TimeUnit.SECONDS);
-        stream.data(ReadableBuffer.wrap(BufferUtil.toBuffer("hello")), false);
+        stream.data(RetainableByteBuffer.wrap(BufferUtil.toBuffer("hello")), false);
         // Make sure the server has seen the stream.
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
 
@@ -194,7 +194,7 @@ public class GracefulShutdownTest extends AbstractTest
         assertFalse(completable.isDone());
 
         // Complete the stream.
-        stream.data(ReadableBuffer.wrap(BufferUtil.toBuffer("world")), true);
+        stream.data(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world")), true);
 
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));

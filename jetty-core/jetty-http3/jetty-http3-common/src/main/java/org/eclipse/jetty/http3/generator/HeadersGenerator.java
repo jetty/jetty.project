@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.http3.generator;
 
-import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
@@ -21,17 +21,16 @@ import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.util.VarLenInt;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HeadersGenerator extends FrameGenerator
 {
     private final QpackEncoder encoder;
     private final boolean useDirectByteBuffers;
 
-    public HeadersGenerator(ByteBufferPool bufferPool, QpackEncoder encoder, boolean useDirectByteBuffers)
+    public HeadersGenerator(WritableBufferPool bufferPool, QpackEncoder encoder, boolean useDirectByteBuffers)
     {
         super(bufferPool);
         this.encoder = encoder;
@@ -39,13 +38,13 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public long generate(RetainableByteBuffer.Mutable accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(List<RetainableByteBuffer> accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
         return generateHeadersFrame(accumulator, streamId, headersFrame, fail);
     }
 
-    private long generateHeadersFrame(RetainableByteBuffer.Mutable accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
+    private long generateHeadersFrame(List<RetainableByteBuffer> accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
     {
         // Reserve initial bytes for the frame header bytes.
         int frameTypeLength = VarLenInt.length(FrameType.HEADERS.type());
@@ -53,25 +52,30 @@ public class HeadersGenerator extends FrameGenerator
         // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
         int maxLength = encoder.getMaxHeadersSize();
         // Acquire buffer and immediately add to the accumulator so that it is released if a failure occurs.
-        RetainableByteBuffer buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
         accumulator.add(buffer);
         try
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            BufferUtil.clearToFill(byteBuffer);
-            byteBuffer.position(maxHeaderLength);
-            byteBuffer.limit(byteBuffer.position() + maxLength);
-            // Encode after the maxHeaderLength.
-            encoder.encode(byteBuffer, streamId, frame.getMetaData());
-            byteBuffer.flip();
-            byteBuffer.position(maxHeaderLength);
+            // Prepare the buffer for encoding.
+            // Start writing and reading from the maxHeaderLength position.
+            buffer.writePosition(maxHeaderLength);
+            buffer.readPosition(maxHeaderLength);
+
+            // Encode after the maxHeaderLength position.
+            encoder.encode(buffer, streamId, frame.getMetaData());
             long dataLength = buffer.remaining();
+
+            // Write the header before the maxHeaderLength position.
             int headerLength = frameTypeLength + VarLenInt.length(dataLength);
-            int position = byteBuffer.position() - headerLength;
-            byteBuffer.position(position);
-            VarLenInt.encode(byteBuffer, FrameType.HEADERS.type());
-            VarLenInt.encode(byteBuffer, dataLength);
-            byteBuffer.position(position);
+            long headerStartPosition = maxHeaderLength - headerLength;
+            buffer.writePosition(headerStartPosition);
+            VarLenInt.encode(buffer, FrameType.HEADERS.type());
+            VarLenInt.encode(buffer, dataLength);
+            // Restore the written bytes to include the encoded bytes.
+            buffer.writePosition(maxHeaderLength + dataLength);
+            // Start reading from the beginning of the header,
+            // before the maxHeaderLength position.
+            buffer.readPosition(headerStartPosition);
             return headerLength + dataLength;
         }
         catch (QpackException x)

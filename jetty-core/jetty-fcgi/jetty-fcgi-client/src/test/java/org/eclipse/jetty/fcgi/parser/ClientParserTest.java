@@ -28,8 +28,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -54,7 +53,7 @@ public class ClientParserTest
 
         WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.generateResponseHeaders(accumulator, id, statusCode, statusMessage, fields);
 
         // Use the fundamental theorem of arithmetic to test the results.
@@ -98,15 +97,15 @@ public class ClientParserTest
             }
         });
 
-        for (ReadableBuffer buffer : accumulator)
+        for (RetainableByteBuffer buffer : accumulator)
         {
             parser.parse(buffer);
-            assertFalse(buffer.remaining() > 0);
+            assertFalse(buffer.hasRemaining());
         }
 
         assertEquals(value, params.get());
 
-        accumulator.forEach(ReadableBuffer::release);
+        accumulator.forEach(RetainableByteBuffer::release);
     }
 
     @Test
@@ -118,7 +117,7 @@ public class ClientParserTest
 
         WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.generateResponseHeaders(accumulator, id, 200, "OK", fields);
         generator.generateResponseContent(accumulator, id, null, true, false);
 
@@ -126,7 +125,7 @@ public class ClientParserTest
         ClientParser parser = new ClientParser(new ClientParser.Listener()
         {
             @Override
-            public boolean onContent(int request, FCGI.StreamType stream, ReadableBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, RetainableByteBuffer buffer)
             {
                 assertEquals(id, request);
                 verifier.addAndGet(2);
@@ -142,15 +141,15 @@ public class ClientParserTest
             }
         });
 
-        for (ReadableBuffer buffer : accumulator)
+        for (RetainableByteBuffer buffer : accumulator)
         {
             parser.parse(buffer);
-            assertFalse(buffer.remaining() > 0);
+            assertFalse(buffer.hasRemaining());
         }
 
         assertEquals(3, verifier.get());
 
-        accumulator.forEach(ReadableBuffer::release);
+        accumulator.forEach(RetainableByteBuffer::release);
     }
 
     @Test
@@ -159,7 +158,7 @@ public class ClientParserTest
         int id = 13;
         HttpFields.Mutable fields = HttpFields.build();
 
-        ReadableBuffer content = ReadableBuffer.allocate(1024, false);
+        RetainableByteBuffer content = RetainableByteBuffer.allocate(1024, false);
         long contentLength = content.remaining();
 
         int code = 200;
@@ -169,7 +168,7 @@ public class ClientParserTest
 
         WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
         generator.generateResponseContent(accumulator, id, content, true, false);
 
@@ -177,7 +176,7 @@ public class ClientParserTest
         ClientParser parser = new ClientParser(new ClientParser.Listener()
         {
             @Override
-            public boolean onContent(int request, FCGI.StreamType stream, ReadableBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, RetainableByteBuffer buffer)
             {
                 assertEquals(id, request);
                 assertEquals(contentLength, buffer.remaining());
@@ -194,15 +193,15 @@ public class ClientParserTest
             }
         });
 
-        for (ReadableBuffer buffer : accumulator)
+        for (RetainableByteBuffer buffer : accumulator)
         {
             parser.parse(buffer);
-            assertFalse(buffer.remaining() > 0);
+            assertFalse(buffer.hasRemaining());
         }
 
         assertEquals(5, verifier.get());
 
-        accumulator.forEach(ReadableBuffer::release);
+        accumulator.forEach(RetainableByteBuffer::release);
     }
 
     @Test
@@ -211,7 +210,7 @@ public class ClientParserTest
         int id = 13;
         HttpFields.Mutable fields = HttpFields.build();
 
-        ReadableBuffer content = ReadableBuffer.allocate(128 * 1024, false);
+        RetainableByteBuffer content = RetainableByteBuffer.allocate(128 * 1024, false);
         long contentLength = content.remaining();
 
         int code = 200;
@@ -221,7 +220,7 @@ public class ClientParserTest
 
         WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
         generator.generateResponseContent(accumulator, id, content, true, false);
 
@@ -230,7 +229,7 @@ public class ClientParserTest
         ClientParser parser = new ClientParser(new ClientParser.Listener()
         {
             @Override
-            public boolean onContent(int request, FCGI.StreamType stream, ReadableBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, RetainableByteBuffer buffer)
             {
                 assertEquals(id, request);
                 totalLength.addAndGet(buffer.remaining());
@@ -247,15 +246,15 @@ public class ClientParserTest
             }
         });
 
-        for (ReadableBuffer buffer : accumulator)
+        for (RetainableByteBuffer buffer : accumulator)
         {
             parser.parse(buffer);
-            assertFalse(buffer.remaining() > 0);
+            assertFalse(buffer.hasRemaining());
         }
 
         assertTrue(verifier.get());
 
-        accumulator.forEach(ReadableBuffer::release);
+        accumulator.forEach(RetainableByteBuffer::release);
     }
 
     @ParameterizedTest
@@ -275,16 +274,15 @@ public class ClientParserTest
         });
 
         // See Parser for the FCGI record structure.
-        WritableBuffer buffer = WritableBuffer.allocate(8, false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(8, false);
         buffer.put((byte)1);
         buffer.put((byte)frameType);
         buffer.putShort((short)13);
         buffer.putShort((short)0);
         buffer.put((byte)0);
         buffer.put((byte)0);
-        ReadableBuffer readable = buffer.toReadable();
-        parser.parse(readable);
-        assertEquals(0, readable.remaining());
+        parser.parse(buffer);
+        assertEquals(0, buffer.remaining());
         buffer.release();
 
         assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
@@ -307,16 +305,15 @@ public class ClientParserTest
         });
 
         // See Parser for the FCGI record structure.
-        WritableBuffer buffer = WritableBuffer.allocate(8, false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(8, false);
         buffer.put((byte)1);
         buffer.put((byte)frameType);
         buffer.putShort((short)13);
         buffer.putShort((short)0);
         buffer.put((byte)0);
         buffer.put((byte)0);
-        ReadableBuffer readable = buffer.toReadable();
-        parser.parse(readable);
-        assertEquals(0, readable.remaining());
+        parser.parse(buffer);
+        assertEquals(0, buffer.remaining());
         buffer.release();
         
         assertTrue(failureLatch.await(5, TimeUnit.SECONDS));

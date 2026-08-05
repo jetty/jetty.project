@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client.transport.internal;
 
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Collections;
 import java.util.Iterator;
@@ -43,17 +42,20 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection.UpgradeFrom;
+import org.eclipse.jetty.io.Connection.UpgradeTo;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConnectionOverHTTP extends AbstractConnection implements IConnection, org.eclipse.jetty.io.Connection.UpgradeFrom, Sweeper.Sweepable, Attachable, Invocable
+public class HttpConnectionOverHTTP extends AbstractConnection implements IConnection, UpgradeTo, UpgradeFrom, Sweeper.Sweepable, Attachable, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP.class);
 
@@ -284,7 +286,14 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     }
 
     @Override
-    public ByteBuffer onUpgradeFrom()
+    public void onUpgradeTo(RetainableByteBuffer.Mutable buffer)
+    {
+        HttpReceiverOverHTTP receiver = channel.getHttpReceiver();
+        receiver.onUpgradeTo(buffer);
+    }
+
+    @Override
+    public RetainableByteBuffer.Mutable onUpgradeFrom()
     {
         HttpReceiverOverHTTP receiver = channel.getHttpReceiver();
         return receiver.onUpgradeFrom();

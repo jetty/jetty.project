@@ -60,8 +60,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -287,13 +286,13 @@ public class FlowControlStrategyTest
             .get(5, TimeUnit.SECONDS);
 
         // Send first chunk that will exceed the flow control window when the new SETTINGS is received.
-        CompletableFuture<Stream> completable = stream.data(ReadableBuffer.allocate(size * 2, false), false);
+        CompletableFuture<Stream> completable = stream.data(RetainableByteBuffer.allocate(size * 2, false), false);
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         completable.thenAccept(s ->
         {
             // Send the second chunk of data, must not leave the client since it is flow control stalled.
-            s.data(ReadableBuffer.allocate(size * 2, false), true);
+            s.data(RetainableByteBuffer.allocate(size * 2, false), true);
         });
 
         // Verify that the server only received one data available notification.
@@ -327,7 +326,7 @@ public class FlowControlStrategyTest
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
                 CompletableFuture<Void> completable = new CompletableFuture<>();
                 stream.headers(responseFrame, Callback.from(completable));
-                completable.thenRun(() -> stream.data(ReadableBuffer.allocate(length, false), true, Callback.NOOP));
+                completable.thenRun(() -> stream.data(RetainableByteBuffer.allocate(length, false), true, Callback.NOOP));
                 return null;
             }
         });
@@ -439,7 +438,7 @@ public class FlowControlStrategyTest
             .thenCompose(s ->
             {
                 int length = 5 * windowSize;
-                return s.data(ReadableBuffer.allocate(length, false), true);
+                return s.data(RetainableByteBuffer.allocate(length, false), true);
             });
 
         // Verify that the data arrived to the server.
@@ -491,7 +490,7 @@ public class FlowControlStrategyTest
                         .thenCompose(s ->
                         {
                             // Send data to consume most of the session window.
-                            return s.data(ReadableBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE - windowSize, false), true);
+                            return s.data(RetainableByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE - windowSize, false), true);
                         });
                     return null;
                 }
@@ -500,7 +499,7 @@ public class FlowControlStrategyTest
                     // For every stream, send down half the window size of data.
                     MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     stream.headers(new HeadersFrame(stream.getId(), metaData, null, false))
-                        .thenCompose(s -> s.data(ReadableBuffer.allocate(windowSize / 2, false), true));
+                        .thenCompose(s -> s.data(RetainableByteBuffer.allocate(windowSize / 2, false), true));
                     return null;
                 }
             }
@@ -602,7 +601,7 @@ public class FlowControlStrategyTest
                 MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
                 stream.headers(responseFrame)
-                    .thenAccept(s -> s.data(ReadableBuffer.wrap(data), true));
+                    .thenAccept(s -> s.data(RetainableByteBuffer.wrap(data), true));
                 return null;
             }
         });
@@ -655,7 +654,7 @@ public class FlowControlStrategyTest
                     public void onDataAvailable(Stream stream)
                     {
                         Content.Chunk chunk = stream.read();
-                        completable.thenAccept(s -> s.data(ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast())
+                        completable.thenAccept(s -> s.data(RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast())
                                 .whenComplete((r, x) ->
                                 {
                                     chunk.release();
@@ -683,7 +682,7 @@ public class FlowControlStrategyTest
         new Random().nextBytes(requestData);
 
         byte[] responseData = new byte[requestData.length];
-        WritableBuffer responseContent = WritableBuffer.wrap(ByteBuffer.wrap(responseData));
+        RetainableByteBuffer.Mutable responseContent = RetainableByteBuffer.Mutable.wrap(ByteBuffer.wrap(responseData));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
         CountDownLatch latch = new CountDownLatch(1);
@@ -693,7 +692,7 @@ public class FlowControlStrategyTest
                 public void onDataAvailable(Stream stream)
                 {
                     Content.Chunk chunk = stream.read();
-                    responseContent.put(ReadableBuffer.wrap(chunk.getByteBuffer()));
+                    responseContent.put(RetainableByteBuffer.wrap(chunk.getByteBuffer()));
                     chunk.release();
                     if (chunk.isLast())
                         latch.countDown();
@@ -703,7 +702,7 @@ public class FlowControlStrategyTest
             })
             .thenAccept(s ->
             {
-                ReadableBuffer requestContent = ReadableBuffer.wrap(requestData);
+                RetainableByteBuffer requestContent = RetainableByteBuffer.wrap(requestData);
                 s.data(requestContent, true);
             });
 
@@ -766,7 +765,7 @@ public class FlowControlStrategyTest
         CompletableFuture<Stream> completable = new CompletableFuture<>();
         session.newStream(requestFrame, Promise.from(completable), null);
         Stream stream = completable.get(5, TimeUnit.SECONDS);
-        ReadableBuffer data = ReadableBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
+        RetainableByteBuffer data = RetainableByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
         CountDownLatch dataLatch = new CountDownLatch(1);
         stream.data(data, false, new Callback()
         {
@@ -795,13 +794,13 @@ public class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        List<ReadableBuffer> accumulator = new ArrayList<>();
-        ReadableBuffer extraData = ReadableBuffer.allocate(1024, false);
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer extraData = RetainableByteBuffer.allocate(1024, false);
         http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), (int)extraData.remaining());
         try (Blocker.Callback callback = Blocker.callback())
         {
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             http2Session.getEndPoint().write(rb, callback);
             rb.release();
             callback.block();
@@ -875,7 +874,7 @@ public class FlowControlStrategyTest
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         session.newStream(requestFrame, streamPromise, null);
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
-        ReadableBuffer data = ReadableBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
+        RetainableByteBuffer data = RetainableByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
         CountDownLatch dataLatch = new CountDownLatch(1);
         stream.data(data, false, new Callback()
         {
@@ -900,13 +899,13 @@ public class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        List<ReadableBuffer> accumulator = new ArrayList<>();
-        ReadableBuffer extraData = ReadableBuffer.allocate(1024, false);
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer extraData = RetainableByteBuffer.allocate(1024, false);
         http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), (int)extraData.remaining());
         try (Blocker.Callback callback = Blocker.callback())
         {
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             http2Session.getEndPoint().write(rb, callback);
             rb.release();
             callback.block();
@@ -966,7 +965,7 @@ public class FlowControlStrategyTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
 
         // Perform a big upload that will stall the flow control windows.
-        ReadableBuffer data = ReadableBuffer.allocate(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
+        RetainableByteBuffer data = RetainableByteBuffer.allocate(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
         CountDownLatch dataLatch = new CountDownLatch(1);
         stream.data(data, true, new Callback()
         {
@@ -1045,7 +1044,7 @@ public class FlowControlStrategyTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
 
         // Write a small DATA frame so the server only performs 1 readData().
-        ReadableBuffer data = ReadableBuffer.allocate(1, false);
+        RetainableByteBuffer data = RetainableByteBuffer.allocate(1, false);
         stream.data(data, true, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));

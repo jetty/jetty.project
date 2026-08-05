@@ -25,6 +25,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +33,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * Testing utility for performing RAW HTTP request/response.
@@ -119,7 +120,7 @@ public class HttpTesting
         ByteBuffer buffer = BufferUtil.toBuffer(string);
         while (BufferUtil.hasContent(buffer))
         {
-            HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(buffer));
+            HttpTester.Response response = HttpTester.parseResponse(RetainableByteBuffer.wrap(buffer));
             if (response == null)
                 break;
             list.add(response);
@@ -210,7 +211,7 @@ public class HttpTesting
         ByteBuffer buffer = BufferUtil.toBuffer(r);
         while (BufferUtil.hasContent(buffer))
         {
-            HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(buffer));
+            HttpTester.Response response = HttpTester.parseResponse(RetainableByteBuffer.wrap(buffer));
             if (response == null)
                 break;
             list.add(response);
@@ -310,8 +311,8 @@ public class HttpTesting
      */
     public HttpTester.Response request(HttpTester.Request request) throws IOException
     {
-        ByteBuffer byteBuff = request.generate();
-        return request(BufferUtil.toString(byteBuff));
+        RetainableByteBuffer buffer = request.generate();
+        return request(buffer.getString(StandardCharsets.UTF_8));
     }
 
     /**

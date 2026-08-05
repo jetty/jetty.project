@@ -17,13 +17,14 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class RawFrameBuilder
 {
-    public static void putOpFin(ByteBuffer buf, byte opcode, boolean fin)
+    public static void putOpFin(RetainableByteBuffer.Mutable buffer, byte opcode, boolean fin)
     {
         byte b = 0x00;
         if (fin)
@@ -31,20 +32,20 @@ public class RawFrameBuilder
             b |= 0x80;
         }
         b |= opcode & 0x0F;
-        buf.put(b);
+        buffer.put(b);
     }
 
-    public static void putLengthAndMask(ByteBuffer buf, int length, byte[] mask)
+    public static void putLengthAndMask(RetainableByteBuffer.Mutable buffer, int length, byte[] mask)
     {
         if (mask != null)
         {
             assertThat("Mask.length", mask.length, is(4));
-            putLength(buf, length, (mask != null));
-            buf.put(mask);
+            putLength(buffer, length, (mask != null));
+            buffer.put(mask);
         }
         else
         {
-            putLength(buf, length, false);
+            putLength(buffer, length, false);
         }
     }
 
@@ -58,7 +59,7 @@ public class RawFrameBuilder
         }
     }
 
-    public static void putLength(ByteBuffer buf, int length, boolean masked)
+    public static void putLength(RetainableByteBuffer.Mutable buffer, int length, boolean masked)
     {
         if (length < 0)
         {
@@ -69,37 +70,37 @@ public class RawFrameBuilder
         // write the uncompressed length
         if (length > 0xFF_FF)
         {
-            buf.put((byte)(b | 0x7F));
-            buf.put((byte)0x00);
-            buf.put((byte)0x00);
-            buf.put((byte)0x00);
-            buf.put((byte)0x00);
-            buf.put((byte)((length >> 24) & 0xFF));
-            buf.put((byte)((length >> 16) & 0xFF));
-            buf.put((byte)((length >> 8) & 0xFF));
-            buf.put((byte)(length & 0xFF));
+            buffer.put((byte)(b | 0x7F));
+            buffer.put((byte)0x00);
+            buffer.put((byte)0x00);
+            buffer.put((byte)0x00);
+            buffer.put((byte)0x00);
+            buffer.put((byte)((length >> 24) & 0xFF));
+            buffer.put((byte)((length >> 16) & 0xFF));
+            buffer.put((byte)((length >> 8) & 0xFF));
+            buffer.put((byte)(length & 0xFF));
         }
         else if (length >= 0x7E)
         {
-            buf.put((byte)(b | 0x7E));
-            buf.put((byte)(length >> 8));
-            buf.put((byte)(length & 0xFF));
+            buffer.put((byte)(b | 0x7E));
+            buffer.put((byte)(length >> 8));
+            buffer.put((byte)(length & 0xFF));
         }
         else
         {
-            buf.put((byte)(b | length));
+            buffer.put((byte)(b | length));
         }
     }
 
-    public static void putMask(ByteBuffer buf, byte[] mask)
+    public static void putMask(ByteBuffer buffer, byte[] mask)
     {
         assertThat("Mask.length", mask.length, is(4));
-        buf.put(mask);
+        buffer.put(mask);
     }
 
-    public static void putPayloadLength(ByteBuffer buf, int length)
+    public static void putPayloadLength(RetainableByteBuffer.Mutable buffer, int length)
     {
-        putLength(buf, length, true);
+        putLength(buffer, length, true);
     }
 
     public static byte[] buildFrame(byte opcode, String message, boolean masked)
@@ -115,8 +116,7 @@ public class RawFrameBuilder
 
     public static byte[] buildFrame(byte opcode, byte[] bytes, boolean masked, boolean fin)
     {
-        ByteBuffer buffer = BufferUtil.allocate(2048);
-        BufferUtil.clearToFill(buffer);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(2048, false);
         RawFrameBuilder.putOpFin(buffer, opcode, fin);
         putLength(buffer, bytes.length, masked);
         if (masked)
@@ -127,8 +127,7 @@ public class RawFrameBuilder
             mask(bytes, mask);
         }
         buffer.put(bytes);
-        BufferUtil.flipToFlush(buffer, 0);
-        return BufferUtil.toArray(buffer);
+        return buffer.getArray();
     }
 
     public static byte[] buildText(String message, boolean masked)
@@ -138,8 +137,7 @@ public class RawFrameBuilder
 
     public static byte[] buildClose(CloseStatus status, boolean masked)
     {
-        ByteBuffer buffer = BufferUtil.allocate(2048);
-        BufferUtil.clearToFill(buffer);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(2048, false);
 
         byte[] bytes = status == null ? null : BufferUtil.toArray(status.asPayloadBuffer());
         RawFrameBuilder.putOpFin(buffer, OpCode.CLOSE, true);
@@ -153,7 +151,6 @@ public class RawFrameBuilder
         }
         if (bytes != null)
             buffer.put(bytes);
-        BufferUtil.flipToFlush(buffer, 0);
-        return BufferUtil.toArray(buffer);
+        return buffer.getArray();
     }
 }

@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -269,7 +269,7 @@ public class ContentDocs
     static class SinkWrong
     {
         // tag::sinkWrong[]
-        public void wrongWrite(Content.Sink sink, ReadableBuffer content1, ReadableBuffer content2)
+        public void wrongWrite(Content.Sink sink, RetainableByteBuffer content1, RetainableByteBuffer content2)
         {
             // Initiate a first write.
             sink.write(false, content1, Callback.NOOP);
@@ -283,7 +283,7 @@ public class ContentDocs
     static class SinkMany
     {
         // tag::sinkMany[]
-        public void manyWrites(Content.Sink sink, ReadableBuffer content1, ReadableBuffer content2)
+        public void manyWrites(Content.Sink sink, RetainableByteBuffer content1, RetainableByteBuffer content2)
         {
             // Initiate a first write.
             // Callback.Completable is-a CompletableFuture.
@@ -344,7 +344,7 @@ public class ContentDocs
             boolean last = length == 0;
 
             // Start the non-blocking write, passing "this" as the callback.
-            sink.write(last, ReadableBuffer.wrap(byteBuffer), this);
+            sink.write(last, RetainableByteBuffer.wrap(byteBuffer), this);
             return Action.SCHEDULED;
         }
 
@@ -411,7 +411,7 @@ public class ContentDocs
                 throw chunk.getFailure();
 
             // Copy the chunk by scheduling an asynchronous write.
-            sink.write(chunk.isLast(), ReadableBuffer.wrap(chunk.getByteBuffer()), this);
+            sink.write(chunk.isLast(), RetainableByteBuffer.wrap(chunk.getByteBuffer()), this);
             return Action.SCHEDULED;
         }
 

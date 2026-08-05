@@ -55,7 +55,7 @@ import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +104,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         }
 
         @Override
-        public void send(MetaData.Request metadataRequest, MetaData.Response metadataResponse, boolean last, ReadableBuffer content, Callback callback)
+        public void send(MetaData.Request metadataRequest, MetaData.Response metadataResponse, boolean last, RetainableByteBuffer content, Callback callback)
         {
             if (metadataResponse != null)
             {

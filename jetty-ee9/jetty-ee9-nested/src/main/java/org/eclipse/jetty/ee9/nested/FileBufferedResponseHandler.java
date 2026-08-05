@@ -27,7 +27,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,7 +133,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
         }
 
         @Override
-        public void write(ReadableBuffer content, boolean last, Callback callback)
+        public void write(RetainableByteBuffer content, boolean last, Callback callback)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} write last={} {}", this, last, content);
@@ -154,7 +154,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
             try
             {
-                if (content != null && content.remaining() > 0L)
+                if (content != null && content.hasRemaining())
                     aggregate(content);
             }
             catch (Throwable t)
@@ -170,7 +170,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
                 callback.succeeded();
         }
 
-        private void aggregate(ReadableBuffer content) throws IOException
+        private void aggregate(RetainableByteBuffer content) throws IOException
         {
             if (_fileOutputStream == null)
             {
@@ -187,7 +187,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             if (_fileOutputStream == null)
             {
                 // We have no content to write, signal next interceptor that we are finished.
-                getNextInterceptor().write(ReadableBuffer.EMPTY, true, callback);
+                getNextInterceptor().write(RetainableByteBuffer.empty(), true, callback);
                 return;
             }
 

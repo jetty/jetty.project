@@ -19,7 +19,7 @@ import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http.compression.NBitStringDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * Parses a stream of unframed instructions for the Decoder. These instructions are sent from the remote Encoder.
@@ -78,15 +78,15 @@ public class DecoderInstructionParser
      * @throws QpackException if there was an error parsing the instructions.
      * @throws EncodingException if the string encoding is invalid.
      */
-    public void parse(ByteBuffer buffer) throws QpackException, EncodingException
+    public void parse(RetainableByteBuffer buffer) throws QpackException, EncodingException
     {
-        while (BufferUtil.hasContent(buffer))
+        while (buffer.hasRemaining())
         {
             switch (_state)
             {
                 case PARSING ->
                 {
-                    byte firstByte = buffer.get(buffer.position());
+                    byte firstByte = buffer.get(buffer.readPosition());
                     if ((firstByte & 0x80) != 0)
                     {
                         _state = State.REFERENCED_NAME;
@@ -116,15 +116,15 @@ public class DecoderInstructionParser
         }
     }
 
-    private void parseInsertNameWithReference(ByteBuffer buffer) throws QpackException, EncodingException
+    private void parseInsertNameWithReference(RetainableByteBuffer buffer) throws QpackException, EncodingException
     {
-        while (BufferUtil.hasContent(buffer))
+        while (buffer.hasRemaining())
         {
             switch (_operation)
             {
                 case NONE ->
                 {
-                    byte firstByte = buffer.get(buffer.position());
+                    byte firstByte = buffer.get(buffer.readPosition());
                     _referenceDynamicTable = (firstByte & 0x40) == 0;
                     _operation = Operation.INDEX;
                     _integerDecoder.setPrefix(6);
@@ -156,9 +156,9 @@ public class DecoderInstructionParser
         }
     }
 
-    private void parseInsertWithLiteralName(ByteBuffer buffer) throws QpackException, EncodingException
+    private void parseInsertWithLiteralName(RetainableByteBuffer buffer) throws QpackException, EncodingException
     {
-        while (BufferUtil.hasContent(buffer))
+        while (buffer.hasRemaining())
         {
             switch (_operation)
             {
@@ -192,7 +192,7 @@ public class DecoderInstructionParser
         }
     }
 
-    private void parseDuplicate(ByteBuffer buffer) throws QpackException
+    private void parseDuplicate(RetainableByteBuffer buffer) throws QpackException
     {
         int index = _integerDecoder.decodeInt(buffer);
         if (index >= 0)
@@ -202,7 +202,7 @@ public class DecoderInstructionParser
         }
     }
 
-    private void parseSetDynamicTableCapacity(ByteBuffer buffer) throws QpackException
+    private void parseSetDynamicTableCapacity(RetainableByteBuffer buffer) throws QpackException
     {
         int capacity = _integerDecoder.decodeInt(buffer);
         if (capacity >= 0)

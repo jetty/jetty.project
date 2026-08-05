@@ -129,7 +129,7 @@ public class ServletCoreRequestTest
             """;
 
         // Using RFC7230 should allow this whitespace violation and return a 200 response.
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(rawRequest));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         // We should have been notified about the violation in the listener.

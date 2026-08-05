@@ -53,7 +53,7 @@ public class RedirectPatternRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.FOUND_302, response.getStatus());
         assertEquals(location, response.get(HttpHeader.LOCATION));
     }
@@ -72,7 +72,7 @@ public class RedirectPatternRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_PERMANENTLY_301, response.getStatus());
         assertEquals(location, response.get(HttpHeader.LOCATION));
     }

@@ -60,7 +60,7 @@ import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
@@ -541,7 +541,7 @@ public class ForwardProxyTLSServerTest
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                     response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
-                    response.write(true, ReadableBuffer.allocate(4096, false), callback);
+                    response.write(true, RetainableByteBuffer.allocate(4096, false), callback);
                     return true;
                 }
                 return super.handle(request, response, callback);
@@ -564,7 +564,7 @@ public class ForwardProxyTLSServerTest
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                     response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
-                    response.write(true, ReadableBuffer.allocate(1024, false), callback);
+                    response.write(true, RetainableByteBuffer.allocate(1024, false), callback);
                     return true;
                 }
                 return super.handle(request, response, callback);

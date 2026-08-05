@@ -25,8 +25,7 @@ import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable;
 
@@ -36,19 +35,19 @@ import org.eclipse.jetty.util.thread.Invocable;
  * bytes read, and flushes/writes may write {@code 0} bytes.</p>
  * <p>Applications are notified of read readiness by registering a
  * {@link Callback} via {@link #fillInterested(Callback)}, and then
- * using {@link #fill(WritableBuffer)} to read the available bytes.</p>
- * <p>Application may use {@link #flush(ReadableBuffer)} to transmit bytes;
+ * using {@link #fill(RetainableByteBuffer.Mutable)} to read the available bytes.</p>
+ * <p>Application may use {@link #flush(RetainableByteBuffer)} to transmit bytes;
  * if the flush does not transmit all the bytes, applications must
  * arrange to resume flushing when it will be possible to transmit more
  * bytes.
- * Alternatively, applications may use {@link #write(ReadableBuffer, Callback)}
+ * Alternatively, applications may use {@link #write(RetainableByteBuffer, Callback)}
  * and be notified via the {@link Callback} when the write completes
  * (i.e. all the buffers have been flushed), either successfully or
  * with a failure.</p>
- * <p>Connection-less reads are performed using {@link #receive(WritableBuffer)}.
+ * <p>Connection-less reads are performed using {@link #receive(RetainableByteBuffer.Mutable)}.
  * Similarly, connection-less flushes are performed using
- * {@link #send(SocketAddress, ReadableBuffer)} and connection-less writes
- * using {@link #write(ReadableBuffer, SocketAddress, Callback)}.</p>
+ * {@link #send(SocketAddress, RetainableByteBuffer)} and connection-less writes
+ * using {@link #write(RetainableByteBuffer, SocketAddress, Callback)}.</p>
  * <p>While all the I/O methods are non-blocking, they can be easily
  * converted to blocking using either {@link org.eclipse.jetty.util.Blocker}
  * or {@link Callback.Completable}:</p>
@@ -71,14 +70,14 @@ import org.eclipse.jetty.util.thread.Invocable;
 public interface EndPoint extends Closeable, Content.Sink
 {
     /**
-     * <p>Constant returned by {@link #receive(WritableBuffer)} to indicate the end-of-file.</p>
+     * <p>Constant returned by {@link #receive(RetainableByteBuffer.Mutable)} to indicate the end-of-file.</p>
      */
     SocketAddress EOF = InetSocketAddress.createUnresolved("", 0);
 
     /**
      * Marks an {@code EndPoint} that wraps another {@code EndPoint}.
      */
-    interface Wrapper
+    interface Wrapped
     {
         /**
          * @return The wrapped {@code EndPoint}
@@ -178,18 +177,10 @@ public interface EndPoint extends Closeable, Content.Sink
     @Deprecated
     default int fill(ByteBuffer buffer) throws IOException
     {
-        WritableBuffer wb = ReadableBuffer.wrap(buffer).toWritable();
-        try
-        {
-            return fill(wb);
-        }
-        finally
-        {
-            wb.toReadable();
-        }
+        return fill(RetainableByteBuffer.Mutable.wrap(buffer));
     }
 
-    default int fill(WritableBuffer buffer) throws IOException
+    default int fill(RetainableByteBuffer.Mutable buffer) throws IOException
     {
         throw new UnsupportedOperationException();
     }
@@ -205,18 +196,10 @@ public interface EndPoint extends Closeable, Content.Sink
     @Deprecated
     default SocketAddress receive(ByteBuffer buffer) throws IOException
     {
-        WritableBuffer wb = ReadableBuffer.wrap(buffer).toWritable();
-        try
-        {
-            return receive(wb);
-        }
-        finally
-        {
-            wb.toReadable();
-        }
+        return receive(RetainableByteBuffer.Mutable.wrap(buffer));
     }
 
-    default SocketAddress receive(WritableBuffer buffer) throws IOException
+    default SocketAddress receive(RetainableByteBuffer.Mutable buffer) throws IOException
     {
         int filled = fill(buffer);
         if (filled < 0)
@@ -241,10 +224,10 @@ public interface EndPoint extends Closeable, Content.Sink
     @Deprecated
     default boolean flush(ByteBuffer... buffers) throws IOException
     {
-        return flush(buffers == null ? null : ReadableBuffer.wrap(buffers));
+        return flush(buffers == null ? null : RetainableByteBuffer.wrap(buffers));
     }
 
-    default boolean flush(ReadableBuffer buffer) throws IOException
+    default boolean flush(RetainableByteBuffer buffer) throws IOException
     {
         throw new UnsupportedOperationException();
     }
@@ -265,7 +248,7 @@ public interface EndPoint extends Closeable, Content.Sink
         return flush(buffers);
     }
 
-    default boolean send(SocketAddress address, ReadableBuffer buffer) throws IOException
+    default boolean send(SocketAddress address, RetainableByteBuffer buffer) throws IOException
     {
         return flush(buffer);
     }
@@ -328,10 +311,10 @@ public interface EndPoint extends Closeable, Content.Sink
     @Deprecated
     default void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
-        write(ReadableBuffer.wrap(buffers), callback);
+        write(RetainableByteBuffer.wrap(buffers), callback);
     }
 
-    default void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
+    default void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
     {
         throw new UnsupportedOperationException();
     }
@@ -349,15 +332,15 @@ public interface EndPoint extends Closeable, Content.Sink
     @Deprecated
     default void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
     {
-        write(ReadableBuffer.wrap(buffers), address, callback);
+        write(RetainableByteBuffer.wrap(buffers), address, callback);
     }
 
-    default void write(ReadableBuffer buffer, SocketAddress address, Callback callback) throws WritePendingException
+    default void write(RetainableByteBuffer buffer, SocketAddress address, Callback callback) throws WritePendingException
     {
         write(buffer, callback);
     }
 
-    default void write(boolean last, ReadableBuffer buffer, Callback callback)
+    default void write(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
         if (last)
         {
@@ -566,5 +549,248 @@ public interface EndPoint extends Closeable, Content.Sink
          * @return the {@link EndPoint} of the remote peer
          */
         EndPoint getRemoteEndPoint();
+    }
+
+    class Wrapper implements EndPoint, Wrapped
+    {
+        private final EndPoint wrapped;
+
+        public Wrapper(EndPoint wrapped)
+        {
+            this.wrapped = wrapped;
+        }
+
+        public EndPoint getWrapped()
+        {
+            return wrapped;
+        }
+
+        @Override
+        public EndPoint unwrap()
+        {
+            return getWrapped();
+        }
+
+        @Override
+        public SocketAddress getLocalSocketAddress()
+        {
+            return wrapped.getLocalSocketAddress();
+        }
+
+        @Override
+        public SocketAddress getRemoteSocketAddress()
+        {
+            return wrapped.getRemoteSocketAddress();
+        }
+
+        @Override
+        public boolean isOpen()
+        {
+            return wrapped.isOpen();
+        }
+
+        @Override
+        public long getCreatedTimeStamp()
+        {
+            return wrapped.getCreatedTimeStamp();
+        }
+
+        @Override
+        public void shutdownOutput()
+        {
+            wrapped.shutdownOutput();
+        }
+
+        @Override
+        public boolean isOutputShutdown()
+        {
+            return wrapped.isOutputShutdown();
+        }
+
+        @Override
+        public boolean isInputShutdown()
+        {
+            return wrapped.isInputShutdown();
+        }
+
+        @Override
+        public void close()
+        {
+            wrapped.close();
+        }
+
+        @Override
+        public void close(Throwable cause)
+        {
+            wrapped.close(cause);
+        }
+
+        @Deprecated
+        @Override
+        public int fill(ByteBuffer buffer) throws IOException
+        {
+            return wrapped.fill(buffer);
+        }
+
+        @Override
+        public int fill(RetainableByteBuffer.Mutable buffer) throws IOException
+        {
+            return wrapped.fill(buffer);
+        }
+
+        @Deprecated
+        @Override
+        public SocketAddress receive(ByteBuffer buffer) throws IOException
+        {
+            return wrapped.receive(buffer);
+        }
+
+        @Override
+        public SocketAddress receive(RetainableByteBuffer.Mutable buffer) throws IOException
+        {
+            return wrapped.receive(buffer);
+        }
+
+        @Deprecated
+        @Override
+        public boolean flush(ByteBuffer... buffers) throws IOException
+        {
+            return wrapped.flush(buffers);
+        }
+
+        @Override
+        public boolean flush(RetainableByteBuffer buffer) throws IOException
+        {
+            return wrapped.flush(buffer);
+        }
+
+        @Deprecated
+        @Override
+        public boolean send(SocketAddress address, ByteBuffer... buffers) throws IOException
+        {
+            return wrapped.send(address, buffers);
+        }
+
+        @Override
+        public boolean send(SocketAddress address, RetainableByteBuffer buffer) throws IOException
+        {
+            return wrapped.send(address, buffer);
+        }
+
+        @Override
+        public Object getTransport()
+        {
+            return wrapped.getTransport();
+        }
+
+        @Override
+        public long getIdleTimeout()
+        {
+            return wrapped.getIdleTimeout();
+        }
+
+        @Override
+        public void setIdleTimeout(long idleTimeout)
+        {
+            wrapped.setIdleTimeout(idleTimeout);
+        }
+
+        @Override
+        public void fillInterested(Callback callback) throws ReadPendingException
+        {
+            wrapped.fillInterested(callback);
+        }
+
+        @Override
+        public boolean tryFillInterested(Callback callback)
+        {
+            return wrapped.tryFillInterested(callback);
+        }
+
+        @Override
+        public boolean isFillInterested()
+        {
+            return wrapped.isFillInterested();
+        }
+
+        @Deprecated
+        @Override
+        public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+        {
+            wrapped.write(callback, buffers);
+        }
+
+        @Override
+        public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
+        {
+            wrapped.write(buffer, callback);
+        }
+
+        @Deprecated
+        @Override
+        public void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
+        {
+            wrapped.write(callback, address, buffers);
+        }
+
+        @Override
+        public void write(RetainableByteBuffer buffer, SocketAddress address, Callback callback) throws WritePendingException
+        {
+            wrapped.write(buffer, address, callback);
+        }
+
+        @Override
+        public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
+        {
+            wrapped.write(last, buffer, callback);
+        }
+
+        @Override
+        public Callback cancelWrite(Throwable cause)
+        {
+            return wrapped.cancelWrite(cause);
+        }
+
+        @Override
+        public Connection getConnection()
+        {
+            return wrapped.getConnection();
+        }
+
+        @Override
+        public void setConnection(Connection connection)
+        {
+            wrapped.setConnection(connection);
+        }
+
+        @Override
+        public void onOpen()
+        {
+            wrapped.onOpen();
+        }
+
+        @Override
+        public void onClose(Throwable cause)
+        {
+            wrapped.onClose(cause);
+        }
+
+        @Override
+        public void upgrade(Connection newConnection)
+        {
+            wrapped.upgrade(newConnection);
+        }
+
+        @Override
+        public SslSessionData getSslSessionData()
+        {
+            return wrapped.getSslSessionData();
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return wrapped.isSecure();
+        }
     }
 }

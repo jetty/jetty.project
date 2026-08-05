@@ -28,7 +28,6 @@ import jakarta.servlet.WriteListener;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
@@ -38,7 +37,7 @@ import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +127,7 @@ public class HttpOutput extends ServletOutputStream
     private long _written;
     private boolean _bypassed;
     private ByteBufferPool.Sized _pool;
-    private RetainableByteBuffer _aggregate;
+    private org.eclipse.jetty.io.RetainableByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
     private WriteListener _writeListener;
@@ -247,10 +246,10 @@ public class HttpOutput extends ServletOutputStream
 
     private void channelWrite(ByteBuffer content, boolean last, Callback callback)
     {
-        _servletChannel.getResponse().write(last, ReadableBuffer.wrap(content), callback);
+        _servletChannel.getResponse().write(last, RetainableByteBuffer.wrap(content), callback);
     }
 
-    private void channelWrite(RetainableByteBuffer content, boolean last, Callback callback)
+    private void channelWrite(org.eclipse.jetty.io.RetainableByteBuffer content, boolean last, Callback callback)
     {
         content.writeTo(_servletChannel.getResponse(), last, callback);
     }
@@ -517,7 +516,7 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void close() throws IOException
     {
-        RetainableByteBuffer content = null;
+        org.eclipse.jetty.io.RetainableByteBuffer content = null;
         boolean acquireBlocker = false;
         boolean combineClosedCallback = false;
         try (AutoLock ignored = _channelState.lock())
@@ -559,7 +558,7 @@ public class HttpOutput extends ServletOutputStream
                     break;
 
                 case OPEN:
-                    RetainableByteBuffer aggregate;
+                    org.eclipse.jetty.io.RetainableByteBuffer aggregate;
                     switch (_apiState)
                     {
                         case BLOCKING:
@@ -575,7 +574,7 @@ public class HttpOutput extends ServletOutputStream
                             }
                             else
                             {
-                                content = RetainableByteBuffer.EMPTY;
+                                content = org.eclipse.jetty.io.RetainableByteBuffer.EMPTY;
                             }
                             break;
 
@@ -602,7 +601,7 @@ public class HttpOutput extends ServletOutputStream
                             }
                             else
                             {
-                                content = RetainableByteBuffer.EMPTY;
+                                content = org.eclipse.jetty.io.RetainableByteBuffer.EMPTY;
                             }
                             break;
 
@@ -703,7 +702,7 @@ public class HttpOutput extends ServletOutputStream
         return _pool;
     }
 
-    private RetainableByteBuffer lockedAcquireBuffer()
+    private org.eclipse.jetty.io.RetainableByteBuffer lockedAcquireBuffer()
     {
         assert _channelState.isLockHeldByCurrentThread();
 
@@ -1696,14 +1695,14 @@ public class HttpOutput extends ServletOutputStream
      * An iterating callback that will take content from an
      * InputStream and write it to this HttpOutput.
      * A non direct buffer of size {@link HttpOutput#getBufferSize()} is used.
-     * This callback is passed to the {@link Content.Sink#write(boolean, ReadableBuffer, Callback)} to
+     * This callback is passed to the {@link Content.Sink#write(boolean, RetainableByteBuffer, Callback)} to
      * be notified as each buffer is written and only once all the input is consumed will the
      * wrapped {@link Callback#succeeded()} method be called.
      */
     private class InputStreamWritingCB extends NestedChannelWriteCB
     {
         private final InputStream _in;
-        private final RetainableByteBuffer _buffer;
+        private final org.eclipse.jetty.io.RetainableByteBuffer _buffer;
         private boolean _eof;
         private boolean _closed;
 
@@ -1779,14 +1778,14 @@ public class HttpOutput extends ServletOutputStream
      * ReadableByteChannel and write it to this HttpOutput.
      * A {@link ByteBuffer} of size {@link HttpOutput#getBufferSize()} is used that will be direct if
      * {@code HttpChannel#isUseOutputDirectByteBuffers()} is true.
-     * This callback is passed to the {@link Content.Sink#write(boolean, ReadableBuffer, Callback)} to
+     * This callback is passed to the {@link Content.Sink#write(boolean, RetainableByteBuffer, Callback)} to
      * be notified as each buffer is written and only once all the input is consumed will the
      * wrapped {@link Callback#succeeded()} method be called.
      */
     private class ReadableByteChannelWritingCB extends NestedChannelWriteCB
     {
         private final ReadableByteChannel _in;
-        private final RetainableByteBuffer _buffer;
+        private final org.eclipse.jetty.io.RetainableByteBuffer _buffer;
         private boolean _eof;
         private boolean _closed;
 

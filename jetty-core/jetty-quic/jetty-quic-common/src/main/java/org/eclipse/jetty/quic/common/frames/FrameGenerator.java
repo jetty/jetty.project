@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
@@ -40,20 +40,20 @@ import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class FrameGenerator
 {
-    private final ByteBufferPool byteBufferPool;
+    private final WritableBufferPool byteBufferPool;
     private boolean useDirectBuffers;
 
     public FrameGenerator(ByteBufferPool byteBufferPool)
     {
-        this.byteBufferPool = byteBufferPool;
+        this.byteBufferPool = WritableBufferPool.wrap(byteBufferPool);
         setUseDirectBuffers(true);
     }
 
-    public ByteBufferPool getByteBufferPool()
+    public WritableBufferPool getByteBufferPool()
     {
         return byteBufferPool;
     }
@@ -68,7 +68,7 @@ public class FrameGenerator
         this.useDirectBuffers = useDirectBuffers;
     }
 
-    public long generate(ByteBufferPool.Accumulator accumulator, Frame frame)
+    public long generate(List<RetainableByteBuffer> accumulator, Frame frame)
     {
         long type = frame.getFrameType();
         FrameType frameType = FrameType.from(type);
@@ -97,28 +97,25 @@ public class FrameGenerator
         };
     }
 
-    public BytesGenerated generate(ByteBufferPool.Accumulator accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
+    public BytesGenerated generate(List<RetainableByteBuffer> accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
     {
         return generateStreamFrame(accumulator, frame, maxDataBytes, maxFrameBytes);
     }
 
-    private long generateNoContentFrame(ByteBufferPool.Accumulator accumulator, Frame frame)
+    private long generateNoContentFrame(List<RetainableByteBuffer> accumulator, Frame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
 
         return capacity;
     }
 
-    private long generateAckFrame(ByteBufferPool.Accumulator accumulator, AckFrame frame)
+    private long generateAckFrame(List<RetainableByteBuffer> accumulator, AckFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -140,31 +137,28 @@ public class FrameGenerator
                 VarLenInt.length(frame.getCECount());
         }
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, ackNumber);
-        VarLenInt.encode(byteBuffer, ackDelay);
-        VarLenInt.encode(byteBuffer, rangeSize - 1);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, ackNumber);
+        VarLenInt.encode(buffer, ackDelay);
+        VarLenInt.encode(buffer, rangeSize - 1);
         for (Integer range : ranges)
         {
-            VarLenInt.encode(byteBuffer, range);
+            VarLenInt.encode(buffer, range);
         }
         if (frameType == 0x03)
         {
-            VarLenInt.encode(byteBuffer, frame.getECT0Count());
-            VarLenInt.encode(byteBuffer, frame.getECT1Count());
-            VarLenInt.encode(byteBuffer, frame.getCECount());
+            VarLenInt.encode(buffer, frame.getECT0Count());
+            VarLenInt.encode(buffer, frame.getECT1Count());
+            VarLenInt.encode(buffer, frame.getCECount());
         }
-        BufferUtil.flipToFlush(byteBuffer, position);
 
         return capacity;
     }
 
-    private long generateResetStreamFrame(ByteBufferPool.Accumulator accumulator, ResetFrame frame)
+    private long generateResetStreamFrame(List<RetainableByteBuffer> accumulator, ResetFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -175,21 +169,18 @@ public class FrameGenerator
         long finalSize = frame.getFinalSize();
         capacity += VarLenInt.length(finalSize);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, streamId);
-        VarLenInt.encode(byteBuffer, errorCode);
-        VarLenInt.encode(byteBuffer, finalSize);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, streamId);
+        VarLenInt.encode(buffer, errorCode);
+        VarLenInt.encode(buffer, finalSize);
 
         return capacity;
     }
 
-    private long generateStopSendingFrame(ByteBufferPool.Accumulator accumulator, StopSendingFrame frame)
+    private long generateStopSendingFrame(List<RetainableByteBuffer> accumulator, StopSendingFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -198,20 +189,17 @@ public class FrameGenerator
         long errorCode = frame.getApplicationErrorCode();
         capacity += VarLenInt.length(errorCode);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, streamId);
-        VarLenInt.encode(byteBuffer, errorCode);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, streamId);
+        VarLenInt.encode(buffer, errorCode);
 
         return capacity;
     }
 
-    private long generateCryptoFrame(ByteBufferPool.Accumulator accumulator, CryptoFrame frame)
+    private long generateCryptoFrame(List<RetainableByteBuffer> accumulator, CryptoFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -221,22 +209,19 @@ public class FrameGenerator
         int length = data.remaining();
         capacity += VarLenInt.length(length);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, offset);
-        VarLenInt.encode(byteBuffer, length);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, offset);
+        VarLenInt.encode(buffer, length);
 
-        accumulator.append(RetainableByteBuffer.wrap(data));
+        accumulator.add(RetainableByteBuffer.wrap(data));
 
         return capacity + length;
     }
 
-    private long generateNewTokenFrame(ByteBufferPool.Accumulator accumulator, NewTokenFrame frame)
+    private long generateNewTokenFrame(List<RetainableByteBuffer> accumulator, NewTokenFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -244,21 +229,18 @@ public class FrameGenerator
         int length = token.remaining();
         capacity += VarLenInt.length(length);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, length);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, length);
 
-        accumulator.append(RetainableByteBuffer.wrap(token));
+        accumulator.add(RetainableByteBuffer.wrap(token));
 
         return capacity + length;
     }
 
-    private BytesGenerated generateStreamFrame(ByteBufferPool.Accumulator accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
+    private BytesGenerated generateStreamFrame(List<RetainableByteBuffer> accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -284,56 +266,49 @@ public class FrameGenerator
         capacity += dataLengthLength;
         boolean endStream = (frameType & StreamFrame.END_STREAM_MASK) == StreamFrame.END_STREAM_MASK;
         // Clear the endStream bit if the frame cannot be fully generated.
-        ByteBuffer data = frame.getData();
+        RetainableByteBuffer data = frame.acquire();
         boolean dataExceedsFrame = data.remaining() > dataLength;
         if (endStream && dataExceedsFrame)
             frameType = frameType & ~StreamFrame.END_STREAM_MASK;
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, streamId);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, streamId);
         if (hasOffset)
-            VarLenInt.encode(byteBuffer, offset);
+            VarLenInt.encode(buffer, offset);
         if (hasLength)
-            VarLenInt.encode(byteBuffer, dataLength);
-        BufferUtil.flipToFlush(byteBuffer, position);
+            VarLenInt.encode(buffer, dataLength);
 
         if (dataExceedsFrame)
         {
-            position = data.position();
-            ByteBuffer slice = data.slice(position, dataLength);
-            data.position(position + dataLength);
+            RetainableByteBuffer slice = data.sliceAndConsume(dataLength);
+            data.release();
             data = slice;
         }
-        accumulator.append(RetainableByteBuffer.wrap(data));
+        accumulator.add(data);
 
         return new BytesGenerated(dataLength, capacity + dataLength);
     }
 
-    private long generateMaxDataFrame(ByteBufferPool.Accumulator accumulator, MaxDataFrame frame)
+    private long generateMaxDataFrame(List<RetainableByteBuffer> accumulator, MaxDataFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
         long maxData = frame.getMaxData();
         capacity += VarLenInt.length(maxData);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, maxData);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, maxData);
 
         return capacity;
     }
 
-    private long generateStreamMaxDataFrame(ByteBufferPool.Accumulator accumulator, StreamMaxDataFrame frame)
+    private long generateStreamMaxDataFrame(List<RetainableByteBuffer> accumulator, StreamMaxDataFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -342,58 +317,49 @@ public class FrameGenerator
         long maxData = frame.getMaxData();
         capacity += VarLenInt.length(maxData);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, streamId);
-        VarLenInt.encode(byteBuffer, maxData);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, streamId);
+        VarLenInt.encode(buffer, maxData);
 
         return capacity;
     }
 
-    private long generateMaxStreamsFrame(ByteBufferPool.Accumulator accumulator, MaxStreamsFrame frame)
+    private long generateMaxStreamsFrame(List<RetainableByteBuffer> accumulator, MaxStreamsFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
         long maxStreams = frame.getMaxStreams();
         capacity += VarLenInt.length(maxStreams);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, maxStreams);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, maxStreams);
 
         return capacity;
     }
 
-    private long generateDataBlockedFrame(ByteBufferPool.Accumulator accumulator, DataBlockedFrame frame)
+    private long generateDataBlockedFrame(List<RetainableByteBuffer> accumulator, DataBlockedFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
         long maxData = frame.getOffset();
         capacity += VarLenInt.length(maxData);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, maxData);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, maxData);
 
         return capacity;
     }
 
-    private long generateStreamDataBlockedFrame(ByteBufferPool.Accumulator accumulator, StreamDataBlockedFrame frame)
+    private long generateStreamDataBlockedFrame(List<RetainableByteBuffer> accumulator, StreamDataBlockedFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -402,39 +368,33 @@ public class FrameGenerator
         long maxData = frame.getOffset();
         capacity += VarLenInt.length(maxData);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, streamId);
-        VarLenInt.encode(byteBuffer, maxData);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, streamId);
+        VarLenInt.encode(buffer, maxData);
 
         return capacity;
     }
 
-    private long generateStreamsBlockedFrame(ByteBufferPool.Accumulator accumulator, StreamsBlockedFrame frame)
+    private long generateStreamsBlockedFrame(List<RetainableByteBuffer> accumulator, StreamsBlockedFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
         long maxStreams = frame.getMaxStreams();
         capacity += VarLenInt.length(maxStreams);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, maxStreams);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, maxStreams);
 
         return capacity;
     }
 
-    private long generateNewConnectionIdFrame(ByteBufferPool.Accumulator accumulator, NewConnectionIdFrame frame)
+    private long generateNewConnectionIdFrame(List<RetainableByteBuffer> accumulator, NewConnectionIdFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -445,82 +405,70 @@ public class FrameGenerator
         byte[] connectionId = frame.getConnectionId();
         capacity += VarLenInt.length(connectionId.length);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, sequenceNumber);
-        VarLenInt.encode(byteBuffer, retirePriorTo);
-        VarLenInt.encode(byteBuffer, connectionId.length);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, sequenceNumber);
+        VarLenInt.encode(buffer, retirePriorTo);
+        VarLenInt.encode(buffer, connectionId.length);
 
-        accumulator.append(RetainableByteBuffer.wrap(ByteBuffer.wrap(connectionId)));
+        accumulator.add(RetainableByteBuffer.wrap(ByteBuffer.wrap(connectionId)));
         byte[] resetToken = frame.getResetToken();
-        accumulator.append(RetainableByteBuffer.wrap(ByteBuffer.wrap(resetToken)));
+        accumulator.add(RetainableByteBuffer.wrap(ByteBuffer.wrap(resetToken)));
 
         return capacity + connectionId.length + resetToken.length;
     }
 
-    private long generateRetireConnectionIdFrame(ByteBufferPool.Accumulator accumulator, RetireConnectionIdFrame frame)
+    private long generateRetireConnectionIdFrame(List<RetainableByteBuffer> accumulator, RetireConnectionIdFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
         long sequenceNumber = frame.getSequenceNumber();
         capacity += VarLenInt.length(sequenceNumber);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, sequenceNumber);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, sequenceNumber);
 
         return capacity;
     }
 
-    private long generatePathChallengeFrame(ByteBufferPool.Accumulator accumulator, PathChallengeFrame frame)
+    private long generatePathChallengeFrame(List<RetainableByteBuffer> accumulator, PathChallengeFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
         long data = frame.getData();
         capacity += 8;
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        byteBuffer.putLong(data);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        buffer.putLong(data);
 
         return capacity;
     }
 
-    private long generatePathResponseFrame(ByteBufferPool.Accumulator accumulator, PathResponseFrame frame)
+    private long generatePathResponseFrame(List<RetainableByteBuffer> accumulator, PathResponseFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
         long data = frame.getData();
         capacity += 8;
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        byteBuffer.putLong(data);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        VarLenInt.encode(buffer, frameType);
+        buffer.putLong(data);
 
         return capacity;
     }
 
-    private long generateConnectionCloseFrame(ByteBufferPool.Accumulator accumulator, ConnectionCloseFrame frame)
+    private long generateConnectionCloseFrame(List<RetainableByteBuffer> accumulator, ConnectionCloseFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -534,19 +482,16 @@ public class FrameGenerator
         int reasonLength = reasonBytes.remaining();
         capacity += VarLenInt.length(reasonLength);
 
-        RetainableByteBuffer buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
-        accumulator.append(buffer);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.add(buffer);
 
-        int position = BufferUtil.flipToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frameType);
-        VarLenInt.encode(byteBuffer, errorCode);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, errorCode);
         if (frameType == 0x1C)
-            VarLenInt.encode(byteBuffer, causeFrameType);
-        VarLenInt.encode(byteBuffer, reasonLength);
-        BufferUtil.flipToFlush(byteBuffer, position);
+            VarLenInt.encode(buffer, causeFrameType);
+        VarLenInt.encode(buffer, reasonLength);
 
-        accumulator.append(RetainableByteBuffer.wrap(reasonBytes));
+        accumulator.add(RetainableByteBuffer.wrap(reasonBytes));
 
         return capacity + reasonLength;
     }

@@ -36,9 +36,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -249,7 +249,7 @@ public class StreamEndPoint implements EndPoint
     }
 
     @Override
-    public int fill(WritableBuffer sink) throws IOException
+    public int fill(RetainableByteBuffer.Mutable sink) throws IOException
     {
         Content.Chunk current;
         try (AutoLock ignored = lock.lock())
@@ -267,7 +267,7 @@ public class StreamEndPoint implements EndPoint
                 ByteBuffer source = current.getByteBuffer();
                 if (source.hasRemaining())
                 {
-                    int filled = BufferUtil.put(current.getByteBuffer(), sink);
+                    int filled = Math.toIntExact(sink.append(current.getByteBuffer()));
 
                     boolean release = true;
                     if (source.hasRemaining())
@@ -365,11 +365,11 @@ public class StreamEndPoint implements EndPoint
     }
 
     @Override
-    public boolean flush(ReadableBuffer buffer) throws IOException
+    public boolean flush(RetainableByteBuffer buffer) throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("flushing {} on {}", buffer, this);
-        if (buffer == null || buffer.remaining() == 0L)
+        if (buffer == null || !buffer.hasRemaining())
             return true;
 
         // Differently from other EndPoint implementations, where write() calls
@@ -398,17 +398,17 @@ public class StreamEndPoint implements EndPoint
     }
 
     @Override
-    public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
+    public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
     {
         write(false, buffer, callback);
     }
 
     @Override
-    public void write(boolean last, ReadableBuffer buffer, Callback callback)
+    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("writing last={} {} on {}", last, buffer, this);
-        if (last || buffer.remaining() > 0L)
+        if (last || buffer.hasRemaining())
         {
             while (true)
             {
@@ -588,26 +588,33 @@ public class StreamEndPoint implements EndPoint
     {
         Connection oldConnection = getConnection();
 
-        ByteBuffer byteBuffer = null;
+        RetainableByteBuffer.Mutable buffer = null;
         if (oldConnection instanceof Connection.UpgradeFrom from)
-            byteBuffer = from.onUpgradeFrom();
+            buffer = from.onUpgradeFrom();
 
-        oldConnection.onClose(null);
-        setConnection(newConnection);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} upgrading from {} to {} with {}",
-                this, oldConnection, newConnection, BufferUtil.toDetailString(byteBuffer));
-
-        if (BufferUtil.hasContent(byteBuffer))
+        try
         {
-            if (newConnection instanceof Connection.UpgradeTo to)
-                to.onUpgradeTo(byteBuffer);
-            else
-                throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
-        }
+            oldConnection.onClose(null);
+            setConnection(newConnection);
 
-        newConnection.onOpen();
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} upgrading from {} to {} with {}",
+                    this, oldConnection, newConnection, buffer);
+
+            if (buffer != null && buffer.hasRemaining())
+            {
+                if (newConnection instanceof Connection.UpgradeTo to)
+                    to.onUpgradeTo(buffer);
+                else
+                    throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
+            }
+
+            newConnection.onOpen();
+        }
+        finally
+        {
+            Retainable.dispose(buffer);
+        }
     }
 
     @Override

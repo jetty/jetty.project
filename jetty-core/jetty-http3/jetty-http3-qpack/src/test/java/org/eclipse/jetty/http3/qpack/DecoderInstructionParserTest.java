@@ -13,7 +13,8 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http3.qpack.internal.instruction.DuplicateInstruction;
@@ -21,21 +22,21 @@ import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstru
 import org.eclipse.jetty.http3.qpack.internal.instruction.LiteralNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.http3.qpack.QpackTestUtil.toBuffer;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DecoderInstructionParserTest
 {
-    private final ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
+    private final WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
     private DecoderInstructionParser _instructionParser;
     private DecoderParserDebugHandler _handler;
 
@@ -50,11 +51,11 @@ public class DecoderInstructionParserTest
     public void testSetDynamicTableCapacityInstruction() throws Exception
     {
         // Set Dynamic Table Capacity=220.
-        ByteBuffer buffer = QpackTestUtil.hexToBuffer("3fbd 01");
+        RetainableByteBuffer buffer = QpackTestUtil.hexToBuffer("3fbd 01");
 
         // Assert that our generated value is equal to that of the spec example.
-        ByteBuffer encodedValue = getEncodedValue(new SetCapacityInstruction(220));
-        assertThat(buffer, equalTo(encodedValue));
+        RetainableByteBuffer encodedValue = getEncodedValue(new SetCapacityInstruction(220));
+        assertArrayEquals(buffer.slice().getArray(), encodedValue.getArray());
 
         _instructionParser.parse(buffer);
         assertThat(_handler.setCapacities.poll(), is(220));
@@ -65,11 +66,11 @@ public class DecoderInstructionParserTest
     public void testDuplicateInstruction() throws Exception
     {
         // Duplicate (Relative Index = 2).
-        ByteBuffer buffer = QpackTestUtil.hexToBuffer("02");
+        RetainableByteBuffer buffer = QpackTestUtil.hexToBuffer("02");
 
         // Assert that our generated value is equal to that of the spec example.
-        ByteBuffer encodedValue = getEncodedValue(new DuplicateInstruction(2));
-        assertThat(buffer, equalTo(encodedValue));
+        RetainableByteBuffer encodedValue = getEncodedValue(new DuplicateInstruction(2));
+        assertArrayEquals(buffer.slice().getArray(), encodedValue.getArray());
 
         _instructionParser.parse(buffer);
         assertThat(_handler.duplicates.poll(), is(2));
@@ -80,11 +81,11 @@ public class DecoderInstructionParserTest
     public void testInsertNameWithReferenceInstruction() throws Exception
     {
         // Insert With Name Reference to Static Table, Index=0 (:authority=www.example.com).
-        ByteBuffer buffer = QpackTestUtil.hexToBuffer("c00f 7777 772e 6578 616d 706c 652e 636f 6d");
+        RetainableByteBuffer buffer = QpackTestUtil.hexToBuffer("c00f 7777 772e 6578 616d 706c 652e 636f 6d");
 
         // Assert that our generated value is equal to that of the spec example.
-        ByteBuffer encodedValue = getEncodedValue(new IndexedNameEntryInstruction(false, 0, false, "www.example.com"));
-        assertThat(buffer, equalTo(encodedValue));
+        RetainableByteBuffer encodedValue = getEncodedValue(new IndexedNameEntryInstruction(false, 0, false, "www.example.com"));
+        assertArrayEquals(buffer.slice().getArray(), encodedValue.getArray());
 
         _instructionParser.parse(buffer);
         DecoderParserDebugHandler.ReferencedEntry entry = _handler.referencedNameEntries.poll();
@@ -107,7 +108,7 @@ public class DecoderInstructionParserTest
     public void testInsertWithLiteralNameInstruction() throws Exception
     {
         // Insert With Literal Name (custom-key=custom-value).
-        ByteBuffer buffer = QpackTestUtil.hexToBuffer("4a63 7573 746f 6d2d 6b65 790c 6375 7374 6f6d 2d76 616c 7565");
+        RetainableByteBuffer buffer = QpackTestUtil.hexToBuffer("4a63 7573 746f 6d2d 6b65 790c 6375 7374 6f6d 2d76 616c 7565");
         _instructionParser.parse(buffer);
 
         // We received the instruction correctly.
@@ -124,14 +125,14 @@ public class DecoderInstructionParserTest
     public void testOneByteAtATime() throws Exception
     {
         HttpField httpField = new HttpField("custom-key", "custom-value");
-        ByteBuffer buffer = toBuffer(new LiteralNameEntryInstruction(httpField, true));
+        RetainableByteBuffer buffer = toBuffer(new LiteralNameEntryInstruction(httpField, true));
 
         // Parse the buffer 1 byte at a time.
         while (buffer.hasRemaining())
         {
-            ByteBuffer oneByte = buffer.slice(buffer.position(), 1);
+            RetainableByteBuffer oneByte = buffer.sliceAndConsume(1);
             _instructionParser.parse(oneByte);
-            buffer.position(buffer.position() + 1);
+            oneByte.release();
         }
 
         // We received the instruction correctly.
@@ -144,10 +145,10 @@ public class DecoderInstructionParserTest
         assertTrue(_handler.isEmpty());
     }
 
-    private ByteBuffer getEncodedValue(Instruction instruction)
+    private RetainableByteBuffer getEncodedValue(Instruction instruction)
     {
-        RetainableByteBuffer.DynamicCapacity lease = new RetainableByteBuffer.DynamicCapacity();
-        instruction.encode(bufferPool, lease);
-        return lease.getByteBuffer();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        instruction.encode(bufferPool, accumulator);
+        return RetainableByteBuffer.wrap(accumulator);
     }
 }

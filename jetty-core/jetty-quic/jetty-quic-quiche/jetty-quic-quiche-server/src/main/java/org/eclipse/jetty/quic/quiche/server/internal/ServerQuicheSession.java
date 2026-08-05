@@ -15,7 +15,6 @@ package org.eclipse.jetty.quic.quiche.server.internal;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.SSLHandshakeException;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,7 +99,7 @@ public class ServerQuicheSession extends QuicheSession implements CyclicTimeouts
         return expireNanoTime;
     }
 
-    Runnable process(SocketAddress remoteAddress, ByteBuffer cipherBuffer)
+    Runnable process(SocketAddress remoteAddress, RetainableByteBuffer cipherBuffer)
     {
         try
         {
@@ -146,7 +146,7 @@ public class ServerQuicheSession extends QuicheSession implements CyclicTimeouts
     }
 
     @Override
-    public void feed(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
+    public void feed(SocketAddress remoteAddress, RetainableByteBuffer cipherBuffer) throws IOException
     {
         // While the connection ID remains the same,
         // the remote address may change so store it again.

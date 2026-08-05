@@ -23,7 +23,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,19 +73,19 @@ public class HpackPerfTest
             stories[i++] = story;
         }
 
-        WritableBuffer buffer = WritableBuffer.allocate(256 * 1024, false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(256 * 1024, false);
 
         // Encode all the requests
         encodeStories(buffer, stories, "request");
 
         // clear table
-        buffer.position(0);
+        buffer.clear();
 
         // Encode all the responses
         encodeStories(buffer, stories, "response");
     }
 
-    private void encodeStories(WritableBuffer buffer, Map<String, Object>[] stories, String type) throws Exception
+    private void encodeStories(RetainableByteBuffer.Mutable buffer, Map<String, Object>[] stories, String type) throws Exception
     {
         for (Map<String, Object> story : stories)
         {
@@ -113,9 +113,9 @@ public class HpackPerfTest
                         _unencodedSize += e.getKey().length() + e.getValue().length();
                     }
 
-                    buffer.position(0);
+                    buffer.clear();
                     encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, fields));
-                    _encodedSize += buffer.position();
+                    _encodedSize += buffer.remaining();
                 }
             }
         }

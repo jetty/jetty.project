@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -21,11 +22,11 @@ import java.util.Queue;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.generator.MessageGenerator;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,15 +37,14 @@ public class MessageFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> entries = new ArrayDeque<>();
+    private final List<RetainableByteBuffer> accumulator = new ArrayList<>();
     private final MessageGenerator generator;
-    private final RetainableByteBuffer.Mutable accumulator;
     private Throwable terminated;
     private Entry entry;
 
-    public MessageFlusher(ByteBufferPool bufferPool, QpackEncoder encoder, boolean useDirectByteBuffers)
+    public MessageFlusher(WritableBufferPool bufferPool, QpackEncoder encoder, boolean useDirectByteBuffers)
     {
         this.generator = new MessageGenerator(bufferPool, encoder, useDirectByteBuffers);
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1, 0, 0);
     }
 
     public boolean offer(StreamEndPoint endPoint, Frame frame, Callback callback)
@@ -86,7 +86,9 @@ public class MessageFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} bytes for stream #{} on {}", accumulator.size(), endPoint.getStream().getId(), this);
 
-        accumulator.writeTo(endPoint, Frame.isLast(frame), Callback.from(entry.callback.getInvocationType(), this::onWriteSuccess, this::onWriteFailure));
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        endPoint.write(Frame.isLast(frame), buffer, Callback.from(entry.callback.getInvocationType(), this::onWriteSuccess, this::onWriteFailure));
+        buffer.release();
         return Action.SCHEDULED;
     }
 
@@ -95,10 +97,10 @@ public class MessageFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("failed to generate {} on {}", entry, this, cause);
 
-        accumulator.clear();
-
         entry.callback.failed(cause);
         entry = null;
+
+        releaseAndClear();
 
         // Continue the iteration.
         succeeded();
@@ -112,6 +114,8 @@ public class MessageFlusher extends IteratingCallback
         entry.callback().succeeded();
         entry = null;
 
+        releaseAndClear();
+
         succeeded();
     }
 
@@ -122,6 +126,8 @@ public class MessageFlusher extends IteratingCallback
 
         entry.callback().failed(failure);
         entry = null;
+
+        releaseAndClear();
 
         // Failure to write to one StreamEndPoint
         // must not impact other StreamEndPoints.
@@ -139,12 +145,14 @@ public class MessageFlusher extends IteratingCallback
             entries.clear();
         }
         allEntries.forEach(e -> e.callback.failed(failure));
+
+        releaseAndClear();
     }
 
-    @Override
-    protected void onCompleteFailure(Throwable failure)
+    private void releaseAndClear()
     {
-        accumulator.release();
+        accumulator.forEach(RetainableByteBuffer::release);
+        accumulator.clear();
     }
 
     @Override

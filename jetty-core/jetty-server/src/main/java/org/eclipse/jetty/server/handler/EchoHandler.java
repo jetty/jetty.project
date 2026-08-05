@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * A utility handler that echoes content from the request to the response.
@@ -135,7 +135,7 @@ public class EchoHandler extends Handler.Abstract
             Content.Source.asReadableBuffer(request, new Promise<>()
             {
                 @Override
-                public void succeeded(ReadableBuffer result)
+                public void succeeded(RetainableByteBuffer result)
                 {
                     response.write(true, result, callback);
                 }

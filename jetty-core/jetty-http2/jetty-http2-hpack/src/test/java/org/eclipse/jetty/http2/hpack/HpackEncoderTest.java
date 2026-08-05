@@ -19,8 +19,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,6 +29,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HpackEncoderTest
 {
@@ -61,22 +61,18 @@ public class HpackEncoderTest
         }
 
         // encode them
-        WritableBuffer wb = WritableBuffer.allocate(4096, false);
-        encoder.encode(wb, new MetaData(HttpVersion.HTTP_2, fields));
+        RetainableByteBuffer.Mutable b = RetainableByteBuffer.Mutable.allocate(4096, false);
+        encoder.encode(b, new MetaData(HttpVersion.HTTP_2, fields));
 
         // something was encoded!
-        {
-            ReadableBuffer rb = wb.toReadable();
-            assertThat(rb.remaining(), Matchers.greaterThan(0L));
-            rb.toWritable();
-        }
+        assertTrue(b.hasRemaining());
 
         // All are in the dynamic table
         assertEquals(4, encoder.getHpackContext().size());
 
         // encode exact same fields again!
-        wb.position(0);
-        encoder.encode(wb, new MetaData(HttpVersion.HTTP_2, fields));
+        b.clear();
+        encoder.encode(b, new MetaData(HttpVersion.HTTP_2, fields));
 
         // All are in the dynamic table
         assertEquals(4, encoder.getHpackContext().size());
@@ -88,15 +84,11 @@ public class HpackEncoderTest
         }
 
         // encode
-        wb.position(0);
-        encoder.encode(wb, new MetaData(HttpVersion.HTTP_2, fields));
+        b.clear();
+        encoder.encode(b, new MetaData(HttpVersion.HTTP_2, fields));
 
         // something was encoded!
-        {
-            ReadableBuffer rb = wb.toReadable();
-            assertThat(rb.remaining(), Matchers.greaterThan(0L));
-            rb.toWritable();
-        }
+        assertTrue(b.hasRemaining());
 
         // max dynamic table size reached
         assertEquals(5, encoder.getHpackContext().size());
@@ -108,15 +100,11 @@ public class HpackEncoderTest
         }
 
         // encode
-        wb.position(0);
-        encoder.encode(wb, new MetaData(HttpVersion.HTTP_2, fields));
+        b.clear();
+        encoder.encode(b, new MetaData(HttpVersion.HTTP_2, fields));
 
         // something was encoded!
-        {
-            ReadableBuffer rb = wb.toReadable();
-            assertThat(rb.remaining(), Matchers.greaterThan(0L));
-            rb.toWritable();
-        }
+        assertTrue(b.hasRemaining());
 
         // max dynamic table size reached
         assertEquals(5, encoder.getHpackContext().size());
@@ -125,15 +113,11 @@ public class HpackEncoderTest
         fields.remove(field[1].getName());
 
         // encode
-        wb.position(0);
-        encoder.encode(wb, new MetaData(HttpVersion.HTTP_2, fields));
+        b.clear();
+        encoder.encode(b, new MetaData(HttpVersion.HTTP_2, fields));
 
         // something was encoded!
-        {
-            ReadableBuffer rb = wb.toReadable();
-            assertThat(rb.remaining(), Matchers.greaterThan(0L));
-            rb.toWritable();
-        }
+        assertTrue(b.hasRemaining());
 
         // max dynamic table size reached
         assertEquals(5, encoder.getHpackContext().size());
@@ -143,15 +127,11 @@ public class HpackEncoderTest
         fields.add(field[1]);
 
         // encode
-        wb.position(0);
-        encoder.encode(wb, new MetaData(HttpVersion.HTTP_2, fields));
+        b.clear();
+        encoder.encode(b, new MetaData(HttpVersion.HTTP_2, fields));
 
         // something was encoded!
-        {
-            ReadableBuffer rb = wb.toReadable();
-            assertThat(rb.remaining(), Matchers.greaterThan(0L));
-            rb.toWritable();
-        }
+        assertTrue(b.hasRemaining());
 
         // max dynamic table size reached
         assertEquals(5, encoder.getHpackContext().size());
@@ -164,7 +144,7 @@ public class HpackEncoderTest
         HpackContext ctx = encoder.getHpackContext();
         ctx.resize(encoder.getMaxTableCapacity());
 
-        WritableBuffer wb = WritableBuffer.allocate(4096, false);
+        RetainableByteBuffer.Mutable wb = RetainableByteBuffer.Mutable.allocate(4096, false);
 
         // Index little fields
         encoder.encode(wb, new HttpField("Name", "Value"));
@@ -187,7 +167,7 @@ public class HpackEncoderTest
         HpackContext ctx = encoder.getHpackContext();
         ctx.resize(encoder.getMaxTableCapacity());
 
-        WritableBuffer buffer = WritableBuffer.allocate(4096, false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(4096, false);
 
         // Index zero content length
         encoder.encode(buffer, HttpFields.CONTENT_LENGTH_0);
@@ -203,34 +183,26 @@ public class HpackEncoderTest
     public void testNeverIndexSetCookie() throws Exception
     {
         HpackEncoder encoder = newHpackEncoder(38 * 5);
-        WritableBuffer wb = WritableBuffer.allocate(4096, false);
+        RetainableByteBuffer.Mutable b = RetainableByteBuffer.Mutable.allocate(4096, false);
 
         HttpFields.Mutable fields = HttpFields.build()
             .put("set-cookie", "some cookie value");
 
         // encode
-        encoder.encode(wb, new MetaData(HttpVersion.HTTP_2, fields));
+        encoder.encode(b, new MetaData(HttpVersion.HTTP_2, fields));
 
         // something was encoded!
-        {
-            ReadableBuffer rb = wb.toReadable();
-            assertThat(rb.remaining(), Matchers.greaterThan(0L));
-            rb.toWritable();
-        }
+        assertTrue(b.hasRemaining());
 
         // empty dynamic table
         assertEquals(0, encoder.getHpackContext().size());
 
         // encode again
-        wb.position(0);
-        encoder.encode(wb, new MetaData(HttpVersion.HTTP_2, fields));
+        b.clear();
+        encoder.encode(b, new MetaData(HttpVersion.HTTP_2, fields));
 
         // something was encoded!
-        {
-            ReadableBuffer rb = wb.toReadable();
-            assertThat(rb.remaining(), Matchers.greaterThan(0L));
-            rb.toWritable();
-        }
+        assertTrue(b.hasRemaining());
 
         // empty dynamic table
         assertEquals(0, encoder.getHpackContext().size());
@@ -242,12 +214,12 @@ public class HpackEncoderTest
         HttpFields.Mutable fields = HttpFields.build();
 
         HpackEncoder encoder = newHpackEncoder(128);
-        WritableBuffer buffer0 = WritableBuffer.allocate(4096, false);
+        RetainableByteBuffer.Mutable buffer0 = RetainableByteBuffer.Mutable.allocate(4096, false);
         encoder.encode(buffer0, new MetaData(HttpVersion.HTTP_2, fields));
 
         encoder = newHpackEncoder(128);
         fields.add(new HttpField("user-agent", "jetty/test"));
-        WritableBuffer buffer1 = WritableBuffer.allocate(4096, false);
+        RetainableByteBuffer.Mutable buffer1 = RetainableByteBuffer.Mutable.allocate(4096, false);
         encoder.encode(buffer1, new MetaData(HttpVersion.HTTP_2, fields));
 
         encoder = newHpackEncoder(128);
@@ -257,13 +229,13 @@ public class HpackEncoderTest
                 "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX " +
                 "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY " +
                 "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ "));
-        WritableBuffer buffer2 = WritableBuffer.allocate(4096, false);
+        RetainableByteBuffer.Mutable buffer2 = RetainableByteBuffer.Mutable.allocate(4096, false);
         encoder.encode(buffer2, new MetaData(HttpVersion.HTTP_2, fields));
 
         encoder = newHpackEncoder(128);
         encoder.setValidateEncoding(false);
         fields.add(new HttpField("host", "somehost"));
-        WritableBuffer buffer = WritableBuffer.allocate(4096, false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(4096, false);
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, fields));
 
         //System.err.println(BufferUtil.toHexString(buffer0));
@@ -272,19 +244,16 @@ public class HpackEncoderTest
         //System.err.println(BufferUtil.toHexString(buffer));
 
         // something was encoded!
-        {
-            ReadableBuffer rb = buffer.toReadable();
-            assertThat(rb.remaining(), Matchers.greaterThan(0L));
+        assertThat(buffer.remaining(), Matchers.greaterThan(0L));
 
-            // check first field is static index name and dynamic index body
-            assertThat((rb.get(buffer0.toReadable().remaining()) & 0xFF) >> 6, equalTo(1));
+        // check first field is static index name and dynamic index body
+        assertThat((buffer.get(buffer0.remaining()) & 0xFF) >> 6, equalTo(1));
 
-            // check first field is static index name and literal body
-            assertThat((rb.get(buffer1.toReadable().remaining()) & 0xFF) >> 4, equalTo(0));
+        // check first field is static index name and literal body
+        assertThat((buffer.get(buffer1.remaining()) & 0xFF) >> 4, equalTo(0));
 
-            // check first field is static index name and dynamic index body
-            assertThat((rb.get(buffer2.toReadable().remaining()) & 0xFF) >> 6, equalTo(1));
-        }
+        // check first field is static index name and dynamic index body
+        assertThat((buffer.get(buffer2.remaining()) & 0xFF) >> 6, equalTo(1));
 
         // Only first and third fields are put in the table
         HpackContext context = encoder.getHpackContext();
@@ -304,7 +273,7 @@ public class HpackEncoderTest
 
         HpackEncoder encoder = newHpackEncoder(4096);
 
-        WritableBuffer buffer = WritableBuffer.allocate(4096, false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(4096, false);
         encoder.encodeMaxDynamicTableSize(buffer, 0);
         encoder.setTableCapacity(50);
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, fields));
@@ -328,20 +297,18 @@ public class HpackEncoderTest
     public void testAlwaysSendInitialSize(int size) throws Exception
     {
         HpackEncoder encoder = newHpackEncoder(size);
-        WritableBuffer buffer = WritableBuffer.allocate(4096, false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(4096, false);
 
         // Index zero content length
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY));
 
-        ReadableBuffer rb = buffer.toReadable();
-
-        byte b = rb.get(buffer.position());
+        byte b = buffer.get(buffer.readPosition());
         byte f = (byte)((b & 0xF0) >> 4);
         assertThat((int)f, Matchers.either(is(2)).or(is(3)));
 
         NBitIntegerDecoder decoder = new NBitIntegerDecoder();
         decoder.setPrefix(5);
-        int s = decoder.decodeInt(rb);
+        int s = decoder.decodeInt(buffer);
 
         assertThat(s, is(size));
     }

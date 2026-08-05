@@ -18,8 +18,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  *
@@ -38,7 +37,7 @@ public class HpackFieldPreEncoder implements HttpFieldPreEncoder
     {
         boolean notIndexed = HpackEncoder.DO_NOT_INDEX.contains(header);
 
-        WritableBuffer buffer = WritableBuffer.allocate(name.length() + value.length() + 10, false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(name.length() + value.length() + 10, false);
         boolean huffman;
         int bits;
 
@@ -77,6 +76,6 @@ public class HpackFieldPreEncoder implements HttpFieldPreEncoder
 
         HpackEncoder.encodeValue(buffer, huffman, value);
 
-        return BufferUtil.toArray(buffer.toReadable());
+        return buffer.getArray();
     }
 }

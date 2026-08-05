@@ -18,8 +18,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class Generator
 {
@@ -44,16 +43,16 @@ public class Generator
         return useDirectByteBuffers;
     }
 
-    protected void generateContent(List<ReadableBuffer> accumulator, int id, ReadableBuffer content, boolean lastContent, FCGI.FrameType frameType)
+    protected void generateContent(List<RetainableByteBuffer> accumulator, int id, RetainableByteBuffer content, boolean lastContent, FCGI.FrameType frameType)
     {
         id &= 0xFF_FF;
 
-        content = Objects.requireNonNullElse(content, ReadableBuffer.EMPTY);
+        content = Objects.requireNonNullElse(content, RetainableByteBuffer.empty());
         long contentLength = content.remaining();
 
         while (contentLength > 0 || lastContent)
         {
-            WritableBuffer buffer = getBufferPool().acquire(8, isUseDirectByteBuffers());
+            RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(8, isUseDirectByteBuffers());
 
             // Generate the frame header.
             buffer.put((byte)0x01);
@@ -62,19 +61,15 @@ public class Generator
             long length = Math.min(MAX_CONTENT_LENGTH, contentLength);
             buffer.putShort((short)length);
             buffer.putShort((short)0);
-            ReadableBuffer readable = buffer.toReadable();
-            accumulator.add(readable);
+            accumulator.add(buffer);
 
             if (contentLength == 0)
                 break;
 
             // Slice the content to avoid copying.
-            ReadableBuffer slice = content.slice(content.position(), length);
-            accumulator.add(slice);
-
-            // Consume the content.
-            content.position(content.position() + length);
+            RetainableByteBuffer slice = content.sliceAndConsume(length);
             contentLength -= length;
+            accumulator.add(slice);
         }
     }
 }

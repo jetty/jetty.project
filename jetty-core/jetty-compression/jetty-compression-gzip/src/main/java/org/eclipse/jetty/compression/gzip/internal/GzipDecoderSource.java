@@ -23,8 +23,7 @@ import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.compression.gzip.GzipCompression;
 import org.eclipse.jetty.compression.gzip.GzipDecoderConfig;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.compression.InflaterPool;
 
 public class GzipDecoderSource extends DecoderSource
@@ -103,15 +102,16 @@ public class GzipDecoderSource extends DecoderSource
                     {
                         while (true)
                         {
-                            WritableBuffer wb = compression.acquireBuffer(bufferSize);
+                            RetainableByteBuffer.Mutable b = compression.acquireBuffer(bufferSize);
                             try
                             {
-                                wb.readFrom(output ->
+                                b.readFrom(output ->
                                 {
                                     try
                                     {
+                                        int p = output.position();
                                         inflater.inflate(output);
-                                        return false;
+                                        return output.position() - p;
                                     }
                                     catch (DataFormatException e)
                                     {
@@ -119,9 +119,8 @@ public class GzipDecoderSource extends DecoderSource
                                     }
                                 });
 
-                                ReadableBuffer rb = wb.toReadable();
-                                if (rb.remaining() > 0L)
-                                    return Content.Chunk.asChunk(rb, false, null);
+                                if (b.hasRemaining())
+                                    return Content.Chunk.asChunk(b, false, null);
                             }
                             catch (IOException x)
                             {
@@ -131,7 +130,7 @@ public class GzipDecoderSource extends DecoderSource
                             }
                             finally
                             {
-                                wb.release();
+                                b.release();
                             }
 
                             if (inflater.needsInput())

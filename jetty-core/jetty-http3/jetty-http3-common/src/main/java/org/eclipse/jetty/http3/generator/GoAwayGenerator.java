@@ -13,46 +13,42 @@
 
 package org.eclipse.jetty.http3.generator;
 
-import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.util.VarLenInt;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class GoAwayGenerator extends FrameGenerator
 {
     private final boolean useDirectByteBuffers;
 
-    public GoAwayGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
+    public GoAwayGenerator(WritableBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         super(bufferPool);
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
     @Override
-    public long generate(RetainableByteBuffer.Mutable accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(List<RetainableByteBuffer> accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
         return generateGoAwayFrame(accumulator, goAwayFrame);
     }
 
-    private long generateGoAwayFrame(RetainableByteBuffer.Mutable accumulator, GoAwayFrame frame)
+    private long generateGoAwayFrame(List<RetainableByteBuffer> accumulator, GoAwayFrame frame)
     {
         long lastId = frame.getLastId();
         int lastIdLength = VarLenInt.length(lastId);
         int length = VarLenInt.length(FrameType.GOAWAY.type()) + VarLenInt.length(lastIdLength) + lastIdLength;
-        RetainableByteBuffer buffer = getByteBufferPool().acquire(length, useDirectByteBuffers);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        BufferUtil.clearToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, FrameType.GOAWAY.type());
-        VarLenInt.encode(byteBuffer, lastIdLength);
-        VarLenInt.encode(byteBuffer, lastId);
-        byteBuffer.flip();
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, useDirectByteBuffers);
+        VarLenInt.encode(buffer, FrameType.GOAWAY.type());
+        VarLenInt.encode(buffer, lastIdLength);
+        VarLenInt.encode(buffer, lastId);
         accumulator.add(buffer);
         return length;
     }

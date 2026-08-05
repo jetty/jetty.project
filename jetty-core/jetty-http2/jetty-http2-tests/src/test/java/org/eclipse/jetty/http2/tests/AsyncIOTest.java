@@ -33,7 +33,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -79,7 +79,7 @@ public class AsyncIOTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        stream.data(ReadableBuffer.allocate(16, false), true, Callback.NOOP);
+        stream.data(RetainableByteBuffer.allocate(16, false), true, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -117,7 +117,7 @@ public class AsyncIOTest extends AbstractTest
 
         // Wait until service() returns.
         Thread.sleep(1000);
-        stream.data(ReadableBuffer.allocate(16, false), true, Callback.NOOP);
+        stream.data(RetainableByteBuffer.allocate(16, false), true, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -307,7 +307,7 @@ public class AsyncIOTest extends AbstractTest
                 return failure;
             }
         };
-        responseRef.get().write(true, ReadableBuffer.EMPTY, cb);
+        responseRef.get().write(true, RetainableByteBuffer.empty(), cb);
         await().atMost(5, TimeUnit.SECONDS).until(cb::failure, instanceOf(EofException.class));
     }
 

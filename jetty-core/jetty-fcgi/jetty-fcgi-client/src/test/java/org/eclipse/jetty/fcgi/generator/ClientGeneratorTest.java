@@ -25,7 +25,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,7 +63,7 @@ public class ClientGeneratorTest
 
         WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ClientGenerator generator = new ClientGenerator(bufferPool);
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         int id = 13;
         generator.generateRequestHeaders(accumulator, id, fields);
 
@@ -119,8 +119,8 @@ public class ClientGeneratorTest
             }
         });
 
-        ReadableBuffer buffer = ReadableBuffer.accumulate(accumulator);
-        accumulator.forEach(ReadableBuffer::release);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        accumulator.forEach(RetainableByteBuffer::release);
 
         parser.parse(buffer);
         assertEquals(0, buffer.remaining());
@@ -129,11 +129,11 @@ public class ClientGeneratorTest
 
         // Parse again byte by byte.
         params.set(1);
-        buffer.position(0);
+        buffer.readPosition(0);
         while (buffer.remaining() > 0)
         {
-            ReadableBuffer slice = buffer.slice(buffer.position(), 1);
-            buffer.position(buffer.position() + 1);
+            RetainableByteBuffer slice = buffer.slice(buffer.readPosition(), 1);
+            buffer.readPosition(buffer.readPosition() + 1);
             parser.parse(slice);
             slice.release();
         }
@@ -157,11 +157,11 @@ public class ClientGeneratorTest
 
     private void testGenerateRequestContent(int contentLength) throws Exception
     {
-        ReadableBuffer content = ReadableBuffer.allocate(contentLength, false);
+        RetainableByteBuffer content = RetainableByteBuffer.allocate(contentLength, false);
 
         WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ClientGenerator generator = new ClientGenerator(bufferPool);
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         int id = 13;
         generator.generateRequestContent(accumulator, id, content, true);
 
@@ -169,7 +169,7 @@ public class ClientGeneratorTest
         ServerParser parser = new ServerParser(new ServerParser.Listener()
         {
             @Override
-            public boolean onContent(int request, FCGI.StreamType stream, ReadableBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, RetainableByteBuffer buffer)
             {
                 assertEquals(id, request);
                 totalLength.addAndGet(buffer.remaining());
@@ -185,18 +185,18 @@ public class ClientGeneratorTest
             }
         });
 
-        ReadableBuffer buffer = ReadableBuffer.accumulate(accumulator);
-        accumulator.forEach(ReadableBuffer::release);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        accumulator.forEach(RetainableByteBuffer::release);
 
         parser.parse(buffer);
         assertEquals(0, buffer.remaining());
 
         // Parse again one byte at a time.
-        buffer.position(0);
+        buffer.readPosition(0);
         while (buffer.remaining() > 0)
         {
-            ReadableBuffer slice = buffer.slice(buffer.position(), 1);
-            buffer.position(buffer.position() + 1);
+            RetainableByteBuffer slice = buffer.slice(buffer.readPosition(), 1);
+            buffer.readPosition(buffer.readPosition() + 1);
             parser.parse(slice);
             slice.release();
         }

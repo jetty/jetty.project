@@ -20,7 +20,7 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +57,7 @@ public class HeadersBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ReadableBuffer buffer)
+    protected void emptyBody(RetainableByteBuffer buffer)
     {
         if (hasFlag(Flags.PRIORITY))
         {
@@ -65,7 +65,7 @@ public class HeadersBodyParser extends BodyParser
         }
         else if (hasFlag(Flags.END_HEADERS))
         {
-            MetaData metaData = headerBlockParser.parse(ReadableBuffer.EMPTY, 0);
+            MetaData metaData = headerBlockParser.parse(RetainableByteBuffer.empty(), 0);
             HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
             if (!rateControlOnEvent(frame))
                 connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
@@ -87,10 +87,10 @@ public class HeadersBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ReadableBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
         boolean loop = false;
-        while (buffer.remaining() > 0L || loop)
+        while (buffer.hasRemaining() || loop)
         {
             switch (state)
             {
@@ -127,7 +127,7 @@ public class HeadersBodyParser extends BodyParser
                         return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame");
                     // We must only peek the first byte and not advance the buffer
                     // because the 31 least significant bits represent the stream id.
-                    int currByte = buffer.get(buffer.position());
+                    int currByte = buffer.get(buffer.readPosition());
                     exclusive = (currByte & 0x80) == 0x80;
                     state = State.PARENT_STREAM_ID;
                     break;
@@ -243,7 +243,7 @@ public class HeadersBodyParser extends BodyParser
                 case PADDING:
                 {
                     int size = buffer.remaining() > Integer.MAX_VALUE ? paddingLength : Math.min((int)buffer.remaining(), paddingLength);
-                    buffer.position(buffer.position() + size);
+                    buffer.readPosition(buffer.readPosition() + size);
                     paddingLength -= size;
                     if (paddingLength == 0)
                     {

@@ -24,13 +24,13 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p>The base parser for the frame body of HTTP/2 frames.</p>
- * <p>Subclasses implement {@link #parse(ReadableBuffer)} to parse
+ * <p>Subclasses implement {@link #parse(RetainableByteBuffer)} to parse
  * the frame specific body.</p>
  *
  * @see Parser
@@ -57,9 +57,9 @@ public abstract class BodyParser
      * @return true if the whole body bytes were parsed, false if not enough
      * body bytes were present in the buffer
      */
-    public abstract boolean parse(ReadableBuffer buffer);
+    public abstract boolean parse(RetainableByteBuffer buffer);
 
-    protected void emptyBody(ReadableBuffer buffer)
+    protected void emptyBody(RetainableByteBuffer buffer)
     {
         connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_frame");
     }
@@ -202,9 +202,9 @@ public abstract class BodyParser
         }
     }
 
-    protected boolean connectionFailure(ReadableBuffer buffer, int error, String reason)
+    protected boolean connectionFailure(RetainableByteBuffer buffer, int error, String reason)
     {
-        buffer.position(buffer.position() + buffer.remaining());
+        buffer.readPosition(buffer.readPosition() + buffer.remaining());
         notifyConnectionFailure(error, reason);
         return false;
     }

@@ -15,7 +15,7 @@ package org.eclipse.jetty.http2.parser;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.DataFrame;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class DataBodyParser extends BodyParser
 {
@@ -38,7 +38,7 @@ public class DataBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ReadableBuffer buffer)
+    protected void emptyBody(RetainableByteBuffer buffer)
     {
         if (isPadding())
         {
@@ -46,7 +46,7 @@ public class DataBodyParser extends BodyParser
         }
         else
         {
-            DataFrame frame = new DataFrame(getStreamId(), ReadableBuffer.EMPTY, isEndStream());
+            DataFrame frame = new DataFrame(getStreamId(), RetainableByteBuffer.empty(), isEndStream());
             if (!isEndStream() && !rateControlOnEvent(frame))
                 connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_data_frame_rate");
             else
@@ -56,10 +56,10 @@ public class DataBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ReadableBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
         boolean loop = false;
-        while (buffer.remaining() > 0L || loop)
+        while (buffer.hasRemaining() || loop)
         {
             switch (state)
             {
@@ -88,11 +88,9 @@ public class DataBodyParser extends BodyParser
                 case DATA:
                 {
                     int size = buffer.remaining() > Integer.MAX_VALUE ? length : Math.min((int)buffer.remaining(), length);
-                    long position = buffer.position();
                     if (size > buffer.remaining())
                         size = (int)buffer.remaining();
-                    ReadableBuffer slice = buffer.slice(position, size);
-                    buffer.position(position + size);
+                    RetainableByteBuffer slice = buffer.sliceAndConsume(size);
 
                     try
                     {
@@ -122,7 +120,7 @@ public class DataBodyParser extends BodyParser
                 case PADDING:
                 {
                     int size = buffer.remaining() > Integer.MAX_VALUE ? paddingLength : Math.min((int)buffer.remaining(), paddingLength);
-                    buffer.position(buffer.position() + size);
+                    buffer.readPosition(buffer.readPosition() + size);
                     paddingLength -= size;
                     if (paddingLength == 0)
                     {
@@ -140,7 +138,7 @@ public class DataBodyParser extends BodyParser
         return false;
     }
 
-    private void onData(ReadableBuffer buffer, boolean fragment, int padding)
+    private void onData(RetainableByteBuffer buffer, boolean fragment, int padding)
     {
         DataFrame frame = new DataFrame(getStreamId(), buffer, !fragment && isEndStream(), padding);
         try

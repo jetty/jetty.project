@@ -51,7 +51,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -284,7 +284,7 @@ public class Http2AsyncIOServletTest
             }
         }).get(5, TimeUnit.SECONDS);
 
-        stream.data(ReadableBuffer.wrap(UTF_8.encode("Hello Jetty")), false)
+        stream.data(RetainableByteBuffer.wrap(UTF_8.encode("Hello Jetty")), false)
             .get(5, TimeUnit.SECONDS);
         stream.demand();
 
@@ -361,7 +361,7 @@ public class Http2AsyncIOServletTest
             }
         }).get(5, TimeUnit.SECONDS);
 
-        stream.data(ReadableBuffer.wrap(UTF_8.encode("Hello Jetty")), false)
+        stream.data(RetainableByteBuffer.wrap(UTF_8.encode("Hello Jetty")), false)
             .get(5, TimeUnit.SECONDS);
         stream.demand();
 
@@ -415,7 +415,7 @@ public class Http2AsyncIOServletTest
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
         Stream stream = session.newStream(new HeadersFrame(request, null, false), new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
 
-        stream.data(ReadableBuffer.wrap(UTF_8.encode("Hello Jetty")), false)
+        stream.data(RetainableByteBuffer.wrap(UTF_8.encode("Hello Jetty")), false)
             .get(5, TimeUnit.SECONDS);
         stream.demand();
 

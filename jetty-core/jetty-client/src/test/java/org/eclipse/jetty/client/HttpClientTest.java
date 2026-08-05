@@ -61,7 +61,6 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -79,7 +78,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -186,7 +185,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -358,7 +357,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 if (paramValue.equals(value))
                 {
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
-                    response.write(true, ReadableBuffer.wrap(content), callback);
+                    response.write(true, RetainableByteBuffer.wrap(content), callback);
                 }
                 return true;
             }
@@ -699,8 +698,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         AsyncRequestContent body = new AsyncRequestContent();
-        body.write(false, ReadableBuffer.allocate(512, false), Callback.NOOP);
-        body.write(false, ReadableBuffer.allocate(512, false), Callback.from(() -> body.fail(new IOException("explicitly_thrown_by_test"))));
+        body.write(false, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
+        body.write(false, RetainableByteBuffer.allocate(512, false), Callback.from(() -> body.fail(new IOException("explicitly_thrown_by_test"))));
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -829,7 +828,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.wrap(new byte[length]), callback);
+                response.write(true, RetainableByteBuffer.wrap(new byte[length]), callback);
                 return true;
             }
         });
@@ -1260,7 +1259,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.wrap(content), callback);
+                response.write(true, RetainableByteBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -1327,7 +1326,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 byte[] content = "TEST".getBytes(UTF_8);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length);
                 Content.Sink.write(response, false, null);
-                response.write(true, ReadableBuffer.wrap(content), callback);
+                response.write(true, RetainableByteBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -1489,7 +1488,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 // Send Connection: close to avoid that the server chunks the content with HTTP 1.1.
                 if (version.compareTo(HttpVersion.HTTP_1_0) > 0)
                     response.getHeaders().put("Connection", "close");
-                response.write(true, ReadableBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -1554,7 +1553,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.allocate(1024, false), callback);
+                response.write(true, RetainableByteBuffer.allocate(1024, false), callback);
                 return true;
             }
         });
@@ -1884,7 +1883,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.wrap(bytes), callback);
+                response.write(true, RetainableByteBuffer.wrap(bytes), callback);
                 return true;
             }
         });
@@ -2119,7 +2118,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
+        org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
         int capacity = buffer.capacity();
         buffer.release();
         client.setMaxRequestHeadersSize(3 * capacity);
@@ -2151,7 +2150,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         HttpConfiguration httpConfig = connector.getBean(HttpConnectionFactory.class).getHttpConfiguration();
-        RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(httpConfig.getResponseHeaderSize(), false);
+        org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(httpConfig.getResponseHeaderSize(), false);
         int capacity = buffer.capacity();
         buffer.release();
         httpConfig.setMaxResponseHeaderSize(3 * capacity);
@@ -2172,7 +2171,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
+        org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
         int capacity = buffer.capacity();
         buffer.release();
         client.setMaxRequestHeadersSize(2 * capacity);
@@ -2192,7 +2191,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
+        org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
         int capacity = buffer.capacity();
         buffer.release();
         client.setMaxRequestHeadersSize(capacity / 4);
@@ -2229,7 +2228,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         HttpConfiguration httpConfig = connector.getBean(HttpConnectionFactory.class).getHttpConfiguration();
-        RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(httpConfig.getResponseHeaderSize(), false);
+        org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(httpConfig.getResponseHeaderSize(), false);
         int capacity = buffer.capacity();
         buffer.release();
         httpConfig.setMaxResponseHeaderSize(2 * capacity);

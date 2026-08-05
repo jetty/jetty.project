@@ -29,7 +29,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -85,7 +85,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -116,7 +116,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -146,7 +146,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -191,7 +191,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -231,7 +231,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        String response = connector.getResponse("""
+        String response = connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -261,7 +261,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -293,7 +293,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -335,7 +335,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        String response = connector.getResponse("""
+        String response = connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -423,7 +423,7 @@ public class StateTrackingHandlerTest
                 Response.Wrapper wrapper = new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ReadableBuffer buffer, Callback callback)
+                    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
                     {
                         try
                         {
@@ -483,7 +483,7 @@ public class StateTrackingHandlerTest
                 Response wrapped = new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ReadableBuffer buffer, Callback callback)
+                    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
                     {
                         // The callback parameter is the write callback from
                         // StateTrackingHandler that will not be completed.
@@ -630,13 +630,13 @@ public class StateTrackingHandlerTest
         {
             // Wait to return from handle(), then send the first chunk of content.
             Thread.sleep(500);
-            endPoint.addInputAndExecute("A");
+            endPoint.writeRequestString("A");
 
             // Wait to detect the blocked demand callback, then add the last chunk of content.
             await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(listener::events, contains("demand-blocked"));
             assertThat(stateTrackingHandler.dump(), containsString("demands size=2"));
             demandLatch.countDown();
-            endPoint.addInputAndExecute("B");
+            endPoint.writeRequestString("B");
 
             HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
@@ -687,7 +687,7 @@ public class StateTrackingHandlerTest
             await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(listener::events, contains("write-callback-blocked"));
             assertThat(stateTrackingHandler.dump(), containsString("writes size=2"));
             writeLatch.countDown();
-            endPoint.addInputAndExecute("B");
+            endPoint.writeRequestString("B");
 
             HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
@@ -711,7 +711,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             

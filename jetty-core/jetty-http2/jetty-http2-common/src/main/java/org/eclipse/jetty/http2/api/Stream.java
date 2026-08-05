@@ -25,7 +25,7 @@ import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
@@ -187,7 +187,7 @@ public interface Stream
      * @param endStream whether the frame is the last one
      * @return the CompletableFuture that gets notified when the frame has been sent
      */
-    public default CompletableFuture<Stream> data(ReadableBuffer data, boolean endStream)
+    public default CompletableFuture<Stream> data(RetainableByteBuffer data, boolean endStream)
     {
         return Promise.Completable.with(p -> data(data, endStream, Callback.from(() -> p.succeeded(this), p::failed)));
     }
@@ -208,7 +208,7 @@ public interface Stream
      * @param endStream whether the frame is the last one
      * @param callback the callback that gets notified when the frame has been sent
      */
-    public void data(ReadableBuffer data, boolean endStream, Callback callback);
+    public void data(RetainableByteBuffer data, boolean endStream, Callback callback);
 
     /**
      * <p>Sends the given RST_STREAM {@code frame}.</p>
