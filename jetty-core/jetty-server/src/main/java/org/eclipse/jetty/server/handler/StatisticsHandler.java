@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
@@ -86,7 +86,7 @@ public class StatisticsHandler extends EventsHandler
     }
 
     @Override
-    protected void onResponseWriteComplete(Request request, boolean last, ReadableBuffer content, Throwable failure)
+    protected void onResponseWriteComplete(Request request, boolean last, RetainableByteBuffer content, Throwable failure)
     {
         if (failure == null)
         {

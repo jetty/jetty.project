@@ -66,7 +66,6 @@ public class JDK9HTTP2ClientTest
                 @Override
                 public void onHeaders(Stream stream, HeadersFrame frame)
                 {
-                    System.err.println(frame);
                     if (frame.isEndStream())
                         latch.countDown();
                     stream.demand();
@@ -76,7 +75,6 @@ public class JDK9HTTP2ClientTest
                 public void onDataAvailable(Stream stream)
                 {
                     Content.Chunk chunk = stream.read();
-                    System.err.println(chunk);
                     chunk.release();
                     if (chunk.isLast())
                         latch.countDown();

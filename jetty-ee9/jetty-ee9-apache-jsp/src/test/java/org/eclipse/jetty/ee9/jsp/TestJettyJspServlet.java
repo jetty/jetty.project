@@ -97,7 +97,7 @@ public class TestJettyJspServlet
                 "Connection: close\r\n" +
                 "\r\n";
 
-        String rawResponse = _connector.getResponse(request);
+        String rawResponse = _connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getContent(), not(containsString("This.Is.The.Default.")));
     }
@@ -111,7 +111,7 @@ public class TestJettyJspServlet
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        String rawResponse = _connector.getResponse(request);
+        String rawResponse = _connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getContent(), containsString("This.Is.The.Default."));
     }

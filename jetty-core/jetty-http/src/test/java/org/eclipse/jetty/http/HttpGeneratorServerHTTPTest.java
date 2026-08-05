@@ -19,12 +19,12 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.equalTo;
@@ -54,7 +54,7 @@ public class HttpGeneratorServerHTTPTest
         HttpParser parser = new HttpParser(handler);
         parser.setHeadResponse(run.result._head);
 
-        parser.parseNext(BufferUtil.toReadableBuffer(response));
+        parser.parseNext(RetainableByteBuffer.wrap(response, UTF_8));
 
         if (run.result._body != null)
             assertEquals(run.result._body, this._content, msg);
@@ -73,7 +73,7 @@ public class HttpGeneratorServerHTTPTest
             assertThat(msg, run.result._contentLength, either(equalTo(_content.length())).or(equalTo(-1)));
     }
 
-    private static class Result
+    public static class Result
     {
         private HttpFields.Mutable _fields = HttpFields.build();
         private final String _body;
@@ -112,41 +112,33 @@ public class HttpGeneratorServerHTTPTest
             if (_other != null)
                 _fields.put("Other", _other);
 
-            ReadableBuffer source = _body == null ? null : BufferUtil.toReadableBuffer(_body);
-            List<ReadableBuffer> chunks = new ArrayList<>();
-            ReadableBuffer content = null;
+            RetainableByteBuffer source = _body == null ? null : RetainableByteBuffer.wrap(_body.getBytes(UTF_8));
+            List<RetainableByteBuffer> chunks = new ArrayList<>();
+            RetainableByteBuffer content = null;
             int c = 0;
             if (source != null)
             {
+                long len = source.remaining() / nchunks;
                 for (int i = 0; i < nchunks; i++)
                 {
-                    long pos = i * (source.capacity() / nchunks);
-                    ReadableBuffer rb = source.slice();
-                    rb.position(pos);
-                    if (i > 0)
-                    {
-                        ReadableBuffer chunk = chunks.get(i - 1);
-                        WritableBuffer wb = chunk.toWritable();
-                        wb.position(rb.position());
-                        wb.toReadable();
-                    }
-                    chunks.add(rb);
+                    RetainableByteBuffer b = (i == nchunks - 1) ? source.sliceAndConsume(source.remaining()) : source.sliceAndConsume(len);
+                    chunks.add(b);
                 }
                 content = chunks.get(c++);
             }
-            WritableBuffer header = null;
-            WritableBuffer chunk = null;
+            RetainableByteBuffer.Mutable header = null;
+            RetainableByteBuffer.Mutable chunk = null;
             MetaData.Response info = null;
 
             loop:
             while (true)
             {
                 // if we have unwritten content
-                if (source != null && content != null && content.remaining() == 0 && c < nchunks)
+                if (source != null && content != null && !content.hasRemaining() && c < nchunks)
                     content = chunks.get(c++);
 
                 // Generate
-                boolean last = content == null || content.remaining() == 0L;
+                boolean last = content == null || !content.hasRemaining();
 
                 HttpGenerator.Result result = gen.generateResponse(info, _head, header, chunk, content, last);
 
@@ -157,43 +149,30 @@ public class HttpGeneratorServerHTTPTest
                         continue;
 
                     case NEED_HEADER:
-                        header = WritableBuffer.allocate(2048, false);
+                        header = RetainableByteBuffer.Mutable.allocate(2048, false);
                         continue;
 
                     case HEADER_OVERFLOW:
                         if (header.capacity() >= 8192)
                             throw new BadMessageException(500, "Header too large");
-                        header = WritableBuffer.allocate(8192, false);
+                        header = RetainableByteBuffer.Mutable.allocate(8192, false);
                         continue;
 
                     case NEED_CHUNK:
-                        chunk = WritableBuffer.allocate(HttpGenerator.CHUNK_SIZE, false);
+                        chunk = RetainableByteBuffer.Mutable.allocate(HttpGenerator.CHUNK_SIZE, false);
                         continue;
 
                     case NEED_CHUNK_TRAILER:
-                        chunk = WritableBuffer.allocate(2048, false);
+                        chunk = RetainableByteBuffer.Mutable.allocate(2048, false);
                         continue;
 
                     case FLUSH:
-                        if (header != null && header.position() > 0)
-                        {
-                            ReadableBuffer rb = header.toReadable();
-                            response += BufferUtil.toString(rb);
-                            rb.position(rb.position() + rb.remaining());
-                            rb.toWritable();
-                        }
-                        if (chunk != null && chunk.position() > 0)
-                        {
-                            ReadableBuffer rb = chunk.toReadable();
-                            response += BufferUtil.toString(rb);
-                            rb.position(rb.position() + rb.remaining());
-                            rb.toWritable();
-                        }
-                        if (content != null && content.remaining() > 0)
-                        {
-                            response += BufferUtil.toString(content);
-                            content.position(content.position() + content.remaining());
-                        }
+                        if (header != null && header.hasRemaining())
+                            response += header.getString(UTF_8);
+                        if (chunk != null && chunk.hasRemaining())
+                            response += chunk.getString(UTF_8);
+                        if (content != null && content.hasRemaining())
+                            response += content.getString(UTF_8);
                         break;
 
                     case CONTINUE:
@@ -224,12 +203,12 @@ public class HttpGeneratorServerHTTPTest
     private class Handler implements HttpParser.ResponseHandler
     {
         @Override
-        public boolean content(ReadableBuffer ref)
+        public boolean content(RetainableByteBuffer ref)
         {
             if (_content == null)
                 _content = "";
             _content += BufferUtil.toString(ref);
-            ref.position(ref.position() + ref.remaining());
+            ref.readPosition(ref.readPosition() + ref.remaining());
             return false;
         }
 
@@ -277,7 +256,7 @@ public class HttpGeneratorServerHTTPTest
 
     public static final String CONTENT = "The quick brown fox jumped over the lazy dog.\nNow is the time for all good men to come to the aid of the party\nThe moon is blue to a fish in love.\n";
 
-    private static class Run
+    public static class Run
     {
         private Result result;
         private ConnectionType connection;
@@ -299,7 +278,7 @@ public class HttpGeneratorServerHTTPTest
         }
     }
 
-    private enum ConnectionType
+    public enum ConnectionType
     {
         NONE(null, 9, 10, 11),
         KEEP_ALIVE("keep-alive", 9, 10, 11),
@@ -309,7 +288,7 @@ public class HttpGeneratorServerHTTPTest
         private String val;
         private int[] supportedHttpVersions;
 
-        private ConnectionType(String val, int... supportedHttpVersions)
+        ConnectionType(String val, int... supportedHttpVersions)
         {
             this.val = val;
             this.supportedHttpVersions = supportedHttpVersions;

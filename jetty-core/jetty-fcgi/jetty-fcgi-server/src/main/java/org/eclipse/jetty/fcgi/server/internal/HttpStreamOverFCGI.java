@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
@@ -226,9 +226,9 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer buffer, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer buffer, Callback callback)
     {
-        ReadableBuffer content = buffer != null ? buffer : ReadableBuffer.EMPTY;
+        RetainableByteBuffer content = buffer != null ? buffer : RetainableByteBuffer.Mutable.empty();
 
         if (LOG.isDebugEnabled())
             LOG.debug("send {} l={} {} {}", request, last, content, this);
@@ -244,10 +244,10 @@ public class HttpStreamOverFCGI implements HttpStream
             {
                 if (last)
                 {
-                    List<ReadableBuffer> accumulator = new ArrayList<>();
-                    generateResponseContent(accumulator, true, ReadableBuffer.EMPTY);
-                    ReadableBuffer accumulated = ReadableBuffer.accumulate(accumulator);
-                    accumulator.forEach(ReadableBuffer::release);
+                    List<RetainableByteBuffer> accumulator = new ArrayList<>();
+                    generateResponseContent(accumulator, true, RetainableByteBuffer.empty());
+                    RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(accumulator);
+                    accumulator.forEach(RetainableByteBuffer::release);
                     flusher.flush(accumulated, callback);
                     accumulated.release();
                 }
@@ -259,10 +259,10 @@ public class HttpStreamOverFCGI implements HttpStream
             }
             else
             {
-                List<ReadableBuffer> accumulator = new ArrayList<>();
+                List<RetainableByteBuffer> accumulator = new ArrayList<>();
                 generateResponseContent(accumulator, last, content);
-                ReadableBuffer accumulated = ReadableBuffer.accumulate(accumulator);
-                accumulator.forEach(ReadableBuffer::release);
+                RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(accumulator);
+                accumulator.forEach(RetainableByteBuffer::release);
                 flusher.flush(accumulated, callback);
                 accumulated.release();
             }
@@ -278,7 +278,7 @@ public class HttpStreamOverFCGI implements HttpStream
         return () -> Callback.combine(_connection.getFlusher().cancel(cause), appCallback).failed(cause);
     }
 
-    private void commit(MetaData.Response info, boolean head, boolean last, ReadableBuffer content, Callback callback)
+    private void commit(MetaData.Response info, boolean head, boolean last, RetainableByteBuffer content, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("commit {} {} l={}", this, info, last);
@@ -292,31 +292,31 @@ public class HttpStreamOverFCGI implements HttpStream
         {
             if (last)
             {
-                List<ReadableBuffer> accumulator = new ArrayList<>();
+                List<RetainableByteBuffer> accumulator = new ArrayList<>();
                 generateResponseHeaders(accumulator, info);
-                generateResponseContent(accumulator, true, ReadableBuffer.EMPTY);
-                ReadableBuffer buffer = ReadableBuffer.accumulate(accumulator);
-                accumulator.forEach(ReadableBuffer::release);
+                generateResponseContent(accumulator, true, RetainableByteBuffer.empty());
+                RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+                accumulator.forEach(RetainableByteBuffer::release);
                 flusher.flush(buffer, callback);
                 buffer.release();
             }
             else
             {
-                List<ReadableBuffer> accumulator = new ArrayList<>();
+                List<RetainableByteBuffer> accumulator = new ArrayList<>();
                 generateResponseHeaders(accumulator, info);
-                ReadableBuffer buffer = ReadableBuffer.accumulate(accumulator);
-                accumulator.forEach(ReadableBuffer::release);
+                RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+                accumulator.forEach(RetainableByteBuffer::release);
                 flusher.flush(buffer, callback);
                 buffer.release();
             }
         }
         else
         {
-            List<ReadableBuffer> accumulator = new ArrayList<>();
+            List<RetainableByteBuffer> accumulator = new ArrayList<>();
             generateResponseHeaders(accumulator, info);
             generateResponseContent(accumulator, last, content);
-            ReadableBuffer buffer = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             flusher.flush(buffer, callback);
             buffer.release();
         }
@@ -325,12 +325,12 @@ public class HttpStreamOverFCGI implements HttpStream
             flusher.shutdown();
     }
 
-    private void generateResponseHeaders(List<ReadableBuffer> accumulator, MetaData.Response info)
+    private void generateResponseHeaders(List<RetainableByteBuffer> accumulator, MetaData.Response info)
     {
         _generator.generateResponseHeaders(accumulator, _id, info.getStatus(), info.getReason(), info.getHttpFields());
     }
 
-    private void generateResponseContent(List<ReadableBuffer> accumulator, boolean last, ReadableBuffer buffer)
+    private void generateResponseContent(List<RetainableByteBuffer> accumulator, boolean last, RetainableByteBuffer buffer)
     {
         _generator.generateResponseContent(accumulator, _id, buffer, last, _aborted);
     }

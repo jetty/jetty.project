@@ -14,11 +14,11 @@
 package org.eclipse.jetty.http3.parser;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.Grease;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.FrameType;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +57,7 @@ public class ControlParser
      *
      * @param buffer the buffer to parse
      */
-    public void parse(ByteBuffer buffer)
+    public void parse(RetainableByteBuffer buffer)
     {
         try
         {
@@ -139,7 +139,7 @@ public class ControlParser
         }
     }
 
-    private void sessionFailure(ByteBuffer buffer, long error, String reason, Throwable failure)
+    private void sessionFailure(RetainableByteBuffer buffer, long error, String reason, Throwable failure)
     {
         unknownBodyParser.sessionFailure(buffer, error, reason, failure);
     }

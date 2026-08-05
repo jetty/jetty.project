@@ -123,21 +123,21 @@ public class FormAuthenticatorTest
         _server.start();
 
         String response;
-        response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Deferred"));
 
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
 
-        response = _connector.getResponse("GET /ctx/known/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/known/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
 
-        response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
@@ -159,13 +159,13 @@ public class FormAuthenticatorTest
         _server.start();
 
         String response;
-        response = _connector.getResponse("GET /ctx/some/thing?action=session HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/some/thing?action=session HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         assertThat(response, containsString("Deferred"));
         String sessionId = sessionId(response);
 
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, not(containsString("Set-Cookie: JSESSIONID=")));
@@ -180,18 +180,18 @@ public class FormAuthenticatorTest
         String response;
 
         String sessionId = "unknown";
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         sessionId = sessionId(response);
 
-        response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/error"));
         assertThat(response, not(containsString("Set-Cookie: JSESSIONID=")));
 
-        response = _connector.getResponse("""
+        response = _connector.getResponseAsString("""
             POST /ctx/j_security_check HTTP/1.0\r
             Host: host:8888\r
             Content-Length: 32\r
@@ -214,13 +214,13 @@ public class FormAuthenticatorTest
         String response;
 
         String sessionId = "unknown";
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         sessionId = sessionId(response);
 
-        response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=password HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/j_security_check?j_username=user&j_password=password HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/any/user"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
@@ -228,16 +228,16 @@ public class FormAuthenticatorTest
         sessionId = sessionId(response);
         assertThat(sessionId, not(equalTo(unsafeSessionId)));
 
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, not(containsString("Set-Cookie: JSESSIONID=")));
         assertThat(response, containsString("user is OK"));
 
-        response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
         assertThat(response, not(containsString("OK")));
 
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + unsafeSessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + unsafeSessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
@@ -252,13 +252,13 @@ public class FormAuthenticatorTest
         String response;
 
         String sessionId = "unknown";
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         sessionId = sessionId(response);
 
-        response = _connector.getResponse("""
+        response = _connector.getResponseAsString("""
             POST /ctx/j_security_check HTTP/1.0\r
             Host: host:8888\r
             Content-Length: 35\r
@@ -274,16 +274,16 @@ public class FormAuthenticatorTest
         sessionId = sessionId(response);
         assertThat(sessionId, not(equalTo(unsafeSessionId)));
 
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, not(containsString("Set-Cookie: JSESSIONID=")));
         assertThat(response, containsString("user is OK"));
 
-        response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
         assertThat(response, not(containsString("OK")));
 
-        response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + unsafeSessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + unsafeSessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
@@ -298,7 +298,7 @@ public class FormAuthenticatorTest
         String response;
         String sessionId = "unknown";
 
-        response = _connector.getResponse("""
+        response = _connector.getResponseAsString("""
             POST /ctx/any/user?action=form HTTP/1.1\r
             Host: host:8888\r
             Content-Length: 25\r
@@ -313,7 +313,7 @@ public class FormAuthenticatorTest
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         sessionId = sessionId(response);
 
-        response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=password HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/j_security_check?j_username=user&j_password=password HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: /ctx/any/user?action=form"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
@@ -321,7 +321,7 @@ public class FormAuthenticatorTest
         sessionId = sessionId(response);
         assertThat(sessionId, not(equalTo(unsafeSessionId)));
 
-        response = _connector.getResponse("GET /ctx/any/user?action=form HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/any/user?action=form HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, not(containsString("Set-Cookie: JSESSIONID=")));
         assertThat(response, containsString("name1:value1,"));
@@ -335,7 +335,7 @@ public class FormAuthenticatorTest
         configureServer(true);
         _server.start();
 
-        String response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Deferred"));
         assertThat(response, containsString("path=/ctx/login,"));
@@ -347,7 +347,7 @@ public class FormAuthenticatorTest
         configureServer(true);
         _server.start();
 
-        String response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Deferred"));
         assertThat(response, containsString("path=/ctx/error,"));
@@ -381,20 +381,20 @@ public class FormAuthenticatorTest
 
         String response;
 
-        response = _connector.getResponse("GET /ctx/any/info HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/any/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString(" 302 Found"));
         assertThat(response, containsString("/ctx/testLoginPage"));
         assertThat(response, containsString("JSESSIONID="));
         String sessionId = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
-        response = _connector.getResponse("GET /ctx/testLoginPage HTTP/1.0\r\n" +
+        response = _connector.getResponseAsString("GET /ctx/testLoginPage HTTP/1.0\r\n" +
             "Cookie: JSESSIONID=" + sessionId + "\r\n" +
             "\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("path=/ctx/testLoginPage"));
         assertThat(response, not(containsString("JSESSIONID=" + sessionId)));
 
-        response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
+        response = _connector.getResponseAsString("POST /ctx/j_security_check HTTP/1.0\r\n" +
             "Cookie: JSESSIONID=" + sessionId + "\r\n" +
             "Content-Type: application/x-www-form-urlencoded\r\n" +
             "Content-Length: 35\r\n" +
@@ -433,7 +433,7 @@ public class FormAuthenticatorTest
         }
 
         // check session still there.
-        response = _connector.getResponse("GET /ctx/any/info HTTP/1.0\r\n" +
+        response = _connector.getResponseAsString("GET /ctx/any/info HTTP/1.0\r\n" +
             "Cookie: JSESSIONID=" + sessionId + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));

@@ -15,7 +15,7 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static org.eclipse.jetty.http.compression.Huffman.CODES;
 import static org.eclipse.jetty.http.compression.Huffman.EOS;
@@ -63,10 +63,10 @@ public class HuffmanEncoder
      */
     public static void encode(ByteBuffer buffer, String s)
     {
-        encode(WritableBuffer.wrap(buffer), s);
+        encode(RetainableByteBuffer.Mutable.wrap(buffer), s);
     }
 
-    public static void encode(WritableBuffer buffer, String s)
+    public static void encode(RetainableByteBuffer.Mutable buffer, String s)
     {
         encode(CODES, buffer, s);
     }
@@ -84,14 +84,14 @@ public class HuffmanEncoder
      * @param buffer the buffer to encode into in lowercase.
      * @param s the string to encode.
      */
-    public static void encodeLowerCase(WritableBuffer buffer, String s)
+    public static void encodeLowerCase(RetainableByteBuffer.Mutable buffer, String s)
     {
         encode(LCCODES, buffer, s);
     }
 
     public static void encodeLowerCase(ByteBuffer buffer, String s)
     {
-        encode(LCCODES, WritableBuffer.wrap(buffer), s);
+        encode(LCCODES, RetainableByteBuffer.Mutable.wrap(buffer), s);
     }
 
     private static int octetsNeeded(final int[][] table, String s)
@@ -114,7 +114,7 @@ public class HuffmanEncoder
      * @param buffer The buffer to encode to
      * @param s The string to encode
      */
-    private static void encode(final int[][] table, WritableBuffer buffer, String s)
+    private static void encode(final int[][] table, RetainableByteBuffer.Mutable buffer, String s)
     {
         long current = 0;
         int n = 0;

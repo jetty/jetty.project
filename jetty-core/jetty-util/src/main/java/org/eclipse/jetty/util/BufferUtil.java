@@ -38,8 +38,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -394,10 +393,10 @@ public class BufferUtil
      * @param buffer The buffer to convert in flush mode. The buffer is not altered.
      * @return An array of bytes duplicated from the buffer.
      */
-    public static byte[] toArray(ReadableBuffer buffer)
+    public static byte[] toArray(RetainableByteBuffer buffer)
     {
         byte[] to = new byte[Math.toIntExact(buffer.remaining())];
-        ReadableBuffer slice = buffer.slice();
+        RetainableByteBuffer slice = buffer.slice();
         slice.get(to);
         slice.release();
         return to;
@@ -576,39 +575,34 @@ public class BufferUtil
     }
 
     /**
-     * Put data from a {@link ReadableBuffer} into a NIO buffer, avoiding over/under flows
+     * Put data from a {@link RetainableByteBuffer} into a NIO buffer, avoiding over/under flows
      *
      * @param from ReadableBuffer to take bytes from, whose position is modified with the bytes taken.
      * @param to Buffer to put bytes to in fill mode.
      * @return number of bytes moved
      * @throws ReadOnlyBufferException if the to buffer is read only
      */
-    public static int put(ReadableBuffer from, ByteBuffer to)
+    public static int put(RetainableByteBuffer from, ByteBuffer to)
     {
-        WritableBuffer wb = WritableBuffer.wrap(to);
+        RetainableByteBuffer.Mutable wb = RetainableByteBuffer.Mutable.wrap(to);
         return (int)put(from, wb);
     }
 
-    public static int put(ByteBuffer from, WritableBuffer to)
-    {
-        return (int)put(ReadableBuffer.wrap(from), to);
-    }
-
-    public static long put(ReadableBuffer from, WritableBuffer to)
+    public static long put(RetainableByteBuffer from, RetainableByteBuffer.Mutable to)
     {
         long filled;
-        if (to.remaining() >= from.remaining())
+        if (to.space() >= from.remaining())
         {
             filled = from.remaining();
             to.put(from);
         }
         else
         {
-            filled = to.remaining();
-            ReadableBuffer slice = from.slice(from.position(), filled);
+            filled = to.space();
+            RetainableByteBuffer slice = from.slice(from.readPosition(), filled);
             to.put(slice);
             slice.release();
-            from.position(from.position() + filled);
+            from.readPosition(from.readPosition() + filled);
         }
         return filled;
     }
@@ -845,22 +839,23 @@ public class BufferUtil
      * @param out The output stream
      * @throws IOException if there was a problem writing.
      */
-    public static void writeTo(ReadableBuffer buffer, OutputStream out) throws IOException
+    public static void writeTo(RetainableByteBuffer buffer, OutputStream out) throws IOException
     {
         buffer.writeTo(input -> writeTo(input, out));
     }
 
-    public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
+    public static int writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
+        int remaining = buffer.remaining();
         if (buffer.hasArray())
         {
-            out.write(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+            out.write(buffer.array(), buffer.arrayOffset() + buffer.position(), remaining);
             // update buffer position, in way similar to non-array version of writeTo
-            buffer.position(buffer.position() + buffer.remaining());
+            buffer.position(buffer.position() + remaining);
         }
         else
         {
-            byte[] bytes = new byte[Math.min(buffer.remaining(), TEMP_BUFFER_SIZE)];
+            byte[] bytes = new byte[Math.min(remaining, TEMP_BUFFER_SIZE)];
             while (buffer.hasRemaining())
             {
                 int byteCountToWrite = Math.min(buffer.remaining(), TEMP_BUFFER_SIZE);
@@ -868,6 +863,7 @@ public class BufferUtil
                 out.write(bytes, 0, byteCountToWrite);
             }
         }
+        return remaining;
     }
 
     /**
@@ -881,7 +877,7 @@ public class BufferUtil
         return toString(buffer, StandardCharsets.ISO_8859_1);
     }
 
-    public static String toString(ReadableBuffer buffer)
+    public static String toString(RetainableByteBuffer buffer)
     {
         return toString(buffer, StandardCharsets.ISO_8859_1);
     }
@@ -907,14 +903,14 @@ public class BufferUtil
         return new String(array, buffer.arrayOffset() + buffer.position(), buffer.remaining(), charset);
     }
 
-    public static String toString(ReadableBuffer buffer, Charset charset)
+    public static String toString(RetainableByteBuffer buffer, Charset charset)
     {
         if (buffer == null)
             return null;
         byte[] to = new byte[Math.toIntExact(buffer.remaining())];
-        long positionBefore = buffer.position();
+        long positionBefore = buffer.readPosition();
         buffer.get(to);
-        buffer.position(positionBefore);
+        buffer.readPosition(positionBefore);
         return new String(to, charset);
     }
 
@@ -944,12 +940,12 @@ public class BufferUtil
         return new String(array, buffer.arrayOffset() + position, length, charset);
     }
 
-    public static String toString(ReadableBuffer buffer, long position, int length, Charset charset)
+    public static String toString(RetainableByteBuffer buffer, long position, int length, Charset charset)
     {
         if (buffer == null)
             return null;
         byte[] to = new byte[length];
-        ReadableBuffer slice = buffer.slice(position, length);
+        RetainableByteBuffer slice = buffer.slice(position, length);
         slice.get(to);
         slice.release();
         return new String(to, charset);
@@ -966,7 +962,7 @@ public class BufferUtil
         return toString(buffer, StandardCharsets.UTF_8);
     }
 
-    public static String toUTF8String(ReadableBuffer buffer)
+    public static String toUTF8String(RetainableByteBuffer buffer)
     {
         return toString(buffer, StandardCharsets.UTF_8);
     }
@@ -1109,10 +1105,10 @@ public class BufferUtil
 
     public static void putHexInt(ByteBuffer buffer, int n)
     {
-        putHexInt(WritableBuffer.wrap(buffer), n);
+        putHexInt(RetainableByteBuffer.Mutable.wrap(buffer), n);
     }
 
-    public static void putHexInt(WritableBuffer buffer, int n)
+    public static void putHexInt(RetainableByteBuffer.Mutable buffer, int n)
     {
         if (n < 0)
         {
@@ -1201,10 +1197,10 @@ public class BufferUtil
 
     public static void putDecLong(ByteBuffer buffer, long n)
     {
-        putDecLong(WritableBuffer.wrap(buffer), n);
+        putDecLong(RetainableByteBuffer.Mutable.wrap(buffer), n);
     }
 
-    public static void putDecLong(WritableBuffer buffer, long n)
+    public static void putDecLong(RetainableByteBuffer.Mutable buffer, long n)
     {
         if (n < 0)
         {
@@ -1263,9 +1259,9 @@ public class BufferUtil
         return toBuffer(s, StandardCharsets.ISO_8859_1);
     }
 
-    public static ReadableBuffer toReadableBuffer(String s)
+    public static RetainableByteBuffer toReadableBuffer(String s)
     {
-        return ReadableBuffer.wrap(toBuffer(s, StandardCharsets.ISO_8859_1));
+        return RetainableByteBuffer.wrap(toBuffer(s, StandardCharsets.ISO_8859_1));
     }
 
     public static ByteBuffer toBuffer(String s, Charset charset)
@@ -1275,9 +1271,9 @@ public class BufferUtil
         return toBuffer(s.getBytes(charset));
     }
 
-    public static ReadableBuffer toReadableBuffer(String s, Charset charset)
+    public static RetainableByteBuffer toReadableBuffer(String s, Charset charset)
     {
-        return ReadableBuffer.wrap(toBuffer(s, charset));
+        return RetainableByteBuffer.wrap(toBuffer(s, charset));
     }
 
     /**
@@ -1332,7 +1328,7 @@ public class BufferUtil
         return buffer;
     }
 
-    public static ByteBuffer toBuffer(ReadableBuffer buffer, boolean direct)
+    public static ByteBuffer toBuffer(RetainableByteBuffer buffer, boolean direct)
     {
         long capacity = buffer.remaining();
         if (capacity > Integer.MAX_VALUE)
@@ -1468,7 +1464,13 @@ public class BufferUtil
     {
         if (buffer == null)
             return "null";
+        return toDetailString(buffer, buffer.position(), buffer.limit(), buffer.remaining());
+    }
 
+    public static String toDetailString(ByteBuffer buffer, int readPosition, int writePosition, int remaining)
+    {
+        if (buffer == null)
+            return "null";
         StringBuilder buf = new StringBuilder();
         idString(buffer, buf);
         buf.append("[p=");
@@ -1478,13 +1480,10 @@ public class BufferUtil
         buf.append(",c=");
         buf.append(buffer.capacity());
         buf.append(",r=");
-        buf.append(buffer.remaining());
+        buf.append(remaining);
         buf.append("]={");
-
-        appendDebugString(buf, buffer);
-
+        appendDebugString(buf, buffer, readPosition, writePosition);
         buf.append("}");
-
         return buf.toString();
     }
 
@@ -1521,56 +1520,51 @@ public class BufferUtil
         return buf.toString();
     }
 
-    public static void appendDebugString(StringBuilder buf, ByteBuffer buffer)
+    public static void appendDebugString(StringBuilder builder, ByteBuffer buffer, int position, int limit)
     {
-        // Take a readonly copy so we can adjust the limit
-        buffer = buffer.asReadOnlyBuffer();
-        int limit = -1;
         try
         {
-            for (int i = 0; i < buffer.position(); i++)
+            for (int i = 0; i < position; i++)
             {
-                appendDebugByte(buf, buffer.get(i));
-                if (i == 8 && buffer.position() > 16)
+                appendDebugByte(builder, buffer.get(i));
+                if (i == 8 && position > 16)
                 {
-                    buf.append("...");
-                    i = buffer.position() - 8;
+                    builder.append("...");
+                    i = position - 8;
                 }
             }
-            buf.append("<<<");
-            for (int i = buffer.position(); i < buffer.limit(); i++)
+
+            builder.append("<<<");
+            for (int i = position; i < limit; i++)
             {
-                appendDebugByte(buf, buffer.get(i));
-                if (i == buffer.position() + 24 && buffer.limit() > buffer.position() + 48)
+                appendDebugByte(builder, buffer.get(i));
+                if (i == position + 24 && limit > position + 48)
                 {
-                    buf.append("...");
-                    i = buffer.limit() - 24;
+                    builder.append("...");
+                    i = limit - 24;
                 }
             }
-            buf.append(">>>");
-            limit = buffer.limit();
+            builder.append(">>>");
+
+            // Move the limit to be able to access bytes between limit and capacity.
+            int lim = buffer.limit();
             buffer.limit(buffer.capacity());
             for (int i = limit; i < buffer.capacity(); i++)
             {
-                appendDebugByte(buf, buffer.get(i));
+                appendDebugByte(builder, buffer.get(i));
                 if (i == limit + 8 && buffer.capacity() > limit + 16)
                 {
-                    buf.append("...");
+                    builder.append("...");
                     i = buffer.capacity() - 8;
                 }
             }
-            buffer.limit(limit);
+            buffer.limit(lim);
         }
         catch (Throwable x)
         {
             if (LOG.isTraceEnabled())
                 LOG.trace("IGNORED", x);
-            buf.append("!!concurrent mod!!");
-        }
-        finally
-        {
-            if (limit >= 0)
-                buffer.limit(limit);
+            builder.append("!!concurrent modification!!");
         }
     }
 
@@ -1621,11 +1615,11 @@ public class BufferUtil
      * @param buffer the buffer to generate a hex byte summary from
      * @return A hex string
      */
-    public static String toHexString(ReadableBuffer buffer)
+    public static String toHexString(RetainableByteBuffer buffer)
     {
         if (buffer == null)
             return "null";
-        ReadableBuffer slice = buffer.slice();
+        RetainableByteBuffer slice = buffer.slice();
         try
         {
             byte[] b = new byte[Math.toIntExact(slice.remaining())];
@@ -1669,7 +1663,7 @@ public class BufferUtil
         buffer.put((byte)10);
     }
 
-    public static void putCRLF(WritableBuffer buffer)
+    public static void putCRLF(RetainableByteBuffer.Mutable buffer)
     {
         buffer.put((byte)13);
         buffer.put((byte)10);

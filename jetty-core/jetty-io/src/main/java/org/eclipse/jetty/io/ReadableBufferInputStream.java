@@ -17,16 +17,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * Present a ReadableBuffer as an InputStream.
  */
 public class ReadableBufferInputStream extends InputStream
 {
-    private ReadableBuffer buf;
+    private RetainableByteBuffer buf;
 
-    public ReadableBufferInputStream(ReadableBuffer buf)
+    public ReadableBufferInputStream(RetainableByteBuffer buf)
     {
         this.buf = Objects.requireNonNull(buf);
         buf.retain();
@@ -49,7 +49,7 @@ public class ReadableBufferInputStream extends InputStream
     public int read() throws IOException
     {
         assertNotClosed();
-        if (buf.remaining() == 0L)
+        if (!buf.hasRemaining())
             return -1;
         return buf.get() & 0xFF;
     }
@@ -57,7 +57,7 @@ public class ReadableBufferInputStream extends InputStream
     public int read(byte[] bytes, int off, int len) throws IOException
     {
         assertNotClosed();
-        if (buf.remaining() == 0L)
+        if (!buf.hasRemaining())
             return -1;
 
         len = Math.min(len, available());

@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -234,7 +234,7 @@ public class HttpServerTestFixture
                 {
                     try (Blocker.Callback blocker = Blocker.callback())
                     {
-                        response.write(i == 0, ReadableBuffer.wrap(bytes.slice()), blocker);
+                        response.write(i == 0, RetainableByteBuffer.wrap(bytes.slice()), blocker);
                         blocker.block();
                     }
                 }
@@ -247,7 +247,7 @@ public class HttpServerTestFixture
                 {
                     try (Blocker.Callback blocker = Blocker.callback())
                     {
-                        response.write(i == 0, ReadableBuffer.wrap(bytes.slice()), blocker);
+                        response.write(i == 0, RetainableByteBuffer.wrap(bytes.slice()), blocker);
                         blocker.block();
                     }
                 }

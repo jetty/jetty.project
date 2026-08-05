@@ -96,6 +96,8 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
         @Override
         public void upgrade(EndPoint endPoint, Map<String, Object> context)
         {
+            System.err.println("SIMON: upgrade");
+
             HttpDestination destination = (HttpDestination)context.get(Destination.CONTEXT_KEY);
             @SuppressWarnings("unchecked")
             Promise<Connection> promise = (Promise<Connection>)context.get(Connection.PROMISE_CONTEXT_KEY);
@@ -104,6 +106,8 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
                 @Override
                 public void succeeded(HttpConnectionOverHTTP2 connection)
                 {
+                    System.err.println("SIMON: succeeded");
+
                     // This code is run when the client receives the server preface reply.
                     // Upgrade the connection to setup HTTP/2 frame listeners that will
                     // handle the HTTP/2 response to the upgrade request.
@@ -126,6 +130,8 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
                 @Override
                 public void failed(Throwable x)
                 {
+                    System.err.println("SIMON: failed");
+                    x.printStackTrace();
                     promise.failed(x);
                 }
             });

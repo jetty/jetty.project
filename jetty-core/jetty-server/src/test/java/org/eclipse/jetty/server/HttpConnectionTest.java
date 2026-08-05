@@ -88,7 +88,7 @@ public class HttpConnectionTest
         httpConfig.setSendDateHeader(true);
         HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
 
-        _connector = new LocalConnector(_server, http, null);
+        _connector = new LocalConnector(_server, http);
         _connector.setIdleTimeout(5000);
         _server.addConnector(_connector);
         _server.setHandler(new DumpHandler());
@@ -111,7 +111,7 @@ public class HttpConnectionTest
             int offset = 0;
 
             // Chunk last
-            response = _connector.getResponse("GET /R1 HTTP/1.1\r\n" +
+            response = _connector.getResponseAsString("GET /R1 HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
                 "Content-Type: text/plain\r\n" +
@@ -126,7 +126,7 @@ public class HttpConnectionTest
             checkContains(response, offset, "12345");
 
             offset = 0;
-            response = _connector.getResponse("GET /R2 HTTP/1.1\r\n" +
+            response = _connector.getResponseAsString("GET /R2 HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
                 "Content-Type: text/plain\r\n" +
@@ -157,13 +157,13 @@ public class HttpConnectionTest
         _server.start();
         _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616);
         String request = "GET / HTTP/0.9\r\n\r\n";
-        String response = _connector.getResponse(request);
+        String response = _connector.getResponseAsString(request);
         assertThat(response, containsString("505 HTTP Version Not Supported"));
         assertThat(response, containsString("<th>MESSAGE:</th><td>Unsupported Version</td>"));
 
         _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC7230);
         request = "GET / HTTP/0.9\r\n\r\n";
-        response = _connector.getResponse(request);
+        response = _connector.getResponseAsString(request);
         assertThat(response, containsString("505 HTTP Version Not Supported"));
         assertThat(response, containsString("<th>MESSAGE:</th><td>Unsupported Version</td>"));
     }
@@ -195,7 +195,7 @@ public class HttpConnectionTest
             "Host: localhost\r\n" +
             "\r\n";
 
-        String response = _connector.getResponse(request);
+        String response = _connector.getResponseAsString(request);
         assertThat(response, startsWith("HTTP/1.1 "));
     }
 
@@ -209,7 +209,7 @@ public class HttpConnectionTest
         _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616);
         // header looking like another request is ignored
         String request = "GET /one\r\nGET :/two\r\n\r\n";
-        String response = BufferUtil.toString(_connector.executeRequest(request).waitForOutput(10, TimeUnit.SECONDS));
+        String response = _connector.executeRequest(request).getResponse(false, 10, TimeUnit.SECONDS);
         assertThat(response, containsString("pathInContext=/one"));
         assertThat(response, not(containsString("two")));
     }
@@ -226,7 +226,7 @@ public class HttpConnectionTest
         // Verify that pipelining does not work with HTTP/0.9.
         String requests = "GET /?id=123\r\n\r\nGET /?id=456\r\n\r\n";
         LocalConnector.LocalEndPoint endp = _connector.executeRequest(requests);
-        String response = BufferUtil.toString(endp.waitForOutput(10, TimeUnit.SECONDS));
+        String response = endp.getResponse(false, 10, TimeUnit.SECONDS);
 
         assertThat(response, containsString("id=123"));
         assertThat(response, not(containsString("id=456")));
@@ -247,7 +247,7 @@ public class HttpConnectionTest
                          chunkSize + "\r\n" +
                          "abcdefgh\r\n";
 
-        String response = _connector.getResponse(request);
+        String response = _connector.getResponseAsString(request);
         assertThat(response, containsString(" 400 Bad Request"));
         assertThat(response, containsString("Connection: close"));
         assertThat(response, containsString("<th>MESSAGE:</th><td>Early EOF</td>"));
@@ -269,7 +269,7 @@ public class HttpConnectionTest
 
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
-            String response = _connector.getResponse(request);
+            String response = _connector.getResponseAsString(request);
             assertThat(response, containsString(" 500 Server Error"));
             assertThat(response, containsString("Connection: close"));
             assertThat(response, containsString("TimeoutException"));
@@ -314,7 +314,7 @@ public class HttpConnectionTest
         request.append("\r\n");
         request.append("abcdefgh"); // actual content of 8 bytes
 
-        String rawResponse = _connector.getResponse(request.toString());
+        String rawResponse = _connector.getResponseAsString(request.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat("Response.status", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
     }
@@ -373,7 +373,7 @@ public class HttpConnectionTest
         request.append("abcdefgh"); // actual content of 8 bytes
         request.append("\r\n0\r\n\r\n"); // last chunk
 
-        String rawResponse = _connector.getResponse(request.toString());
+        String rawResponse = _connector.getResponseAsString(request.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat("Response.status", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
     }
@@ -418,7 +418,7 @@ public class HttpConnectionTest
         request.append("abcdefgh"); // actual content of 8 bytes
         request.append("\r\n0\r\n\r\n"); // last chunk
 
-        String rawResponse = _connector.getResponse(request.toString());
+        String rawResponse = _connector.getResponseAsString(request.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat("Response.status (" + response.getReason() + ")", response.getStatus(), is(HttpStatus.OK_200));
     }
@@ -471,7 +471,7 @@ public class HttpConnectionTest
         request.append("abcdefgh"); // actual content of 8 bytes
         request.append("\r\n0\r\n\r\n"); // last chunk
 
-        String rawResponse = _connector.getResponse(request.toString());
+        String rawResponse = _connector.getResponseAsString(request.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat("Response.status", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
     }
@@ -480,7 +480,7 @@ public class HttpConnectionTest
     public void testNoPath() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET http://localhost:80 HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET http://localhost:80 HTTP/1.1\r\n" +
             "Host: localhost:80\r\n" +
             "Connection: close\r\n" +
             "\r\n");
@@ -494,7 +494,7 @@ public class HttpConnectionTest
     public void testDate() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET / HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET / HTTP/1.1\r\n" +
             "Host: localhost:80\r\n" +
             "Connection: close\r\n" +
             "\r\n");
@@ -509,7 +509,7 @@ public class HttpConnectionTest
     public void testSetDate() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET /?date=1+Jan+1970 HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET /?date=1+Jan+1970 HTTP/1.1\r\n" +
             "Host: localhost:80\r\n" +
             "Connection: close\r\n" +
             "\r\n");
@@ -524,7 +524,7 @@ public class HttpConnectionTest
     public void testBadNoPath() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET http://localhost:80/../cheat HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET http://localhost:80/../cheat HTTP/1.1\r\n" +
             "Host: localhost:80\r\n" +
             "\r\n");
         checkContains(response, 0, "HTTP/1.1 400");
@@ -534,7 +534,7 @@ public class HttpConnectionTest
     public void testOKPathDotDotPath() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET /ooops/../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
+        String response = _connector.getResponseAsString("GET /ooops/../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
         checkContains(response, 0, "HTTP/1.1 200 OK");
         checkContains(response, 0, "pathInContext=/path");
     }
@@ -543,7 +543,7 @@ public class HttpConnectionTest
     public void testBadPathDotDotPath() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET /ooops/../../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
+        String response = _connector.getResponseAsString("GET /ooops/../../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
         checkContains(response, 0, "HTTP/1.1 400 ");
         checkContains(response, 0, "<th>MESSAGE:</th><td>Bad Request</td>");
     }
@@ -552,7 +552,7 @@ public class HttpConnectionTest
     public void testBadDotDotPath() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET ../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
+        String response = _connector.getResponseAsString("GET ../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
         checkContains(response, 0, "HTTP/1.1 400 ");
         checkContains(response, 0, "<th>MESSAGE:</th><td>Bad Request</td>");
     }
@@ -561,32 +561,29 @@ public class HttpConnectionTest
     public void testBadSlashDotDotPath() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET /../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
+        String response = _connector.getResponseAsString("GET /../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
         checkContains(response, 0, "HTTP/1.1 400 ");
         checkContains(response, 0, "<th>MESSAGE:</th><td>Bad Request</td>");
     }
 
     @Test
-    public void test09() throws Exception
+    public void testHttp09() throws Exception
     {
         _server.start();
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
-        LocalConnector.LocalEndPoint endp = _connector.executeRequest("GET /R1\n");
-        endp.waitUntilClosed();
-        String response = BufferUtil.toString(endp.takeOutput());
+        _connector.getHttpConnectionFactory().getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
+        String response = _connector.getResponseAsString("GET /R1\n");
 
-        int offset = 0;
-        checkNotContained(response, offset, "HTTP/1.1");
-        checkNotContained(response, offset, "200");
-        checkContains(response, offset, "httpURI=http://0.0.0.0/R1");
-        checkContains(response, offset, "pathInContext=/R1");
+        checkNotContained(response, 0, "HTTP/1.1");
+        checkNotContained(response, 0, "200");
+        checkContains(response, 0, "httpURI=http://%s/R1".formatted(_connector.getLocalSocketAddress()));
+        checkContains(response, 0, "pathInContext=/R1");
     }
 
     @Test
     public void testSimple() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET /R1 HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET /R1 HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Connection: close\r\n" +
             "\r\n");
@@ -601,7 +598,7 @@ public class HttpConnectionTest
     public void testEmptyNotPersistent() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("""
+        String response = _connector.getResponseAsString("""
             GET /R1?empty=true HTTP/1.0\r
             Host: localhost\r
             \r
@@ -610,7 +607,7 @@ public class HttpConnectionTest
         int offset = 0;
         checkContains(response, offset, "HTTP/1.1 200");
 
-        response = _connector.getResponse("""
+        response = _connector.getResponseAsString("""
             GET /R1?empty=true HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -625,7 +622,7 @@ public class HttpConnectionTest
     public void testEmptyPersistent() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("""
+        String response = _connector.getResponseAsString("""
             GET /R1?empty=true HTTP/1.0\r
             Host: localhost\r
             Connection: keep-alive\r
@@ -637,7 +634,7 @@ public class HttpConnectionTest
         checkContains(response, offset, "Content-Length: 0");
         checkNotContained(response, offset, "Connection: close");
 
-        response = _connector.getResponse("""
+        response = _connector.getResponseAsString("""
             GET /R1?empty=true HTTP/1.1\r
             Host: localhost\r
             \r
@@ -653,7 +650,7 @@ public class HttpConnectionTest
     public void testEmptyChunk() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET /R1 HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET /R1 HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Transfer-Encoding: chunked\r\n" +
             "Content-Type: text/plain\r\n" +
@@ -671,7 +668,7 @@ public class HttpConnectionTest
     public void testChunk() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET /R1 HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET /R1 HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Transfer-Encoding: chunked\r\n" +
             "Content-Type: text/plain\r\n" +
@@ -692,7 +689,7 @@ public class HttpConnectionTest
     public void testChunkTrailer() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET /R1 HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET /R1 HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Transfer-Encoding: chunked\r\n" +
             "Content-Type: text/plain\r\n" +
@@ -716,7 +713,7 @@ public class HttpConnectionTest
         _server.start();
         // Expect TimeoutException logged
         _connector.setIdleTimeout(1000);
-        String response = _connector.getResponse("GET /R1 HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET /R1 HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Transfer-Encoding: chunked\r\n" +
             "Content-Type: text/plain\r\n" +
@@ -735,12 +732,12 @@ public class HttpConnectionTest
     public void testHead() throws Exception
     {
         _server.start();
-        String responsePOST = _connector.getResponse("POST /R1 HTTP/1.1\r\n" +
+        String responsePOST = _connector.getResponseAsString("POST /R1 HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Connection: close\r\n" +
             "\r\n");
 
-        String responseHEAD = _connector.getResponse("HEAD /R1 HTTP/1.1\r\n" +
+        String responseHEAD = _connector.getResponseAsString("HEAD /R1 HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Connection: close\r\n" +
             "\r\n");
@@ -787,13 +784,13 @@ public class HttpConnectionTest
     public void testHeadChunked() throws Exception
     {
         _server.start();
-        String responsePOST = _connector.getResponse("POST /R1?no-content-length=true HTTP/1.1\r\n" +
+        String responsePOST = _connector.getResponseAsString("POST /R1?no-content-length=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
-            "\r\n", false, 1, TimeUnit.SECONDS);
+            "\r\n", 1, TimeUnit.SECONDS);
 
-        String responseHEAD = _connector.getResponse("HEAD /R1?no-content-length=true HTTP/1.1\r\n" +
+        String responseHEAD = _connector.getResponseAsString("HEAD /R1?no-content-length=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
-            "\r\n", true, 1, TimeUnit.SECONDS);
+            "\r\n", 1, TimeUnit.SECONDS);
 
         String postLine;
         boolean postDate = false;
@@ -839,7 +836,7 @@ public class HttpConnectionTest
         _server.start();
         String response;
 
-        response = _connector.getResponse("""
+        response = _connector.getResponseAsString("""
             GET /foo HTTP/1.1
             Host: :1234
             Connection: close
@@ -854,7 +851,7 @@ public class HttpConnectionTest
         _server.start();
         String response;
 
-        response = _connector.getResponse("GET http://localhost:EXPECTED_NUMBER_FORMAT_EXCEPTION/ HTTP/1.1\r\n" +
+        response = _connector.getResponseAsString("GET http://localhost:EXPECTED_NUMBER_FORMAT_EXCEPTION/ HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Connection: close\r\n" +
             "\r\n");
@@ -867,7 +864,7 @@ public class HttpConnectionTest
         _server.start();
         String response;
 
-        response = _connector.getResponse("""
+        response = _connector.getResponseAsString("""
             GET / HTTP/1.1
             
             """);
@@ -880,7 +877,7 @@ public class HttpConnectionTest
         _server.start();
         String response;
 
-        response = _connector.getResponse("GET / HTTP/1.1\r\n" +
+        response = _connector.getResponseAsString("GET / HTTP/1.1\r\n" +
             "Host:\r\n" +
             "\r\n");
         checkContains(response, 0, "HTTP/1.1 400");
@@ -892,7 +889,7 @@ public class HttpConnectionTest
         _server.start();
         String response;
 
-        response = _connector.getResponse("GET scheme:/// HTTP/1.1\r\n" +
+        response = _connector.getResponseAsString("GET scheme:/// HTTP/1.1\r\n" +
             "Host:\r\n" +
             "\r\n");
         checkContains(response, 0, "HTTP/1.1 200");
@@ -902,7 +899,7 @@ public class HttpConnectionTest
     public void testBadURIencoding() throws Exception
     {
         _server.start();
-        String response = _connector.getResponse("GET /bad/encoding%x HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET /bad/encoding%x HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Connection: close\r\n" +
             "\r\n");
@@ -915,7 +912,7 @@ public class HttpConnectionTest
         _server.start();
         int offset = 0;
 
-        String response = _connector.getResponse("GET /R1 HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET /R1 HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Transfer-Encoding: chunked\r\n" +
             "Content-Type: text/plain\r\n" +
@@ -946,7 +943,7 @@ public class HttpConnectionTest
         });
         _server.start();
 
-        String response = _connector.getResponse("GET / HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET / HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Connection: close\r\n" +
             "\r\n");
@@ -1008,7 +1005,7 @@ public class HttpConnectionTest
                 "12345\r\n";
 
         long start = NanoTime.now();
-        String response = _connector.getResponse(requests, 2000, TimeUnit.MILLISECONDS);
+        String response = _connector.getResponseAsString(requests, 2000, TimeUnit.MILLISECONDS);
         assertThat(NanoTime.millisSince(start), lessThanOrEqualTo(2000L));
 
         offset = checkContains(response, offset, "HTTP/1.1 200");
@@ -1114,7 +1111,7 @@ public class HttpConnectionTest
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
             LOG.info("EXPECTING: java.lang.IllegalStateException...");
-            String response = _connector.getResponse(requests);
+            String response = _connector.getResponseAsString(requests);
             offset = checkContains(response, offset, "HTTP/1.1 500");
             checkNotContained(response, offset, "HTTP/1.1 200");
         }
@@ -1128,7 +1125,7 @@ public class HttpConnectionTest
         try
         {
             int offset = 0;
-            response = _connector.getResponse("GET /R1 HTTP/1.1\r\n" +
+            response = _connector.getResponseAsString("GET /R1 HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: TE, close\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
@@ -1166,7 +1163,7 @@ public class HttpConnectionTest
             {
                 cookie += "xxxxxxxxxxxx";
             }
-            response = _connector.getResponse("GET / HTTP/1.1\r\n" +
+            response = _connector.getResponseAsString("GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Cookie: " + cookie + "\r\n" +
                 "\r\n"
@@ -1202,7 +1199,7 @@ public class HttpConnectionTest
         }
         request.append("\r\n");
 
-        String response = _connector.getResponse(request.toString());
+        String response = _connector.getResponseAsString(request.toString());
         offset = checkContains(response, offset, "HTTP/1.1 431");
         checkContains(response, offset, "<h2>HTTP ERROR 431 Request Header Fields Too Large</h2>");
     }
@@ -1236,7 +1233,7 @@ public class HttpConnectionTest
         });
         _server.start();
 
-        String response = _connector.getResponse("GET / HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET / HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "\r\n"
         );
@@ -1275,7 +1272,7 @@ public class HttpConnectionTest
         });
         _server.start();
 
-        String response = _connector.getResponse("GET / HTTP/1.1\r\n" +
+        String response = _connector.getResponseAsString("GET / HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "\r\n"
         );
@@ -1295,7 +1292,7 @@ public class HttpConnectionTest
         {
             int offset = 0;
 
-            response = _connector.getResponse("OPTIONS * HTTP/1.1\r\n" +
+            response = _connector.getResponseAsString("OPTIONS * HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
                 "Content-Type: text/plain; charset=utf-8\r\n" +
@@ -1308,7 +1305,7 @@ public class HttpConnectionTest
             checkContains(response, offset, "HTTP/1.1 200");
 
             offset = 0;
-            response = _connector.getResponse("GET * HTTP/1.1\r\n" +
+            response = _connector.getResponseAsString("GET * HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
                 "Content-Type: text/plain; charset=utf-8\r\n" +
@@ -1321,7 +1318,7 @@ public class HttpConnectionTest
             checkContains(response, offset, "HTTP/1.1 400");
 
             offset = 0;
-            response = _connector.getResponse("GET ** HTTP/1.1\r\n" +
+            response = _connector.getResponseAsString("GET ** HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
                 "Content-Type: text/plain; charset=utf-8\r\n" +
@@ -1350,7 +1347,7 @@ public class HttpConnectionTest
         {
             int offset = 0;
 
-            response = _connector.getResponse("CONNECT www.webtide.com:8080 HTTP/1.1\r\n" +
+            response = _connector.getResponseAsString("CONNECT www.webtide.com:8080 HTTP/1.1\r\n" +
                 "Host: www.webtide.com:8080\r\n" +
                 "\r\n", 200, TimeUnit.MILLISECONDS);
             checkContains(response, offset, "HTTP/1.1 200");
@@ -1409,44 +1406,44 @@ public class HttpConnectionTest
         });
         _server.start();
 
-        LocalConnector.LocalEndPoint localEndPoint = _connector.executeRequest("" +
+        try (LocalConnector.LocalEndPoint localEndPoint = _connector.executeRequest("" +
             "POST / HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Content-Length: " + dataLength + "\r\n" +
             "\r\n" +
-            chunk1);
+            chunk1))
+        {
+            // Wait for the server to block on the read().
+            Thread.sleep(500);
 
-        // Wait for the server to block on the read().
-        Thread.sleep(500);
+            // Send more content.
+            localEndPoint.writeRequestString(chunk2);
 
-        // Send more content.
-        localEndPoint.addInput(chunk2);
+            HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse());
+            assertEquals(response.getStatus(), HttpStatus.OK_200);
+        }
 
-        HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse());
-        assertEquals(response.getStatus(), HttpStatus.OK_200);
-        localEndPoint.close();
+         try (LocalConnector.LocalEndPoint localEndPoint = _connector.executeRequest("" +
+                "POST / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                Integer.toHexString(chunk1.length()) + "\r\n" +
+                chunk1 + "\r\n"))
+         {
+             // Wait for the server to block on the read().
+             Thread.sleep(500);
 
-        localEndPoint = _connector.executeRequest("" +
-            "POST / HTTP/1.1\r\n" +
-            "Host: localhost\r\n" +
-            "Transfer-Encoding: chunked\r\n" +
-            "\r\n" +
-            Integer.toHexString(chunk1.length()) + "\r\n" +
-            chunk1 + "\r\n");
+             // Send more content.
+             localEndPoint.writeRequestString("" +
+                 Integer.toHexString(chunk2.length()) + "\r\n" +
+                 chunk2 + "\r\n" +
+                 "0\r\n" +
+                 "\r\n");
 
-        // Wait for the server to block on the read().
-        Thread.sleep(500);
-
-        // Send more content.
-        localEndPoint.addInput("" +
-            Integer.toHexString(chunk2.length()) + "\r\n" +
-            chunk2 + "\r\n" +
-            "0\r\n" +
-            "\r\n");
-
-        response = HttpTester.parseResponse(localEndPoint.getResponse());
-        assertEquals(response.getStatus(), HttpStatus.OK_200);
-        localEndPoint.close();
+             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse());
+             assertEquals(response.getStatus(), HttpStatus.OK_200);
+        }
     }
 
     @Test
@@ -1459,9 +1456,9 @@ public class HttpConnectionTest
             
             """;
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 200"));
     }
 
     @Test
@@ -1474,15 +1471,15 @@ public class HttpConnectionTest
             \r
             """;
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.from(EnumSet.of(UriCompliance.Violation.AMBIGUOUS_PATH_PARAMETER)));
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 200"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 200"));
     }
 
     @Test
@@ -1495,11 +1492,11 @@ public class HttpConnectionTest
             \r
             """;
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 200"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
     }
 
     @Test
@@ -1512,13 +1509,13 @@ public class HttpConnectionTest
             \r
             """;
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.from("DEFAULT,AMBIGUOUS_PATH_SEPARATOR"));
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 200"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 200"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
     }
 
     @Test
@@ -1532,13 +1529,13 @@ public class HttpConnectionTest
             """;
 
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
 
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.from(EnumSet.of(
             UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR,
             UriCompliance.Violation.AMBIGUOUS_PATH_SEGMENT,
             UriCompliance.Violation.AMBIGUOUS_PATH_PARAMETER)));
-        assertThat(_connector.getResponse(request), Matchers.allOf(
+        assertThat(_connector.getResponseAsString(request), Matchers.allOf(
             startsWith("HTTP/1.1 200"),
             containsString("pathInContext=/path/ambiguous%2F../info")));
     }
@@ -1553,20 +1550,20 @@ public class HttpConnectionTest
             \r
             """;
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.from(EnumSet.of(UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING)));
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 200"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 200"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 200"));
 
         UriCompliance custom = new UriCompliance("Custom", EnumSet.complementOf(
             EnumSet.of(UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING)));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(custom);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
     }
 
     @Test
@@ -1579,15 +1576,15 @@ public class HttpConnectionTest
             
             """;
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.JETTY_11);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 200"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 200"));
     }
 
     @Test
@@ -1601,7 +1598,7 @@ public class HttpConnectionTest
             """;
 
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponseAsString(request), startsWith("HTTP/1.1 400"));
     }
 
     private int checkContains(String s, int offset, String c)
@@ -1739,7 +1736,7 @@ public class HttpConnectionTest
             rawRequest.append("Connection: ").append(requestConnectionHeader).append("\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(200));
@@ -1805,25 +1802,25 @@ public class HttpConnectionTest
         blocked.await(5, TimeUnit.SECONDS);
 
         // Send more content.
-        localEndPoint.addInput("""
-            three\r
-            4\r
-            four\r
-            4\r
-            five\r
-            3\r
-            si""");
+        localEndPoint.writeRequestString("""
+        three\r
+        4\r
+        four\r
+        4\r
+        five\r
+        3\r
+        si""");
 
         // Send more content.
-        localEndPoint.addInput("""
-            x\r
-            5\r
-            seven\r
-            5\r
-            eight\r
-            0\r
-            \r
-            """);
+        localEndPoint.writeRequestString("""
+        x\r
+        5\r
+        seven\r
+        5\r
+        eight\r
+        0\r
+        \r
+        """);
 
         String rawResponse = localEndPoint.getResponse();
         // System.err.println(rawResponse);

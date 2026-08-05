@@ -34,7 +34,7 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * Frequently many handlers are combined together to handle different aspects of
@@ -77,7 +77,7 @@ public class ManyHandlers
 
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_JSON.asString());
             response.write(true,
-                ReadableBuffer.wrap(new JSON().toJSON(List.of(queryFields.toStringArrayMap(), formFields.toStringArrayMap())).getBytes(StandardCharsets.UTF_8)),
+                RetainableByteBuffer.wrap(new JSON().toJSON(List.of(queryFields.toStringArrayMap(), formFields.toStringArrayMap())).getBytes(StandardCharsets.UTF_8)),
                 callback);
 
             return true;

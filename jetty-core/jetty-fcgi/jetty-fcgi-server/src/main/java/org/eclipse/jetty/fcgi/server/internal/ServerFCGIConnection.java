@@ -33,8 +33,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +53,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private final String id;
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
-    private ReadableBuffer inputBuffer;
+    private RetainableByteBuffer.Mutable networkBuffer;
     private HttpStreamOverFCGI stream;
     private State state = State.IDLE;
     private Content.Chunk chunk;
@@ -172,7 +171,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onFillable {} {} {}", this, stream, inputBuffer);
+            LOG.debug("onFillable {} {} {}", this, stream, networkBuffer);
 
         process(true);
     }
@@ -214,33 +213,32 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
 
     private void fillAndParse(boolean setFillInterest)
     {
-        ReadableBuffer readable = null;
-        WritableBuffer writable = null;
-        if (inputBuffer != null)
+        RetainableByteBuffer.Mutable buffer;
+        if (networkBuffer != null)
         {
-            readable = inputBuffer;
-            inputBuffer = null;
+            buffer = networkBuffer;
+            networkBuffer = null;
         }
         else
         {
-            writable = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            buffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
         }
 
         try
         {
             while (true)
             {
-                if (writable != null)
+                if (!buffer.hasRemaining())
                 {
-                    int read = fillInputBuffer(writable);
+                    int read = fillInputBuffer(buffer.clear());
                     if (LOG.isDebugEnabled())
                         LOG.debug("Read {} bytes from {} {}", read, getEndPoint(), this);
 
                     if (read <= 0)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Releasing {}", writable);
-                        writable.release();
+                            LOG.debug("Releasing {}", buffer);
+                        buffer.release();
 
                         if (read == 0)
                         {
@@ -253,18 +251,14 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                         }
                         return;
                     }
-
-                    readable = writable.toReadable();
                 }
 
-                assert readable != null;
-
-                if (parse(readable))
+                if (parse(buffer))
                 {
-                    if (readable.remaining() == 0)
-                        readable.release();
+                    if (!buffer.hasRemaining())
+                        buffer.release();
                     else
-                        inputBuffer = readable;
+                        networkBuffer = buffer;
                     return;
                 }
 
@@ -272,16 +266,12 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 // This may happen when the buffer read from the network
                 // a "data frame" and then some bytes of the next "data frame":
                 // reusing the buffer would overwrite the first "data frame" bytes.
-                if (readable.isRetained())
+                if (buffer.isRetained())
                 {
-                    readable.release();
-                    writable = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+                    buffer.release();
+                    buffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Reacquired {}", writable);
-                }
-                else
-                {
-                    writable = readable.toWritable();
+                        LOG.debug("Reacquired {}", buffer);
                 }
             }
         }
@@ -289,15 +279,12 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to fill endpoint", x);
-            if (writable != null)
-                writable.release();
-            else
-                readable.release();
+            buffer.release();
             parser.eof();
         }
     }
 
-    private int fillInputBuffer(WritableBuffer buffer)
+    private int fillInputBuffer(RetainableByteBuffer.Mutable buffer)
     {
         try
         {
@@ -311,9 +298,9 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         }
     }
 
-    private boolean parse(ReadableBuffer buffer)
+    private boolean parse(RetainableByteBuffer buffer)
     {
-        while (buffer.remaining() > 0)
+        while (buffer.hasRemaining())
         {
             boolean result = parser.parse(buffer);
             if (result)
@@ -388,7 +375,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         }
 
         @Override
-        public boolean onContent(int request, FCGI.StreamType streamType, ReadableBuffer buffer)
+        public boolean onContent(int request, FCGI.StreamType streamType, RetainableByteBuffer buffer)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} {} content {} on {}", request, streamType, buffer, stream);

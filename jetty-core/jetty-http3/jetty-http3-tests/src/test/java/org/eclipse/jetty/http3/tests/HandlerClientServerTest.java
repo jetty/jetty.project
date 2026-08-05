@@ -26,7 +26,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -35,7 +34,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -142,12 +141,12 @@ public class HandlerClientServerTest extends AbstractClientServerTest
 
         byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
-        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> stream.data(new DataFrame(ReadableBuffer.wrap(bytes, 0, bytes.length / 2), false), new Promise.Invocable.NonBlocking<>()
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> stream.data(RetainableByteBuffer.wrap(bytes, 0, bytes.length / 2), false, new Promise.Invocable.NonBlocking<>()
         {
             @Override
             public void succeeded(Stream result)
             {
-                result.data(new DataFrame(ReadableBuffer.wrap(bytes, bytes.length / 2, bytes.length / 2), true), p);
+                result.data(RetainableByteBuffer.wrap(bytes, bytes.length / 2, bytes.length / 2), true, p);
             }
         }));
 

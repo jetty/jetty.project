@@ -86,12 +86,12 @@ public class UnauthenticatedTest
         TestAuthenticator.AUTHENTICATION.set(Authentication.UNAUTHENTICATED);
 
         // Request to URI which doesn't require authentication can get through even though auth is UNAUTHENTICATED.
-        String response = connector.getResponse("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String response = connector.getResponseAsString("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("authentication: UNAUTHENTICATED"));
 
         // This URI requires just that the request is authenticated.
-        response = connector.getResponse("GET /requireAuth/test HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        response = connector.getResponseAsString("GET /requireAuth/test HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 401 Unauthorized"));
     }
 
@@ -101,12 +101,12 @@ public class UnauthenticatedTest
         TestAuthenticator.AUTHENTICATION.set(new DeferredAuthentication(authenticator));
 
         // Request to URI which doesn't require authentication can get through even though auth is UNAUTHENTICATED.
-        String response = connector.getResponse("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String response = connector.getResponseAsString("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("DeferredAuthentication"));
 
         // This URI requires just that the request is authenticated. But DeferredAuthentication can bypass this.
-        response = connector.getResponse("GET /requireAuth/test HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        response = connector.getResponseAsString("GET /requireAuth/test HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("DeferredAuthentication"));
     }

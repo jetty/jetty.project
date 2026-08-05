@@ -22,7 +22,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -45,7 +45,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.wrap(content), callback);
+                response.write(true, RetainableByteBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -103,7 +103,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
-                response.write(true, ReadableBuffer.wrap(content.getBytes(encoding)), callback);
+                response.write(true, RetainableByteBuffer.wrap(content.getBytes(encoding)), callback);
                 return true;
             }
         });
@@ -133,7 +133,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
-                response.write(true, ReadableBuffer.wrap(content.getBytes(encoding)), callback);
+                response.write(true, RetainableByteBuffer.wrap(content.getBytes(encoding)), callback);
                 return true;
             }
         });

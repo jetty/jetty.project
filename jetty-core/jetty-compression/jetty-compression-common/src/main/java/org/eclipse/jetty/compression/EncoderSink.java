@@ -17,13 +17,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingNestedCallback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class EncoderSink implements Content.Sink
 {
+    private final EncodeBufferCallback encoder = new EncodeBufferCallback();
     private final Content.Sink sink;
 
     protected EncoderSink(Content.Sink sink)
@@ -32,25 +35,25 @@ public abstract class EncoderSink implements Content.Sink
     }
 
     @Override
-    public void write(boolean last, ReadableBuffer content, Callback callback)
+    public void write(boolean last, RetainableByteBuffer content, Callback callback)
     {
         if (content != null || last)
-            new EncodeBufferCallback(last, content, last ? Callback.from(callback, this::release) : callback).iterate();
+            encoder.init(last, content, callback);
         else
             callback.succeeded();
     }
 
     /**
      * Creates a {@link WriteRecord} with the given {@code last} flag and {@code content} buffer.
-     * @param last the {@code last} flag to eventually pass to {@link org.eclipse.jetty.io.Content.Sink#write(boolean, ReadableBuffer, Callback)}.
-     * @param content the buffer to eventually pass to {@link org.eclipse.jetty.io.Content.Sink#write(boolean, ReadableBuffer, Callback)}.
+     * @param last the {@code last} flag to eventually pass to {@link org.eclipse.jetty.io.Content.Sink#write(boolean, RetainableByteBuffer, Callback)}.
+     * @param content the buffer to eventually pass to {@link org.eclipse.jetty.io.Content.Sink#write(boolean, RetainableByteBuffer, Callback)}.
      * @return the {@link WriteRecord}.
      * @throws IllegalStateException if {@link #release()} has already been called.
      */
-    protected abstract WriteRecord encode(boolean last, ReadableBuffer content);
+    protected abstract WriteRecord encode(boolean last, RetainableByteBuffer content);
 
     /**
-     * <p>Release all resources held by this instance. Any further {@link #write(boolean, ReadableBuffer, Callback) write attempt}
+     * <p>Release all resources held by this instance. Any further {@link #write(boolean, RetainableByteBuffer, Callback) write attempt}
      * fails once this method has been called.</p>
      * <p>Implementation must be idempotent.</p>
      */
@@ -58,9 +61,9 @@ public abstract class EncoderSink implements Content.Sink
     {
     }
 
-    public record WriteRecord(boolean last, ReadableBuffer output) {}
+    public record WriteRecord(boolean last, RetainableByteBuffer output) {}
 
-    private class EncodeBufferCallback extends IteratingNestedCallback
+    private class EncodeBufferCallback extends IteratingCallback
     {
         private enum State
         {
@@ -75,16 +78,32 @@ public abstract class EncoderSink implements Content.Sink
         }
 
         private static final Logger LOG = LoggerFactory.getLogger(EncodeBufferCallback.class);
-        private final AtomicReference<State> state = new AtomicReference<>(State.INITIAL);
-        private final ReadableBuffer content;
-        private final boolean last;
 
-        public EncodeBufferCallback(boolean last, ReadableBuffer content, Callback callback)
+        private final AtomicReference<State> state = new AtomicReference<>();
+        private RetainableByteBuffer content;
+        private boolean last;
+        private Callback callback;
+
+        private EncodeBufferCallback()
         {
-            super(callback);
-            this.content = content == null ? ReadableBuffer.EMPTY : content;
-            this.content.retain();
-            this.last = last;
+            super(true);
+        }
+
+        private void init(boolean last, RetainableByteBuffer content, Callback callback)
+        {
+            if (reset())
+            {
+                this.state.set(State.INITIAL);
+                this.last = last;
+                this.content = content == null ? RetainableByteBuffer.Mutable.empty() : content;
+                this.content.retain();
+                this.callback = callback;
+                iterate();
+            }
+            else
+            {
+                callback.failed(new IllegalStateException("Could not initialize encoder " + EncoderSink.this));
+            }
         }
 
         @Override
@@ -105,7 +124,7 @@ public abstract class EncoderSink implements Content.Sink
                 return Action.SCHEDULED;
             }
 
-            boolean hasRemaining = content != null && content.remaining() > 0L;
+            boolean hasRemaining = content.hasRemaining();
             if (LOG.isDebugEnabled())
                 LOG.debug("process() - hasRemaining={}", hasRemaining);
             return hasRemaining ? Action.SCHEDULED : Action.SUCCEEDED;
@@ -119,7 +138,7 @@ public abstract class EncoderSink implements Content.Sink
                 state.set(State.FINISHING);
                 callback = Callback.from(this::finished, callback);
             }
-            sink.write(writeRecord.last, writeRecord.output, callback);
+            sink.write(writeRecord.last(), writeRecord.output(), callback);
         }
 
         protected void finished()
@@ -130,8 +149,35 @@ public abstract class EncoderSink implements Content.Sink
         @Override
         protected void onCompleted(Throwable causeOrNull)
         {
-            this.content.release();
-            super.onCompleted(causeOrNull);
+            content = Retainable.dispose(content);
+            Throwable disposeFailure = dispose();
+            super.onCompleted(ExceptionUtil.combine(causeOrNull, disposeFailure));
+        }
+
+        private Throwable dispose()
+        {
+            try
+            {
+                if (last)
+                    release();
+                return null;
+            }
+            catch (Throwable x)
+            {
+                return x;
+            }
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            callback.succeeded();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            callback.failed(cause);
         }
 
         @Override

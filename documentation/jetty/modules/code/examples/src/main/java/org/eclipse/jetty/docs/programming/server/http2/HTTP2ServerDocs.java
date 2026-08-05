@@ -38,8 +38,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 import static java.lang.System.Logger.Level.INFO;
@@ -237,7 +236,7 @@ public class HTTP2ServerDocs
                 if (HttpMethod.GET.is(request.getMethod()))
                 {
                     // The response content.
-                    ReadableBuffer resourceBytes = getResourceBytes(request);
+                    RetainableByteBuffer resourceBytes = getResourceBytes(request);
 
                     // Send the HEADERS frame with the response status and headers,
                     // and a DATA frame with the response content bytes.
@@ -252,9 +251,9 @@ public class HTTP2ServerDocs
             }
             // tag::exclude[]
 
-            private ReadableBuffer getResourceBytes(MetaData.Request request)
+            private RetainableByteBuffer getResourceBytes(MetaData.Request request)
             {
-                return WritableBuffer.allocate(1024, false).toReadable();
+                return RetainableByteBuffer.allocate(1024, false);
             }
             // end::exclude[]
         };
@@ -303,7 +302,7 @@ public class HTTP2ServerDocs
     {
         // tag::push[]
         // The favicon bytes.
-        ReadableBuffer faviconBuffer = ReadableBuffer.wrap(BufferUtil.toBuffer(ResourceFactory.root().newResource("/path/to/favicon.ico"), true));
+        RetainableByteBuffer faviconBuffer = RetainableByteBuffer.wrap(BufferUtil.toBuffer(ResourceFactory.root().newResource("/path/to/favicon.ico"), true));
 
         ServerSessionListener sessionListener = new ServerSessionListener()
         {

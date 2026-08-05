@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -88,18 +88,18 @@ public class RetainableByteBufferTest
 
     public static Stream<Arguments> buffers()
     {
-        List<Supplier<RetainableByteBuffer>> list = new ArrayList<>()
+        List<Supplier<org.eclipse.jetty.io.RetainableByteBuffer>> list = new ArrayList<>()
         {
             @Override
-            public boolean add(Supplier<RetainableByteBuffer> parent)
+            public boolean add(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> parent)
             {
-                RetainableByteBuffer buffer = parent.get();
+                org.eclipse.jetty.io.RetainableByteBuffer buffer = parent.get();
                 String name = buffer.toDetailString().replaceAll("@[0-9a-zA-Z]*", "");
                 buffer.release();
                 return super.add(new Supplier<>()
                 {
                     @Override
-                    public RetainableByteBuffer get()
+                    public org.eclipse.jetty.io.RetainableByteBuffer get()
                     {
                         return parent.get();
                     }
@@ -113,19 +113,19 @@ public class RetainableByteBufferTest
             }
         };
 
-        list.add(() -> RetainableByteBuffer.wrap(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH)));
-        list.add(() -> RetainableByteBuffer.wrap(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).slice()));
-        list.add(() -> RetainableByteBuffer.wrap(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).asReadOnlyBuffer()));
-        list.add(() -> RetainableByteBuffer.wrap(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).duplicate()));
+        list.add(() -> org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH)));
+        list.add(() -> org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).slice()));
+        list.add(() -> org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).asReadOnlyBuffer()));
+        list.add(() -> org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).duplicate()));
 
-        list.add(() -> new RetainableByteBuffer.FixedCapacity(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH)));
-        list.add(() -> new RetainableByteBuffer.FixedCapacity(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).slice()));
-        list.add(() -> new RetainableByteBuffer.FixedCapacity(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).asReadOnlyBuffer()));
-        list.add(() -> new RetainableByteBuffer.FixedCapacity(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).duplicate()));
+        list.add(() -> new org.eclipse.jetty.io.RetainableByteBuffer.FixedCapacity(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH)));
+        list.add(() -> new org.eclipse.jetty.io.RetainableByteBuffer.FixedCapacity(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).slice()));
+        list.add(() -> new org.eclipse.jetty.io.RetainableByteBuffer.FixedCapacity(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).asReadOnlyBuffer()));
+        list.add(() -> new org.eclipse.jetty.io.RetainableByteBuffer.FixedCapacity(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, TEST_LENGTH).duplicate()));
 
         list.add(() ->
         {
-            RetainableByteBuffer rbb = _pool.acquire(1024, false);
+            org.eclipse.jetty.io.RetainableByteBuffer rbb = _pool.acquire(1024, false);
             ByteBuffer byteBuffer = rbb.getByteBuffer();
             BufferUtil.append(byteBuffer, TEST_TEXT_BYTES);
             byteBuffer.position(byteBuffer.position() + TEST_OFFSET);
@@ -134,7 +134,7 @@ public class RetainableByteBufferTest
 
         list.add(() ->
         {
-            RetainableByteBuffer rbb = _pool.acquire(1024, true);
+            org.eclipse.jetty.io.RetainableByteBuffer rbb = _pool.acquire(1024, true);
             ByteBuffer byteBuffer = rbb.getByteBuffer();
             BufferUtil.append(byteBuffer, TEST_TEXT_BYTES);
             byteBuffer.position(byteBuffer.position() + TEST_OFFSET);
@@ -175,9 +175,9 @@ public class RetainableByteBufferTest
             {
                 Mutable mutable = Objects.requireNonNull(mutable(index));
                 int half = TEST_LENGTH / 2;
-                RetainableByteBuffer first = _pool.acquire(half, mutable.isDirect());
+                org.eclipse.jetty.io.RetainableByteBuffer first = _pool.acquire(half, mutable.isDirect());
                 first.asMutable().append(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET, half));
-                RetainableByteBuffer second = _pool.acquire(TEST_LENGTH - half, mutable.isDirect());
+                org.eclipse.jetty.io.RetainableByteBuffer second = _pool.acquire(TEST_LENGTH - half, mutable.isDirect());
                 second.asMutable().append(BufferUtil.toBuffer(TEST_TEXT_BYTES, TEST_OFFSET + half, TEST_LENGTH - half));
                 mutable.add(first).add(second);
                 return mutable;
@@ -206,9 +206,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testNotEmptyBuffer(Supplier<RetainableByteBuffer> supplier)
+    public void testNotEmptyBuffer(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         assertFalse(buffer.isEmpty());
         assertTrue(buffer.hasRemaining());
         assertThat(buffer.size(), is((long)TEST_EXPECTED_BYTES.length));
@@ -218,9 +218,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testGetByteBuffer(Supplier<RetainableByteBuffer> supplier)
+    public void testGetByteBuffer(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         ByteBuffer byteBuffer = buffer.getByteBuffer();
         assertThat(BufferUtil.toString(byteBuffer), equalTo(TEST_EXPECTED));
         assertThat(byteBuffer.get(), equalTo((byte)TEST_EXPECTED.charAt(0)));
@@ -232,9 +232,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testGet(Supplier<RetainableByteBuffer> supplier)
+    public void testGet(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         Utf8StringBuilder builder = new Utf8StringBuilder();
         for (int i = buffer.remaining(); i-- > 0; )
             builder.append(buffer.get());
@@ -250,9 +250,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testGetAtIndex(Supplier<RetainableByteBuffer> supplier)
+    public void testGetAtIndex(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         Utf8StringBuilder builder = new Utf8StringBuilder();
 
         for (int i = 0; i < buffer.remaining(); i++)
@@ -269,9 +269,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testGetBytes(Supplier<RetainableByteBuffer> supplier)
+    public void testGetBytes(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         byte[] testing = new byte[1024];
         assertThat(buffer.get(testing, 0, 8), equalTo(8));
         assertThat(BufferUtil.toString(BufferUtil.toBuffer(testing, 0, 8)), equalTo("Testing "));
@@ -283,10 +283,10 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testCopy(Supplier<RetainableByteBuffer> supplier)
+    public void testCopy(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
-        RetainableByteBuffer copy = buffer.copy();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer copy = buffer.copy();
 
         byte[] testing = new byte[1024];
         assertThat(copy.get(testing, 0, 1024), equalTo(TEST_EXPECTED_BYTES.length));
@@ -302,9 +302,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testClear(Supplier<RetainableByteBuffer> supplier)
+    public void testClear(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         buffer.clear();
         assertTrue(buffer.isEmpty());
         assertFalse(buffer.hasRemaining());
@@ -315,9 +315,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testSkipLength(Supplier<RetainableByteBuffer> supplier)
+    public void testSkipLength(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         buffer.skip(buffer.remaining());
         assertTrue(buffer.isEmpty());
         assertFalse(buffer.hasRemaining());
@@ -328,9 +328,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testSkip1by1(Supplier<RetainableByteBuffer> supplier)
+    public void testSkip1by1(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         for (int i = buffer.remaining(); i-- > 0; )
         {
             buffer.skip(1);
@@ -346,19 +346,19 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testSliceOnly(Supplier<RetainableByteBuffer> supplier)
+    public void testSliceOnly(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         buffer.slice().release();
         buffer.release();
     }
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testSlice(Supplier<RetainableByteBuffer> supplier)
+    public void testSlice(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
-        RetainableByteBuffer slice = buffer.slice();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer slice = buffer.slice();
 
         byte[] testing = new byte[1024];
         assertThat(slice.get(testing, 0, 1024), equalTo(TEST_EXPECTED_BYTES.length));
@@ -373,9 +373,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testLimitLess(Supplier<RetainableByteBuffer> supplier)
+    public void testLimitLess(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         buffer.limit(buffer.size() - 2);
 
         byte[] testing = new byte[1024];
@@ -386,9 +386,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testLimitMore(Supplier<RetainableByteBuffer> supplier)
+    public void testLimitMore(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         buffer.limit(buffer.size() + 2);
 
         byte[] testing = new byte[1024];
@@ -399,10 +399,10 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testSliceLess(Supplier<RetainableByteBuffer> supplier)
+    public void testSliceLess(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
-        RetainableByteBuffer slice = buffer.slice(buffer.size() - 2);
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer slice = buffer.slice(buffer.size() - 2);
 
         byte[] testing = new byte[1024];
         assertThat(slice.get(testing, 0, 1024), equalTo(TEST_EXPECTED_BYTES.length - 2));
@@ -417,10 +417,10 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testSliceMore(Supplier<RetainableByteBuffer> supplier)
+    public void testSliceMore(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
-        RetainableByteBuffer slice = buffer.slice(buffer.size() + 2);
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer slice = buffer.slice(buffer.size() + 2);
 
         byte[] testing = new byte[1024];
         assertThat(slice.get(testing, 0, 1024), equalTo(TEST_EXPECTED_BYTES.length));
@@ -440,22 +440,22 @@ public class RetainableByteBufferTest
         Mutable buffer = supplier.get();
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
         CountDownLatch released = new CountDownLatch(2);
-        buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown));
-        buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
+        buffer.add(org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown));
+        buffer.add(org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
 
-        RetainableByteBuffer hello = buffer.slice(5);
+        org.eclipse.jetty.io.RetainableByteBuffer hello = buffer.slice(5);
         buffer.skip(5);
         assertThat(BufferUtil.toString(hello.getByteBuffer()), is("Hello"));
 
-        RetainableByteBuffer space = buffer.slice(1);
+        org.eclipse.jetty.io.RetainableByteBuffer space = buffer.slice(1);
         buffer.skip(1);
         assertThat(BufferUtil.toString(space.getByteBuffer()), is(" "));
 
-        RetainableByteBuffer cruel = buffer.slice(5);
+        org.eclipse.jetty.io.RetainableByteBuffer cruel = buffer.slice(5);
         buffer.skip(5);
         assertThat(BufferUtil.toString(cruel.getByteBuffer()), is("cruel"));
 
-        RetainableByteBuffer world = buffer.slice(6);
+        org.eclipse.jetty.io.RetainableByteBuffer world = buffer.slice(6);
         buffer.skip(6);
         assertThat(world.skip(1), is(1L));
         assertThat(BufferUtil.toString(world.getByteBuffer()), is("world"));
@@ -473,12 +473,12 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testSliceAndSkipNLength(Supplier<RetainableByteBuffer> supplier)
+    public void testSliceAndSkipNLength(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         for (int i = buffer.remaining(); i > 0; i--)
         {
-            RetainableByteBuffer slice = buffer.slice();
+            org.eclipse.jetty.io.RetainableByteBuffer slice = buffer.slice();
             assertThat(slice.skip(i), equalTo((long)i));
             assertThat(BufferUtil.toString(slice.getByteBuffer()), equalTo(TEST_EXPECTED.substring(i)));
             slice.release();
@@ -488,9 +488,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testAppendToByteBuffer(Supplier<RetainableByteBuffer> supplier)
+    public void testAppendToByteBuffer(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         ByteBuffer byteBuffer = BufferUtil.allocate(1024);
         BufferUtil.append(byteBuffer, "<<<");
         assertTrue(buffer.appendTo(byteBuffer));
@@ -503,9 +503,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testAppendToByteBufferLimited(Supplier<RetainableByteBuffer> supplier)
+    public void testAppendToByteBufferLimited(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         ByteBuffer byteBuffer = BufferUtil.allocate(8);
         assertFalse(buffer.appendTo(byteBuffer));
         assertFalse(buffer.isEmpty());
@@ -516,10 +516,10 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testAppendToRetainableByteBuffer(Supplier<RetainableByteBuffer> supplier)
+    public void testAppendToRetainableByteBuffer(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
-        RetainableByteBuffer rbb = RetainableByteBuffer.wrap(BufferUtil.allocate(1024));
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer rbb = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.allocate(1024));
         assertTrue(buffer.appendTo(rbb));
         assertTrue(buffer.isEmpty());
         assertThat(BufferUtil.toString(rbb.getByteBuffer()), equalTo(TEST_EXPECTED));
@@ -529,10 +529,10 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testAppendToRetainableByteBufferLimited(Supplier<RetainableByteBuffer> supplier)
+    public void testAppendToRetainableByteBufferLimited(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
-        RetainableByteBuffer rbb = RetainableByteBuffer.wrap(BufferUtil.allocate(8));
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer rbb = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.allocate(8));
         assertFalse(buffer.appendTo(rbb));
         assertFalse(buffer.isEmpty());
         assertThat(BufferUtil.toString(rbb.getByteBuffer()), equalTo(TEST_EXPECTED.substring(0, 8)));
@@ -542,9 +542,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testPutTo(Supplier<RetainableByteBuffer> supplier)
+    public void testPutTo(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         ByteBuffer byteBuffer = BufferUtil.allocate(1024);
         int p = BufferUtil.flipToFill(byteBuffer);
         byteBuffer.put("<<<".getBytes(StandardCharsets.UTF_8));
@@ -559,9 +559,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testPutToLimited(Supplier<RetainableByteBuffer> supplier)
+    public void testPutToLimited(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         ByteBuffer byteBuffer = BufferUtil.allocate(11);
         BufferUtil.flipToFill(byteBuffer);
         byteBuffer.put("<<<".getBytes(StandardCharsets.UTF_8));
@@ -572,9 +572,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testWriteTo(Supplier<RetainableByteBuffer> supplier) throws Exception
+    public void testWriteTo(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier) throws Exception
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         Content.Sink sink = Content.Sink.from(bout);
@@ -588,9 +588,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testWriteToBlocking(Supplier<RetainableByteBuffer> supplier) throws Exception
+    public void testWriteToBlocking(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier) throws Exception
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         Content.Sink sink = Content.Sink.from(bout);
@@ -602,18 +602,18 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testWriteToEndPoint(Supplier<RetainableByteBuffer> supplier) throws Exception
+    public void testWriteToEndPoint(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier) throws Exception
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
 
         StringBuilder out = new StringBuilder();
         try (EndPoint endPoint = new AbstractEndPoint(new TimerScheduler())
         {
             @Override
-            public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
+            public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
             {
                 out.append(BufferUtil.toString(buffer));
-                buffer.position(buffer.position() + buffer.remaining());
+                buffer.readPosition(buffer.readPosition() + buffer.remaining());
                 callback.succeeded();
             }
 
@@ -661,18 +661,18 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testWriteToEndPointLast(Supplier<RetainableByteBuffer> supplier) throws Exception
+    public void testWriteToEndPointLast(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier) throws Exception
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         StringBuilder out = new StringBuilder();
 
         try (EndPoint endPoint = new AbstractEndPoint(new TimerScheduler())
         {
             @Override
-            public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
+            public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
             {
                 out.append(BufferUtil.toString(buffer));
-                buffer.position(buffer.position() + buffer.remaining());
+                buffer.readPosition(buffer.readPosition() + buffer.remaining());
                 callback.succeeded();
             }
 
@@ -720,9 +720,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testToString(Supplier<RetainableByteBuffer> supplier)
+    public void testToString(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         String string = buffer.toString();
         assertThat(string, containsString(buffer.getClass().getSimpleName()));
         assertThat(string, not(containsString("={")));
@@ -732,9 +732,9 @@ public class RetainableByteBufferTest
 
     @ParameterizedTest
     @MethodSource("buffers")
-    public void testToDetailString(Supplier<RetainableByteBuffer> supplier)
+    public void testToDetailString(Supplier<org.eclipse.jetty.io.RetainableByteBuffer> supplier)
     {
-        RetainableByteBuffer buffer = supplier.get();
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = supplier.get();
         String string = buffer.toDetailString();
         assertThat(string, containsString(buffer.getClass().getSimpleName()));
         assertThat(string, anyOf(
@@ -749,10 +749,10 @@ public class RetainableByteBufferTest
     {
         return switch (index)
         {
-            case  0 -> new RetainableByteBuffer.FixedCapacity(BufferUtil.allocate(MAX_CAPACITY));
-            case  1 -> new RetainableByteBuffer.FixedCapacity(BufferUtil.allocateDirect(MAX_CAPACITY));
-            case  2 -> new RetainableByteBuffer.FixedCapacity(BufferUtil.allocate(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0));
-            case  3 -> new RetainableByteBuffer.FixedCapacity(BufferUtil.allocateDirect(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0));
+            case  0 -> new org.eclipse.jetty.io.RetainableByteBuffer.FixedCapacity(BufferUtil.allocate(MAX_CAPACITY));
+            case  1 -> new org.eclipse.jetty.io.RetainableByteBuffer.FixedCapacity(BufferUtil.allocateDirect(MAX_CAPACITY));
+            case  2 -> new org.eclipse.jetty.io.RetainableByteBuffer.FixedCapacity(BufferUtil.allocate(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0));
+            case  3 -> new org.eclipse.jetty.io.RetainableByteBuffer.FixedCapacity(BufferUtil.allocateDirect(2 * MAX_CAPACITY).limit(MAX_CAPACITY + MAX_CAPACITY / 2).position(MAX_CAPACITY / 2).slice().limit(0));
             case  4 -> _pool.acquire(MAX_CAPACITY, true).asMutable();
             case  5 -> _pool.acquire(MAX_CAPACITY, false).asMutable();
             case  6 -> new Mutable.DynamicCapacity(_pool, true, MAX_CAPACITY);
@@ -866,10 +866,10 @@ public class RetainableByteBufferTest
     {
         Mutable buffer = supplier.get();
         CountDownLatch release = new CountDownLatch(3);
-        RetainableByteBuffer hello = RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello"), release::countDown);
-        RetainableByteBuffer cruel = RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel "), release::countDown);
-        RetainableByteBuffer world = RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!"), release::countDown);
-        RetainableByteBuffer.Mutable cruelWorld = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
+        org.eclipse.jetty.io.RetainableByteBuffer hello = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello"), release::countDown);
+        org.eclipse.jetty.io.RetainableByteBuffer cruel = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel "), release::countDown);
+        org.eclipse.jetty.io.RetainableByteBuffer world = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!"), release::countDown);
+        org.eclipse.jetty.io.RetainableByteBuffer.Mutable cruelWorld = new org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
         cruelWorld.add(cruel);
         cruelWorld.add(world);
 
@@ -889,7 +889,7 @@ public class RetainableByteBufferTest
     public void testAppendOneByteRetainable(Supplier<Mutable> supplier)
     {
         Mutable buffer = supplier.get();
-        RetainableByteBuffer toAppend = _pool.acquire(1, true);
+        org.eclipse.jetty.io.RetainableByteBuffer toAppend = _pool.acquire(1, true);
         BufferUtil.append(toAppend.getByteBuffer(), (byte)'X');
         assertThat(buffer.append(toAppend), is(true));
         assertFalse(toAppend.hasRemaining());
@@ -931,7 +931,7 @@ public class RetainableByteBufferTest
     public void testAppendMoreBytesThanCapacityRetainable(Supplier<Mutable> supplier)
     {
         Mutable buffer = supplier.get();
-        RetainableByteBuffer toAppend = _pool.acquire(MAX_CAPACITY * 2, true);
+        org.eclipse.jetty.io.RetainableByteBuffer toAppend = _pool.acquire(MAX_CAPACITY * 2, true);
         int pos = BufferUtil.flipToFill(toAppend.getByteBuffer());
         byte[] bytes = new byte[MAX_CAPACITY * 2];
         Arrays.fill(bytes, (byte)'X');
@@ -998,10 +998,10 @@ public class RetainableByteBufferTest
     {
         Mutable buffer = supplier.get();
         CountDownLatch release = new CountDownLatch(3);
-        RetainableByteBuffer hello = RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello"), release::countDown);
-        RetainableByteBuffer cruel = RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel "), release::countDown);
-        RetainableByteBuffer world = RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!"), release::countDown);
-        RetainableByteBuffer.Mutable cruelWorld = new RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
+        org.eclipse.jetty.io.RetainableByteBuffer hello = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello"), release::countDown);
+        org.eclipse.jetty.io.RetainableByteBuffer cruel = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel "), release::countDown);
+        org.eclipse.jetty.io.RetainableByteBuffer world = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!"), release::countDown);
+        org.eclipse.jetty.io.RetainableByteBuffer.Mutable cruelWorld = new org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity(null, false, -1, -1, 0);
         cruelWorld.add(cruel).add(world);
 
         buffer.add(hello).add(cruelWorld);
@@ -1017,7 +1017,7 @@ public class RetainableByteBufferTest
     public void testAddOneByteRetainable(Supplier<Mutable> supplier)
     {
         Mutable buffer = supplier.get();
-        RetainableByteBuffer toAdd = _pool.acquire(1, true);
+        org.eclipse.jetty.io.RetainableByteBuffer toAdd = _pool.acquire(1, true);
         BufferUtil.append(toAdd.getByteBuffer(), (byte)'X');
 
         toAdd.retain();
@@ -1050,7 +1050,7 @@ public class RetainableByteBufferTest
     public void testAddMoreBytesThanCapacityRetainable(Supplier<Mutable> supplier)
     {
         Mutable buffer = supplier.get();
-        RetainableByteBuffer toAdd = _pool.acquire(MAX_CAPACITY * 2, true);
+        org.eclipse.jetty.io.RetainableByteBuffer toAdd = _pool.acquire(MAX_CAPACITY * 2, true);
         int pos = BufferUtil.flipToFill(toAdd.getByteBuffer());
         byte[] bytes = new byte[MAX_CAPACITY * 2];
         Arrays.fill(bytes, (byte)'X');
@@ -1086,9 +1086,9 @@ public class RetainableByteBufferTest
     public void testNonRetainableWriteTo(Supplier<Mutable> supplier) throws Exception
     {
         Mutable buffer = supplier.get();
-        buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello")));
-        buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" ")));
-        buffer.append(RetainableByteBuffer.wrap(BufferUtil.toBuffer("World!")));
+        buffer.append(org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello")));
+        buffer.append(org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(" ")));
+        buffer.append(org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("World!")));
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         FutureCallback callback = new FutureCallback();
@@ -1104,11 +1104,11 @@ public class RetainableByteBufferTest
     {
         Mutable buffer = supplier.get();
         CountDownLatch released = new CountDownLatch(3);
-        RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
-        buffer.append(buffers[0] = RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello"), released::countDown));
-        buffer.append(buffers[1] = RetainableByteBuffer.wrap(BufferUtil.toBuffer(" "), released::countDown));
-        buffer.append(buffers[2] = RetainableByteBuffer.wrap(BufferUtil.toBuffer("World!"), released::countDown));
-        Arrays.asList(buffers).forEach(RetainableByteBuffer::release);
+        org.eclipse.jetty.io.RetainableByteBuffer[] buffers = new org.eclipse.jetty.io.RetainableByteBuffer[3];
+        buffer.append(buffers[0] = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("Hello"), released::countDown));
+        buffer.append(buffers[1] = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(" "), released::countDown));
+        buffer.append(buffers[2] = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("World!"), released::countDown));
+        Arrays.asList(buffers).forEach(org.eclipse.jetty.io.RetainableByteBuffer::release);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         FutureCallback callback = new FutureCallback();
@@ -1127,7 +1127,7 @@ public class RetainableByteBufferTest
         Mutable original = supplier.get();
         ByteBuffer bytes = ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8));
         original.append(bytes);
-        RetainableByteBuffer copy = original.copy();
+        org.eclipse.jetty.io.RetainableByteBuffer copy = original.copy();
 
         assertEquals(0, BufferUtil.space(copy.getByteBuffer()));
         assertEquals(5, copy.remaining());
@@ -1145,7 +1145,7 @@ public class RetainableByteBufferTest
     {
         Mutable original = supplier.get();
         original.append(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)));
-        RetainableByteBuffer copy = original.copy();
+        org.eclipse.jetty.io.RetainableByteBuffer copy = original.copy();
         original.append(ByteBuffer.wrap(" world".getBytes(StandardCharsets.UTF_8)));
 
         assertEquals(0, BufferUtil.space(copy.getByteBuffer()));
@@ -1299,12 +1299,12 @@ public class RetainableByteBufferTest
     public void testTakeByteBuffer(Supplier<Mutable> supplier)
     {
         Mutable buffer = supplier.get();
-        if (buffer instanceof RetainableByteBuffer.DynamicCapacity dynamic)
+        if (buffer instanceof org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity dynamic)
         {
             dynamic.put("Hello".getBytes(StandardCharsets.UTF_8));
             dynamic.put((byte)' ');
             CountDownLatch released = new CountDownLatch(1);
-            dynamic.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
+            dynamic.add(org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
             int length = dynamic.remaining();
             byte[] result = dynamic.takeByteArray();
             assertThat(new String(result, 0, length, StandardCharsets.UTF_8), is("Hello world!"));
@@ -1322,8 +1322,8 @@ public class RetainableByteBufferTest
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
         buffer.put((byte)' ');
         CountDownLatch released = new CountDownLatch(1);
-        buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
-        RetainableByteBuffer result = buffer.take();
+        buffer.add(org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
+        org.eclipse.jetty.io.RetainableByteBuffer result = buffer.take();
         assertThat(BufferUtil.toString(result.getByteBuffer()), is("Hello world!"));
         assertThat(buffer.remaining(), is(0));
         result.release();
@@ -1338,11 +1338,11 @@ public class RetainableByteBufferTest
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
         buffer.put((byte)' ');
         CountDownLatch released = new CountDownLatch(1);
-        RetainableByteBuffer world = RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown);
+        org.eclipse.jetty.io.RetainableByteBuffer world = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown);
         world.retain();
         buffer.add(world);
 
-        RetainableByteBuffer result = buffer.take();
+        org.eclipse.jetty.io.RetainableByteBuffer result = buffer.take();
         assertThat(BufferUtil.toString(result.getByteBuffer()), is("Hello world!"));
         assertThat(buffer.remaining(), is(0));
         result.release();
@@ -1357,26 +1357,26 @@ public class RetainableByteBufferTest
         Mutable buffer = supplier.get();
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
         CountDownLatch released = new CountDownLatch(2);
-        buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown));
-        buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
+        buffer.add(org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown));
+        buffer.add(org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
 
-        RetainableByteBuffer hello = buffer.take(5);
+        org.eclipse.jetty.io.RetainableByteBuffer hello = buffer.take(5);
         assertThat(BufferUtil.toString(hello.getByteBuffer()), is("Hello"));
         assertFalse(hello.isRetained());
         assertFalse(buffer.isRetained());
         assertTrue(hello.release());
 
-        RetainableByteBuffer space = buffer.take(1);
+        org.eclipse.jetty.io.RetainableByteBuffer space = buffer.take(1);
         assertThat(BufferUtil.toString(space.getByteBuffer()), is(" "));
         assertFalse(space.isRetained());
         assertTrue(space.release());
 
-        RetainableByteBuffer cruel = buffer.take(5);
+        org.eclipse.jetty.io.RetainableByteBuffer cruel = buffer.take(5);
         assertThat(BufferUtil.toString(cruel.getByteBuffer()), is("cruel"));
         assertFalse(cruel.isRetained());
         assertTrue(cruel.release());
 
-        RetainableByteBuffer world = buffer.take(6);
+        org.eclipse.jetty.io.RetainableByteBuffer world = buffer.take(6);
         assertThat(world.skip(1), is(1L));
         assertThat(BufferUtil.toString(world.getByteBuffer()), is("world"));
         assertFalse(world.isRetained());
@@ -1395,17 +1395,17 @@ public class RetainableByteBufferTest
         Mutable buffer = supplier.get();
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
         CountDownLatch released = new CountDownLatch(2);
-        RetainableByteBuffer cruel = RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown);
+        org.eclipse.jetty.io.RetainableByteBuffer cruel = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown);
         cruel.retain();
         buffer.add(cruel);
-        RetainableByteBuffer world = RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown);
+        org.eclipse.jetty.io.RetainableByteBuffer world = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown);
         world.retain();
         buffer.add(world);
 
-        RetainableByteBuffer hello = buffer.take(5);
-        RetainableByteBuffer cruelWorld = buffer.take(buffer.size() - 1);
+        org.eclipse.jetty.io.RetainableByteBuffer hello = buffer.take(5);
+        org.eclipse.jetty.io.RetainableByteBuffer cruelWorld = buffer.take(buffer.size() - 1);
         cruelWorld.skip(1);
-        RetainableByteBuffer bang = buffer.take(1);
+        org.eclipse.jetty.io.RetainableByteBuffer bang = buffer.take(1);
 
         assertThat(BufferUtil.toString(hello.getByteBuffer()), is("Hello"));
         assertThat(BufferUtil.toString(cruelWorld.getByteBuffer()), is("cruel world"));
@@ -1426,19 +1426,19 @@ public class RetainableByteBufferTest
         Mutable buffer = supplier.get();
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
         CountDownLatch released = new CountDownLatch(2);
-        buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown));
-        buffer.add(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
+        buffer.add(org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown));
+        buffer.add(org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown));
 
-        RetainableByteBuffer none = buffer.takeFrom(Long.MAX_VALUE);
+        org.eclipse.jetty.io.RetainableByteBuffer none = buffer.takeFrom(Long.MAX_VALUE);
         assertTrue(none.isEmpty());
         none.release();
 
-        RetainableByteBuffer hello = buffer.takeFrom(0);
+        org.eclipse.jetty.io.RetainableByteBuffer hello = buffer.takeFrom(0);
         buffer.release();
 
-        RetainableByteBuffer space = hello.takeFrom(5);
-        RetainableByteBuffer bang = space.takeFrom(space.size() - 1);
-        RetainableByteBuffer cruelWorld = space.takeFrom(1);
+        org.eclipse.jetty.io.RetainableByteBuffer space = hello.takeFrom(5);
+        org.eclipse.jetty.io.RetainableByteBuffer bang = space.takeFrom(space.size() - 1);
+        org.eclipse.jetty.io.RetainableByteBuffer cruelWorld = space.takeFrom(1);
 
         assertThat(BufferUtil.toString(hello.getByteBuffer()), is("Hello"));
         assertThat(BufferUtil.toString(space.getByteBuffer()), is(" "));
@@ -1460,16 +1460,16 @@ public class RetainableByteBufferTest
         Mutable buffer = supplier.get();
         buffer.put("Hello".getBytes(StandardCharsets.UTF_8));
         CountDownLatch released = new CountDownLatch(2);
-        RetainableByteBuffer cruel = RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown);
+        org.eclipse.jetty.io.RetainableByteBuffer cruel = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer(" cruel ".getBytes(StandardCharsets.UTF_8)), released::countDown);
         cruel.retain();
         buffer.add(cruel);
-        RetainableByteBuffer world = RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown);
+        org.eclipse.jetty.io.RetainableByteBuffer world = org.eclipse.jetty.io.RetainableByteBuffer.wrap(BufferUtil.toBuffer("world!".getBytes(StandardCharsets.UTF_8)), released::countDown);
         world.retain();
         buffer.add(world);
-        RetainableByteBuffer space = buffer.takeFrom(5);
+        org.eclipse.jetty.io.RetainableByteBuffer space = buffer.takeFrom(5);
 
-        RetainableByteBuffer bang = space.takeFrom(space.size() - 1);
-        RetainableByteBuffer cruelWorld = space.takeFrom(1);
+        org.eclipse.jetty.io.RetainableByteBuffer bang = space.takeFrom(space.size() - 1);
+        org.eclipse.jetty.io.RetainableByteBuffer cruelWorld = space.takeFrom(1);
 
         assertThat(BufferUtil.toString(buffer.getByteBuffer()), is("Hello"));
         assertThat(BufferUtil.toString(space.getByteBuffer()), is(" "));
@@ -1502,7 +1502,7 @@ public class RetainableByteBufferTest
     {
         Mutable buffer = supplier.get();
         assertTrue(buffer.append(BufferUtil.EMPTY_BUFFER));
-        assertTrue(buffer.append(RetainableByteBuffer.EMPTY));
+        assertTrue(buffer.append(org.eclipse.jetty.io.RetainableByteBuffer.EMPTY));
         assertThat(buffer.remaining(), is(0));
 
         while (!buffer.isFull())
@@ -1510,7 +1510,7 @@ public class RetainableByteBufferTest
 
         long size = buffer.size();
         assertTrue(buffer.append(BufferUtil.EMPTY_BUFFER));
-        assertTrue(buffer.append(RetainableByteBuffer.EMPTY));
+        assertTrue(buffer.append(org.eclipse.jetty.io.RetainableByteBuffer.EMPTY));
         assertThat(buffer.size(), is(size));
 
         assertTrue(buffer.release());
@@ -1522,7 +1522,7 @@ public class RetainableByteBufferTest
     {
         Mutable buffer = supplier.get();
         buffer.add(BufferUtil.EMPTY_BUFFER);
-        buffer.add(RetainableByteBuffer.EMPTY);
+        buffer.add(org.eclipse.jetty.io.RetainableByteBuffer.EMPTY);
         assertThat(buffer.remaining(), is(0));
 
         while (!buffer.isFull())
@@ -1530,7 +1530,7 @@ public class RetainableByteBufferTest
 
         long size = buffer.size();
         buffer.add(BufferUtil.EMPTY_BUFFER);
-        buffer.add(RetainableByteBuffer.EMPTY);
+        buffer.add(org.eclipse.jetty.io.RetainableByteBuffer.EMPTY);
         assertThat(buffer.size(), is(size));
 
         assertTrue(buffer.release());
@@ -1541,12 +1541,12 @@ public class RetainableByteBufferTest
     {
         ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
         ByteBufferPool.Sized sized = new ByteBufferPool.Sized(pool, false, 10);
-        RetainableByteBuffer.DynamicCapacity root = new RetainableByteBuffer.DynamicCapacity(sized, 1024, 0);
+        org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity root = new org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity(sized, 1024, 0);
 
         Mutable mutable1 = pool.acquire(1, false);
         mutable1.putShort((short)1);
         root.add(mutable1);
-        RetainableByteBuffer.DynamicCapacity sub = new RetainableByteBuffer.DynamicCapacity(sized, 1024, 0);
+        org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity sub = new org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity(sized, 1024, 0);
         Mutable mutable2 = pool.acquire(2, false);
         mutable2.putShort((short)2);
         sub.add(mutable2);
@@ -1569,12 +1569,12 @@ public class RetainableByteBufferTest
     {
         ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
         ByteBufferPool.Sized sized = new ByteBufferPool.Sized(pool, false, 10);
-        RetainableByteBuffer.DynamicCapacity root = new RetainableByteBuffer.DynamicCapacity(sized, 1024, 0);
+        org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity root = new org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity(sized, 1024, 0);
 
         Mutable mutable1 = pool.acquire(1, false);
         mutable1.putShort((short)1);
         root.add(mutable1);
-        RetainableByteBuffer.DynamicCapacity sub = new RetainableByteBuffer.DynamicCapacity(sized, 1024, 0);
+        org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity sub = new org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity(sized, 1024, 0);
         Mutable mutable2 = pool.acquire(2, false);
         mutable2.putShort((short)2);
         sub.add(mutable2);
@@ -1591,7 +1591,7 @@ public class RetainableByteBufferTest
         for (int i = 0; i < 3; i++)
         {
             Content.Chunk read = source.read();
-            assertInstanceOf(RetainableByteBuffer.FixedCapacity.class, read);
+            assertInstanceOf(org.eclipse.jetty.io.RetainableByteBuffer.FixedCapacity.class, read);
             assertFalse(read.isLast());
             read.release();
         }

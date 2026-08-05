@@ -13,5 +13,7 @@
 
 module org.eclipse.jetty.quic.util
 {
+    requires org.eclipse.jetty.util;
+
     exports org.eclipse.jetty.quic.util;
 }

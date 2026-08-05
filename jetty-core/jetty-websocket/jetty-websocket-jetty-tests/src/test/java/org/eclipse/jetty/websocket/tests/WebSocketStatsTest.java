@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.tests;
 
 import java.lang.management.ManagementFactory;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +24,7 @@ import org.eclipse.jetty.io.IncludeExcludeConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -101,7 +100,7 @@ public class WebSocketStatsTest
     long getFrameByteSize(Frame frame)
     {
         Generator generator = new Generator();
-        ByteBuffer headerBuffer = BufferUtil.allocate(Generator.MAX_HEADER_LENGTH);
+        RetainableByteBuffer.Mutable headerBuffer = RetainableByteBuffer.Mutable.allocate(Generator.MAX_HEADER_LENGTH, false);
         generator.generateHeader(frame, headerBuffer);
         return headerBuffer.remaining() + frame.getPayloadLength();
     }

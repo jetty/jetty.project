@@ -15,7 +15,7 @@ package org.eclipse.jetty.http;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * Known HTTP Methods
@@ -152,12 +152,12 @@ public enum HttpMethod
      * @param buffer buffer containing ISO-8859-1 characters, it is not modified.
      * @return An HttpMethod if a match or null if no easy match.
      */
-    public static HttpMethod lookAheadGet(ReadableBuffer buffer)
+    public static HttpMethod lookAheadGet(RetainableByteBuffer buffer)
     {
         long len = buffer.remaining();
         // Shortcut for 3 or 4 char methods, mostly for GET optimisation
         if (len > 4)
-            return lookAheadGet(buffer, buffer.getInt(buffer.position()));
+            return lookAheadGet(buffer, buffer.getInt(buffer.readPosition()));
         return LOOK_AHEAD.getBest(buffer, 0, len);
     }
 
@@ -169,7 +169,7 @@ public enum HttpMethod
      *                  with the equivalent of {@code buffer.getInt(buffer.position())}
      * @return An HttpMethod if a match or null if no easy match.
      */
-    static HttpMethod lookAheadGet(ReadableBuffer buffer, int lookAhead)
+    static HttpMethod lookAheadGet(RetainableByteBuffer buffer, int lookAhead)
     {
         return switch (lookAhead)
         {
@@ -177,8 +177,8 @@ public enum HttpMethod
             case GET_AS_INT -> GET;
             case PRI_AS_INT -> PRI;
             case PUT_AS_INT -> PUT;
-            case POST_AS_INT -> (buffer.get(buffer.position() + 4) == ' ') ? POST : LOOK_AHEAD.getBest(buffer, 0, buffer.remaining());
-            case HEAD_AS_INT -> (buffer.get(buffer.position() + 4) == ' ') ? HEAD : LOOK_AHEAD.getBest(buffer, 0, buffer.remaining());
+            case POST_AS_INT -> (buffer.get(buffer.readPosition() + 4) == ' ') ? POST : LOOK_AHEAD.getBest(buffer, 0, buffer.remaining());
+            case HEAD_AS_INT -> (buffer.get(buffer.readPosition() + 4) == ' ') ? HEAD : LOOK_AHEAD.getBest(buffer, 0, buffer.remaining());
             default -> LOOK_AHEAD.getBest(buffer, 0, buffer.remaining());
         };
     }

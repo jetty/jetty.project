@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * Parses a stream of unframed instructions for the Encoder. These instructions are sent from the remote Decoder.
@@ -61,16 +61,16 @@ public class EncoderInstructionParser
      * @param buffer the buffer to parse.
      * @throws QpackException if there was an error parsing the instructions.
      */
-    public void parse(ByteBuffer buffer) throws QpackException
+    public void parse(RetainableByteBuffer buffer) throws QpackException
     {
-        while (BufferUtil.hasContent(buffer))
+        while (buffer.hasRemaining())
         {
             switch (_state)
             {
                 case IDLE ->
                 {
                     // Get first byte without incrementing the buffers position.
-                    byte firstByte = buffer.get(buffer.position());
+                    byte firstByte = buffer.get(buffer.readPosition());
                     if ((firstByte & 0x80) != 0)
                     {
                         _state = State.SECTION_ACKNOWLEDGEMENT;
@@ -95,7 +95,7 @@ public class EncoderInstructionParser
         }
     }
 
-    private void parseSectionAcknowledgment(ByteBuffer buffer) throws QpackException
+    private void parseSectionAcknowledgment(RetainableByteBuffer buffer) throws QpackException
     {
         long streamId = _integerDecoder.decodeInt(buffer);
         if (streamId >= 0)
@@ -105,7 +105,7 @@ public class EncoderInstructionParser
         }
     }
 
-    private void parseStreamCancellation(ByteBuffer buffer) throws QpackException
+    private void parseStreamCancellation(RetainableByteBuffer buffer) throws QpackException
     {
         long streamId = _integerDecoder.decodeLong(buffer);
         if (streamId >= 0)
@@ -115,7 +115,7 @@ public class EncoderInstructionParser
         }
     }
 
-    private void parseInsertCountIncrement(ByteBuffer buffer) throws QpackException
+    private void parseInsertCountIncrement(RetainableByteBuffer buffer) throws QpackException
     {
         int increment = _integerDecoder.decodeInt(buffer);
         if (increment >= 0)

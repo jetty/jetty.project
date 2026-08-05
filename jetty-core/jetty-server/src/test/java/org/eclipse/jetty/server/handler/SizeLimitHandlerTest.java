@@ -34,7 +34,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,7 +87,7 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+            _local.getResponseAsString("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(200));
         assertThat(response.getContent(), containsString("Hello World"));
     }
@@ -108,7 +108,7 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+            _local.getResponseAsString("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(500));
         assertThat(response.getContent(), containsString("8193&gt;8192"));
     }
@@ -121,13 +121,13 @@ public class SizeLimitHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.wrap(new byte[8 * 1024 + 1]), callback);
+                response.write(true, RetainableByteBuffer.wrap(new byte[8 * 1024 + 1]), callback);
                 return true;
             }
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+            _local.getResponseAsString("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(500));
         assertThat(response.getContent(), containsString("8193&gt;8192"));
     }
@@ -169,7 +169,7 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+            _local.getResponseAsString("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(200));
         assertTrue(error.get());
 
@@ -197,7 +197,7 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+            _local.getResponseAsString("""
                 POST /ctx/hello HTTP/1.0\r
                 Content-Length: 8\r
                 \r
@@ -223,7 +223,7 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+            _local.getResponseAsString("""
                 POST /ctx/hello HTTP/1.0\r
                 Content-Length: 32768\r
                 \r
@@ -262,7 +262,7 @@ public class SizeLimitHandlerTest
             String text = new String(data, 0, 1024, Charset.defaultCharset());
 
             for (int i = 0; i < 9; i++)
-                endPoint.addInput("400\r\n" + text + "\r\n");
+                endPoint.writeRequestString("400\r\n" + text + "\r\n");
 
             HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
 
@@ -290,7 +290,7 @@ public class SizeLimitHandlerTest
         for (int i = 0; i < 1000; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+                _local.getResponseAsString("GET /ctx/hello HTTP/1.0\r\n\r\n"));
             assertThat(response.getStatus(), equalTo(200));
             assertThat(response.getContent(), equalTo(message));
         }

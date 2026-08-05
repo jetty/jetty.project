@@ -37,7 +37,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -135,7 +135,7 @@ public class StreamCloseTest extends AbstractTest
                         Content.Chunk chunk = stream.read();
 
                         assertTrue(stream.isRemotelyClosed());
-                        completable.thenRun(() -> stream.data(ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), new Callback()
+                        completable.thenRun(() -> stream.data(RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), new Callback()
                         {
                             @Override
                             public void succeeded()
@@ -171,7 +171,7 @@ public class StreamCloseTest extends AbstractTest
         assertFalse(((HTTP2Stream)stream).isLocallyClosed());
 
         CountDownLatch clientDataLatch = new CountDownLatch(1);
-        stream.data(ReadableBuffer.wrap(new byte[512]), true, new Callback()
+        stream.data(RetainableByteBuffer.wrap(new byte[512]), true, new Callback()
         {
             @Override
             public void succeeded()
@@ -206,7 +206,7 @@ public class StreamCloseTest extends AbstractTest
                         // When created, pushed stream must be implicitly remotely closed.
                         assertTrue(pushedStream.isRemotelyClosed());
                         // Send some data with endStream = true.
-                        pushedStream.data(ReadableBuffer.allocate(16, false), true, new Callback()
+                        pushedStream.data(RetainableByteBuffer.allocate(16, false), true, new Callback()
                         {
                             @Override
                             public void succeeded()
@@ -329,7 +329,7 @@ public class StreamCloseTest extends AbstractTest
                     // stop() on different thread which tries to concurrently fail the stream.
                     ((HTTP2Session)stream.getSession()).getEndPoint().shutdownOutput();
                     // Try to write something to force an error.
-                    stream.data(ReadableBuffer.allocate(1024, false), true, Callback.NOOP);
+                    stream.data(RetainableByteBuffer.allocate(1024, false), true, Callback.NOOP);
                 }
                 return null;
             }

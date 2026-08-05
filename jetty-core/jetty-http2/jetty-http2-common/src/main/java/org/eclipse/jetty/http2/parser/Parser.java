@@ -30,7 +30,7 @@ import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,7 +142,7 @@ public class Parser
      *
      * @param buffer the buffer to parse
      */
-    public void parse(ReadableBuffer buffer)
+    public void parse(RetainableByteBuffer buffer)
     {
         try
         {
@@ -152,7 +152,7 @@ public class Parser
                 {
                     case HEADER:
                     {
-                        if (buffer.remaining() > 0L)
+                        if (buffer.hasRemaining())
                             storeBeginNanoTime();
                         if (!parseHeader(buffer))
                             return;
@@ -181,7 +181,7 @@ public class Parser
         }
     }
 
-    protected boolean parseHeader(ReadableBuffer buffer)
+    protected boolean parseHeader(RetainableByteBuffer buffer)
     {
         if (!headerParser.parse(buffer))
             return false;
@@ -212,7 +212,7 @@ public class Parser
         return true;
     }
 
-    protected boolean parseBody(ReadableBuffer buffer)
+    protected boolean parseBody(RetainableByteBuffer buffer)
     {
         int type = getFrameType();
         if (type < 0 || type >= bodyParsers.length)
@@ -242,7 +242,7 @@ public class Parser
         return true;
     }
 
-    private boolean connectionFailure(ReadableBuffer buffer, ErrorCode error, String reason)
+    private boolean connectionFailure(RetainableByteBuffer buffer, ErrorCode error, String reason)
     {
         return unknownBodyParser.connectionFailure(buffer, error.code, reason);
     }

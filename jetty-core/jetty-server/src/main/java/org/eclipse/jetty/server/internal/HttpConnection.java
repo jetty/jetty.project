@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.internal;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.List;
 import java.util.Objects;
@@ -62,16 +61,15 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.TunnelSupport;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
@@ -105,7 +103,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private final AtomicBoolean _handling = new AtomicBoolean(false);
     private final HttpFields.Mutable _headerBuilder;
     private final int _minBufferSpace;
-    private volatile ReadableBuffer _requestBuffer;
+    private RetainableByteBuffer.Mutable _requestBuffer;
     private HttpFields.Mutable _trailers;
     private Runnable _onRequest;
     private final AtomicLong _requests = new AtomicLong();
@@ -307,23 +305,19 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     }
 
     @Override
-    public ByteBuffer onUpgradeFrom()
+    public RetainableByteBuffer.Mutable onUpgradeFrom()
     {
         if (isRequestBufferEmpty())
             return null;
-        ByteBuffer unconsumed = ByteBuffer.allocateDirect(Math.toIntExact(_requestBuffer.remaining()));
-        BufferUtil.put(_requestBuffer, unconsumed);
-        unconsumed.flip();
-        return unconsumed;
+        _requestBuffer.retain();
+        return _requestBuffer;
     }
 
     @Override
-    public void onUpgradeTo(ByteBuffer buffer)
+    public void onUpgradeTo(RetainableByteBuffer.Mutable buffer)
     {
         ensureRequestBuffer();
-        WritableBuffer wb = _requestBuffer.toWritable();
-        BufferUtil.put(buffer, wb);
-        wb.toReadable();
+        _requestBuffer.put(buffer);
     }
 
     @Override
@@ -337,17 +331,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         if (LOG.isDebugEnabled())
             LOG.debug("releasing request buffer {} {}", _requestBuffer, this);
-        ReadableBuffer buffer = _requestBuffer;
-        _requestBuffer = null;
-        if (buffer != null)
-            buffer.release();
+        _requestBuffer = Retainable.dispose(_requestBuffer);
     }
 
     private void ensureRequestBuffer()
     {
         if (_requestBuffer == null)
         {
-            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers()).toReadable();
+            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
                 LOG.debug("request buffer acquired {} {}", _requestBuffer, this);
         }
@@ -355,7 +346,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     public boolean isRequestBufferEmpty()
     {
-        return _requestBuffer == null || _requestBuffer.remaining() == 0L;
+        return _requestBuffer == null || !_requestBuffer.hasRemaining();
     }
 
     @Override
@@ -523,7 +514,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 break;
             }
 
-            assert _requestBuffer.remaining() == 0L;
+            assert !_requestBuffer.hasRemaining();
 
             int filled;
             boolean compact = true;
@@ -532,7 +523,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_requestBuffer.isRetained())
             {
                 // If there is sufficient space available, we can top up the buffer rather than allocate a new one
-                long space = _requestBuffer == null ? 0L : _requestBuffer.capacity() - _requestBuffer.position();
+                long space = _requestBuffer == null ? 0L : _requestBuffer.capacity() - _requestBuffer.readPosition();
                 if (_minBufferSpace > 0 && space >= _minBufferSpace)
                 {
                     // do not compact the buffer
@@ -559,7 +550,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 // chunk followed by an immediately served demand where the next read()
                 // actually makes the parser generate the error chunk.
                 if (filled < 0)
-                    _parser.parseNext(ReadableBuffer.EMPTY);
+                    _parser.parseNext(RetainableByteBuffer.empty());
                 break;
             }
         }
@@ -567,13 +558,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     private int fillRequestBuffer(boolean compact)
     {
-        WritableBuffer requestBuffer = _requestBuffer.toWritable();
-        _requestBuffer = null;
         try
         {
-            int filled = getEndPoint().fill(requestBuffer);
+            if (compact)
+                _requestBuffer.compact();
+
+            int filled = getEndPoint().fill(_requestBuffer);
             if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
-                filled = getEndPoint().fill(requestBuffer);
+                filled = getEndPoint().fill(_requestBuffer);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("filled {} {} {}", filled, _requestBuffer, this);
@@ -591,10 +583,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
             _parser.atEOF();
             return -1;
-        }
-        finally
-        {
-            _requestBuffer = requestBuffer.toReadable();
         }
     }
 
@@ -737,11 +725,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         private MetaData.Response _info;
         private boolean _head;
-        private ReadableBuffer _content;
+        private RetainableByteBuffer.Mutable _header;
+        private RetainableByteBuffer.Mutable _chunk;
+        private RetainableByteBuffer _content;
         private boolean _lastContent;
         private Callback _callback;
-        private ReadableBuffer _header;
-        private ReadableBuffer _chunk;
         private boolean _shutdownOut;
 
         private SendCallback()
@@ -753,7 +741,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
          * Cancel any send in progress by aborting this {@link IteratingCallback} and take any send {@link Callback}.
          * @param cause the cause of the cancellation
          * @return A {@link Callback} passed to
-         *         {@link #reset(MetaData.Request, MetaData.Response, ReadableBuffer, boolean, Callback)} if it has not yet
+         *         {@link #reset(MetaData.Request, MetaData.Response, RetainableByteBuffer, boolean, Callback)} if it has not yet
          *         been invoked, else {@code null}
          */
         public Callback cancel(Throwable cause)
@@ -808,13 +796,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             return _callback.getInvocationType();
         }
 
-        private boolean reset(MetaData.Request request, MetaData.Response response, ReadableBuffer content, boolean last, Callback callback)
+        private boolean reset(MetaData.Request request, MetaData.Response response, RetainableByteBuffer content, boolean last, Callback callback)
         {
             if (reset())
             {
                 _info = response;
                 _head = request != null && HttpMethod.HEAD.is(request.getMethod());
                 _content = content;
+                if (content != null)
+                    content.retain();
                 _lastContent = last;
                 _callback = callback;
                 // Cannot call reset unless we are
@@ -848,34 +838,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             int chunkMaxLength = getTransferEncodingChunkMaxLength();
             while (true)
             {
-                HttpGenerator.Result result;
-                {
-                    WritableBuffer headerBuffer = _header == null ? null : _header.toWritable();
-                    _header = null;
-                    WritableBuffer chunkBuffer = _chunk == null ? null : _chunk.toWritable();
-                    _chunk = null;
-
-                    try
-                    {
-                        result = _generator.generateResponse(_info, _head, headerBuffer, chunkBuffer, _content, _lastContent);
-                    }
-                    finally
-                    {
-                        if (headerBuffer != null)
-                            _header = headerBuffer.toReadable();
-                        if (chunkBuffer != null)
-                            _chunk = chunkBuffer.toReadable();
-                    }
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("generate: {} for {} ({},{},{})@{}",
-                            result,
-                            this,
-                            headerBuffer,
-                            _content,
-                            _lastContent,
-                            _generator.getState());
-                }
+                HttpGenerator.Result result = _generator.generateResponse(_info, _head, _header, _chunk, _content, _lastContent);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("generate: {} for {} ({},{},{})@{}",
+                        result,
+                        this,
+                        _header,
+                        _content,
+                        _lastContent,
+                        _generator.getState());
 
                 switch (result)
                 {
@@ -889,7 +860,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         if (maxHeaderBytes < 0)
                             maxHeaderBytes = responseHeadersSize;
                         _generator.setMaxHeaderBytes(maxHeaderBytes);
-                        _header = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers).toReadable();
+                        _header = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
                     }
                     case HEADER_OVERFLOW:
@@ -897,8 +868,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                         if (maxResponseHeadersSize > 0 && maxResponseHeadersSize > responseHeadersSize)
                         {
                             _generator.reset();
-                            _header.release();
-                            _header = _bufferPool.acquire(maxResponseHeadersSize, useDirectByteBuffers).toReadable();
+                            releaseHeader();
+                            _header = _bufferPool.acquire(maxResponseHeadersSize, useDirectByteBuffers);
                             responseHeadersSize = maxResponseHeadersSize;
                             break;
                         }
@@ -909,47 +880,50 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     }
                     case NEED_CHUNK:
                     {
-                        _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers).toReadable();
+                        _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);
                         continue;
                     }
                     case NEED_CHUNK_TRAILER:
                     {
                         releaseChunk();
-                        _chunk = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers).toReadable();
+                        _chunk = _bufferPool.acquire(responseHeadersSize, useDirectByteBuffers);
                         continue;
                     }
                     case FLUSH:
                     {
-                        // Don't write the chunk or the content if this is a HEAD response, or any other type of response that should have no content
+                        // Don't write the chunk or the content if this is a HEAD response,
+                        // or any other type of response that should have no content.
                         if (_head || _generator.isNoContent())
                         {
                             if (_chunk != null)
-                                _chunk.position(_chunk.position() + _chunk.remaining());
+                                _chunk.consume(_chunk.remaining());
                             if (_content != null)
-                                _content.position(_content.position() + _content.remaining());
+                                _content.consume(_content.remaining());
                         }
 
-                        long bytes = 0;
-                        if (_header != null)
-                            bytes += _header.remaining();
-                        if (_chunk != null)
-                            bytes += _chunk.remaining();
-                        ReadableBuffer contentByteBuffer = _content;
-                        if (contentByteBuffer != null && contentByteBuffer.remaining() > 0L)
+                        boolean sliced = false;
+                        RetainableByteBuffer content = _content;
+                        if (content != null && content.hasRemaining())
                         {
-                            if (_generator.isChunking() && contentByteBuffer.remaining() > chunkMaxLength)
+                            if (_generator.isChunking() && content.remaining() > chunkMaxLength)
                             {
-                                ReadableBuffer slice = contentByteBuffer.slice(contentByteBuffer.position(), chunkMaxLength);
-                                contentByteBuffer.position(contentByteBuffer.position() + chunkMaxLength);
-                                contentByteBuffer.release();
-                                contentByteBuffer = slice;
+                                content = content.sliceAndConsume(chunkMaxLength);
+                                sliced = true;
                             }
-                            bytes += contentByteBuffer.remaining();
                         }
+
+                        long bytes = _header != null ? _header.remaining() : 0;
+                        bytes +=  _chunk != null ? _chunk.remaining() : 0;
+                        bytes += content != null ? content.remaining() : 0;
                         _bytesOut.addAndGet(bytes);
-                        ReadableBuffer accumulated = ReadableBuffer.accumulate(_header, _chunk, contentByteBuffer);
+
+                        // TODO: here use heavily optimized version of RetainableByteBuffer.wrap().
+                        //  We have to use a single RetainableByteBuffer in order to support gather writes.
+                        RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(_header, _chunk, content);
                         getEndPoint().write(accumulated, this);
                         accumulated.release();
+                        if (sliced)
+                            Retainable.dispose(content);
 
                         return Action.SCHEDULED;
                     }
@@ -980,12 +954,19 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             }
         }
 
+        @Override
+        protected void onSuccess()
+        {
+            releaseHeader();
+            if (_chunk != null)
+                _chunk.clear();
+        }
+
         private Callback takeCallbackAndReset()
         {
             Callback callback = _callback;
             _callback = null;
             _info = null;
-            _content = null;
             return callback;
         }
 
@@ -995,20 +976,17 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 throw new IllegalStateException("callback not invoked");
             releaseHeader();
             releaseChunk();
+            _content = Retainable.dispose(_content);
         }
 
         private void releaseHeader()
         {
-            if (_header != null)
-                _header.release();
-            _header = null;
+            _header = Retainable.dispose(_header);
         }
 
         private void releaseChunk()
         {
-            if (_chunk != null)
-                _chunk.release();
-            _chunk = null;
+            _chunk = Retainable.dispose(_chunk);
         }
 
         @Override
@@ -1121,7 +1099,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
-        public boolean content(ReadableBuffer buffer)
+        public boolean content(RetainableByteBuffer buffer)
         {
             HttpStreamOverHTTP1 stream = _stream.get();
             if (stream == null || stream._chunk != null || _requestBuffer == null)
@@ -1510,11 +1488,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
-        public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
+        public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
         {
             if (response == null)
             {
-                if (!last && (content == null || content.remaining() == 0L))
+                if (!last && (content == null || !content.hasRemaining()))
                 {
                     callback.succeeded();
                     return;

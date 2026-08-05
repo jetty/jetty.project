@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,7 +35,7 @@ public class EncoderSinkTest
             final AtomicInteger releaseCounter = new AtomicInteger();
 
             @Override
-            protected WriteRecord encode(boolean last, ReadableBuffer content)
+            protected WriteRecord encode(boolean last, RetainableByteBuffer content)
             {
                 return new WriteRecord(last, content);
             }
@@ -49,7 +49,7 @@ public class EncoderSinkTest
 
         try (Blocker.Callback cb = Blocker.callback())
         {
-            encoderSink.write(true, ReadableBuffer.allocate(128, false), cb);
+            encoderSink.write(true, RetainableByteBuffer.allocate(128, false), cb);
             assertThrows(ArithmeticException.class, cb::block);
         }
 

@@ -15,8 +15,7 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class NBitStringEncoder
 {
@@ -39,11 +38,11 @@ public class NBitStringEncoder
 
     public static void encode(ByteBuffer buffer, int prefix, String value, boolean huffman)
     {
-        WritableBuffer wb = WritableBuffer.wrap(buffer);
+        RetainableByteBuffer.Mutable wb = RetainableByteBuffer.Mutable.wrap(buffer);
         encode(wb, prefix, value, huffman);
     }
 
-    public static void encode(WritableBuffer buffer, int prefix, String value, boolean huffman)
+    public static void encode(RetainableByteBuffer.Mutable buffer, int prefix, String value, boolean huffman)
     {
         if (prefix <= 0 || prefix > 8)
             throw new IllegalArgumentException();
@@ -55,8 +54,8 @@ public class NBitStringEncoder
         }
         else
         {
-            long p = buffer.position() - 1;
-            buffer.put(p, (byte)(getByteAt(buffer, p) | huffmanFlag));
+            long p = buffer.writePosition() - 1;
+            buffer.put(p, (byte)(buffer.get(p) | huffmanFlag));
         }
 
         // Start encoding size & content in rest of prefix.
@@ -79,13 +78,5 @@ public class NBitStringEncoder
                 buffer.put((byte)c);
             }
         }
-    }
-
-    private static byte getByteAt(WritableBuffer buffer, long p)
-    {
-        ReadableBuffer rb = buffer.toReadable();
-        byte b = rb.get(p);
-        rb.toWritable();
-        return b;
     }
 }

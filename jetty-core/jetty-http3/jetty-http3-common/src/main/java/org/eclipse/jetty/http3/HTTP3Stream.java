@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,9 +132,13 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     }
 
     @Override
-    public void data(DataFrame frame, Promise.Invocable<Stream> promise)
+    public void data(RetainableByteBuffer data, boolean last, Promise.Invocable<Stream> promise)
     {
-        write(frame, promise);
+        // The data must be retained here because the flusher deals with
+        // Frame instances that in general do not wrap Retainable instances.
+        // As such, the release must be done here wrapping the Promise.
+        DataFrame frame = new DataFrame(data, last);
+        write(frame, Promise.Invocable.from(promise, frame::close));
     }
 
     protected void write(Frame frame, Promise.Invocable<Stream> promise)

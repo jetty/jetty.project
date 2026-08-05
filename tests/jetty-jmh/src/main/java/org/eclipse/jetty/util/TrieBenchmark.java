@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -117,12 +117,12 @@ public class TrieBenchmark
         throw new IllegalStateException();
     }
 
-    private static final ReadableBuffer X = BufferUtil.toReadableBuffer("Xx\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ReadableBuffer Z = BufferUtil.toReadableBuffer("Zasdfadsfasfasfbae9mn3m0mdmmfkk092nvfs0smnsmm3k23m3m23m\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ReadableBuffer M = BufferUtil.toReadableBuffer(LONG_MISS + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ReadableBuffer P = BufferUtil.toReadableBuffer("Pragma: no-cache;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ReadableBuffer A = BufferUtil.toReadableBuffer("Accept-Language: en-US,enq=0.5;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ReadableBuffer H = BufferUtil.toReadableBuffer(LONG_HIT + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    private static final RetainableByteBuffer X = BufferUtil.toReadableBuffer("Xx\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    private static final RetainableByteBuffer Z = BufferUtil.toReadableBuffer("Zasdfadsfasfasfbae9mn3m0mdmmfkk092nvfs0smnsmm3k23m3m23m\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    private static final RetainableByteBuffer M = BufferUtil.toReadableBuffer(LONG_MISS + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    private static final RetainableByteBuffer P = BufferUtil.toReadableBuffer("Pragma: no-cache;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    private static final RetainableByteBuffer A = BufferUtil.toReadableBuffer("Accept-Language: en-US,enq=0.5;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    private static final RetainableByteBuffer H = BufferUtil.toReadableBuffer(LONG_HIT + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 
     @Benchmark
     public boolean testGetBest()
@@ -193,7 +193,7 @@ public class TrieBenchmark
         }
 
         @Override
-        public String getBest(ReadableBuffer b, long offset, long len)
+        public String getBest(RetainableByteBuffer b, long offset, long len)
         {
             throw new UnsupportedOperationException();
         }
@@ -201,22 +201,22 @@ public class TrieBenchmark
         @Override
         public String getBest(ByteBuffer b)
         {
-            return getBest(ReadableBuffer.wrap(b));
+            return getBest(RetainableByteBuffer.wrap(b));
         }
 
         @Override
-        public String getBest(ReadableBuffer buf)
+        public String getBest(RetainableByteBuffer buf)
         {
             long len = buf.remaining();
             for (int i = 0; i < len; i++)
             {
-                byte b = buf.get(buf.position() + i);
+                byte b = buf.get(buf.readPosition() + i);
                 switch (b)
                 {
                     case '\r':
                     case '\n':
                     case ';':
-                        String s = BufferUtil.toString(buf, buf.position(), i, StandardCharsets.ISO_8859_1);
+                        String s = BufferUtil.toString(buf, buf.readPosition(), i, StandardCharsets.ISO_8859_1);
                         if (isCaseInsensitive())
                             s = StringUtil.asciiToLowerCase(s);
                         return trie.get(s);

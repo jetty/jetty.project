@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -61,16 +60,14 @@ public class ParserGoodCloseStatusCodesTest
     {
         ParserCapture capture = new ParserCapture();
 
-        ByteBuffer raw = BufferUtil.allocate(256);
-        BufferUtil.clearToFill(raw);
+        RetainableByteBuffer.Mutable raw = RetainableByteBuffer.Mutable.allocate(256, false);
 
         // add close frame
         RawFrameBuilder.putOpFin(raw, OpCode.CLOSE, true);
         RawFrameBuilder.putLength(raw, 2, false); // len of closeCode
-        raw.putChar((char)closeCode); // 2 bytes for closeCode
+        raw.putShort((short)closeCode); // 2 bytes for closeCode
 
         // parse buffer
-        BufferUtil.flipToFlush(raw, 0);
         capture.parse(raw);
         Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Frame opcode", frame.getOpCode(), is(OpCode.CLOSE));
@@ -85,17 +82,15 @@ public class ParserGoodCloseStatusCodesTest
     {
         ParserCapture capture = new ParserCapture();
 
-        ByteBuffer raw = BufferUtil.allocate(256);
-        BufferUtil.clearToFill(raw);
+        RetainableByteBuffer.Mutable raw = RetainableByteBuffer.Mutable.allocate(256, false);
 
         // add close frame
         RawFrameBuilder.putOpFin(raw, OpCode.CLOSE, true);
         RawFrameBuilder.putLength(raw, 2 + 5, false); // len of closeCode + reason phrase
-        raw.putChar((char)closeCode); // 2 bytes for closeCode
+        raw.putShort((short)closeCode); // 2 bytes for closeCode
         raw.put("hello".getBytes(UTF_8));
 
         // parse buffer
-        BufferUtil.flipToFlush(raw, 0);
         capture.parse(raw);
         Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
         assertThat("Frame opcode", frame.getOpCode(), is(OpCode.CLOSE));

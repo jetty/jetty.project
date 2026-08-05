@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -164,7 +164,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     }
 
     @Override
-    public void data(ReadableBuffer data, boolean endStream, Callback callback)
+    public void data(RetainableByteBuffer data, boolean endStream, Callback callback)
     {
         if (startWrite(callback))
         {
@@ -557,9 +557,9 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         DataFrame dataFrame = readFrame();
         if (dataFrame == null)
             return null;
-        ReadableBuffer rb = dataFrame.acquire();
-        Content.Chunk chunk = Content.Chunk.asChunk(rb, dataFrame.isEndStream(), dataFrame);
-        rb.release();
+        RetainableByteBuffer data = dataFrame.acquire();
+        Content.Chunk chunk = Content.Chunk.asChunk(data, dataFrame.isEndStream(), dataFrame);
+        data.release();
         dataFrame.release();
         return chunk;
     }

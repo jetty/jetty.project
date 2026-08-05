@@ -36,7 +36,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,7 +67,7 @@ public class ResponseTrailerTest extends AbstractTest
                 // Send empty response trailers.
                 response.setTrailersSupplier(() -> HttpFields.EMPTY);
                 if (data != null)
-                    response.write(true, ReadableBuffer.wrap(data.getBytes(StandardCharsets.US_ASCII)), callback);
+                    response.write(true, RetainableByteBuffer.wrap(data.getBytes(StandardCharsets.US_ASCII)), callback);
                 else
                     callback.succeeded();
                 return true;

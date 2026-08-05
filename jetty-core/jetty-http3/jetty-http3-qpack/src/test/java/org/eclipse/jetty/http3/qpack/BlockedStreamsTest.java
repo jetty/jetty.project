@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.QpackException.SessionException;
@@ -23,8 +21,8 @@ import org.eclipse.jetty.http3.qpack.internal.instruction.InsertCountIncrementIn
 import org.eclipse.jetty.http3.qpack.internal.instruction.LiteralNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -77,8 +75,8 @@ public class BlockedStreamsTest
         // Encode a new field, which will be added to table. But do not forward insertion instruction to decoder,
         // this will cause decoder to become "blocked" on stream 0 until receives the instruction.
         HttpField entry1 = new HttpField("name1", "value1");
-        ByteBuffer buffer = encode(_encoder, 0, toMetaData("GET", "/", "http", entry1));
-        assertThat(BufferUtil.remaining(buffer), greaterThan(0L));
+        RetainableByteBuffer buffer = encode(_encoder, 0, toMetaData("GET", "/", "http", entry1));
+        assertThat(buffer.remaining(), greaterThan(0L));
         Instruction instruction1 = _encoderHandler.getInstruction();
         assertThat(instruction1, instanceOf(LiteralNameEntryInstruction.class));
         assertNull(_encoderHandler.getInstruction());
@@ -86,14 +84,14 @@ public class BlockedStreamsTest
         // Decoder will not be able to decode this header until it receives instruction.
         boolean decoded = _decoder.decode(0, buffer, _decoderHandler);
         assertFalse(decoded);
-        assertThat(BufferUtil.remaining(buffer), equalTo(0L));
+        assertThat(buffer.remaining(), equalTo(0L));
         assertNull(_decoderHandler.getMetaData());
         assertNull(_decoderHandler.getInstruction());
 
         // Encode second field with dynamic table, do not forward instruction to decoder.
         HttpField entry2 = new HttpField("name1", "value2");
         buffer = encode(_encoder, 1, toMetaData("GET", "/", "http", entry2));
-        assertThat(BufferUtil.remaining(buffer), greaterThan(0L));
+        assertThat(buffer.remaining(), greaterThan(0L));
         Instruction instruction2 = _encoderHandler.getInstruction();
         assertThat(instruction2, instanceOf(IndexedNameEntryInstruction.class));
         assertNull(_encoderHandler.getInstruction());
@@ -142,7 +140,7 @@ public class BlockedStreamsTest
         // It should only encode literal entries to not risk blocking another stream on the decoder.
         HttpField entry3 = new HttpField("name3", "value3");
         buffer = encode(_encoder, 3, toMetaData("GET", "/", "http", entry3));
-        assertThat(BufferUtil.remaining(buffer), greaterThan(0L));
+        assertThat(buffer.remaining(), greaterThan(0L));
         instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(LiteralNameEntryInstruction.class));
         assertNull(_encoderHandler.getInstruction());
@@ -157,13 +155,13 @@ public class BlockedStreamsTest
         // No longer referencing any streams that have been acknowledged.
         buffer = toBuffer(inc1, ack1, inc2, ack2);
         _encoder.parseInstructions(buffer);
-        assertThat(BufferUtil.remaining(buffer), equalTo(0L));
+        assertThat(buffer.remaining(), equalTo(0L));
         assertThat(_encoder.getStreamInfoMap().size(), equalTo(0));
 
         // Encoder can now reference entries not acknowledged by the decoder again.
         HttpField entry4 = new HttpField("name4", "value4");
         buffer = encode(_encoder, 4, toMetaData("GET", "/", "http", entry4));
-        assertThat(BufferUtil.remaining(buffer), greaterThan(0L));
+        assertThat(buffer.remaining(), greaterThan(0L));
         instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(LiteralNameEntryInstruction.class));
         assertNull(_encoderHandler.getInstruction());
@@ -191,8 +189,8 @@ public class BlockedStreamsTest
         // Encode a new field, which will be added to table. But do not forward insertion instruction to decoder,
         // this will cause decoder to become "blocked" on stream 0 until receives the instruction.
         HttpField entry1 = new HttpField("name1", "value1");
-        ByteBuffer buffer = encode(_encoder, 0, toMetaData("GET", "/", "http", entry1));
-        assertThat(BufferUtil.remaining(buffer), greaterThan(0L));
+        RetainableByteBuffer buffer = encode(_encoder, 0, toMetaData("GET", "/", "http", entry1));
+        assertThat(buffer.remaining(), greaterThan(0L));
         Instruction instruction1 = _encoderHandler.getInstruction();
         assertThat(instruction1, instanceOf(LiteralNameEntryInstruction.class));
         assertNull(_encoderHandler.getInstruction());
@@ -200,14 +198,14 @@ public class BlockedStreamsTest
         // Decoder will not be able to decode this header until it receives instruction.
         boolean decoded = _decoder.decode(0, buffer, _decoderHandler);
         assertFalse(decoded);
-        assertThat(BufferUtil.remaining(buffer), equalTo(0L));
+        assertThat(buffer.remaining(), equalTo(0L));
         assertNull(_decoderHandler.getMetaData());
         assertNull(_decoderHandler.getInstruction());
 
         // Encode second field with dynamic table, do not forward instruction to decoder.
         HttpField entry2 = new HttpField("name1", "value2");
         buffer = encode(_encoder, 1, toMetaData("GET", "/", "http", entry2));
-        assertThat(BufferUtil.remaining(buffer), greaterThan(0L));
+        assertThat(buffer.remaining(), greaterThan(0L));
         Instruction instruction2 = _encoderHandler.getInstruction();
         assertThat(instruction2, instanceOf(IndexedNameEntryInstruction.class));
         assertNull(_encoderHandler.getInstruction());
@@ -220,8 +218,8 @@ public class BlockedStreamsTest
 
         // This entry will block a 3rd stream which the decoder must not allow.
         HttpField entry3 = new HttpField("name3", "value3");
-        ByteBuffer encodedMetadata = encode(_encoder, 3, toMetaData("GET", "/", "http", entry3));
-        assertThat(BufferUtil.remaining(encodedMetadata), greaterThan(0L));
+        RetainableByteBuffer encodedMetadata = encode(_encoder, 3, toMetaData("GET", "/", "http", entry3));
+        assertThat(encodedMetadata.remaining(), greaterThan(0L));
         instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(LiteralNameEntryInstruction.class));
         assertNull(_encoderHandler.getInstruction());

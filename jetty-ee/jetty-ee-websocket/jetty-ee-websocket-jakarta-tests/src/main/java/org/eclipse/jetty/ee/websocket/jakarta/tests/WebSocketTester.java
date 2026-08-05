@@ -30,6 +30,7 @@ import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -85,10 +86,10 @@ public class WebSocketTester implements AutoCloseable
         this.frameCapture = futureFrameCapture.get(10, TimeUnit.SECONDS);
     }
 
-    public ByteBuffer asNetworkBuffer(List<Frame> frames)
+    public RetainableByteBuffer asNetworkBuffer(List<Frame> frames)
     {
         int bufferLength = frames.stream().mapToInt((f) -> f.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
-        ByteBuffer buffer = BufferUtil.allocate(bufferLength);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(bufferLength, false);
         for (Frame f : frames)
         {
             generator.generate(buffer, f);
@@ -123,7 +124,7 @@ public class WebSocketTester implements AutoCloseable
      *
      * @param buffer the buffer
      */
-    public void send(ByteBuffer buffer) throws IOException
+    public void send(RetainableByteBuffer buffer) throws IOException
     {
         frameCapture.writeRaw(buffer);
     }
@@ -134,13 +135,12 @@ public class WebSocketTester implements AutoCloseable
      * @param buffer the buffer
      * @param length the number of bytes to send from buffer
      */
-    public void send(ByteBuffer buffer, int length) throws IOException
+    public void send(RetainableByteBuffer buffer, int length) throws IOException
     {
-        int limit = Math.min(length, buffer.remaining());
-        ByteBuffer sliced = buffer.slice();
-        sliced.limit(limit);
+        long limit = Math.min(length, buffer.remaining());
+        RetainableByteBuffer sliced = buffer.sliceAndConsume(limit);
         frameCapture.writeRaw(sliced);
-        buffer.position(buffer.position() + limit);
+        sliced.release();
     }
 
     /**
@@ -192,9 +192,9 @@ public class WebSocketTester implements AutoCloseable
      */
     public void sendSegmented(List<Frame> frames, int segmentSize) throws IOException
     {
-        ByteBuffer buffer = asNetworkBuffer(frames);
+        RetainableByteBuffer buffer = asNetworkBuffer(frames);
 
-        while (buffer.remaining() > 0)
+        while (buffer.hasRemaining())
         {
             send(buffer, segmentSize);
         }
@@ -366,7 +366,7 @@ public class WebSocketTester implements AutoCloseable
             callback.succeeded();
         }
 
-        public void writeRaw(ByteBuffer buffer) throws IOException
+        public void writeRaw(RetainableByteBuffer buffer) throws IOException
         {
             try
             {
@@ -380,7 +380,7 @@ public class WebSocketTester implements AutoCloseable
             try (AutoLock ignored = lock.lock())
             {
                 FutureCallback callback = new FutureCallback();
-                endPoint.write(callback, buffer);
+                endPoint.write(buffer, callback);
                 callback.block();
             }
         }

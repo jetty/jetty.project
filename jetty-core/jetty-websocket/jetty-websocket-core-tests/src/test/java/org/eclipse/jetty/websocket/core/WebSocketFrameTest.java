@@ -13,40 +13,36 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WebSocketFrameTest
 {
     private final Generator generator = new Generator();
 
-    private ByteBuffer generateWholeFrame(Generator generator, Frame frame)
+    private RetainableByteBuffer generateWholeFrame(Generator generator, Frame frame)
     {
-        ByteBuffer buf = BufferUtil.allocate(frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH);
-        generator.generateWholeFrame(frame, buf);
-        return buf;
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH, false);
+        generator.generateWholeFrame(frame, buffer);
+        return buffer;
     }
 
-    private void assertFrameHex(String message, String expectedHex, ByteBuffer actual)
+    private void assertFrameHex(String message, String expectedHex, RetainableByteBuffer actual)
     {
-        String actualHex = Hex.asHex(actual);
-        assertThat("Generated Frame:" + message, actualHex, is(expectedHex));
+        assertArrayEquals(StringUtil.fromHexString(expectedHex), actual.getArray(), "Generated Frame:" + message);
     }
 
     @Test
     public void testInvalidClose()
     {
         Frame frame = new Frame(OpCode.CLOSE).setFin(false);
-        ByteBuffer actual = generateWholeFrame(generator, frame);
+        RetainableByteBuffer actual = generateWholeFrame(generator, frame);
         String expected = "0800";
         assertFrameHex("Invalid Close Frame", expected, actual);
     }
@@ -55,7 +51,7 @@ public class WebSocketFrameTest
     public void testInvalidPing()
     {
         Frame frame = new Frame(OpCode.PING).setFin(false);
-        ByteBuffer actual = generateWholeFrame(generator, frame);
+        RetainableByteBuffer actual = generateWholeFrame(generator, frame);
         String expected = "0900";
         assertFrameHex("Invalid Ping Frame", expected, actual);
     }
@@ -64,7 +60,7 @@ public class WebSocketFrameTest
     public void testValidClose()
     {
         Frame frame = CloseStatus.toFrame(CloseStatus.NORMAL);
-        ByteBuffer actual = generateWholeFrame(generator, frame);
+        RetainableByteBuffer actual = generateWholeFrame(generator, frame);
         String expected = "880203E8";
         assertFrameHex("Valid Close Frame", expected, actual);
     }
@@ -73,7 +69,7 @@ public class WebSocketFrameTest
     public void testValidPing()
     {
         Frame frame = new Frame(OpCode.PING);
-        ByteBuffer actual = generateWholeFrame(generator, frame);
+        RetainableByteBuffer actual = generateWholeFrame(generator, frame);
         String expected = "8900";
         assertFrameHex("Valid Ping Frame", expected, actual);
     }
@@ -84,7 +80,7 @@ public class WebSocketFrameTest
         Frame frame = new Frame(OpCode.TEXT);
         frame.setPayload("Hi");
         frame.setRsv1(true);
-        ByteBuffer actual = generateWholeFrame(generator, frame);
+        RetainableByteBuffer actual = generateWholeFrame(generator, frame);
         String expected = "C1024869";
         assertFrameHex("Text Frame with RSV1", expected, actual);
     }
@@ -95,7 +91,7 @@ public class WebSocketFrameTest
         Frame frame = new Frame(OpCode.TEXT);
         frame.setPayload("Hi");
         frame.setRsv2(true);
-        ByteBuffer actual = generateWholeFrame(generator, frame);
+        RetainableByteBuffer actual = generateWholeFrame(generator, frame);
         String expected = "A1024869";
         assertFrameHex("Text Frame with RSV2", expected, actual);
     }
@@ -106,7 +102,7 @@ public class WebSocketFrameTest
         Frame frame = new Frame(OpCode.TEXT);
         frame.setPayload("Hi");
         frame.setRsv3(true);
-        ByteBuffer actual = generateWholeFrame(generator, frame);
+        RetainableByteBuffer actual = generateWholeFrame(generator, frame);
         String expected = "91024869";
         assertFrameHex("Text Frame with RSV3", expected, actual);
     }

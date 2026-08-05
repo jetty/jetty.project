@@ -82,7 +82,7 @@ public class WebAppDefaultServletCacheTest
             rawRequest.append(extraHeader).append("\r\n");
         }
         rawRequest.append("\r\n");
-        String rawResponse = connector.getResponse(rawRequest.toString());
+        String rawResponse = connector.getResponseAsString(rawRequest.toString());
         return HttpTester.parseResponse(rawResponse);
     }
 }

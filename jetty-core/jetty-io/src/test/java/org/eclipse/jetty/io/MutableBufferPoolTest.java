@@ -15,8 +15,7 @@ package org.eclipse.jetty.io;
 
 import java.util.List;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -24,7 +23,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class WritableBufferPoolTest
+public class MutableBufferPoolTest
 {
     static List<WritableBufferPool> sources()
     {
@@ -38,19 +37,18 @@ public class WritableBufferPoolTest
     @MethodSource("sources")
     public void testSimple(WritableBufferPool writableBufferPool)
     {
-        WritableBuffer wb = writableBufferPool.acquire(10, false);
-        assertEquals(0, wb.position());
-        assertThat(wb.remaining(), greaterThanOrEqualTo(10L));
+        RetainableByteBuffer.Mutable b = writableBufferPool.acquire(10, false);
+        assertEquals(0, b.writePosition());
+        assertThat(b.space(), greaterThanOrEqualTo(10L));
 
-        wb.putInt(1);
-        wb.putInt(2);
-        assertEquals(8, wb.position());
-        assertThat(wb.remaining(), greaterThanOrEqualTo(2L));
+        b.putInt(1);
+        b.putInt(2);
+        assertEquals(8, b.writePosition());
+        assertThat(b.space(), greaterThanOrEqualTo(2L));
 
-        ReadableBuffer rb = wb.toReadable();
-        assertEquals(0, rb.position());
-        assertEquals(8, rb.remaining());
-        assertEquals(1, rb.getInt());
-        assertEquals(2, rb.getInt());
+        assertEquals(0, b.readPosition());
+        assertEquals(8, b.remaining());
+        assertEquals(1, b.getInt());
+        assertEquals(2, b.getInt());
     }
 }

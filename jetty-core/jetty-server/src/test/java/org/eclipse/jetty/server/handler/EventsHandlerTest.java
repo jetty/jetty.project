@@ -36,7 +36,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -189,13 +189,13 @@ public class EventsHandlerTest
             }
 
             @Override
-            protected void onResponseWrite(Request request, boolean last, ReadableBuffer content)
+            protected void onResponseWrite(Request request, boolean last, RetainableByteBuffer content)
             {
                 events.add("onResponseWrite");
             }
 
             @Override
-            protected void onResponseWriteComplete(Request request, boolean last, ReadableBuffer content, Throwable failure)
+            protected void onResponseWriteComplete(Request request, boolean last, RetainableByteBuffer content, Throwable failure)
             {
                 events.add("onResponseWriteComplete");
             }
@@ -260,7 +260,7 @@ public class EventsHandlerTest
             {
                 assertEquals(Invocable.InvocationType.NON_BLOCKING, callback.getInvocationType());
                 // Perform a large write to become TCP congested.
-                response.write(true, ReadableBuffer.allocate(128 * 1024 * 1024, false), callback);
+                response.write(true, RetainableByteBuffer.allocate(128 * 1024 * 1024, false), callback);
                 return true;
             }
         }) {});

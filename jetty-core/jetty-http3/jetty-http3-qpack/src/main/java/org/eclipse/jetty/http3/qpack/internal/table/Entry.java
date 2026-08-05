@@ -21,7 +21,7 @@ import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class Entry
 {
@@ -123,7 +123,7 @@ public class Entry
                     throw new IllegalStateException("bad value");
                 int lenLen = NBitIntegerEncoder.octetsNeeded(7, huffmanLen);
                 _huffmanValue = new byte[lenLen + huffmanLen];
-                WritableBuffer buffer = WritableBuffer.wrap(ByteBuffer.wrap(_huffmanValue));
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.wrap(ByteBuffer.wrap(_huffmanValue));
 
                 // Indicate Huffman
                 buffer.put((byte)0x80);

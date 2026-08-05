@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,15 +49,12 @@ public class MaxFrameSizeParseTest
         // Iterate a few times to be sure the parser is properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            byte[] bytes = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0};
-            ReadableBuffer buffer = ReadableBuffer.wrap(bytes);
-            WritableBuffer wb = buffer.toWritable();
-            wb.position(0);
-            wb.putInt(maxFrameSize + 1);
-            wb.position(wb.capacity());
-            wb.toReadable();
-            buffer.position(1);
-            while (buffer.remaining() > 0L)
+            ByteBuffer bytes = ByteBuffer.wrap(new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0});
+            bytes.position(bytes.limit());
+            RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.wrap(bytes);
+            buffer.putInt(0, maxFrameSize + 1);
+            buffer.readPosition(1);
+            while (buffer.hasRemaining())
             {
                 parser.parse(buffer);
             }

@@ -35,7 +35,7 @@ import org.eclipse.jetty.http3.qpack.internal.parser.EncodedFieldSection;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.table.StaticTable;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -149,10 +149,10 @@ public class QpackDecoder implements Dumpable
      * @return true if the MetaData could be decoded immediately without requiring addition state in the DynamicTable.
      * @throws QpackException if there was an error with the QPACK decompression.
      */
-    public boolean decode(long streamId, ByteBuffer buffer, Handler handler) throws QpackException
+    public boolean decode(long streamId, RetainableByteBuffer buffer, Handler handler) throws QpackException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Decoding: streamId={}, buffer={}", streamId, BufferUtil.toDetailString(buffer));
+            LOG.debug("Decoding: streamId={}, buffer={}", streamId, buffer);
 
         // If the buffer is big, don't even think about decoding it
         // Huffman may double the size, but it will only be a temporary allocation until detected in MetaDataBuilder.emit().
@@ -170,7 +170,7 @@ public class QpackDecoder implements Dumpable
                 throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "invalid_required_insert_count");
 
             _integerDecoder.setPrefix(7);
-            boolean signBit = (buffer.get(buffer.position()) & 0x80) != 0;
+            boolean signBit = (buffer.get(buffer.readPosition()) & 0x80) != 0;
             int deltaBase = _integerDecoder.decodeInt(buffer);
             if (deltaBase < 0)
                 throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "invalid_delta_base");
@@ -229,10 +229,10 @@ public class QpackDecoder implements Dumpable
      * @param buffer a buffer containing bytes from the Encoder stream.
      * @throws QpackException.SessionException if there was an error parsing or handling the instructions.
      */
-    public void parseInstructions(ByteBuffer buffer) throws QpackException.SessionException
+    public void parseInstructions(RetainableByteBuffer buffer) throws QpackException.SessionException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Parsing Instructions {}", BufferUtil.toDetailString(buffer));
+            LOG.debug("Parsing Instructions {}", buffer);
 
         List<Instruction> instructions;
         List<MetaDataNotification> metaDataNotifications;

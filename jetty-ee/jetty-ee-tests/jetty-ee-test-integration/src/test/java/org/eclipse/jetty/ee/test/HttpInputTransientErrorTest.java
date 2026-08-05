@@ -34,7 +34,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
@@ -53,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 //TODO test all protocols
 public class HttpInputTransientErrorTest
 {
-    private static final int IDLE_TIMEOUT = 250;
+    private static final int IDLE_TIMEOUT = 1000;
 
     private LocalConnector connector;
     private Server server;
@@ -77,7 +76,7 @@ public class HttpInputTransientErrorTest
     {
         bufferPool = new ArrayByteBufferPool.Tracking();
         server = new Server(null, null, bufferPool);
-        connector = new LocalConnector(server, new HttpConnectionFactory());
+        connector = new LocalConnector(server);
         connector.setIdleTimeout(IDLE_TIMEOUT);
         server.addConnector(connector);
 
@@ -166,7 +165,7 @@ public class HttpInputTransientErrorTest
             }
         });
 
-        try (LocalConnector.LocalEndPoint localEndPoint = connector.connect())
+        try (LocalConnector.LocalEndPoint localEndPoint = connector.connectToServer())
         {
             String request = """
                 POST /ctx/post HTTP/1.1
@@ -174,9 +173,9 @@ public class HttpInputTransientErrorTest
                 Content-Length: 10
                             
                 """;
-            localEndPoint.addInput(request);
+            localEndPoint.writeRequestString(request);
             Thread.sleep((long)(IDLE_TIMEOUT * 1.5));
-            localEndPoint.addInput("1234567890");
+            localEndPoint.writeRequestString("1234567890");
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));
@@ -258,7 +257,7 @@ public class HttpInputTransientErrorTest
             }
         });
 
-        try (LocalConnector.LocalEndPoint localEndPoint = connector.connect())
+        try (LocalConnector.LocalEndPoint localEndPoint = connector.connectToServer())
         {
             String request = """
                 POST /ctx/post HTTP/1.1
@@ -266,9 +265,9 @@ public class HttpInputTransientErrorTest
                 Content-Length: 10
                             
                 """;
-            localEndPoint.addInput(request);
+            localEndPoint.writeRequestString(request);
             Thread.sleep((long)(IDLE_TIMEOUT * 1.5));
-            localEndPoint.addInput("1234567890");
+            localEndPoint.writeRequestString("1234567890");
             doPostlatch.countDown();
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
@@ -325,7 +324,7 @@ public class HttpInputTransientErrorTest
             }
         });
 
-        try (LocalConnector.LocalEndPoint localEndPoint = connector.connect())
+        try (LocalConnector.LocalEndPoint localEndPoint = connector.connectToServer())
         {
             String request = """
                 POST /ctx/post HTTP/1.1
@@ -333,9 +332,9 @@ public class HttpInputTransientErrorTest
                 Content-Length: 10
                             
                 """;
-            localEndPoint.addInput(request);
+            localEndPoint.writeRequestString(request);
             Thread.sleep((long)(IDLE_TIMEOUT * 1.5));
-            localEndPoint.addInput("1234567890");
+            localEndPoint.writeRequestString("1234567890");
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.IM_A_TEAPOT_418));
@@ -368,7 +367,7 @@ public class HttpInputTransientErrorTest
             }
         });
 
-        try (LocalConnector.LocalEndPoint localEndPoint = connector.connect())
+        try (LocalConnector.LocalEndPoint localEndPoint = connector.connectToServer())
         {
             String request = """
                 POST /ctx/post HTTP/1.1
@@ -376,9 +375,9 @@ public class HttpInputTransientErrorTest
                 Content-Length: 10
                             
                 """;
-            localEndPoint.addInput(request);
+            localEndPoint.writeRequestString(request);
             Thread.sleep((long)(IDLE_TIMEOUT * 1.5));
-            localEndPoint.addInput("1234567890");
+            localEndPoint.writeRequestString("1234567890");
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));
@@ -410,7 +409,7 @@ public class HttpInputTransientErrorTest
             }
         });
 
-        try (LocalConnector.LocalEndPoint localEndPoint = connector.connect())
+        try (LocalConnector.LocalEndPoint localEndPoint = connector.connectToServer())
         {
             String request = """
                 POST /ctx/post HTTP/1.1
@@ -418,9 +417,9 @@ public class HttpInputTransientErrorTest
                 Content-Length: 10
                             
                 """;
-            localEndPoint.addInput(request);
+            localEndPoint.writeRequestString(request);
             Thread.sleep((long)(IDLE_TIMEOUT * 1.5));
-            localEndPoint.addInput("1234567890");
+            localEndPoint.writeRequestString("1234567890");
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.IM_A_TEAPOT_418));

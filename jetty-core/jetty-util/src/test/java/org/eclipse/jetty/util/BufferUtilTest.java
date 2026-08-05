@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -257,7 +257,7 @@ public class BufferUtilTest
     @Test
     public void testPutFromReadableBufferIntoLargeEnoughBuffer()
     {
-        ReadableBuffer from = ReadableBuffer.wrap(BufferUtil.toBuffer("012345"));
+        RetainableByteBuffer from = RetainableByteBuffer.wrap(BufferUtil.toBuffer("012345"));
         ByteBuffer to = ByteBuffer.allocate(10);
 
         BufferUtil.put(from, to);
@@ -270,7 +270,7 @@ public class BufferUtilTest
     @Test
     public void testPutFromReadableBufferIntoTooSmallBuffer()
     {
-        ReadableBuffer from = ReadableBuffer.wrap(BufferUtil.toBuffer("1234567890A"));
+        RetainableByteBuffer from = RetainableByteBuffer.wrap(BufferUtil.toBuffer("1234567890A"));
         ByteBuffer to = ByteBuffer.allocate(10);
 
         BufferUtil.put(from, to);
@@ -284,7 +284,7 @@ public class BufferUtilTest
     @Test
     public void testToBuffer()
     {
-        ReadableBuffer from = ReadableBuffer.wrap(BufferUtil.toBuffer("1234567890A"));
+        RetainableByteBuffer from = RetainableByteBuffer.wrap(BufferUtil.toBuffer("1234567890A"));
         ByteBuffer buffer = BufferUtil.toBuffer(from, false);
 
         assertEquals(0, from.remaining());
@@ -425,7 +425,6 @@ public class BufferUtilTest
         assertEquals("Cruel", BufferUtil.toString(b1));
         ByteBuffer b2 = b1.slice();
         assertEquals("Cruel", BufferUtil.toString(b2));
-        System.err.println(BufferUtil.toDetailString(b2));
         assertEquals(8, b2.arrayOffset());
         assertEquals(5, b2.capacity());
 

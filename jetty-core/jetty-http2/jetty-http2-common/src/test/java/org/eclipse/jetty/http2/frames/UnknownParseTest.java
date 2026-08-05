@@ -21,7 +21,7 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,7 +40,7 @@ public class UnknownParseTest
     @Test
     public void testParseOneByteAtATime()
     {
-        testParse(buffer -> ReadableBuffer.wrap(new byte[]{buffer.get()}));
+        testParse(buffer -> RetainableByteBuffer.wrap(new byte[]{buffer.get()}));
     }
 
     @Test
@@ -60,8 +60,8 @@ public class UnknownParseTest
 
         // 0x4001 == 16385 which is > Frame.DEFAULT_MAX_LENGTH.
         byte[] bytes = new byte[]{0, 0x40, 0x01, 64, 0, 0, 0, 0, 0};
-        ReadableBuffer buffer = ReadableBuffer.wrap(bytes);
-        while (buffer.remaining() > 0L)
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(bytes);
+        while (buffer.hasRemaining())
         {
             parser.parse(buffer);
         }
@@ -69,7 +69,7 @@ public class UnknownParseTest
         assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, failure.get());
     }
 
-    private void testParse(Function<ReadableBuffer, ReadableBuffer> fn)
+    private void testParse(Function<RetainableByteBuffer, RetainableByteBuffer> fn)
     {
         AtomicBoolean failure = new AtomicBoolean();
         Parser parser = new Parser(bufferPool, 8192);
@@ -86,8 +86,8 @@ public class UnknownParseTest
         for (int i = 0; i < 2; ++i)
         {
             byte[] bytes = new byte[]{0, 0, 4, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            ReadableBuffer buffer = ReadableBuffer.wrap(bytes);
-            while (buffer.remaining() > 0L)
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(bytes);
+            while (buffer.hasRemaining())
             {
                 parser.parse(fn.apply(buffer));
             }
@@ -96,7 +96,7 @@ public class UnknownParseTest
         assertFalse(failure.get());
     }
 
-    static void parse(Parser parser, ReadableBuffer buffer)
+    static void parse(Parser parser, RetainableByteBuffer buffer)
     {
         parser.parse(buffer);
     }

@@ -123,7 +123,7 @@ public class DefaultServletNamedTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponseAsString(rawRequest));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         assertThat(response.get("X-TestServlet-PathInfo"), is("/foo.txt"));

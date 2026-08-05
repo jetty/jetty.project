@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.HelloHandler;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -201,7 +201,7 @@ public class NotAcceptingTest
         {
             String content = exchange.exchange(request.getHttpURI().getPath());
             handled++;
-            response.write(true, ReadableBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)), callback);
+            response.write(true, RetainableByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)), callback);
             return true;
         }
 
