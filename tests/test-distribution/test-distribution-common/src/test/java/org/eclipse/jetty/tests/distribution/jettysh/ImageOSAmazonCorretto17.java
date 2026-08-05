@@ -27,7 +27,7 @@ public class ImageOSAmazonCorretto17 extends ImageOS
         super("amazoncorretto-jdk17-jetty12",
             builder ->
                 builder
-                    .from("amazoncorretto:17-al2023")
+                    .from("amazoncorretto:17.0.20-al2023")
                     // Notes: amazoncorretto now uses dnf, not yum
                     .run("dnf update -y ; " +
                         // Notes:
